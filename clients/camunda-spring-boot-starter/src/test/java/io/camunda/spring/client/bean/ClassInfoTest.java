@@ -18,7 +18,8 @@ package io.camunda.spring.client.bean;
 import static io.camunda.spring.client.testsupport.ClassInfoUtil.classInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.spring.client.annotation.*;
+import io.camunda.sdk.annotation.Deployment;
+import io.camunda.sdk.annotation.JobWorker;
 import org.junit.jupiter.api.Test;
 
 public class ClassInfoTest {

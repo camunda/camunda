@@ -33,8 +33,8 @@ import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuild
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.spring.client.event.CamundaClientClosingEvent;
-import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientClosingSpringEvent;
+import io.camunda.spring.client.event.CamundaClientCreatedSpringEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
@@ -59,13 +59,13 @@ import org.springframework.test.context.TestExecutionListener;
  * <ul>
  *   <li>Create a {@link CamundaClient} to inject in the test class
  *   <li>Create a {@link CamundaProcessTestContext} to inject in the test class
- *   <li>Publish a {@link CamundaClientCreatedEvent}
+ *   <li>Publish a {@link CamundaClientCreatedSpringEvent}
  * </ul>
  *
  * <p>After each test method:
  *
  * <ul>
- *   <li>Publish a {@link CamundaClientClosingEvent}
+ *   <li>Publish a {@link CamundaClientClosingSpringEvent}
  *   <li>Close created {@link CamundaClient}s
  *   <li>Purge the runtime (i.e. delete all data)
  * </ul>
@@ -142,7 +142,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         .setContext(camundaProcessTestContext);
 
     // publish Zeebe client
-    testContext.getApplicationContext().publishEvent(new CamundaClientCreatedEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new CamundaClientCreatedSpringEvent(this, client));
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientCreatedEvent(this, zeebeClient));
@@ -172,7 +174,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     // reset assertions
     CamundaAssert.reset();
     // close Zeebe clients
-    testContext.getApplicationContext().publishEvent(new CamundaClientClosingEvent(this, client));
+    testContext
+        .getApplicationContext()
+        .publishEvent(new CamundaClientClosingSpringEvent(this, client));
     testContext
         .getApplicationContext()
         .publishEvent(new ZeebeClientClosingEvent(this, zeebeClient));

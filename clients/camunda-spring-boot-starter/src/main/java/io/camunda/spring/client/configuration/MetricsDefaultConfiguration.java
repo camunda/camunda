@@ -15,8 +15,8 @@
  */
 package io.camunda.spring.client.configuration;
 
-import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
-import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.sdk.metrics.DefaultNoopMetricsRecorder;
+import io.camunda.sdk.metrics.MetricsRecorder;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 

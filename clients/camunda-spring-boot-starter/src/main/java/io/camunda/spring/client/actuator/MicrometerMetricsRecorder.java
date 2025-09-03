@@ -15,7 +15,7 @@
  */
 package io.camunda.spring.client.actuator;
 
-import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.sdk.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;

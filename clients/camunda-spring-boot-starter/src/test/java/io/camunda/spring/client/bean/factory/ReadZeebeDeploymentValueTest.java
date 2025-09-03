@@ -18,7 +18,7 @@ package io.camunda.spring.client.bean.factory;
 import static io.camunda.spring.client.annotation.AnnotationUtil.getDeploymentValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.spring.client.annotation.Deployment;
+import io.camunda.sdk.annotation.Deployment;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.bean.ClassInfo;
 import java.util.Arrays;

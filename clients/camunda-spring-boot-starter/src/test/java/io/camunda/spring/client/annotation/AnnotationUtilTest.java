@@ -87,16 +87,15 @@ public class AnnotationUtilTest {
           .isEqualTo(ComplexType.class);
     }
 
-    public void testNoName(@io.camunda.spring.client.annotation.Variable final ComplexType var1) {}
+    public void testNoName(@io.camunda.sdk.annotation.Variable final ComplexType var1) {}
 
     public void testNotOptional(
-        @io.camunda.spring.client.annotation.Variable(optional = false) final ComplexType var1) {}
+        @io.camunda.sdk.annotation.Variable(optional = false) final ComplexType var1) {}
 
     public void testName(
-        @io.camunda.spring.client.annotation.Variable(name = "var2") final ComplexType var1) {}
+        @io.camunda.sdk.annotation.Variable(name = "var2") final ComplexType var1) {}
 
-    public void testValue(
-        @io.camunda.spring.client.annotation.Variable("var2") final ComplexType var1) {}
+    public void testValue(@io.camunda.sdk.annotation.Variable("var2") final ComplexType var1) {}
   }
 
   @Nested
@@ -113,7 +112,7 @@ public class AnnotationUtilTest {
       assertThat(deploymentValue.getResources().get(0)).isEqualTo("classpath*:*.bpmn");
     }
 
-    @io.camunda.spring.client.annotation.Deployment(resources = "classpath*:*.bpmn")
+    @io.camunda.sdk.annotation.Deployment(resources = "classpath*:*.bpmn")
     static class DeployingBean {}
   }
 
@@ -175,22 +174,21 @@ public class AnnotationUtilTest {
     }
 
     public void testNoName(
-        @io.camunda.spring.client.annotation.Document
-            final List<DocumentReferenceResponse> document) {}
+        @io.camunda.sdk.annotation.Document final List<DocumentReferenceResponse> document) {}
 
     public void testNotOptional(
-        @io.camunda.spring.client.annotation.Document(optional = false)
+        @io.camunda.sdk.annotation.Document(optional = false)
             final List<DocumentReferenceResponse> document) {}
 
     public void testName(
-        @io.camunda.spring.client.annotation.Document(name = "anotherDocument")
+        @io.camunda.sdk.annotation.Document(name = "anotherDocument")
             final List<DocumentReferenceResponse> document) {}
 
     public void testValue(
-        @io.camunda.spring.client.annotation.Document("anotherDocument")
+        @io.camunda.sdk.annotation.Document("anotherDocument")
             final List<DocumentReferenceResponse> document) {}
 
     public void testSingle(
-        @io.camunda.spring.client.annotation.Document final DocumentReferenceResponse document) {}
+        @io.camunda.sdk.annotation.Document final DocumentReferenceResponse document) {}
   }
 }

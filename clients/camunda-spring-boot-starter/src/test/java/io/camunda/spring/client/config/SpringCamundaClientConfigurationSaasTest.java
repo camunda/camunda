@@ -15,16 +15,15 @@
  */
 package io.camunda.spring.client.config;
 
-import static io.camunda.spring.client.configuration.SpringCamundaClientConfiguration.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.configuration.CamundaClientAllAutoConfiguration;
 import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
-import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Properties;

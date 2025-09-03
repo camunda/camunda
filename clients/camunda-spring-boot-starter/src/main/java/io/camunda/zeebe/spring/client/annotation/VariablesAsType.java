@@ -18,7 +18,7 @@ package io.camunda.zeebe.spring.client.annotation;
 import java.lang.annotation.*;
 
 /**
- * @deprecated please use {@link io.camunda.spring.client.annotation.VariablesAsType}
+ * @deprecated please use {@link io.camunda.sdk.annotation.VariablesAsType}
  */
 @Target(ElementType.PARAMETER)
 @Retention(RetentionPolicy.RUNTIME)

@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.common.exception;
 
-import io.camunda.spring.client.exception.BpmnError;
+import io.camunda.sdk.exception.BpmnError;
 import java.util.Map;
 
 /**

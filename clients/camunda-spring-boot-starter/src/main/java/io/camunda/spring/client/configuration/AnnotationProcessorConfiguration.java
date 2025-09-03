@@ -15,12 +15,12 @@
  */
 package io.camunda.spring.client.configuration;
 
-import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
+import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.sdk.jobhandling.JobWorkerManager;
+import io.camunda.sdk.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.event.CamundaClientEventListener;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.List;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

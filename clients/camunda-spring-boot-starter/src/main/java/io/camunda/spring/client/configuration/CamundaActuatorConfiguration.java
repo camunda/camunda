@@ -16,10 +16,10 @@
 package io.camunda.spring.client.configuration;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.sdk.metrics.MetricsRecorder;
 import io.camunda.spring.client.actuator.CamundaClientHealthIndicator;
 import io.camunda.spring.client.actuator.MicrometerMetricsRecorder;
 import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
-import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;
 import org.springframework.boot.actuate.health.HealthIndicator;

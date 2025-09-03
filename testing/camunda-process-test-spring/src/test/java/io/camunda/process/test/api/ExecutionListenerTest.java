@@ -35,8 +35,8 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.spring.client.event.CamundaClientClosingEvent;
-import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientClosingSpringEvent;
+import io.camunda.spring.client.event.CamundaClientCreatedSpringEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
@@ -91,8 +91,13 @@ public class ExecutionListenerTest {
   @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeClientJsonMapper;
   @Captor private ArgumentCaptor<ZeebeClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
-  @Captor private ArgumentCaptor<CamundaClientCreatedEvent> camundaClientCreatedEventArgumentCaptor;
-  @Captor private ArgumentCaptor<CamundaClientClosingEvent> camundaClientClosingEventArgumentCaptor;
+
+  @Captor
+  private ArgumentCaptor<CamundaClientCreatedSpringEvent> camundaClientCreatedEventArgumentCaptor;
+
+  @Captor
+  private ArgumentCaptor<CamundaClientClosingSpringEvent> camundaClientClosingEventArgumentCaptor;
+
   @Captor private ArgumentCaptor<ZeebeClientCreatedEvent> zeebeClientCreatedEventArgumentCaptor;
   @Captor private ArgumentCaptor<ZeebeClientClosingEvent> zeebeClientClosingEventArgumentCaptor;
 
@@ -148,7 +153,7 @@ public class ExecutionListenerTest {
     verify(applicationContext).publishEvent(camundaClientCreatedEventArgumentCaptor.capture());
     verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
 
-    final CamundaClientCreatedEvent createdEvent =
+    final CamundaClientCreatedSpringEvent createdEvent =
         camundaClientCreatedEventArgumentCaptor.getValue();
     assertThat(createdEvent).isNotNull();
     assertThat(createdEvent.getClient()).isEqualTo(camundaClient);
@@ -282,7 +287,7 @@ public class ExecutionListenerTest {
 
     // then
     verify(applicationContext).publishEvent(camundaClientCreatedEventArgumentCaptor.capture());
-    final CamundaClientCreatedEvent createdEvent =
+    final CamundaClientCreatedSpringEvent createdEvent =
         camundaClientCreatedEventArgumentCaptor.getValue();
 
     verify(applicationContext).publishEvent(zeebeClientCreatedEventArgumentCaptor.capture());
@@ -290,7 +295,7 @@ public class ExecutionListenerTest {
         zeebeClientCreatedEventArgumentCaptor.getValue();
 
     verify(applicationContext).publishEvent(camundaClientClosingEventArgumentCaptor.capture());
-    final CamundaClientClosingEvent closedClient =
+    final CamundaClientClosingSpringEvent closedClient =
         camundaClientClosingEventArgumentCaptor.getValue();
     assertThat(createdEvent.getClient()).isEqualTo(closedClient.getClient());
 
