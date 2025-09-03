@@ -90,32 +90,39 @@ jobs:
         shell: bash
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         env:
-          ES_URL: http://localhost:9200
           DATABASE: elasticsearch
+          ES_URL: http://elasticsearch:9200
+          # Exporter (legacy)
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE: elasticsearch
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: ${{ env.ES_URL }}
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: "100"
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: "false"
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CREATESCHEMA: "true"
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_RETENTION_ENABLED: "false"
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: "false"
+          # Primary database + per-app URLs
           CAMUNDA_DATABASE_TYPE: elasticsearch
-          CAMUNDA_DATABASE_URL: http://localhost:9200
-          CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: elasticsearch
-          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_DATABASE_URL: ${{ env.ES_URL }}
           CAMUNDA_TASKLIST_DATABASE: elasticsearch
-          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: ${{ env.ES_URL }}
           CAMUNDA_OPERATE_DATABASE: elasticsearch
-          CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_OPERATE_ELASTICSEARCH_URL: ${{ env.ES_URL }}
         run: |
           set -euo pipefail
-          echo "DATABASE (env) = $DATABASE"
-          echo "Rendering docker compose (expecting elasticsearch substituted)..."
+          echo "Checking for accidental secondary storage vars (should be none)..."
+          if env | grep -i 'SECONDARY.*STORAGE'; then
+            echo "ERROR: Secondary storage variables still present"; exit 1
+          fi
           docker compose config > rendered-compose.yml
-          if ! grep -q 'elasticsearch' rendered-compose.yml; then
-            echo "DATABASE not substituted:"
-            sed -n '1,120p' rendered-compose.yml
-            exit 1
+          if grep -q localhost:9200 rendered-compose.yml; then
+            echo "ERROR: Found localhost:9200 reference"; grep -n localhost:9200 rendered-compose.yml; exit 1
           fi
-          if [[ "$NON_STANDALONE" == "true" ]]; then
-            docker compose up -d operate tasklist
-          else
-            echo "Starting Camunda with: ${DATABASE}"
-            docker compose up -d camunda
-          fi
+            if [[ "${NON_STANDALONE:-}" == "true" ]]; then
+              docker compose up -d operate tasklist
+            else
+              docker compose up -d camunda
+            fi
 
       - name: List running Docker containers
         run: docker ps -a
