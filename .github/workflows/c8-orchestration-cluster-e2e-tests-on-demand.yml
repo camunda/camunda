@@ -90,7 +90,16 @@ jobs:
         shell: bash
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
         env:
+          ES_URL: http://localhost:9200
           DATABASE: elasticsearch
+          CAMUNDA_DATABASE_TYPE: elasticsearch
+          CAMUNDA_DATABASE_URL: http://localhost:9200
+          CAMUNDA_DATA_SECONDARYSTORAGE_TYPE: elasticsearch
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_TASKLIST_DATABASE: elasticsearch
+          CAMUNDA_TASKLIST_ELASTICSEARCH_URL: http://localhost:9200
+          CAMUNDA_OPERATE_DATABASE: elasticsearch
+          CAMUNDA_OPERATE_ELASTICSEARCH_URL: http://localhost:9200
         run: |
           set -euo pipefail
           echo "DATABASE (env) = $DATABASE"
