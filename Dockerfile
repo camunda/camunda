@@ -7,7 +7,7 @@
 ARG BASE_IMAGE="ubuntu:noble"
 ARG BASE_DIGEST="sha256:f3b7f1bdfaf22a0a8db05bb2b758535fe0e70d82bea4206f7549f89aa12922f4"
 ARG JDK_IMAGE="eclipse-temurin:21-jdk-noble"
-ARG JDK_DIGEST="sha256:6df9c76db1a25ded488cf2c34e178cbe83ef5e8f8d9379cab8a06a583f96a18e"
+ARG JDK_DIGEST="sha256:71f2d18eea2e834fad8b6b8d5c7ae6effca37b97f3a3da2df5de932ee540c060"
 
 # set to "build" to build zeebe from scratch instead of using a distball
 ARG DIST="distball"
