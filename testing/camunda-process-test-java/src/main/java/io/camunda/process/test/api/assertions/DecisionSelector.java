@@ -46,4 +46,32 @@ public interface DecisionSelector {
    * @param filter the filter used to limit the decision instance search
    */
   default void applyFilter(final DecisionInstanceFilter filter) {}
+
+  /**
+   * Combines two decision selectors together.
+   *
+   * @param other decision selector to be added.
+   * @return the combined decision selector
+   */
+  default DecisionSelector and(DecisionSelector other) {
+    final DecisionSelector self = this;
+
+    return new DecisionSelector() {
+      @Override
+      public boolean test(final DecisionInstance decisionInstance) {
+        return self.test(decisionInstance) && other.test(decisionInstance);
+      }
+
+      @Override
+      public String describe() {
+        return String.format("%s, %s", self.describe(), other.describe());
+      }
+
+      @Override
+      public void applyFilter(final DecisionInstanceFilter filter) {
+        self.applyFilter(filter);
+        other.applyFilter(filter);
+      }
+    };
+  }
 }
