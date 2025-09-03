@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import crypto from 'crypto';
 export const LOGIN_CREDENTIALS = {username: 'demo', password: 'demo'};
 
 // Generate a simple random alphanumeric string for test isolation
 export const generateUniqueId = () => {
-  return Math.random().toString(36).substring(2, 10);
+  return crypto.randomBytes(8).toString('base64url');
 };
 
 // Create unique user with optional custom ID
