@@ -25,25 +25,37 @@ public abstract class BackupEndpointStandaloneTest {
 
   @Test
   public void shouldCallTakeWhenIsStandalone() {
+    // when
     backupEndpointStandalone.take(11L);
+
+    // then
     verify(backupEndpoint).take(11L);
   }
 
   @Test
   public void shouldCallListWhenIsStandalone() {
+    // when
     backupEndpointStandalone.query(null);
+
+    // then
     verify(backupEndpoint).query(null);
   }
 
   @Test
   public void shouldCallGetWhenIsStandalone() {
+    // when
     backupEndpointStandalone.query("11");
+
+    // then
     verify(backupEndpoint).query("11");
   }
 
   @Test
   public void shouldCallDeleteWhenIsStandalone() {
+    // when
     backupEndpointStandalone.delete(11L);
+
+    // then
     verify(backupEndpoint).delete(11L);
   }
 }
