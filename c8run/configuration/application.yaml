@@ -8,15 +8,14 @@ camunda:
       users:
         - username: demo
           password: demo
-          name: Demo
+          name: demo
           email: demo@example.com
       defaultRoles:
         admin:
           users:
             - demo
-
     # By default authorization and api protection is disabled
     authentication:
-      unprotected-api: false
+      unprotected-api: true
     authorizations:
-      enabled: true
+      enabled: false
