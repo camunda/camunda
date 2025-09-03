@@ -147,6 +147,7 @@ class BackupIdentifierWildcardTest {
     assertThat(pattern.matches(100L)).isTrue();
     assertThat(pattern.matches(1L)).isFalse();
     assertThat(pattern.matches(101L)).isFalse();
+    assertThat(pattern.matches(1000L)).isFalse();
   }
 
   @Test
@@ -169,6 +170,7 @@ class BackupIdentifierWildcardTest {
     assertThat(pattern.matches(101L)).isTrue();
     assertThat(pattern.matches(1L)).isFalse();
     assertThat(pattern.matches(20L)).isFalse();
+    assertThat(pattern.matches(110L)).isFalse();
   }
 
   @Test
