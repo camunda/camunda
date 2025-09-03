@@ -23,9 +23,14 @@ public record ProcessCacheResult(Map<Long, ProcessCacheItem> cachedProcesses) {
   }
 
   public static ProcessCacheResult of(
-      final Long processDefinitionKey, final String elementId, final String cachedName) {
+      final Long processDefinitionKey,
+      final String processName,
+      final String elementId,
+      final String cachedName) {
     return new ProcessCacheResult(
-        Map.of(processDefinitionKey, new ProcessCacheItem(Map.of(elementId, cachedName))));
+        Map.of(
+            processDefinitionKey,
+            new ProcessCacheItem(processName, Map.of(elementId, cachedName))));
   }
 
   public boolean isEmpty() {
