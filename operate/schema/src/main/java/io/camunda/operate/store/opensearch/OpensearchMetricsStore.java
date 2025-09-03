@@ -12,7 +12,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.END_TIME;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.TENANT_ID;
@@ -76,7 +76,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveProcessInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    var query = and(gteLte(EVENT_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
+    var query = and(gteLte(END_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
     }
@@ -92,7 +92,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    var query = and(term(EVENT_TYPE, EDI.name()), gteLte(EVENT_TIME, startTime, endTime));
+    var query = and(term(EVENT_TYPE, EDI.name()), gteLte(END_TIME, startTime, endTime));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
     }
@@ -141,7 +141,8 @@ public class OpensearchMetricsStore implements MetricsStore {
         .setId(String.format(ID_PATTERN, key, tenantId))
         .setEventType(RPI)
         .setEventValue(1L)
-        .setEventTime(timestamp)
+        .setStartTime(timestamp)
+        .setEndTime(timestamp)
         .setTenantId(tenantId)
         .setPartitionId(partitionId);
   }
@@ -155,7 +156,8 @@ public class OpensearchMetricsStore implements MetricsStore {
         .setId(String.format(ID_PATTERN, key, tenantId))
         .setEventType(EDI)
         .setEventValue(1L)
-        .setEventTime(timestamp)
+        .setStartTime(timestamp)
+        .setEndTime(timestamp)
         .setTenantId(tenantId)
         .setPartitionId(partitionId);
   }
