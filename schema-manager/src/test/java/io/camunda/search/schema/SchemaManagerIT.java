@@ -920,6 +920,7 @@ public class SchemaManagerIT {
         // to make sure no index will be accidentally dropped, names are changed or added
         .containsExactlyInAnyOrder(
             newPrefix + "-camunda-authorization-8.8.0_",
+            newPrefix + "-camunda-correlated-message-8.8.0_",
             newPrefix + "-camunda-group-8.8.0_",
             newPrefix + "-camunda-mapping-rule-8.8.0_",
             newPrefix + "-camunda-role-8.8.0_",
