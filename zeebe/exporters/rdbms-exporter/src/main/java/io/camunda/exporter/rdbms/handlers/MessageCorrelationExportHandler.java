@@ -45,7 +45,7 @@ public class MessageCorrelationExportHandler
   private MessageCorrelationDbModel map(final Record<ProcessMessageSubscriptionRecordValue> record) {
     final ProcessMessageSubscriptionRecordValue value = record.getValue();
     
-    return new MessageCorrelationDbModel.Builder()
+    return new MessageCorrelationDbModel.MessageCorrelationDbModelBuilder()
         .subscriptionKey(record.getKey())
         .messageKey(value.getMessageKey())
         .messageName(value.getMessageName())
@@ -53,10 +53,10 @@ public class MessageCorrelationExportHandler
         .processInstanceKey(value.getProcessInstanceKey())
         .flowNodeInstanceKey(value.getElementInstanceKey())
         .flowNodeId(value.getElementId())
-        .bpmnProcessId(value.getBpmnProcessId())
+        .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(null) // Not available in ProcessMessageSubscriptionRecord
         .tenantId(value.getTenantId())
-        .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .correlationTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .partitionId(record.getPartitionId())
         .build();
   }

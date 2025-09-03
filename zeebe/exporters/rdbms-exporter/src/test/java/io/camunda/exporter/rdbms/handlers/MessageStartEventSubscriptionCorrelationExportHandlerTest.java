@@ -67,7 +67,7 @@ class MessageStartEventSubscriptionCorrelationExportHandlerTest {
     assertThat(model.processInstanceKey()).isEqualTo(record.getValue().getProcessInstanceKey());
     assertThat(model.flowNodeInstanceKey()).isNull(); // Not available for start events
     assertThat(model.flowNodeId()).isEqualTo(record.getValue().getStartEventId());
-    assertThat(model.bpmnProcessId()).isEqualTo(record.getValue().getBpmnProcessId());
+    assertThat(model.processDefinitionId()).isEqualTo(record.getValue().getBpmnProcessId());
     assertThat(model.processDefinitionKey()).isEqualTo(record.getValue().getProcessDefinitionKey());
     assertThat(model.tenantId()).isEqualTo(record.getValue().getTenantId());
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());

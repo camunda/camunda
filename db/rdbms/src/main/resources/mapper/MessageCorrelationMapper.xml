@@ -12,78 +12,78 @@
 
   <resultMap id="messageCorrelationResultMap" type="io.camunda.db.rdbms.write.domain.MessageCorrelationDbModel">
     <constructor>
-      <arg column="SUBSCRIPTION_KEY" javaType="java.lang.Long" />
+      <arg column="CORRELATION_KEY" javaType="java.lang.String" />
+      <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime" />
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String" />
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long" />
+      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime" />
       <arg column="MESSAGE_KEY" javaType="java.lang.Long" />
+      <arg column="MESSAGE_NAME" javaType="java.lang.String" />
+      <arg column="PARTITION_ID" javaType="java.lang.Integer" />
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" />
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" />
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" />
+      <arg column="SUBSCRIPTION_KEY" javaType="java.lang.Long" />
+      <arg column="TENANT_ID" javaType="java.lang.String" />
     </constructor>
-    <result property="messageName" column="MESSAGE_NAME" />
-    <result property="correlationKey" column="CORRELATION_KEY" />
-    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY" />
-    <result property="flowNodeInstanceKey" column="FLOW_NODE_INSTANCE_KEY" />
-    <result property="flowNodeId" column="FLOW_NODE_ID" />
-    <result property="bpmnProcessId" column="BPMN_PROCESS_ID" />
-    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY" />
-    <result property="tenantId" column="TENANT_ID" />
-    <result property="dateTime" column="DATE_TIME" />
-    <result property="partitionId" column="PARTITION_ID" />
-    <result property="historyCleanupDate" column="HISTORY_CLEANUP_DATE" />
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.MessageCorrelationDbModel">
-    INSERT INTO ${prefix}MESSAGE_CORRELATION (
-      SUBSCRIPTION_KEY,
+    INSERT INTO ${prefix}CORRELATED_MESSAGE (
+      CORRELATION_KEY,
+      CORRELATION_TIME,
+      FLOW_NODE_ID,
+      FLOW_NODE_INSTANCE_KEY,
+      HISTORY_CLEANUP_DATE,
       MESSAGE_KEY,
       MESSAGE_NAME,
-      CORRELATION_KEY,
-      PROCESS_INSTANCE_KEY,
-      FLOW_NODE_INSTANCE_KEY,
-      FLOW_NODE_ID,
-      BPMN_PROCESS_ID,
-      PROCESS_DEFINITION_KEY,
-      TENANT_ID,
-      DATE_TIME,
       PARTITION_ID,
-      HISTORY_CLEANUP_DATE
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      SUBSCRIPTION_KEY,
+      TENANT_ID
     ) VALUES (
-      #{subscriptionKey},
+      #{correlationKey},
+      #{correlationTime},
+      #{flowNodeId},
+      #{flowNodeInstanceKey},
+      #{historyCleanupDate},
       #{messageKey},
       #{messageName},
-      #{correlationKey},
-      #{processInstanceKey},
-      #{flowNodeInstanceKey},
-      #{flowNodeId},
-      #{bpmnProcessId},
-      #{processDefinitionKey},
-      #{tenantId},
-      #{dateTime},
       #{partitionId},
-      #{historyCleanupDate}
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processInstanceKey},
+      #{subscriptionKey},
+      #{tenantId}
     )
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.MessageCorrelationDbModel">
-    UPDATE ${prefix}MESSAGE_CORRELATION SET
-      MESSAGE_NAME = #{messageName},
+    UPDATE ${prefix}CORRELATED_MESSAGE SET
       CORRELATION_KEY = #{correlationKey},
-      PROCESS_INSTANCE_KEY = #{processInstanceKey},
-      FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
+      CORRELATION_TIME = #{correlationTime},
       FLOW_NODE_ID = #{flowNodeId},
-      BPMN_PROCESS_ID = #{bpmnProcessId},
-      PROCESS_DEFINITION_KEY = #{processDefinitionKey},
-      TENANT_ID = #{tenantId},
-      DATE_TIME = #{dateTime},
+      FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate},
+      MESSAGE_NAME = #{messageName},
       PARTITION_ID = #{partitionId},
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate}
+      PROCESS_DEFINITION_ID = #{processDefinitionId},
+      PROCESS_DEFINITION_KEY = #{processDefinitionKey},
+      PROCESS_INSTANCE_KEY = #{processInstanceKey},
+      TENANT_ID = #{tenantId}
     WHERE SUBSCRIPTION_KEY = #{subscriptionKey} AND MESSAGE_KEY = #{messageKey}
   </update>
 
   <update id="updateHistoryCleanupDate" parameterType="io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper$UpdateHistoryCleanupDateDto">
-    UPDATE ${prefix}MESSAGE_CORRELATION SET
+    UPDATE ${prefix}CORRELATED_MESSAGE SET
       HISTORY_CLEANUP_DATE = #{historyCleanupDate}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
   <delete id="cleanupHistory" parameterType="io.camunda.db.rdbms.sql.HistoryCleanupMapper$CleanupHistoryDto">
-    DELETE FROM ${prefix}MESSAGE_CORRELATION
+    DELETE FROM ${prefix}CORRELATED_MESSAGE
     WHERE PARTITION_ID = #{partitionId}
       AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
     LIMIT #{limit}

@@ -10,15 +10,15 @@ package io.camunda.db.rdbms.sql.columns;
 public class MessageCorrelationColumn {
   public static final String SUBSCRIPTION_KEY = "SUBSCRIPTION_KEY";
   public static final String MESSAGE_KEY = "MESSAGE_KEY";
-  public static final String MESSAGE_NAME = "MESSAGE_NAME";
   public static final String CORRELATION_KEY = "CORRELATION_KEY";
-  public static final String PROCESS_INSTANCE_KEY = "PROCESS_INSTANCE_KEY";
-  public static final String FLOW_NODE_INSTANCE_KEY = "FLOW_NODE_INSTANCE_KEY";
+  public static final String CORRELATION_TIME = "CORRELATION_TIME";
   public static final String FLOW_NODE_ID = "FLOW_NODE_ID";
-  public static final String BPMN_PROCESS_ID = "BPMN_PROCESS_ID";
-  public static final String PROCESS_DEFINITION_KEY = "PROCESS_DEFINITION_KEY";
-  public static final String TENANT_ID = "TENANT_ID";
-  public static final String DATE_TIME = "DATE_TIME";
-  public static final String PARTITION_ID = "PARTITION_ID";
+  public static final String FLOW_NODE_INSTANCE_KEY = "FLOW_NODE_INSTANCE_KEY";
   public static final String HISTORY_CLEANUP_DATE = "HISTORY_CLEANUP_DATE";
+  public static final String MESSAGE_NAME = "MESSAGE_NAME";
+  public static final String PARTITION_ID = "PARTITION_ID";
+  public static final String PROCESS_DEFINITION_ID = "PROCESS_DEFINITION_ID";
+  public static final String PROCESS_DEFINITION_KEY = "PROCESS_DEFINITION_KEY";
+  public static final String PROCESS_INSTANCE_KEY = "PROCESS_INSTANCE_KEY";
+  public static final String TENANT_ID = "TENANT_ID";
 }

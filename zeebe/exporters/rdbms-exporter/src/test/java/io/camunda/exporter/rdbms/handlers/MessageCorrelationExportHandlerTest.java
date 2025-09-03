@@ -68,7 +68,7 @@ class MessageCorrelationExportHandlerTest {
     assertThat(model.processInstanceKey()).isEqualTo(record.getValue().getProcessInstanceKey());
     assertThat(model.flowNodeInstanceKey()).isEqualTo(record.getValue().getElementInstanceKey());
     assertThat(model.flowNodeId()).isEqualTo(record.getValue().getElementId());
-    assertThat(model.bpmnProcessId()).isEqualTo(record.getValue().getBpmnProcessId());
+    assertThat(model.processDefinitionId()).isEqualTo(record.getValue().getBpmnProcessId());
     assertThat(model.tenantId()).isEqualTo(record.getValue().getTenantId());
     assertThat(model.partitionId()).isEqualTo(record.getPartitionId());
 

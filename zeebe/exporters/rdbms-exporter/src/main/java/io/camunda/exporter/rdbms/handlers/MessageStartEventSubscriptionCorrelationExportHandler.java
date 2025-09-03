@@ -45,7 +45,7 @@ public class MessageStartEventSubscriptionCorrelationExportHandler
   private MessageCorrelationDbModel map(final Record<MessageStartEventSubscriptionRecordValue> record) {
     final MessageStartEventSubscriptionRecordValue value = record.getValue();
     
-    return new MessageCorrelationDbModel.Builder()
+    return new MessageCorrelationDbModel.MessageCorrelationDbModelBuilder()
         .subscriptionKey(record.getKey())
         .messageKey(value.getMessageKey())
         .messageName(value.getMessageName())
@@ -53,10 +53,10 @@ public class MessageStartEventSubscriptionCorrelationExportHandler
         .processInstanceKey(value.getProcessInstanceKey())
         .flowNodeInstanceKey(null) // Not available for start events
         .flowNodeId(value.getStartEventId())
-        .bpmnProcessId(value.getBpmnProcessId())
+        .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .tenantId(value.getTenantId())
-        .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
+        .correlationTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .partitionId(record.getPartitionId())
         .build();
   }
