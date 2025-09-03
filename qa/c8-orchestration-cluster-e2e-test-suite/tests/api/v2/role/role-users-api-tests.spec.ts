@@ -139,7 +139,7 @@ test.describe.parallel('Role Users API Tests', () => {
     const roleId: string = state['roleId1'] as string;
     const p = {userId: userFromState(roleId, state) as string};
     const res = await request.post(
-      buildUrl('/roles/{userId}/users/search', p),
+      buildUrl('/roles/{roleId}/users/search', p),
       {headers: {}, data: {}},
     );
     await assertUnauthorizedRequest(res);
@@ -179,7 +179,7 @@ test.describe.parallel('Role Users API Tests', () => {
     await test.step('Search Role Users After Unassign', async () => {
       await expect(async () => {
         const res = await request.post(
-          buildUrl('/roles/{userId}/users/search', p),
+          buildUrl('/roles/{roleId}/users/search', p),
           {headers: jsonHeaders(), data: {}},
         );
         await assertPaginatedRequest(res, {
