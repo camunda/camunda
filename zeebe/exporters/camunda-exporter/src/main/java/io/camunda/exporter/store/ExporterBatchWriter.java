@@ -96,7 +96,7 @@ public final class ExporterBatchWriter {
       for (final var handler : entityAndHandler.handlers()) {
         handler.flush(entity, batchRequest);
       }
-      LOG.debug("Flushed entity: {}", entity);
+      LOG.info("Flushed entity: {}", entity);
     }
 
     batchRequest.execute(customErrorHandler);

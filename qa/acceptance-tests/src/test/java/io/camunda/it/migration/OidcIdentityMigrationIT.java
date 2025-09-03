@@ -132,7 +132,7 @@ public class OidcIdentityMigrationIT {
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   @AutoClose private final HttpClient httpClient = HttpClient.newHttpClient();
   private TestStandaloneIdentityMigration migration;
-  private CamundaClient client;
+  @AutoClose private CamundaClient client;
 
   @BeforeAll
   static void init() {

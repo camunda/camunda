@@ -60,8 +60,8 @@ public class OidcNoSecondaryStorageTest {
   @Container
   private static final KeycloakContainer KEYCLOAK = DefaultTestContainers.createDefaultKeycloak();
 
-  @AutoClose private static CamundaClient defaultClient;
-  @AutoClose private static CamundaClient serviceClient;
+  @AutoClose private CamundaClient defaultClient;
+  @AutoClose private CamundaClient serviceClient;
 
   @TestZeebe(awaitCompleteTopology = false)
   private final TestStandaloneBroker broker =
