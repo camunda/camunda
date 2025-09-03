@@ -17,6 +17,8 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageFromMessageStartEventSubscriptionHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -85,6 +87,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
+import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
@@ -315,7 +318,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 batchOperationCache),
             new UsageMetricHandler(
                 indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
-                indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName())));
+                indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
+            new CorrelatedMessageFromMessageStartEventSubscriptionHandler(
+                indexDescriptors.get(CorrelatedMessageIndex.class).getFullQualifiedName()),
+            new CorrelatedMessageFromProcessMessageSubscriptionHandler(
+                indexDescriptors.get(CorrelatedMessageIndex.class).getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
