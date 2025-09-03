@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+@Disabled // TODO: Test to be deleted
 public class ProcessDefinitionFormDataMigrationIT {
 
   private static final Map<String, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();

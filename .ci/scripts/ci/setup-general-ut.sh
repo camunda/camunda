@@ -1,5 +1,4 @@
-#!/bin/bash -eux
-
+#!/bin/bash
 #
 # Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
 # one or more contributor license agreements. See the NOTICE file distributed
@@ -8,12 +7,15 @@
 # except in compliance with the Camunda License 1.0.
 #
 
+set -euxo pipefail
+
 #### Outputs a list of optimize, operate, tasklist, and zeebe modules that should be skipped in the general unit tests
 #### The skipped modules are run elsewhere. This script ensures that any new modules that are added will be run by general unit test
 
 ### Get list of all modules in monorepo
-# shellcheck disable=SC2016,SC2005,SC2006,SC2046
-rawModuleList=$(echo $(./mvnw -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' | grep '###MODULE_GAV### ' | cut -f2 -d' '))
+# shellcheck disable=SC2005,SC2046
+rawModuleList=$(echo $(python3 .ci/scripts/ci/find-pom-artifactids.py))
+echo "Raw module list: $rawModuleList"
 
 # Convert the module list string into an array
 IFS=' ' read -ra items <<< "$rawModuleList"
