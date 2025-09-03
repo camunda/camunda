@@ -74,6 +74,7 @@ public class IncidentSpecificFilterIT {
                     .flowNodeInstanceKey(4000L)
                     .errorType(ErrorType.JOB_NO_RETRIES)
                     .errorMessage("error-message-5000")
+                    .errorMessageHash("error-message-5000".hashCode())
                     .state(IncidentState.ACTIVE)
                     .jobKey(6000L)
                     .creationDate(CommonFixtures.NOW)
@@ -106,6 +107,7 @@ public class IncidentSpecificFilterIT {
                 Operation.gt(NOW.minus(1, ChronoUnit.MILLIS)),
                 Operation.lt(NOW.plus(1, ChronoUnit.MILLIS)))
             .build(),
-        new IncidentFilter.Builder().tenantIds("sorting-tenant1").build());
+        new IncidentFilter.Builder().tenantIds("sorting-tenant1").build(),
+        new IncidentFilter.Builder().errorMessageHashes("error-message-5000".hashCode()).build());
   }
 }
