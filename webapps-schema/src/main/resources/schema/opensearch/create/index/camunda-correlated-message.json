@@ -5,45 +5,45 @@
       "id": {
         "type": "keyword"
       },
-      "messageKey": {
-        "type": "long"
-      },
-      "subscriptionKey": {
-        "type": "long"
-      },
-      "messageName": {
+      "bpmnProcessId": {
         "type": "keyword"
       },
       "correlationKey": {
         "type": "keyword"
       },
-      "processInstanceKey": {
-        "type": "long"
-      },
-      "flowNodeInstanceKey": {
-        "type": "long"
+      "correlationTime": {
+        "type": "date",
+        "format": "date_time || epoch_millis"
       },
       "flowNodeId": {
         "type": "keyword"
       },
-      "processDefinitionKey": {
+      "flowNodeInstanceKey": {
         "type": "long"
       },
-      "bpmnProcessId": {
-        "type": "keyword"
-      },
-      "tenantId": {
-        "type": "keyword"
-      },
-      "position": {
+      "messageKey": {
         "type": "long"
+      },
+      "messageName": {
+        "type": "keyword"
       },
       "partitionId": {
         "type": "integer"
       },
-      "correlationTime": {
-        "type": "date",
-        "format": "date_time || epoch_millis"
+      "position": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "subscriptionKey": {
+        "type": "long"
+      },
+      "tenantId": {
+        "type": "keyword"
       }
     }
   }
