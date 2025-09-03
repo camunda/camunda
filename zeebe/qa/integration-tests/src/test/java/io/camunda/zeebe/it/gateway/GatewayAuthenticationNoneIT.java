@@ -44,7 +44,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 /**
- * This test is mostly a copy of {@link GatewayAuthenticationIdentityIT} but with the authentication
+ * This test is mostly a copy of {@link GatewayAuthenticationNoneIT} but with the authentication
  * mode set to none. It verifies that the gateway can be configured to not require authentication,
  * even when the {@link Profile#IDENTITY_AUTH} profile is active. In other words, users must be able
  * to override the security configuration with env vars.
@@ -59,8 +59,9 @@ public class GatewayAuthenticationNoneIT {
   public static final Duration FIRST_REQUEST_TIMEOUT = Duration.ofSeconds(5);
   public static final String SNAPSHOT_TAG = "SNAPSHOT";
   private static final String KEYCLOAK_PATH_CAMUNDA_REALM = "/realms/camunda-platform";
-  private static final String ZEEBE_CLIENT_ID = "zeebe";
-  private static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
+  private static final String ZEEBE_CLIENT_ID = "orchestration";
+  private static final String ZEEBE_CLIENT_NAME = "Orchestration";
+  private static final String ZEEBE_CLIENT_AUDIENCE = "orchestration-api";
   private static final String ZEEBE_CLIENT_SECRET = "zecret";
   private static final Network NETWORK = Network.newNetwork();
 
@@ -90,8 +91,9 @@ public class GatewayAuthenticationNoneIT {
               "http://keycloak:8080" + KEYCLOAK_PATH_CAMUNDA_REALM)
           .withEnv("KEYCLOAK_SETUP_USER", KEYCLOAK_USER)
           .withEnv("KEYCLOAK_SETUP_PASSWORD", KEYCLOAK_PASSWORD)
-          .withEnv("KEYCLOAK_INIT_ZEEBE_SECRET", ZEEBE_CLIENT_SECRET)
-          .withEnv("KEYCLOAK_CLIENTS_0_NAME", ZEEBE_CLIENT_ID)
+          .withEnv("KEYCLOAK_INIT_ORCHESTRATION_SECRET", ZEEBE_CLIENT_SECRET)
+          .withEnv("KEYCLOAK_INIT_ORCHESTRATION_ROOT_URL", "http://localhost:8080")
+          .withEnv("KEYCLOAK_CLIENTS_0_NAME", ZEEBE_CLIENT_NAME)
           .withEnv("KEYCLOAK_CLIENTS_0_ID", ZEEBE_CLIENT_ID)
           .withEnv("KEYCLOAK_CLIENTS_0_SECRET", ZEEBE_CLIENT_SECRET)
           .withEnv("KEYCLOAK_CLIENTS_0_TYPE", "m2m")
