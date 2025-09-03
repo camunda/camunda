@@ -12,12 +12,11 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsItemImpl;
-import io.camunda.configuration.beans.SearchEngineConnectProperties;
-import io.camunda.it.util.TestHelper;
 import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.migration.usagemetric.OperateMetricMigrator;
@@ -108,8 +107,11 @@ public class OperateMetricMigratorIT {
 
   @BeforeAll
   static void setup() throws IOException {
-    TestHelper.deployResource(camundaClient, "process/service_tasks_v1.bpmn");
-
+    camundaClient
+        .newDeployResourceCommand()
+        .addResourceFromClasspath("process/service_tasks_v1.bpmn")
+        .send()
+        .join();
     // generate older operate rPI metrics
     connectConfiguration = new SearchEngineConnectProperties();
     connectConfiguration.setIndexPrefix(

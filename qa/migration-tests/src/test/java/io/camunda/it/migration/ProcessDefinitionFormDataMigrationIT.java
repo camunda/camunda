@@ -9,22 +9,14 @@ package io.camunda.it.migration;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.Profile;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
-import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
+import io.camunda.it.migration.util.MigrationTestUtils;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
-import io.camunda.search.clients.core.SearchQueryHit;
-import io.camunda.search.clients.core.SearchQueryRequest;
-import io.camunda.search.clients.query.SearchQueryBuilders;
-import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.entities.ProcessEntity;
-import java.net.URI;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Optional;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -41,40 +33,20 @@ public class ProcessDefinitionFormDataMigrationIT {
   @RegisterExtension
   private static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          .withPostUpdateAdditionalProfiles(Profile.PROCESS_MIGRATION)
           .withBeforeUpgradeConsumer(ProcessDefinitionFormDataMigrationIT::setup);
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
-    migrator
-        .getCamundaClient()
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("form/form.form")
-        .send()
-        .join();
+    MigrationTestUtils.deployForm(migrator, "form/form.form");
+
     final var formStartedProcessKey =
-        migrator
-            .getCamundaClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/process_start_form.bpmn")
-            .send()
-            .join()
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
-    awaitProcessDefinitionCreated(formStartedProcessKey, migrator);
+        MigrationTestUtils.deployProcessDefinition(migrator, "process/process_start_form.bpmn");
+    MigrationTestUtils.awaitProcessDefinitionCreated(formStartedProcessKey, migrator);
     PROCESS_DEFINITION_KEYS.put("formStartedProcessKey", formStartedProcessKey);
 
     final var embeddedFormStartedProcessKey =
-        migrator
-            .getCamundaClient()
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("process/startedByFormProcess.bpmn")
-            .send()
-            .join()
-            .getProcesses()
-            .getFirst()
-            .getProcessDefinitionKey();
-    awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
-
+        MigrationTestUtils.deployProcessDefinition(migrator, "process/startedByFormProcess.bpmn");
+    MigrationTestUtils.awaitProcessDefinitionCreated(embeddedFormStartedProcessKey, migrator);
     PROCESS_DEFINITION_KEYS.put("embeddedFormStartedProcessKey", embeddedFormStartedProcessKey);
   }
 
@@ -87,7 +59,7 @@ public class ProcessDefinitionFormDataMigrationIT {
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
-              final var proc = findProcess(migrator, processDefinitionKey);
+              final var proc = MigrationTestUtils.findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
               assertThat(proc.get().getFormId()).isEqualTo("test");
               assertThat(proc.get().getIsPublic()).isFalse();
@@ -100,61 +72,17 @@ public class ProcessDefinitionFormDataMigrationIT {
   void shouldMigrateProcessDefinitionWithEmbeddedForm(final CamundaMigrator migrator) {
 
     final long processDefinitionKey = PROCESS_DEFINITION_KEYS.get("embeddedFormStartedProcessKey");
-
     Awaitility.await("Form data should be present on process definition")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
-              final var proc = findProcess(migrator, processDefinitionKey);
+              final var proc = MigrationTestUtils.findProcess(migrator, processDefinitionKey);
               assertThat(proc).isPresent();
               assertThat(proc.get().getFormId()).isNull();
               assertThat(proc.get().getFormKey()).isEqualTo("camunda-forms:bpmn:testForm");
               assertThat(proc.get().getIsPublic()).isTrue();
               assertThat(proc.get().getIsFormEmbedded()).isTrue();
             });
-  }
-
-  private static void awaitProcessDefinitionCreated(
-      final long processDefinitionKey, final CamundaMigrator migrator) {
-    final ObjectMapper mapper = new ObjectMapper();
-
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .ignoreExceptions()
-        .until(
-            () -> {
-              final var res =
-                  migrator.request(
-                      b ->
-                          b.GET()
-                              .uri(
-                                  URI.create(
-                                      migrator.getWebappsUrl()
-                                          + "/process-definitions/"
-                                          + processDefinitionKey)),
-                      HttpResponse.BodyHandlers.ofString());
-
-              if (res.statusCode() == 200) {
-                final var proc = mapper.readValue(res.body(), ProcessDefinition.class);
-                return proc.getKey() == processDefinitionKey;
-              }
-              return false;
-            });
-  }
-
-  private Optional<ProcessEntity> findProcess(
-      final CamundaMigrator migrator, final long processDefinitionKey) {
-    final var processDefinitionQuery =
-        SearchQueryBuilders.term(ProcessIndex.KEY, processDefinitionKey);
-    final var req =
-        SearchQueryRequest.of(
-            s ->
-                s.query(processDefinitionQuery)
-                    .index(migrator.indexFor(ProcessIndex.class).getAlias()));
-
-    return migrator.getSearchClient().search(req, ProcessEntity.class).hits().stream()
-        .findFirst()
-        .map(SearchQueryHit::source);
   }
 }

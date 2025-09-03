@@ -29,6 +29,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoin
 import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -40,6 +41,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.UnaryOperator;
+import org.apache.commons.lang3.exception.UncheckedException;
 import org.awaitility.Awaitility;
 
 public abstract class UserTaskMigrationHelper {
@@ -111,6 +113,40 @@ public abstract class UserTaskMigrationHelper {
         .getProcesses()
         .getFirst()
         .getProcessDefinitionKey();
+  }
+
+  /// Complete a User Task in 8.7 Tasklist
+  protected static void completeUserTask(final CamundaMigrator migrator, final String taskId) {
+    try {
+      migrator.request(
+          b ->
+              b.method("PATCH", HttpRequest.BodyPublishers.noBody())
+                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/complete")),
+          HttpResponse.BodyHandlers.discarding());
+    } catch (final IOException | InterruptedException e) {
+      throw new UncheckedException(e);
+    }
+  }
+
+  /// Assign a User Task in 8.7 Tasklist
+  protected static void assignUserTask(
+      final CamundaMigrator migrator, final String taskId, final String assignee) {
+    final String assignPayload;
+    try {
+      assignPayload = OBJECT_MAPPER.writeValueAsString(Map.of("assignee", assignee));
+    } catch (final JsonProcessingException e) {
+      throw new UncheckedException(e);
+    }
+
+    try {
+      migrator.request(
+          b ->
+              b.method("PATCH", HttpRequest.BodyPublishers.ofString(assignPayload))
+                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/assign")),
+          HttpResponse.BodyHandlers.discarding());
+    } catch (final IOException | InterruptedException e) {
+      throw new UncheckedException(e);
+    }
   }
 
   protected static long startProcessInstance(

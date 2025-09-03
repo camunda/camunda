@@ -28,6 +28,7 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          // .withPostUpdateAdditionalProfiles(Profile.TASK_MIGRATION)
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, null));
 
   @Test
