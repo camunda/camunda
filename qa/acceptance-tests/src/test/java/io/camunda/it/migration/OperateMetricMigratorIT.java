@@ -12,7 +12,6 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbD
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.statistics.response.UsageMetricsStatisticsImpl;
@@ -67,7 +66,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class UsageMetricMigrationIT {
+public class OperateMetricMigratorIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
   public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
@@ -113,7 +112,8 @@ public class UsageMetricMigrationIT {
 
     // generate older operate rPI metrics
     connectConfiguration = new SearchEngineConnectProperties();
-    connectConfiguration.setIndexPrefix(UsageMetricMigrationIT.class.getSimpleName().toLowerCase());
+    connectConfiguration.setIndexPrefix(
+        OperateMetricMigratorIT.class.getSimpleName().toLowerCase());
     isElasticsearch = currentMultiDbDatabaseType() == DatabaseType.ES;
     final SearchEngineClient searchEngineClient;
     if (isElasticsearch) {
