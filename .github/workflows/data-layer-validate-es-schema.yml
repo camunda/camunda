@@ -1,0 +1,70 @@
+name: Validate Elasticsearch Mappings
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+    paths:
+      - "webapps-schema/src/main/resources/schema/elasticsearch/create/**"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+
+    services:
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        ports:
+          - 9200:9200
+        options: >-
+          -e discovery.type=single-node
+          -e xpack.security.enabled=false
+
+    steps:
+      # Checkout only PR branch's mappings directory
+      - name: Checkout PR branch mappings
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          sparse-checkout: |
+            webapps-schema/src/main/resources/schema/elasticsearch/create
+            .ci
+
+      - name: Create working directory
+        run: mkdir mappings_compare
+
+      - name: Copy current (PR) version of files with "new-" prefix
+        run: |
+          find webapps-schema/src/main/resources/schema/elasticsearch/create -type f -name "*.json" \
+          -exec sh -c 'cp "$1" "mappings_compare/new-$(basename "$1")"' _ {} \;
+
+      # Fetch only the main branch's mappings directory
+      - name: Checkout base (main) branch mappings
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          path: main_branch
+          fetch-depth: 1
+          sparse-checkout: |
+            webapps-schema/src/main/resources/schema/elasticsearch/create
+
+      - name: Copy main version of files with "old-" prefix
+        run: |
+          find main_branch/webapps-schema/src/main/resources/schema/elasticsearch/create -type f -name "*.json" \
+          -exec sh -c 'cp "$1" "mappings_compare/old-$(basename "$1")"' _ {} \;
+
+      - name: Wait for Elasticsearch
+        run: |
+          for i in {1..30}; do
+            if curl -s http://localhost:9200 >/dev/null; then
+              echo "Elasticsearch is up!"
+              break
+            fi
+            echo "Waiting for Elasticsearch... attempt $i"
+            sleep 5
+          done
+
+      - name: Run mapping validation script
+        run: |
+          python3 .ci/scripts/ci/compare_mappings.py mappings_compare
