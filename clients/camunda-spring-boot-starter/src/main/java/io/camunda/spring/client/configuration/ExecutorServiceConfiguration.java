@@ -15,7 +15,7 @@
  */
 package io.camunda.spring.client.configuration;
 
-import io.camunda.spring.client.jobhandling.CamundaClientExecutorService;
+import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;

@@ -16,11 +16,11 @@
 package io.camunda.workers;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.camunda.sdk.annotation.JobWorker;
+import io.camunda.sdk.annotation.Variable;
+import io.camunda.sdk.exception.BpmnError;
 import io.camunda.services.ArchiveService;
 import io.camunda.services.WiredLegacyException;
-import io.camunda.spring.client.annotation.JobWorker;
-import io.camunda.spring.client.annotation.Variable;
-import io.camunda.spring.client.exception.BpmnError;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -38,7 +38,7 @@ public class ArchiveInvoiceWorker {
       @Variable("invoice") final JsonNode invoiceJson) {
     try {
       service.archiveInvoice(invoiceId, invoiceJson);
-    } catch (WiredLegacyException e) {
+    } catch (final WiredLegacyException e) {
       throw new BpmnError(
           "LEGACY_ERROR_ARCHIVE", "The archive system had a problem: " + e.getMessage());
     }

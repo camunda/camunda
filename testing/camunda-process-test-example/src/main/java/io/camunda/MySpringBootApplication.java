@@ -15,7 +15,7 @@
  */
 package io.camunda;
 
-import io.camunda.spring.client.annotation.Deployment;
+import io.camunda.sdk.annotation.Deployment;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication

@@ -16,9 +16,9 @@
 package io.camunda.workers;
 
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.sdk.annotation.JobWorker;
+import io.camunda.sdk.annotation.Variable;
 import io.camunda.services.PaymentService;
-import io.camunda.spring.client.annotation.JobWorker;
-import io.camunda.spring.client.annotation.Variable;
 import org.springframework.stereotype.Component;
 
 @Component

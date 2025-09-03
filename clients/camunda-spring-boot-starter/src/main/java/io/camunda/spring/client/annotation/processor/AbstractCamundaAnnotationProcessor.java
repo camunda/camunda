@@ -16,6 +16,7 @@
 package io.camunda.spring.client.annotation.processor;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.sdk.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.spring.client.bean.ClassInfo;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;

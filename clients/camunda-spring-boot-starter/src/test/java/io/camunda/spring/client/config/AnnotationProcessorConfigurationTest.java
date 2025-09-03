@@ -18,13 +18,13 @@ package io.camunda.spring.client.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.sdk.jobhandling.JobWorkerManager;
+import io.camunda.sdk.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.spring.client.annotation.processor.AbstractCamundaAnnotationProcessor;
-import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
-import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientCreatedSpringEvent;
 import io.camunda.spring.client.event.CamundaClientEventListener;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,8 @@ public class AnnotationProcessorConfigurationTest {
   @Test
   void shouldRun() {
     // when - we mock the creation of the camunda client
-    camundaClientEventListener.handleStart(new CamundaClientCreatedEvent(this, camundaClient));
+    camundaClientEventListener.handleStart(
+        new CamundaClientCreatedSpringEvent(this, camundaClient));
     // then
     assertThat(camundaClientLifecycleAwareSet)
         .anySatisfy(p -> assertThat(p).isInstanceOf(MockCamundaAnnotationProcessor.class));

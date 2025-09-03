@@ -35,13 +35,13 @@ public class CamundaLifecycleEventProducer implements SmartLifecycle {
 
   @Override
   public void start() {
-    publisher.publishEvent(new CamundaClientCreatedEvent(this, client));
+    publisher.publishEvent(new CamundaClientCreatedSpringEvent(this, client));
     running = true;
   }
 
   @Override
   public void stop() {
-    publisher.publishEvent(new CamundaClientClosingEvent(this, client));
+    publisher.publishEvent(new CamundaClientClosingSpringEvent(this, client));
     running = false;
   }
 
