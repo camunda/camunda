@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang3.StringUtils;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record UserTaskEntity(
@@ -18,6 +19,7 @@ public record UserTaskEntity(
     String elementId,
     String name,
     String processDefinitionId,
+    String processName,
     OffsetDateTime creationDate,
     OffsetDateTime completionDate,
     String assignee,
@@ -43,6 +45,33 @@ public record UserTaskEntity(
         elementId,
         newName,
         processDefinitionId,
+        processName,
+        creationDate,
+        completionDate,
+        assignee,
+        state,
+        formKey,
+        processDefinitionKey,
+        processInstanceKey,
+        elementInstanceKey,
+        tenantId,
+        dueDate,
+        followUpDate,
+        candidateGroups,
+        candidateUsers,
+        externalFormReference,
+        processDefinitionVersion,
+        customHeaders,
+        priority);
+  }
+
+  public UserTaskEntity withProcessName(final String newProcessName) {
+    return new UserTaskEntity(
+        userTaskKey,
+        elementId,
+        name,
+        processDefinitionId,
+        newProcessName,
         creationDate,
         completionDate,
         assignee,
@@ -64,6 +93,10 @@ public record UserTaskEntity(
 
   public boolean hasName() {
     return name != null && !name.isBlank();
+  }
+
+  public boolean hasProcessName() {
+    return !StringUtils.isBlank(processName);
   }
 
   public enum UserTaskState {

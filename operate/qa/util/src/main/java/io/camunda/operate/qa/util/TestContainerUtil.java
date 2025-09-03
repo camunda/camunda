@@ -60,6 +60,7 @@ public class TestContainerUtil {
 
   public static final String PROPERTIES_PREFIX = "camunda.operate.";
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
+  public static final String DB_TYPE_ELASTICSEARCH = "elasticsearch";
   public static final int ELS_PORT = 9200;
   public static final String ELS_HOST = "localhost";
   public static final String ELS_SCHEME = "http";
@@ -394,14 +395,27 @@ public class TestContainerUtil {
   private void applyConfiguration(
       final GenericContainer<?> operateContainer, final TestContext testContext) {
     operateContainer
+        // ES
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
+        // OS
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
+
+        /* these need to match the URL value even if they're not used */
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
-        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+        // OS
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext));
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
 
@@ -447,6 +461,13 @@ public class TestContainerUtil {
       final String zeebeContactPoint,
       final String zeebeIndexPrefix) {
     final Properties properties = new Properties();
+    properties.setProperty("camunda.data.secondary-storage.type", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty("camunda.database.type", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty("camunda.operate.database", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty("camunda.tasklist.database", DB_TYPE_ELASTICSEARCH);
+    properties.setProperty(
+        "zeebe.broker.exporters.camundaexporter.args.connect.type", DB_TYPE_ELASTICSEARCH);
+
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.host", elsHost);
     properties.setProperty(PROPERTIES_PREFIX + "elasticsearch.port", String.valueOf(elsPort));
     properties.setProperty(PROPERTIES_PREFIX + "zeebeElasticsearch.host", elsHost);
@@ -528,6 +549,11 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME", "Demo")
           .withEnv("CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL", "demo@example.com");
 
+      if (testContext.getDatabaseType() != null) {
+        final String dbType = testContext.getDatabaseType().toLowerCase();
+        broker.withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType);
+      }
+
       if (testContext.getPartitionCount() != null) {
         broker.withEnv(
             "ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT",
@@ -568,21 +594,37 @@ public class TestContainerUtil {
   }
 
   private void configureCamundaExporter(final TestContext testContext) {
+    final String dbType = testContext.getConnectionType();
+    final String dbUrl = getElasticURL(testContext);
+
     broker
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME",
             "io.camunda.exporter.CamundaExporter")
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE",
-            testContext.getConnectionType())
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", getElasticURL(testContext))
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_DELAY", "1")
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE", "1")
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s")
-        .withEnv("CAMUNDA_DATABASE_TYPE", testContext.getConnectionType())
-        .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext));
+        // unified config db type + compatibility vars
+        .withEnv("CAMUNDA_DATABASE_TYPE", dbType)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", dbType)
+        .withEnv("CAMUNDA_OPERATE_DATABASE", dbType)
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", dbType)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", dbType)
+        // unified config db url + compaptibility vars (elasticsearch)
+        .withEnv("CAMUNDA_DATABASE_URL", dbUrl)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", dbUrl)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl)
+        // unified config db url + compaptibility vars (opensearch)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", dbUrl);
     if (testContext.getZeebeIndexPrefix() != null) {
       broker
           .withEnv(

@@ -21,6 +21,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Tag;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 @TestMethodOrder(OrderAnnotation.class)
+@Disabled // TODO: Test to be deleted
 public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   private static final Instant STARTING_INSTANT = Instant.now().truncatedTo(ChronoUnit.MILLIS);

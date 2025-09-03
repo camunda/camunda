@@ -5,7 +5,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>tasklist-qa</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.9.0-SNAPSHOT</version>
   </parent>
   <artifactId>tasklist-it-tests</artifactId>
 
@@ -443,12 +443,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>zeebe-opensearch-exporter</artifactId>
       <scope>test</scope>
     </dependency>
@@ -593,7 +587,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>opensearch</value>
         </property>
       </activation>
@@ -661,7 +655,7 @@
       <activation>
         <activeByDefault>true</activeByDefault>
         <property>
-          <name>camunda.tasklist.database</name>
+          <name>camunda.data.secondary-storage.type</name>
           <value>elasticsearch</value>
         </property>
       </activation>

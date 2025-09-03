@@ -46,6 +46,7 @@ public class StartupIT {
   @Test
   public void testDockerWithNonRootUser() throws Exception {
     testContext = new TestContext();
+    testContext.setDatabaseType("elasticsearch");
     testContainerUtil.startElasticsearch(testContext);
 
     testContainerUtil.startZeebe(
@@ -63,14 +64,25 @@ public class StartupIT {
 
     final String elasticsearchUrl = String.format("http://%s:%s", elsHost, elsPort);
     operateContainer
+        // Unified Configuration: DB URL + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl)
+        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", elasticsearchUrl)
+        // Unified Configuration: DB type + compatibility
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
+        .withEnv("CAMUNDA_DATABASE_TYPE", "elasticsearch")
+        .withEnv("CAMUNDA_OPERATE_DATABASE", "elasticsearch")
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", "elasticsearch")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_TYPE", "elasticsearch")
+        // ---
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
-        .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
 

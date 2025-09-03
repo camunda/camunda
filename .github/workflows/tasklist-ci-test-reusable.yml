@@ -54,9 +54,11 @@ jobs:
         database: [ elasticsearch, opensearch ]
         include:
           - database: elasticsearch
+            capitalizedDatabase: Elasticsearch
             testProfile: docker-es
             url: http://localhost:9200
           - database: opensearch
+            capitalizedDatabase: Opensearch
             testProfile: docker-os
             url: http://localhost:9200
     env:
@@ -109,8 +111,16 @@ jobs:
             -P ${{ matrix.testProfile }},skipFrontendBuild \
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
+            -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
+            -Dcamunda.database.type=${{ matrix.database }} \
             -Dcamunda.tasklist.database=${{ matrix.database }} \
+            -Dcamunda.operate.database=${{ matrix.database }} \
+            -Dcamunda.data.secondary-storage.${{ matrix.database }}.url=${{ matrix.url }} \
             -Dcamunda.database.url=${{ matrix.url }} \
+            -Dcamunda.operate.${{ matrix.database }}.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
+            -Dcamunda.tasklist.${{ matrix.database }}.url=${{ matrix.url }} \
+            -Dcamunda.operate.zeebe${{ matrix.capitalizedDatabase }}.url=${{ matrix.url }} \
             -Dzeebe.currentVersion.docker.tag=${{ env.ZEEBE_TEST_DOCKER_IMAGE_TAG }} \
             -Dzeebe.currentVersion.docker.repo=${{ env.ZEEBE_TEST_DOCKER_IMAGE }}
 

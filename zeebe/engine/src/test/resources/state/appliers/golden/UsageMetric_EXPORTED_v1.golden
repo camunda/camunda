@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
+import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,15 +29,7 @@ public class UsageMetricsExportedApplier
 
   @Override
   public void applyState(final long key, final UsageMetricRecord record) {
-    final var activeBucket = usageMetricState.getActiveBucket();
-
-    // uninitialized bucket created on-demand
-    if (activeBucket != null && !activeBucket.isInitialized()) {
-      LOG.debug("Update active bucket time {}", record.getResetTime());
-      usageMetricState.updateActiveBucketTime(record.getResetTime());
-    }
-    // regular export interval
-    else if (activeBucket == null || activeBucket.getFromTime() != record.getResetTime()) {
+    if (record.getEventType() == EventType.NONE) {
       LOG.debug("Reset active bucket {}", record.getResetTime());
       usageMetricState.resetActiveBucket(record.getResetTime());
     }
