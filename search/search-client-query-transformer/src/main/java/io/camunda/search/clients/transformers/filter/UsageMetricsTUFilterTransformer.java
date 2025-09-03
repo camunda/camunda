@@ -32,7 +32,7 @@ public class UsageMetricsTUFilterTransformer extends IndexFilterTransformer<Usag
     final var queries =
         new ArrayList<>(
             dateTimeOperations(
-                UsageMetricTUIndex.EVENT_TIME,
+                UsageMetricTUIndex.END_TIME,
                 List.of(Operation.gte(filter.startTime()), Operation.lt(filter.endTime()))));
 
     if (filter.tenantId() != null) {

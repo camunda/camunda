@@ -20,7 +20,8 @@ public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5
   public static final String ID = "id";
   public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
   public static final String PARTITION_ID = "partitionId";
-  public static final String EVENT_TIME = "eventTime";
+  public static final String START_TIME = "startTime";
+  public static final String END_TIME = "endTime";
   public static final String ASSIGNEE_HASH = "assigneeHash";
 
   public UsageMetricTUIndex(final String indexPrefix, final boolean isElasticsearch) {
