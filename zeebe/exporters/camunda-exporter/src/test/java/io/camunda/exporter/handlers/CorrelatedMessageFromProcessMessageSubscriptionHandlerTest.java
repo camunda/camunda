@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageIndex;
+import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -33,7 +33,7 @@ import org.mockito.Mockito;
 
 final class CorrelatedMessageFromProcessMessageSubscriptionHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
-  private final String indexName = CorrelatedMessageIndex.INDEX_NAME;
+  private final String indexName = CorrelatedMessageTemplate.INDEX_NAME;
 
   private final CorrelatedMessageFromProcessMessageSubscriptionHandler underTest =
       new CorrelatedMessageFromProcessMessageSubscriptionHandler(indexName);
@@ -213,7 +213,7 @@ final class CorrelatedMessageFromProcessMessageSubscriptionHandlerTest {
     final long recordKey = 789;
     final long messageKey = 555;
     final Intent intent = ProcessMessageSubscriptionIntent.CORRELATED;
-    final String expectedIndexName = CorrelatedMessageIndex.INDEX_NAME;
+    final String expectedIndexName = CorrelatedMessageTemplate.INDEX_NAME;
 
     final var recordValue =
         ImmutableProcessMessageSubscriptionRecordValue.builder().withMessageKey(messageKey).build();
