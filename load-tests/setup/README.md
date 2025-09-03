@@ -1,8 +1,8 @@
-# Setup a load test
+# Manual set up a load test
 
-Welcome to the setup of a load test. :wave:
+Welcome to the manual set up of a load test. :wave:
 
-There are two ways to run a load test:
+There are two targets to run a load test against:
 
 * [Self-Managed Zeebe Cluster](#load-testing-self-managed-zeebe-cluster)
 * [Camunda Cloud Cluster](#load-testing-camunda-cloud-saas)
@@ -34,7 +34,7 @@ to configure your load test.
 ### How to configure a load test
 
 The load test configuration is completely done via the `values.yaml` file.
-If there is a property missing that you want to change please open an issue at https://github.com/camunda/zeebe-load-test-helm
+If there is a property missing that you want to change please open an issue at https://github.com/camunda/zeebe-benchmark-helm
 
 #### Use different Zeebe Snapshot
 
@@ -66,10 +66,10 @@ camunda-platform:
 
 ### How to run a load test
 
-After you have setup your load test namespace and make changes to your configuration.
+After you have set up your load test namespace and make changes to your configuration.
 You can start your load test just with `make load-test`.
 
-This will deploy the `zeebe`, `zeebe-gateway`, `elastic` and load tests applications (including `starter` and `worker`).
+This will deploy the `camunda`, `elastic` and load tests applications (e.g. `starter` and `worker`).
 
 ### How to clean up a load test
 
@@ -112,18 +112,3 @@ The `clean` job works regardless.
 _You need a Kubernetes Cluster at your disposal to run the load test itself, which then connects to your Camunda Cloud Cluster._
 
 Follow the guide [here](https://github.com/camunda/zeebe-benchmark-helm/blob/main/charts/zeebe-benchmark/README.md#running-against-saas).
-Possible future extension point: Use https://docs.camunda.io/docs/apis-clients/cloud-console-api-reference/ to create clusters automatically, at the moment you need to create them manually.
-
-### Setup Cloud Cluster
-
-* Go to Camunda Cloud Console and login with your credentials (reach out to #cloud if you haven't one)
-* Create a new cluster
-* Create new API credentials for that cluster
-
-### Setup Cloud load test
-
-* Create a new cloud load test in our load test folder, via `./newCloudLoadTest`. This will create a new namespace in our k8 cluster, such that we can deploy our starters and workers. They will connect to the camunda cloud cluster after we added the correct credentials.
-* Edit the `cloudcredentials.yaml` file, replace the old/default values with your client credentials. **NOTE: Please make sure that you're not pushing your credentials to the repository!** https://github.com/camunda/camunda/blob/main/zeebe/load-tests/setup/cloud-default/cloudcredentials.yaml contains an example.
-* Deploy everything you need, e. g. run `make clean all` to deploy the secret, worker and starter. **Alternatively**, you can also manually provision the resources:
-* `make secret worker starter`
-
