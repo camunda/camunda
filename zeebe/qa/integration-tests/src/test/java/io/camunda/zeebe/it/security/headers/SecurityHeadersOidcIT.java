@@ -95,6 +95,9 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
           .withAuthenticatedAccess()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
           .withCamundaExporter("http://" + CONTAINER.getHttpHostAddress())
+          .withProperty(
+              "camunda.data.secondary-storage.elasticsearch.url",
+              "http://" + CONTAINER.getHttpHostAddress())
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);

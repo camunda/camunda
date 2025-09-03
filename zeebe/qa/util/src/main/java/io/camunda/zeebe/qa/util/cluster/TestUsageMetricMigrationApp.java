@@ -12,7 +12,7 @@ import io.camunda.application.Profile;
 import io.camunda.application.StandaloneUsageMetricMigration;
 import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
