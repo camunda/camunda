@@ -7,6 +7,7 @@
  */
 
 import {expect, Page} from '@playwright/test';
+import {waitForAssertion} from './waitForAssertion';
 
 export async function verifyAccess(
   page: Page,
@@ -23,6 +24,13 @@ export async function verifyAccess(
       await expect(page).toHaveURL(new RegExp(appName));
     }
   } else {
-    await expect(page).toHaveURL(/forbidden/);
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(page).toHaveURL(/forbidden/);
+      },
+      onFailure: async () => {
+        await page.reload();
+      },
+    });
   }
 }
