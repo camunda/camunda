@@ -16,8 +16,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
+import io.camunda.application.Profile;
+import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import io.camunda.client.CamundaClient;
-import io.camunda.migration.process.ProcessMigrator;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.search.clients.DocumentBasedSearchClient;
@@ -61,7 +62,8 @@ public class MigrationITExtension
   private CamundaMigrator migrator;
   private Path tempDir;
   private MigrationDatabaseChecks migrationDatabaseChecks;
-  private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = (db, migrator) -> {};
+  private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = null;
+  private Profile[] postUpdateProfiles;
 
   public MigrationITExtension() {
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
@@ -88,7 +90,9 @@ public class MigrationITExtension
       setupDatabase();
       migrator = new CamundaMigrator(indexPrefix, tempDir, databaseType, databaseUrl);
       migrator.initialize(initialEnvOverrides);
-      beforeUpgradeConsumer.accept(databaseType, migrator);
+      if (beforeUpgradeConsumer != null) {
+        beforeUpgradeConsumer.accept(databaseType, migrator);
+      }
       upgrade(upgradeEnvOverrides);
     }
   }
@@ -116,11 +120,20 @@ public class MigrationITExtension
     return this;
   }
 
+  /// Include additional profiles that should be activated after the update
+  public MigrationITExtension withPostUpdateAdditionalProfiles(final Profile... profiles) {
+    postUpdateProfiles = profiles;
+    return this;
+  }
+
   private void upgrade(final Map<String, String> envOverrides) {
 
-    awaitImportersFlushed();
-
-    migrator.update(envOverrides);
+    // Ensure that the importers have flushed their positions before starting the upgrade
+    // if there are initialization data and importers are not disabled
+    if (beforeUpgradeConsumer != null && !areImportersDisabled()) {
+      awaitImportersFlushed();
+    }
+    migrator.update(envOverrides, postUpdateProfiles);
     awaitExporterReadiness();
     awaitDemoUserIsPresent();
 
@@ -129,8 +142,17 @@ public class MigrationITExtension
 
     awaitImportersFinished();
 
-    awaitProcessMigrationFinished();
-    awaitTaskMigrationFinished();
+    if (shouldWaitForMigrations()) {
+      awaitMigrationsFinished();
+    }
+  }
+
+  private boolean shouldWaitForMigrations() {
+    return postUpdateProfiles != null
+        && postUpdateProfiles.length > 0
+        && (List.of(postUpdateProfiles).contains(Profile.PROCESS_MIGRATION)
+            || List.of(postUpdateProfiles).contains(Profile.USAGE_METRIC_MIGRATION)
+        /*|| List.of(postUpdateProfiles).contains(Profile.TASK_MIGRATION)*/ );
   }
 
   private void awaitDemoUserIsPresent() {
@@ -204,8 +226,8 @@ public class MigrationITExtension
                     && migrationDatabaseChecks.checkImportPositionsFlushed(TASKLIST));
   }
 
-  private void awaitProcessMigrationFinished() {
-    final var logger = (Logger) LoggerFactory.getLogger(ProcessMigrator.class);
+  private void awaitMigrationsFinished() {
+    final var logger = (Logger) LoggerFactory.getLogger(AsyncMigrationsRunner.class);
     final var appender = new LogAppender();
     appender.setContext(logger.getLoggerContext());
     appender.start();
@@ -218,19 +240,21 @@ public class MigrationITExtension
     logger.detachAndStopAllAppenders();
   }
 
-  private void awaitTaskMigrationFinished() {
-    Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
-        .untilAsserted(
-            () -> assertThat(migrationDatabaseChecks.checkIfTasksHaveBeenReindexed()).isTrue());
-  }
-
   private void ingestRecordToTriggerImporters(final CamundaClient client) {
     client
         .newDeployResourceCommand()
         .addResourceFromClasspath("process/error-end-event.bpmn")
         .send()
         .join();
+  }
+
+  private boolean areImportersDisabled() {
+    return initialEnvOverrides
+            .getOrDefault("CAMUNDA_TASKLIST_IMPORTERENABLED", "true")
+            .equals("false")
+        && initialEnvOverrides
+            .getOrDefault("CAMUNDA_OPERATE_IMPORTERENABLED", "true")
+            .equals("false");
   }
 
   @Override
@@ -265,7 +289,7 @@ public class MigrationITExtension
 
     @Override
     protected void append(final ILoggingEvent iLoggingEvent) {
-      if (iLoggingEvent.getMessage().contains("Process Migration completed")) {
+      if (iLoggingEvent.getMessage().contains("All migration tasks completed")) {
         logs.add(iLoggingEvent);
       }
     }

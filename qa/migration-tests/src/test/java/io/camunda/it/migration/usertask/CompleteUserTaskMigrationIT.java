@@ -23,37 +23,38 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
+public class CompleteUserTaskMigrationIT extends UserTaskMigrationHelper {
 
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          // .withPostUpdateAdditionalProfiles(Profile.TASK_MIGRATION)
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, "demo"));
 
   @Test
-  void shouldUnassign87ZeebeTaskV1(final CamundaMigrator migrator) {
+  void shouldComplete87ZeebeTaskV1(final CamundaMigrator migrator) {
 
     final long taskKey = USER_TASK_KEYS.get("first");
 
     final var res =
-        migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
+        migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
     assertThat(res.statusCode()).isEqualTo(200);
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
   @Test
-  void shouldUnassign87ZeebeTaskV2(final CamundaMigrator migrator) {
+  void shouldComplete87ZeebeTaskV2(final CamundaMigrator migrator) {
 
     final long taskKey = USER_TASK_KEYS.get("second");
 
-    migrator.getCamundaClient().newUnassignUserTaskCommand(taskKey).send().join();
+    migrator.getCamundaClient().newCompleteUserTaskCommand(taskKey).send().join();
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
   @Test
-  void shouldUnassign88ZeebeTaskV1(final CamundaMigrator migrator) {
+  void shouldComplete88ZeebeTaskV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
@@ -62,14 +63,14 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
-        migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
+        migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
     assertThat(res.statusCode()).isEqualTo(200);
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
   @Test
-  void shouldUnassign88ZeebeTaskV2(final CamundaMigrator migrator) {
+  void shouldComplete88ZeebeTaskV2(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
@@ -77,25 +78,25 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
             PROCESS_DEFINITION_KEYS.get(TaskImplementation.ZEEBE_USER_TASK));
     final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
-    migrator.getCamundaClient().newUnassignUserTaskCommand(taskKey).send().join();
+    migrator.getCamundaClient().newCompleteUserTaskCommand(taskKey).send().join();
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
   @Test
-  void shouldUnAssign87JobWorkerV1(final CamundaMigrator migrator) {
+  void shouldComplete87JobWorkerV1(final CamundaMigrator migrator) {
 
     final long taskKey = USER_TASK_KEYS.get("third");
 
     final var res =
-        migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
+        migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
     assertThat(res.statusCode()).isEqualTo(200);
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
   @Test
-  void shouldUnAssign88JobWorkerV1(final CamundaMigrator migrator) {
+  void shouldComplete88JobWorkerV1(final CamundaMigrator migrator) {
 
     final var piKey =
         startProcessInstance(
@@ -104,14 +105,14 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
     final var taskKey = waitFor88CreatedTaskToBeImportedReturningId(migrator, piKey);
 
     final var res =
-        migrator.getTasklistClient().withAuthentication("demo", "demo").unassignUserTask(taskKey);
+        migrator.getTasklistClient().withAuthentication("demo", "demo").completeUserTask(taskKey);
     assertThat(res.statusCode()).isEqualTo(200);
 
-    shouldBeUnassigned(migrator.getCamundaClient(), taskKey);
+    shouldBeCompleted(migrator.getCamundaClient(), taskKey);
   }
 
-  private void shouldBeUnassigned(final CamundaClient client, final long taskKey) {
-    Awaitility.await("User Task should be unassigned")
+  private void shouldBeCompleted(final CamundaClient client, final long taskKey) {
+    Awaitility.await("User Task should be completed")
         .atMost(Duration.ofSeconds(15))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
@@ -124,7 +125,7 @@ public class UnassignUserTaskMigrationIT extends UserTaskMigrationHelper {
                       .join()
                       .items();
               if (!tasks.isEmpty()) {
-                assertThat(tasks.getFirst().getAssignee()).isNull();
+                assertThat(tasks.getFirst().getState().name()).isEqualTo("COMPLETED");
               }
             });
   }
