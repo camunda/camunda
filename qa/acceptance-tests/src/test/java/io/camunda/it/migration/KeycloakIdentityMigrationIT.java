@@ -198,9 +198,7 @@ public class KeycloakIdentityMigrationIT {
     migrationProperties.getManagementIdentity().setClientId(IDENTITY_CLIENT);
     migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
     migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
-    migrationProperties
-        .getCluster()
-        .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+    migrationProperties.getCluster().setInitialContactPoints(List.of(BROKER.address(CLUSTER)));
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
     client = BROKER.newClientBuilder().build();

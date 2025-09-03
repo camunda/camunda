@@ -33,7 +33,6 @@ import io.camunda.zeebe.qa.util.actuator.ExportingActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
-import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import io.camunda.zeebe.test.util.testcontainers.ContainerLogsDumper;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
@@ -92,7 +91,6 @@ public class BackupRestoreIT {
   protected ExportingActuator exportingActuator;
   protected BackupActuator backupActuator;
 
-  @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
 
   protected BackupDBClient webappsDBClient;
@@ -113,8 +111,10 @@ public class BackupRestoreIT {
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(
-        webappsDBClient, camundaClient, generator, searchContainer, testStandaloneApplication);
+    CloseHelper.quietCloseAll(webappsDBClient, camundaClient, generator, searchContainer);
+    if (testStandaloneApplication != null) {
+      testStandaloneApplication.stop();
+    }
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {

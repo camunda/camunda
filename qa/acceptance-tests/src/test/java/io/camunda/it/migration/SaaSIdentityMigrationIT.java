@@ -164,9 +164,7 @@ public class SaaSIdentityMigrationIT {
         new TestStandaloneIdentityMigration(migrationProperties)
             .withAppConfig(
                 config -> {
-                  config
-                      .getCluster()
-                      .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+                  config.getCluster().setInitialContactPoints(List.of(BROKER.address(CLUSTER)));
                 });
 
     client = BROKER.newClientBuilder().build();

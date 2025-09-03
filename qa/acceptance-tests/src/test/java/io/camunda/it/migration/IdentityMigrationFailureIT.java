@@ -87,9 +87,7 @@ public class IdentityMigrationFailureIT {
     // given
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     // connection to broker is set
-    migrationProperties
-        .getCluster()
-        .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
+    migrationProperties.getCluster().setInitialContactPoints(List.of(BROKER.address(CLUSTER)));
     // but no other config, e.g. for management identity connection
 
     try (final TestStandaloneIdentityMigration testIdentityMigration =
