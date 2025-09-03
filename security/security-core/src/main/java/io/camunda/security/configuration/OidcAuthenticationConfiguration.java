@@ -25,6 +25,7 @@ public class OidcAuthenticationConfiguration {
           CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT);
 
   private String issuerUri;
+  private String clientName;
   private String clientId;
   private String clientSecret;
   private String grantType = "authorization_code";
@@ -59,6 +60,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
+  }
+
+  public String getClientName() {
+    return clientName;
+  }
+
+  public void setClientName(final String clientName) {
+    this.clientName = clientName;
   }
 
   public String getClientId() {
@@ -228,6 +237,7 @@ public class OidcAuthenticationConfiguration {
   public static class Builder {
     private String issuerUri;
     private String clientId;
+    private String clientName;
     private String clientSecret;
     private String grantType = "authorization_code";
     private String redirectUri;
@@ -253,6 +263,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder clientId(final String clientId) {
       this.clientId = clientId;
+      return this;
+    }
+
+    public Builder clientName(final String clientName) {
+      this.clientName = clientName;
       return this;
     }
 
@@ -338,6 +353,7 @@ public class OidcAuthenticationConfiguration {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
       config.setClientId(clientId);
+      config.setClientName(clientName);
       config.setClientSecret(clientSecret);
       config.setGrantType(grantType);
       config.setRedirectUri(redirectUri);

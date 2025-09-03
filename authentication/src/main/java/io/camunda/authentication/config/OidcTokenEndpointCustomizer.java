@@ -11,13 +11,14 @@ import com.nimbusds.jose.jwk.JWK;
 import com.nimbusds.jose.jwk.RSAKey;
 import com.nimbusds.jose.util.Base64;
 import com.nimbusds.jose.util.Base64URL;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import io.camunda.security.configuration.SecurityConfiguration;
 import java.security.KeyStore;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.oauth2.client.OAuth2LoginConfigurer;
@@ -32,52 +33,68 @@ import org.springframework.util.MultiValueMap;
 public class OidcTokenEndpointCustomizer
     implements Customizer<OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig> {
 
-  private final OidcAuthenticationConfiguration oidcConfig;
+  private final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository;
+  private final Map<String, JWK> resolvedJwks;
 
-  public OidcTokenEndpointCustomizer(final SecurityConfiguration securityConfiguration) {
-    oidcConfig = securityConfiguration.getAuthentication().getOidc();
+  public OidcTokenEndpointCustomizer(
+      final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+    this.oidcAuthenticationConfigurationRepository = oidcAuthenticationConfigurationRepository;
+    resolvedJwks = new ConcurrentHashMap<>();
   }
 
   @Override
   public void customize(final OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig config) {
     final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient =
         new RestClientAuthorizationCodeTokenResponseClient();
+    final var resourceParameterConverter = createResourceParameterConverter();
+    final var jwtClientAuthenticationParametersConverter =
+        createJwtClientAuthenticationParametersConverter();
 
-    addResourceParameter(tokenResponseClient);
+    tokenResponseClient.addParametersConverter(resourceParameterConverter);
+    tokenResponseClient.addParametersConverter(jwtClientAuthenticationParametersConverter);
 
-    // fallback is Spring default client_secret_basic
-    if (oidcConfig.isClientAuthenticationPrivateKeyJwt()) {
-      config.accessTokenResponseClient(createPrivateKeyJwtTokenResponseClient(tokenResponseClient));
-    }
+    config.accessTokenResponseClient(tokenResponseClient);
   }
 
-  private RestClientAuthorizationCodeTokenResponseClient createPrivateKeyJwtTokenResponseClient(
-      final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient) {
-    final var jwk = resolveJwk();
+  private NimbusJwtClientAuthenticationParametersConverter<OAuth2AuthorizationCodeGrantRequest>
+      createJwtClientAuthenticationParametersConverter() {
     final var converter =
         new NimbusJwtClientAuthenticationParametersConverter<OAuth2AuthorizationCodeGrantRequest>(
-            clientRegistration -> jwk);
+            clientRegistration -> {
+              final var clientRegistrationId = clientRegistration.getRegistrationId();
+              return resolveJwk(clientRegistrationId);
+            });
     converter.setJwtClientAssertionCustomizer(
         ctx -> ctx.getHeaders().algorithm(SignatureAlgorithm.RS256));
-
-    tokenResponseClient.addParametersConverter(converter);
-    return tokenResponseClient;
+    return converter;
   }
 
-  private void addResourceParameter(
-      final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient) {
-    tokenResponseClient.addParametersConverter(
-        request -> {
-          if (oidcConfig.getResource() != null && !oidcConfig.getResource().isEmpty()) {
-            final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
-            parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, oidcConfig.getResource());
-            return parametersToAdd;
-          }
-          return null;
-        });
+  private Converter<OAuth2AuthorizationCodeGrantRequest, MultiValueMap<String, String>>
+      createResourceParameterConverter() {
+    return request -> {
+      final var clientRegistration = request.getClientRegistration();
+      final var clientRegistrationId = clientRegistration.getRegistrationId();
+      final var oidcConfig =
+          oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurationById(
+              clientRegistrationId);
+      final var resource = oidcConfig.getResource();
+      if (resource != null && !resource.isEmpty()) {
+        final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
+        parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, resource);
+        return parametersToAdd;
+      }
+      return null;
+    };
   }
 
-  private JWK resolveJwk() {
+  private JWK resolveJwk(final String clientRegistrationId) {
+    return resolvedJwks.computeIfAbsent(clientRegistrationId, this::createJwk);
+  }
+
+  private JWK createJwk(final String clientRegistrationId) {
+    final var oidcConfig =
+        oidcAuthenticationConfigurationRepository.getOidcAuthenticationConfigurationById(
+            clientRegistrationId);
     final var alias = oidcConfig.getAssertionKeystore().getKeyAlias();
     final var password = oidcConfig.getAssertionKeystore().getKeyPassword().toCharArray();
     try {
