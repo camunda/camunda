@@ -23,7 +23,7 @@ import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.configuration.MigrationProperties;
 import io.camunda.migration.commons.storage.ProcessorStep;
 import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
-import io.camunda.migration.usagemetric.TUMetricMigrator;
+import io.camunda.migration.usagemetric.TasklistMetricMigrator;
 import io.camunda.migration.usagemetric.client.es.ElasticsearchUsageMetricMigrationClient;
 import io.camunda.migration.usagemetric.client.os.OpensearchUsageMetricMigrationClient;
 import io.camunda.search.clients.query.SearchQuery;
@@ -52,7 +52,7 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class TUMetricsMigrationIT extends MigrationTest {
+public class TasklistMetricMigratorIT extends MigrationTest {
   private final ThreadLocalRandom rnd = ThreadLocalRandom.current();
   private final List<String> assignees = new ArrayList<>();
   private final Map<String, Long> documentCountPerAssignee = new HashMap<>();
@@ -64,7 +64,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
       final MeterRegistry meterRegistry) {
     final var migrationProperties = new MigrationProperties();
     migrationProperties.setMigration(Map.of(ConfigurationType.TU_METRICS, migrationConfiguration));
-    return new TUMetricMigrator(connectConfiguration, meterRegistry, migrationProperties);
+    return new TasklistMetricMigrator(connectConfiguration, meterRegistry, migrationProperties);
   }
 
   @Override
@@ -272,7 +272,7 @@ public class TUMetricsMigrationIT extends MigrationTest {
                 assertThatExceptionOfType(MigrationException.class)
                     .isThrownBy(this::runMigration)
                     .withCauseInstanceOf(MigrationTimeoutException.class)
-                    .withMessageContaining("Importer did not finish within the timeout of"));
+                    .withMessageContaining("Importers did not finish within the timeout of"));
   }
 
   @ParameterizedTest
