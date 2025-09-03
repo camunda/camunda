@@ -77,12 +77,14 @@ jobs:
           fi
 
       - name: Start Camunda
+        shell: bash
         env:
           DATABASE: elasticsearch
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
+            export DATABASE=elasticsearch
             DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
