@@ -8,13 +8,16 @@
 package io.camunda.it.auth;
 
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
+import static io.camunda.client.api.search.enums.PermissionType.DELETE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.ResourceType.MAPPING_RULE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.MappingRuleDefinition;
 import io.camunda.qa.util.auth.Permissions;
@@ -46,9 +49,9 @@ class MappingRuleAuthorizationIT {
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-  private static final String ADMIN = "admin";
-  private static final String RESTRICTED = "restrictedUser";
-  private static final String UNAUTHORIZED = "unauthorizedUser";
+  private static final String ADMIN = "mrAuthTestAdmin";
+  private static final String RESTRICTED = "mrAuthTestRestricted";
+  private static final String UNAUTHORIZED = "mrAuthTestUnauthorized";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_RULE_SEARCH_ENDPOINT = "v2/mapping-rules/search";
 
@@ -59,7 +62,8 @@ class MappingRuleAuthorizationIT {
           DEFAULT_PASSWORD,
           List.of(
               new Permissions(MAPPING_RULE, CREATE, List.of("*")),
-              new Permissions(MAPPING_RULE, READ, List.of("*"))));
+              new Permissions(MAPPING_RULE, READ, List.of("*")),
+              new Permissions(MAPPING_RULE, DELETE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -72,11 +76,11 @@ class MappingRuleAuthorizationIT {
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_1 =
-      new TestMappingRule("mappingRule1", "test-name", "test-value");
+      new TestMappingRule("authTestMappingRule1", "test-name", "test-value");
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_2 =
-      new TestMappingRule("mappingRule2", "test-name2", "test-value2");
+      new TestMappingRule("authTestMappingRule2", "test-name2", "test-value2");
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -89,7 +93,7 @@ class MappingRuleAuthorizationIT {
     assertThat(mappingRuleSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
         .map(MappingRuleResponse::name)
-        .contains("mappingRule1", "mappingRule2");
+        .contains("authTestMappingRule1", "authTestMappingRule2");
   }
 
   @Test
@@ -99,6 +103,42 @@ class MappingRuleAuthorizationIT {
         searchMappingRules(userClient.getConfiguration().getRestAddress().toString(), UNAUTHORIZED);
 
     assertThat(mappingRuleSearchResponse.items()).isEmpty();
+  }
+
+  @Test
+  void deleteMappingRuleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () -> camundaClient.newDeleteMappingRuleCommand("authTestMappingRule1").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void deleteMappingRuleShouldDeleteMappingRuleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
+    // given - verify that authTestMappingRule2 exists initially
+    final var searchResponseBefore =
+        searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
+    assertThat(searchResponseBefore.items())
+        .map(MappingRuleResponse::name)
+        .contains("authTestMappingRule2");
+    final int initialCount = searchResponseBefore.items().size();
+
+    // when - delete the mapping rule (this should not throw an exception)
+    final var deleteResponse =
+        camundaClient.newDeleteMappingRuleCommand("authTestMappingRule2").send().join();
+
+    // Add a small delay to ensure the deletion is processed
+    Thread.sleep(1000);
+
+    // then - verify the mapping rule was deleted
+    final var searchResponseAfter =
+        searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
+    assertThat(searchResponseAfter.items())
+        .map(MappingRuleResponse::name)
+        .doesNotContain("authTestMappingRule2");
+    assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
   }
 
   // TODO once available, this test should use the client to make the request
