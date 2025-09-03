@@ -65,20 +65,21 @@ public class IdentityMigrationFailureIT {
     migrationProperties.getManagementIdentity().setClientSecret(IDENTITY_CLIENT_SECRET);
     migrationProperties.getManagementIdentity().setAudience(CAMUNDA_IDENTITY_RESOURCE_SERVER);
 
-    final TestStandaloneIdentityMigration testIdentityMigration =
-        new TestStandaloneIdentityMigration(migrationProperties);
-    setupLogCapturing(testIdentityMigration, BlockingMigrationsRunner.class);
+    try (final TestStandaloneIdentityMigration testIdentityMigration =
+        new TestStandaloneIdentityMigration(migrationProperties)) {
+      setupLogCapturing(testIdentityMigration, BlockingMigrationsRunner.class);
 
-    // when
-    testIdentityMigration.start();
+      // when
+      testIdentityMigration.start();
 
-    // then
-    assertThat(testIdentityMigration.getExitCode()).isEqualTo(1);
-    assertThat(
-            logCapturer.contains(
-                "IdentityMigrator failed with: Failed to connect to Orchestration Cluster within PT1S.",
-                Level.ERROR))
-        .isTrue();
+      // then
+      assertThat(testIdentityMigration.getExitCode()).isEqualTo(1);
+      assertThat(
+              logCapturer.contains(
+                  "IdentityMigrator failed with: Failed to connect to Orchestration Cluster within PT1S.",
+                  Level.ERROR))
+          .isTrue();
+    }
   }
 
   @Test
@@ -91,24 +92,25 @@ public class IdentityMigrationFailureIT {
         .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
     // but no other config, e.g. for management identity connection
 
-    final TestStandaloneIdentityMigration testIdentityMigration =
-        new TestStandaloneIdentityMigration(migrationProperties);
-    setupLogCapturing(testIdentityMigration, BlockingMigrationsRunner.class);
+    try (final TestStandaloneIdentityMigration testIdentityMigration =
+        new TestStandaloneIdentityMigration(migrationProperties)) {
+      setupLogCapturing(testIdentityMigration, BlockingMigrationsRunner.class);
 
-    // when
-    final Throwable thrown = catchThrowable(testIdentityMigration::start);
+      // when
+      final Throwable thrown = catchThrowable(testIdentityMigration::start);
 
-    // then
-    assertThat(thrown)
-        .isInstanceOf(ConfigurationPropertiesBindException.class)
-        .cause()
-        .cause()
-        .hasMessageContainingAll(
-            "Audience must be provided",
-            "Issuer Backend URL must be provided",
-            "Client Secret must be provided",
-            "Client ID must be provided",
-            "Base URL must be provided");
+      // then
+      assertThat(thrown)
+          .isInstanceOf(ConfigurationPropertiesBindException.class)
+          .cause()
+          .cause()
+          .hasMessageContainingAll(
+              "Audience must be provided",
+              "Issuer Backend URL must be provided",
+              "Client Secret must be provided",
+              "Client ID must be provided",
+              "Base URL must be provided");
+    }
   }
 
   /**

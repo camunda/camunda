@@ -209,6 +209,9 @@ public class KeycloakIdentityMigrationIT {
   @AfterEach
   void tearDown() {
     migration.close();
+    if (client != null) {
+      client.close();
+    }
   }
 
   @Test

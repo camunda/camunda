@@ -29,15 +29,16 @@ public class BasicAuthNoSecondaryStorageTest {
   @Test
   void shouldFailToStartWithBasicAuthAndNoSecondaryStorage() {
     // given - Basic Authentication configured with no secondary storage
-    final var broker =
+    try (final var broker =
         new TestStandaloneBroker()
             .withBasicAuth()
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
-            .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE);
+            .withProperty(PROPERTY_CAMUNDA_DATABASE_TYPE, CAMUNDA_DATABASE_TYPE_NONE)) {
 
-    // when/then - application startup should fail with the expected exception
-    assertThatThrownBy(broker::start)
-        .isInstanceOf(BeanCreationException.class)
-        .hasRootCauseInstanceOf(BasicAuthenticationNotSupportedException.class);
+      // when/then - application startup should fail with the expected exception
+      assertThatThrownBy(broker::start)
+          .isInstanceOf(BeanCreationException.class)
+          .hasRootCauseInstanceOf(BasicAuthenticationNotSupportedException.class);
+    }
   }
 }

@@ -113,7 +113,8 @@ public class BackupRestoreIT {
 
   @AfterEach
   public void tearDown() {
-    CloseHelper.quietCloseAll(webappsDBClient, camundaClient, generator, searchContainer);
+    CloseHelper.quietCloseAll(
+        webappsDBClient, camundaClient, generator, searchContainer, testStandaloneApplication);
   }
 
   private void setup(final BackupRestoreTestConfig config) throws Exception {

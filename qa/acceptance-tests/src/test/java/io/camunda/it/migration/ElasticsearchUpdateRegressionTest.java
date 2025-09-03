@@ -82,29 +82,31 @@ public class ElasticsearchUpdateRegressionTest {
         .timeout(Duration.ofMinutes(1))
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(""));
-    final TestStandaloneBroker testStandaloneBroker = new TestStandaloneBroker();
-    final MultiDbConfigurator multiDbConfigurator = new MultiDbConfigurator(testStandaloneBroker);
-    multiDbConfigurator.configureElasticsearchSupport(httpHostAddress, "");
+    try (final TestStandaloneBroker testStandaloneBroker = new TestStandaloneBroker()) {
+      final MultiDbConfigurator multiDbConfigurator = new MultiDbConfigurator(testStandaloneBroker);
+      multiDbConfigurator.configureElasticsearchSupport(httpHostAddress, "");
 
-    // when
-    testStandaloneBroker.start();
-    testStandaloneBroker.awaitCompleteTopology();
-    final CamundaClient camundaClient = testStandaloneBroker.newClientBuilder().build();
-    camundaClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("test").startEvent().endEvent().done(), "test.bpmn")
-        .send()
-        .join();
+      // when
+      testStandaloneBroker.start();
+      testStandaloneBroker.awaitCompleteTopology();
+      try (final CamundaClient camundaClient = testStandaloneBroker.newClientBuilder().build()) {
+        camundaClient
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("test").startEvent().endEvent().done(), "test.bpmn")
+            .send()
+            .join();
 
-    // then
-    Awaitility.await("wait for processes")
-        .atMost(Duration.ofMinutes(1))
-        .untilAsserted(
-            () -> {
-              final SearchResponse<ProcessDefinition> searchResponse =
-                  camundaClient.newProcessDefinitionSearchRequest().send().join();
-              assertThat(searchResponse.items().size()).isNotZero();
-            });
+        // then
+        Awaitility.await("wait for processes")
+            .atMost(Duration.ofMinutes(1))
+            .untilAsserted(
+                () -> {
+                  final SearchResponse<ProcessDefinition> searchResponse =
+                      camundaClient.newProcessDefinitionSearchRequest().send().join();
+                  assertThat(searchResponse.items().size()).isNotZero();
+                });
+      }
+    }
   }
 }
