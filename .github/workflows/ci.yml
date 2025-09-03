@@ -399,10 +399,17 @@ jobs:
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] Elasticsearch"
+    name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Elasticsearch - ${{ matrix.module.name }}"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    strategy:
+      matrix:
+        module:
+          - name: QA Acceptance Tests
+            maven_module: 'qa/acceptance-tests'
+          - name: QA Migration Tests
+            maven_module: 'qa/migration-tests'
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -462,7 +469,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=es
-          -pl 'qa/acceptance-tests'
+          -pl ${{ matrix.module.maven_module }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -475,7 +482,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] Elasticsearch"
+          name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Elasticsearch - ${{ matrix.module.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -492,10 +499,17 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] OpenSearch"
+    name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Opensearch - ${{ matrix.module.name }}"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    strategy:
+      matrix:
+        module:
+          - name: QA Acceptance Tests
+            maven_module: 'qa/acceptance-tests'
+          - name: QA Migration Tests
+            maven_module: 'qa/migration-tests'
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
     services:
@@ -561,7 +575,7 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
           -D test.integration.camunda.database.type=os
-          -pl 'qa/acceptance-tests'
+          -pl ${{ matrix.module.maven_module }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -574,7 +588,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] OpenSearch"
+          name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Opensearch - ${{ matrix.module.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
