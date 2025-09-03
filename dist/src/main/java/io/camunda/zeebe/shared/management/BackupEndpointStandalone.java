@@ -15,7 +15,6 @@ import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
 import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -34,7 +33,12 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> query(@Selector @Nullable final String prefixOrId) {
+  public WebEndpointResponse<?> listAll() {
+    return backupEndpoint.listAll();
+  }
+
+  @ReadOperation
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
     return backupEndpoint.query(prefixOrId);
   }
 
