@@ -36,8 +36,14 @@ public class PartitionScalingRestartTest {
             .withReplicationFactor(1)
             .withEmbeddedGateway(true)
             .withBrokerConfig(
-                (memberId, broker) ->
-                    broker.withWorkingDirectory(resolveBrokerDir(baseWorkingDir, memberId)))
+                (memberId, broker) -> {
+                  broker.withWorkingDirectory(resolveBrokerDir(baseWorkingDir, memberId));
+                  broker
+                      .brokerConfig()
+                      .getExperimental()
+                      .getFeatures()
+                      .setEnablePartitionScaling(true);
+                })
             .build();
 
     cluster.start().awaitCompleteTopology();
