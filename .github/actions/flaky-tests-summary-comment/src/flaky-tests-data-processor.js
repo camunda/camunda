@@ -22,12 +22,12 @@ function processFlakyTestsData(rawData) {
         if (!existingTest.jobs.includes(job)) {
           existingTest.jobs.push(job);
         }
-        existingTest.occurrences++;
+        existingTest.currentRunFailures++;
       } else {
         testMap.set(key, {
           ...parsedTest,
           jobs: [job],
-          occurrences: 1
+          currentRunFailures: 1
         });
       }
     });

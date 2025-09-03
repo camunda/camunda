@@ -66,11 +66,36 @@ function parseComment(body) {
         currentTest.className = classMatch[1];
       }
 
-      // Match occurrences
+      // Match overall retries
+      const overallMatch = line.match(/Overall retries:\s+\*\*(\d+)\*\*\s+\(per run:\s+\[([^\]]+)\]\)/);
+      if (overallMatch) {
+        currentTest.overallRetries = parseInt(overallMatch[1], 10);
+        currentTest.failuresHistory = overallMatch[2].split(',').map(n => parseInt(n.trim(), 10));
+      }
+
+      // Match total failures
+      const totalMatch = line.match(/Total failures:\s+(\d+)/);
+      if (totalMatch) {
+        currentTest.totalFailures = parseInt(totalMatch[1], 10);
+      }
+
+      // Match pipeline runs
+      const runsMatch = line.match(/Pipeline runs:\s+(\d+)/);
+      if (runsMatch) {
+        currentTest.totalRuns = parseInt(runsMatch[1], 10);
+      }
+
+      // Match occurrences (older format - for backward compatibility)
+      // todo: remove ASAP
       const occMatch = line.match(/Occurrences:\s+(\d+)\s*\/\s*(\d+)/);
       if (occMatch) {
-        currentTest.occurrences = parseInt(occMatch[1], 10);
-        currentTest.totalRuns = parseInt(occMatch[2], 10);
+        // This is old format, transform to new structure
+        const occurrences = parseInt(occMatch[1], 10);
+        const totalRuns = parseInt(occMatch[2], 10);
+        
+        currentTest.failuresHistory = [occurrences];
+        currentTest.overallRetries = occurrences;
+        currentTest.totalRuns = totalRuns;
       }
     }
 
@@ -92,7 +117,10 @@ function mergeFlakyData(current, historical) {
   const merged = new Map();
 
   historical.forEach(oldTest => {
-    merged.set(getTestKey(oldTest), {...oldTest, totalRuns: newTotal});
+    merged.set(getTestKey(oldTest), {
+      ...oldTest,
+      totalRuns: newTotal
+    });
   });
 
   current.forEach(test => {
@@ -101,36 +129,46 @@ function mergeFlakyData(current, historical) {
 
     if (existing) {
       const jobs = [...new Set([...existing.jobs, ...test.jobs])];
+      const newFailuresHistory = [...existing.failuresHistory, test.currentRunFailures];
+      const newOverallRetries = existing.overallRetries + test.currentRunFailures;
+
       merged.set(key, {
         ...existing,
         jobs,
-        occurrences: existing.occurrences + 1,
+        failuresHistory: newFailuresHistory,
+        overallRetries: newOverallRetries,
         totalRuns: newTotal
       });
     } else {
+      // This test appears for the first time in the current run
+      // Pad with zeros for all previous runs where this test didn't fail
+      const previousRuns = newTotal - 1;
+      const paddedHistory = Array(previousRuns).fill(0).concat(test.currentRunFailures);
+      
       merged.set(key, {
         ...test,
-        occurrences: 1,
+        failuresHistory: paddedHistory,
+        overallRetries: (test.currentRunFailures || 0),
         totalRuns: newTotal
       });
     }
   });
 
-  return Array.from(merged.values(), test => ({
-    ...test,
-    flakiness: Math.round((test.occurrences / test.totalRuns) * 100)
-  }));
+  return Array.from(merged.values());
 }
 
 function prepareFirstRunData(currentData) {
   if (!currentData?.length) return [];
 
-  return currentData.map(test => ({
-    ...test,
-    occurrences: test.occurrences || 1,
-    totalRuns: 1,
-    flakiness: (test.occurrences || 1) * 100
-  }));
+  return currentData.map(test => {
+    const currentRunFailures = test.currentRunFailures || 1;
+    return {
+      ...test,
+      failuresHistory: [currentRunFailures],
+      overallRetries: currentRunFailures,
+      totalRuns: 1
+    };
+  });
 }
 
 function getTestKey(test) {

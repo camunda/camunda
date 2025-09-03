@@ -39,19 +39,21 @@ async function buildComment(mergedData, github, branchName) {
     ``
   ];
 
-  mergedData.sort((a, b) => b.flakiness - a.flakiness);
+  mergedData.sort((a, b) => b.overallRetries - a.overallRetries);
 
   for (const test of mergedData) {
-    const icon = getFlakyIcon(test.flakiness);
     const url = await generateTestSourceUrl(test, github, branchName);
 
     const testName = test.methodName || test.fullName;
     const formattedName = url ? `[**${testName}**](${url})` : `**${testName}**`;
-    lines.push(`- ${formattedName} – ${icon} **${test.flakiness}% flakiness**`);
+    const failuresHistoryStr = test.failuresHistory.join(', ');
+    
+    lines.push(`- ${formattedName}`);
     lines.push(`  - Jobs: \`${test.jobs.join(', ')}\``);
     lines.push(`  - Package: \`${test.packageName}\``);
     lines.push(`  - Class: \`${test.className ? test.className : "-"}\``);
-    lines.push(`  - Occurrences: ${test.occurrences} / ${test.totalRuns}`);
+    lines.push(`  - Overall retries: **${test.overallRetries || 0}** (per run: [${failuresHistoryStr}])`);
+    lines.push(`  - Pipeline runs: **${test.totalRuns || 1}**`);
     lines.push('');
   }
 
@@ -61,12 +63,6 @@ async function buildComment(mergedData, github, branchName) {
   );
 
   return lines.join('\n');
-}
-
-function getFlakyIcon(percent) {
-  if (percent < 30) return '👀';
-  if (percent <= 80) return '⚠️';
-  return '💀';
 }
 
 async function generateTestSourceUrl(test, github, branchName) {
