@@ -1,0 +1,22 @@
+spring:
+  profiles:
+    active: operate,tasklist,broker,identity,consolidated-auth
+
+camunda:
+  security:
+    initialization:
+      users:
+        - username: demo
+          password: demo
+          name: Demo
+          email: demo@example.com
+      defaultRoles:
+        admin:
+          users:
+            - demo
+
+    # By default authorization and api protection is disabled
+    authentication:
+      unprotected-api: false
+    authorizations:
+      enabled: true
