@@ -92,7 +92,7 @@ public final class BackupEndpoint {
       return new WebEndpointResponse<>(
           new Error()
               .message(
-                  "Id '%s' was neither an number nor a prefix ending with '*'"
+                  "Expected a backup ID or prefix ending with '*', but got '%s'."
                       .formatted(prefixOrId)),
           400);
     }
