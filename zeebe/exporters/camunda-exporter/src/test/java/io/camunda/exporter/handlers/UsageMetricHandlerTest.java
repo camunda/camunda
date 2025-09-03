@@ -147,7 +147,10 @@ class UsageMetricHandlerTest {
             String.format(ID_PATTERN, EVENT_KEY, TENANT_2),
             String.format(ID_PATTERN, EVENT_KEY, TENANT_3));
     assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventTime)
+        .extracting(UsageMetricsEntity::getEndTime)
+        .contains(DateUtil.toOffsetDateTime(now));
+    assertThat(variables)
+        .extracting(UsageMetricsEntity::getStartTime)
         .contains(DateUtil.toOffsetDateTime(now));
     assertThat(variables)
         .extracting(UsageMetricsEntity::getEventType)
@@ -195,7 +198,10 @@ class UsageMetricHandlerTest {
             String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_3, ASSIGNEE_HASH_1),
             String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_3, ASSIGNEE_HASH_2));
     assertThat(tuVariables)
-        .extracting(UsageMetricsTUEntity::getEventTime)
+        .extracting(UsageMetricsTUEntity::getEndTime)
+        .contains(DateUtil.toOffsetDateTime(now));
+    assertThat(tuVariables)
+        .extracting(UsageMetricsTUEntity::getStartTime)
         .contains(DateUtil.toOffsetDateTime(now));
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getPartitionId)
@@ -242,7 +248,10 @@ class UsageMetricHandlerTest {
             String.format(ID_PATTERN, EVENT_KEY, TENANT_1),
             String.format(ID_PATTERN, EVENT_KEY, TENANT_2));
     assertThat(variables)
-        .extracting(UsageMetricsEntity::getEventTime)
+        .extracting(UsageMetricsEntity::getEndTime)
+        .contains(DateUtil.toOffsetDateTime(now));
+    assertThat(variables)
+        .extracting(UsageMetricsEntity::getStartTime)
         .contains(DateUtil.toOffsetDateTime(now));
     assertThat(variables).extracting(UsageMetricsEntity::getPartitionId).containsOnly(PARTITION_ID);
     assertThat(variables)
@@ -257,7 +266,10 @@ class UsageMetricHandlerTest {
             String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_3, ASSIGNEE_HASH_1),
             String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_3, ASSIGNEE_HASH_2));
     assertThat(tuVariables)
-        .extracting(UsageMetricsTUEntity::getEventTime)
+        .extracting(UsageMetricsTUEntity::getEndTime)
+        .contains(DateUtil.toOffsetDateTime(now));
+    assertThat(tuVariables)
+        .extracting(UsageMetricsTUEntity::getStartTime)
         .contains(DateUtil.toOffsetDateTime(now));
     assertThat(tuVariables)
         .extracting(UsageMetricsTUEntity::getPartitionId)
@@ -297,20 +309,23 @@ class UsageMetricHandlerTest {
     verifyNoMoreInteractions(mockRequest);
   }
 
-  private ArrayList<UsageMetricsEntity> composeUsageMetrics(final long now, Long... eventValues) {
+  private ArrayList<UsageMetricsEntity> composeUsageMetrics(
+      final long now, final Long... eventValues) {
     return new ArrayList<>(
         List.of(
             new UsageMetricsEntity()
                 .setId(String.format(ID_PATTERN, EVENT_KEY, TENANT_1))
                 .setPartitionId(PARTITION_ID)
-                .setEventTime(DateUtil.toOffsetDateTime(now))
+                .setStartTime(DateUtil.toOffsetDateTime(now))
+                .setEndTime(DateUtil.toOffsetDateTime(now))
                 .setEventType(UsageMetricsEventType.RPI)
                 .setEventValue(eventValues[0]),
             new UsageMetricsEntity()
                 .setId(String.format(ID_PATTERN, EVENT_KEY, TENANT_2))
                 .setEventType(UsageMetricsEventType.RPI)
                 .setPartitionId(PARTITION_ID)
-                .setEventTime(DateUtil.toOffsetDateTime(now))
+                .setStartTime(DateUtil.toOffsetDateTime(now))
+                .setEndTime(DateUtil.toOffsetDateTime(now))
                 .setEventValue(eventValues[1])));
   }
 
@@ -321,13 +336,15 @@ class UsageMetricHandlerTest {
                 .setId(String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_1, ASSIGNEE_HASH_1))
                 .setPartitionId(PARTITION_ID)
                 .setTenantId(TENANT_1)
-                .setEventTime(DateUtil.toOffsetDateTime(now))
+                .setStartTime(DateUtil.toOffsetDateTime(now))
+                .setEndTime(DateUtil.toOffsetDateTime(now))
                 .setAssigneeHash(ASSIGNEE_HASH_1),
             new UsageMetricsTUEntity()
                 .setId(String.format(TU_ID_PATTERN, EVENT_KEY, TENANT_2, ASSIGNEE_HASH_2))
                 .setPartitionId(PARTITION_ID)
                 .setTenantId(TENANT_2)
-                .setEventTime(DateUtil.toOffsetDateTime(now))
+                .setStartTime(DateUtil.toOffsetDateTime(now))
+                .setEndTime(DateUtil.toOffsetDateTime(now))
                 .setAssigneeHash(ASSIGNEE_HASH_2)));
   }
 }
