@@ -8,33 +8,30 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
-import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
-import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
-public record CorrelatedMessageFromProcessMessageSubscriptionHandler(String indexName)
-    implements ExportHandler<CorrelatedMessageEntity, ProcessMessageSubscriptionRecordValue> {
+public class CorrelatedMessageFromProcessMessageSubscriptionHandler
+    extends AbstractCorrelatedMessageHandler<ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ProcessMessageSubscriptionIntent.CORRELATED);
 
-  @Override
-  public ValueType getHandledValueType() {
-    return ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
+  private final String indexName;
+
+  public CorrelatedMessageFromProcessMessageSubscriptionHandler(final String indexName) {
+    this.indexName = indexName;
   }
 
   @Override
-  public Class<CorrelatedMessageEntity> getEntityType() {
-    return CorrelatedMessageEntity.class;
+  public ValueType getHandledValueType() {
+    return ValueType.PROCESS_MESSAGE_SUBSCRIPTION;
   }
 
   @Override
@@ -44,46 +41,28 @@ public record CorrelatedMessageFromProcessMessageSubscriptionHandler(String inde
   }
 
   @Override
-  public List<String> generateIds(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    final var value = record.getValue();
-    // composite id: messageKey_subscriptionKey
-    return List.of("%s_%s".formatted(value.getMessageKey(), record.getKey()));
+  public String getIndexName() {
+    return indexName;
   }
 
   @Override
-  public CorrelatedMessageEntity createNewEntity(final String id) {
-    return new CorrelatedMessageEntity().setId(id);
+  protected long getMessageKey(final ProcessMessageSubscriptionRecordValue value) {
+    return value.getMessageKey();
   }
 
   @Override
-  public void updateEntity(
-      final Record<ProcessMessageSubscriptionRecordValue> record,
-      final CorrelatedMessageEntity entity) {
-    final var value = record.getValue();
+  protected void updateEntityFromRecordValue(
+      final ProcessMessageSubscriptionRecordValue value, final CorrelatedMessageEntity entity) {
 
     entity
         .setBpmnProcessId(value.getBpmnProcessId())
         .setCorrelationKey(value.getCorrelationKey())
-        .setCorrelationTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .setFlowNodeId(value.getElementId())
         .setFlowNodeInstanceKey(value.getElementInstanceKey())
         .setMessageKey(value.getMessageKey())
         .setMessageName(value.getMessageName())
-        .setPartitionId(record.getPartitionId())
-        .setPosition(record.getPosition())
         .setProcessDefinitionKey(null) // not available for process message subscriptions
         .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setSubscriptionKey(record.getKey())
         .setTenantId(tenantOrDefault(value.getTenantId()));
-  }
-
-  @Override
-  public void flush(final CorrelatedMessageEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
-  }
-
-  @Override
-  public String getIndexName() {
-    return indexName;
   }
 }

@@ -8,33 +8,30 @@
 package io.camunda.exporter.handlers;
 
 import static io.camunda.exporter.utils.ExporterUtil.tenantOrDefault;
-import static io.camunda.exporter.utils.ExporterUtil.toOffsetDateTime;
 
-import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.MessageStartEventSubscriptionRecordValue;
-import java.time.Instant;
-import java.util.List;
 import java.util.Set;
 
-public record CorrelatedMessageFromMessageStartEventSubscriptionHandler(String indexName)
-    implements ExportHandler<CorrelatedMessageEntity, MessageStartEventSubscriptionRecordValue> {
+public class CorrelatedMessageFromMessageStartEventSubscriptionHandler
+    extends AbstractCorrelatedMessageHandler<MessageStartEventSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(MessageStartEventSubscriptionIntent.CORRELATED);
 
-  @Override
-  public ValueType getHandledValueType() {
-    return ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
+  private final String indexName;
+
+  public CorrelatedMessageFromMessageStartEventSubscriptionHandler(final String indexName) {
+    this.indexName = indexName;
   }
 
   @Override
-  public Class<CorrelatedMessageEntity> getEntityType() {
-    return CorrelatedMessageEntity.class;
+  public ValueType getHandledValueType() {
+    return ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
   }
 
   @Override
@@ -44,46 +41,28 @@ public record CorrelatedMessageFromMessageStartEventSubscriptionHandler(String i
   }
 
   @Override
-  public List<String> generateIds(final Record<MessageStartEventSubscriptionRecordValue> record) {
-    final var value = record.getValue();
-    // composite id: messageKey_subscriptionKey
-    return List.of("%s_%s".formatted(value.getMessageKey(), record.getKey()));
+  public String getIndexName() {
+    return indexName;
   }
 
   @Override
-  public CorrelatedMessageEntity createNewEntity(final String id) {
-    return new CorrelatedMessageEntity().setId(id);
+  protected long getMessageKey(final MessageStartEventSubscriptionRecordValue value) {
+    return value.getMessageKey();
   }
 
   @Override
-  public void updateEntity(
-      final Record<MessageStartEventSubscriptionRecordValue> record,
-      final CorrelatedMessageEntity entity) {
-    final var value = record.getValue();
+  protected void updateEntityFromRecordValue(
+      final MessageStartEventSubscriptionRecordValue value, final CorrelatedMessageEntity entity) {
 
     entity
         .setBpmnProcessId(value.getBpmnProcessId())
         .setCorrelationKey(value.getCorrelationKey())
-        .setCorrelationTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .setFlowNodeId(value.getStartEventId())
         .setFlowNodeInstanceKey(null) // not available for start event subscriptions
         .setMessageKey(value.getMessageKey())
         .setMessageName(value.getMessageName())
-        .setPartitionId(record.getPartitionId())
-        .setPosition(record.getPosition())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
-        .setSubscriptionKey(record.getKey())
         .setTenantId(tenantOrDefault(value.getTenantId()));
-  }
-
-  @Override
-  public void flush(final CorrelatedMessageEntity entity, final BatchRequest batchRequest) {
-    batchRequest.add(indexName, entity);
-  }
-
-  @Override
-  public String getIndexName() {
-    return indexName;
   }
 }
