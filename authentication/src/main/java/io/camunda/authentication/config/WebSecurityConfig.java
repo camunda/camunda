@@ -7,18 +7,10 @@
  */
 package io.camunda.authentication.config;
 
-import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SAAS_SECURITY_POLICY;
 import static io.camunda.security.configuration.headers.ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.ES512;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS256;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS384;
-import static org.springframework.security.oauth2.jose.jws.SignatureAlgorithm.RS512;
 
 import com.nimbusds.jose.JOSEObjectType;
-import com.nimbusds.jose.proc.DefaultJOSEObjectTypeVerifier;
 import io.camunda.authentication.CamundaUserDetailsService;
 import io.camunda.authentication.ConditionalOnAuthenticationMethod;
 import io.camunda.authentication.ConditionalOnProtectedApi;
@@ -37,8 +29,10 @@ import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
-import io.camunda.security.auth.OidcGroupsLoader;
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import io.camunda.security.configuration.ConfiguredUser;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import io.camunda.security.configuration.ProvidersConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.configuration.headers.HeaderConfiguration;
 import io.camunda.security.configuration.headers.values.FrameOptionMode;
@@ -56,10 +50,15 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
+<<<<<<< HEAD
+=======
+import java.util.Map;
+import java.util.Optional;
+>>>>>>> bfe2316a (feat: support multiple OIDC providers)
 import java.util.Set;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
@@ -89,17 +88,18 @@ import org.springframework.security.oauth2.client.oidc.authentication.OidcIdToke
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
-import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
+<<<<<<< HEAD
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest.Builder;
 import org.springframework.security.oauth2.jwt.Jwt;
+=======
+>>>>>>> bfe2316a (feat: support multiple OIDC providers)
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
-import org.springframework.security.oauth2.jwt.JwtValidators;
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.oauth2.jwt.SupplierJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
@@ -131,26 +131,6 @@ public class WebSecurityConfig {
           "/v2/status",
           // deprecated Tasklist v1 Public Endpoints
           "/v1/external/process/**");
-  public static final Set<String> WEBAPP_PATHS =
-      Set.of(
-          "/login/**",
-          "/logout",
-          "/identity/**",
-          "/operate/**",
-          "/tasklist/**",
-          "/",
-          "/sso-callback/**",
-          "/oauth2/authorization/**",
-          // old Tasklist and Operate webapps routes
-          "/processes",
-          "/processes/*",
-          "/{regex:[\\d]+}", // user task id
-          "/processes/*/start",
-          "/new/*",
-          "/decisions",
-          "/decisions/*",
-          "/instances",
-          "/instances/*");
   public static final Set<String> UNPROTECTED_PATHS =
       Set.of(
           // endpoint for failure forwarding
@@ -171,6 +151,28 @@ public class WebSecurityConfig {
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
   static final JOSEObjectType AT_JWT = new JOSEObjectType("at+jwt");
+  private static final String SPRING_DEFAULT_UI_CSS = "/default-ui.css";
+  public static final Set<String> WEBAPP_PATHS =
+      Set.of(
+          "/login/**",
+          "/logout",
+          "/identity/**",
+          "/operate/**",
+          "/tasklist/**",
+          "/",
+          "/sso-callback/**",
+          "/oauth2/authorization/**",
+          // old Tasklist and Operate webapps routes
+          "/processes",
+          "/processes/*",
+          "/{regex:[\\d]+}", // user task id
+          "/processes/*/start",
+          "/new/*",
+          "/decisions",
+          "/decisions/*",
+          "/instances",
+          "/instances/*",
+          SPRING_DEFAULT_UI_CSS);
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.
   private static final int ORDER_UNPROTECTED = 0;
@@ -413,11 +415,25 @@ public class WebSecurityConfig {
 
     @PostConstruct
     public void verifyBasicConfiguration() {
-      if (securityConfiguration.getAuthentication().getOidc() != null
-          && securityConfiguration.getAuthentication().getOidc().isSet()) {
+      if (isOidcConfigurationEnabled(securityConfiguration)) {
         throw new IllegalStateException(
             "Oidc configuration is not supported with `BASIC` authentication method");
       }
+    }
+
+    protected boolean isOidcConfigurationEnabled(
+        final SecurityConfiguration securityConfiguration) {
+      if (securityConfiguration.getAuthentication().getOidc() != null
+          && securityConfiguration.getAuthentication().getOidc().isSet()) {
+        return true;
+      }
+
+      return Optional.ofNullable(securityConfiguration.getAuthentication())
+          .map(AuthenticationConfiguration::getProviders)
+          .map(ProvidersConfiguration::getOidc)
+          .map(Map::values)
+          .map(values -> values.stream().anyMatch(OidcAuthenticationConfiguration::isSet))
+          .orElse(false);
     }
 
     @Bean
@@ -586,21 +602,35 @@ public class WebSecurityConfig {
     @Bean
     public CamundaAuthenticationConverter<Authentication> oidcUserAuthenticationConverter(
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final JwtDecoder jwtDecoder,
+        final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final TokenClaimsConverter tokenClaimsConverter,
         final HttpServletRequest request) {
       return new OidcUserAuthenticationConverter(
-          authorizedClientRepository, jwtDecoder, tokenClaimsConverter, request);
+          authorizedClientRepository, oidcAccessTokenDecoderFactory, tokenClaimsConverter, request);
+    }
+
+    @Bean
+    public OidcAuthenticationConfigurationRepository oidcProviderRepository(
+        final SecurityConfiguration securityConfiguration) {
+      return new OidcAuthenticationConfigurationRepository(securityConfiguration);
     }
 
     @Bean
     public ClientRegistrationRepository clientRegistrationRepository(
-        final SecurityConfiguration securityConfiguration) {
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
+      final var clientRegistrations =
+          oidcProviderRepository.getOidcAuthenticationConfigurations().entrySet().stream()
+              .map(e -> createClientRegistration(e.getKey(), e.getValue()))
+              .toList();
+      return new InMemoryClientRegistrationRepository(clientRegistrations);
+    }
+
+    private ClientRegistration createClientRegistration(
+        final String registrationId, final OidcAuthenticationConfiguration configuration) {
       try {
-        return new InMemoryClientRegistrationRepository(
-            OidcClientRegistration.create(securityConfiguration.getAuthentication().getOidc()));
+        return ClientRegistrationFactory.createClientRegistration(registrationId, configuration);
       } catch (final Exception e) {
-        final String issuerUri = securityConfiguration.getAuthentication().getOidc().getIssuerUri();
+        final String issuerUri = configuration.getIssuerUri();
         throw new IllegalStateException(
             "Unable to connect to the Identity Provider endpoint `"
                 + issuerUri
@@ -611,64 +641,59 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public OidcGroupsLoader oidcGroupsLoader(final SecurityConfiguration securityConfiguration) {
-      final String groupsClaim =
-          securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
-      return new OidcGroupsLoader(groupsClaim);
+    public TokenValidatorFactory tokenValidatorFactory(
+        final SecurityConfiguration securityConfiguration,
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+      return new TokenValidatorFactory(
+          securityConfiguration, oidcAuthenticationConfigurationRepository);
     }
 
     @Bean
     public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory(
-        final SecurityConfiguration securityConfiguration) {
+        final TokenValidatorFactory tokenValidatorFactory) {
       final var decoderFactory = new OidcIdTokenDecoderFactory();
-      decoderFactory.setJwtValidatorFactory(
-          registration -> getTokenValidator(securityConfiguration));
+      decoderFactory.setJwtValidatorFactory(tokenValidatorFactory::createTokenValidator);
       return decoderFactory;
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(
-        final SecurityConfiguration securityConfiguration,
-        final ClientRegistrationRepository clientRegistrationRepository) {
-      // Do not rely on the configured uri, the client registration can automatically discover it
-      // based on the issuer uri.
-      final var jwkSetUri =
-          clientRegistrationRepository
-              .findByRegistrationId(OidcClientRegistration.REGISTRATION_ID)
-              .getProviderDetails()
-              .getJwkSetUri();
-
-      final var decoder =
-          NimbusJwtDecoder.withJwkSetUri(jwkSetUri)
-              .jwsAlgorithms(
-                  algorithms ->
-                      algorithms.addAll(List.of(RS256, RS384, RS512, ES256, ES384, ES512)))
-              .jwtProcessorCustomizer(
-                  // the default implementation supports only JOSEObjectType.JWT and null
-                  processor ->
-                      processor.setJWSTypeVerifier(
-                          new DefaultJOSEObjectTypeVerifier<>(JWT, AT_JWT, null)))
-              .build();
-      decoder.setJwtValidator(getTokenValidator(securityConfiguration));
-      return decoder;
+    public JWSKeySelectorFactory jwsKeySelectorFactory() {
+      return new JWSKeySelectorFactory();
     }
 
-    private static OAuth2TokenValidator<Jwt> getTokenValidator(
-        final SecurityConfiguration configuration) {
-      final var validAudiences = configuration.getAuthentication().getOidc().getAudiences();
-      final var validators = new LinkedList<OAuth2TokenValidator<Jwt>>();
-      if (validAudiences != null) {
-        validators.add(new AudienceValidator(validAudiences));
-      }
-      if (configuration.getSaas().isConfigured()) {
-        validators.add(new OrganizationValidator(configuration.getSaas().getOrganizationId()));
-        validators.add(new ClusterValidator(configuration.getSaas().getClusterId()));
-      }
+    @Bean
+    public OidcAccessTokenDecoderFactory accessTokenDecoderFactory(
+        final JWSKeySelectorFactory jwsKeySelectorFactory,
+        final TokenValidatorFactory tokenValidatorFactory) {
+      return new OidcAccessTokenDecoderFactory(jwsKeySelectorFactory, tokenValidatorFactory);
+    }
 
-      if (!validators.isEmpty()) {
-        return JwtValidators.createDefaultWithValidators(validators);
+    @Bean
+    public JwtDecoder jwtDecoder(
+        final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
+        final ClientRegistrationRepository clientRegistrationRepository) {
+      final var repository = (Iterable<ClientRegistration>) clientRegistrationRepository;
+      final var clientRegistrations =
+          StreamSupport.stream(repository.spliterator(), false).toList();
+
+      if (clientRegistrations.size() == 1) {
+        final var clientRegistration = clientRegistrations.getFirst();
+        LOG.info(
+            "Create Access Token JWT Decoder for OIDC Provider: {}",
+            clientRegistration.getRegistrationId());
+        return new SupplierJwtDecoder(
+            () -> oidcAccessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
+      } else {
+        LOG.info(
+            "Create Issuer Aware JWT Decoder for multiple OIDC Providers: [{}]",
+            clientRegistrations.stream()
+                .map(ClientRegistration::getRegistrationId)
+                .collect(Collectors.joining(", ")));
+        return new SupplierJwtDecoder(
+            () ->
+                oidcAccessTokenDecoderFactory.createIssuerAwareAccessTokenDecoder(
+                    clientRegistrations));
       }
-      return JwtValidators.createDefault();
     }
 
     @Bean
@@ -677,6 +702,15 @@ public class WebSecurityConfig {
     }
 
     @Bean
+<<<<<<< HEAD
+=======
+    public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+      return new OidcTokenEndpointCustomizer(oidcAuthenticationConfigurationRepository);
+    }
+
+    @Bean
+>>>>>>> bfe2316a (feat: support multiple OIDC providers)
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -729,6 +763,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final ClientRegistrationRepository clientRegistrationRepository,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository,
         final JwtDecoder jwtDecoder,
         final SecurityConfiguration securityConfiguration,
         final CamundaAuthenticationProvider authenticationProvider,
@@ -741,7 +776,12 @@ public class WebSecurityConfig {
           httpSecurity
               .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
               .authorizeHttpRequests(
-                  (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().authenticated())
+                  (authorizeHttpRequests) ->
+                      authorizeHttpRequests
+                          .requestMatchers(SPRING_DEFAULT_UI_CSS)
+                          .permitAll()
+                          .anyRequest()
+                          .authenticated())
               .headers(
                   headers ->
                       setupSecureHeaders(
@@ -767,7 +807,12 @@ public class WebSecurityConfig {
                             authorization ->
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
+<<<<<<< HEAD
                                         clientRegistrationRepository, securityConfiguration)));
+=======
+                                        clientRegistrationRepository, oidcProviderRepository)))
+                        .tokenEndpoint(tokenEndpointCustomizer);
+>>>>>>> bfe2316a (feat: support multiple OIDC providers)
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
@@ -794,6 +839,7 @@ public class WebSecurityConfig {
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
         final ClientRegistrationRepository clientRegistrationRepository,
+<<<<<<< HEAD
         final SecurityConfiguration securityConfiguration) {
 
       final var authorizationRequestResolver =
@@ -819,6 +865,11 @@ public class WebSecurityConfig {
           customizer.additionalParameters(additionalParameters);
         }
       };
+=======
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
+      return new ClientAwareOAuth2AuthorizationRequestResolver(
+          clientRegistrationRepository, oidcAuthenticationConfigurationRepository);
+>>>>>>> bfe2316a (feat: support multiple OIDC providers)
     }
 
     // refresh token filter has to be registered after the ExceptionTranslationFilter
