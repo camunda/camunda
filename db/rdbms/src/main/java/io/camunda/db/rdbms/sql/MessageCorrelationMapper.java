@@ -19,7 +19,5 @@ public interface MessageCorrelationMapper extends HistoryCleanupMapper, ProcessB
 
   void update(MessageCorrelationDbModel messageCorrelation);
 
-  void updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
-
   int cleanupHistory(CleanupHistoryDto cleanupHistoryDto);
 }
