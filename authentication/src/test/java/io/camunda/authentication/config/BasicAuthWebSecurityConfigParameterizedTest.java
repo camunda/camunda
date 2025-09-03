@@ -9,9 +9,11 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ForkJoinPool;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -91,7 +93,8 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   public static class TestApplication {
     @Bean
     public UserServices userServices() {
-      return new UserServices(null, null, null, null, null);
+      return new UserServices(
+          null, null, null, null, null, new ApiServicesExecutorProvider(ForkJoinPool.commonPool()));
     }
 
     @Bean
