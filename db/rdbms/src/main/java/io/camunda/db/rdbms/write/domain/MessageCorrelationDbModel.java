@@ -29,7 +29,8 @@ public record MessageCorrelationDbModel(
 
   @Override
   public MessageCorrelationDbModel copy(
-      final Function<ObjectBuilder<MessageCorrelationDbModel>, ObjectBuilder<MessageCorrelationDbModel>>
+      final Function<
+              ObjectBuilder<MessageCorrelationDbModel>, ObjectBuilder<MessageCorrelationDbModel>>
           builderFunction) {
     return builderFunction
         .apply(
@@ -89,7 +90,8 @@ public record MessageCorrelationDbModel(
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
+    public MessageCorrelationDbModelBuilder historyCleanupDate(
+        final OffsetDateTime historyCleanupDate) {
       this.historyCleanupDate = historyCleanupDate;
       return this;
     }
