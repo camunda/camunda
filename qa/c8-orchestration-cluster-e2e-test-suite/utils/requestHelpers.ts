@@ -299,7 +299,6 @@ export async function createRole(
   const json = await res.json();
   assertRequiredFields(json, roleRequiredFields);
   if (state && key) {
-    const json = await res.json();
     state[`roleId${key}`] = json.roleId;
     state[`roleName${key}`] = json.name;
     state[`roleDescription${key}`] = json.description;
