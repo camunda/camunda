@@ -33,13 +33,13 @@ public final class BackupEndpointStandalone {
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> status(@Selector @NonNull final long id) {
-    return backupEndpoint.status(id);
+  public WebEndpointResponse<?> listAll() {
+    return backupEndpoint.listAll();
   }
 
   @ReadOperation
-  public WebEndpointResponse<?> list() {
-    return backupEndpoint.list();
+  public WebEndpointResponse<?> query(@Selector final String prefixOrId) {
+    return backupEndpoint.query(prefixOrId);
   }
 
   @DeleteOperation
