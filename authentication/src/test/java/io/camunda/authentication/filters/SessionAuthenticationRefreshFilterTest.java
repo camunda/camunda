@@ -37,6 +37,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
@@ -118,7 +120,7 @@ public class SessionAuthenticationRefreshFilterTest {
   }
 
   @Test
-  void shouldRefreshAfterInterval() {
+  void shouldRefreshOnWebappAfterInterval() {
     final MockHttpSession session = new MockHttpSession();
     setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(createMockAuthentication());
@@ -129,6 +131,30 @@ public class SessionAuthenticationRefreshFilterTest {
             .get()
             .session(session)
             .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+            .exchange();
+
+    assertThat(testResult).hasStatusOk();
+    verify(authenticationProvider, times(1)).refresh();
+    final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+    assertThat(lastRefreshTime).isAfter(oldRefresh);
+  }
+
+  @Test
+  void shouldRefreshOnApiAfterInterval() {
+    final MockHttpSession session = new MockHttpSession();
+    setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
+    final var mockAuthentication = createMockAuthentication();
+    final var testAuthentication = new TestingAuthenticationToken(mockAuthentication, null);
+    testAuthentication.setAuthenticated(true);
+    SecurityContextHolder.getContext().setAuthentication(testAuthentication);
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(mockAuthentication);
+    final Instant oldRefresh = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
+
+    final MvcTestResult testResult =
+        mockMvcTester
+            .get()
+            .session(session)
+            .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
             .exchange();
 
     assertThat(testResult).hasStatusOk();
