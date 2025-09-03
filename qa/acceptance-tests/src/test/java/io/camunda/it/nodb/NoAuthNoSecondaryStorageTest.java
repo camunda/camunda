@@ -22,7 +22,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -30,7 +29,6 @@ import org.junit.jupiter.api.Test;
  * test validates the complete engine-only deployment scenario where database.type=none.
  */
 @ZeebeIntegration
-@Disabled
 public class NoAuthNoSecondaryStorageTest {
 
   @TestZeebe
