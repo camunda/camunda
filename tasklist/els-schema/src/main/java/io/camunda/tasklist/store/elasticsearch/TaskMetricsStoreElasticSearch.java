@@ -10,7 +10,7 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
@@ -83,7 +83,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
 
     final BoolQueryBuilder boolQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(EVENT_TIME).gte(startTime).lte(endTime));
+        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(startTime).lte(endTime));
 
     if (tenantId != null) {
       boolQuery.must(QueryBuilders.termQuery(TENANT_ID, tenantId));
@@ -142,7 +142,8 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     final long assigneeHash = HashUtil.getStringHashValue(task.getAssignee());
     return new UsageMetricsTUEntity()
         .setId(String.format(TU_ID_PATTERN, task.getKey(), tenantId, assigneeHash))
-        .setEventTime(task.getCreationTime())
+        .setStartTime(task.getCreationTime())
+        .setEndTime(task.getCreationTime())
         .setAssigneeHash(assigneeHash)
         .setTenantId(tenantId)
         .setPartitionId(task.getPartitionId());

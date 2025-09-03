@@ -12,7 +12,7 @@ import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSea
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -83,7 +83,8 @@ public class TaskMetricsStoreElasticSearchTest {
         new UsageMetricsTUEntity()
             .setId(String.format(TU_ID_PATTERN, task.getKey(), task.getTenantId(), assigneeHash))
             .setAssigneeHash(assigneeHash)
-            .setEventTime(now)
+            .setStartTime(now)
+            .setEndTime(now)
             .setTenantId("<default>")
             .setPartitionId(0);
     final var indexResponse = mock(IndexResponse.class);
@@ -160,7 +161,7 @@ public class TaskMetricsStoreElasticSearchTest {
   private SearchRequest buildSearchRequest(
       final OffsetDateTime now, final OffsetDateTime oneHourBefore) {
     final BoolQueryBuilder rangeQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(EVENT_TIME).gte(oneHourBefore).lte(now));
+        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(oneHourBefore).lte(now));
     final TermsAggregationBuilder aggregation =
         AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
 
