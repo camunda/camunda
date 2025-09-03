@@ -9,7 +9,7 @@ package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.OpenSearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.EVENT_TIME;
+import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -81,7 +81,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
         new Builder()
             .range(
                 r -> {
-                  r.field(EVENT_TIME);
+                  r.field(END_TIME);
 
                   if (startTime != null) {
                     r.gte(JsonData.of(startTime));
@@ -155,7 +155,8 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
     final long assigneeHash = HashUtil.getStringHashValue(task.getAssignee());
     return new UsageMetricsTUEntity()
         .setId(String.format(TU_ID_PATTERN, task.getKey(), tenantId, assigneeHash))
-        .setEventTime(task.getCreationTime())
+        .setStartTime(task.getCreationTime())
+        .setEndTime(task.getCreationTime())
         .setAssigneeHash(assigneeHash)
         .setTenantId(tenantId)
         .setPartitionId(task.getPartitionId());
