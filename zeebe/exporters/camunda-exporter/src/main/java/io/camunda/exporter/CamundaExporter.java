@@ -81,8 +81,8 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
-  private boolean schemaIsReady = false;
-  private boolean exporterCanFlush = false;
+  private volatile boolean schemaIsReady = false;
+  private volatile boolean exporterCanFlush = false;
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
