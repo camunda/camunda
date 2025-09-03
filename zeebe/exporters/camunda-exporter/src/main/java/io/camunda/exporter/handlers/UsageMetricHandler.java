@@ -78,6 +78,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
 
     final var recordKey = record.getKey();
     final var partitionId = record.getPartitionId();
+    final var startTime = DateUtil.toOffsetDateTime(recordValue.getStartTime());
     final var endTime = DateUtil.toOffsetDateTime(recordValue.getEndTime());
     final var collection = usageMetricsBatch.variables();
     final var tuCollection = usageMetricsBatch.tuVariables();
@@ -88,7 +89,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
             (tenantId, counter) ->
                 collection.add(
                     createUsageMetricEntity(
-                        recordKey, partitionId, endTime, tenantId, eventType, counter)));
+                        recordKey, partitionId, startTime, endTime, tenantId, eventType, counter)));
 
     recordValue
         .getSetValues()
@@ -98,7 +99,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
                     .map(
                         setValue ->
                             createUsageMetricTUEntity(
-                                recordKey, partitionId, endTime, tenantId, setValue))
+                                recordKey, partitionId, startTime, endTime, tenantId, setValue))
                     .forEach(tuCollection::add));
   }
 
@@ -127,7 +128,8 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
   private UsageMetricsEntity createUsageMetricEntity(
       final long recordKey,
       final int partitionId,
-      final OffsetDateTime timestamp,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
       final String tenantId,
       final UsageMetricsEventType eventType,
       final Long eventValue) {
@@ -136,7 +138,8 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
         .setId(String.format(ID_PATTERN, recordKey, tenantId))
         .setPartitionId(partitionId)
         .setTenantId(tenantId)
-        .setEventTime(timestamp)
+        .setStartTime(startTime)
+        .setEndTime(endTime)
         .setEventType(eventType)
         .setEventValue(eventValue);
   }
@@ -144,7 +147,8 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
   private UsageMetricsTUEntity createUsageMetricTUEntity(
       final long recordKey,
       final int partitionId,
-      final OffsetDateTime timestamp,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
       final String tenantId,
       final long assigneeHash) {
 
@@ -152,7 +156,8 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
         .setId(String.format(TU_ID_PATTERN, recordKey, tenantId, assigneeHash))
         .setPartitionId(partitionId)
         .setTenantId(tenantId)
-        .setEventTime(timestamp)
+        .setStartTime(startTime)
+        .setEndTime(endTime)
         .setAssigneeHash(assigneeHash);
   }
 
