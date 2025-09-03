@@ -12,10 +12,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
-import {
-  findLocatorInPaginatedList,
-  waitForItemInList,
-} from '../../utils/waitForItemInList';
+import {waitForItemInList} from '../../utils/waitForItemInList';
 
 test.describe.serial('roles CRUD', () => {
   let NEW_ROLE: NonNullable<ReturnType<typeof createTestData>['authRole']>;
