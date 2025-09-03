@@ -8,16 +8,16 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.write.domain.MessageCorrelationDbModel;
+import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
 import org.apache.ibatis.annotations.Mapper;
 
 @Mapper
-public interface MessageCorrelationMapper
+public interface CorrelatedMessageMapper
     extends HistoryCleanupMapper, ProcessBasedHistoryCleanupMapper {
 
-  void insert(MessageCorrelationDbModel messageCorrelation);
+  void insert(CorrelatedMessageDbModel correlatedMessage);
 
-  void update(MessageCorrelationDbModel messageCorrelation);
+  void update(CorrelatedMessageDbModel correlatedMessage);
 
   int cleanupHistory(CleanupHistoryDto cleanupHistoryDto);
 }

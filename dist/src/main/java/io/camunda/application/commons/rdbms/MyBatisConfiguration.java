@@ -20,7 +20,7 @@ import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
-import io.camunda.db.rdbms.sql.MessageCorrelationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -274,9 +274,9 @@ public class MyBatisConfiguration {
   }
 
   @Bean
-  MapperFactoryBean<MessageCorrelationMapper> messageCorrelationMapper(
+  MapperFactoryBean<CorrelatedMessageMapper> correlatedMessageMapper(
       final SqlSessionFactory sqlSessionFactory) {
-    return createMapperFactoryBean(sqlSessionFactory, MessageCorrelationMapper.class);
+    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

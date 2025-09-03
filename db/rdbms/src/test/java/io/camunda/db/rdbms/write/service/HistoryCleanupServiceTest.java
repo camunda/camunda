@@ -40,7 +40,7 @@ class HistoryCleanupServiceTest {
   private SequenceFlowWriter sequenceFlowWriter;
   private BatchOperationWriter batchOperationWriter;
   private MessageSubscriptionWriter messageSubscriptionWriter;
-  private MessageCorrelationWriter messageCorrelationWriter;
+  private CorrelatedMessageWriter correlatedMessageWriter;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -57,7 +57,7 @@ class HistoryCleanupServiceTest {
     sequenceFlowWriter = mock(SequenceFlowWriter.class);
     batchOperationWriter = mock(BatchOperationWriter.class);
     messageSubscriptionWriter = mock(MessageSubscriptionWriter.class);
-    messageCorrelationWriter = mock(MessageCorrelationWriter.class);
+    correlatedMessageWriter = mock(CorrelatedMessageWriter.class);
 
     when(processInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(flowNodeInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
@@ -70,7 +70,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
-    when(messageCorrelationWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(correlatedMessageWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -99,7 +99,7 @@ class HistoryCleanupServiceTest {
             sequenceFlowWriter,
             batchOperationWriter,
             messageSubscriptionWriter,
-            messageCorrelationWriter,
+            correlatedMessageWriter,
             mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
   }
 
@@ -117,7 +117,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
-    when(messageCorrelationWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
+    when(correlatedMessageWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -136,7 +136,7 @@ class HistoryCleanupServiceTest {
     verify(batchOperationWriter).cleanupItemHistory(CLEANUP_DATE, 100);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(messageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
-    verify(messageCorrelationWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(correlatedMessageWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test

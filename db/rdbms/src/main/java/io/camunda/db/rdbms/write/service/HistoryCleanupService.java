@@ -43,7 +43,7 @@ public class HistoryCleanupService {
   private final SequenceFlowWriter sequenceFlowWriter;
   private final BatchOperationWriter batchOperationWriter;
   private final MessageSubscriptionWriter messageSubscriptionWriter;
-  private final MessageCorrelationWriter messageCorrelationWriter;
+  private final CorrelatedMessageWriter correlatedMessageWriter;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -59,7 +59,7 @@ public class HistoryCleanupService {
       final SequenceFlowWriter sequenceFlowWriter,
       final BatchOperationWriter batchOperationWriter,
       final MessageSubscriptionWriter messageSubscriptionWriter,
-      final MessageCorrelationWriter messageCorrelationWriter,
+      final CorrelatedMessageWriter correlatedMessageWriter,
       final RdbmsWriterMetrics metrics) {
     LOG.info(
         "Creating HistoryCleanupService with default history ttl {}",
@@ -87,7 +87,7 @@ public class HistoryCleanupService {
     this.sequenceFlowWriter = sequenceFlowWriter;
     this.batchOperationWriter = batchOperationWriter;
     this.messageSubscriptionWriter = messageSubscriptionWriter;
-    this.messageCorrelationWriter = messageCorrelationWriter;
+    this.correlatedMessageWriter = correlatedMessageWriter;
     this.metrics = metrics;
   }
 
@@ -108,7 +108,7 @@ public class HistoryCleanupService {
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     messageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
-    messageCorrelationWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    correlatedMessageWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
   }
 
   public void scheduleBatchOperationForHistoryCleanup(
@@ -175,7 +175,7 @@ public class HistoryCleanupService {
         messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     numDeletedRecords.put(
         "messageCorrelation",
-        messageCorrelationWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        correlatedMessageWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 

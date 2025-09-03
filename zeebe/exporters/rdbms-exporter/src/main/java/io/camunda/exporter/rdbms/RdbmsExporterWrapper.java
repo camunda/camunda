@@ -21,8 +21,8 @@ import io.camunda.exporter.rdbms.handlers.GroupExportHandler;
 import io.camunda.exporter.rdbms.handlers.IncidentExportHandler;
 import io.camunda.exporter.rdbms.handlers.JobExportHandler;
 import io.camunda.exporter.rdbms.handlers.MappingRuleExportHandler;
-import io.camunda.exporter.rdbms.handlers.MessageCorrelationExportHandler;
-import io.camunda.exporter.rdbms.handlers.MessageStartEventSubscriptionCorrelationExportHandler;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageFromProcessMessageSubscriptionHandler;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageFromMessageStartEventSubscriptionHandler;
 import io.camunda.exporter.rdbms.handlers.MessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessExportHandler;
 import io.camunda.exporter.rdbms.handlers.ProcessInstanceExportHandler;
@@ -188,10 +188,10 @@ public class RdbmsExporterWrapper implements Exporter {
         new MessageSubscriptionExportHandler(rdbmsWriter.getMessageSubscriptionWriter()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        new MessageCorrelationExportHandler(rdbmsWriter.getMessageCorrelationWriter()));
+        new CorrelatedMessageFromProcessMessageSubscriptionHandler(rdbmsWriter.getCorrelatedMessageWriter()));
     builder.withHandler(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-        new MessageStartEventSubscriptionCorrelationExportHandler(rdbmsWriter.getMessageCorrelationWriter()));
+        new CorrelatedMessageFromMessageStartEventSubscriptionHandler(rdbmsWriter.getCorrelatedMessageWriter()));
   }
 
   private void createBatchOperationHandlers(

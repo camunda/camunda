@@ -11,7 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
 
-public record MessageCorrelationDbModel(
+public record CorrelatedMessageDbModel(
     String correlationKey,
     OffsetDateTime correlationTime,
     String flowNodeId,
@@ -25,16 +25,16 @@ public record MessageCorrelationDbModel(
     Long processInstanceKey,
     Long subscriptionKey,
     String tenantId)
-    implements DbModel<MessageCorrelationDbModel> {
+    implements DbModel<CorrelatedMessageDbModel> {
 
   @Override
-  public MessageCorrelationDbModel copy(
+  public CorrelatedMessageDbModel copy(
       final Function<
-              ObjectBuilder<MessageCorrelationDbModel>, ObjectBuilder<MessageCorrelationDbModel>>
+              ObjectBuilder<CorrelatedMessageDbModel>, ObjectBuilder<CorrelatedMessageDbModel>>
           builderFunction) {
     return builderFunction
         .apply(
-            new MessageCorrelationDbModelBuilder()
+            new CorrelatedMessageDbModelBuilder()
                 .correlationKey(correlationKey)
                 .correlationTime(correlationTime)
                 .flowNodeId(flowNodeId)
@@ -51,8 +51,8 @@ public record MessageCorrelationDbModel(
         .build();
   }
 
-  public static class MessageCorrelationDbModelBuilder
-      implements ObjectBuilder<MessageCorrelationDbModel> {
+  public static class CorrelatedMessageDbModelBuilder
+      implements ObjectBuilder<CorrelatedMessageDbModel> {
 
     private String correlationKey;
     private OffsetDateTime correlationTime;
@@ -68,77 +68,77 @@ public record MessageCorrelationDbModel(
     private Long subscriptionKey;
     private String tenantId;
 
-    public MessageCorrelationDbModelBuilder() {}
+    public CorrelatedMessageDbModelBuilder() {}
 
-    public MessageCorrelationDbModelBuilder correlationKey(final String correlationKey) {
+    public CorrelatedMessageDbModelBuilder correlationKey(final String correlationKey) {
       this.correlationKey = correlationKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder correlationTime(final OffsetDateTime correlationTime) {
+    public CorrelatedMessageDbModelBuilder correlationTime(final OffsetDateTime correlationTime) {
       this.correlationTime = correlationTime;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder flowNodeId(final String flowNodeId) {
+    public CorrelatedMessageDbModelBuilder flowNodeId(final String flowNodeId) {
       this.flowNodeId = flowNodeId;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
+    public CorrelatedMessageDbModelBuilder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
       this.flowNodeInstanceKey = flowNodeInstanceKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder historyCleanupDate(
+    public CorrelatedMessageDbModelBuilder historyCleanupDate(
         final OffsetDateTime historyCleanupDate) {
       this.historyCleanupDate = historyCleanupDate;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder messageKey(final Long messageKey) {
+    public CorrelatedMessageDbModelBuilder messageKey(final Long messageKey) {
       this.messageKey = messageKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder messageName(final String messageName) {
+    public CorrelatedMessageDbModelBuilder messageName(final String messageName) {
       this.messageName = messageName;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder partitionId(final int partitionId) {
+    public CorrelatedMessageDbModelBuilder partitionId(final int partitionId) {
       this.partitionId = partitionId;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder processDefinitionId(final String processDefinitionId) {
+    public CorrelatedMessageDbModelBuilder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
+    public CorrelatedMessageDbModelBuilder processDefinitionKey(final Long processDefinitionKey) {
       this.processDefinitionKey = processDefinitionKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder processInstanceKey(final Long processInstanceKey) {
+    public CorrelatedMessageDbModelBuilder processInstanceKey(final Long processInstanceKey) {
       this.processInstanceKey = processInstanceKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder subscriptionKey(final Long subscriptionKey) {
+    public CorrelatedMessageDbModelBuilder subscriptionKey(final Long subscriptionKey) {
       this.subscriptionKey = subscriptionKey;
       return this;
     }
 
-    public MessageCorrelationDbModelBuilder tenantId(final String tenantId) {
+    public CorrelatedMessageDbModelBuilder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
     @Override
-    public MessageCorrelationDbModel build() {
-      return new MessageCorrelationDbModel(
+    public CorrelatedMessageDbModel build() {
+      return new CorrelatedMessageDbModel(
           correlationKey,
           correlationTime,
           flowNodeId,

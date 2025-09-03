@@ -15,7 +15,7 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
-import io.camunda.db.rdbms.sql.MessageCorrelationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -48,7 +48,7 @@ public class RdbmsWriterFactory {
   private final UsageMetricTUMapper usageMetricTUMapper;
   private final BatchOperationMapper batchOperationMapper;
   private final MessageSubscriptionMapper messageSubscriptionMapper;
-  private final MessageCorrelationMapper messageCorrelationMapper;
+  private final CorrelatedMessageMapper correlatedMessageMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -69,7 +69,7 @@ public class RdbmsWriterFactory {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final MessageCorrelationMapper messageCorrelationMapper) {
+      final CorrelatedMessageMapper correlatedMessageMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -88,7 +88,7 @@ public class RdbmsWriterFactory {
     this.usageMetricTUMapper = usageMetricTUMapper;
     this.batchOperationMapper = batchOperationMapper;
     this.messageSubscriptionMapper = messageSubscriptionMapper;
-    this.messageCorrelationMapper = messageCorrelationMapper;
+    this.correlatedMessageMapper = correlatedMessageMapper;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
@@ -115,6 +115,6 @@ public class RdbmsWriterFactory {
         usageMetricTUMapper,
         batchOperationMapper,
         messageSubscriptionMapper,
-        messageCorrelationMapper);
+        correlatedMessageMapper);
   }
 }

@@ -30,7 +30,7 @@ public enum ContextType {
   USAGE_METRIC(false),
   USAGE_METRIC_TU(false),
   MESSAGE_SUBSCRIPTION(false),
-  MESSAGE_CORRELATION(false);
+  CORRELATED_MESSAGE(false);
 
   private final boolean preserveOrder;
 

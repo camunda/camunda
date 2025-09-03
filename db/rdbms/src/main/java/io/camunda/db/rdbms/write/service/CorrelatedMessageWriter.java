@@ -8,56 +8,56 @@
 package io.camunda.db.rdbms.write.service;
 
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper.CleanupHistoryDto;
-import io.camunda.db.rdbms.sql.MessageCorrelationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper;
-import io.camunda.db.rdbms.write.domain.MessageCorrelationDbModel;
+import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 
-public class MessageCorrelationWriter {
+public class CorrelatedMessageWriter {
 
   private final ExecutionQueue executionQueue;
-  private final MessageCorrelationMapper mapper;
+  private final CorrelatedMessageMapper mapper;
 
-  public MessageCorrelationWriter(
-      final ExecutionQueue executionQueue, final MessageCorrelationMapper mapper) {
+  public CorrelatedMessageWriter(
+      final ExecutionQueue executionQueue, final CorrelatedMessageMapper mapper) {
     this.executionQueue = executionQueue;
     this.mapper = mapper;
   }
 
-  public void create(final MessageCorrelationDbModel messageCorrelation) {
+  public void create(final CorrelatedMessageDbModel correlatedMessage) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.MESSAGE_CORRELATION,
+            ContextType.CORRELATED_MESSAGE,
             WriteStatementType.INSERT,
             // Using a composite key made from subscription and message keys
-            messageCorrelation.subscriptionKey() + "_" + messageCorrelation.messageKey(),
-            "io.camunda.db.rdbms.sql.MessageCorrelationMapper.insert",
-            messageCorrelation));
+            correlatedMessage.subscriptionKey() + "_" + correlatedMessage.messageKey(),
+            "io.camunda.db.rdbms.sql.CorrelatedMessageMapper.insert",
+            correlatedMessage));
   }
 
-  public void update(final MessageCorrelationDbModel messageCorrelation) {
+  public void update(final CorrelatedMessageDbModel correlatedMessage) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.MESSAGE_CORRELATION,
+            ContextType.CORRELATED_MESSAGE,
             WriteStatementType.UPDATE,
             // Using a composite key made from subscription and message keys
-            messageCorrelation.subscriptionKey() + "_" + messageCorrelation.messageKey(),
-            "io.camunda.db.rdbms.sql.MessageCorrelationMapper.update",
-            messageCorrelation));
+            correlatedMessage.subscriptionKey() + "_" + correlatedMessage.messageKey(),
+            "io.camunda.db.rdbms.sql.CorrelatedMessageMapper.update",
+            correlatedMessage));
   }
 
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
     executionQueue.executeInQueue(
         new QueueItem(
-            ContextType.MESSAGE_CORRELATION,
+            ContextType.CORRELATED_MESSAGE,
             WriteStatementType.UPDATE,
             processInstanceKey,
-            "io.camunda.db.rdbms.sql.MessageCorrelationMapper.updateHistoryCleanupDate",
+            "io.camunda.db.rdbms.sql.CorrelatedMessageMapper.updateHistoryCleanupDate",
             new ProcessBasedHistoryCleanupMapper.UpdateHistoryCleanupDateDto.Builder()
                 .processInstanceKey(processInstanceKey)
                 .historyCleanupDate(historyCleanupDate)
