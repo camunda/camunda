@@ -180,9 +180,18 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.selectProcess(
         'Process With Multiple Versions',
       );
-      await expect
-        .poll(() => operateFiltersPanelPage.processVersionFilter.innerText())
-        .toBe('2');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() =>
+              operateFiltersPanelPage.processVersionFilter.innerText(),
+            )
+            .toBe('2');
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
 
     await test.step('Change version and see flow node filter has been reset', async () => {
