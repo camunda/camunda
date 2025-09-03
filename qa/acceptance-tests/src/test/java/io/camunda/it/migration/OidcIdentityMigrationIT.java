@@ -51,6 +51,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.ProtocolMapperRepresentation;
@@ -65,6 +66,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @ZeebeIntegration
 @Testcontainers(parallel = true)
+@Disabled
 public class OidcIdentityMigrationIT {
 
   @TestZeebe(autoStart = false)

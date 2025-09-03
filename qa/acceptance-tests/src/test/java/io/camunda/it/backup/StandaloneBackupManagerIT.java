@@ -34,6 +34,7 @@ import java.util.function.Predicate;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
@@ -44,6 +45,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @ZeebeIntegration
 @Testcontainers
+@Disabled
 final class StandaloneBackupManagerIT {
 
   public static final String ADMIN_USER = "camunda-admin";

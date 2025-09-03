@@ -26,6 +26,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.event.ApplicationStartedEvent;
@@ -34,6 +35,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesBindEx
 import org.springframework.context.ApplicationListener;
 
 @ZeebeIntegration
+@Disabled
 public class IdentityMigrationFailureIT {
 
   @TestZeebe

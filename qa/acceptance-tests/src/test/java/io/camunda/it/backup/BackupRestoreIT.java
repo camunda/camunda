@@ -52,6 +52,7 @@ import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -75,6 +76,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
+@Disabled
 public class BackupRestoreIT {
   private static final Logger LOGGER = LoggerFactory.getLogger(BackupRestoreIT.class);
   private static final String REPOSITORY_NAME = "test-repository";

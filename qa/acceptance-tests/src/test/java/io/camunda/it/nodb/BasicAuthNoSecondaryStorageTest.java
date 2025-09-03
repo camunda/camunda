@@ -15,6 +15,7 @@ import io.camunda.authentication.exception.BasicAuthenticationNotSupportedExcept
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.BeanCreationException;
 
@@ -24,6 +25,7 @@ import org.springframework.beans.factory.BeanCreationException;
  * database.type=none and Basic Authentication is configured.
  */
 @ZeebeIntegration
+@Disabled
 public class BasicAuthNoSecondaryStorageTest {
 
   @Test

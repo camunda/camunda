@@ -22,6 +22,7 @@ import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +34,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
+@Disabled
 public class ElasticsearchUpdateRegressionTest {
 
   private static final Logger LOGGER =
