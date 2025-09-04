@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.DocumentMetadata;
 import io.camunda.zeebe.client.api.response.DocumentReferenceResponse;
-import io.camunda.zeebe.client.protocol.rest.DocumentReferenceResult;
+import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -32,7 +32,7 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   private final String contentHash;
   private final DocumentMetadata metadata;
 
-  public DocumentReferenceResponseImpl(final DocumentReferenceResult documentReference) {
+  public DocumentReferenceResponseImpl(final DocumentReference documentReference) {
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
     contentHash = documentReference.getContentHash();

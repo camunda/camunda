@@ -15,9 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
-import io.camunda.zeebe.client.api.search.filter.UserTaskFilter;
+import io.camunda.zeebe.client.api.search.filter.io.camunda.zeebe.client.protocol.rest.UserTaskFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -25,17 +24,17 @@ import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
  *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
-public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserTaskFilterRequest>
+public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.UserTaskFilter>
     implements UserTaskFilter {
 
-  private final UserTaskFilterRequest filter;
+  private final io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter;
 
-  public UserTaskFilterImpl(final UserTaskFilterRequest filter) {
-    this.filter = new UserTaskFilterRequest();
+  public UserTaskFilterImpl(final io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter) {
+    this.filter = new io.camunda.zeebe.client.protocol.rest.UserTaskFilter();
   }
 
   public UserTaskFilterImpl() {
-    filter = new UserTaskFilterRequest();
+    filter = new io.camunda.zeebe.client.protocol.rest.UserTaskFilter();
   }
 
   @Override
@@ -99,7 +98,7 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<UserT
   }
 
   @Override
-  protected UserTaskFilterRequest getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.UserTaskFilter getSearchRequestProperty() {
     return filter;
   }
 }

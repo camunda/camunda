@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -26,13 +25,13 @@ import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
  */
 @Deprecated
 public class DecisionDefinitionFilterImpl
-    extends TypedSearchRequestPropertyProvider<DecisionDefinitionFilterRequest>
+    extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter>
     implements DecisionDefinitionFilter {
 
-  private final DecisionDefinitionFilterRequest filter;
+  private final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter filter;
 
   public DecisionDefinitionFilterImpl() {
-    filter = new DecisionDefinitionFilterRequest();
+    filter = new io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter();
   }
 
   @Override
@@ -78,7 +77,7 @@ public class DecisionDefinitionFilterImpl
   }
 
   @Override
-  protected DecisionDefinitionFilterRequest getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter getSearchRequestProperty() {
     return filter;
   }
 }

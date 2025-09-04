@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.oauth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.camunda.zeebe.client.impl.ZeebeClientCredentials;
 import java.io.File;

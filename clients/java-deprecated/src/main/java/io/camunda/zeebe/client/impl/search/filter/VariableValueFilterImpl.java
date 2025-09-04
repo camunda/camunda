@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.VariableValueFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.VariableValueFilterProperty;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -26,13 +26,13 @@ import io.camunda.zeebe.client.protocol.rest.VariableValueFilterRequest;
  */
 @Deprecated
 public class VariableValueFilterImpl
-    extends TypedSearchRequestPropertyProvider<VariableValueFilterRequest>
+    extends TypedSearchRequestPropertyProvider<VariableValueFilterProperty>
     implements VariableValueFilter {
 
-  private final VariableValueFilterRequest filter;
+  private final VariableValueFilterProperty filter;
 
   public VariableValueFilterImpl() {
-    filter = new VariableValueFilterRequest();
+    filter = new VariableValueFilterProperty();
   }
 
   @Override
@@ -72,7 +72,7 @@ public class VariableValueFilterImpl
   }
 
   @Override
-  protected VariableValueFilterRequest getSearchRequestProperty() {
+  protected VariableValueFilterProperty getSearchRequestProperty() {
     return filter;
   }
 }

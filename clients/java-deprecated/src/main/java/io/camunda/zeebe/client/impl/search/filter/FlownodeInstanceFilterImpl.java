@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.FlownodeInstanceFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
+import io.camunda.zeebe.client.protocol.rest.ElementInstanceFilter;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -26,13 +26,13 @@ import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
  */
 @Deprecated
 public class FlownodeInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceFilterRequest>
+    extends TypedSearchRequestPropertyProvider<ElementInstanceFilter>
     implements FlownodeInstanceFilter {
 
-  private final FlowNodeInstanceFilterRequest filter;
+  private final ElementInstanceFilter filter;
 
   public FlownodeInstanceFilterImpl() {
-    filter = new FlowNodeInstanceFilterRequest();
+    filter = new ElementInstanceFilter();
   }
 
   @Override
@@ -102,7 +102,7 @@ public class FlownodeInstanceFilterImpl
   }
 
   @Override
-  protected FlowNodeInstanceFilterRequest getSearchRequestProperty() {
+  protected ElementInstanceFilter getSearchRequestProperty() {
     return filter;
   }
 }

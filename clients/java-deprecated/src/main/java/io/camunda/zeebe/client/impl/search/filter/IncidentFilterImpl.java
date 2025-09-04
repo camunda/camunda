@@ -17,9 +17,6 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.IncidentFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.ErrorTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -27,13 +24,13 @@ import io.camunda.zeebe.client.protocol.rest.IncidentFilterRequest.StateEnum;
  *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
-public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<IncidentFilterRequest>
+public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.IncidentFilter>
     implements IncidentFilter {
 
-  private final IncidentFilterRequest filter;
+  private final io.camunda.zeebe.client.protocol.rest.IncidentFilter filter;
 
   public IncidentFilterImpl() {
-    filter = new IncidentFilterRequest();
+    filter = new io.camunda.zeebe.client.protocol.rest.IncidentFilter();
   }
 
   @Override
@@ -62,7 +59,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter errorType(final String errorType) {
-    filter.errorType(ErrorTypeEnum.valueOf(errorType));
+    filter.errorType(io.camunda.zeebe.client.protocol.rest.IncidentFilter.ErrorTypeEnum.valueOf(errorType));
     return this;
   }
 
@@ -92,7 +89,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
 
   @Override
   public IncidentFilter state(final String value) {
-    filter.setState(StateEnum.fromValue(value));
+    filter.setState(io.camunda.zeebe.client.protocol.rest.IncidentFilter.StateEnum.fromValue(value));
     return this;
   }
 
@@ -115,7 +112,7 @@ public class IncidentFilterImpl extends TypedSearchRequestPropertyProvider<Incid
   }
 
   @Override
-  protected IncidentFilterRequest getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.IncidentFilter getSearchRequestProperty() {
     return filter;
   }
 }

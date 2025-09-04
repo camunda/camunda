@@ -31,13 +31,13 @@ import io.camunda.zeebe.client.impl.search.response.ProcessInstanceImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchQueryResponseImpl;
 import io.camunda.zeebe.client.impl.search.response.SearchResponsePageImpl;
 import io.camunda.zeebe.client.impl.search.response.UserTaskImpl;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResponse;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResult;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsSearchQueryResult;
+import io.camunda.zeebe.client.protocol.rest.ElementInstanceSearchQueryResult;
+import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResult;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageResponse;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResult;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -49,7 +49,7 @@ public final class SearchResponseMapper {
   private SearchResponseMapper() {}
 
   public static SearchQueryResponse<ProcessInstance> toProcessInstanceSearchResponse(
-      final ProcessInstanceSearchQueryResponse response) {
+      final ProcessInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<ProcessInstance> instances =
         toSearchResponseInstances(response.getItems(), ProcessInstanceImpl::new);
@@ -58,7 +58,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<UserTask> toUserTaskSearchResponse(
-      final UserTaskSearchQueryResponse response) {
+      final UserTaskSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<UserTask> instances =
         toSearchResponseInstances(response.getItems(), UserTaskImpl::new);
@@ -66,7 +66,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionDefinition> toDecisionDefinitionSearchResponse(
-      final DecisionDefinitionSearchQueryResponse response) {
+      final DecisionDefinitionSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionDefinition> instances =
         toSearchResponseInstances(response.getItems(), DecisionDefinitionImpl::new);
@@ -74,7 +74,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<FlowNodeInstance> toFlowNodeInstanceSearchResponse(
-      final FlowNodeInstanceSearchQueryResponse response) {
+      final ElementInstanceSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<FlowNodeInstance> instances =
         toSearchResponseInstances(response.getItems(), FlowNodeInstanceImpl::new);
@@ -82,7 +82,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<Incident> toIncidentSearchResponse(
-      final IncidentSearchQueryResponse response) {
+      final IncidentSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<Incident> incidents =
         toSearchResponseInstances(response.getItems(), IncidentImpl::new);
@@ -98,7 +98,7 @@ public final class SearchResponseMapper {
   }
 
   public static SearchQueryResponse<DecisionRequirements> toDecisionRequirementsSearchResponse(
-      final DecisionRequirementsSearchQueryResponse response) {
+      final DecisionRequirementsSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<DecisionRequirements> instances =
         toSearchResponseInstances(response.getItems(), DecisionRequirementsImpl::new);

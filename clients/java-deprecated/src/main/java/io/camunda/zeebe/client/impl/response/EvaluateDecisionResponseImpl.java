@@ -47,7 +47,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final long decisionInstanceKey;
 
   public EvaluateDecisionResponseImpl(
-      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response,
+      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response,
       final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionDefinitionId();
@@ -86,7 +86,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   }
 
   private void buildEvaluatedDecisions(
-      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResponse response) {
+      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response) {
     if (response.getEvaluatedDecisions() == null) {
       return;
     }

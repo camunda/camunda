@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.impl.search.filter;
 
 import io.camunda.zeebe.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilterRequest;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -26,17 +25,17 @@ import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilterRequest;
  */
 @Deprecated
 public class DecisionRequirementsFilterImpl
-    extends TypedSearchRequestPropertyProvider<DecisionRequirementsFilterRequest>
+    extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter>
     implements DecisionRequirementsFilter {
 
-  private final DecisionRequirementsFilterRequest filter;
+  private final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter;
 
-  public DecisionRequirementsFilterImpl(final DecisionRequirementsFilterRequest filter) {
-    this.filter = new DecisionRequirementsFilterRequest();
+  public DecisionRequirementsFilterImpl(final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter) {
+    this.filter = new io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter();
   }
 
   public DecisionRequirementsFilterImpl() {
-    filter = new DecisionRequirementsFilterRequest();
+    filter = new io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter();
   }
 
   @Override
@@ -70,7 +69,7 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  protected DecisionRequirementsFilterRequest getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter getSearchRequestProperty() {
     return filter;
   }
 }
