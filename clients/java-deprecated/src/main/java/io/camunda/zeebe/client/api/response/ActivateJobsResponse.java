@@ -19,8 +19,7 @@ import java.util.List;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the migration guide:
- *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
+ *     the <a href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda Java Client migration guide</a>
  */
 @Deprecated
 public interface ActivateJobsResponse {

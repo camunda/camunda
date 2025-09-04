@@ -99,31 +99,31 @@ public class CamundaClientCloudBuilderImpl
         properties,
         this::withClusterId,
         CLOUD_CLUSTER_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID);
+        io.camunda.client.ClientProperties.CLOUD_CLUSTER_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_ID);
+        io.camunda.client.ClientProperties.CLOUD_CLIENT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_SECRET,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
+        io.camunda.client.ClientProperties.CLOUD_CLIENT_SECRET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withRegion,
         CLOUD_REGION,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_REGION);
+        io.camunda.client.ClientProperties.CLOUD_REGION);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED);
+        io.camunda.client.ClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
 
