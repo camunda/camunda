@@ -47,4 +47,32 @@ public interface UserTaskSelector {
    * @param filter the filter used to limit the user task search
    */
   default void applyFilter(final UserTaskFilter filter) {}
+
+  /**
+   * Combines two user task selectors together.
+   *
+   * @param other user task selector to be added.
+   * @return the combined user task selector
+   */
+  default UserTaskSelector and(UserTaskSelector other) {
+    final UserTaskSelector self = this;
+
+    return new UserTaskSelector() {
+      @Override
+      public boolean test(final UserTask userTask) {
+        return self.test(userTask) && other.test(userTask);
+      }
+
+      @Override
+      public String describe() {
+        return String.format("%s, %s", self.describe(), other.describe());
+      }
+
+      @Override
+      public void applyFilter(final UserTaskFilter filter) {
+        self.applyFilter(filter);
+        other.applyFilter(filter);
+      }
+    };
+  }
 }

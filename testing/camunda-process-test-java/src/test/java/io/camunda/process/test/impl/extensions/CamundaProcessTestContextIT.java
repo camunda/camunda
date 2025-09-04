@@ -451,7 +451,8 @@ public class CamundaProcessTestContextIT {
     Assertions.assertThatThrownBy(
             () ->
                 processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
-        .hasMessage("Expected to complete user task [unknown-task] but no job is available.");
+        .hasMessage(
+            "Expected to complete user task [elementId: unknown-task] but no job is available.");
   }
 
   @Test
@@ -534,7 +535,7 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
-  void shouldFindUserTaskByTaskNameAndProcessInstanceKey() {
+  void shouldFindUserTaskByTaskNameAndByProcessInstanceKey() {
     // Given
     final long firstInstanceKey = deployProcessModel(processModelWithUserTask());
     final long secondInstanceKey = deployProcessModel(processModelWithUserTask());
@@ -548,6 +549,10 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThatUserTask(
             UserTaskSelectors.byTaskName("user-task", processInstanceEvent.getProcessInstanceKey()))
+        .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
+
+    assertThatUserTask(
+            UserTaskSelectors.byProcessInstanceKey(processInstanceEvent.getProcessInstanceKey()))
         .hasProcessInstanceKey(processInstanceEvent.getProcessInstanceKey());
   }
 
@@ -804,15 +809,15 @@ public class CamundaProcessTestContextIT {
     // Then
     Assertions.assertThatThrownBy(() -> assertThatDecision(response).isEvaluated())
         .hasMessage(
-            "No DecisionInstance [Determine Overall Happiness "
-                + "(decisionId: decision_overall_happiness)] "
+            "No DecisionInstance [name: Determine Overall Happiness"
+                + ", decisionId: decision_overall_happiness] "
                 + "found.");
 
     Assertions.assertThatThrownBy(
             () ->
                 assertThatDecision(DecisionSelectors.byId("decision_overall_happiness"))
                     .isEvaluated())
-        .hasMessage("No DecisionInstance [decision_overall_happiness] found.");
+        .hasMessage("No DecisionInstance [decisionId: decision_overall_happiness] found.");
   }
 
   /**
