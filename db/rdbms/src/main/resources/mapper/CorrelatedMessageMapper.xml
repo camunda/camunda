@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
   ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
   ~ one or more contributor license agreements. See the NOTICE file distributed
@@ -6,27 +6,11 @@
   ~ Licensed under the Camunda License 1.0. You may not use this file
   ~ except in compliance with the Camunda License 1.0.
   -->
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="io.camunda.db.rdbms.sql.CorrelatedMessageMapper">
-
-  <resultMap id="correlatedMessageResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
-    <constructor>
-      <arg column="CORRELATION_KEY" javaType="java.lang.String" />
-      <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime" />
-      <arg column="FLOW_NODE_ID" javaType="java.lang.String" />
-      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long" />
-      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime" />
-      <arg column="MESSAGE_KEY" javaType="java.lang.Long" />
-      <arg column="MESSAGE_NAME" javaType="java.lang.String" />
-      <arg column="PARTITION_ID" javaType="java.lang.Integer" />
-      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String" />
-      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long" />
-      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long" />
-      <arg column="SUBSCRIPTION_KEY" javaType="java.lang.Long" />
-      <arg column="TENANT_ID" javaType="java.lang.String" />
-    </constructor>
-  </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
     INSERT INTO ${prefix}CORRELATED_MESSAGE (
@@ -45,10 +29,10 @@
       TENANT_ID
     ) VALUES (
       #{correlationKey},
-      #{correlationTime},
+      #{correlationTime, jdbcType=TIMESTAMP},
       #{flowNodeId},
       #{flowNodeInstanceKey},
-      #{historyCleanupDate},
+      #{historyCleanupDate, jdbcType=TIMESTAMP},
       #{messageKey},
       #{messageName},
       #{partitionId},
@@ -63,10 +47,10 @@
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
     UPDATE ${prefix}CORRELATED_MESSAGE SET
       CORRELATION_KEY = #{correlationKey},
-      CORRELATION_TIME = #{correlationTime},
+      CORRELATION_TIME = #{correlationTime, jdbcType=TIMESTAMP},
       FLOW_NODE_ID = #{flowNodeId},
       FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate},
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP},
       MESSAGE_NAME = #{messageName},
       PARTITION_ID = #{partitionId},
       PROCESS_DEFINITION_ID = #{processDefinitionId},
@@ -78,7 +62,7 @@
 
   <update id="updateHistoryCleanupDate" parameterType="io.camunda.db.rdbms.sql.ProcessBasedHistoryCleanupMapper$UpdateHistoryCleanupDateDto">
     UPDATE ${prefix}CORRELATED_MESSAGE SET
-      HISTORY_CLEANUP_DATE = #{historyCleanupDate}
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 
