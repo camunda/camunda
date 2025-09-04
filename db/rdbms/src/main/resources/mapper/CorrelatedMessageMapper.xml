@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.CorrelatedMessageMapper">
+
+  <resultMap id="correlatedMessageResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
+    <result property="correlationKey" column="CORRELATION_KEY"/>
+    <result property="correlationTime" column="CORRELATION_TIME"/>
+    <result property="flowNodeId" column="FLOW_NODE_ID"/>
+    <result property="flowNodeInstanceKey" column="FLOW_NODE_INSTANCE_KEY"/>
+    <result property="historyCleanupDate" column="HISTORY_CLEANUP_DATE"/>
+    <result property="messageKey" column="MESSAGE_KEY"/>
+    <result property="messageName" column="MESSAGE_NAME"/>
+    <result property="partitionId" column="PARTITION_ID"/>
+    <result property="processDefinitionId" column="PROCESS_DEFINITION_ID"/>
+    <result property="processDefinitionKey" column="PROCESS_DEFINITION_KEY"/>
+    <result property="processInstanceKey" column="PROCESS_INSTANCE_KEY"/>
+    <result property="subscriptionKey" column="SUBSCRIPTION_KEY"/>
+    <result property="tenantId" column="TENANT_ID"/>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
+    INSERT INTO ${prefix}CORRELATED_MESSAGE (
+      CORRELATION_KEY,
+      CORRELATION_TIME,
+      FLOW_NODE_ID,
+      FLOW_NODE_INSTANCE_KEY,
+      HISTORY_CLEANUP_DATE,
+      MESSAGE_KEY,
+      MESSAGE_NAME,
+      PARTITION_ID,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      SUBSCRIPTION_KEY,
+      TENANT_ID
+    )
+    VALUES (
+      #{correlationKey},
+      #{correlationTime, jdbcType=TIMESTAMP},
+      #{flowNodeId},
+      #{flowNodeInstanceKey},
+      #{historyCleanupDate, jdbcType=TIMESTAMP},
+      #{messageKey},
+      #{messageName},
+      #{partitionId},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processInstanceKey},
+      #{subscriptionKey},
+      #{tenantId}
+    )
+  </insert>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessagesDbQuery" resultType="long">
+    SELECT COUNT(*)
+    FROM ${prefix}CORRELATED_MESSAGE
+    <include refid="whereClause"/>
+  </select>
+
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessagesDbQuery" resultMap="correlatedMessageResultMap">
+    SELECT *
+    FROM ${prefix}CORRELATED_MESSAGE
+    <include refid="whereClause"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.pagination"/>
+  </select>
+
+  <sql id="whereClause">
+    <where>
+      <if test="filter != null">
+        <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="CORRELATION_KEY"/>
+            <property name="operations" value="filter.correlationKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.correlationTimeOperations != null and !filter.correlationTimeOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="CORRELATION_TIME"/>
+            <property name="operations" value="filter.correlationTimeOperations"/>
+          </include>
+        </if>
+        <if test="filter.elementIdOperations != null and !filter.elementIdOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="FLOW_NODE_ID"/>
+            <property name="operations" value="filter.elementIdOperations"/>
+          </include>
+        </if>
+        <if test="filter.elementInstanceKeyOperations != null and !filter.elementInstanceKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="FLOW_NODE_INSTANCE_KEY"/>
+            <property name="operations" value="filter.elementInstanceKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.messageKeyOperations != null and !filter.messageKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="MESSAGE_KEY"/>
+            <property name="operations" value="filter.messageKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.messageNameOperations != null and !filter.messageNameOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="MESSAGE_NAME"/>
+            <property name="operations" value="filter.messageNameOperations"/>
+          </include>
+        </if>
+        <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="PROCESS_DEFINITION_ID"/>
+            <property name="operations" value="filter.processDefinitionIdOperations"/>
+          </include>
+        </if>
+        <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="PROCESS_DEFINITION_KEY"/>
+            <property name="operations" value="filter.processDefinitionKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="PROCESS_INSTANCE_KEY"/>
+            <property name="operations" value="filter.processInstanceKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.subscriptionKeyOperations != null and !filter.subscriptionKeyOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="SUBSCRIPTION_KEY"/>
+            <property name="operations" value="filter.subscriptionKeyOperations"/>
+          </include>
+        </if>
+        <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+          <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
+            <property name="column" value="TENANT_ID"/>
+            <property name="operations" value="filter.tenantIdOperations"/>
+          </include>
+        </if>
+      </if>
+    </where>
+  </sql>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}CORRELATED_MESSAGE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'CORRELATED_MESSAGE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+
+</mapper>

@@ -28,7 +28,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-public final class MessageServices extends ApiServices<MessageServices> {
+public final class MessageServices extends SearchQueryService<MessageServices, CorrelatedMessagesQuery, CorrelatedMessageEntity> {
 
   private final CorrelatedMessagesSearchClient correlatedMessagesSearchClient;
 
@@ -36,7 +36,8 @@ public final class MessageServices extends ApiServices<MessageServices> {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication) {
-    this(brokerClient, securityContextProvider, null, authentication);
+    super(brokerClient, securityContextProvider, authentication);
+    this.correlatedMessagesSearchClient = null;
   }
 
   public MessageServices(
@@ -72,6 +73,11 @@ public final class MessageServices extends ApiServices<MessageServices> {
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId);
     return sendBrokerRequestWithFullResponse(brokerRequest);
+  }
+
+  @Override
+  public SearchQueryResult<CorrelatedMessageEntity> search(final CorrelatedMessagesQuery query) {
+    return searchCorrelatedMessages(query);
   }
 
   public SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessages(final CorrelatedMessagesQuery query) {

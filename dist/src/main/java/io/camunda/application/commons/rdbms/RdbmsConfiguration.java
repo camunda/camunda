@@ -25,6 +25,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
+import io.camunda.db.rdbms.read.service.CorrelatedMessagesDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionStatisticsDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
@@ -52,6 +53,7 @@ import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.PurgeMapper;
@@ -196,6 +198,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public CorrelatedMessagesDbReader correlatedMessagesDbReader(
+      final CorrelatedMessageMapper correlatedMessageMapper) {
+    return new CorrelatedMessagesDbReader(correlatedMessageMapper);
+  }
+
+  @Bean
   public BatchOperationDbReader batchOperationReader(
       final BatchOperationMapper batchOperationMapper) {
     return new BatchOperationDbReader(batchOperationMapper);
@@ -298,7 +306,8 @@ public class RdbmsConfiguration {
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
-      final MessageSubscriptionDbReader messageSubscriptionReader) {
+      final MessageSubscriptionDbReader messageSubscriptionReader,
+      final CorrelatedMessagesDbReader correlatedMessagesReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -323,6 +332,7 @@ public class RdbmsConfiguration {
         jobReader,
         usageMetricReader,
         usageMetricTUDbReader,
-        messageSubscriptionReader);
+        messageSubscriptionReader,
+        correlatedMessagesReader);
   }
 }

@@ -20,6 +20,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
+import io.camunda.db.rdbms.read.service.CorrelatedMessagesDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
@@ -63,6 +64,7 @@ public class RdbmsService {
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
+  private final CorrelatedMessagesDbReader correlatedMessagesReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -88,7 +90,8 @@ public class RdbmsService {
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
-      final MessageSubscriptionDbReader messageSubscriptionReader) {
+      final MessageSubscriptionDbReader messageSubscriptionReader,
+      final CorrelatedMessagesDbReader correlatedMessagesReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.authorizationReader = authorizationReader;
     this.decisionRequirementsReader = decisionRequirementsReader;
@@ -113,6 +116,7 @@ public class RdbmsService {
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
+    this.correlatedMessagesReader = correlatedMessagesReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -205,6 +209,10 @@ public class RdbmsService {
 
   public MessageSubscriptionDbReader getMessageSubscriptionReader() {
     return messageSubscriptionReader;
+  }
+
+  public CorrelatedMessagesDbReader getCorrelatedMessagesReader() {
+    return correlatedMessagesReader;
   }
 
   public RdbmsWriter createWriter(final long partitionId) { // todo fix in all itests afterwards?
