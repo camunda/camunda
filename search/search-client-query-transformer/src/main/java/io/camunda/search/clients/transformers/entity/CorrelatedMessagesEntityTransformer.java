@@ -19,11 +19,11 @@ public class CorrelatedMessagesEntityTransformer
     return new io.camunda.search.entities.CorrelatedMessageEntity(
         value.getCorrelationKey(),
         value.getCorrelationTime(),
-        value.getFlowNodeId(),
-        value.getFlowNodeInstanceKey(),
+        value.getFlowNodeId(), // Maps to elementId in search domain
+        value.getFlowNodeInstanceKey(), // Maps to elementInstanceKey in search domain
         value.getMessageKey(),
         value.getMessageName(),
-        value.getBpmnProcessId(),
+        value.getBpmnProcessId(), // Maps to processDefinitionId in search domain
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
         value.getSubscriptionKey(),

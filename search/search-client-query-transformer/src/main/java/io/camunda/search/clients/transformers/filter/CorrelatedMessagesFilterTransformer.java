@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.CORRELATION_TIME;
@@ -45,7 +46,7 @@ public class CorrelatedMessagesFilterTransformer
         stringOperations(MESSAGE_NAME, filter.messageNameOperations()),
         stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()),
         longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()),
-        longOperations("processInstanceKey", filter.processInstanceKeyOperations()),
+        longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()),
         longOperations(SUBSCRIPTION_KEY, filter.subscriptionKeyOperations()),
         stringOperations(TENANT_ID, filter.tenantIdOperations()));
   }
