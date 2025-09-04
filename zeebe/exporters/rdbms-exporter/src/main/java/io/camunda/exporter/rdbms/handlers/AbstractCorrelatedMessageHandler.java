@@ -13,8 +13,8 @@ import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.time.Instant;
 import java.util.Set;
 

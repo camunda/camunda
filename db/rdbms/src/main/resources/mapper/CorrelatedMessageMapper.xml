@@ -67,10 +67,8 @@
   </update>
 
   <delete id="cleanupHistory" parameterType="io.camunda.db.rdbms.sql.HistoryCleanupMapper$CleanupHistoryDto">
-    DELETE FROM ${prefix}CORRELATED_MESSAGE
-    WHERE PARTITION_ID = #{partitionId}
-      AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
-    LIMIT #{limit}
+    <bind name="tableName" value="'CORRELATED_MESSAGE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
   </delete>
 
 </mapper>
