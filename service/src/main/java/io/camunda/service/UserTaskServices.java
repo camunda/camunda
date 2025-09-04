@@ -40,10 +40,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 public final class UserTaskServices
     extends SearchQueryService<UserTaskServices, UserTaskQuery, UserTaskEntity> {
+
+  private static final Predicate<UserTaskEntity> NEEDS_CACHE_ENRICHMENT =
+      u -> !u.hasName() || !u.hasProcessName();
 
   private final UserTaskSearchClient userTaskSearchClient;
   private final FormServices formServices;
@@ -103,7 +107,7 @@ public final class UserTaskServices
 
     final var processDefinitionKeys =
         result.items().stream()
-            .filter(u -> !u.hasName())
+            .filter(NEEDS_CACHE_ENRICHMENT)
             .map(UserTaskEntity::processDefinitionKey)
             .collect(Collectors.toSet());
 
@@ -123,8 +127,16 @@ public final class UserTaskServices
   }
 
   private UserTaskEntity toCacheEnrichedUserTaskEntity(
-      final UserTaskEntity item, final ProcessCacheItem cachedItem) {
-    return item.hasName() ? item : item.withName(cachedItem.getElementName(item.elementId()));
+      UserTaskEntity item, final ProcessCacheItem cachedItem) {
+
+    if (!item.hasName()) {
+      item = item.withName(cachedItem.getElementName(item.elementId()));
+    }
+    if (!item.hasProcessName()) {
+      item = item.withProcessName(cachedItem.getProcessName());
+    }
+
+    return item;
   }
 
   public SearchQueryResult<UserTaskEntity> search(
