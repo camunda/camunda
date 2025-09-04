@@ -24,7 +24,6 @@ public record CorrelatedMessageEntity(
     Long subscriptionKey,
     String tenantId)
     implements TenantOwnedEntity {
-
   public static Builder builder() {
     return new Builder();
   }

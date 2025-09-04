@@ -42,6 +42,7 @@ import io.camunda.db.rdbms.read.service.UserTaskDbReader;
 import io.camunda.db.rdbms.read.service.VariableDbReader;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -259,7 +260,8 @@ public class RdbmsConfiguration {
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
-      final MessageSubscriptionMapper messageSubscriptionMapper) {
+      final MessageSubscriptionMapper messageSubscriptionMapper,
+      final CorrelatedMessageMapper correlatedMessageMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -278,7 +280,8 @@ public class RdbmsConfiguration {
         usageMetricMapper,
         usageMetricTUMapper,
         batchOperationMapper,
-        messageSubscriptionMapper);
+        messageSubscriptionMapper,
+        correlatedMessageMapper);
   }
 
   @Bean
