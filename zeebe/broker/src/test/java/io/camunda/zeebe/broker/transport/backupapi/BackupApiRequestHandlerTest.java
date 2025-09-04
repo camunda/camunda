@@ -295,7 +295,8 @@ final class BackupApiRequestHandlerTest {
             Optional.of(createdAt),
             Optional.of(lastModified));
 
-    when(backupManager.listBackups()).thenReturn(CompletableActorFuture.completed(List.of(status)));
+    when(backupManager.listBackups(""))
+        .thenReturn(CompletableActorFuture.completed(List.of(status)));
 
     // when
     final BackupListResponse listResponse = new BackupListResponse(List.of());
@@ -329,7 +330,7 @@ final class BackupApiRequestHandlerTest {
                             Optional.of(Instant.now())))
             .toList();
 
-    when(backupManager.listBackups()).thenReturn(CompletableActorFuture.completed(statuses));
+    when(backupManager.listBackups("")).thenReturn(CompletableActorFuture.completed(statuses));
 
     // when
     final BackupListResponse listResponse = new BackupListResponse(List.of());
@@ -346,7 +347,7 @@ final class BackupApiRequestHandlerTest {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.LIST).setPartitionId(1);
 
-    when(backupManager.listBackups())
+    when(backupManager.listBackups(""))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("list failed")));
 
