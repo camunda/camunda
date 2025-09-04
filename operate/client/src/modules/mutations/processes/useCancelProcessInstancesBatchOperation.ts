@@ -15,7 +15,7 @@ import type {
   CreateCancellationBatchOperationRequestBody,
   CreateCancellationBatchOperationResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {cancelProcessInstancesBatchOperation} from 'modules/api/v2/processes/cancelProcessInstancesBatchOperation';
+import {createCancellationBatchOperation} from 'modules/api/v2/processInstances/createCancellationBatchOperation';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useCancelProcessInstancesBatchOperation = (
@@ -32,8 +32,7 @@ const useCancelProcessInstancesBatchOperation = (
   return useMutation({
     mutationKey: ['createProcessInstanceCancellationBatchOperation'],
     mutationFn: async (payload) => {
-      const {response, error} =
-        await cancelProcessInstancesBatchOperation(payload);
+      const {response, error} = await createCancellationBatchOperation(payload);
       if (response !== null) {
         await queryClient.invalidateQueries({
           queryKey: [BATCH_OPERATIONS_QUERY_KEY],
