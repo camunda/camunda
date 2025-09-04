@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlo
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableScriptTask;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -25,25 +26,17 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Function;
 
 public final class StraightThroughProcessingLoopValidator {
 
-  private static final EnumSet<BpmnElementType> STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES =
-      EnumSet.of(
-          BpmnElementType.MANUAL_TASK,
-          BpmnElementType.TASK,
-          BpmnElementType.EXCLUSIVE_GATEWAY,
-          BpmnElementType.INCLUSIVE_GATEWAY,
-          BpmnElementType.PARALLEL_GATEWAY,
-          BpmnElementType.START_EVENT,
-          BpmnElementType.END_EVENT,
-          BpmnElementType.SUB_PROCESS,
-          BpmnElementType.MULTI_INSTANCE_BODY,
-          BpmnElementType.CALL_ACTIVITY,
-          BpmnElementType.INTERMEDIATE_THROW_EVENT);
+  private static final Function<ExecutableFlowNode, Boolean> NOOP_VALIDATOR = e -> true;
+  private static final HashMap<BpmnElementType, Function<ExecutableFlowNode, Boolean>>
+      STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES = new HashMap<>();
 
   /**
    * Loops must contain any of the rejected element types for it to be considered a loop. This makes
@@ -54,7 +47,29 @@ public final class StraightThroughProcessingLoopValidator {
           BpmnElementType.MANUAL_TASK,
           BpmnElementType.TASK,
           BpmnElementType.CALL_ACTIVITY,
-          BpmnElementType.INTERMEDIATE_THROW_EVENT);
+          BpmnElementType.INTERMEDIATE_THROW_EVENT,
+          BpmnElementType.SCRIPT_TASK);
+
+  static {
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.MANUAL_TASK, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.TASK, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.EXCLUSIVE_GATEWAY, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.INCLUSIVE_GATEWAY, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.PARALLEL_GATEWAY, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.START_EVENT, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.END_EVENT, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.SUB_PROCESS, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.MULTI_INSTANCE_BODY, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(BpmnElementType.CALL_ACTIVITY, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.INTERMEDIATE_THROW_EVENT, NOOP_VALIDATOR);
+    STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.put(
+        BpmnElementType.SCRIPT_TASK,
+        StraightThroughProcessingLoopValidator::isScriptTaskStraightThrough);
+  }
 
   /**
    * Validates a list of processes for straight-through processing loops. These are loops of
@@ -179,7 +194,13 @@ public final class StraightThroughProcessingLoopValidator {
       // describing the loop.
       loop.add(element);
       return Either.left(loop);
-    } else if (STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.contains(element.getElementType())) {
+    } else if (STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.containsKey(element.getElementType())) {
+      final var isElementStraightThrough =
+          STRAIGHT_THROUGH_PROCESSING_ELEMENT_TYPES.get(element.getElementType()).apply(element);
+      if (!isElementStraightThrough) {
+        return Either.right(null);
+      }
+
       // We are not in a loop yet, but the element is a straight-through processing element. We must
       // keep checking for loops by analysing the outgoing sequence flows of this element.
       if (element.getElementType() != BpmnElementType.MULTI_INSTANCE_BODY) {
@@ -323,5 +344,11 @@ public final class StraightThroughProcessingLoopValidator {
     writer.write(message);
     writer.write("\n");
     return writer.toString();
+  }
+
+  private static boolean isScriptTaskStraightThrough(final ExecutableFlowNode element) {
+    // If a script task is handled by a job worker is it not straight-through.
+    final var scriptTask = (ExecutableScriptTask) element;
+    return scriptTask.getJobWorkerProperties() == null;
   }
 }
