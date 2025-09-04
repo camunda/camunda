@@ -85,6 +85,8 @@ public class Network {
    */
   private Duration heartbeatInterval = Duration.ofSeconds(5);
 
+  private CommandApi commandApi = new CommandApi();
+
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".host",
@@ -187,6 +189,14 @@ public class Network {
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
     this.heartbeatInterval = heartbeatInterval;
+  }
+
+  public CommandApi getCommandApi() {
+    return commandApi;
+  }
+
+  public void setCommandApi(final CommandApi commandApi) {
+    this.commandApi = commandApi;
   }
 
   @Override
