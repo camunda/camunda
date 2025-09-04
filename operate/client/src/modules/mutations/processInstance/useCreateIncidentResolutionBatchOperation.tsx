@@ -34,7 +34,7 @@ const useCreateIncidentResolutionBatchOperation = (
     ],
     mutationFn: async () => {
       const {response, error} = await createIncidentResolutionBatchOperation({
-        processInstanceKey,
+        filter: {processInstanceKey},
       });
 
       if (response === null) {
