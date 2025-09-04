@@ -18,6 +18,18 @@ package io.camunda.client.spring.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.spring.client.annotation.processor.AbstractCamundaAnnotationProcessor;
+import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
+import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
+import io.camunda.spring.client.event.CamundaClientCreatedEvent;
+import io.camunda.spring.client.event.CamundaClientEventListener;
+import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessor;
@@ -42,6 +54,11 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
+  @MockitoBean CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  @MockitoBean MetricsRecorder metricsRecorder;
+  @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+  @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+  @MockitoBean JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
   @Autowired MockedBean mockedBean;
   @Autowired CamundaClientEventListener camundaClientEventListener;
   @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;

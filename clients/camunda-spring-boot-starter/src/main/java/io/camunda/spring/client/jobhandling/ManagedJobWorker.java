@@ -15,12 +15,7 @@
  */
 package io.camunda.spring.client.jobhandling;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.JobHandler;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
 
-public interface JobHandlerFactory {
-  JobHandler getJobHandler(final JobHandlerFactoryContext context);
-
-  record JobHandlerFactoryContext(JobWorkerValue jobWorkerValue, CamundaClient camundaClient) {}
-}
+public record ManagedJobWorker(
+    JobWorkerValue jobWorkerValue, JobHandlerFactory jobHandlerFactory) {}
