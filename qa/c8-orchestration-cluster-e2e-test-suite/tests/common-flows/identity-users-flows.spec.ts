@@ -14,6 +14,7 @@ import {createTestData, createComponentAuthorization} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {sleep} from 'utils/sleep';
+import {waitForItemInList} from 'utils/waitForItemInList';
 
 test.describe('Identity User Flows', () => {
   test.beforeEach(async ({loginPage, page}) => {
@@ -109,13 +110,14 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  test('Admin user can remove Authorizations granted to user', async ({
+  test('Admin user can grant and revoke component authorization for user', async ({
     page,
     loginPage,
     identityUsersPage,
     identityHeader,
     identityAuthorizationsPage,
   }) => {
+    test.slow();
     let testUser:
       | {username: string; password: string; email?: string; name?: string}
       | undefined;
@@ -141,6 +143,16 @@ test.describe('Identity User Flows', () => {
         'User',
       );
       await identityAuthorizationsPage.createAuthorization(COMPONENT_AUTH);
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser!.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
     });
 
     await test.step(`Login with the new user and verify Identity access`, async () => {
@@ -178,7 +190,16 @@ test.describe('Identity User Flows', () => {
       await expect(
         identityAuthorizationsPage.deleteAuthorizationModal,
       ).toBeHidden();
-      await sleep(1500);
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser!.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: false,
+        timeout: 15000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+      });
     });
 
     await test.step(`Logout and login with the new user`, async () => {
