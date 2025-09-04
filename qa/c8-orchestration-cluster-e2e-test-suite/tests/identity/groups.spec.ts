@@ -81,8 +81,10 @@ test.describe.serial('groups CRUD', () => {
 
   test('deletes a group', async ({page, identityGroupsPage}) => {
     const group = identityGroupsPage.groupCell(EDITED_GROUP.name);
-    expect(await findLocatorInPaginatedList(page, group)).toBe(true);
-    await expect(group).toBeVisible();
+    await waitForItemInList(page, group, {
+      clickNext: true,
+      timeout: 60000,
+    });
 
     await identityGroupsPage.deleteGroup(EDITED_GROUP.name);
 

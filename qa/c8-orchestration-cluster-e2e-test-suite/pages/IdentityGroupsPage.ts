@@ -9,6 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {sleep} from 'utils/sleep';
+import {defaultAssertionOptions} from '../utils/constants';
 
 export class IdentityGroupsPage {
   private page: Page;
@@ -40,6 +41,7 @@ export class IdentityGroupsPage {
   readonly assignUserButtonModal: Locator;
   readonly selectGroupRow: (name: string) => Locator;
   readonly groupCell: (name: string) => Locator;
+  readonly groupsHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -132,6 +134,7 @@ export class IdentityGroupsPage {
     this.assignUserButtonModal = page
       .getByLabel('Assign user')
       .getByRole('button', {name: 'Assign user'});
+    this.groupsHeading = this.page.getByRole('heading', {name: 'Groups'});
   }
 
   async navigateToGroups() {
@@ -165,7 +168,13 @@ export class IdentityGroupsPage {
   }
 
   async deleteGroup(groupName: string) {
-    await this.deleteGroupButton(groupName).click();
+    await expect(async () => {
+      await expect(this.deleteGroupButton(groupName)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.groupsHeading.click();
+      await this.deleteGroupButton(groupName).click();
+    }).toPass(defaultAssertionOptions);
     await expect(this.deleteGroupModal).toBeVisible();
     await this.deleteGroupModalDeleteButton.click();
     await expect(this.deleteGroupModal).toBeHidden();

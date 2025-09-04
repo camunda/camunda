@@ -32,6 +32,7 @@ export class IdentityRolesPage {
   readonly deleteRoleModalCancelButton: Locator;
   readonly deleteRoleModalDeleteButton: Locator;
   readonly roleCell: (name: string) => Locator;
+  readonly rolesHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -101,6 +102,7 @@ export class IdentityRolesPage {
     );
     this.roleCell = (roleID: string) =>
       this.rolesList.getByRole('cell', {name: roleID, exact: true});
+    this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
   }
 
   async clickCreateRoles() {
@@ -133,8 +135,11 @@ export class IdentityRolesPage {
   }
 
   async deleteRole(roleName: string) {
-    await expect(this.deleteRoleButton(roleName)).toBeVisible({timeout: 20000});
     await expect(async () => {
+      await expect(this.deleteRoleButton(roleName)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.rolesHeading.click();
       await this.deleteRoleButton(roleName).click({timeout: 20000});
     }).toPass(defaultAssertionOptions);
     await expect(this.deleteRoleModal).toBeVisible();
