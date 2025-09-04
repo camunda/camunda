@@ -48,23 +48,16 @@ class SchemaUpdateIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaUpdateIT.class);
 
-  private static String currentMinorVersion; // e.g. "8.8"
+  private static String currentMinorVersion; // e.g. "8.9"
 
-  private static String previousMinorSnapshotVersion; // e.g. "8.7-SNAPSHOT"
+  private static String previousMinorSnapshotVersion; // e.g. "8.8-SNAPSHOT"
 
   @BeforeAll
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
-    // TODO find a better way to get the previous version image
-    // final var previousSemanticVersion =
-    //    SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
-    // previousMinorSnapshotVersion =
-    //   "%d.%d-SNAPSHOT"
-    //       .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
-
-    // FIXME using SNAPSHOT for now, as it is the only one that has tasklist-task-8.8.0_ index
-    previousMinorSnapshotVersion = "SNAPSHOT";
+    previousMinorSnapshotVersion =
+        "%d.%d-SNAPSHOT".formatted(semanticVersion.major(), semanticVersion.minor() - 1);
   }
 
   @BeforeEach
@@ -88,21 +81,13 @@ class SchemaUpdateIT {
                     .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
+            .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
             .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
             .withEnv("CAMUNDA_DATABASE_URL", url)
-            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
+            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
-            .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
-            .withEnv("CAMUNDA_OPERATE_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_TASKLIST_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)) {
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
     }
@@ -125,10 +110,7 @@ class SchemaUpdateIT {
             config,
             searchClientAdapter,
             indexDescriptors.templates().stream()
-                .filter(
-                    template ->
-                        !template.getVersion().startsWith(currentMinorVersion)
-                            && !template.getIndexName().contains("correlated-message"))
+                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
                 .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
