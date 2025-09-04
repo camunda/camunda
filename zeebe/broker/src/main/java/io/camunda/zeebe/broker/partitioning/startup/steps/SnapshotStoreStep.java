@@ -21,9 +21,15 @@ import io.camunda.zeebe.snapshots.transfer.SnapshotTransferImpl;
 
 public class SnapshotStoreStep implements StartupStep<PartitionStartupContext> {
 
+  private final String name;
+
+  public SnapshotStoreStep(final int partitionId) {
+    name = String.format("Partition %d - Snapshot Store", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Snapshot Store";
+    return name;
   }
 
   @Override

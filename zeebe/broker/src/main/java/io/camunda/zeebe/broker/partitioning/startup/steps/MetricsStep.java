@@ -16,9 +16,17 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 
 public class MetricsStep implements StartupStep<PartitionStartupContext> {
 
+  private final int partitionId;
+  private final String name;
+
+  public MetricsStep(final int partitionId) {
+    this.partitionId = partitionId;
+    name = String.format("Partition %d - Metrics Step", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Partition Metrics Startup Step";
+    return name;
   }
 
   @Override
