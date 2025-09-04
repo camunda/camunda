@@ -123,10 +123,7 @@ class SchemaUpdateIT {
             config,
             searchClientAdapter,
             indexDescriptors.templates().stream()
-                .filter(
-                    template ->
-                        !template.getVersion().startsWith(currentMinorVersion)
-                            && !template.getIndexName().contains("correlated-message"))
+                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
                 .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
