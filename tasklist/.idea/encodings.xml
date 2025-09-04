@@ -47,8 +47,8 @@
     <file url="file://$PROJECT_DIR$/operate/webapp/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/parent/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/parent/src/main/resources" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/spring-boot-starter-camunda-sdk/src/main/java" charset="UTF-8" />
-    <file url="file://$PROJECT_DIR$/spring-boot-starter-camunda-sdk/src/main/resources" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/camunda-spring-boot-starter/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/camunda-spring-boot-starter/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/java" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/zeebe/atomix/cluster/src/main/java" charset="UTF-8" />

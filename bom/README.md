@@ -42,13 +42,13 @@ For example, you can use it to import the
 ```
 
 Also, you can use it to import the
-Spring SDK
+Camunda Spring Boot Starter
 
 ```xml
 <dependencies>
   <dependency>
     <groupId>io.camunda</groupId>
-    <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+    <artifactId>camunda-spring-boot-starter</artifactId>
   </dependency>
 </dependencies>
 ```
