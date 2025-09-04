@@ -1,7 +1,3 @@
-spring:
-  profiles:
-    active: operate,tasklist,broker,identity,consolidated-auth
-
 camunda:
   security:
     initialization:
@@ -19,3 +15,11 @@ camunda:
       unprotected-api: true
     authorizations:
       enabled: false
+
+zeebe:
+  broker:
+    exporters:
+      camundaExporter:
+        args:
+          createSchema: true
+        className: io.camunda.exporter.CamundaExporter

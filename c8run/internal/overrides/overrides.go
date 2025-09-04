@@ -54,8 +54,6 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.Port)
 	}
 	if settings.Username != "demo" && settings.Password != "demo" {
-		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.args.createSchema=true"
-		javaOpts = javaOpts + " -Dzeebe.broker.exporters.camundaExporter.className=io.camunda.exporter.CamundaExporter"
 		javaOpts += " -Dcamunda.security.initialization.users[0].username=" + settings.Username
 		javaOpts += " -Dcamunda.security.initialization.users[0].password=" + settings.Password
 		javaOpts += " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
