@@ -52,8 +52,8 @@ async function buildComment(mergedData, github, branchName) {
     lines.push(`  - Jobs: \`${test.jobs.join(', ')}\``);
     lines.push(`  - Package: \`${test.packageName}\``);
     lines.push(`  - Class: \`${test.className ? test.className : "-"}\``);
-    lines.push(`  - Overall retries: ${test.overallRetries || 0} (per run: [${failuresHistoryStr}])`);
     lines.push(`  - Pipeline runs: ${test.totalRuns || 1}`);
+    lines.push(`  - **Overall retries: ${test.overallRetries || 0} (per run: [${failuresHistoryStr}])**`);
     lines.push('');
   }
 

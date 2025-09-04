@@ -37,7 +37,7 @@ function parseComment(body) {
 
     for (const line of lines) {
       //Match method name
-      const methodMatch = line.match(/-\s(?:\[\*\*(.+?)\*\*\]\(.+?\)|(\S+?))\s–/);
+      const methodMatch = line.match(/-\s(?:\[\*\*(.+?)\*\*\]\(.+?\))/);
       if (methodMatch) {
         // If no hyperlink exists
         if (Object.keys(currentTest).length > 0) {
