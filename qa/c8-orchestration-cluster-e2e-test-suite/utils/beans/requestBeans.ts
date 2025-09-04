@@ -35,6 +35,7 @@ export const mappingRuleRequiredFields: string[] = [
   'mappingRuleId',
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
+export const userRequiredFields: string[] = ['username', 'name', 'email'];
 export const licenseRequiredFields: string[] = [
   'validLicense',
   'licenseType',
@@ -117,6 +118,26 @@ export function CREATE_NEW_ROLE() {
     description: 'E2E test role',
   };
 }
+
+export function CREATE_NEW_USER() {
+  const uid = generateUniqueId();
+  return {
+    username: `username-${uid}`,
+    name: `name-${uid}`,
+    email: `email-${uid}@example.com`,
+    password: `password-${uid}`,
+  };
+}
+
+export function UPDATE_USER() {
+  const uid = generateUniqueId();
+  return {
+    name: `updated-name-${uid}`,
+    email: `updated-email-${uid}@example.com`,
+    password: `updated-password-${uid}`,
+  };
+}
+
 export function UPDATE_ROLE() {
   const uid = generateUniqueId();
   return {
