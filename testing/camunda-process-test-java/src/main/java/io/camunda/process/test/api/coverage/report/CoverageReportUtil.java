@@ -18,7 +18,12 @@ package io.camunda.process.test.api.coverage.report;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.*;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
+import java.util.Objects;
+import java.util.stream.Collectors;
+import org.apache.commons.io.FileUtils;
 
 /**
  * Utility class for JSON serialization and deserialization of coverage reports.
@@ -28,7 +33,9 @@ import java.nio.file.*;
  */
 public class CoverageReportUtil {
 
+  public static final String REPORT_RESOURCES = "coverage/static";
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  private static final String REPORT_TEMPLATE = "coverage/index.html";
 
   /**
    * Serializes a CoverageReport object to a JSON string.
@@ -42,6 +49,50 @@ public class CoverageReportUtil {
       return OBJECT_MAPPER.writer().withDefaultPrettyPrinter().writeValueAsString(report);
     } catch (final JsonProcessingException e) {
       throw new RuntimeException("Failed to serialize object to Json : " + e);
+    }
+  }
+
+  public static String toHtml(final HtmlCoverageReport coverageReport) {
+    final InputStream template =
+        CoverageReportUtil.class.getClassLoader().getResourceAsStream(REPORT_TEMPLATE);
+    Objects.requireNonNull(template);
+    final String html =
+        new BufferedReader(new InputStreamReader(template, StandardCharsets.UTF_8))
+            .lines()
+            .collect(Collectors.joining("\n"));
+    return html.replace("{{ COVERAGE_DATA }}", toJson(coverageReport));
+  }
+
+  static void installReportDependencies(final File reportDirectory) {
+    final File reportResourcesDir = new File(reportDirectory, REPORT_RESOURCES);
+
+    // Skip if resources are already installed
+    if (reportResourcesDir.exists()) {
+      return;
+    }
+
+    try {
+      // Create parent directory if needed
+      if (!reportDirectory.exists() && !reportDirectory.mkdirs()) {
+        throw new IllegalStateException(
+            "Could not create report parent directory: " + reportDirectory.getAbsolutePath());
+      }
+
+      // Get resource URL based on current environment (JAR or IDE)
+      final URL resourceUrl = CoverageReportUtil.class.getResource("/" + REPORT_RESOURCES);
+      if (resourceUrl == null) {
+        throw new IllegalStateException("Report resources not found in classpath");
+      }
+
+      // Copy the resources
+      final File source = new File(resourceUrl.toURI());
+      if (source.isDirectory()) {
+        FileUtils.copyDirectoryToDirectory(source, reportDirectory);
+      } else {
+        FileUtils.copyFileToDirectory(source, reportDirectory);
+      }
+    } catch (final Exception e) {
+      throw new RuntimeException("Unable to copy report resources", e);
     }
   }
 }
