@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageFromMessageStartEventSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -184,6 +185,14 @@ public class RdbmsExporterWrapper implements Exporter {
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
         new MessageSubscriptionExportHandler(rdbmsWriter.getMessageSubscriptionWriter()));
+    builder.withHandler(
+        ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
+        new CorrelatedMessageFromMessageStartEventSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageWriter()));
+    builder.withHandler(
+        ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
+        new CorrelatedMessageFromMessageStartEventSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageWriter()));
   }
 
   private void createBatchOperationHandlers(
