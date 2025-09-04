@@ -399,7 +399,7 @@ jobs:
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Elasticsearch - ${{ matrix.module.name }}"
+    name: "[IT] Elasticsearch - ${{ matrix.module.name }}"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -482,12 +482,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Elasticsearch - ${{ matrix.module.name }}"
+          name: "[IT] Elasticsearch - ${{ matrix.module.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "elasticsearch-integration-tests/${{ matrix.module.maven_module }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
@@ -499,7 +500,7 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Opensearch - ${{ matrix.module.name }}"
+    name: "[IT] Opensearch - ${{ matrix.module.name }}"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -588,12 +589,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "${{ matrix.module.maven_module == 'qa/migration-tests' && 'Migration / ' || '' }}[IT] Opensearch - ${{ matrix.module.name }}"
+          name: "[IT] Opensearch - ${{ matrix.module.name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "opensearch-integration-tests/${{ matrix.module.maven_module }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
