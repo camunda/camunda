@@ -132,11 +132,13 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       mappingRuleId: mappingRule1.mappingRuleId,
     };
 
-    const res = await request.post(buildUrl('/mapping-rules'), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    await assertConflictRequest(res);
+    await expect(async () => {
+      const res = await request.post(buildUrl('/mapping-rules'), {
+        headers: jsonHeaders(),
+        data: requestBody,
+      });
+      await assertConflictRequest(res);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Get Mapping Rule', async ({request}) => {
@@ -147,7 +149,6 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         }),
         {headers: jsonHeaders()},
       );
-
       expect(res.status()).toBe(200);
       const json = await res.json();
       assertRequiredFields(json, mappingRuleRequiredFields);

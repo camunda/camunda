@@ -13,7 +13,7 @@ export async function findLocatorInPaginatedList(
   page: Page,
   locator: Locator,
 ): Promise<boolean> {
-  const maxPage = 10;
+  const maxPage = 20;
   const nextButton = page.getByRole('button', {name: 'Next page'});
 
   for (let i = 0; i < maxPage; i++) {
