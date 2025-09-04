@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
-import io.camunda.webapps.schema.descriptors.index.CorrelatedMessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
