@@ -11,6 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalCfg;
+import io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg;
 import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -18,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import org.springframework.util.unit.DataSize;
 
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
@@ -33,7 +36,17 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.election-timeout=10s",
         "camunda.cluster.raft.priority-election-enabled=false",
         "camunda.cluster.raft.flush-enabled=false",
-        "camunda.cluster.raft.flush-delay=5s"
+        "camunda.cluster.raft.flush-delay=5s",
+        "camunda.cluster.raft.max-appends-per-follower=7",
+        "camunda.cluster.raft.max-append-batch-size=64",
+        "camunda.cluster.raft.request-timeout=5s",
+        "camunda.cluster.raft.snapshot-request-timeout=5s",
+        "camunda.cluster.raft.snapshot-chunk-size=2GB",
+        "camunda.cluster.raft.configuration-change-timeout=20s",
+        "camunda.cluster.raft.max-quorum-response-timeout=10s",
+        "camunda.cluster.raft.min-step-down-failure-count=5",
+        "camunda.cluster.raft.prefer-snapshot-replication-threshold=110",
+        "camunda.cluster.raft.preallocate-segment-files=false"
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -67,6 +80,26 @@ public class ClusterRaftTest {
       assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
           .isEqualTo(Duration.ofSeconds(5));
     }
+
+    @Test
+    void shouldSetExperimental() {
+      assertThat(brokerCfg.getExperimental())
+          .returns(7, ExperimentalCfg::getMaxAppendsPerFollower)
+          .returns(DataSize.ofBytes(64), ExperimentalCfg::getMaxAppendBatchSize);
+    }
+
+    @Test
+    void shouldSetExperimentalRaft() {
+      assertThat(brokerCfg.getExperimental().getRaft())
+          .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getRequestTimeout)
+          .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getSnapshotRequestTimeout)
+          .returns(DataSize.ofGigabytes(2), ExperimentalRaftCfg::getSnapshotChunkSize)
+          .returns(Duration.ofSeconds(20), ExperimentalRaftCfg::getConfigurationChangeTimeout)
+          .returns(Duration.ofSeconds(10), ExperimentalRaftCfg::getMaxQuorumResponseTimeout)
+          .returns(5, ExperimentalRaftCfg::getMinStepDownFailureCount)
+          .returns(110, ExperimentalRaftCfg::getPreferSnapshotReplicationThreshold)
+          .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
+    }
   }
 
   @Nested
@@ -76,7 +109,17 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.electionTimeout=20s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=10s"
+        "zeebe.broker.cluster.raft.flush.delay=10s",
+        "zeebe.broker.experimental.maxAppendsPerFollower=8",
+        "zeebe.broker.experimental.maxAppendBatchSize=96",
+        "zeebe.broker.experimental.raft.requestTimeout=10s",
+        "zeebe.broker.experimental.raft.snapshotRequestTimeout=10s",
+        "zeebe.broker.experimental.raft.snapshotChunkSize=3GB",
+        "zeebe.broker.experimental.raft.configurationChangeTimeout=25s",
+        "zeebe.broker.experimental.raft.maxQuorumResponseTimeout=20s",
+        "zeebe.broker.experimental.raft.minStepDownFailureCount=10",
+        "zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold=120",
+        "zeebe.broker.experimental.raft.preallocateSegmentFiles=false"
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -110,6 +153,26 @@ public class ClusterRaftTest {
       assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
           .isEqualTo(Duration.ofSeconds(10));
     }
+
+    @Test
+    void shouldSetExperimentalFromLegacy() {
+      assertThat(brokerCfg.getExperimental())
+          .returns(8, ExperimentalCfg::getMaxAppendsPerFollower)
+          .returns(DataSize.ofBytes(96), ExperimentalCfg::getMaxAppendBatchSize);
+    }
+
+    @Test
+    void shouldSetExperimentalRaft() {
+      assertThat(brokerCfg.getExperimental().getRaft())
+          .returns(Duration.ofSeconds(10), ExperimentalRaftCfg::getRequestTimeout)
+          .returns(Duration.ofSeconds(10), ExperimentalRaftCfg::getSnapshotRequestTimeout)
+          .returns(DataSize.ofGigabytes(3), ExperimentalRaftCfg::getSnapshotChunkSize)
+          .returns(Duration.ofSeconds(25), ExperimentalRaftCfg::getConfigurationChangeTimeout)
+          .returns(Duration.ofSeconds(20), ExperimentalRaftCfg::getMaxQuorumResponseTimeout)
+          .returns(10, ExperimentalRaftCfg::getMinStepDownFailureCount)
+          .returns(120, ExperimentalRaftCfg::getPreferSnapshotReplicationThreshold)
+          .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
+    }
   }
 
   @Nested
@@ -121,12 +184,32 @@ public class ClusterRaftTest {
         "camunda.cluster.raft.priority-election-enabled=true",
         "camunda.cluster.raft.flush-enabled=true",
         "camunda.cluster.raft.flush-delay=15s",
+        "camunda.cluster.raft.max-appends-per-follower=7",
+        "camunda.cluster.raft.max-append-batch-size=64",
+        "camunda.cluster.raft.request-timeout=5s",
+        "camunda.cluster.raft.snapshot-request-timeout=5s",
+        "camunda.cluster.raft.snapshot-chunk-size=2GB",
+        "camunda.cluster.raft.configuration-change-timeout=20s",
+        "camunda.cluster.raft.max-quorum-response-timeout=10s",
+        "camunda.cluster.raft.min-step-down-failure-count=5",
+        "camunda.cluster.raft.prefer-snapshot-replication-threshold=110",
+        "camunda.cluster.raft.preallocate-segment-files=false",
         // legacy
         "zeebe.broker.cluster.heartbeatInterval=99s",
         "zeebe.broker.cluster.electionTimeout=99s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=99s"
+        "zeebe.broker.cluster.raft.flush.delay=99s",
+        "zeebe.broker.experimental.maxAppendsPerFollower=8",
+        "zeebe.broker.experimental.maxAppendBatchSize=96",
+        "zeebe.broker.experimental.raft.requestTimeout=10s",
+        "zeebe.broker.experimental.raft.snapshotRequestTimeout=10s",
+        "zeebe.broker.experimental.raft.snapshotChunkSize=3GB",
+        "zeebe.broker.experimental.raft.configurationChangeTimeout=25s",
+        "zeebe.broker.experimental.raft.maxQuorumResponseTimeout=20s",
+        "zeebe.broker.experimental.raft.minStepDownFailureCount=10",
+        "zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold=120",
+        "zeebe.broker.experimental.raft.preallocateSegmentFiles=true"
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -159,6 +242,26 @@ public class ClusterRaftTest {
     void shouldSetFlushDelayFromNew() {
       assertThat(brokerCfg.getCluster().getRaft().getFlush().delayTime())
           .isEqualTo(Duration.ofSeconds(15));
+    }
+
+    @Test
+    void shouldSetExperimentalFromNew() {
+      assertThat(brokerCfg.getExperimental())
+          .returns(7, ExperimentalCfg::getMaxAppendsPerFollower)
+          .returns(DataSize.ofBytes(64), ExperimentalCfg::getMaxAppendBatchSize);
+    }
+
+    @Test
+    void shouldSetExperimentalRaft() {
+      assertThat(brokerCfg.getExperimental().getRaft())
+          .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getRequestTimeout)
+          .returns(Duration.ofSeconds(5), ExperimentalRaftCfg::getSnapshotRequestTimeout)
+          .returns(DataSize.ofGigabytes(2), ExperimentalRaftCfg::getSnapshotChunkSize)
+          .returns(Duration.ofSeconds(20), ExperimentalRaftCfg::getConfigurationChangeTimeout)
+          .returns(Duration.ofSeconds(10), ExperimentalRaftCfg::getMaxQuorumResponseTimeout)
+          .returns(5, ExperimentalRaftCfg::getMinStepDownFailureCount)
+          .returns(110, ExperimentalRaftCfg::getPreferSnapshotReplicationThreshold)
+          .returns(false, ExperimentalRaftCfg::isPreallocateSegmentFiles);
     }
   }
 }
