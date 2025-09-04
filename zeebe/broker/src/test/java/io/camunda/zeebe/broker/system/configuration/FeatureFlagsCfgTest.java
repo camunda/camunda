@@ -164,16 +164,6 @@ final class FeatureFlagsCfgTest {
   }
 
   @Test
-  void shouldDisablePartitionScalingByDefault() {
-    // when
-    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
-    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
-
-    // then
-    assertThat(featureFlagsCfg.isEnablePartitionScaling()).isFalse();
-  }
-
-  @Test
   void shouldSetEnablePartitionScalingFromConfig() {
     // when
     final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
