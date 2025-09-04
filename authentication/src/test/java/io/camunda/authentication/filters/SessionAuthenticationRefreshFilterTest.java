@@ -146,8 +146,7 @@ public class SessionAuthenticationRefreshFilterTest {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
 
-      final var result =
-          getSendMultipleRequest(session, authenticationProvider, mockMvcTester);
+      final var result = getSendMultipleRequest(session, authenticationProvider, mockMvcTester);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
       verify(authenticationProvider, times(1)).refresh();
