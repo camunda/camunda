@@ -4370,6 +4370,36 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /correlated-messages/search:
+    post:
+      tags:
+        - Message
+      operationId: searchCorrelatedMessages
+      summary: Search correlated messages
+      description: |
+        Search for correlated messages based on given criteria.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CorrelatedMessagesSearchQuery"
+      responses:
+        "200":
+          description: The correlated messages search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CorrelatedMessagesSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /documents:
     post:
       tags:
@@ -7278,6 +7308,146 @@ components:
             $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
         $like:
           $ref: "#/components/schemas/LikeFilterProperty"
+    CorrelatedMessagesSearchQueryResult:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The matching correlated messages.
+          type: array
+          items:
+            $ref: "#/components/schemas/CorrelatedMessageResult"
+    CorrelatedMessageResult:
+      type: object
+      properties:
+        correlationKey:
+          description: The correlation key of the message.
+          type: string
+        correlationTime:
+          description: The time when the message was correlated.
+          type: string
+          format: date-time
+        elementId:
+          description: The element ID that received the message.
+          type: string
+        elementInstanceKey:
+          description: The element instance key that received the message.
+          type: string
+        messageKey:
+          description: The message key.
+          type: string
+        messageName:
+          description: The name of the message.
+          type: string
+        processDefinitionId:
+          description: The process definition ID associated with this correlated message.
+          type: string
+        processDefinitionKey:
+          description: The process definition key associated with this correlated message.
+          type: string
+        processInstanceKey:
+          description: The process instance key associated with this correlated message.
+          type: string
+        subscriptionKey:
+          description: The subscription key that received the message.
+          type: string
+        tenantId:
+          description: The unique external tenant ID.
+          type: string
+      required:
+        - correlationKey
+        - correlationTime
+        - elementId
+        - messageKey
+        - messageName
+        - processDefinitionId
+        - processInstanceKey
+        - subscriptionKey
+        - tenantId
+    CorrelatedMessagesSearchQuery:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/CorrelatedMessagesSearchQuerySortRequest"
+        filter:
+          description: The correlated messages search filters.
+          allOf:
+            - $ref: "#/components/schemas/CorrelatedMessagesFilter"
+    CorrelatedMessagesSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          type: string
+          enum:
+            - correlationKey
+            - correlationTime
+            - elementId
+            - elementInstanceKey
+            - messageKey
+            - messageName
+            - processDefinitionId
+            - processDefinitionKey
+            - processInstanceKey
+            - subscriptionKey
+            - tenantId
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+    CorrelatedMessagesFilter:
+      description: Correlated messages search filter.
+      type: object
+      properties:
+        correlationKey:
+          description: The correlation key of the message.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        correlationTime:
+          description: The time when the message was correlated.
+          allOf:
+            - $ref: "#/components/schemas/DateTimeFilterProperty"
+        elementId:
+          description: The element ID that received the message.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        elementInstanceKey:
+          description: The element instance key that received the message.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        messageKey:
+          description: The message key.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        messageName:
+          description: The name of the message.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionId:
+          description: The process definition ID associated with this correlated message.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
+        processDefinitionKey:
+          description: The process definition key associated with this correlated message.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        processInstanceKey:
+          description: The process instance key associated with this correlated message.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        subscriptionKey:
+          description: The subscription key that received the message.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
+        tenantId:
+          description: The unique external tenant ID.
+          allOf:
+            - $ref: "#/components/schemas/StringFilterProperty"
     IncidentResult:
       type: object
       properties:
