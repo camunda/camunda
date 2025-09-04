@@ -61,12 +61,37 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
     return this;
   }
 
+  public ConnectorsContainer withMultitenancy() {
+    withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_METHOD, "basic")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_USERNAME, "demo")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_PASSWORD, "demo")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_TENANTID, "<default>")
+        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS, "<default>")
+        .waitingFor(newBasicAuthWaitStrategy());
+
+    return this;
+  }
+
+  public static HttpWaitStrategy newBasicAuthConnectorsReadyCheck() {
+    return newDefaultConnectorsReadyCheck()
+        .withBasicCredentials(
+            MultitenancyConfiguration.CAMUNDA_CLIENT_AUTH_USERNAME,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_AUTH_PASSWORD);
+  }
+
   public static HttpWaitStrategy newDefaultConnectorsReadyCheck() {
     return new HttpWaitStrategy()
         .forPath(CONNECTORS_READY_ENDPOINT)
         .forPort(ContainerRuntimePorts.CONNECTORS_REST_API)
         .forStatusCodeMatching(status -> status >= 200 && status < 300)
         .withReadTimeout(Duration.ofSeconds(10));
+  }
+
+  private WaitAllStrategy newBasicAuthWaitStrategy() {
+    return new WaitAllStrategy(Mode.WITH_OUTER_TIMEOUT)
+        .withStrategy(new HostPortWaitStrategy())
+        .withStrategy(newBasicAuthConnectorsReadyCheck())
+        .withStartupTimeout(DEFAULT_STARTUP_TIMEOUT);
   }
 
   private WaitAllStrategy newDefaultWaitStrategy() {
@@ -82,5 +107,19 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
 
   public URI getRestApiAddress() {
     return URI.create("http://" + getHost() + ":" + getRestApiPort());
+  }
+
+  /**
+   * Contains all configuration values required for running a self-managed, multitenancy-enabled
+   * Camunda connectors runtime.
+   */
+  public static class MultitenancyConfiguration {
+    private static final String CAMUNDA_CLIENT_AUTH_METHOD = "basic";
+    private static final String CAMUNDA_CLIENT_AUTH_USERNAME =
+        CamundaContainer.MultitenancyConfiguration.MULTITENANCY_USER_USERNAME;
+    private static final String CAMUNDA_CLIENT_AUTH_PASSWORD =
+        CamundaContainer.MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD;
+    private static final String CAMUNDA_CLIENT_TENANTID = "<default>";
+    private static final String CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS = "<default>";
   }
 }

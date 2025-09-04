@@ -57,7 +57,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
         .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
         .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars())
-        .withCamundaLogger(runtimeConfiguration.getCamundaLoggerName());
+        .withCamundaLogger(runtimeConfiguration.getCamundaLoggerName())
+        .withMultitenancyEnabled(runtimeConfiguration.isMultitenancyEnabled());
 
     runtimeConfiguration.getCamundaExposedPorts().forEach(runtimeBuilder::withCamundaExposedPort);
 
