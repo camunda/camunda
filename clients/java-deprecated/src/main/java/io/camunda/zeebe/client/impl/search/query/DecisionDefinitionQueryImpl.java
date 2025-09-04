@@ -22,7 +22,6 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchReq
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
-import io.camunda.zeebe.client.api.search.filter.io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
@@ -35,7 +34,6 @@ import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQuery;
 import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -65,14 +63,17 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter filter = provideSearchRequestProperty(value);
+  public DecisionDefinitionQuery filter(
+      final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter value) {
+    final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final Consumer<io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter> fn) {
+  public DecisionDefinitionQuery filter(
+      final Consumer<io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter> fn) {
     return filter(decisionDefinitionFilter(fn));
   }
 

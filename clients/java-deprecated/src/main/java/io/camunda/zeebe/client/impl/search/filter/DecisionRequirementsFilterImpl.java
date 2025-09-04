@@ -25,12 +25,14 @@ import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
  */
 @Deprecated
 public class DecisionRequirementsFilterImpl
-    extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter>
     implements DecisionRequirementsFilter {
 
   private final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter;
 
-  public DecisionRequirementsFilterImpl(final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter) {
+  public DecisionRequirementsFilterImpl(
+      final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter) {
     this.filter = new io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter();
   }
 
@@ -69,7 +71,8 @@ public class DecisionRequirementsFilterImpl
   }
 
   @Override
-  protected io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter
+      getSearchRequestProperty() {
     return filter;
   }
 }

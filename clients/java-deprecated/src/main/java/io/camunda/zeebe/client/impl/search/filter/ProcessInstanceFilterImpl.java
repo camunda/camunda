@@ -25,7 +25,8 @@ import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
  */
 @Deprecated
 public class ProcessInstanceFilterImpl
-    extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter>
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter>
     implements ProcessInstanceFilter {
 
   private final io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter filter;
@@ -113,7 +114,8 @@ public class ProcessInstanceFilterImpl
   }
 
   @Override
-  public ProcessInstanceFilter variable(final io.camunda.zeebe.client.protocol.rest.VariableFilter variable) {
+  public ProcessInstanceFilter variable(
+      final io.camunda.zeebe.client.protocol.rest.VariableFilter variable) {
     filter.setVariable(variable);
     return this;
   }

@@ -33,10 +33,10 @@ import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.IncidentFilter;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQuery;
 import io.camunda.zeebe.client.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.IncidentFilter;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +49,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
  *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
-public class IncidentQueryImpl
-    extends TypedSearchRequestPropertyProvider<IncidentSearchQuery>
+public class IncidentQueryImpl extends TypedSearchRequestPropertyProvider<IncidentSearchQuery>
     implements IncidentQuery {
 
   private final IncidentSearchQuery request;
@@ -86,7 +85,8 @@ public class IncidentQueryImpl
 
   @Override
   public IncidentQuery filter(final IncidentFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.IncidentFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.IncidentFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }

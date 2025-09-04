@@ -85,7 +85,8 @@ public class DecisionRequirementsQueryImpl
 
   @Override
   public DecisionRequirementsQuery filter(final DecisionRequirementsFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.DecisionRequirementsFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }

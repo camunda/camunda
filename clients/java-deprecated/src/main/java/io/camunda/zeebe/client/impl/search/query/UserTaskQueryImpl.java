@@ -34,9 +34,9 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
-import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQuery;
 import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResult;
+import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -48,8 +48,7 @@ import org.apache.hc.client5.http.config.RequestConfig;
  *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
-public class UserTaskQueryImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
+public class UserTaskQueryImpl extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
     implements UserTaskQuery {
 
   private final UserTaskSearchQuery request;
@@ -85,7 +84,8 @@ public class UserTaskQueryImpl
 
   @Override
   public UserTaskQuery filter(final UserTaskFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }

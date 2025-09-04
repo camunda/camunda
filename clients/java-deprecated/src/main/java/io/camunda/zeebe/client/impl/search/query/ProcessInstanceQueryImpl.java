@@ -32,11 +32,11 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQuery;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -86,7 +86,8 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }

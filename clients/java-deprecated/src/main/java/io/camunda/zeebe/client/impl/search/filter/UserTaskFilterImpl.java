@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client.impl.search.filter;
 
-import io.camunda.zeebe.client.api.search.filter.io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 
 /**
@@ -24,17 +23,28 @@ import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
  *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
-public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter>
+public class UserTaskFilterImpl
+    extends TypedSearchRequestPropertyProvider<
+        io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter>
     implements io.camunda.zeebe.client.protocol.rest.UserTaskFilter {
 
-  private final io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter;
+  private final io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest
+          .UserTaskFilter
+      filter;
 
-  public UserTaskFilterImpl(final io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter) {
-    this.filter = new io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter();
+  public UserTaskFilterImpl(
+      final io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest
+              .UserTaskFilter
+          filter) {
+    this.filter =
+        new io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest
+            .UserTaskFilter();
   }
 
   public UserTaskFilterImpl() {
-    filter = new io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter();
+    filter =
+        new io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest
+            .UserTaskFilter();
   }
 
   @Override
@@ -62,25 +72,29 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<io.ca
   }
 
   @Override
-  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter candidateGroup(final String candidateGroup) {
+  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter candidateGroup(
+      final String candidateGroup) {
     filter.setCandidateGroup(candidateGroup);
     return this;
   }
 
   @Override
-  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter candidateUser(final String candidateUser) {
+  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter candidateUser(
+      final String candidateUser) {
     filter.setCandidateUser(candidateUser);
     return this;
   }
 
   @Override
-  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter processDefinitionKey(final Long processDefinitionKey) {
+  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter processDefinitionKey(
+      final Long processDefinitionKey) {
     filter.setProcessDefinitionKey(processDefinitionKey);
     return this;
   }
 
   @Override
-  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter processInstanceKey(final Long processInstanceKey) {
+  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter processInstanceKey(
+      final Long processInstanceKey) {
     filter.setProcessInstanceKey(processInstanceKey);
     return this;
   }
@@ -92,13 +106,16 @@ public class UserTaskFilterImpl extends TypedSearchRequestPropertyProvider<io.ca
   }
 
   @Override
-  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter bpmnProcessId(final String bpmnProcessId) {
+  public io.camunda.zeebe.client.protocol.rest.UserTaskFilter bpmnProcessId(
+      final String bpmnProcessId) {
     filter.processDefinitionId(bpmnProcessId);
     return this;
   }
 
   @Override
-  protected io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter getSearchRequestProperty() {
+  protected io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest
+          .UserTaskFilter
+      getSearchRequestProperty() {
     return filter;
   }
 }

@@ -84,7 +84,8 @@ public class FlowNodeInstanceQueryImpl
 
   @Override
   public FlownodeInstanceQuery filter(final FlownodeInstanceFilter value) {
-    final io.camunda.zeebe.client.protocol.rest.ElementInstanceFilter filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.ElementInstanceFilter filter =
+        provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
