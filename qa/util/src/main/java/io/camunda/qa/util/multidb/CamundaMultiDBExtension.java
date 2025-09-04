@@ -322,7 +322,7 @@ public class CamundaMultiDBExtension
           .application()
           .withSecurityConfig(
               cfg -> {
-                final var oidcConfig = cfg.getAuthentication().getOidc();
+                final var oidcConfig = cfg.getAuthentication().getOidc().get(0);
                 oidcConfig.setClientId("example");
                 oidcConfig.setRedirectUri("example.com");
                 oidcConfig.setIssuerUri(

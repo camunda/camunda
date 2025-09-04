@@ -34,18 +34,20 @@ services:
     depends_on:
       - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.3.3
+    command: start-dev
+    image: quay.io/keycloak/keycloak:26.3.2
     volumes:
-      - keycloak-theme:/opt/bitnami/keycloak/themes/identity
+      - ./themes/custom-login/login/templates:/opt/keycloak/themes/custom-login
+      - /Users/roman.smirnov/Development/projects/prefix-protocol-mapper/target/prefix-protocol-mapper-1.0-SNAPSHOT.jar:/opt/keycloak/providers/prefix-protocol-mapper-1.0-SNAPSHOT.jar.jar:ro
     ports:
       - "18080:8080"
     environment:
-      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
-      KEYCLOAK_DATABASE_HOST: postgres
-      KEYCLOAK_DATABASE_NAME: identity
-      KEYCLOAK_DATABASE_USER: identity
-      KEYCLOAK_DATABASE_PASSWORD: "t2L@!AqSMg8%I%NmHM"
-      KEYCLOAK_ADMIN_USER: admin
+      KC_DB: postgres
+      KC_DB_URL_DATABASE: identity
+      KC_DB_URL_HOST: postgres
+      KC_DB_USERNAME: identity
+      KC_DB_PASSWORD: "t2L@!AqSMg8%I%NmHM"
+      KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]

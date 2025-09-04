@@ -17,10 +17,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoders;
 import org.springframework.security.oauth2.jwt.JwtException;
 
 public class OidcUserAuthenticationConverter
@@ -79,7 +81,7 @@ public class OidcUserAuthenticationConverter
     return Optional.ofNullable(authorizedClient)
         .map(OAuth2AuthorizedClient::getAccessToken)
         .map(OAuth2AccessToken::getTokenValue)
-        .map(this::decodeAccessToken)
+        .map(t -> decodeAccessToken(authorizedClient.getClientRegistration(), t))
         .map(Jwt::getClaims)
         .orElse(null);
   }
@@ -91,8 +93,13 @@ public class OidcUserAuthenticationConverter
         clientRegistrationId, authenticationToken, request);
   }
 
-  protected Jwt decodeAccessToken(final String accessTokenValue) {
+  protected Jwt decodeAccessToken(
+      final ClientRegistration clientRegistration, final String accessTokenValue) {
     try {
+      // TODO: avoid creating jwt decoders on the fly, instead, cache those + ensure the correct
+      // settings.
+      final JwtDecoder jwtDecoder =
+          JwtDecoders.fromIssuerLocation(clientRegistration.getProviderDetails().getIssuerUri());
       return jwtDecoder.decode(accessTokenValue);
     } catch (final JwtException e) {
       LOGGER.warn("Failed to decode Access Token: '{}', returning null", e.getMessage());

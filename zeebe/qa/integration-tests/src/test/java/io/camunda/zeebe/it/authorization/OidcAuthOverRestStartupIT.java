@@ -41,7 +41,7 @@ public class OidcAuthOverRestStartupIT {
           .withSecurityConfig(
               c -> {
                 c.getAuthorizations().setEnabled(true);
-                final var oidcConfig = c.getAuthentication().getOidc();
+                final var oidcConfig = c.getAuthentication().getOidc().get(0);
                 final String issuerUri = "http://localhost:1000" + "/realms/" + KEYCLOAK_REALM;
                 oidcConfig.setIssuerUri(issuerUri);
                 // The following two properties are only needed for the webapp login flow which we

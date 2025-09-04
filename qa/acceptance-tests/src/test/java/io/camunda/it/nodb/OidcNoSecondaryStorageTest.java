@@ -74,7 +74,7 @@ public class OidcNoSecondaryStorageTest {
               c -> {
                 c.getAuthorizations().setEnabled(true);
 
-                final var oidcConfig = c.getAuthentication().getOidc();
+                final var oidcConfig = c.getAuthentication().getOidc().get(0);
                 oidcConfig.setIssuerUri(KEYCLOAK.getAuthServerUrl() + "/realms/" + KEYCLOAK_REALM);
                 // Required for OIDC configuration even if not used in this test
                 oidcConfig.setClientId("example");
