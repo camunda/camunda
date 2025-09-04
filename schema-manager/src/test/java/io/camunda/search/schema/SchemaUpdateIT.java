@@ -198,7 +198,7 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config,
       final SearchClientAdapter searchClientAdapter,
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
-    final int archivePeriodInDays = 30;
+    final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
     for (final var indexTemplate : indexTemplateDescriptors) {
       IntStream.range(0, archivePeriodInDays)
