@@ -80,7 +80,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     final String internalUrl =
         databaseUrl.replaceAll("elasticsearch|opensearch|localhost", "internal.host");
     final Map<String, String> env =
-        databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)
+        isElasticsearch() || databaseType.equals(DatabaseType.LOCAL)
             ? elasticsearchConfiguration87(internalUrl)
             : opensearchConfiguration87(internalUrl);
     if (envOverrides != null) {
@@ -117,6 +117,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       throw new RuntimeException(e);
     }
 
+    searchClients =
+        isElasticsearch()
+            ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
+                getConnectConfiguration(databaseType))
+            : SearchClientsUtil.createLowLevelOpensearchSearchClient(
+                getConnectConfiguration(databaseType));
+
     return this;
   }
 
@@ -138,6 +145,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withBasicAuth()
             .withAuthenticatedAccess()
             .withAdditionalProfile(Profile.PROCESS_MIGRATION)
+            .withAdditionalProfile(Profile.TASK_MIGRATION)
             .withBrokerConfig(
                 cfg -> {
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
@@ -146,7 +154,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
     final var multiDbConfigurator = new MultiDbConfigurator(camunda);
-    if (databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL)) {
+    if (isElasticsearch() || databaseType.equals(DatabaseType.LOCAL)) {
       multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix);
     } else {
@@ -155,6 +163,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     }
     final Map<String, String> env = new HashMap<>();
     env.put("camunda.migration.process.importerFinishedTimeout", "PT2S");
+    env.put("camunda.migration.tasks.importerFinishedTimeout", "PT2S");
     // Reduce importer intervals to speed up tests
     env.put("camunda.operate.importer.importPositionUpdateInterval", "200");
     env.put("camunda.operate.importer.readerBackoff", "200");
@@ -172,7 +181,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     tasklistClient = new TestRestTasklistClient(uri);
     operateClient = new TestRestOperateClient(uri, "demo", "demo");
     searchClients =
-        databaseType.equals(DatabaseType.ES)
+        isElasticsearch()
             ? SearchClientsUtil.createLowLevelElasticsearchSearchClient(
                 getConnectConfiguration(databaseType))
             : SearchClientsUtil.createLowLevelOpensearchSearchClient(
@@ -296,5 +305,13 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
       connectConfiguration.setPassword(OS_PASSWORD);
     }
     return connectConfiguration;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  public boolean isElasticsearch() {
+    return databaseType.equals(DatabaseType.ES);
   }
 }

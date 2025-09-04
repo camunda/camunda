@@ -27,7 +27,7 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 import org.springframework.stereotype.Component;
 
 @Component
-@Profile({"process-migration", "usage-metric-migration"})
+@Profile({"process-migration", "usage-metric-migration", "task-migration"})
 @ComponentScan(basePackages = "io.camunda.application.commons.migration")
 @EnableConfigurationProperties(MigrationProperties.class)
 public class AsyncMigrationsRunner implements ApplicationRunner {
