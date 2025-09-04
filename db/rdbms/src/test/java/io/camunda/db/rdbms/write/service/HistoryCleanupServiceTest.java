@@ -40,6 +40,7 @@ class HistoryCleanupServiceTest {
   private SequenceFlowWriter sequenceFlowWriter;
   private BatchOperationWriter batchOperationWriter;
   private MessageSubscriptionWriter messageSubscriptionWriter;
+  private CorrelatedMessageWriter correlatedMessageWriter;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -56,6 +57,7 @@ class HistoryCleanupServiceTest {
     sequenceFlowWriter = mock(SequenceFlowWriter.class);
     batchOperationWriter = mock(BatchOperationWriter.class);
     messageSubscriptionWriter = mock(MessageSubscriptionWriter.class);
+    correlatedMessageWriter = mock(CorrelatedMessageWriter.class);
 
     when(processInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(flowNodeInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
@@ -68,6 +70,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(correlatedMessageWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -96,6 +99,7 @@ class HistoryCleanupServiceTest {
             sequenceFlowWriter,
             batchOperationWriter,
             messageSubscriptionWriter,
+            correlatedMessageWriter,
             mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
   }
 
@@ -113,6 +117,7 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
+    when(correlatedMessageWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =
@@ -131,23 +136,24 @@ class HistoryCleanupServiceTest {
     verify(batchOperationWriter).cleanupItemHistory(CLEANUP_DATE, 100);
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(messageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+    verify(correlatedMessageWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
   }
 
   @Test
   void testCalculateNewDurationWhenDeletedNothing() {
     // given
-    final Map<String, Integer> numDeletedRecords =
-        Map.of(
-            "processInstance", 0,
-            "flowNodeInstance", 0,
-            "incident", 0,
-            "userTask", 0,
-            "variable", 0,
-            "decisionInstance", 0,
-            "job", 0,
-            "sequenceFlow", 0,
-            "batchOperation", 0,
-            "messageSubscription", 0);
+    final Map<String, Integer> numDeletedRecords = new java.util.HashMap<>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("flowNodeInstance", 0);
+    numDeletedRecords.put("incident", 0);
+    numDeletedRecords.put("userTask", 0);
+    numDeletedRecords.put("variable", 0);
+    numDeletedRecords.put("decisionInstance", 0);
+    numDeletedRecords.put("job", 0);
+    numDeletedRecords.put("sequenceFlow", 0);
+    numDeletedRecords.put("batchOperation", 0);
+    numDeletedRecords.put("messageSubscription", 0);
+    numDeletedRecords.put("correlatedMessage", 0);
 
     // when
     final Duration nextDuration =
@@ -173,6 +179,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperationItem", 100);
     numDeletedRecords.put("batchOperation", 100);
     numDeletedRecords.put("messageSubscription", 100);
+    numDeletedRecords.put("correlatedMessage", 100);
 
     // when
     final Duration nextDuration =
@@ -186,18 +193,18 @@ class HistoryCleanupServiceTest {
   @Test
   void testCalculateNewDurationWhenNormalCleanup() {
     // given
-    final Map<String, Integer> numDeletedRecords =
-        Map.of(
-            "processInstance", 50,
-            "flowNodeInstance", 50,
-            "incident", 50,
-            "userTask", 50,
-            "variable", 50,
-            "decisionInstance", 50,
-            "job", 50,
-            "sequenceFlow", 50,
-            "batchOperation", 50,
-            "messageSubscription", 50);
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 50);
+    numDeletedRecords.put("flowNodeInstance", 50);
+    numDeletedRecords.put("incident", 50);
+    numDeletedRecords.put("userTask", 50);
+    numDeletedRecords.put("variable", 50);
+    numDeletedRecords.put("decisionInstance", 50);
+    numDeletedRecords.put("job", 50);
+    numDeletedRecords.put("sequenceFlow", 50);
+    numDeletedRecords.put("batchOperation", 50);
+    numDeletedRecords.put("messageSubscription", 50);
+    numDeletedRecords.put("correlatedMessage", 50);
 
     // when
     final Duration nextDuration =
