@@ -73,6 +73,7 @@ import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1;
+import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
@@ -209,6 +210,7 @@ import io.camunda.client.impl.command.ResetClockCommandImpl;
 import io.camunda.client.impl.command.ResolveIncidentCommandImpl;
 import io.camunda.client.impl.command.ResumeBatchOperationCommandImpl;
 import io.camunda.client.impl.command.SetVariablesCommandImpl;
+import io.camunda.client.impl.command.StatusRequestImpl;
 import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
@@ -503,6 +505,11 @@ public final class CamundaClientImpl implements CamundaClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         config.preferRestOverGrpc());
+  }
+
+  @Override
+  public StatusRequestStep1 newStatusRequest() {
+    return new StatusRequestImpl(httpClient, config.getDefaultRequestTimeout());
   }
 
   @Override
