@@ -16,6 +16,7 @@ import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.KeyStore;
+import io.camunda.configuration.Membership;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 import io.camunda.zeebe.broker.system.configuration.ExportingCfg;
+import io.camunda.zeebe.broker.system.configuration.MembershipCfg;
 import io.camunda.zeebe.broker.system.configuration.RaftCfg.FlushConfig;
 import io.camunda.zeebe.broker.system.configuration.ThreadsCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.AzureBackupStoreConfig;
@@ -181,6 +183,7 @@ public class BrokerBasedPropertiesOverride {
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
 
+    populateFromMembership(override);
     populateFromRaftProperties(override);
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
@@ -199,6 +202,26 @@ public class BrokerBasedPropertiesOverride {
     longPollingCfg.setTimeout(longPolling.getTimeout());
     longPollingCfg.setProbeTimeout(longPolling.getProbeTimeout());
     longPollingCfg.setMinEmptyResponses(longPolling.getMinEmptyResponses());
+  }
+
+  private void populateFromMembership(final BrokerBasedProperties override) {
+    final Membership membership =
+        unifiedConfiguration
+            .getCamunda()
+            .getCluster()
+            .getMembership()
+            .withBrokerMembershipProperties();
+    final MembershipCfg membershipCfg = override.getCluster().getMembership();
+    membershipCfg.setBroadcastUpdates(membership.isBroadcastUpdates());
+    membershipCfg.setBroadcastDisputes(membership.isBroadcastDisputes());
+    membershipCfg.setNotifySuspect(membership.isNotifySuspect());
+    membershipCfg.setGossipInterval(membership.getGossipInterval());
+    membershipCfg.setGossipFanout(membership.getGossipFanout());
+    membershipCfg.setProbeInterval(membership.getProbeInterval());
+    membershipCfg.setProbeTimeout(membership.getProbeTimeout());
+    membershipCfg.setSuspectProbes(membership.getSuspectProbes());
+    membershipCfg.setFailureTimeout(membership.getFailureTimeout());
+    membershipCfg.setSyncInterval(membership.getSyncInterval());
   }
 
   private void populateFromRaftProperties(final BrokerBasedProperties override) {
