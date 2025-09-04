@@ -132,21 +132,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>identity-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <groupId>org.springframework.boot</groupId>
-          <artifactId>spring-boot-starter-logging</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.elasticsearch.client</groupId>
-          <artifactId>transport</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>identity-spring-boot-autoconfigure</artifactId>
       <scope>test</scope>
     </dependency>
@@ -415,7 +400,6 @@
           <usedDependencies>
             <dependency>io.camunda:tasklist-importer</dependency>
             <dependency>io.camunda:tasklist-webjar</dependency>
-            <dependency>io.camunda:identity-spring-boot-starter</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-log4j2</dependency>
