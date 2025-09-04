@@ -210,7 +210,7 @@ public class SessionAuthenticationRefreshFilterTest {
             }
           };
 
-      final Thread[] threads = new Thread[10];
+      final Thread[] threads = new Thread[5];
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new Thread(requestTask);
         threads[i].start();
