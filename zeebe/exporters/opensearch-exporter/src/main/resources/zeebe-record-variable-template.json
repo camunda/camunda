@@ -19,6 +19,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "variableKey": {
+              "type": "long"
+            },
             "name": {
               "type": "keyword"
             },

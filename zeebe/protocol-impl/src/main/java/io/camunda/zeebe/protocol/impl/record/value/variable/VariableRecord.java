@@ -20,10 +20,12 @@ import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class VariableRecord extends UnifiedRecordValue implements VariableRecordValue {
 
   // Static StringValue keys for property names
+  private static final StringValue VARIABLE_KEY_KEY = new StringValue("variableKey");
   private static final StringValue NAME_KEY = new StringValue("name");
   private static final StringValue VALUE_KEY = new StringValue("value");
   private static final StringValue SCOPE_KEY_KEY = new StringValue("scopeKey");
@@ -33,25 +35,39 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private static final StringValue BPMN_PROCESS_ID_KEY = new StringValue("bpmnProcessId");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
-  private final StringProperty nameProp = new StringProperty(NAME_KEY);
-  private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
-  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY);
-  private final LongProperty processInstanceKeyProp = new LongProperty(PROCESS_INSTANCE_KEY_KEY);
+  private final LongProperty variableKeyProp = new LongProperty(VARIABLE_KEY_KEY, 0L);
+  private final StringProperty nameProp = new StringProperty(NAME_KEY, "");
+  private final BinaryProperty valueProp =
+      new BinaryProperty(VALUE_KEY, new UnsafeBuffer(new byte[] {0}));
+  private final LongProperty scopeKeyProp = new LongProperty(SCOPE_KEY_KEY, -1);
+  private final LongProperty processInstanceKeyProp =
+      new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
   private final LongProperty processDefinitionKeyProp =
-      new LongProperty(PROCESS_DEFINITION_KEY_KEY);
+      new LongProperty(PROCESS_DEFINITION_KEY_KEY, -1);
   private final StringProperty bpmnProcessIdProp = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final StringProperty tenantIdProp =
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
 
   public VariableRecord() {
-    super(7);
-    declareProperty(nameProp)
+    super(8);
+    declareProperty(variableKeyProp)
+        .declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
         .declareProperty(processInstanceKeyProp)
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(tenantIdProp);
+  }
+
+  @Override
+  public Long getVariableKey() {
+    return variableKeyProp.getValue();
+  }
+
+  public VariableRecord setVariableKey(final Long variableKey) {
+    variableKeyProp.setValue(variableKey);
+    return this;
   }
 
   @Override
@@ -110,6 +126,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   public VariableRecord setName(final DirectBuffer name) {
+    nameProp.setValue(name);
+    return this;
+  }
+
+  public VariableRecord setName(final String name) {
     nameProp.setValue(name);
     return this;
   }

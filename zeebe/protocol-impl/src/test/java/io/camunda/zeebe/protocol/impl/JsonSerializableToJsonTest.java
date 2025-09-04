@@ -1474,11 +1474,13 @@ final class JsonSerializableToJsonTest {
               final String name = "x";
               final String value = "1";
               final long scopeKey = 3;
+              final long variableKey = 0L;
               final long processInstanceKey = 2;
               final long processDefinitionKey = 4;
               final String bpmnProcessId = "process";
 
               return new VariableRecord()
+                  .setVariableKey(variableKey)
                   .setName(wrapString(name))
                   .setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)))
                   .setScopeKey(scopeKey)
@@ -1488,6 +1490,7 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
+          "variableKey": 0,
           "scopeKey": 3,
           "processInstanceKey": 2,
           "processDefinitionKey": 4,
@@ -1504,6 +1507,7 @@ final class JsonSerializableToJsonTest {
         "VariableRecord",
         (Supplier<UnifiedRecordValue>)
             () -> {
+              final long variableKey = 0L;
               final String name = "x";
               final String value = "1";
               final long scopeKey = 3;
@@ -1522,6 +1526,7 @@ final class JsonSerializableToJsonTest {
             },
         """
         {
+        "variableKey" : 0,
           "scopeKey": 3,
           "processInstanceKey": 2,
           "processDefinitionKey": 4,

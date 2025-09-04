@@ -30,6 +30,47 @@ public interface MutableVariableState extends VariableState {
       long key, long scopeKey, long processDefinitionKey, DirectBuffer name, DirectBuffer value);
 
   /**
+   * Creates a lightweight "pointer" entry for a variable. This associates the given {@code name}
+   * with the {@code scopeKey} without storing a concrete value. Pointers are typically used as
+   * placeholders or to track references to variables which will be resolved later.
+   *
+   * <p>This method is expected to be called only from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param recordKey the unique key identifying this variable pointer record
+   * @param scopeKey the local scope of the variable pointer
+   * @param name the name of the variable being pointed to (UTF-8 encoded in {@link DirectBuffer})
+   */
+  void createVariablePointer(final long recordKey, final long scopeKey, final DirectBuffer name);
+
+  /**
+   * Removes the variable with the given {@code name} from the specified {@code scopeKey}.
+   *
+   * <p>This deletes the variable entry itself; if there is an associated variable pointer, use
+   * {@link #removeVariableVariablePointer(long)} to remove that as well.
+   *
+   * <p>This method is expected to be called only from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param scopeKey the local scope key from which the variable should be removed
+   * @param name the name of the variable to remove (UTF-8 encoded in {@link DirectBuffer})
+   */
+  void removeVariable(final long scopeKey, final DirectBuffer name);
+
+  /**
+   * Removes a previously created variable pointer identified by the given {@code key}.
+   *
+   * <p>This does not delete the variable value itself, only the pointer entry. To remove the
+   * variable value, use {@link #removeVariable(long, DirectBuffer)}.
+   *
+   * <p>This method is expected to be called only from an {@link
+   * io.camunda.zeebe.engine.state.EventApplier} or from tests.
+   *
+   * @param key the unique key identifying the variable pointer record to remove
+   */
+  void removeVariableVariablePointer(final long key);
+
+  /**
    * Creates or updates the variable with {@code name} within the given scope with {@code scopeKey},
    * setting its value to the given {@code value}.
    *

@@ -14,6 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeVariableDataDto implements VariableRecordValue {
 
+  private long key;
   private String name;
   private String value;
   private long scopeKey;
@@ -36,6 +37,11 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
 
   public void setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+  }
+
+  @Override
+  public Long getVariableKey() {
+    return 0L;
   }
 
   @Override
