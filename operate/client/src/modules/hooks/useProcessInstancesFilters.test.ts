@@ -10,7 +10,7 @@ import {renderHook} from 'modules/testing-library';
 import {useFilters} from 'modules/hooks/useFilters';
 import {type ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import {useProcessInstanceFilters} from './useProcessInstancesFilters';
-import {type GetProcessDefinitionStatisticsRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type GetProcessDefinitionStatisticsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 vi.mock('modules/hooks/useFilters');
 

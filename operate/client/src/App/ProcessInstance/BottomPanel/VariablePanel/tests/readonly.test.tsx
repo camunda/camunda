@@ -31,7 +31,7 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {
   type GetProcessInstanceStatisticsResponseBody,
   type ProcessInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';

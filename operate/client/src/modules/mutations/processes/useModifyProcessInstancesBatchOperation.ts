@@ -15,7 +15,7 @@ import {modifyProcessInstancesBatchOperation} from 'modules/api/v2/processInstan
 import type {
   CreateModificationBatchOperationRequestBody,
   CreateModificationBatchOperationResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
 const useModifyProcessInstancesBatchOperation = (

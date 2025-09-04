@@ -8,7 +8,7 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {updateElementInstanceVariables} from 'modules/api/v2/elementInstances/updateElementInstanceVariables';
-import type {ElementInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {queryKeys} from 'modules/queries/queryKeys';
 

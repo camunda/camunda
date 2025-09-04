@@ -11,7 +11,7 @@ import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {match, Pattern} from 'ts-pattern';
 import {AssigneeTag} from 'common/components/AssigneeTag';
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';

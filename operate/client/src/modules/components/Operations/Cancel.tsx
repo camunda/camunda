@@ -8,7 +8,7 @@
 
 import {useState} from 'react';
 import {Modal} from '@carbon/react';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {Paths} from 'modules/Routes';
 import {OperationItem} from 'modules/components/OperationItem';
 import {Link} from 'modules/components/Link';

@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.0.1
+
+### 🚀 Enhancements
+
+- Migrate @vzeta/camunda-api-zod-schemas to @camunda/camunda-api-zod-schemas ([#36991](https://github.com/camunda/camunda/pull/36991)), ([#37073](https://github.com/camunda/camunda/pull/37073)), ([#37504](https://github.com/camunda/camunda/pull/37504))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+# Old Changelog
+
 ## v2.0.12
 
 [compare changes](https://github.com/vsgoulart/camunda-api-zod-schemas/compare/v2.0.11...v2.1.0)

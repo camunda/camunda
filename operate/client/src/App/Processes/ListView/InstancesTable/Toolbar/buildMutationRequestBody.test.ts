@@ -11,7 +11,7 @@ import type {RequestFilters} from 'modules/utils/filter';
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationRequestBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Body =
   | CreateIncidentResolutionBatchOperationRequestBody

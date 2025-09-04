@@ -11,7 +11,7 @@ import {test} from '../e2e-fixtures';
 import {expect} from '@playwright/test';
 import {SETUP_WAITING_TIME} from './constants';
 import {config} from '../config';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 let initialData: Awaited<ReturnType<typeof setup>>;
 

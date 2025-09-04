@@ -12,7 +12,7 @@ import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import type {DiagramModel} from 'bpmn-moddle';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import type {ProcessDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
 

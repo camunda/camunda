@@ -8,7 +8,7 @@
 
 import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import isEmpty from 'lodash/isEmpty';

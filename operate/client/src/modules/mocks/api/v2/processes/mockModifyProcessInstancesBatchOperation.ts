@@ -7,7 +7,7 @@
  */
 
 import {mockPostRequest} from '../../mockRequest';
-import {endpoints} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockModifyProcessInstancesBatchOperation = () =>
   mockPostRequest(`${endpoints.createModificationBatchOperation.getUrl()}`);

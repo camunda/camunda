@@ -14,7 +14,7 @@ import {
 import type {
   CreateCancellationBatchOperationRequestBody,
   CreateCancellationBatchOperationResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {cancelProcessInstancesBatchOperation} from 'modules/api/v2/processes/cancelProcessInstancesBatchOperation';
 import {BATCH_OPERATIONS_QUERY_KEY} from 'modules/queries/batch-operations/useBatchOperations';
 
