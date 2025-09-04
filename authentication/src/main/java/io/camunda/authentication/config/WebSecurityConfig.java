@@ -404,6 +404,21 @@ public class WebSecurityConfig {
   @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
 
+    private final SecurityConfiguration securityConfiguration;
+
+    public BasicConfiguration(final SecurityConfiguration securityConfiguration) {
+      this.securityConfiguration = securityConfiguration;
+    }
+
+    @PostConstruct
+    public void verifyBasicConfiguration() {
+      if (securityConfiguration.getAuthentication().getOidc() != null
+          && securityConfiguration.getAuthentication().getOidc().isSet()) {
+        throw new IllegalStateException(
+            "Oidc configuration is not supported with `BASIC` authentication method");
+      }
+    }
+
     @Bean
     public CamundaAuthenticationConverter<Authentication> usernamePasswordAuthenticationConverter(
         final RoleServices roleServices,
