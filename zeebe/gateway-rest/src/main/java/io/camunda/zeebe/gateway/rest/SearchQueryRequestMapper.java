@@ -19,10 +19,10 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.CorrelatedMessagesFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
-import io.camunda.search.filter.CorrelatedMessagesFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
@@ -2096,13 +2096,17 @@ public final class SearchQueryRequestMapper {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessagesSearchQuery().build());
     }
-    
-    if (!(request instanceof io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery)) {
-      return Either.left(RequestValidator.createProblemDetail(
-          List.of("Invalid request type for correlated messages search")).orElse(null));
+
+    if (!(request
+        instanceof io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery)) {
+      return Either.left(
+          RequestValidator.createProblemDetail(
+                  List.of("Invalid request type for correlated messages search"))
+              .orElse(null));
     }
-    
-    final var searchQuery = (io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery) request;
+
+    final var searchQuery =
+        (io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery) request;
     final var page = toSearchQueryPage(searchQuery.getPage());
     final var sort =
         toSearchQuerySort(

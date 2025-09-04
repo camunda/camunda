@@ -568,17 +568,21 @@ public class MessageControllerTest extends RestControllerTest {
   @Test
   void shouldSearchCorrelatedMessages() {
     // given
-    final var correlatedMessage = new io.camunda.search.entities.CorrelatedMessageEntity.Builder()
-        .correlationKey("test-key")
-        .messageName("test-message")
-        .tenantId("default")
-        .build();
-    final var searchResult = new io.camunda.search.query.SearchQueryResult.Builder<io.camunda.search.entities.CorrelatedMessageEntity>()
-        .items(List.of(correlatedMessage))
-        .total(1L)
-        .build();
-    
-    when(messageServices.searchCorrelatedMessages(any(io.camunda.search.query.CorrelatedMessagesQuery.class)))
+    final var correlatedMessage =
+        new io.camunda.search.entities.CorrelatedMessageEntity.Builder()
+            .correlationKey("test-key")
+            .messageName("test-message")
+            .tenantId("default")
+            .build();
+    final var searchResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                io.camunda.search.entities.CorrelatedMessageEntity>()
+            .items(List.of(correlatedMessage))
+            .total(1L)
+            .build();
+
+    when(messageServices.searchCorrelatedMessages(
+            any(io.camunda.search.query.CorrelatedMessagesQuery.class)))
         .thenReturn(searchResult);
 
     // when / then

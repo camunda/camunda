@@ -1144,26 +1144,28 @@ public final class SearchQueryResponseMapper {
 
   public static Object toCorrelatedMessagesSearchQueryResponse(
       final SearchQueryResult<io.camunda.search.entities.CorrelatedMessageEntity> result) {
-    final var searchResult = new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQueryResult();
-    
+    final var searchResult =
+        new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQueryResult();
+
     if (result.items() != null) {
-      final var items = result.items().stream()
-          .map(SearchQueryResponseMapper::toCorrelatedMessageResult)
-          .toList();
+      final var items =
+          result.items().stream()
+              .map(SearchQueryResponseMapper::toCorrelatedMessageResult)
+              .toList();
       searchResult.setItems(items);
     }
-    
+
     if (result.page() != null) {
       searchResult.setPage(SearchQueryResponseMapper.toSearchQueryPageResponse(result.page()));
     }
-    
+
     return searchResult;
   }
 
-  private static io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult toCorrelatedMessageResult(
-      final io.camunda.search.entities.CorrelatedMessageEntity entity) {
+  private static io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult
+      toCorrelatedMessageResult(final io.camunda.search.entities.CorrelatedMessageEntity entity) {
     final var result = new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult();
-    
+
     result.setCorrelationKey(entity.correlationKey());
     result.setCorrelationTime(formatDate(entity.correlationTime()));
     result.setElementId(entity.elementId());
@@ -1175,7 +1177,7 @@ public final class SearchQueryResponseMapper {
     result.setProcessInstanceKey(String.valueOf(entity.processInstanceKey()));
     result.setSubscriptionKey(String.valueOf(entity.subscriptionKey()));
     result.setTenantId(entity.tenantId());
-    
+
     return result;
   }
 

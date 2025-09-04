@@ -88,8 +88,7 @@ public class MessageController {
         .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessages);
   }
 
-  private ResponseEntity<Object> searchCorrelatedMessages(
-      final CorrelatedMessagesQuery query) {
+  private ResponseEntity<Object> searchCorrelatedMessages(final CorrelatedMessagesQuery query) {
     try {
       final var result =
           messageServices
