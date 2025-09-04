@@ -308,7 +308,7 @@ class BatchOperationAuthorizationIT {
             camundaClient
                 .newCreateBatchOperationCommand()
                 .processInstanceCancel()
-                .filter(b -> {})
+                .filter(f -> f.processInstanceKey(serviceTaskV1Key))
                 .send()
                 .join();
 
