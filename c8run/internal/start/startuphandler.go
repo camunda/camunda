@@ -165,7 +165,7 @@ func ensureDefaultConfig(parentDir string) error {
 	}
 	if _, err := os.Stat(appYAML); err != nil {
 		if os.IsNotExist(err) {
-			return fmt.Errorf("missing default config at %s (expected /configuration/application.yaml). Please add it to your repo.", appYAML)
+			return fmt.Errorf("missing default config at %s (expected /configuration/application.yaml). Please add it to your repo", appYAML)
 		}
 		return fmt.Errorf("failed to stat %s: %w", appYAML, err)
 	}
