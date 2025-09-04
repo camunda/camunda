@@ -22,7 +22,7 @@ class FeatureFlagsTest {
     assertThat(sut.yieldingDueDateChecker()).isTrue();
     assertThat(sut.enableActorMetrics()).isFalse();
     assertThat(sut.enableMessageTTLCheckerAsync()).isFalse();
-    assertThat(sut.enablePartitionScaling()).isFalse();
+    assertThat(sut.enablePartitionScaling()).isTrue();
     assertThat(sut.enableMessageBodyOnExpired()).isFalse();
   }
 
