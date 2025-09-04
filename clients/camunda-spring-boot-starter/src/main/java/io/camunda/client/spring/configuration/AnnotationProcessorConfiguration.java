@@ -19,7 +19,12 @@ import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware
 import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.spring.client.event.CamundaClientEventListener;
+import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
@@ -49,7 +54,18 @@ public class AnnotationProcessorConfiguration {
 
   @Bean
   public JobWorkerAnnotationProcessor jobWorkerPostProcessor(
-      final JobWorkerManager jobWorkerManager) {
-    return new JobWorkerAnnotationProcessor(jobWorkerManager);
+      final JobWorkerManager jobWorkerManager,
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final MetricsRecorder metricsRecorder,
+      final ParameterResolverStrategy parameterResolverStrategy,
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+    return new JobWorkerAnnotationProcessor(
+        jobWorkerManager,
+        commandExceptionHandlingStrategy,
+        metricsRecorder,
+        parameterResolverStrategy,
+        resultProcessorStrategy,
+        jobExceptionHandlingStrategy);
   }
 }

@@ -34,7 +34,7 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   private final Map<String, Counter> counters = new ConcurrentHashMap<>();
 
   public MicrometerMetricsRecorder(final MeterRegistry meterRegistry) {
-    LOGGER.info("Enabling Micrometer based metrics for camunda-client (available via Actuator)");
+    LOGGER.info("Enabling Micrometer based metrics for camunda-client");
     this.meterRegistry = meterRegistry;
   }
 
