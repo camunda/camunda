@@ -17,6 +17,7 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +50,11 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
       final long key, final ResourceAccessChecks resourceAccessChecks) {
     return search(
             AuthorizationQuery.of(q -> q.filter(f -> f.authorizationKey(key)).singleResult()),
-            resourceAccessChecks)
+            ResourceAccessChecks.disabled())
         .items()
-        .getFirst();
+        .stream()
+        .findFirst()
+        .orElse(null);
   }
 
   @Override
@@ -63,9 +66,18 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
             AuthorizationSearchColumn.OWNER_ID,
             AuthorizationSearchColumn.OWNER_TYPE,
             AuthorizationSearchColumn.RESOURCE_TYPE);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         AuthorizationDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for authorizations with filter {}", dbQuery);
     final var totalHits = authorizationMapper.count(dbQuery);
@@ -86,5 +98,17 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
         model.resourceMatcher(),
         model.resourceId(),
         new HashSet<>(model.permissionTypes()));
+  }
+
+  /**
+   * Checks if the search result should be empty based on resource and tenant authorization.
+   * Returns {@code true} if authorization is enabled but no authorized resource IDs are present.
+   *
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
+   * @return {@code true} if the search result should be empty, {@code false
+   */
+  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty();
   }
 }

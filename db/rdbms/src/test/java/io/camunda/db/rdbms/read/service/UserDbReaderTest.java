@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.db.rdbms.sql.RoleMapper;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.db.rdbms.sql.UserMapper;
+import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -19,29 +19,29 @@ import io.camunda.security.reader.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class RoleDbReaderTest {
-  private final RoleMapper roleMapper = mock(RoleMapper.class);
-  private final RoleDbReader roleDbReader = new RoleDbReader(roleMapper);
+class UserDbReaderTest {
+  private final UserMapper userMapper = mock(UserMapper.class);
+  private final UserDbReader userDbReader = new UserDbReader(userMapper);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final UserQuery query = UserQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
+            AuthorizationCheck.enabled(Authorization.of(a -> a.user().read())),
             TenantCheck.disabled());
 
-    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    final var items = userDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final UserQuery query = UserQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
-    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    final var items = userDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 }
