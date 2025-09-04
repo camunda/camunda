@@ -20,7 +20,7 @@
   </modules>
 
   <properties>
-    <version.zeebe.docker.current>8.8.0-alpha8-rc3</version.zeebe.docker.current>
+    <version.zeebe.docker.current>8.8.0-alpha8</version.zeebe.docker.current>
     <version.zeebe.docker.repo>camunda/zeebe</version.zeebe.docker.repo>
     <version.identity.docker.current>SNAPSHOT</version.identity.docker.current>
   </properties>
