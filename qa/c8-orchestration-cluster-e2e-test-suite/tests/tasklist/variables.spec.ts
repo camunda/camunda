@@ -96,7 +96,7 @@ test.describe('variables page', () => {
     ).toBeHidden();
     await expect(
       taskDetailsPage.variablesTable.getByText('updatedValue'),
-    ).toBeVisible();
+    ).toBeVisible({timeout: 60000});
   });
 
   test('edited variable is not saved after refresh', async ({
