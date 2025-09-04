@@ -13,8 +13,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
@@ -240,6 +242,32 @@ public final class ExporterDirectorTest {
     inOrder.verify(exporter).open(any());
     inOrder.verify(exporter).open(any());
     inOrder.verify(exporter, timeout(5000)).export(any());
+
+    rule.closeExporterDirector();
+  }
+
+  @Test
+  public void shouldNotResumeExportingUntilExportersFinishOpening() throws Exception {
+    // given
+    final var exporter = startExporterWithFaultyOpenCall(null);
+    writeEvent();
+
+    Awaitility.await("exporter open has been retried")
+        .untilAsserted(() -> verify(exporter, times(3)).open(any()));
+
+    // when - Resume exporting while exporters are still trying to open
+    rule.getDirector().resumeExporting().join();
+
+    // then - no records have been exported
+    assertThat(exporter.getExportedRecords()).isEmpty();
+    verify(exporter, never()).export(any());
+
+    // when - the exporter finally opens successfully
+    doCallRealMethod().when(exporter).open(any());
+
+    // then - the record is exported
+    Awaitility.await("Record has been exported")
+        .until(() -> !exporter.getExportedRecords().isEmpty());
 
     rule.closeExporterDirector();
   }
@@ -859,9 +887,21 @@ public final class ExporterDirectorTest {
   }
 
   private ControlledTestExporter startExporterWithFaultyOpenCall() {
+    return startExporterWithFaultyOpenCall(1);
+  }
+
+  // if numberOfRetries is null, it will keep failing forever
+  private ControlledTestExporter startExporterWithFaultyOpenCall(final Integer numberOfRetries) {
     final ControlledTestExporter exporter = spy(new ControlledTestExporter());
 
-    doThrow(new RuntimeException("open failed")).doCallRealMethod().when(exporter).open(any());
+    var stubbing = doThrow(new RuntimeException("open failed"));
+    if (numberOfRetries != null) {
+      for (int i = 1; i < numberOfRetries; i++) {
+        stubbing = stubbing.doThrow(new RuntimeException("open failed"));
+      }
+      stubbing = stubbing.doCallRealMethod();
+    }
+    stubbing.when(exporter).open(any());
 
     final ExporterDescriptor descriptor =
         spy(
