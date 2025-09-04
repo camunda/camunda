@@ -19,7 +19,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {verifyAccess} from 'utils/accessVerification';
 
-test.describe.serial('authorizations CRUD', () => {
+test.describe.serial('component authorizations CRUD', () => {
   let NEW_USER: {
     username: string;
     name: string;
@@ -33,8 +33,8 @@ test.describe.serial('authorizations CRUD', () => {
   let NEW_COMPONENT_AUTHORIZATION: NonNullable<
     ReturnType<typeof createComponentAuthorization>
   >;
+
   test.beforeAll(() => {
-    // Create test data once for the entire serial test suite
     const testData = createTestData({
       user: true,
       authRole: true,
@@ -110,7 +110,7 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('create component authorization', async ({
+  test('create component authorization for a role', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
@@ -125,14 +125,14 @@ test.describe.serial('authorizations CRUD', () => {
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
   });
 
-  test('delete an authorization', async ({
+  test('delete component authorization for role', async ({
     page,
     identityHeader,
     loginPage,
     identityUsersPage,
     identityAuthorizationsPage,
   }) => {
-    await test.step(`Delete Authorization of new user`, async () => {
+    await test.step(`Delete component authorization for role`, async () => {
       const resourceType = NEW_COMPONENT_AUTHORIZATION.resourceType;
       await identityAuthorizationsPage.selectResourceTypeTab(resourceType);
       await identityAuthorizationsPage.clickDeleteAuthorizationButton(
@@ -173,6 +173,73 @@ test.describe.serial('authorizations CRUD', () => {
       await identityUsersPage.deleteUser(NEW_USER);
       const userItem = identityUsersPage.userCell(NEW_USER.username);
       await waitForItemInList(page, userItem, {shouldBeVisible: false});
+    });
+  });
+});
+
+test.describe('authorization scenarios', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('create component authorization for a user', async ({
+    page,
+    identityUsersPage,
+    identityAuthorizationsPage,
+    identityHeader,
+    loginPage,
+  }) => {
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+
+    await test.step(`Create new test user for direct authorization`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(testUser);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    });
+
+    await test.step(`Create component authorization for user`, async () => {
+      const USER_COMPONENT_AUTH = createComponentAuthorization(
+        {name: testUser.name ?? testUser.username},
+        'User',
+      );
+      await identityAuthorizationsPage.createAuthorization(USER_COMPONENT_AUTH);
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step(`Verify user can access Identity after authorization`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser.username, testUser.password);
+      await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
     });
   });
 });
