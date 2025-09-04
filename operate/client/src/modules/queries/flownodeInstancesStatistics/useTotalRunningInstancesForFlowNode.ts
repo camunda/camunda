@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type GetProcessInstanceStatisticsResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
 import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';

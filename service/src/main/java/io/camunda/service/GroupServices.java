@@ -38,8 +38,9 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.groupSearchClient = groupSearchClient;
   }
 
@@ -68,7 +69,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
   @Override
   public GroupServices withAuthentication(final CamundaAuthentication authentication) {
     return new GroupServices(
-        brokerClient, securityContextProvider, groupSearchClient, authentication);
+        brokerClient, securityContextProvider, groupSearchClient, authentication, executorProvider);
   }
 
   public CompletableFuture<GroupRecord> createGroup(final GroupDTO groupDTO) {

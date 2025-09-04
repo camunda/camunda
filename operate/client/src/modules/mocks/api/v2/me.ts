@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockGetRequest} from '../mockRequest';
 
 const mockMe = ({contextPath}: {contextPath?: string} = {}) =>

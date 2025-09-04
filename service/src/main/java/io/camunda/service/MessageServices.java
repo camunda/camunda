@@ -35,8 +35,9 @@ public final class MessageServices extends SearchQueryService<MessageServices, C
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.correlatedMessagesSearchClient = null;
   }
 
@@ -44,14 +45,15 @@ public final class MessageServices extends SearchQueryService<MessageServices, C
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CorrelatedMessagesSearchClient correlatedMessagesSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.correlatedMessagesSearchClient = correlatedMessagesSearchClient;
   }
 
   @Override
   public MessageServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MessageServices(brokerClient, securityContextProvider, correlatedMessagesSearchClient, authentication);
+    return new MessageServices(brokerClient, securityContextProvider, correlatedMessagesSearchClient, authentication, executorProvider);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(

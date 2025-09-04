@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryProcessInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 

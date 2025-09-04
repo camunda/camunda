@@ -151,8 +151,4 @@ public record CorrelatedMessageDbModel(
           tenantId);
     }
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> origin/37530-export-correlated-msg-rdbms

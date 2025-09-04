@@ -28,8 +28,9 @@ public class MessageSubscriptionServices
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MessageSubscriptionSearchClient searchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.searchClient = searchClient;
   }
 
@@ -48,6 +49,6 @@ public class MessageSubscriptionServices
   public MessageSubscriptionServices withAuthentication(
       final CamundaAuthentication authentication) {
     return new MessageSubscriptionServices(
-        brokerClient, securityContextProvider, searchClient, authentication);
+        brokerClient, securityContextProvider, searchClient, authentication, executorProvider);
   }
 }

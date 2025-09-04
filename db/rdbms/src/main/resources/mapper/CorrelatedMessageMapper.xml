@@ -27,6 +27,7 @@
     <result property="subscriptionKey" column="SUBSCRIPTION_KEY"/>
     <result property="tenantId" column="TENANT_ID"/>
   </resultMap>
+
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
     INSERT INTO ${prefix}CORRELATED_MESSAGE (
       CORRELATION_KEY,

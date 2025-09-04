@@ -10,7 +10,7 @@ import {requestWithThrow} from 'modules/request';
 import {
   endpoints,
   type GetDecisionDefinitionXmlResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const fetchDecisionDefinitionXml = async (decisionDefinitionKey: string) => {
   return requestWithThrow<GetDecisionDefinitionXmlResponseBody>({

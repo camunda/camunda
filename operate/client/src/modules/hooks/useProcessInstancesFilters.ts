@@ -11,7 +11,7 @@ import {useFilters} from 'modules/hooks/useFilters';
 import {
   type GetProcessDefinitionStatisticsRequestBody,
   type ProcessInstanceState,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const formatToISO = (dateString: string | undefined): string | undefined => {
   if (!dateString) {

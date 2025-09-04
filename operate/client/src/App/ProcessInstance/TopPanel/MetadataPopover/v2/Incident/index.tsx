@@ -14,7 +14,7 @@ import {Header} from '../../Header';
 import type {
   Incident as IncidentDto,
   DecisionInstance,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {SummaryDataKey, SummaryDataValue} from '../../styled';
 import {resolveIncidentErrorType} from './resolveIncidentErrorType';
 

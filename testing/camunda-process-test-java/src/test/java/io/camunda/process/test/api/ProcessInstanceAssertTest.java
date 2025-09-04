@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
 import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byParentProcesInstanceKey;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveChildProcessInstance;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveProcessInstance;
@@ -35,6 +36,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.response.MessageSubscriptionImpl;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
+import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
@@ -72,6 +74,46 @@ public class ProcessInstanceAssertTest {
   @BeforeEach
   void configureAssertions() {
     CamundaAssert.initialize(camundaDataSource);
+  }
+
+  @Nested
+  public class CombineSelectors {
+    @Test
+    public void canCombineSelectors() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      // when
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      // then
+      final ProcessInstanceSelector combined =
+          ProcessInstanceSelectors.byProcessId(BPMN_PROCESS_ID)
+              .and(ProcessInstanceSelectors.byKey(processInstanceEvent.getProcessInstanceKey()));
+
+      CamundaAssert.assertThatProcessInstance(combined).isActive();
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    public void combinedSelectorsRequireAllTestsToPass() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      // then
+      final ProcessInstanceSelector badCombination =
+          ProcessInstanceSelectors.byProcessId(BPMN_PROCESS_ID)
+              .and(ProcessInstanceSelectors.byKey(-1000));
+
+      // then
+      Assertions.assertThatThrownBy(() -> assertThatProcessInstance(badCombination).isActive())
+          .hasMessage(
+              "Process instance [process-id: 'process', key: -1000] should be active but was not created.");
+    }
   }
 
   @Nested
