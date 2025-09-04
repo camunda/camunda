@@ -45,6 +45,10 @@ const filtersSchema = z.object({
   dueDateTo: z.coerce.date().optional(),
   followUpDateFrom: z.coerce.date().optional(),
   followUpDateTo: z.coerce.date().optional(),
+  assigned: z
+    .string()
+    .transform((value) => value === 'true')
+    .optional(),
   ...apiFiltersSchema.shape,
 });
 
