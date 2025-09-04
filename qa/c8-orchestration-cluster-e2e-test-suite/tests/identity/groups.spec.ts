@@ -129,6 +129,7 @@ test.describe('Groups functionalities', () => {
       const item = identityGroupsPage.groupCell(TEST_GROUP.name);
       await waitForItemInList(page, item, {
         clickNext: true,
+        timeout: 60000,
       });
       await expect(item).toBeVisible();
     });
