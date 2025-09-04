@@ -26,6 +26,10 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.impl.CamundaObjectMapper;
+import io.camunda.spring.client.annotation.Document;
+import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.spring.client.jobhandling.DocumentContext;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
@@ -36,15 +40,19 @@ public class DefaultParameterResolverStrategyTest {
   @Test
   void shouldResolveLegacyParameter() {
     final ZeebeClient zeebeClient = mock(ZeebeClient.class);
+    final CamundaClient camundaClient = mock(CamundaClient.class);
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(
-            new CamundaObjectMapper(), zeebeClient, mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), zeebeClient);
 
     final List<ParameterInfo> parameters = parameterInfos(this, "legacyMethod");
     assertThat(parameters).hasSize(2);
-    final ParameterResolver jobClientResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver jobClientResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(jobClientResolver).isInstanceOf(CompatJobClientParameterResolver.class);
-    final ParameterResolver activatedJobResolver = strategy.createResolver(parameters.get(1));
+    final ParameterResolver activatedJobResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(1), camundaClient));
     assertThat(activatedJobResolver).isInstanceOf(CompatActivatedJobParameterResolver.class);
     final Object resolvedJobClient = jobClientResolver.resolve(null, null);
     assertThat(resolvedJobClient).isEqualTo(zeebeClient);
@@ -52,23 +60,33 @@ public class DefaultParameterResolverStrategyTest {
 
   @Test
   void shouldResolveCurrentParameter() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
+
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "currentMethod");
     assertThat(parameters).hasSize(2);
-    final ParameterResolver jobClientResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver jobClientResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(jobClientResolver).isInstanceOf(JobClientParameterResolver.class);
-    final ParameterResolver activatedJobResolver = strategy.createResolver(parameters.get(1));
+    final ParameterResolver activatedJobResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(1), camundaClient));
     assertThat(activatedJobResolver).isInstanceOf(ActivatedJobParameterResolver.class);
   }
 
   @Test
   void shouldResolveDocument() {
+    final CamundaClient camundaClient = mock(CamundaClient.class);
+
     final DefaultParameterResolverStrategy strategy =
-        new DefaultParameterResolverStrategy(new CamundaObjectMapper(), mock(CamundaClient.class));
+        new DefaultParameterResolverStrategy(new CamundaObjectMapper());
     final List<ParameterInfo> parameters = parameterInfos(this, "documentMethod");
     assertThat(parameters).hasSize(1);
-    final ParameterResolver parameterResolver = strategy.createResolver(parameters.get(0));
+    final ParameterResolver parameterResolver =
+        strategy.createResolver(
+            new ParameterResolverStrategyContext(parameters.get(0), camundaClient));
     assertThat(parameterResolver).isInstanceOf(DocumentParameterResolver.class);
   }
 

@@ -42,6 +42,11 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
+  @MockitoBean CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  @MockitoBean MetricsRecorder metricsRecorder;
+  @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+  @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+  @MockitoBean JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
   @Autowired MockedBean mockedBean;
   @Autowired CamundaClientEventListener camundaClientEventListener;
   @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;

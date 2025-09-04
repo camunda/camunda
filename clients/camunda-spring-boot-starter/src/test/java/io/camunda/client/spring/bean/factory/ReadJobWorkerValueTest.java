@@ -20,6 +20,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.spring.bean.SpringBeanInfoTest;
@@ -44,8 +46,8 @@ public class ReadJobWorkerValueTest {
 
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
-    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getType().value()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName().value()).isEqualTo("kermit");
     assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100));
     assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(-1);
     assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(-1));
@@ -79,14 +81,15 @@ public class ReadJobWorkerValueTest {
 
     // then
     assertThat(jobWorkerValue.isPresent()).isTrue();
-    assertThat(jobWorkerValue.get().getType()).isEqualTo("bar");
-    assertThat(jobWorkerValue.get().getName()).isEqualTo("kermit");
+    assertThat(jobWorkerValue.get().getType().value()).isEqualTo("bar");
+    assertThat(jobWorkerValue.get().getName().value()).isEqualTo("kermit");
     assertThat(jobWorkerValue.get().getTimeout()).isEqualTo(Duration.ofMillis(100L));
     assertThat(jobWorkerValue.get().getMaxJobsActive()).isEqualTo(3);
     assertThat(jobWorkerValue.get().getRequestTimeout()).isEqualTo(Duration.ofSeconds(500L));
     assertThat(jobWorkerValue.get().getPollInterval()).isEqualTo(Duration.ofSeconds(1L));
     assertThat(jobWorkerValue.get().getAutoComplete()).isEqualTo(true);
-    assertThat(jobWorkerValue.get().getFetchVariables()).isEqualTo(List.of("foo"));
+    assertThat(jobWorkerValue.get().getFetchVariables())
+        .isEqualTo(List.of(new FetchVariable("foo", FieldSource.FROM_ANNOTATION)));
     assertThat(jobWorkerValue.get().getMethodInfo()).isEqualTo(methodInfo);
   }
 

@@ -16,6 +16,10 @@
 package io.camunda.spring.client.jobhandling;
 
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.Name;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.Type;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -78,6 +82,13 @@ public sealed interface JobWorkerChangeSet {
     }
   }
 
+  record CreateChangeSet() implements JobWorkerChangeSet {
+    @Override
+    public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
+      return true;
+    }
+  }
+
   record EnabledChangeSet(boolean enabled) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
@@ -88,7 +99,10 @@ public sealed interface JobWorkerChangeSet {
   record NameChangeSet(String name) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(jobWorkerValue.getName(), name, jobWorkerValue::setName);
+      return updateIfChanged(
+          jobWorkerValue.getName().value(),
+          name,
+          n -> jobWorkerValue.setName(new Name(n, FieldSource.FROM_ACTUATOR)));
     }
   }
 
@@ -96,7 +110,10 @@ public sealed interface JobWorkerChangeSet {
 
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(jobWorkerValue.getType(), type, jobWorkerValue::setType);
+      return updateIfChanged(
+          jobWorkerValue.getType().value(),
+          type,
+          t -> jobWorkerValue.setType(new Type(t, FieldSource.FROM_ACTUATOR)));
     }
   }
 
@@ -150,7 +167,13 @@ public sealed interface JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
       return updateIfChanged(
-          jobWorkerValue.getFetchVariables(), fetchVariables, jobWorkerValue::setFetchVariables);
+          jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList(),
+          fetchVariables,
+          fvs ->
+              jobWorkerValue.setFetchVariables(
+                  fvs.stream()
+                      .map(fv -> new FetchVariable(fv, FieldSource.FROM_ACTUATOR))
+                      .toList()));
     }
   }
 

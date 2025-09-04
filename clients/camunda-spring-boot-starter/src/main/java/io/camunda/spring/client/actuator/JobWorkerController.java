@@ -214,8 +214,8 @@ public class JobWorkerController {
       final String type, final JobWorkerValue jobWorkerValue) {
     return new JobWorkerDto(
         type,
-        jobWorkerValue.getType(),
-        jobWorkerValue.getName(),
+        jobWorkerValue.getType().value(),
+        jobWorkerValue.getName().value(),
         ofNullable(jobWorkerValue.getEnabled()).orElse(true),
         jobWorkerValue.getTenantIds());
   }

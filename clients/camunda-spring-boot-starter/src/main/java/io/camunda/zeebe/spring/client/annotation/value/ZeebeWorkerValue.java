@@ -16,6 +16,10 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.Name;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.Type;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
@@ -53,14 +57,17 @@ public class ZeebeWorkerValue {
       final Duration streamTimeout,
       final int maxRetries) {
     this();
-    jobWorkerValue.setType(type);
-    jobWorkerValue.setName(name);
+    jobWorkerValue.setType(new Type(type, FieldSource.LEGACY));
+    jobWorkerValue.setName(new Name(name, FieldSource.LEGACY));
     jobWorkerValue.setTimeout(timeout);
     jobWorkerValue.setMaxJobsActive(maxJobsActive);
     jobWorkerValue.setRequestTimeout(requestTimeout);
     jobWorkerValue.setPollInterval(pollInterval);
     jobWorkerValue.setAutoComplete(autoComplete);
-    jobWorkerValue.setFetchVariables(fetchVariables);
+    jobWorkerValue.setFetchVariables(
+        fetchVariables.stream()
+            .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.LEGACY))
+            .toList());
     jobWorkerValue.setEnabled(enabled);
     jobWorkerValue.setMethodInfo(methodInfo);
     jobWorkerValue.setTenantIds(tenantIds);
@@ -75,19 +82,19 @@ public class ZeebeWorkerValue {
   }
 
   public String getType() {
-    return jobWorkerValue.getType();
+    return jobWorkerValue.getType().value();
   }
 
   public void setType(final String type) {
-    jobWorkerValue.setType(type);
+    jobWorkerValue.setType(new Type(type, FieldSource.LEGACY));
   }
 
   public String getName() {
-    return jobWorkerValue.getName();
+    return jobWorkerValue.getName().value();
   }
 
   public void setName(final String name) {
-    jobWorkerValue.setName(name);
+    jobWorkerValue.setName(new Name(name, FieldSource.LEGACY));
   }
 
   public Duration getTimeout() {
@@ -131,11 +138,14 @@ public class ZeebeWorkerValue {
   }
 
   public List<String> getFetchVariables() {
-    return jobWorkerValue.getFetchVariables();
+    return jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList();
   }
 
   public void setFetchVariables(final List<String> fetchVariables) {
-    jobWorkerValue.setFetchVariables(fetchVariables);
+    jobWorkerValue.setFetchVariables(
+        fetchVariables.stream()
+            .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.LEGACY))
+            .toList());
   }
 
   public Boolean getEnabled() {
