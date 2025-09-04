@@ -110,7 +110,7 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('create component authorization', async ({
+  test('create a  component authorization', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
