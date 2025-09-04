@@ -305,14 +305,12 @@
           </configOptions>
         </configuration>
         <executions>
-          <!-- Disable OpenAPI generation for deprecated client
           <execution>
             <id>rest</id>
             <goals>
               <goal>generate</goal>
             </goals>
           </execution>
-          -->
         </executions>
       </plugin>
 

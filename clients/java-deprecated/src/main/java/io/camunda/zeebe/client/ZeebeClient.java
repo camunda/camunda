@@ -684,32 +684,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   ClockResetCommandStep1 newClockResetCommand();
 
   /**
-   * Executes a search request to query process instances.
-   *
-   * <pre>
-   * long processInstanceKey = ...;
-   *
-   * zeebeClient
-   *  .newProcessInstanceQuery()
-   *  .filter((f) -> f.processInstanceKeys(processInstanceKey))
-   *  .sort((s) -> s.startDate().asc())
-   *  .page((p) -> p.limit(100))
-   *  .send();
-   * </pre>
-   *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @return a builder for the process instance query
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  ProcessInstanceQuery newProcessInstanceQuery();
-
-  /**
-   * Executes a search request to query flow node instances.
    *
    * <pre>
    * long flownodeInstanceKey = ...;
@@ -734,32 +708,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   FlownodeInstanceQuery newFlownodeInstanceQuery();
 
   /**
-   * Executes a search request to query user tasks.
-   *
-   * <pre>
-   * zeebeClient
-   *  .newUserTaskQuery()
-   *  .filter((f) -> f.userTaskKey(userTaskKey))
-   *  .sort((s) -> s.creationDate().asc())
-   *  .page((p) -> p.limit(100))
-   *  .send();
-   * </pre>
-   *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @return a builder for the user task query
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  UserTaskQuery newUserTaskQuery();
-
-  /**
-   * Executes a search request to query Decision Requirements.
-   *
-   * <pre>
    *   zeebeClient
    *   .newDecisionRequirementsQuery()
    *   .filter((f) -> f.decisionRequirementsKey(decisionRequirementsKey))
@@ -780,32 +728,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionRequirementsQuery newDecisionRequirementsQuery();
 
   /*
-   * Executes a search request to query decision definitions.
-   *
-   * <pre>
-   * long decisionDefinitionKey = ...;
-   *
-   * zeebeClient
-   *  .newDecisionDefinitionQuery()
-   *  .filter((f) -> f.decisionKey(decisionDefinitionKey))
-   *  .sort((s) -> s.dmnDecisionName().asc())
-   *  .page((p) -> p.limit(100))
-   *  .send();
-   * </pre>
-   *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @return a builder for the decision definition query
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  DecisionDefinitionQuery newDecisionDefinitionQuery();
-
-  /*
-   * Retrieves the XML representation of a decision definition.
    *
    * <pre>
    * long decisionKey = ...;
@@ -827,32 +749,6 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionKey);
 
   /*
-   * Executes a search request to query decision definitions.
-   *
-   * <pre>
-   * long decisionDefinitionKey = ...;
-   *
-   * zeebeClient
-   *  .newIncidentQuery()
-   *  .filter((f) -> f.processInstanceKey(processInstanceKey))
-   *  .sort((s) -> s.processDefinitionKey().asc())
-   *  .page((p) -> p.limit(100))
-   *  .send();
-   * </pre>
-   *
-   * <p><strong>Experimental: This method is under development, and as such using it may have no
-   * effect on the client builder when called. The respective API on compatible clusters is not
-   * enabled by default. Thus, this method doesn't work out of the box with all clusters. Until this
-   * warning is removed, anything described below may not yet have taken effect, and the interface
-   * and its description are subject to change.</strong>
-   *
-   * @return a builder for the incident query
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
-  IncidentQuery newIncidentQuery();
-
-  /**
-   * Command to create a user.
    *
    * <pre>
    *
