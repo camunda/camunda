@@ -14,10 +14,11 @@ import io.camunda.db.rdbms.write.service.CorrelatedMessageWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.RecordValue;
 import java.time.Instant;
 import java.util.Set;
 
-public abstract class AbstractCorrelatedMessageHandler<T> implements RdbmsExportHandler<T> {
+public abstract class AbstractCorrelatedMessageHandler<T extends RecordValue> implements RdbmsExportHandler<T> {
 
   protected final CorrelatedMessageWriter correlatedMessageWriter;
 

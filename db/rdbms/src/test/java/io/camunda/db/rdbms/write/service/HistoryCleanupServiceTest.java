@@ -142,18 +142,18 @@ class HistoryCleanupServiceTest {
   @Test
   void testCalculateNewDurationWhenDeletedNothing() {
     // given
-    final Map<String, Integer> numDeletedRecords =
-        Map.of(
-            "processInstance", 0,
-            "flowNodeInstance", 0,
-            "incident", 0,
-            "userTask", 0,
-            "variable", 0,
-            "decisionInstance", 0,
-            "job", 0,
-            "sequenceFlow", 0,
-            "batchOperation", 0,
-            "messageSubscription", 0);
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 0);
+    numDeletedRecords.put("flowNodeInstance", 0);
+    numDeletedRecords.put("incident", 0);
+    numDeletedRecords.put("userTask", 0);
+    numDeletedRecords.put("variable", 0);
+    numDeletedRecords.put("decisionInstance", 0);
+    numDeletedRecords.put("job", 0);
+    numDeletedRecords.put("sequenceFlow", 0);
+    numDeletedRecords.put("batchOperation", 0);
+    numDeletedRecords.put("messageSubscription", 0);
+    numDeletedRecords.put("messageCorrelation", 0);
 
     // when
     final Duration nextDuration =
@@ -179,6 +179,7 @@ class HistoryCleanupServiceTest {
     numDeletedRecords.put("batchOperationItem", 100);
     numDeletedRecords.put("batchOperation", 100);
     numDeletedRecords.put("messageSubscription", 100);
+    numDeletedRecords.put("messageCorrelation", 100);
 
     // when
     final Duration nextDuration =
@@ -192,18 +193,18 @@ class HistoryCleanupServiceTest {
   @Test
   void testCalculateNewDurationWhenNormalCleanup() {
     // given
-    final Map<String, Integer> numDeletedRecords =
-        Map.of(
-            "processInstance", 50,
-            "flowNodeInstance", 50,
-            "incident", 50,
-            "userTask", 50,
-            "variable", 50,
-            "decisionInstance", 50,
-            "job", 50,
-            "sequenceFlow", 50,
-            "batchOperation", 50,
-            "messageSubscription", 50);
+    final var numDeletedRecords = new java.util.HashMap<String, Integer>();
+    numDeletedRecords.put("processInstance", 50);
+    numDeletedRecords.put("flowNodeInstance", 50);
+    numDeletedRecords.put("incident", 50);
+    numDeletedRecords.put("userTask", 50);
+    numDeletedRecords.put("variable", 50);
+    numDeletedRecords.put("decisionInstance", 50);
+    numDeletedRecords.put("job", 50);
+    numDeletedRecords.put("sequenceFlow", 50);
+    numDeletedRecords.put("batchOperation", 50);
+    numDeletedRecords.put("messageSubscription", 50);
+    numDeletedRecords.put("messageCorrelation", 50);
 
     // when
     final Duration nextDuration =
