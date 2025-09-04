@@ -1144,9 +1144,39 @@ public final class SearchQueryResponseMapper {
 
   public static Object toCorrelatedMessagesSearchQueryResponse(
       final SearchQueryResult<io.camunda.search.entities.CorrelatedMessageEntity> result) {
-    // TODO: Implement proper mapping once CorrelatedMessagesSearchQueryResult DTO is generated
-    // For now, return a simple object to allow compilation
-    return new Object();
+    final var searchResult = new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQueryResult();
+    
+    if (result.items() != null) {
+      final var items = result.items().stream()
+          .map(SearchQueryResponseMapper::toCorrelatedMessageResult)
+          .toList();
+      searchResult.setItems(items);
+    }
+    
+    if (result.page() != null) {
+      searchResult.setPage(SearchQueryResponseMapper.toSearchQueryPageResponse(result.page()));
+    }
+    
+    return searchResult;
+  }
+
+  private static io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult toCorrelatedMessageResult(
+      final io.camunda.search.entities.CorrelatedMessageEntity entity) {
+    final var result = new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult();
+    
+    result.setCorrelationKey(entity.correlationKey());
+    result.setCorrelationTime(formatDate(entity.correlationTime()));
+    result.setElementId(entity.elementId());
+    result.setElementInstanceKey(String.valueOf(entity.elementInstanceKey()));
+    result.setMessageKey(String.valueOf(entity.messageKey()));
+    result.setMessageName(entity.messageName());
+    result.setProcessDefinitionId(entity.processDefinitionId());
+    result.setProcessDefinitionKey(String.valueOf(entity.processDefinitionKey()));
+    result.setProcessInstanceKey(String.valueOf(entity.processInstanceKey()));
+    result.setSubscriptionKey(String.valueOf(entity.subscriptionKey()));
+    result.setTenantId(entity.tenantId());
+    
+    return result;
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}

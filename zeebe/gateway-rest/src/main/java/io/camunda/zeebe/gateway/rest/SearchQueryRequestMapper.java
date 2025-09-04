@@ -2024,10 +2024,93 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 
+  private static CorrelatedMessagesFilter toCorrelatedMessagesFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesFilter filter) {
+    final var builder = FilterBuilders.correlatedMessages();
+
+    if (filter != null) {
+      ofNullable(filter.getCorrelationKey())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::correlationKeyOperations);
+      ofNullable(filter.getCorrelationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::correlationTimeOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::elementIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::elementInstanceKeyOperations);
+      ofNullable(filter.getMessageKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::messageKeyOperations);
+      ofNullable(filter.getMessageName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::messageNameOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getSubscriptionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::subscriptionKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+    }
+    return builder.build();
+  }
+
+  private static List<String> applyCorrelatedMessagesSortField(
+      final CorrelatedMessagesSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.CorrelatedMessagesSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case CORRELATION_KEY -> builder.correlationKey();
+        case CORRELATION_TIME -> builder.correlationTime();
+        case ELEMENT_ID -> builder.elementId();
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case MESSAGE_KEY -> builder.messageKey();
+        case MESSAGE_NAME -> builder.messageName();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case SUBSCRIPTION_KEY -> builder.subscriptionKey();
+        case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
   public static Either<ProblemDetail, CorrelatedMessagesQuery> toCorrelatedMessagesQuery(
       final Object request) {
-    // TODO: Implement proper mapping once CorrelatedMessagesSearchQuery DTO is generated
-    // For now, return an empty query to allow compilation
-    return Either.right(SearchQueryBuilders.correlatedMessagesSearchQuery().build());
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.correlatedMessagesSearchQuery().build());
+    }
+    
+    if (!(request instanceof io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery)) {
+      return Either.left(RequestValidator.createProblemDetail(
+          List.of("Invalid request type for correlated messages search")).orElse(null));
+    }
+    
+    final var searchQuery = (io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery) request;
+    final var page = toSearchQueryPage(searchQuery.getPage());
+    final var sort =
+        toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromCorrelatedMessagesSearchQuerySortRequest(
+                searchQuery.getSort()),
+            SortOptionBuilders::correlatedMessages,
+            SearchQueryRequestMapper::applyCorrelatedMessagesSortField);
+    final var filter = toCorrelatedMessagesFilter(searchQuery.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::correlatedMessagesSearchQuery);
   }
 }
