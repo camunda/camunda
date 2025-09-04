@@ -139,7 +139,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentContentResponse> getDocumentContent(
-      final String documentId, final String storeId, final String contentHash) {
+      final String documentId, final String storeId) {
 
     if (!hasDocumentPermission(PermissionType.READ)) {
       return CompletableFuture.failedFuture(
@@ -149,7 +149,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
     final DocumentStore documentStore = getDocumentStore(storeId).instance();
     return documentStore
-        .verifyContentHash(documentId, contentHash)
+        .getDocument(documentId)
         .thenCompose(
             verification -> {
               if (verification.isLeft()) {
@@ -180,10 +180,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
   }
 
   public CompletableFuture<DocumentLink> createLink(
-      final String documentId,
-      final String storeId,
-      final String contentHash,
-      final DocumentLinkParams params) {
+      final String documentId, final String storeId, final DocumentLinkParams params) {
 
     if (!hasDocumentPermission(PermissionType.CREATE)) {
       return CompletableFuture.failedFuture(
@@ -195,7 +192,7 @@ public class DocumentServices extends ApiServices<DocumentServices> {
 
     final DocumentStore documentStore = getDocumentStore(storeId).instance();
     return documentStore
-        .verifyContentHash(documentId, contentHash)
+        .getDocument(documentId)
         .thenCompose(
             verification ->
                 verification.isLeft()

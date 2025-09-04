@@ -37,15 +37,12 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   private final DocumentReference documentReference;
   private final String documentId;
   private final String storeId;
-  private final String contentHash;
   private final DocumentMetadata metadata;
 
   public DocumentReferenceResponseImpl(final DocumentReference documentReference) {
     this.documentReference = documentReference;
     documentId = documentReference.getDocumentId();
     storeId = documentReference.getStoreId();
-    contentHash = documentReference.getContentHash();
-
     metadata = new DocumentMetadataImpl(documentReference.getMetadata());
   }
 
@@ -57,11 +54,6 @@ public class DocumentReferenceResponseImpl implements DocumentReferenceResponse 
   @Override
   public String getStoreId() {
     return storeId;
-  }
-
-  @Override
-  public String getContentHash() {
-    return contentHash;
   }
 
   @Override

@@ -647,24 +647,19 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(final String documentId) {
-    return new DocumentContentGetRequestImpl(httpClient, documentId, null, null, config);
+    return new DocumentContentGetRequestImpl(httpClient, documentId, null, config);
   }
 
   @Override
   public DocumentContentGetRequest newDocumentContentGetRequest(
       final DocumentReferenceResponse documentReference) {
     return new DocumentContentGetRequestImpl(
-        httpClient,
-        documentReference.getDocumentId(),
-        documentReference.getStoreId(),
-        documentReference.getContentHash(),
-        config);
+        httpClient, documentReference.getDocumentId(), documentReference.getStoreId(), config);
   }
 
   @Override
   public CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(final String documentId) {
-    return new CreateDocumentLinkCommandImpl(
-        documentId, null, null, jsonMapper, httpClient, config);
+    return new CreateDocumentLinkCommandImpl(documentId, null, jsonMapper, httpClient, config);
   }
 
   @Override
@@ -673,7 +668,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new CreateDocumentLinkCommandImpl(
         documentReference.getDocumentId(),
         documentReference.getStoreId(),
-        documentReference.getContentHash(),
         jsonMapper,
         httpClient,
         config);
