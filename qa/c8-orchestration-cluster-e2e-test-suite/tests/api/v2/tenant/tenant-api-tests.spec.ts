@@ -261,7 +261,7 @@ test.describe.parallel('Tenants API Tests', () => {
     });
     await assertNotFoundRequest(
       res,
-      "Command 'DELETE' rejected with code 'NOT_FOUND",
+      "Command 'DELETE' rejected with code 'NOT_FOUND'",
     );
   });
 

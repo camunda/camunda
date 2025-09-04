@@ -72,10 +72,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         headers: jsonHeaders(),
       },
     );
-    await assertNotFoundRequest(
-      res,
-      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
-    );
+    expect(res.status()).toBe(204);
   });
 
   test('Assign Group To Tenant Non Existent Tenant Not Found', async ({

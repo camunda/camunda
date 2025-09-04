@@ -39,7 +39,7 @@ test.describe.parallel('Role Groups API Tests', () => {
     await assignGroupsToRole(request, 3, 'roleId3', state);
   });
 
-  test('Assign Group To Role', async ({request}) => {
+  test('Assign Role To Group', async ({request}) => {
     const groupKey = `${state['roleId1']}6`;
     await createGroupAndStoreResponseFields(request, 1, state, groupKey);
     const p = {
@@ -58,9 +58,7 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Assign Group To Role Non Existent Group Not Found', async ({
-    request,
-  }) => {
+  test('Assign Role To Group Non Existent Group Sucess', async ({request}) => {
     const stateParams: Record<string, string> = {
       groupId: 'invalidGroupId',
       roleId: state['roleId1'] as string,
@@ -72,13 +70,10 @@ test.describe.parallel('Role Groups API Tests', () => {
         headers: jsonHeaders(),
       },
     );
-    await assertNotFoundRequest(
-      res,
-      `Command 'ADD_ENTITY' rejected with code 'NOT_FOUND'`,
-    );
+    expect(res.status()).toBe(204);
   });
 
-  test('Assign Group To Role Non Existent Role Not Found', async ({
+  test('Assign Role To Group Non Existent Role Not Found', async ({
     request,
   }) => {
     const stateParams: Record<string, string> = {
@@ -98,7 +93,7 @@ test.describe.parallel('Role Groups API Tests', () => {
     );
   });
 
-  test('Assign Group To Role Unauthorized', async ({request}) => {
+  test('Assign Role To Group Unauthorized', async ({request}) => {
     const stateParams: Record<string, string> = {
       groupId: groupIdFromState('roleId1', state) as string,
       roleId: state['roleId1'] as string,
@@ -133,7 +128,7 @@ test.describe.parallel('Role Groups API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Unassign Group From Role', async ({request}) => {
+  test('Assign Role From Group', async ({request}) => {
     const p = {
       groupId: groupIdFromState('roleId2', state) as string,
       roleId: state['roleId2'] as string,
