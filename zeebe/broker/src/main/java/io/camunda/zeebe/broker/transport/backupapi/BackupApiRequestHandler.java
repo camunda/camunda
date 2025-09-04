@@ -90,7 +90,7 @@ public final class BackupApiRequestHandler
               handleTakeBackupRequest(
                   requestStreamId, requestId, requestReader, responseWriter, errorWriter));
       case QUERY_STATUS -> handleQueryStatusRequest(requestReader, responseWriter, errorWriter);
-      case LIST -> handleListBackupRequest(responseWriter, errorWriter);
+      case LIST -> handleListBackupRequest(requestReader, responseWriter, errorWriter);
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(
@@ -152,12 +152,15 @@ public final class BackupApiRequestHandler
   }
 
   private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> handleListBackupRequest(
-      final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+      final BackupApiRequestReader requestReader,
+      final BackupApiResponseWriter responseWriter,
+      final ErrorResponseWriter errorWriter) {
     final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
         new CompletableActorFuture<>();
+    final var pattern = requestReader.pattern();
 
     backupManager
-        .listBackups()
+        .listBackups(pattern)
         .onComplete(
             (backups, error) -> {
               if (error == null) {
