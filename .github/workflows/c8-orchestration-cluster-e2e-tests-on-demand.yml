@@ -77,18 +77,13 @@ jobs:
           fi
 
       - name: Start Camunda
-        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
-            export DATABASE=elasticsearch
-            echo "Starting Camunda with: ${DATABASE}"
-            docker compose up -d camunda
+            DATABASE=elasticsearch docker compose up -d camunda
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-        env:
-          DATABASE: elasticsearch
 
       - name: List running Docker containers
         run: docker ps -a
@@ -99,7 +94,7 @@ jobs:
         run: |
           echo "Checking if services are up..."
           ready=false
-          for i in {1..10}; do
+          for i in {1..90}; do
             if [[ "$NON_STANDALONE" == "true" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
