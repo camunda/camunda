@@ -55,35 +55,28 @@ public class GatewayRestConfiguration {
    * instead of absolute thread counts, so it scales sensibly across different deployment sizes
    * without manual retuning.
    *
-   * <p>Effective sizes (evaluated at startup):
+   * <p>Effective sizes (computed at startup using {@code Runtime.availableProcessors()}):
    *
    * <pre>
    *   corePoolSize = availableProcessors * corePoolSizeMultiplier
    *   maxPoolSize  = availableProcessors * maxPoolSizeMultiplier
    * </pre>
    *
-   * <p>Threads above the core size are created on demand and reclaimed after being idle for {@code
-   * keepAliveSeconds}. A {@code SynchronousQueue} + direct handoff + a {@code CallerRunsPolicy} (or
-   * similar strategy, depending on the executor implementation) is typically used to:
-   *
-   * <ul>
-   *   <li>Avoid unbounded internal task buffering
-   *   <li>Apply natural back-pressure when saturated (caller executes work)
-   * </ul>
+   * <p>Threads above the core size may be reclaimed after being idle for {@code keepAliveSeconds}.
    *
    * <p><b>Constraints:</b>
    *
    * <ul>
-   *   <li>{@code corePoolSizeMultiplier} should be &gt;= 0 (0 means no core threads, only on-demand
-   *       threads).
-   *   <li>{@code maxPoolSizeMultiplier} should be &gt; 0
+   *   <li>{@code corePoolSizeMultiplier} ≥ 0 (0 means no core threads)
+   *   <li>{@code maxPoolSizeMultiplier} &gt; 0 (and typically ≥ core multiplier)
    * </ul>
    */
   public static class ApiExecutorConfiguration {
 
     private static final int DEFAULT_CORE_POOL_SIZE_MULTIPLIER = 1;
-    private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 2;
+    private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 8;
     private static final long DEFAULT_KEEP_ALIVE_SECONDS = 60L;
+    private static final int DEFAULT_QUEUE_CAPACITY = 64;
 
     /**
      * Multiplier applied to the number of available processors to compute the executor's core pool
@@ -120,6 +113,13 @@ public class GatewayRestConfiguration {
      */
     private long keepAliveSeconds = DEFAULT_KEEP_ALIVE_SECONDS;
 
+    /**
+     * Capacity of the executor's task queue. A small bounded queue (e.g. 64) is recommended to
+     * handle short bursts while still allowing the pool to grow. Default value: {@link
+     * #DEFAULT_QUEUE_CAPACITY}.
+     */
+    private int queueCapacity = DEFAULT_QUEUE_CAPACITY;
+
     public int getCorePoolSizeMultiplier() {
       return corePoolSizeMultiplier;
     }
@@ -154,6 +154,17 @@ public class GatewayRestConfiguration {
             "keepAliveSeconds must be > 0 (was " + keepAliveSeconds + ")");
       }
       this.keepAliveSeconds = keepAliveSeconds;
+    }
+
+    public int getQueueCapacity() {
+      return queueCapacity;
+    }
+
+    public void setQueueCapacity(final int queueCapacity) {
+      if (queueCapacity <= 0) {
+        throw new IllegalArgumentException("queueCapacity must be > 0 (was " + queueCapacity + ")");
+      }
+      this.queueCapacity = queueCapacity;
     }
   }
 }

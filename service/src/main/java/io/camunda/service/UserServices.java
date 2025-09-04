@@ -37,8 +37,9 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
       final SecurityContextProvider securityContextProvider,
       final UserSearchClient userSearchClient,
       final CamundaAuthentication authentication,
-      final PasswordEncoder passwordEncoder) {
-    super(brokerClient, securityContextProvider, authentication);
+      final PasswordEncoder passwordEncoder,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.userSearchClient = userSearchClient;
     this.passwordEncoder = passwordEncoder;
   }
@@ -57,7 +58,12 @@ public class UserServices extends SearchQueryService<UserServices, UserQuery, Us
   @Override
   public UserServices withAuthentication(final CamundaAuthentication authentication) {
     return new UserServices(
-        brokerClient, securityContextProvider, userSearchClient, authentication, passwordEncoder);
+        brokerClient,
+        securityContextProvider,
+        userSearchClient,
+        authentication,
+        passwordEncoder,
+        executorProvider);
   }
 
   public CompletableFuture<UserRecord> createUser(final UserDTO request) {

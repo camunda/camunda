@@ -52,7 +52,8 @@ public final class ElementInstanceServiceTest {
             mock(SecurityContextProvider.class),
             client,
             processCache,
-            null);
+            null,
+            mock(ApiServicesExecutorProvider.class));
 
     when(client.withSecurityContext(any())).thenReturn(client);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);

@@ -39,8 +39,9 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final CamundaAuthentication authentication) {
-    super(brokerClient, securityContextProvider, authentication);
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.roleSearchClient = roleSearchClient;
   }
 
@@ -92,7 +93,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   @Override
   public RoleServices withAuthentication(final CamundaAuthentication authentication) {
     return new RoleServices(
-        brokerClient, securityContextProvider, roleSearchClient, authentication);
+        brokerClient, securityContextProvider, roleSearchClient, authentication, executorProvider);
   }
 
   public CompletableFuture<RoleRecord> createRole(final CreateRoleRequest request) {
