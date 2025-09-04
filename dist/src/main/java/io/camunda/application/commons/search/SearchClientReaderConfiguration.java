@@ -39,6 +39,8 @@ import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
+import io.camunda.search.clients.reader.CorrelatedMessagesDocumentReader;
+import io.camunda.search.clients.reader.CorrelatedMessagesReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
@@ -83,6 +85,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -221,6 +224,12 @@ public class SearchClientReaderConfiguration {
   public MessageSubscriptionReader messageSubscriptionReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new MessageSubscriptionDocumentReader(executor, descriptors.get(EventTemplate.class));
+  }
+
+  @Bean
+  public CorrelatedMessagesReader correlatedMessagesReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new CorrelatedMessagesDocumentReader(executor, descriptors.get(CorrelatedMessageTemplate.class));
   }
 
   @Bean
