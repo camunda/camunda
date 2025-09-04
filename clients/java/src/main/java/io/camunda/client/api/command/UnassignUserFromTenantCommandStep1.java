@@ -23,20 +23,23 @@ public interface UnassignUserFromTenantCommandStep1 {
   /**
    * Sets the username for unassignment.
    *
+   * @param username the username of the user
    * @return the builder for this command.
    */
   UnassignUserFromTenantCommandStep2 username(String username);
 
-  interface UnassignUserFromTenantCommandStep2
-      extends FinalCommandStep<UnassignUserFromTenantResponse> {
+  interface UnassignUserFromTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the tenantId of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignUserFromTenantCommandStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    UnassignUserFromTenantCommandStep2 tenantId(String tenantId);
+    UnassignUserFromTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface UnassignUserFromTenantCommandStep3
+      extends FinalCommandStep<UnassignUserFromTenantResponse> {}
 }
