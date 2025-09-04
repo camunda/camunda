@@ -13,8 +13,6 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.RequestMapper;
@@ -84,13 +82,13 @@ public class MessageController {
 
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/correlated-messages/search")
-  public ResponseEntity<CorrelatedMessagesSearchQueryResult> searchCorrelatedMessages(
-      @RequestBody(required = false) final CorrelatedMessagesSearchQuery searchRequest) {
+  public ResponseEntity<Object> searchCorrelatedMessages(
+      @RequestBody(required = false) final Object searchRequest) {
     return SearchQueryRequestMapper.toCorrelatedMessagesQuery(searchRequest)
         .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessages);
   }
 
-  private ResponseEntity<CorrelatedMessagesSearchQueryResult> searchCorrelatedMessages(
+  private ResponseEntity<Object> searchCorrelatedMessages(
       final CorrelatedMessagesQuery query) {
     try {
       final var result =

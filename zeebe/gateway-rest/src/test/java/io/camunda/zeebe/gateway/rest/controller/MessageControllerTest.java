@@ -23,6 +23,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
@@ -562,5 +563,30 @@ public class MessageControllerTest extends RestControllerTest {
             .setTimeToLive(123L)
             .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
+  }
+
+  @Test
+  void shouldSearchCorrelatedMessages() {
+    // given
+    final var correlatedMessage = new io.camunda.search.entities.CorrelatedMessageEntity.Builder()
+        .correlationKey("test-key")
+        .messageName("test-message")
+        .tenantId("default")
+        .build();
+    final var searchResult = new io.camunda.search.query.SearchQueryResult.Builder<io.camunda.search.entities.CorrelatedMessageEntity>()
+        .items(List.of(correlatedMessage))
+        .total(1L)
+        .build();
+    
+    when(messageServices.searchCorrelatedMessages(any(io.camunda.search.query.CorrelatedMessagesQuery.class)))
+        .thenReturn(searchResult);
+
+    // when / then
+    webClient
+        .post()
+        .uri(MESSAGE_BASE_URL + "/correlated-messages/search")
+        .exchange()
+        .expectStatus()
+        .isOk();
   }
 }

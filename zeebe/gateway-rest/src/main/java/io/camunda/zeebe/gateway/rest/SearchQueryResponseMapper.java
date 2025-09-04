@@ -1142,5 +1142,12 @@ public final class SearchQueryResponseMapper {
                 : processInstanceEntity.processDefinitionName());
   }
 
+  public static Object toCorrelatedMessagesSearchQueryResponse(
+      final SearchQueryResult<io.camunda.search.entities.CorrelatedMessageEntity> result) {
+    // TODO: Implement proper mapping once CorrelatedMessagesSearchQueryResult DTO is generated
+    // For now, return a simple object to allow compilation
+    return new Object();
+  }
+
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
 }

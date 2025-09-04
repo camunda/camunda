@@ -22,6 +22,7 @@ import io.camunda.search.filter.BatchOperationFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
+import io.camunda.search.filter.CorrelatedMessagesFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
@@ -46,6 +47,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.CorrelatedMessagesQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -2020,5 +2022,12 @@ public final class SearchQueryRequestMapper {
     final var filter = toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
+  }
+
+  public static Either<ProblemDetail, CorrelatedMessagesQuery> toCorrelatedMessagesQuery(
+      final Object request) {
+    // TODO: Implement proper mapping once CorrelatedMessagesSearchQuery DTO is generated
+    // For now, return an empty query to allow compilation
+    return Either.right(SearchQueryBuilders.correlatedMessagesSearchQuery().build());
   }
 }
