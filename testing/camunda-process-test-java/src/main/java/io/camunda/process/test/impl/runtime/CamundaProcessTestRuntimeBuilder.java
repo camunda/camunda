@@ -84,6 +84,8 @@ public class CamundaProcessTestRuntimeBuilder {
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
 
+  private boolean isMultitenancyEnabled = false;
+
   // ============ For testing =================
 
   CamundaProcessTestRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
@@ -244,6 +246,11 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withMultitenancyEnabled(final boolean enabled) {
+    this.isMultitenancyEnabled = enabled;
+    return this;
+  }
+
   // ============ Build =================
 
   public CamundaProcessTestRuntime build() {
@@ -322,6 +329,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public boolean isConnectorsEnabled() {
     return connectorsEnabled;
+  }
+
+  public boolean isMultitenancyEnabled() {
+    return isMultitenancyEnabled;
   }
 
   public Map<String, String> getConnectorsSecrets() {
