@@ -125,7 +125,10 @@ class SchemaUpdateIT {
             config,
             searchClientAdapter,
             indexDescriptors.templates().stream()
-                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
+                .filter(
+                    template ->
+                        !template.getVersion().startsWith(currentMinorVersion)
+                            && !template.getIndexName().contains("correlated-message"))
                 .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
@@ -200,7 +203,7 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config,
       final SearchClientAdapter searchClientAdapter,
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
-    final int archivePeriodInDays = 30;
+    final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
     for (final var indexTemplate : indexTemplateDescriptors) {
       IntStream.range(0, archivePeriodInDays)
