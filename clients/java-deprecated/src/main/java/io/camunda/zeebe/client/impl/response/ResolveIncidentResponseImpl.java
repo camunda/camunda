@@ -19,8 +19,9 @@ import io.camunda.zeebe.client.api.response.ResolveIncidentResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 /**
- * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java.
- * Please see the migration guide: https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
+ * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
+ *     the migration guide:
+ *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
 public class ResolveIncidentResponseImpl implements ResolveIncidentResponse {

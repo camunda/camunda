@@ -57,8 +57,9 @@ import io.camunda.zeebe.client.impl.ZeebeClientImpl;
 
 /** The client to communicate with a Zeebe broker/cluster. */
 /**
- * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java.
- * Please see the migration guide: https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
+ * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
+ *     the migration guide:
+ *     https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/
  */
 @Deprecated
 public interface ZeebeClient extends AutoCloseable, JobClient {
@@ -685,6 +686,7 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
 
   /**
    *
+   *
    * <pre>
    * long flownodeInstanceKey = ...;
    *
@@ -708,13 +710,9 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   FlownodeInstanceQuery newFlownodeInstanceQuery();
 
   /**
-   *   zeebeClient
-   *   .newDecisionRequirementsQuery()
-   *   .filter((f) -> f.decisionRequirementsKey(decisionRequirementsKey))
-   *   .sort((s) -> s.version().asc())
-   *   .page((p) -> p.limit(100))
-   *   .send();
-   *   </pre>
+   * zeebeClient .newDecisionRequirementsQuery() .filter((f) ->
+   * f.decisionRequirementsKey(decisionRequirementsKey)) .sort((s) -> s.version().asc()) .page((p)
+   * -> p.limit(100)) .send(); </pre>
    *
    * <p><strong>Experimental: This method is under development, and as such using it may have no
    * effect on the client builder when called. The respective API on compatible clusters is not
