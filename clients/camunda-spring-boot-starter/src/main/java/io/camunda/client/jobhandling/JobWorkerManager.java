@@ -22,8 +22,8 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.CreateChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
 import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ResetChangeSet;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
@@ -49,60 +49,36 @@ public class JobWorkerManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerManager.class);
 
-  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
-  private final MetricsRecorder metricsRecorder;
-  private final ParameterResolverStrategy parameterResolverStrategy;
-  private final ResultProcessorStrategy resultProcessorStrategy;
-  private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
   private final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers;
   private final JobWorkerFactory jobWorkerFactory;
 
-  private final Map<String, ManagedJobWorker> managedJobWorkers = new HashMap<>();
+  private final Map<String, InternalManagedJobWorker> managedJobWorkers = new HashMap<>();
 
   public JobWorkerManager(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy,
-      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier,
       final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
       final JobWorkerFactory jobWorkerFactory) {
-    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
-    this.metricsRecorder = metricsRecorder;
-    this.parameterResolverStrategy = parameterResolverStrategy;
-    this.resultProcessorStrategy = resultProcessorStrategy;
-    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
     this.jobWorkerValueCustomizers = jobWorkerValueCustomizers;
     this.jobWorkerFactory = jobWorkerFactory;
   }
 
   public void createJobWorker(
-      final CamundaClient client, final JobWorkerValue jobWorkerValue, final Object source) {
+      final CamundaClient client, final ManagedJobWorker managedJobWorker, final Object source) {
+    final JobWorkerValue jobWorkerValue = managedJobWorker.jobWorkerValue();
     jobWorkerValueCustomizers.forEach(customizer -> customizer.customize(jobWorkerValue));
-    final String type = jobWorkerValue.getType();
-    final ManagedJobWorker managedJobWorker;
+    final String type = jobWorkerValue.getType().value();
+    final InternalManagedJobWorker internalManagedJobWorker;
     if (managedJobWorkers.containsKey(type)) {
-      managedJobWorker = managedJobWorkers.get(type);
+      internalManagedJobWorker = managedJobWorkers.get(type);
     } else {
-      managedJobWorker = new ManagedJobWorker();
-      managedJobWorker.setSource(source);
-      managedJobWorker.setOriginal(jobWorkerValue);
-      managedJobWorker.setCurrent(jobWorkerValue.clone());
-      managedJobWorker.setCamundaClient(client);
-      managedJobWorker.setJobHandler(
-          jobWorkerValue
-              .getJobHandlerFactory()
-              .getJobHandler(
-                  new SpringBeanJobHandlerFactoryContext(
-                      commandExceptionHandlingStrategy,
-                      metricsRecorder,
-                      parameterResolverStrategy,
-                      resultProcessorStrategy,
-                      jobExceptionHandlingStrategy,
-                      jobWorkerValue)));
-      managedJobWorkers.put(type, managedJobWorker);
+      internalManagedJobWorker = new InternalManagedJobWorker();
+      internalManagedJobWorker.setSource(source);
+      internalManagedJobWorker.setOriginal(jobWorkerValue);
+      internalManagedJobWorker.setCurrent(jobWorkerValue.clone());
+      internalManagedJobWorker.setCamundaClient(client);
+      internalManagedJobWorker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
+      managedJobWorkers.put(type, internalManagedJobWorker);
     }
-    upsertWorker(managedJobWorker, new NoopChangeSet(), false);
+    upsertWorker(internalManagedJobWorker, new CreateChangeSet(), false);
   }
 
   public Map<String, JobWorkerValue> getJobWorkers() {
@@ -112,14 +88,14 @@ public class JobWorkerManager {
   }
 
   public JobWorkerValue getJobWorker(final String type) {
-    final ManagedJobWorker managedJobWorker = findManagedJobWorker(type);
-    return managedJobWorker.getCurrent();
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    return internalManagedJobWorker.getCurrent();
   }
 
   public void updateJobWorker(
       final String type, final JobWorkerChangeSet changeSet, final boolean applyCustomizers) {
-    final ManagedJobWorker managedJobWorker = findManagedJobWorker(type);
-    upsertWorker(managedJobWorker, changeSet, applyCustomizers);
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    upsertWorker(internalManagedJobWorker, changeSet, applyCustomizers);
   }
 
   public void updateJobWorkers(final JobWorkerChangeSet changeSet, final boolean applyCustomizers) {
@@ -127,8 +103,11 @@ public class JobWorkerManager {
   }
 
   public void resetJobWorker(final String type) {
-    final ManagedJobWorker managedJobWorker = findManagedJobWorker(type);
-    upsertWorker(managedJobWorker, new ResetChangeSet(managedJobWorker.getOriginal()), false);
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    upsertWorker(
+        internalManagedJobWorker,
+        new ResetChangeSet(internalManagedJobWorker.getOriginal()),
+        false);
   }
 
   public void resetJobWorkers() {
@@ -136,11 +115,11 @@ public class JobWorkerManager {
   }
 
   public void closeJobWorker(final String type) {
-    final ManagedJobWorker managedJobWorker = findManagedJobWorker(type);
-    upsertWorker(managedJobWorker, new EnabledChangeSet(false), false);
+    final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
+    upsertWorker(internalManagedJobWorker, new EnabledChangeSet(false), false);
   }
 
-  private ManagedJobWorker findManagedJobWorker(final String type) {
+  private InternalManagedJobWorker findManagedJobWorker(final String type) {
     if (!managedJobWorkers.containsKey(type)) {
       throw new IllegalArgumentException("Unknown job worker type: " + type);
     }
@@ -148,35 +127,49 @@ public class JobWorkerManager {
   }
 
   private void upsertWorker(
-      final ManagedJobWorker managedJobWorker,
+      final InternalManagedJobWorker internalManagedJobWorker,
       final JobWorkerChangeSet changeSet,
       final boolean applyCustomizers) {
     // apply changes and check whether there was an actual change
-    final boolean changed = changeSet.applyChanges(managedJobWorker.getCurrent());
+    final boolean changed = changeSet.applyChanges(internalManagedJobWorker.getCurrent());
     if (!changed) {
       return;
     }
     // try to find the currently running worker and stop it
-    final JobWorker jobWorker = managedJobWorker.getJobWorker();
+    final JobWorker jobWorker = internalManagedJobWorker.getJobWorker();
     if (jobWorker != null && !jobWorker.isClosed()) {
       jobWorker.close();
-      LOGGER.info(". Stopping job worker: {}", managedJobWorker.getCurrent());
+      LOGGER.info(
+          "Stopping job worker: {}",
+          LOGGER.isDebugEnabled()
+              ? internalManagedJobWorker.getCurrent()
+              : String.format(
+                  "%s with type %s",
+                  internalManagedJobWorker.getCurrent().getName().value(),
+                  internalManagedJobWorker.getCurrent().getType().value()));
     }
     // apply customizers if required
     if (applyCustomizers) {
       jobWorkerValueCustomizers.forEach(
-          customizer -> customizer.customize(managedJobWorker.getCurrent()));
+          customizer -> customizer.customize(internalManagedJobWorker.getCurrent()));
     }
     final boolean enabled =
-        managedJobWorker.getCurrent().getEnabled() == null
-            || managedJobWorker.getCurrent().getEnabled();
+        internalManagedJobWorker.getCurrent().getEnabled() == null
+            || internalManagedJobWorker.getCurrent().getEnabled();
     if (enabled) {
-      managedJobWorker.setJobWorker(
+      internalManagedJobWorker.setJobWorker(
           jobWorkerFactory.createJobWorker(
-              managedJobWorker.getCamundaClient(),
-              managedJobWorker.getCurrent(),
-              managedJobWorker.getJobHandler()));
-      LOGGER.info(". Starting job worker: {}", managedJobWorker.getCurrent());
+              internalManagedJobWorker.getCamundaClient(),
+              internalManagedJobWorker.getCurrent(),
+              internalManagedJobWorker.getJobHandlerFactory()));
+      LOGGER.info(
+          "Starting job worker: {}",
+          LOGGER.isDebugEnabled()
+              ? internalManagedJobWorker.getCurrent()
+              : String.format(
+                  "%s with type %s",
+                  internalManagedJobWorker.getCurrent().getName().value(),
+                  internalManagedJobWorker.getCurrent().getType().value()));
     }
   }
 
@@ -187,8 +180,8 @@ public class JobWorkerManager {
         .forEach(this::closeJobWorker);
   }
 
-  private static final class ManagedJobWorker {
-    private JobHandler jobHandler;
+  private static final class InternalManagedJobWorker {
+    private JobHandlerFactory jobHandlerFactory;
     private JobWorker jobWorker;
     private JobWorkerValue original;
     private JobWorkerValue current;
@@ -227,12 +220,12 @@ public class JobWorkerManager {
       this.camundaClient = camundaClient;
     }
 
-    public JobHandler getJobHandler() {
-      return jobHandler;
+    public JobHandlerFactory getJobHandlerFactory() {
+      return jobHandlerFactory;
     }
 
-    public void setJobHandler(final JobHandler jobHandler) {
-      this.jobHandler = jobHandler;
+    public void setJobHandlerFactory(final JobHandlerFactory jobHandlerFactory) {
+      this.jobHandlerFactory = jobHandlerFactory;
     }
 
     public Object getSource() {

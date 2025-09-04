@@ -15,104 +15,64 @@
  */
 package io.camunda.spring.client.jobhandling;
 
-import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableParameters;
-import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
-import static io.camunda.spring.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.bean.ParameterInfo;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
 import io.camunda.spring.client.jobhandling.result.ResultProcessor;
 import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.util.List;
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.util.ReflectionUtils;
 
-public class SpringBeanJobHandlerFactory
-    implements JobHandlerFactory<SpringBeanJobHandlerFactoryContext> {
+public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
   private final MethodInfo methodInfo;
+  private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  private final ParameterResolverStrategy parameterResolverStrategy;
+  private final ResultProcessorStrategy resultProcessorStrategy;
+  private final MetricsRecorder metricsRecorder;
+  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
-  public SpringBeanJobHandlerFactory(final MethodInfo methodInfo) {
+  public SpringBeanJobHandlerFactory(
+      final MethodInfo methodInfo,
+      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
+      final ParameterResolverStrategy parameterResolverStrategy,
+      final ResultProcessorStrategy resultProcessorStrategy,
+      final MetricsRecorder metricsRecorder,
+      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
     this.methodInfo = methodInfo;
+    this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
+    this.parameterResolverStrategy = parameterResolverStrategy;
+    this.resultProcessorStrategy = resultProcessorStrategy;
+    this.metricsRecorder = metricsRecorder;
+    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
-  private List<ParameterResolver> createParameterResolvers(
-      final ParameterResolverStrategy parameterResolverStrategy) {
+  private List<ParameterResolver> createParameterResolvers(final CamundaClient camundaClient) {
     return methodInfo.getParameters().stream()
+        .map(parameterInfo -> new ParameterResolverStrategyContext(parameterInfo, camundaClient))
         .map(parameterResolverStrategy::createResolver)
         .toList();
   }
 
-  private ResultProcessor createResultProcessor(
-      final ResultProcessorStrategy resultProcessorStrategy) {
-    return resultProcessorStrategy.createProcessor(methodInfo);
+  private ResultProcessor createResultProcessor(final CamundaClient camundaClient) {
+    return resultProcessorStrategy.createProcessor(
+        new ResultProcessorStrategyContext(methodInfo, camundaClient));
   }
 
   @Override
-  public JobHandler getJobHandler(final SpringBeanJobHandlerFactoryContext context) {
+  public JobHandler getJobHandler(final JobHandlerFactoryContext context) {
     return new JobHandlerInvokingSpringBeans(
-        context.jobWorkerValue().getName(),
+        context.jobWorkerValue().getName().value(),
         methodInfo::invoke,
         context.jobWorkerValue().getAutoComplete(),
         context.jobWorkerValue().getMaxRetries(),
-        context.commandExceptionHandlingStrategy(),
-        context.metricsRecorder(),
-        createParameterResolvers(context.parameterResolverStrategy()),
-        createResultProcessor(context.resultProcessorStrategy()),
-        context.jobExceptionHandlingStrategy());
-  }
-
-  @Override
-  public String getGeneratedJobWorkerName() {
-    return methodInfo.getBeanName() + "#" + methodInfo.getMethodName();
-  }
-
-  @Override
-  public String getGeneratedJobWorkerType() {
-    return methodInfo.getMethodName();
-  }
-
-  @Override
-  public boolean usesActivatedJob() {
-    return methodInfo.getParameters().stream()
-        .anyMatch(p -> p.getParameterInfo().getType().isAssignableFrom(ActivatedJob.class));
-  }
-
-  @Override
-  public List<String> getUsedVariableNames() {
-    final List<String> result = new ArrayList<>();
-    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
-    parameters.forEach(
-        pi ->
-            ReflectionUtils.doWithFields(
-                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
-    result.addAll(
-        readZeebeVariableParameters(methodInfo).stream().map(this::extractVariableName).toList());
-    return result;
-  }
-
-  private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
-    return getVariableParameters(methodInfo);
-  }
-
-  private String extractVariableName(final ParameterInfo parameterInfo) {
-    // get can be used here as the list is already filtered by readZeebeVariableParameters
-    return getVariableValue(parameterInfo).get().getName();
-  }
-
-  private String extractFieldName(final Field field) {
-    if (field.isAnnotationPresent(JsonProperty.class)) {
-      final String value = field.getAnnotation(JsonProperty.class).value();
-      if (StringUtils.isNotBlank(value)) {
-        return value;
-      }
-    }
-    return field.getName();
+        commandExceptionHandlingStrategy,
+        metricsRecorder,
+        createParameterResolvers(context.camundaClient()),
+        createResultProcessor(context.camundaClient()),
+        jobExceptionHandlingStrategy);
   }
 }

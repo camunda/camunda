@@ -77,10 +77,8 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ParameterResolverStrategy parameterResolverStrategy(
-      final JsonMapper jsonMapper,
-      @Autowired(required = false) final ZeebeClient zeebeClient,
-      final CamundaClient camundaClient) {
-    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient, camundaClient);
+      final JsonMapper jsonMapper, @Autowired(required = false) final ZeebeClient zeebeClient) {
+    return new DefaultParameterResolverStrategy(jsonMapper, zeebeClient);
   }
 
   @Bean
@@ -93,11 +91,9 @@ public class CamundaClientAllAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public ResultProcessorStrategy resultProcessorStrategy(
-      final CamundaClient camundaClient,
       final DocumentResultProcessorFailureHandlingStrategy
           documentResultProcessorFailureHandlingStrategy) {
-    return new DefaultResultProcessorStrategy(
-        camundaClient, documentResultProcessorFailureHandlingStrategy);
+    return new DefaultResultProcessorStrategy(documentResultProcessorFailureHandlingStrategy);
   }
 
   @Bean
@@ -117,23 +113,9 @@ public class CamundaClientAllAutoConfiguration {
 
   @Bean
   public JobWorkerManager jobWorkerManager(
-      final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
-      final MetricsRecorder metricsRecorder,
-      final ParameterResolverStrategy parameterResolverStrategy,
-      final ResultProcessorStrategy resultProcessorStrategy,
-      final BackoffSupplier backoffSupplier,
-      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier,
       final List<JobWorkerValueCustomizer> jobWorkerValueCustomizers,
       final JobWorkerFactory jobWorkerFactory) {
-    return new JobWorkerManager(
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        parameterResolverStrategy,
-        resultProcessorStrategy,
-        backoffSupplier,
-        jobExceptionHandlerSupplier,
-        jobWorkerValueCustomizers,
-        jobWorkerFactory);
+    return new JobWorkerManager(jobWorkerValueCustomizers, jobWorkerFactory);
   }
 
   @Bean

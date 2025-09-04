@@ -15,6 +15,14 @@
  */
 package io.camunda.client.annotation.value;
 
+import static io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource.EMPTY_FIELD;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.spring.client.jobhandling.JobHandlerFactory;
 import java.time.Duration;
@@ -23,13 +31,13 @@ import java.util.List;
 import java.util.Objects;
 
 public class JobWorkerValue implements Cloneable {
-  private String type;
-  private String name;
+  private Type type = new Type(null, EMPTY_FIELD);
+  private Name name = new Name(null, EMPTY_FIELD);
   private Duration timeout;
   private Integer maxJobsActive;
   private Duration requestTimeout;
   private Duration pollInterval;
-  private List<String> fetchVariables;
+  private List<FetchVariable> fetchVariables;
   private Boolean enabled;
   private List<String> tenantIds;
   private Boolean forceFetchAllVariables;
@@ -38,32 +46,31 @@ public class JobWorkerValue implements Cloneable {
   private Integer maxRetries = 0;
   private Duration retryBackoff;
   // cannot be changed from change set
-  private JobHandlerFactory jobHandlerFactory;
   private Boolean autoComplete;
 
   @Deprecated(forRemoval = true)
+  @JsonIgnore
   private MethodInfo methodInfo;
   private Duration retryBackoff;
 
   public JobWorkerValue() {}
 
   public JobWorkerValue(
-      final String type,
-      final String name,
+      final Type type,
+      final Name name,
       final Duration timeout,
       final Integer maxJobsActive,
       final Duration requestTimeout,
       final Duration pollInterval,
       final Boolean autoComplete,
-      final List<String> fetchVariables,
+      final List<FetchVariable> fetchVariables,
       final Boolean enabled,
       final List<String> tenantIds,
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
       final Integer maxRetries,
-      final Duration retryBackoff,
-      final JobHandlerFactory jobHandlerFactory) {
+      final Duration retryBackoff) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -79,22 +86,29 @@ public class JobWorkerValue implements Cloneable {
     this.streamTimeout = streamTimeout;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
-    this.jobHandlerFactory = jobHandlerFactory;
   }
 
-  public String getType() {
+  public List<FetchVariable> getFetchVariables() {
+    return fetchVariables;
+  }
+
+  public void setFetchVariables(final List<FetchVariable> fetchVariables) {
+    this.fetchVariables = fetchVariables;
+  }
+
+  public Type getType() {
     return type;
   }
 
-  public void setType(final String type) {
+  public void setType(final Type type) {
     this.type = type;
   }
 
-  public String getName() {
+  public Name getName() {
     return name;
   }
 
-  public void setName(final String name) {
+  public void setName(final Name name) {
     this.name = name;
   }
 
@@ -138,14 +152,6 @@ public class JobWorkerValue implements Cloneable {
     this.autoComplete = autoComplete;
   }
 
-  public List<String> getFetchVariables() {
-    return fetchVariables;
-  }
-
-  public void setFetchVariables(final List<String> fetchVariables) {
-    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
-  }
-
   public Boolean getEnabled() {
     return enabled;
   }
@@ -159,7 +165,9 @@ public class JobWorkerValue implements Cloneable {
   }
 
   public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = Collections.unmodifiableList(tenantIds);
+    if (tenantIds != null) {
+      this.tenantIds = Collections.unmodifiableList(tenantIds);
+    }
   }
 
   public Boolean getForceFetchAllVariables() {
@@ -202,13 +210,6 @@ public class JobWorkerValue implements Cloneable {
     this.retryBackoff = retryBackoff;
   }
 
-  public JobHandlerFactory getJobHandlerFactory() {
-    return jobHandlerFactory;
-  }
-
-  public void setJobHandlerFactory(final JobHandlerFactory jobHandlerFactory) {
-    this.jobHandlerFactory = jobHandlerFactory;
-  }
 
   @Deprecated(forRemoval = true)
   public MethodInfo getMethodInfo() {
@@ -229,7 +230,6 @@ public class JobWorkerValue implements Cloneable {
         maxJobsActive,
         requestTimeout,
         pollInterval,
-        autoComplete,
         fetchVariables,
         enabled,
         tenantIds,
@@ -237,8 +237,7 @@ public class JobWorkerValue implements Cloneable {
         streamEnabled,
         streamTimeout,
         maxRetries,
-        jobHandlerFactory,
-        retryBackoff);
+        jobHandlerFactory);
   }
 
   @Override
@@ -253,7 +252,6 @@ public class JobWorkerValue implements Cloneable {
         && Objects.equals(maxJobsActive, that.maxJobsActive)
         && Objects.equals(requestTimeout, that.requestTimeout)
         && Objects.equals(pollInterval, that.pollInterval)
-        && Objects.equals(autoComplete, that.autoComplete)
         && Objects.equals(fetchVariables, that.fetchVariables)
         && Objects.equals(enabled, that.enabled)
         && Objects.equals(tenantIds, that.tenantIds)
@@ -262,57 +260,83 @@ public class JobWorkerValue implements Cloneable {
         && Objects.equals(streamTimeout, that.streamTimeout)
         && Objects.equals(maxRetries, that.maxRetries)
         && Objects.equals(retryBackoff, that.retryBackoff)
-        && Objects.equals(jobHandlerFactory, that.jobHandlerFactory);
+        && Objects.equals(autoComplete, that.autoComplete);
   }
 
   @Override
   public JobWorkerValue clone() {
     try {
-      final JobWorkerValue clone = (JobWorkerValue) super.clone();
-      // TODO: copy mutable state here, so the clone can't change the internals of the original
+      final ObjectMapper objectMapper =
+          JsonMapper.builder().addModule(new JavaTimeModule()).build();
+      final JobWorkerValue clone =
+          objectMapper.readValue(objectMapper.writeValueAsString(this), JobWorkerValue.class);
+      clone.setMethodInfo(getMethodInfo());
       return clone;
-    } catch (final CloneNotSupportedException e) {
-      throw new AssertionError();
+    } catch (final JsonProcessingException e) {
+      throw new RuntimeException("Error while cloning " + this, e);
     }
   }
 
   @Override
   public String toString() {
     return "JobWorkerValue{"
-        + "type='"
-        + type
-        + '\''
+        + "autoComplete="
+        + autoComplete
+        + ", maxRetries="
+        + maxRetries
+        + ", streamTimeout="
+        + streamTimeout
+        + ", streamEnabled="
+        + streamEnabled
+        + ", forceFetchAllVariables="
+        + forceFetchAllVariables
+        + ", tenantIds="
+        + tenantIds
+        + ", enabled="
+        + enabled
+        + ", fetchVariables="
+        + fetchVariables
+        + ", pollInterval="
+        + pollInterval
+        + ", requestTimeout="
+        + requestTimeout
+        + ", maxJobsActive="
+        + maxJobsActive
+        + ", timeout="
+        + timeout
         + ", name='"
         + name
         + '\''
-        + ", timeout="
-        + timeout
-        + ", maxJobsActive="
-        + maxJobsActive
-        + ", requestTimeout="
-        + requestTimeout
-        + ", pollInterval="
-        + pollInterval
-        + ", autoComplete="
-        + autoComplete
-        + ", fetchVariables="
-        + fetchVariables
-        + ", enabled="
-        + enabled
-        + ", tenantIds="
-        + tenantIds
-        + ", forceFetchAllVariables="
-        + forceFetchAllVariables
-        + ", streamEnabled="
-        + streamEnabled
-        + ", streamTimeout="
-        + streamTimeout
-        + ", maxRetries="
-        + maxRetries
-        + ", retryBackoff="
-        + retryBackoff
-        + ", jobWorkerFactory="
-        + jobHandlerFactory
+        + ", type='"
+        + type
+        + '\''
         + '}';
+  }
+
+  public record Name(String value, FieldSource source) {}
+
+  public record Type(String value, FieldSource source) {}
+
+  public record FetchVariable(String value, FieldSource source) {}
+
+  public enum FieldSource {
+    EMPTY_FIELD(true),
+    GENERATED_FROM_METHOD_INFO(true),
+    FROM_ANNOTATION(false),
+    FROM_DEFAULT_PROPERTIES(false),
+    FROM_OVERRIDE_PROPERTIES(false),
+    FROM_ACTUATOR(false),
+    @Deprecated(forRemoval = true)
+    LEGACY(false);
+
+    private final boolean generated;
+
+    FieldSource(final boolean generated) {
+      this.generated = generated;
+    }
+
+    public boolean isGenerated() {
+      return generated;
+    }
   }
 }

@@ -21,6 +21,8 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.spring.client.metrics.CamundaClientMetricsBridge;
 import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.time.Duration;
@@ -38,15 +40,19 @@ public class JobWorkerFactory {
   public JobWorker createJobWorker(
       final CamundaClient camundaClient,
       final JobWorkerValue jobWorkerValue,
-      final JobHandler jobHandler) {
+      final JobHandlerFactory jobHandlerFactory) {
+    final JobHandler jobHandler =
+        jobHandlerFactory.getJobHandler(
+            new JobHandlerFactoryContext(jobWorkerValue, camundaClient));
     final JobWorkerBuilderStep1.JobWorkerBuilderStep3 builder =
         camundaClient
             .newWorker()
-            .jobType(jobWorkerValue.getType())
+            .jobType(jobWorkerValue.getType().value())
             .handler(jobHandler)
-            .name(jobWorkerValue.getName())
+            .name(jobWorkerValue.getName().value())
             .backoffSupplier(backoffSupplier)
-            .metrics(new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType()));
+            .metrics(
+                new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType().value()));
 
     if (jobWorkerValue.getMaxJobsActive() != null && jobWorkerValue.getMaxJobsActive() > 0) {
       builder.maxJobsActive(jobWorkerValue.getMaxJobsActive());
@@ -62,7 +68,8 @@ public class JobWorkerFactory {
     }
     if (jobWorkerValue.getFetchVariables() != null
         && !jobWorkerValue.getFetchVariables().isEmpty()) {
-      builder.fetchVariables(jobWorkerValue.getFetchVariables());
+      builder.fetchVariables(
+          jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList());
     }
     if (jobWorkerValue.getTenantIds() != null && !jobWorkerValue.getTenantIds().isEmpty()) {
       builder.tenantIds(jobWorkerValue.getTenantIds());

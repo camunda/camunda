@@ -17,6 +17,8 @@ package io.camunda.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
@@ -28,13 +30,15 @@ import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.BeanInfo;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import io.camunda.spring.client.jobhandling.DocumentContext;
-import io.camunda.spring.client.jobhandling.SpringBeanJobHandlerFactory;
+import java.lang.reflect.Field;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
@@ -54,6 +58,7 @@ import java.util.function.Function;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.ReflectionUtils;
 
 public class AnnotationUtil {
   private static final Logger LOG = LoggerFactory.getLogger(AnnotationUtil.class);
@@ -156,24 +161,45 @@ public class AnnotationUtil {
     final Optional<JobWorker> methodAnnotation = methodInfo.getAnnotation(JobWorker.class);
     if (methodAnnotation.isPresent()) {
       final JobWorker annotation = methodAnnotation.get();
+      final JobWorkerValue.Name name =
+          "".equals(annotation.name())
+              ? new JobWorkerValue.Name(
+                  methodInfo.getBeanName() + "#" + methodInfo.getMethodName(),
+                  FieldSource.GENERATED_FROM_METHOD_INFO)
+              : new JobWorkerValue.Name(annotation.name(), FieldSource.FROM_ANNOTATION);
+      final JobWorkerValue.Type type =
+          "".equals(annotation.type())
+              ? new JobWorkerValue.Type(
+                  methodInfo.getMethodName(), FieldSource.GENERATED_FROM_METHOD_INFO)
+              : new JobWorkerValue.Type(annotation.type(), FieldSource.FROM_ANNOTATION);
+      final List<FetchVariable> fetchVariables = new ArrayList<>();
+      fetchVariables.addAll(
+          Arrays.stream(annotation.fetchVariables())
+              .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.FROM_ANNOTATION))
+              .toList());
+      fetchVariables.addAll(
+          usedVariableNames(methodInfo).stream()
+              .map(
+                  fetchVariable ->
+                      new FetchVariable(fetchVariable, FieldSource.GENERATED_FROM_METHOD_INFO))
+              .toList());
       return Optional.of(
               new JobWorkerValue(
-                  annotation.type(),
-                  annotation.name(),
+                  type,
+                  name,
                   Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
                   annotation.maxJobsActive(),
                   Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
                   Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
                   annotation.autoComplete(),
-                  Arrays.asList(annotation.fetchVariables()),
+                  fetchVariables,
                   annotation.enabled(),
                   Arrays.asList(annotation.tenantIds()),
-                  annotation.fetchAllVariables(),
+                  annotation.fetchAllVariables() || usesActivatedJob(methodInfo),
                   annotation.streamEnabled(),
                   Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
                   annotation.maxRetries(),
-                  Duration.of(annotation.retryBackoff(), ChronoUnit.MILLIS),
-                  new SpringBeanJobHandlerFactory(methodInfo)))
+                  Duration.of(annotation.retryBackoff(), ChronoUnit.MILLIS)))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
@@ -183,30 +209,88 @@ public class AnnotationUtil {
     return Optional.empty();
   }
 
+  private static boolean usesActivatedJob(final MethodInfo methodInfo) {
+    return methodInfo.getParameters().stream()
+        .anyMatch(
+            p ->
+                p.getParameterInfo().getType().isAssignableFrom(ActivatedJob.class)
+                    || p.getParameterInfo()
+                        .getType()
+                        .isAssignableFrom(io.camunda.zeebe.client.api.response.ActivatedJob.class));
+  }
+
+  public static List<String> usedVariableNames(final MethodInfo methodInfo) {
+    final List<String> result = new ArrayList<>();
+    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
+    parameters.forEach(
+        pi ->
+            ReflectionUtils.doWithFields(
+                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
+    result.addAll(
+        getVariableParameters(methodInfo).stream()
+            .map(AnnotationUtil::getVariableValue)
+            .filter(Optional::isPresent)
+            .map(Optional::get)
+            .map(VariableValue::getName)
+            .toList());
+    return result;
+  }
+
+  private static String extractFieldName(final Field field) {
+    if (field.isAnnotationPresent(JsonProperty.class)) {
+      final String value = field.getAnnotation(JsonProperty.class).value();
+      if (StringUtils.isNotBlank(value)) {
+        return value;
+      }
+    }
+    return field.getName();
+  }
+
   private static Optional<JobWorkerValue> getJobWorkerValueLegacyInternal(
       final MethodInfo methodInfo) {
     final Optional<io.camunda.zeebe.spring.client.annotation.JobWorker> methodAnnotation =
         methodInfo.getAnnotation(io.camunda.zeebe.spring.client.annotation.JobWorker.class);
     if (methodAnnotation.isPresent()) {
       final io.camunda.zeebe.spring.client.annotation.JobWorker annotation = methodAnnotation.get();
+      final JobWorkerValue.Name name =
+          "".equals(annotation.name())
+              ? new JobWorkerValue.Name(
+                  methodInfo.getBeanName() + "#" + methodInfo.getMethodName(),
+                  FieldSource.GENERATED_FROM_METHOD_INFO)
+              : new JobWorkerValue.Name(annotation.name(), FieldSource.FROM_ANNOTATION);
+      final JobWorkerValue.Type type =
+          "".equals(annotation.type())
+              ? new JobWorkerValue.Type(
+                  methodInfo.getMethodName(), FieldSource.GENERATED_FROM_METHOD_INFO)
+              : new JobWorkerValue.Type(annotation.type(), FieldSource.FROM_ANNOTATION);
+      final List<FetchVariable> fetchVariables = new ArrayList<>();
+      fetchVariables.addAll(
+          Arrays.stream(annotation.fetchVariables())
+              .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.FROM_ANNOTATION))
+              .toList());
+      fetchVariables.addAll(
+          usedVariableNames(methodInfo).stream()
+              .map(
+                  fetchVariable ->
+                      new FetchVariable(fetchVariable, FieldSource.GENERATED_FROM_METHOD_INFO))
+              .toList());
       return Optional.of(
               new JobWorkerValue(
-                  annotation.type(),
-                  annotation.name(),
+                  type,
+                  name,
                   Duration.of(annotation.timeout(), ChronoUnit.MILLIS),
                   annotation.maxJobsActive(),
                   Duration.of(annotation.requestTimeout(), ChronoUnit.SECONDS),
                   Duration.of(annotation.pollInterval(), ChronoUnit.MILLIS),
                   annotation.autoComplete(),
-                  Arrays.asList(annotation.fetchVariables()),
+                  fetchVariables,
                   annotation.enabled(),
                   Arrays.asList(annotation.tenantIds()),
-                  annotation.fetchAllVariables(),
+                  annotation.fetchAllVariables() || usesActivatedJob(methodInfo),
                   annotation.streamEnabled(),
                   Duration.of(annotation.streamTimeout(), ChronoUnit.MILLIS),
                   annotation.maxRetries(),
-                  Duration.ZERO,
-                  new SpringBeanJobHandlerFactory(methodInfo)))
+                  Duration.ZERO))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);

@@ -36,6 +36,8 @@ import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.spring.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.spring.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
@@ -76,21 +78,18 @@ public class JobHandlerInvokingBeansTest {
       value = Response.class,
       names = {"VOID", "RESPONSE"})
   void shouldAutoComplete(final Response response) throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(AutoComplete.YES, response, List.of()));
+    final TestDimension testDimension = new TestDimension(AutoComplete.YES, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        jobWorkerValue
-            .getJobHandlerFactory()
-            .getJobHandler(
-                new SpringBeanJobHandlerFactoryContext(
-                    commandExceptionHandlingStrategy(),
-                    metricsRecorder(),
-                    parameterResolverStrategy(),
-                    resultProcessorStrategy(),
-                    parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
-                    jobWorkerValue));
-
+        new SpringBeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder(),
+                parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue))
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final CompleteJobCommandStep1 completeJobCommandStep1 = mock(CompleteJobCommandStep1.class);
     final CamundaFuture<CompleteJobResponse> future = mock(CamundaFuture.class);
@@ -109,21 +108,19 @@ public class JobHandlerInvokingBeansTest {
 
   @Test
   void shouldNotAutoComplete() throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(AutoComplete.NO, Response.VOID, List.of()));
+    final TestDimension testDimension =
+        new TestDimension(AutoComplete.NO, Response.VOID, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        jobWorkerValue
-            .getJobHandlerFactory()
-            .getJobHandler(
-                new SpringBeanJobHandlerFactoryContext(
-                    commandExceptionHandlingStrategy(),
-                    metricsRecorder(),
-                    parameterResolverStrategy(),
-                    resultProcessorStrategy(),
-                    parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
-                    jobWorkerValue));
-
+        new SpringBeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder(),
+                parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue))
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
     jobHandler.handle(jobClient, job);
@@ -135,20 +132,18 @@ public class JobHandlerInvokingBeansTest {
   @ParameterizedTest
   @MethodSource("shouldFailJobSource")
   void shouldFailJob(final AutoComplete autoComplete, final Response response) throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
+    final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        jobWorkerValue
-            .getJobHandlerFactory()
-            .getJobHandler(
-                new SpringBeanJobHandlerFactoryContext(
-                    commandExceptionHandlingStrategy(),
-                    metricsRecorder(),
-                    parameterResolverStrategy(),
-                    resultProcessorStrategy(),
-                    parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
-                    jobWorkerValue));
+        new SpringBeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder(),
+                parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue))
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -161,20 +156,18 @@ public class JobHandlerInvokingBeansTest {
   @MethodSource("shouldThrowBpmnErrorSource")
   void shouldThrowBpmnError(final AutoComplete autoComplete, final Response response)
       throws Exception {
-    final JobWorkerValue jobWorkerValue =
-        jobWorkerValue(new TestDimension(autoComplete, response, List.of()));
+    final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
+    final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        jobWorkerValue
-            .getJobHandlerFactory()
-            .getJobHandler(
-                new SpringBeanJobHandlerFactoryContext(
-                    commandExceptionHandlingStrategy(),
-                    metricsRecorder(),
-                    parameterResolverStrategy(),
-                    resultProcessorStrategy(),
-                    parameterResolvers(jobWorkerValue),
-            resultProcessor(jobWorkerValue),
-                    jobWorkerValue));
+        new SpringBeanJobHandlerFactory(
+                methodInfo(testDimension),
+                commandExceptionHandlingStrategy(),
+                parameterResolverStrategy(),
+                resultProcessorStrategy(),
+                metricsRecorder(),
+                parameterResolvers(jobWorkerValue),
+            resultProcessor(jobWorkerValue))
+            .getJobHandler(new JobHandlerFactoryContext(jobWorkerValue, mock(CamundaClient.class)));
 
     final JobClient jobClient = mock(JobClient.class);
     final ActivatedJob job = mock(ActivatedJob.class);
@@ -185,17 +178,20 @@ public class JobHandlerInvokingBeansTest {
   }
 
   private ParameterResolverStrategy parameterResolverStrategy() {
-    return new DefaultParameterResolverStrategy(
-        new CamundaObjectMapper(), mock(CamundaClient.class));
+    return new DefaultParameterResolverStrategy(new CamundaObjectMapper());
   }
 
   private static ResultProcessorStrategy resultProcessorStrategy() {
     return new DefaultResultProcessorStrategy(
-        mock(CamundaClient.class), new DefaultDocumentResultProcessorFailureHandlingStrategy());
+        new DefaultDocumentResultProcessorFailureHandlingStrategy());
   }
 
   private static JobWorkerValue jobWorkerValue(final TestDimension testDimension) {
     return JobWorkerPermutationsUtil.jobWorkerValue(JobWorkerPermutations.class, testDimension);
+  }
+
+  private static MethodInfo methodInfo(final TestDimension testDimension) {
+    return JobWorkerPermutationsUtil.getMethodInfo(JobWorkerPermutations.class, testDimension);
   }
 
   private static Stream<Arguments> shouldThrowBpmnErrorSource() {
