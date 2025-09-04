@@ -55,7 +55,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(21)).createAuthorization(results.capture());
+    verify(authorizationServices, times(26)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
     assertThat(requests).containsExactlyElementsOf(ROLE_PERMISSIONS);
   }
@@ -75,6 +75,6 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     migrationHandler.migrate();
 
     // then
-    verify(authorizationServices, times(22)).createAuthorization(any());
+    verify(authorizationServices, times(26)).createAuthorization(any());
   }
 }

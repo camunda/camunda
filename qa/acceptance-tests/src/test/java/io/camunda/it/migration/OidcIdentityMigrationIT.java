@@ -228,7 +228,11 @@ public class OidcIdentityMigrationIT {
                 "operate",
                 ResourceType.RESOURCE,
                 Set.of(
-                    PermissionType.READ, PermissionType.DELETE_PROCESS, PermissionType.DELETE_DRD)),
+                    PermissionType.READ,
+                    PermissionType.DELETE_PROCESS,
+                    PermissionType.DELETE_DRD,
+                    PermissionType.DELETE_FORM,
+                    PermissionType.DELETE_RESOURCE)),
             tuple(
                 "operate",
                 ResourceType.DECISION_DEFINITION,
@@ -246,10 +250,13 @@ public class OidcIdentityMigrationIT {
                 "operate",
                 ResourceType.PROCESS_DEFINITION,
                 Set.of(
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.READ_PROCESS_DEFINITION,
-                    PermissionType.DELETE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE,
-                    PermissionType.READ_PROCESS_INSTANCE)),
+                    PermissionType.MODIFY_PROCESS_INSTANCE,
+                    PermissionType.CANCEL_PROCESS_INSTANCE,
+                    PermissionType.DELETE_PROCESS_INSTANCE)),
             tuple(
                 "operate",
                 ResourceType.BATCH,
