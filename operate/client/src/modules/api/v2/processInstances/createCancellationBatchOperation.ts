@@ -13,7 +13,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {requestWithThrow} from 'modules/request';
 
-const cancelProcessInstancesBatchOperation = async (
+const createCancellationBatchOperation = async (
   payload: CreateCancellationBatchOperationRequestBody,
 ) => {
   return requestWithThrow<CreateCancellationBatchOperationResponseBody>({
@@ -23,4 +23,4 @@ const cancelProcessInstancesBatchOperation = async (
   });
 };
 
-export {cancelProcessInstancesBatchOperation};
+export {createCancellationBatchOperation};
