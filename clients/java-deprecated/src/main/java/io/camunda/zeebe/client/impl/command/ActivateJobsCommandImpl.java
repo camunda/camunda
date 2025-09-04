@@ -29,7 +29,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.zeebe.client.protocol.rest.JobActivationRequest;
-import io.camunda.zeebe.client.protocol.rest.JobActivationResponse;
+import io.camunda.zeebe.client.protocol.rest.JobActivationResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -177,7 +177,7 @@ public final class ActivateJobsCommandImpl
         "/jobs/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        JobActivationResponse.class,
+        JobActivationResult.class,
         response::addResponse,
         result);
     return result;

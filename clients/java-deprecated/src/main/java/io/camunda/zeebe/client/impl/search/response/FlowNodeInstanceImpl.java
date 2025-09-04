@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.FlowNodeInstance;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceItem;
+import io.camunda.zeebe.client.protocol.rest.ElementInstanceResult;
 
 public final class FlowNodeInstanceImpl implements FlowNodeInstance {
 
@@ -34,7 +34,7 @@ public final class FlowNodeInstanceImpl implements FlowNodeInstance {
   private final String treePath;
   private final String type;
 
-  public FlowNodeInstanceImpl(final FlowNodeInstanceItem item) {
+  public FlowNodeInstanceImpl(final ElementInstanceResult item) {
     flowNodeInstanceKey = item.getFlowNodeInstanceKey();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();

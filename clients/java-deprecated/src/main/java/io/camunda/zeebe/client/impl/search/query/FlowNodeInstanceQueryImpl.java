@@ -34,9 +34,8 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.FlownodeInstanceSortImpl;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.FlowNodeInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.ElementInstanceSearchQuery;
+import io.camunda.zeebe.client.protocol.rest.ElementInstanceSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -49,16 +48,16 @@ import org.apache.hc.client5.http.config.RequestConfig;
  */
 @Deprecated
 public class FlowNodeInstanceQueryImpl
-    extends TypedSearchRequestPropertyProvider<FlowNodeInstanceSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<ElementInstanceSearchQuery>
     implements FlownodeInstanceQuery {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final FlowNodeInstanceSearchQueryRequest request;
+  private final ElementInstanceSearchQuery request;
   private final RequestConfig.Builder httpRequestConfig;
 
   public FlowNodeInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new FlowNodeInstanceSearchQueryRequest();
+    request = new ElementInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -77,7 +76,7 @@ public class FlowNodeInstanceQueryImpl
         "/flownode-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        FlowNodeInstanceSearchQueryResponse.class,
+        ElementInstanceSearchQueryResult.class,
         SearchResponseMapper::toFlowNodeInstanceSearchResponse,
         result);
     return result;
@@ -85,7 +84,7 @@ public class FlowNodeInstanceQueryImpl
 
   @Override
   public FlownodeInstanceQuery filter(final FlownodeInstanceFilter value) {
-    final FlowNodeInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.ElementInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -120,7 +119,7 @@ public class FlowNodeInstanceQueryImpl
   }
 
   @Override
-  protected FlowNodeInstanceSearchQueryRequest getSearchRequestProperty() {
+  protected ElementInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

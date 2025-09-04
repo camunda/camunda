@@ -32,9 +32,9 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQuery;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
 import java.time.Duration;
@@ -50,16 +50,16 @@ import org.apache.hc.client5.http.config.RequestConfig;
  */
 @Deprecated
 public class ProcessInstanceQueryImpl
-    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<ProcessInstanceSearchQuery>
     implements ProcessInstanceQuery {
 
-  private final ProcessInstanceSearchQueryRequest request;
+  private final ProcessInstanceSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessInstanceQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new ProcessInstanceSearchQueryRequest();
+    request = new ProcessInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -78,7 +78,7 @@ public class ProcessInstanceQueryImpl
         "/process-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        ProcessInstanceSearchQueryResponse.class,
+        ProcessInstanceSearchQueryResult.class,
         SearchResponseMapper::toProcessInstanceSearchResponse,
         result);
     return result;
@@ -86,7 +86,7 @@ public class ProcessInstanceQueryImpl
 
   @Override
   public ProcessInstanceQuery filter(final ProcessInstanceFilter value) {
-    final ProcessInstanceFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.ProcessInstanceFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -121,7 +121,7 @@ public class ProcessInstanceQueryImpl
   }
 
   @Override
-  protected ProcessInstanceSearchQueryRequest getSearchRequestProperty() {
+  protected ProcessInstanceSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.Operation;
-import io.camunda.zeebe.client.protocol.rest.BatchBatchOperationItemResponseResponse;
+import io.camunda.zeebe.client.protocol.rest.BatchOperationItemResponse;
 import java.util.Optional;
 
 /**

@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.ProcessInstanceReference;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceReferenceItem;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceResult;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -30,7 +30,7 @@ public class ProcessInstanceReferenceImpl implements ProcessInstanceReference {
   private final String processDefinitionId;
   private final String processDefinitionName;
 
-  public ProcessInstanceReferenceImpl(final ProcessInstanceReferenceItem item) {
+  public ProcessInstanceReferenceImpl(final ProcessInstanceResult item) {
     instanceId = item.getInstanceId();
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionName = item.getProcessDefinitionName();

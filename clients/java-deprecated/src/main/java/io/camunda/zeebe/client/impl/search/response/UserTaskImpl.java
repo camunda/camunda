@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.UserTask;
-import io.camunda.zeebe.client.protocol.rest.UserTaskItem;
+import io.camunda.zeebe.client.protocol.rest.UserTaskResult;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +49,7 @@ public class UserTaskImpl implements UserTask {
   private final Map<String, String> customHeaders;
   private final Integer priority;
 
-  public UserTaskImpl(final UserTaskItem item) {
+  public UserTaskImpl(final UserTaskResult item) {
     key = item.getKey();
     state = item.getState();
     assignee = item.getAssignee();

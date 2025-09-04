@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.ProcessInstance;
-import io.camunda.zeebe.client.protocol.rest.ProcessInstanceItem;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceResult;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -46,7 +46,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final List<OperationImpl> operations;
   private final List<ProcessInstanceReferenceImpl> callHierarchy;
 
-  public ProcessInstanceImpl(final ProcessInstanceItem item) {
+  public ProcessInstanceImpl(final ProcessInstanceResult item) {
     this.key = item.getKey();
     this.processName = item.getProcessDefinitionName();
     this.processVersion = item.getProcessDefinitionVersion();

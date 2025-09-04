@@ -16,9 +16,9 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.Incident;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem.ErrorTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.IncidentItem.StateEnum;
+import io.camunda.zeebe.client.protocol.rest.IncidentResult;
+import io.camunda.zeebe.client.protocol.rest.IncidentResult.ErrorTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.IncidentResult.StateEnum;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -42,7 +42,7 @@ public class IncidentImpl implements Incident {
   private final String treePath;
   private final String tenantId;
 
-  public IncidentImpl(final IncidentItem item) {
+  public IncidentImpl(final IncidentResult item) {
     key = item.getKey();
     processDefinitionKey = item.getProcessDefinitionKey();
     bpmnProcessId = item.getProcessDefinitionId();

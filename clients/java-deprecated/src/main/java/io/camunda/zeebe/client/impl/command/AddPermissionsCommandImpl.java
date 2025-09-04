@@ -25,11 +25,11 @@ import io.camunda.zeebe.client.api.command.FinalCommandStep;
 import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequest.ResourceTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationPatchRequestPermissionsInner.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest;
+import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.ActionEnum;
+import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.ResourceTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest;
+import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.PermissionTypeEnum;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,18 +48,18 @@ public class AddPermissionsCommandImpl
         AddPermissionsCommandStep4 {
 
   private final String path;
-  private final AuthorizationPatchRequest request;
+  private final AuthorizationRequest request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private AuthorizationPatchRequestPermissionsInner currentPermission;
+  private AuthorizationRequest currentPermission;
 
   public AddPermissionsCommandImpl(
       final long ownerKey, final HttpClient httpClient, final JsonMapper jsonMapper) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
-    request = new AuthorizationPatchRequest().action(ActionEnum.ADD);
+    request = new AuthorizationRequest().action(ActionEnum.ADD);
     path = "/authorizations/" + ownerKey;
   }
 
@@ -73,7 +73,7 @@ public class AddPermissionsCommandImpl
   @Override
   public AddPermissionsCommandStep3 permission(final PermissionTypeEnum permissionType) {
     ArgumentUtil.ensureNotNull("permissionType", permissionType);
-    currentPermission = new AuthorizationPatchRequestPermissionsInner();
+    currentPermission = new AuthorizationRequest();
     currentPermission.permissionType(permissionType);
     request.addPermissionsItem(currentPermission);
     return this;

@@ -22,7 +22,7 @@ import static io.camunda.zeebe.client.api.search.SearchRequestBuilders.searchReq
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.search.SearchRequestPage;
-import io.camunda.zeebe.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.zeebe.client.api.search.filter.io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter;
 import io.camunda.zeebe.client.api.search.query.DecisionDefinitionQuery;
 import io.camunda.zeebe.client.api.search.query.FinalSearchQueryStep;
 import io.camunda.zeebe.client.api.search.response.DecisionDefinition;
@@ -32,11 +32,10 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQuery;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.client.protocol.rest.SearchQueryPageRequest;
-import io.camunda.zeebe.client.protocol.rest.SearchQuerySortRequest;
+import io.camunda.zeebe.client.protocol.rest.DecisionDefinitionSearchQuerySortRequest;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -50,30 +49,30 @@ import org.apache.hc.client5.http.config.RequestConfig;
  */
 @Deprecated
 public class DecisionDefinitionQueryImpl
-    extends TypedSearchRequestPropertyProvider<DecisionDefinitionSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<DecisionDefinitionSearchQuery>
     implements DecisionDefinitionQuery {
 
-  private final DecisionDefinitionSearchQueryRequest request;
+  private final DecisionDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionDefinitionQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new DecisionDefinitionSearchQueryRequest();
+    request = new DecisionDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final DecisionDefinitionFilter value) {
-    final DecisionDefinitionFilterRequest filter = provideSearchRequestProperty(value);
+  public DecisionDefinitionQuery filter(final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter value) {
+    final io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
 
   @Override
-  public DecisionDefinitionQuery filter(final Consumer<DecisionDefinitionFilter> fn) {
+  public DecisionDefinitionQuery filter(final Consumer<io.camunda.zeebe.client.protocol.rest.DecisionDefinitionFilter> fn) {
     return filter(decisionDefinitionFilter(fn));
   }
 
@@ -102,7 +101,7 @@ public class DecisionDefinitionQueryImpl
   }
 
   @Override
-  protected DecisionDefinitionSearchQueryRequest getSearchRequestProperty() {
+  protected DecisionDefinitionSearchQuery getSearchRequestProperty() {
     return request;
   }
 
@@ -119,7 +118,7 @@ public class DecisionDefinitionQueryImpl
         "/decision-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        DecisionDefinitionSearchQueryResponse.class,
+        DecisionDefinitionSearchQueryResult.class,
         SearchResponseMapper::toDecisionDefinitionSearchResponse,
         result);
     return result;

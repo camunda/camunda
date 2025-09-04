@@ -34,9 +34,9 @@ import io.camunda.zeebe.client.impl.search.SearchRequestPageImpl;
 import io.camunda.zeebe.client.impl.search.SearchResponseMapper;
 import io.camunda.zeebe.client.impl.search.TypedSearchRequestPropertyProvider;
 import io.camunda.zeebe.client.impl.search.sort.UserTaskSortImpl;
-import io.camunda.zeebe.client.protocol.rest.UserTaskFilterRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryRequest;
-import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResponse;
+import io.camunda.zeebe.client.protocol.rest.io.camunda.zeebe.client.protocol.rest.UserTaskFilter;
+import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQuery;
+import io.camunda.zeebe.client.protocol.rest.UserTaskSearchQueryResult;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -49,16 +49,16 @@ import org.apache.hc.client5.http.config.RequestConfig;
  */
 @Deprecated
 public class UserTaskQueryImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskSearchQueryRequest>
+    extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
     implements UserTaskQuery {
 
-  private final UserTaskSearchQueryRequest request;
+  private final UserTaskSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
   public UserTaskQueryImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
-    request = new UserTaskSearchQueryRequest();
+    request = new UserTaskSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -77,7 +77,7 @@ public class UserTaskQueryImpl
         "/user-tasks/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UserTaskSearchQueryResponse.class,
+        UserTaskSearchQueryResult.class,
         SearchResponseMapper::toUserTaskSearchResponse,
         result);
     return result;
@@ -85,7 +85,7 @@ public class UserTaskQueryImpl
 
   @Override
   public UserTaskQuery filter(final UserTaskFilter value) {
-    final UserTaskFilterRequest filter = provideSearchRequestProperty(value);
+    final io.camunda.zeebe.client.protocol.rest.UserTaskFilter filter = provideSearchRequestProperty(value);
     request.setFilter(filter);
     return this;
   }
@@ -120,7 +120,7 @@ public class UserTaskQueryImpl
   }
 
   @Override
-  protected UserTaskSearchQueryRequest getSearchRequestProperty() {
+  protected UserTaskSearchQuery getSearchRequestProperty() {
     return request;
   }
 }

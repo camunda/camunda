@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.search.response;
 
 import io.camunda.zeebe.client.api.search.response.DecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsItem;
+import io.camunda.zeebe.client.protocol.rest.DecisionRequirementsResult;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -32,7 +32,7 @@ public class DecisionRequirementsImpl implements DecisionRequirements {
   private final String dmnDecisionRequirementsName;
   private final Integer version;
 
-  public DecisionRequirementsImpl(final DecisionRequirementsItem item) {
+  public DecisionRequirementsImpl(final DecisionRequirementsResult item) {
     decisionRequirementsKey = item.getDecisionRequirementsKey();
     resourceName = item.getResourceName();
     tenantId = item.getTenantId();
