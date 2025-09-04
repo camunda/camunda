@@ -30,6 +30,7 @@ import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilde
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
@@ -99,31 +100,28 @@ public class CamundaClientCloudBuilderImpl
         properties,
         this::withClusterId,
         CLOUD_CLUSTER_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLUSTER_ID);
+        LegacyZeebeClientProperties.CLOUD_CLUSTER_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_ID,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_ID);
+        LegacyZeebeClientProperties.CLOUD_CLIENT_ID);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         this::withClientId,
         CLOUD_CLIENT_SECRET,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_CLIENT_SECRET);
+        LegacyZeebeClientProperties.CLOUD_CLIENT_SECRET);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::withRegion,
-        CLOUD_REGION,
-        io.camunda.zeebe.client.ClientProperties.CLOUD_REGION);
+        properties, this::withRegion, CLOUD_REGION, LegacyZeebeClientProperties.CLOUD_REGION);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         STREAM_ENABLED,
-        io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED);
+        LegacyZeebeClientProperties.STREAM_ENABLED);
 
     innerBuilder.withProperties(properties);
 
