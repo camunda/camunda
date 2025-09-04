@@ -214,6 +214,7 @@ public class SessionAuthenticationRefreshFilterTest {
       for (int i = 0; i < threads.length; i++) {
         threads[i] = new Thread(requestTask);
         threads[i].start();
+        Thread.sleep(10);
       }
 
       for (final Thread thread : threads) {
