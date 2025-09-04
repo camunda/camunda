@@ -53,10 +53,15 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 	if settings.Port != 8080 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.Port)
 	}
-	if settings.Username != "demo" && settings.Password != "demo" {
-		javaOpts += " -Dcamunda.security.initialization.users[0].username=" + settings.Username
-		javaOpts += " -Dcamunda.security.initialization.users[0].password=" + settings.Password
-		javaOpts += " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
+	// as demo is set in the default config, we only add the user settings if they differ
+	if settings.Username != "demo" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].username=" + settings.Username
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].name=" + settings.Username
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].email=" + settings.Username + "@example.com"
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.defaultRoles.admin.users[0]=" + settings.Username
+	}
+	if settings.Password != "demo" {
+		javaOpts = javaOpts + " -Dcamunda.security.initialization.users[0].password=" + settings.Password
 	}
 	if err := os.Setenv("CAMUNDA_OPERATE_ZEEBE_RESTADDRESS", protocol+"://localhost:"+strconv.Itoa(settings.Port)); err != nil {
 		log.Error().Err(err).Msg("failed to set CAMUNDA_OPERATE_ZEEBE_RESTADDRESS")
