@@ -30,6 +30,8 @@ public final class EngineConfiguration {
 
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF = Duration.ofMinutes(5);
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -48,6 +50,8 @@ public final class EngineConfiguration {
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+  private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
+  private Duration commandRedistributionMaxBackoff = DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -159,5 +163,26 @@ public final class EngineConfiguration {
   public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
     this.commandDistributionPaused = commandDistributionPaused;
     return this;
+  }
+
+  public Duration getCommandRedistributionInterval() {
+    return commandRedistributionInterval;
+  }
+
+  public EngineConfiguration setCommandRedistributionInterval(
+      final Duration commandRedistributionInterval) {
+    this.commandRedistributionInterval = commandRedistributionInterval;
+    return this;
+  }
+
+  public Duration getCommandRedistributionMaxBackoff() {
+    return commandRedistributionMaxBackoff;
+  }
+
+  public EngineConfiguration setCommandRedistributionMaxBackoff(
+      final Duration commandRedistributionMaxBackoff) {
+    this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
+    return this;
+  }
   }
 }

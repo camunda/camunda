@@ -208,9 +208,14 @@ public final class EngineProcessors {
         typedRecordProcessors,
         writers,
         processingState,
+<<<<<<< HEAD
         scheduledTaskStateFactory,
         interPartitionCommandSender,
         config.isCommandDistributionPaused());
+=======
+        partitionsCount,
+        config);
+>>>>>>> 25ce09a8 (feat: Implement configurable command distribution retry intervals)
 
     UserTaskEventProcessors.addUserTaskProcessors(
         typedRecordProcessors, processingState, bpmnBehaviors, writers);
@@ -442,6 +447,7 @@ public final class EngineProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final ProcessingState processingState,
+<<<<<<< HEAD
       final Supplier<ScheduledTaskState> scheduledTaskStateFactory,
       final InterPartitionCommandSender interPartitionCommandSender,
       final boolean isCommandDistributionPaused) {
@@ -452,6 +458,28 @@ public final class EngineProcessors {
             scheduledTaskStateFactory.get().getDistributionState(),
             interPartitionCommandSender,
             isCommandDistributionPaused));
+=======
+      final int staticPartitionsCount,
+      final EngineConfiguration config) {
+
+    {
+      final var scheduledTaskState = scheduledTaskStateSupplier.get();
+      // periodically retries command distribution
+      // Note that the CommandRedistributor runs in a separate actor, so it must not use the same
+      // state as the StreamProcessors as it runs in another RocksDB transaction as well.
+      // It can only use the state from scheduledTaskStateSupplier.
+      typedRecordProcessors.withListener(
+          new CommandRedistributor(
+              commandDistributionBehavior.withScheduledState(
+                  scheduledTaskState.getDistributionState()),
+              RoutingInfo.dynamic(
+                  scheduledTaskState.getRoutingState(),
+                  RoutingInfo.forStaticPartitions(staticPartitionsCount)),
+              config.isCommandDistributionPaused(),
+              config.getCommandRedistributionInterval(),
+              config.getCommandRedistributionMaxBackoff()));
+    }
+>>>>>>> 25ce09a8 (feat: Implement configurable command distribution retry intervals)
 
     final var distributionState = processingState.getDistributionState();
     typedRecordProcessors.onCommand(
