@@ -15,11 +15,15 @@
  */
 package io.camunda.process.test.api;
 
+import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byParentProcesInstanceKey;
+import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveChildProcessInstance;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveProcessInstance;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -27,6 +31,7 @@ import io.camunda.client.api.response.ProcessInstanceResult;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.search.response.MessageSubscriptionImpl;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
@@ -37,8 +42,10 @@ import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.function.Consumer;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -682,6 +689,84 @@ public class ProcessInstanceAssertTest {
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
           .hasVariable("x", 1)
           .hasActiveElements("A");
+    }
+  }
+
+  @Nested
+  class ParentChildProcesses {
+
+    private static final long PARENT_PROCESS_KEY = 2;
+    private static final long BAD_PARENT_PROCESS_KEY = 777;
+
+    @Test
+    void shouldFindChildProcess() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(
+                  newActiveChildProcessInstance(PROCESS_INSTANCE_KEY, PARENT_PROCESS_KEY).build()));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+          .isCreated();
+    }
+
+    @Test
+    void shouldReturnFirstValidChildProcess() {
+      // given
+      final List<ProcessInstance> searchResult = new ArrayList<>();
+      searchResult.add(
+          spy(newActiveChildProcessInstance(PROCESS_INSTANCE_KEY, PARENT_PROCESS_KEY).build()));
+      searchResult.add(spy(newActiveChildProcessInstance(2, PARENT_PROCESS_KEY).build()));
+      searchResult.add(spy(newActiveChildProcessInstance(3, PARENT_PROCESS_KEY).build()));
+
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(searchResult);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+          .isCreated();
+
+      final ProcessInstance firstChildProcessInstance = searchResult.get(0);
+      verify(firstChildProcessInstance, times(1)).getState();
+      verifyNoInteractions(searchResult.get(1));
+      verifyNoInteractions(searchResult.get(2));
+    }
+
+    @Test
+    void shouldFilterOutOtherParentProcesses() {
+      // given
+      final List<ProcessInstance> searchResult = new ArrayList<>();
+      searchResult.add(
+          spy(newActiveChildProcessInstance(PROCESS_INSTANCE_KEY, PARENT_PROCESS_KEY).build()));
+      searchResult.add(
+          spy(newActiveChildProcessInstance(PROCESS_INSTANCE_KEY, BAD_PARENT_PROCESS_KEY).build()));
+
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(searchResult);
+
+      // then
+      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+          .isCreated();
+
+      final ProcessInstance firstChildProcessInstance = searchResult.get(0);
+      verify(firstChildProcessInstance, times(1)).getState();
+      verifyNoInteractions(searchResult.get(1));
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldDescribeParentKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any())).thenReturn(Collections.emptyList());
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(
+                          byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+                      .isCreated())
+          .hasMessage(
+              "Process instance [parent key: %d] should be created but was not created.",
+              PARENT_PROCESS_KEY);
     }
   }
 
