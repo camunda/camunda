@@ -68,12 +68,12 @@ final class Partition {
         new StartupProcess<>(
             LOGGER,
             List.of(
-                new MetricsStep(),
-                new PartitionDirectoryStep(),
-                new SnapshotStoreStep(),
-                new RaftBootstrapStep(),
-                new ZeebePartitionStep(),
-                new PartitionRegistrationStep())));
+                new MetricsStep(context.partitionId()),
+                new PartitionDirectoryStep(context.partitionId()),
+                new SnapshotStoreStep(context.partitionId()),
+                new RaftBootstrapStep(context.partitionId()),
+                new ZeebePartitionStep(context.partitionId()),
+                new PartitionRegistrationStep(context.partitionId()))));
   }
 
   static Partition joining(final PartitionStartupContext context) {
@@ -81,12 +81,12 @@ final class Partition {
         context,
         new StartupProcess<>(
             List.of(
-                new MetricsStep(),
-                new PartitionDirectoryStep(),
-                new SnapshotStoreStep(),
-                new RaftJoinStep(),
-                new ZeebePartitionStep(),
-                new PartitionRegistrationStep())));
+                new MetricsStep(context.partitionId()),
+                new PartitionDirectoryStep(context.partitionId()),
+                new SnapshotStoreStep(context.partitionId()),
+                new RaftJoinStep(context.partitionId()),
+                new ZeebePartitionStep(context.partitionId()),
+                new PartitionRegistrationStep(context.partitionId()))));
   }
 
   ActorFuture<Partition> start() {
