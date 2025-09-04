@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.CorrelatedMessageMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel">
+    INSERT INTO ${prefix}CORRELATED_MESSAGE (
+      CORRELATION_KEY,
+      CORRELATION_TIME,
+      FLOW_NODE_ID,
+      FLOW_NODE_INSTANCE_KEY,
+      HISTORY_CLEANUP_DATE,
+      MESSAGE_KEY,
+      MESSAGE_NAME,
+      PARTITION_ID,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      SUBSCRIPTION_KEY,
+      TENANT_ID
+    )
+    VALUES (
+      #{correlationKey},
+      #{correlationTime, jdbcType=TIMESTAMP},
+      #{flowNodeId},
+      #{flowNodeInstanceKey},
+      #{historyCleanupDate, jdbcType=TIMESTAMP},
+      #{messageKey},
+      #{messageName},
+      #{partitionId},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processInstanceKey},
+      #{subscriptionKey},
+      #{tenantId}
+    )
+  </insert>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}CORRELATED_MESSAGE SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'CORRELATED_MESSAGE'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+</mapper>
