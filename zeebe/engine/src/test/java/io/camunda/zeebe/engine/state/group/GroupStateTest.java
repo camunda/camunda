@@ -121,4 +121,18 @@ public class GroupStateTest {
     final var group = groupState.get(groupId);
     assertThat(group).isEmpty();
   }
+
+  @Test
+  void shouldReturnNewCopiesOnGet() {
+    // given
+    final String id = "id";
+    groupState.create(new GroupRecord().setGroupId(id).setGroupKey(123L).setName("name"));
+
+    // when
+    final var group1 = groupState.get(id).get();
+    final var group2 = groupState.get(id).get();
+
+    // then
+    assertThat(group1).isNotSameAs(group2);
+  }
 }
