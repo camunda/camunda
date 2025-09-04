@@ -63,7 +63,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
-  private final AtomicBoolean allExportersOpened = new AtomicBoolean(false);
+  // using primitive boolean since it is only used in actor
+  private boolean allExportersOpened;
 
   // Use concrete type because it must be modifiable
   private final ArrayList<ExporterContainer> containers;
@@ -567,7 +568,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     actor.runOnCompletion(
         containerOpenFutures,
         (error) -> {
-          allExportersOpened.set(true);
+          allExportersOpened = true;
           if (state.hasExporters()) {
             final long snapshotPosition = state.getLowestPosition();
             // start reading and exporting
@@ -654,7 +655,7 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
 
   private boolean shouldExport() {
     return isOpened.get()
-        && allExportersOpened.get()
+        && allExportersOpened
         && !idle
         && logStreamReader.hasNext()
         && !inExportingPhase
