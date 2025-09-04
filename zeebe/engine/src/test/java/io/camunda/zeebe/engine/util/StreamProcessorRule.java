@@ -201,6 +201,10 @@ public final class StreamProcessorRule implements TestRule, CommandWriter {
     return streamProcessingComposite.getProcessingState(getLogName(partitionId));
   }
 
+  public StreamProcessorMode getStreamProcessorMode() {
+    return streamProcessorMode;
+  }
+
   public RecordStream events() {
     return new RecordStream(streams.events(getLogName(startPartitionId)));
   }
