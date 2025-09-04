@@ -50,7 +50,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
 public class SessionAuthenticationRefreshFilterTest {
 
-  class BaseTest {
+  abstract class BaseTest {
     @Autowired MockMvcTester mockMvcTester;
     Duration refreshInterval;
     @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
@@ -146,7 +146,7 @@ public class SessionAuthenticationRefreshFilterTest {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
 
-      final sendMultipleRequest result =
+      final var result =
           getSendMultipleRequest(session, authenticationProvider, mockMvcTester);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
@@ -181,7 +181,7 @@ public class SessionAuthenticationRefreshFilterTest {
       session.setAttribute(LAST_REFRESH_ATTR + "_LOCK", session.getId() + "LOCK");
     }
 
-    private sendMultipleRequest getSendMultipleRequest(
+    private SendMultipleRequest getSendMultipleRequest(
         final MockHttpSession session,
         final CamundaAuthenticationProvider authenticationProvider,
         final MockMvcTester mockMvcTester)
@@ -220,11 +220,10 @@ public class SessionAuthenticationRefreshFilterTest {
       for (final Thread thread : threads) {
         thread.join();
       }
-      final sendMultipleRequest result = new sendMultipleRequest(successfulRequests, threads);
-      return result;
+      return new SendMultipleRequest(successfulRequests, threads);
     }
 
-    private record sendMultipleRequest(AtomicInteger successfulRequests, Thread[] threads) {}
+    private record SendMultipleRequest(AtomicInteger successfulRequests, Thread[] threads) {}
   }
 
   @Nested
