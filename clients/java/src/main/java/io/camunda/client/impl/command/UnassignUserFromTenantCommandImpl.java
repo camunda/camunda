@@ -19,6 +19,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1.UnassignUserFromTenantCommandStep2;
+import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1.UnassignUserFromTenantCommandStep3;
 import io.camunda.client.api.response.UnassignUserFromTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class UnassignUserFromTenantCommandImpl
-    implements UnassignUserFromTenantCommandStep1, UnassignUserFromTenantCommandStep2 {
+    implements UnassignUserFromTenantCommandStep1,
+        UnassignUserFromTenantCommandStep2,
+        UnassignUserFromTenantCommandStep3 {
 
   private String tenantId;
   private String username;
@@ -47,7 +50,7 @@ public final class UnassignUserFromTenantCommandImpl
   }
 
   @Override
-  public UnassignUserFromTenantCommandStep2 tenantId(final String tenantId) {
+  public UnassignUserFromTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
