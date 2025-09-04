@@ -4923,13 +4923,15 @@ paths:
           schema:
             type: string
             format: date
+            example: "2025-06-07T13:14:15Z"
         - name: endTime
           in: query
           required: true
-          description: The end date for usage metrics, including this date.
+          description: The end date for usage metrics, excluding this date.
           schema:
             type: string
             format: date
+            example: "2026-07-08T13:14:15Z"
         - name: tenantId
           in: query
           required: false
@@ -4951,6 +4953,29 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/UsageMetricsResponse"
+              examples:
+                "Response without tenants":
+                  value:
+                    "processInstances": 5
+                    "decisionInstances": 23
+                    "activeTenants": 2
+                    "assignees": 3
+                    "tenants": {}
+                "Response with tenants":
+                  value:
+                    "processInstances": 5
+                    "decisionInstances": 23
+                    "activeTenants": 2
+                    "assignees": 3
+                    "tenants":
+                      "tenant1":
+                        "processInstances": 1
+                        "decisionInstances": 2
+                        "assignees": 1
+                      "tenant2":
+                        "processInstances": 4
+                        "decisionInstances": 21
+                        "assignees": 3
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7364,6 +7389,8 @@ components:
           type: object
           additionalProperties:
             type: object
+            title: The tenant ID.
+            description: The usage metrics for the specific tenant.
             allOf:
               - $ref: "#/components/schemas/UsageMetricsResponseItem"
     UsageMetricsResponseItem:

@@ -186,6 +186,27 @@ public class ProcessInstanceBuilder implements ProcessInstance {
     return this;
   }
 
+  public static ProcessInstanceBuilder newActiveChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newActiveProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
+  }
+
+  public static ProcessInstanceBuilder newCompletedChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newCompletedProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
+  }
+
+  public static ProcessInstanceBuilder newTerminatedChildProcessInstance(
+      final long processInstanceKey, final long parentElementInstanceKey) {
+
+    return newTerminatedProcessInstance(processInstanceKey)
+        .setParentProcessInstanceKey(parentElementInstanceKey);
+  }
+
   public static ProcessInstanceBuilder newActiveProcessInstance(final long processInstanceKey) {
     return new ProcessInstanceBuilder()
         .setProcessInstanceKey(processInstanceKey)

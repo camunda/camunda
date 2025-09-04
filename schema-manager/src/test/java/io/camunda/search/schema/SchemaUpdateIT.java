@@ -89,6 +89,8 @@ class SchemaUpdateIT {
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
             .withEnv("CAMUNDA_DATABASE_URL", url)
             .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
@@ -123,7 +125,10 @@ class SchemaUpdateIT {
             config,
             searchClientAdapter,
             indexDescriptors.templates().stream()
-                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
+                .filter(
+                    template ->
+                        !template.getVersion().startsWith(currentMinorVersion)
+                            && !template.getIndexName().contains("correlated-message"))
                 .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
@@ -198,7 +203,7 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config,
       final SearchClientAdapter searchClientAdapter,
       final List<IndexTemplateDescriptor> indexTemplateDescriptors) {
-    final int archivePeriodInDays = 30;
+    final int archivePeriodInDays = 20;
     final LocalDate today = LocalDate.now();
     for (final var indexTemplate : indexTemplateDescriptors) {
       IntStream.range(0, archivePeriodInDays)

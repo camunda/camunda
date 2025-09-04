@@ -25,6 +25,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
@@ -53,6 +54,7 @@ public class IndexDescriptors {
         Stream.of(
                 new AuthorizationIndex(indexPrefix, isElasticsearch),
                 new BatchOperationTemplate(indexPrefix, isElasticsearch),
+                new CorrelatedMessageTemplate(indexPrefix, isElasticsearch),
                 new DecisionIndex(indexPrefix, isElasticsearch),
                 new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
                 new DecisionRequirementsIndex(indexPrefix, isElasticsearch),

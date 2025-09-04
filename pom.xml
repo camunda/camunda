@@ -42,6 +42,7 @@
     <module>security</module>
     <module>migration</module>
     <module>configuration</module>
+    <module>load-tests/load-tester</module>
   </modules>
 
   <scm>

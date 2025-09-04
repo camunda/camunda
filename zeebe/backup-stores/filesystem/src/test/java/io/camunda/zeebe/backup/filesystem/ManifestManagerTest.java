@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
@@ -145,16 +146,20 @@ class ManifestManagerTest {
   private static Stream<Arguments> provideWildcardsForListManifests() {
     return Stream.of(
         Arguments.of(
-            new BackupIdentifierWildcardImpl(Optional.empty(), Optional.empty(), Optional.empty()),
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.empty(), CheckpointPattern.any()),
             6),
         Arguments.of(
-            new BackupIdentifierWildcardImpl(Optional.of(1337), Optional.empty(), Optional.empty()),
+            new BackupIdentifierWildcardImpl(
+                Optional.of(1337), Optional.empty(), CheckpointPattern.any()),
             4),
         Arguments.of(
-            new BackupIdentifierWildcardImpl(Optional.empty(), Optional.empty(), Optional.of(42L)),
+            new BackupIdentifierWildcardImpl(
+                Optional.empty(), Optional.empty(), CheckpointPattern.of(42L)),
             3),
         Arguments.of(
-            new BackupIdentifierWildcardImpl(Optional.of(1337), Optional.of(0), Optional.of(42L)),
+            new BackupIdentifierWildcardImpl(
+                Optional.of(1337), Optional.of(0), CheckpointPattern.of(42L)),
             1));
   }
 
