@@ -29,17 +29,19 @@ const buildMutationRequestBody = ({
   const requestBody:
     | CreateIncidentResolutionBatchOperationRequestBody
     | CreateCancellationBatchOperationRequestBody = {
-    elementId: baseFilter.activityId,
-    hasIncident: baseFilter.incidents,
+    filter: {
+      elementId: baseFilter.activityId,
+      hasIncident: baseFilter.incidents,
+    },
   };
 
   const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
   if (keyCriterion) {
-    requestBody.processInstanceKey = keyCriterion;
+    requestBody.filter.processInstanceKey = keyCriterion;
   }
 
   if (processDefinitionKey) {
-    requestBody.processDefinitionKey = processDefinitionKey;
+    requestBody.filter.processDefinitionKey = processDefinitionKey;
   }
 
   return requestBody;
