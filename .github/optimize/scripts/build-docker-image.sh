@@ -12,6 +12,10 @@ if [ "${IS_MAIN}" = "true" ]; then
     tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8-SNAPSHOT")
 fi
 
+if [ "${IS_STABLE_88}" = "true" ]; then
+    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8.8-SNAPSHOT")
+fi
+
 printf -v tag_arguments -- "-t %s " "${tags[@]}"
 docker buildx create --use
 

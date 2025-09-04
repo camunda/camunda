@@ -41,6 +41,7 @@ jobs:
           echo "VERSION=${{ steps.pom-info.outputs.project_version }}"
           echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_stable_branch }}"
           echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
+          echo "IS_STABLE_88=${{ github.ref == 'refs/heads/stable/8.8' }}"
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
         } >> "$GITHUB_ENV"
     # Generating a production build
