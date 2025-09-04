@@ -35,7 +35,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
     await createTenant(request, state, '2');
     await createTenant(request, state, '3');
     await assignGroupsToTenant(request, 2, 'tenantId1', state);
-    await assignGroupsToTenant(request, 3, 'tenantId2', state);
+    await assignGroupsToTenant(request, 1, 'tenantId2', state);
     await assignGroupsToTenant(request, 3, 'tenantId3', state);
   });
 
