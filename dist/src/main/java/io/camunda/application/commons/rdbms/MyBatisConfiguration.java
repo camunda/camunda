@@ -10,6 +10,7 @@ package io.camunda.application.commons.rdbms;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
@@ -270,6 +271,12 @@ public class MyBatisConfiguration {
   MapperFactoryBean<MessageSubscriptionMapper> messageSubscriptionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, MessageSubscriptionMapper.class);
+  }
+
+  @Bean
+  MapperFactoryBean<CorrelatedMessageMapper> correlatedMessageMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, CorrelatedMessageMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(
