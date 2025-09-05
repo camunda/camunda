@@ -112,6 +112,10 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   List<BackupInfo> list();
 
+  @RequestLine("GET /{prefix}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  List<BackupInfo> list(@Param final String prefix);
+
   @RequestLine("DELETE /{id}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   void delete(@Param final long id);

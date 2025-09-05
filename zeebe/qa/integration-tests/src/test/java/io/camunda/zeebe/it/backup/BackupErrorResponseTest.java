@@ -126,7 +126,7 @@ class BackupErrorResponseTest {
     @Test
     void shouldReturn400() {
       // when - then
-      assertThat(backupEndpoint.status(1).getStatus()).isEqualTo(400);
+      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(400);
     }
   }
 
@@ -154,7 +154,7 @@ class BackupErrorResponseTest {
       clusteringRule.disconnect(clusteringRule.getBroker(0));
 
       // when - then
-      assertThat(backupEndpoint.status(1).getStatus()).isEqualTo(504);
+      assertThat(backupEndpoint.query("1").getStatus()).isEqualTo(504);
     }
   }
 }

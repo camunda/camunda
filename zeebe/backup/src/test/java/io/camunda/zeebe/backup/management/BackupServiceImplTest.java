@@ -20,6 +20,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
+import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -66,7 +67,7 @@ class BackupServiceImplTest {
         .when(
             backupStore.list(
                 new BackupIdentifierWildcardImpl(
-                    Optional.empty(), Optional.of(2), Optional.of(3L))))
+                    Optional.empty(), Optional.of(2), CheckpointPattern.of(3L))))
         .thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
@@ -304,7 +305,7 @@ class BackupServiceImplTest {
             new BackupIdentifierWildcardImpl(
                 Optional.empty(),
                 Optional.of(inProgressBackup.id.partitionId()),
-                Optional.of(inProgressBackup.checkpointId()))))
+                CheckpointPattern.of(inProgressBackup.checkpointId()))))
         .thenReturn(CompletableFuture.completedFuture(List.of(status)));
 
     // when
@@ -350,7 +351,7 @@ class BackupServiceImplTest {
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId))))
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
 
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
@@ -374,7 +375,7 @@ class BackupServiceImplTest {
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), Optional.of(checkpointId))))
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
 
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
@@ -398,11 +399,11 @@ class BackupServiceImplTest {
 
     when(backupStore.list(
             new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), Optional.empty())))
+                Optional.empty(), Optional.of(partitionId), CheckpointPattern.any())))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2)));
 
     // when
-    final var backups = backupService.listBackups(partitionId, concurrencyControl).join();
+    final var backups = backupService.listBackups(partitionId, null, concurrencyControl).join();
 
     // then
     assertThat(backups).containsExactlyInAnyOrder(backup1, backup2);
