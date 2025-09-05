@@ -21,6 +21,7 @@ import io.camunda.migration.task.adapter.os.OpensearchAdapter;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.migration.task.util.TaskMigrationMetricRegistry;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.retry.RetryDecorator;
@@ -48,12 +49,13 @@ public class TaskMigrator implements Migrator {
   public TaskMigrator(
       final ConnectConfiguration connect,
       final MigrationProperties properties,
-      final MeterRegistry meterRegistry) {
+      final MeterRegistry meterRegistry,
+      final RetentionConfiguration retentionConfiguration) {
     configuration = properties.getMigrationConfiguration(getClass());
     adapter =
         connect.getTypeEnum().isElasticSearch()
-            ? new ElasticsearchAdapter(configuration, connect)
-            : new OpensearchAdapter(configuration, connect);
+            ? new ElasticsearchAdapter(configuration, connect, retentionConfiguration)
+            : new OpensearchAdapter(configuration, connect, retentionConfiguration);
     scheduler = Executors.newScheduledThreadPool(1);
     metricRegistry = new TaskMigrationMetricRegistry(meterRegistry);
   }
