@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
@@ -100,7 +100,7 @@ public class DocumentDataConsumerTest {
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
     // error is thrown when data exceeds buffer capacity
-    assertThrows(IOException.class, () -> consumer.consume(ByteBuffer.wrap(data)));
+    assertThatThrownBy(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));
