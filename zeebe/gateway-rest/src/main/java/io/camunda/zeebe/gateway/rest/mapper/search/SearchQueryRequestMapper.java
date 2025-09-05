@@ -21,6 +21,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.BatchOperationItemQuery;
 import io.camunda.search.query.BatchOperationQuery;
+import io.camunda.search.query.CorrelatedMessageQuery;
 import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
@@ -565,6 +566,17 @@ public final class SearchQueryRequestMapper {
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
+  }
+
+  public static Either<ProblemDetail, CorrelatedMessageQuery> toCorrelatedMessagesQuery(
+      final CorrelatedMessagesSearchQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.correlatedMessageSearchQuery().build());
+    }
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort = SearchQuerySortRequestMapper.toCorrelatedMessageSort(request.getSort());
+    final var filter = SearchQueryFilterMapper.toCorrelatedMessageFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::correlatedMessageSearchQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

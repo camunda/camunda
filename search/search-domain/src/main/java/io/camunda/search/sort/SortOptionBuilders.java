@@ -198,4 +198,13 @@ public final class SortOptionBuilders {
       final Function<MessageSubscriptionSort.Builder, ObjectBuilder<MessageSubscriptionSort>> fn) {
     return fn.apply(messageSubscription()).build();
   }
+
+  public static CorrelatedMessageSort.Builder correlatedMessage() {
+    return new CorrelatedMessageSort.Builder();
+  }
+
+  public static CorrelatedMessageSort correlatedMessage(
+      final Function<CorrelatedMessageSort.Builder, ObjectBuilder<CorrelatedMessageSort>> fn) {
+    return fn.apply(correlatedMessage()).build();
+  }
 }

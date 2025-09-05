@@ -26,6 +26,7 @@ import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
@@ -194,6 +195,12 @@ public class SearchQuerySortRequestMapper {
   static List<SearchQuerySortRequest<MessageSubscriptionSearchQuerySortRequest.FieldEnum>>
       fromMessageSubscriptionSearchQuerySortRequest(
           final List<MessageSubscriptionSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  static List<SearchQuerySortRequest<CorrelatedMessagesSearchQuerySortRequest.FieldEnum>>
+      fromCorrelatedMessagesSearchQuerySortRequest(
+          final List<CorrelatedMessagesSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -703,6 +710,41 @@ public class SearchQuerySortRequestMapper {
       }
     }
     return validationErrors;
+  }
+
+  static List<String> applyCorrelatedMessagesSortField(
+      final CorrelatedMessagesSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.CorrelatedMessagesSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case CORRELATION_KEY -> builder.correlationKey();
+        case CORRELATION_TIME -> builder.correlationTime();
+        case ELEMENT_ID -> builder.elementId();
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case MESSAGE_KEY -> builder.messageKey();
+        case MESSAGE_NAME -> builder.messageName();
+        case PARTITION_ID -> builder.partionId();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case SUBSCRIPTION_KEY -> builder.subscriptionKey();
+        case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
+      Either<List<String>, T> toCorrelatedMessageSort(
+          final List<CorrelatedMessagesSearchQuerySortRequest> requests) {
+    return toSearchQuerySort(
+        fromCorrelatedMessagesSearchQuerySortRequest(requests),
+        SortOptionBuilders::correlatedMessages,
+        SearchQuerySortRequestMapper::applyCorrelatedMessagesSortField);
   }
 
   static <T, B extends SortOption.AbstractBuilder<B> & ObjectBuilder<T>, F>
