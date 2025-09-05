@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const variables = [
   {

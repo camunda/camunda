@@ -43,7 +43,7 @@ import {
   startPolling as startPollingFlowNodeInstance,
 } from 'modules/utils/flowNodeInstance';
 import {init as initFlowNodeSelection} from 'modules/utils/flowNodeSelection';
-import {type ProcessInstance as ProcessInstanceType} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance as ProcessInstanceType} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   useIsRootNodeSelected,
   useRootNode,

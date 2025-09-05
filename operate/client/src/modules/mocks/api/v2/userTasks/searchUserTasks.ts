@@ -10,7 +10,7 @@ import {mockPostRequest} from '../../mockRequest';
 import {
   type QueryUserTasksResponseBody,
   endpoints,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const mockSearchUserTasks = () =>
   mockPostRequest<QueryUserTasksResponseBody>(

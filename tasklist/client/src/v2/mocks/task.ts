@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {UserTask} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
 import {currentUser} from 'common/mocks/current-user';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {uniqueId} from './utils';

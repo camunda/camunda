@@ -8,7 +8,7 @@
 
 import {fetchDecisionDefinitionXml} from 'modules/api/v2/decisionDefinitions/fetchDecisionDefinitionXml';
 import {genericQueryOptions} from '../genericQuery';
-import {type DecisionDefinition} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 
 function useDecisionDefinitionXmlOptions({
   decisionDefinitionKey,

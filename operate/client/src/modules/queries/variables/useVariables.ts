@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type QueryVariablesResponseBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';

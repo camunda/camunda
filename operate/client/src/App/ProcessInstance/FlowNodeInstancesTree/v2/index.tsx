@@ -39,7 +39,7 @@ import {
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
-import {type ProcessInstance} from '@vzeta/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const TREE_NODE_HEIGHT = 32;
 

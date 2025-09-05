@@ -8,7 +8,7 @@
 
 import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElementInstances';
-import type {QueryElementInstancesRequestBody} from '@vzeta/camunda-api-zod-schemas/8.8';
+import type {QueryElementInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const MAX_ELEMENT_INSTANCES_PER_REQUEST = 50;
 

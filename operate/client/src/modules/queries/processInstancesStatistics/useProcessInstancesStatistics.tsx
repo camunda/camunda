@@ -10,7 +10,7 @@ import {fetchProcessInstancesStatistics} from 'modules/api/v2/processInstances/f
 import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
-} from '@vzeta/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useProcessInstanceFilters} from 'modules/hooks/useProcessInstancesFilters';
 import {skipToken, type UseQueryOptions} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
