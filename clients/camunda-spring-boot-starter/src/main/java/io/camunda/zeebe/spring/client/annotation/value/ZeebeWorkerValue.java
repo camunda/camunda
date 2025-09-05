@@ -195,7 +195,7 @@ public class ZeebeWorkerValue {
   }
 
   public MethodInfo getBeanInfo() {
-    return jobWorkerValue.getBeanInfo();
+    return jobWorkerValue.getMethodInfo();
   }
 
   @Override

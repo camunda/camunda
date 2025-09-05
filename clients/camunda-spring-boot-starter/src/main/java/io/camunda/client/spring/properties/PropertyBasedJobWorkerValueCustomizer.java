@@ -15,11 +15,11 @@
  */
 package io.camunda.client.spring.properties;
 
+import static io.camunda.client.annotation.AnnotationUtil.getVariableParameters;
+import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
+import static io.camunda.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
-import static io.camunda.client.spring.annotation.AnnotationUtil.getVariableParameters;
-import static io.camunda.client.spring.annotation.AnnotationUtil.getVariableValue;
-import static io.camunda.client.spring.annotation.AnnotationUtil.getVariablesAsTypeParameters;
 import static org.apache.commons.lang3.StringUtils.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;

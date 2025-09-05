@@ -13,32 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.annotation.value;
+package io.camunda.client.annotation.value;
 
 import io.camunda.client.spring.bean.ParameterInfo;
 
-public class VariableValue implements CamundaAnnotationValue<ParameterInfo> {
+public class DocumentValue {
   private final String name;
   private final ParameterInfo parameterInfo;
   private final boolean optional;
+  private final ParameterType parameterType;
 
-  public VariableValue(
-      final String name, final ParameterInfo parameterInfo, final boolean optional) {
+  public DocumentValue(
+      final String name,
+      final ParameterInfo parameterInfo,
+      final boolean optional,
+      final ParameterType parameterType) {
     this.name = name;
     this.parameterInfo = parameterInfo;
     this.optional = optional;
+    this.parameterType = parameterType;
   }
 
   public String getName() {
     return name;
   }
 
-  @Override
-  public ParameterInfo getBeanInfo() {
+  public ParameterInfo getParameterInfo() {
     return parameterInfo;
   }
 
   public boolean isOptional() {
     return optional;
+  }
+
+  public ParameterType getParameterType() {
+    return parameterType;
+  }
+
+  public enum ParameterType {
+    SINGLE,
+    LIST,
+    CONTEXT
   }
 }

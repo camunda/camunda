@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.annotation.value;
+package io.camunda.client.annotation.value;
 
 import io.camunda.client.spring.bean.ClassInfo;
 import java.util.List;
 import java.util.Objects;
 
-public final class DeploymentValue implements CamundaAnnotationValue<ClassInfo> {
+public final class DeploymentValue {
 
   private final List<String> resources;
 
@@ -34,8 +34,7 @@ public final class DeploymentValue implements CamundaAnnotationValue<ClassInfo> 
     return resources;
   }
 
-  @Override
-  public ClassInfo getBeanInfo() {
+  public ClassInfo getClassInfo() {
     return beanInfo;
   }
 
