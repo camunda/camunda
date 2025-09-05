@@ -27,8 +27,8 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   private final long processInstanceKey;
   private final String tenantId;
 
-  public CreateProcessInstanceResultImpl(
-      final GatewayOuterClass.CreateProcessInstanceResult response) {
+  public CreateProcessInstanceResponseImpl(
+      final GatewayOuterClass.CreateProcessInstanceResponse response) {
     processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getBpmnProcessId();
     version = response.getVersion();
@@ -36,7 +36,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     tenantId = response.getTenantId();
   }
 
-  public CreateProcessInstanceResultImpl(final CreateProcessInstanceResult response) {
+  public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResult response) {
     processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();

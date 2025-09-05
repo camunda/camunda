@@ -16,27 +16,49 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.Decision;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.DecisionRequirements;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.Form;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.Process;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.response.Resource;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirementsResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentFormResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentMetadataResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentResourceResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentResult;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.ArrayList;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.List;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.Optional;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import org.slf4j.Logger;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 
 public final class DeploymentEventImpl implements DeploymentEvent {
 

@@ -16,13 +16,19 @@
 package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResult;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.ArrayList;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.List;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import java.util.stream.Collectors;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -47,25 +53,25 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final String tenantId;
   private final long decisionInstanceKey;
 
-  public EvaluateDecisionResultImpl(
+  public EvaluateDecisionResponseImpl(
       final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response,
       final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionDefinitionId();
-    decisionKey = response.getDecisionDefinitionKey();
+    decisionKey = ParseUtil.parseLongOrEmpty(response.getDecisionDefinitionKey());
     decisionVersion = response.getDecisionDefinitionVersion();
     decisionName = response.getDecisionDefinitionName();
     decisionRequirementsId = response.getDecisionRequirementsId();
-    decisionRequirementsKey = response.getDecisionRequirementsKey();
+    decisionRequirementsKey = ParseUtil.parseLongOrEmpty(response.getDecisionRequirementsKey());
     decisionOutput = response.getOutput();
     failedDecisionId = response.getFailedDecisionDefinitionId();
     failureMessage = response.getFailureMessage();
     tenantId = response.getTenantId();
-    decisionInstanceKey = response.getDecisionInstanceKey();
+    decisionInstanceKey = ParseUtil.parseLongOrEmpty(response.getDecisionInstanceKey());
     buildEvaluatedDecisions(response);
   }
 
-  public EvaluateDecisionResultImpl(
+  public EvaluateDecisionResponseImpl(
       final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResult response) {
     this.jsonMapper = jsonMapper;
 
