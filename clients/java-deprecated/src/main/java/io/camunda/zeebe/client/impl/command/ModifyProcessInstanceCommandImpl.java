@@ -27,6 +27,7 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.ModifyProcessInstanceResponseImpl;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.ModifyProcessInstanceVariableInstruction;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceModificationInstruction;
@@ -102,7 +103,7 @@ public final class ModifyProcessInstanceCommandImpl
         TerminateInstruction.newBuilder().setElementInstanceKey(elementInstanceKey).build());
     httpRequestObject.addTerminateInstructionsItem(
         new ProcessInstanceModificationTerminateInstruction()
-            .elementInstanceKey(elementInstanceKey));
+            .elementInstanceKey(ParseUtil.keyToString(elementInstanceKey)));
     return this;
   }
 
@@ -118,7 +119,7 @@ public final class ModifyProcessInstanceCommandImpl
     final ProcessInstanceModificationActivateInstruction activateInstructionsItem =
         new ProcessInstanceModificationActivateInstruction()
             .elementId(elementId)
-            .ancestorElementInstanceKey(ancestorElementInstanceKey);
+            .ancestorElementInstanceKey(ParseUtil.keyToString(ancestorElementInstanceKey));
     latestActivateInstructionRest = activateInstructionsItem;
     httpRequestObject.addActivateInstructionsItem(activateInstructionsItem);
     return this;
