@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.apache.commons.collections4.ListUtils;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -58,6 +59,7 @@ public abstract class OpenSearchUtil {
       "30000ms"; // this scroll timeout value is used for reindex and delete q
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int UPDATE_RETRY_COUNT = 3;
+  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
   public static final Function<Hit, Long> SEARCH_HIT_ID_TO_LONG = (hit) -> Long.valueOf(hit.id());
   public static final Function<Hit, String> SEARCH_HIT_ID_TO_STRING = Hit::id;
   private static final Logger LOGGER = LoggerFactory.getLogger(OpenSearchUtil.class);
@@ -426,6 +428,25 @@ public abstract class OpenSearchUtil {
     final SearchRequest.Builder builder = new SearchRequest.Builder();
     builder.index(whereToSearch(descriptor, queryType));
     return builder;
+  }
+
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
+   * #DEFAULT_MAX_TERMS_COUNT}
+   */
+  public static <T> List<T> scrollInChunks(
+      final List<String> ids,
+      final int chunkSize,
+      final Function<List<String>, SearchRequest.Builder> chunkToSearchRequestBuilder,
+      final Class<T> clazz,
+      final OpenSearchClient osClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequestBuilder.apply(chunk), clazz, osClient));
+    }
+    return result;
   }
 
   public static <T> List<T> scroll(
