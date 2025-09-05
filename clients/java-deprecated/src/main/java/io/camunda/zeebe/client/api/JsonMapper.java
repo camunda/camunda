@@ -50,8 +50,6 @@ import java.util.Map;
  * Null values won't pass in the JSON with variables: {@code { "a": "b" } }
  *
  * @see ZeebeObjectMapper
- */
-/**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link io.camunda.client.api.JsonMapper}.
  *     Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
