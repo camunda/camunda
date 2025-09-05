@@ -37,6 +37,13 @@ public interface AddPermissionsCommandStep1 {
    */
   AddPermissionsCommandStep2 resourceType(ResourceTypeEnum resourceType);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface AddPermissionsCommandStep2 {
 
     /**
@@ -48,6 +55,13 @@ public interface AddPermissionsCommandStep1 {
     AddPermissionsCommandStep3 permission(PermissionTypeEnum permissionType);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep3}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface AddPermissionsCommandStep3 {
 
     /**
@@ -67,6 +81,13 @@ public interface AddPermissionsCommandStep1 {
     AddPermissionsCommandStep4 resourceId(String resourceId);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.AddPermissionsCommandStep1.AddPermissionsCommandStep4}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface AddPermissionsCommandStep4
       extends AddPermissionsCommandStep2,
           AddPermissionsCommandStep3,

@@ -104,6 +104,13 @@ public interface DeployResourceCommandStep1
   DeployResourceCommandStep2 addProcessModel(
       BpmnModelInstance processDefinition, String resourceName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface DeployResourceCommandStep2
       extends DeployResourceCommandStep1,
           CommandWithTenantStep<DeployResourceCommandStep2>,
