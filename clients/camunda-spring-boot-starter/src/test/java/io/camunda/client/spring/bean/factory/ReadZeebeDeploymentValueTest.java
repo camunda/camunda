@@ -15,11 +15,11 @@
  */
 package io.camunda.client.spring.bean.factory;
 
-import static io.camunda.client.spring.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.Deployment;
-import io.camunda.client.spring.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.spring.bean.ClassInfo;
 import java.util.Arrays;
 import java.util.Collections;

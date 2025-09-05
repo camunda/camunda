@@ -15,8 +15,8 @@
  */
 package io.camunda.client.spring.annotation.processor;
 
-import static io.camunda.client.spring.annotation.AnnotationUtil.getJobWorkerValue;
-import static io.camunda.client.spring.annotation.AnnotationUtil.isJobWorker;
+import static io.camunda.client.annotation.AnnotationUtil.getJobWorkerValue;
+import static io.camunda.client.annotation.AnnotationUtil.isJobWorker;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;

@@ -13,21 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.annotation.value;
+package io.camunda.client.annotation.value;
 
-import io.camunda.client.spring.bean.BeanInfo;
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.spring.bean.ParameterInfo;
 
-/**
- * Common type for all annotation values.
- *
- * @param <B> either {@link ClassInfo} or {@link MethodInfo}.
- */
-public interface CamundaAnnotationValue<B extends BeanInfo> {
+public class VariableValue {
+  private final String name;
+  private final ParameterInfo parameterInfo;
+  private final boolean optional;
 
-  /**
-   * @return the context of this annotation.
-   */
-  B getBeanInfo();
+  public VariableValue(
+      final String name, final ParameterInfo parameterInfo, final boolean optional) {
+    this.name = name;
+    this.parameterInfo = parameterInfo;
+    this.optional = optional;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public ParameterInfo getParameterInfo() {
+    return parameterInfo;
+  }
+
+  public boolean isOptional() {
+    return optional;
+  }
 }

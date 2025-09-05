@@ -15,8 +15,8 @@
  */
 package io.camunda.client.spring.testsupport;
 
+import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.spring.annotation.AnnotationUtil;
 import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator;

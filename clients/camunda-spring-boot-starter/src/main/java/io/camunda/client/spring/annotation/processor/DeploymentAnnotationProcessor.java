@@ -15,14 +15,14 @@
  */
 package io.camunda.client.spring.annotation.processor;
 
-import static io.camunda.client.spring.annotation.AnnotationUtil.getDeploymentValue;
-import static io.camunda.client.spring.annotation.AnnotationUtil.isDeployment;
+import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.spring.annotation.value.DeploymentValue;
 import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.event.CamundaPostDeploymentSpringEvent;
 import java.io.IOException;

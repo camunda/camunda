@@ -15,13 +15,12 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.spring.annotation.value.CamundaAnnotationValue;
 import io.camunda.client.spring.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 
-public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
+public class JobWorkerValue {
   private String type;
   private String name;
   private Duration timeout;
@@ -191,11 +190,6 @@ public class JobWorkerValue implements CamundaAnnotationValue<MethodInfo> {
 
   public void setMaxRetries(final Integer maxRetries) {
     this.maxRetries = maxRetries;
-  }
-
-  @Override
-  public MethodInfo getBeanInfo() {
-    return methodInfo;
   }
 
   @Override
