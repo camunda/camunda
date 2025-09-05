@@ -16,8 +16,8 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
-import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
+import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
+import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.impl.ZeebeClientImpl;

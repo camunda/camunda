@@ -15,8 +15,8 @@
  */
 package io.camunda.zeebe.spring.client.annotation.value;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.spring.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -195,7 +195,7 @@ public class ZeebeWorkerValue {
   }
 
   public MethodInfo getBeanInfo() {
-    return jobWorkerValue.getBeanInfo();
+    return jobWorkerValue.getMethodInfo();
   }
 
   @Override
