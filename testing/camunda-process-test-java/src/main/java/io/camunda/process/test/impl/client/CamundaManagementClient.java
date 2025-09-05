@@ -36,7 +36,7 @@ import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
 
-public class CamundaManagementClient {
+public final class CamundaManagementClient {
 
   private static final String CLOCK_ENDPOINT = "/actuator/clock";
   private static final String CLOCK_ADD_ENDPOINT = "/actuator/clock/add";
@@ -51,10 +51,28 @@ public class CamundaManagementClient {
 
   private final URI camundaManagementApi;
   private final URI camundaRestApi;
+  private final String basicAuthCredentials;
 
-  public CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
+  private CamundaManagementClient(final URI camundaManagementApi, final URI camundaRestApi) {
+    this(camundaManagementApi, camundaRestApi, null);
+  }
+
+  private CamundaManagementClient(
+      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
+
     this.camundaManagementApi = camundaManagementApi;
     this.camundaRestApi = camundaRestApi;
+    this.basicAuthCredentials = basicAuthCredentials;
+  }
+
+  public static CamundaManagementClient createAuthenticatedClient(
+      final URI camundaManagementApi, final URI camundaRestApi, final String basicAuthCredentials) {
+    return new CamundaManagementClient(camundaManagementApi, camundaRestApi, basicAuthCredentials);
+  }
+
+  public static CamundaManagementClient createClient(
+      final URI camundaManagementApi, final URI camundaRestApi) {
+    return new CamundaManagementClient(camundaManagementApi, camundaRestApi);
   }
 
   public Instant getCurrentTime() {
@@ -172,6 +190,10 @@ public class CamundaManagementClient {
   }
 
   private String sendRequest(final ClassicHttpRequest request) throws IOException {
+    if (basicAuthCredentials != null) {
+      request.setHeader("Authorization", "Basic " + basicAuthCredentials);
+    }
+
     return httpClient.execute(
         request,
         response -> {
@@ -186,6 +208,11 @@ public class CamundaManagementClient {
   }
 
   private boolean isNotSuccessfulStatusCode(final int statusCode) {
-    return statusCode < 200 || statusCode >= 300;
+    /*
+     * Multitenancy uses basic auth to secure the camunda gateway. During the purge, the default
+     * user is briefly deleted and previously authenticated requests will fail until the user's
+     * been recreated. Therefore, we choose to silently ignore 401 errors.
+     */
+    return statusCode < 200 || (statusCode >= 300 && statusCode != 401);
   }
 }

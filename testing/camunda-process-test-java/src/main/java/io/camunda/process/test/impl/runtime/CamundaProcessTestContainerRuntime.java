@@ -16,8 +16,11 @@
 package io.camunda.process.test.impl.runtime;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultitenancyConfiguration;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
@@ -69,6 +72,7 @@ public class CamundaProcessTestContainerRuntime
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
 
+  private final boolean isMultitenancyEnabled;
   private final boolean connectorsEnabled;
   private final Duration camundaClientRequestTimeout;
 
@@ -76,12 +80,20 @@ public class CamundaProcessTestContainerRuntime
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
 
+    isMultitenancyEnabled = builder.isMultitenancyEnabled();
+    connectorsEnabled = builder.isConnectorsEnabled();
+    camundaClientRequestTimeout = builder.getCamundaClientRequestTimeout();
+
     network = Network.newNetwork();
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
 
-    connectorsEnabled = builder.isConnectorsEnabled();
-    camundaClientRequestTimeout = builder.getCamundaClientRequestTimeout();
+    if (isMultitenancyEnabled) {
+      LOGGER.info(
+          "Multitenancy has been enabled. The API is now secured and requires basic "
+              + "authentication. Please see the CamundaContainer.MultitenancyConfiguration and "
+              + "ContainerRuntimeEnvs for more information.");
+    }
   }
 
   /*
@@ -121,6 +133,10 @@ public class CamundaProcessTestContainerRuntime
             .withEnv(builder.getCamundaEnvVars())
             .withAccessToHost(true);
 
+    if (isMultitenancyEnabled) {
+      container.withMultitenancy();
+    }
+
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
@@ -142,6 +158,10 @@ public class CamundaProcessTestContainerRuntime
             .withEnv(builder.getConnectorsSecrets())
             .withEnv(builder.getConnectorsEnvVars())
             .withAccessToHost(true);
+
+    if (isMultitenancyEnabled) {
+      container.withMultitenancy();
+    }
 
     builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
 
@@ -196,12 +216,22 @@ public class CamundaProcessTestContainerRuntime
 
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return () ->
+    final CamundaClientBuilder client =
         CamundaClient.newClientBuilder()
             .restAddress(getCamundaRestApiAddress())
             .grpcAddress(getCamundaGrpcApiAddress())
             .usePlaintext()
             .defaultRequestTimeout(camundaClientRequestTimeout);
+
+    if (isMultitenancyEnabled) {
+      client.credentialsProvider(
+          CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+              .username(MultitenancyConfiguration.MULTITENANCY_USER_USERNAME)
+              .password(MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+              .build());
+    }
+
+    return () -> client;
   }
 
   public CamundaContainer getCamundaContainer() {
