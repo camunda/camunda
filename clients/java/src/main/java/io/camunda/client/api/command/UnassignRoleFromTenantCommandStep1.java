@@ -27,16 +27,18 @@ public interface UnassignRoleFromTenantCommandStep1 {
    */
   UnassignRoleFromTenantCommandStep2 roleId(String roleId);
 
-  interface UnassignRoleFromTenantCommandStep2
-      extends FinalCommandStep<UnassignRoleFromTenantResponse> {
+  interface UnassignRoleFromTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the tenantId of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignRoleFromTenantCommandStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    UnassignRoleFromTenantCommandStep2 tenantId(String tenantId);
+    UnassignRoleFromTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface UnassignRoleFromTenantCommandStep3
+      extends FinalCommandStep<UnassignRoleFromTenantResponse> {}
 }
