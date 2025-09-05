@@ -69,7 +69,7 @@ const Members: FC<MembersProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath="/docs/next/self-managed/components/orchestration-cluster/identity/manage-tenants/"
+          docsLinkPath="/docs/next/components/identity/user/"
         />
         {assignUsersModal}
       </>
