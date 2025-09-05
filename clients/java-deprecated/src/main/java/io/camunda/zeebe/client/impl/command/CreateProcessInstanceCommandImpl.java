@@ -28,14 +28,13 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
-import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResult;
+import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResultImpl;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest.Builder;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
@@ -192,8 +191,8 @@ public final class CreateProcessInstanceCommandImpl
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        CreateProcessInstanceResult.class,
-        CreateProcessInstanceResponseImpl::new,
+        io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResult.class,
+        CreateProcessInstanceResultImpl::new,
         result);
     return result;
   }
@@ -201,9 +200,9 @@ public final class CreateProcessInstanceCommandImpl
   private ZeebeFuture<ProcessInstanceEvent> sendGrpcRequest() {
     final CreateProcessInstanceRequest request = grpcRequestObjectBuilder.build();
 
-    final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResponse> future =
+    final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResult> future =
         new RetriableClientFutureImpl<>(
-            CreateProcessInstanceResponseImpl::new,
+            CreateProcessInstanceResultImpl::new,
             retryPredicate,
             streamObserver -> sendGrpcRequest(request, streamObserver));
 
@@ -220,7 +219,7 @@ public final class CreateProcessInstanceCommandImpl
 
   private void sendGrpcRequest(
       final CreateProcessInstanceRequest request,
-      final StreamObserver<GatewayOuterClass.CreateProcessInstanceResponse> future) {
+      final StreamObserver<GatewayOuterClass.CreateProcessInstanceResult> future) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .createProcessInstance(request, future);
