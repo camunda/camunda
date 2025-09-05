@@ -63,6 +63,6 @@ public class CorrelatedMessageWriter {
   }
 
   private static String getCompositeId(final CorrelatedMessageDbModel correlatedMessage) {
-    return correlatedMessage.subscriptionKey() + "_" + correlatedMessage.messageKey();
+    return correlatedMessage.messageKey() + "_" + correlatedMessage.subscriptionKey();
   }
 }
