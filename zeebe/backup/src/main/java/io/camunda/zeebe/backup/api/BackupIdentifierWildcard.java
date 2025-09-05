@@ -65,7 +65,7 @@ public interface BackupIdentifierWildcard {
           prefix.append(wildcard.nodeId().get());
         }
       }
-      // Checkpoint pattern is not exact so our prefix ends here, we can't include the node id
+        // Checkpoint pattern is not exact so our prefix ends here, we can't include the node id
       case Prefix(final var cpPrefix) -> prefix.append(cpPrefix);
       case Any() -> {}
     }
