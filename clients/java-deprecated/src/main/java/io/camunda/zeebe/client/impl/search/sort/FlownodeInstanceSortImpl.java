@@ -19,8 +19,8 @@ import io.camunda.zeebe.client.api.search.sort.FlownodeInstanceSort;
 import io.camunda.zeebe.client.impl.search.query.SearchQuerySortBase;
 
 /**
- * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+ *     io.camunda.client.impl.search.sort.FlownodeInstanceSortImpl}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
  *     Java Client migration guide</a>
  */
