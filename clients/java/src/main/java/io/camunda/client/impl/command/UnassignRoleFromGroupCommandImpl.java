@@ -19,6 +19,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1.UnassignRoleFromGroupCommandStep2;
+import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1.UnassignRoleFromGroupCommandStep3;
 import io.camunda.client.api.response.UnassignRoleFromGroupResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignRoleFromGroupCommandImpl
-    implements UnassignRoleFromGroupCommandStep1, UnassignRoleFromGroupCommandStep2 {
+    implements UnassignRoleFromGroupCommandStep1,
+        UnassignRoleFromGroupCommandStep2,
+        UnassignRoleFromGroupCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -47,7 +50,7 @@ public class UnassignRoleFromGroupCommandImpl
   }
 
   @Override
-  public UnassignRoleFromGroupCommandStep2 groupId(final String groupId) {
+  public UnassignRoleFromGroupCommandStep3 groupId(final String groupId) {
     this.groupId = groupId;
     return this;
   }
