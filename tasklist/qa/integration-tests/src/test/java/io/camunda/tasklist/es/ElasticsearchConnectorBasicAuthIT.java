@@ -109,6 +109,9 @@ public class ElasticsearchConnectorBasicAuthIT extends TasklistIntegrationTest {
               "camunda.database.type=elasticsearch",
               "camunda.tasklist.database=elasticsearch",
               "camunda.operate.database=elasticsearch",
+              // Unified config
+              "camunda.data.secondary-storage.elasticsearch.username=elastic",
+              "camunda.data.secondary-storage.elasticsearch.password=changeme",
               //
               "camunda.tasklist.zeebeElasticsearch.username=elastic",
               "camunda.tasklist.zeebeElasticsearch.password=changeme",

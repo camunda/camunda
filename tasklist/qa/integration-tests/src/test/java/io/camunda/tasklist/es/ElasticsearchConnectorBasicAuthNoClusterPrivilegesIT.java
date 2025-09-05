@@ -129,6 +129,9 @@ public class ElasticsearchConnectorBasicAuthNoClusterPrivilegesIT extends Taskli
               "camunda.database.type=elasticsearch",
               "camunda.tasklist.database=elasticsearch",
               "camunda.operate.database=elasticsearch",
+              // Unified config
+              "camunda.data.secondary-storage.elasticsearch.username=" + TASKLIST_ES_USER,
+              "camunda.data.secondary-storage.elasticsearch.password=" + TASKLIST_ES_PASSWORD,
               //
               "camunda.tasklist.zeebeElasticsearch.username=" + TASKLIST_ES_USER,
               "camunda.tasklist.zeebeElasticsearch.password=" + TASKLIST_ES_PASSWORD,
