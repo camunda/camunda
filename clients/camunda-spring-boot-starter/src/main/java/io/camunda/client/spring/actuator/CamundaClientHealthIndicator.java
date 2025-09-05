@@ -15,28 +15,24 @@
  */
 package io.camunda.client.spring.actuator;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.Topology;
-import org.springframework.beans.factory.annotation.Autowired;
+import io.camunda.client.health.HealthCheck;
 import org.springframework.boot.actuate.health.AbstractHealthIndicator;
 import org.springframework.boot.actuate.health.Health;
 
 public class CamundaClientHealthIndicator extends AbstractHealthIndicator {
 
-  private final CamundaClient client;
+  private final HealthCheck healthCheck;
 
-  @Autowired
-  public CamundaClientHealthIndicator(final CamundaClient client) {
-    this.client = client;
+  public CamundaClientHealthIndicator(final HealthCheck healthCheck) {
+    this.healthCheck = healthCheck;
   }
 
   @Override
   protected void doHealthCheck(final Health.Builder builder) {
-    final Topology topology = client.newTopologyRequest().send().join();
-    if (topology.getBrokers().isEmpty()) {
-      builder.down();
-    } else {
-      builder.up();
+    switch (healthCheck.health()) {
+      case UP -> builder.up();
+      case DOWN -> builder.down();
+      default -> throw new IllegalStateException("Unexpected value: " + healthCheck.health());
     }
   }
 }
