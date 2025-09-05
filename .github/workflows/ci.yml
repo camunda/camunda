@@ -1161,7 +1161,7 @@ jobs:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     name: "Zeebe"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/zeebe-ci.yml
+    uses: ./.github/workflows/ci-zeebe.yml
     secrets: inherit
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}

@@ -28,6 +28,7 @@ defaults:
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Zeebe
 
 jobs:
   smoke-tests:
@@ -166,14 +167,18 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   performance-tests:
-    name: "[Performance] Tests / Core Features"
+    name: "Performance / Core Features"
     runs-on: gcp-perf-core-16-default
     timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       ZEEBE_PERFORMANCE_TEST_RESULTS_DIR: "/tmp/jmh"
+      TEST_OWNER: Core Features
+      TEST_TYPE: Performance
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -233,12 +238,17 @@ jobs:
 
   strace-tests:
     # Zeebe tests requiring strace
-    name: "[UT] Strace Tests / Core Features"
+    name: "Unit / Strace Tests"
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
+    env:
+      TEST_OWNER: Core Features
+      TEST_TYPE: Unit
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - name: Install and allow strace tests
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
@@ -290,7 +300,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   docker-checks:
-    name: "[Build] Docker Build Checks / Core Features"
+    name: "Build / Docker Checks"
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -303,6 +313,8 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/zeebe
+      TEST_OWNER: Core Features
+      TEST_TYPE: Build
     steps:
       - uses: actions/checkout@v4
       - uses: hadolint/hadolint-action@v3.1.0
@@ -426,6 +438,7 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "team-distributed-systems"
+
   deploy-benchmark-images:
     name: Deploy benchmark images
     timeout-minutes: 5
@@ -473,6 +486,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "team-distributed-systems"
+
   deploy-snyk-projects:
     name: Deploy Snyk development projects
     needs: [ test-summary ]
