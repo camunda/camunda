@@ -51,13 +51,13 @@ public class TokenClaimsConverterTest {
 
   public static final String GROUP1_NAME = "idp-g1";
   public static final String GROUP2_NAME = "idp-g2";
+  private static final String USERNAME_CLAIM = "email";
+  private static final String APPLICATION_ID_CLAIM = "client-id";
   private TokenClaimsConverter converter;
   private MembershipService membershipService;
 
   @Nested
   class ClientIdClaimConfiguration {
-
-    private static final String APPLICATION_ID_CLAIM = "client-id";
 
     @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
@@ -146,12 +146,25 @@ public class TokenClaimsConverterTest {
       assertThat(camundaAuthentication.claims()).containsEntry(AUTHORIZED_CLIENT_ID, "app-1");
       assertThat(camundaAuthentication.claims()).containsEntry(USER_TOKEN_CLAIMS, claims);
     }
+
+    @Test
+    public void shouldPreferClientIdOverUsername() {
+      final Map<String, Object> claims =
+          Map.of(USERNAME_CLAIM, "ignored", APPLICATION_ID_CLAIM, "preferred");
+
+      final var camundaAuthentication = converter.convert(claims);
+
+      assertThat(camundaAuthentication).isNotNull();
+      assertThat(camundaAuthentication.authenticatedClientId()).isEqualTo("preferred");
+      assertThat(camundaAuthentication.authenticatedUsername()).isNull();
+      assertThat(camundaAuthentication.claims())
+          .containsEntry(AUTHORIZED_CLIENT_ID, "preferred")
+          .doesNotContainKey(USERNAME_CLAIM);
+    }
   }
 
   @Nested
   class UsernameClaimConfiguration {
-
-    private static final String USERNAME_CLAIM = "email";
 
     @Mock private MappingRuleServices mappingRuleServices;
     @Mock private TenantServices tenantServices;
