@@ -26,7 +26,7 @@ import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
-import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.OffsetDateTime;
@@ -87,7 +87,11 @@ public class OperateMetricMigrator extends MetricMigrator {
   @Override
   protected SearchQuery getImportPositionQuery() {
     return or(
-        wildcardQuery(ImportPositionIndex.ID, "*-" + ListViewTemplate.INDEX_NAME),
+        wildcardQuery(ImportPositionIndex.ID, "*-" + VariableTemplate.INDEX_NAME),
+        // We don't have a reference for the `process-instance` index name, so use it directly
+        // as it's one of the streams that populate the `operate-list-view` index and
+        // therefore should wait for it to be completed
+        wildcardQuery(ImportPositionIndex.ID, "*-process-instance"),
         wildcardQuery(ImportPositionIndex.ID, "*-" + DecisionInstanceTemplate.INDEX_NAME));
   }
 
