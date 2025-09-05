@@ -19,10 +19,11 @@ import static io.camunda.client.spring.testsupport.ClassInfoUtil.classInfo;
 import static io.camunda.client.spring.testsupport.ClassInfoUtil.parameterInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.DocumentValue;
+import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.spring.annotation.value.DeploymentValue;
-import io.camunda.client.spring.annotation.value.DocumentValue;
-import io.camunda.client.spring.annotation.value.VariableValue;
 import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.bean.ParameterInfo;
 import java.util.List;
@@ -44,7 +45,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -57,7 +58,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isFalse();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -70,7 +71,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -83,7 +84,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 

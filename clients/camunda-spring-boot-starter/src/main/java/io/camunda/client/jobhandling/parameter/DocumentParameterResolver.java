@@ -16,12 +16,12 @@
 package io.camunda.client.jobhandling.parameter;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.spring.annotation.value.DocumentValue.ParameterType;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;
