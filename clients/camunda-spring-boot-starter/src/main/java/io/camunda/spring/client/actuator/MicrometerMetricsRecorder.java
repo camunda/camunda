@@ -36,7 +36,7 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
 
   public MicrometerMetricsRecorder(final MeterRegistry meterRegistry) {
     LOGGER.info(
-        "Enabling Micrometer based metrics for camunda-spring-sdk (available via Actuator)");
+        "Enabling Micrometer based metrics for camunda-spring-boot-starter (available via Actuator)");
     this.meterRegistry = meterRegistry;
   }
 

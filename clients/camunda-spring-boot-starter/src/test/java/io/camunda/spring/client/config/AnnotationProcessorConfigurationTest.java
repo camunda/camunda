@@ -24,7 +24,12 @@ import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
 import io.camunda.spring.client.event.CamundaClientCreatedEvent;
 import io.camunda.spring.client.event.CamundaClientEventListener;
+import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.spring.client.metrics.MetricsRecorder;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +47,11 @@ public class AnnotationProcessorConfigurationTest {
   // required to auto-wire with the job worker annotation processor configuration
   @MockitoBean JobWorkerManager jobWorkerManager;
   @MockitoBean CamundaClient camundaClient;
+  @MockitoBean CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
+  @MockitoBean MetricsRecorder metricsRecorder;
+  @MockitoBean ParameterResolverStrategy parameterResolverStrategy;
+  @MockitoBean ResultProcessorStrategy resultProcessorStrategy;
+  @MockitoBean JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
   @Autowired MockedBean mockedBean;
   @Autowired CamundaClientEventListener camundaClientEventListener;
   @Autowired Set<CamundaClientLifecycleAware> camundaClientLifecycleAwareSet;

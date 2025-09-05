@@ -16,22 +16,106 @@
 package io.camunda.spring.client.annotation;
 
 import static io.camunda.spring.client.testsupport.ClassInfoUtil.classInfo;
+import static io.camunda.spring.client.testsupport.ClassInfoUtil.methodInfo;
 import static io.camunda.spring.client.testsupport.ClassInfoUtil.parameterInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.spring.client.annotation.value.VariableValue;
 import io.camunda.spring.client.bean.ClassInfo;
+import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 public class AnnotationUtilTest {
 
   public static class ComplexType {}
+
+  @Nested
+  class JobWorker {
+    @Test
+    void shouldExtractVariableFromJsonAnnotation() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithJsonProperty");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new FetchVariable("some_name", FieldSource.GENERATED_FROM_METHOD_INFO));
+    }
+
+    @Test
+    void shouldExtractVariableName() {
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorker");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new FetchVariable("helloWorld", FieldSource.GENERATED_FROM_METHOD_INFO));
+    }
+
+    @Test
+    void shouldExtractVariableAsTypeNames() {
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithVariablesType");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(
+              new FetchVariable("hello", FieldSource.GENERATED_FROM_METHOD_INFO),
+              new FetchVariable("world", FieldSource.GENERATED_FROM_METHOD_INFO));
+    }
+
+    @Test
+    void shouldExtractVariableFromEmptyJsonAnnotation() {
+      // given
+      final MethodInfo methodInfo = methodInfo(this, "test", "sampleWorkerWithEmptyJsonProperty");
+      final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
+      assertThat(jobWorkerValue).isPresent();
+      final JobWorkerValue value = jobWorkerValue.get();
+      assertThat(value.getFetchVariables())
+          .containsExactly(new FetchVariable("value", FieldSource.GENERATED_FROM_METHOD_INFO));
+    }
+
+    @io.camunda.spring.client.annotation.JobWorker
+    public void sampleWorkerWithEmptyJsonProperty(
+        @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
+
+    @io.camunda.spring.client.annotation.JobWorker
+    public void sampleWorker(
+        @io.camunda.spring.client.annotation.Variable final String helloWorld) {}
+
+    @io.camunda.spring.client.annotation.JobWorker
+    public void sampleWorkerWithVariablesType(
+        @VariablesAsType final VariablesType annotatedClass) {}
+
+    @io.camunda.spring.client.annotation.JobWorker
+    public void sampleWorkerWithJsonProperty(
+        @VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
+
+    private static final class PropertyAnnotatedClass {
+      @JsonProperty("some_name")
+      private String value;
+    }
+
+    private static final class PropertyAnnotatedClassEmptyValue {
+      @JsonProperty() private String value;
+    }
+
+    private static final class VariablesType {
+      private String hello;
+      private String world;
+    }
+  }
 
   @Nested
   class Variable {
@@ -44,7 +128,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -57,7 +141,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var1");
       assertThat(variableValue.isOptional()).isFalse();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -70,7 +154,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
@@ -83,7 +167,7 @@ public class AnnotationUtilTest {
       // then
       assertThat(variableValue.getName()).isEqualTo("var2");
       assertThat(variableValue.isOptional()).isTrue();
-      assertThat(variableValue.getBeanInfo().getParameterInfo().getType())
+      assertThat(variableValue.getParameterInfo().getParameterInfo().getType())
           .isEqualTo(ComplexType.class);
     }
 
