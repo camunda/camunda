@@ -677,6 +677,12 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
+        final SecurityConfiguration securityConfiguration) {
+      return new OidcTokenEndpointCustomizer(securityConfiguration);
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnProtectedApi
     public SecurityFilterChain oidcApiSecurity(
@@ -735,7 +741,8 @@ public class WebSecurityConfig {
         final ResourceAccessProvider resourceAccessProvider,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -756,19 +763,19 @@ public class WebSecurityConfig {
               .oauth2ResourceServer(
                   oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
               .oauth2Login(
-                  oauthLoginConfigurer -> {
-                    oauthLoginConfigurer
-                        .clientRegistrationRepository(clientRegistrationRepository)
-                        .authorizedClientRepository(authorizedClientRepository)
-                        .redirectionEndpoint(
-                            redirectionEndpointConfig ->
-                                redirectionEndpointConfig.baseUri("/sso-callback"))
-                        .authorizationEndpoint(
-                            authorization ->
-                                authorization.authorizationRequestResolver(
-                                    authorizationRequestResolver(
-                                        clientRegistrationRepository, securityConfiguration)));
-                  })
+                  oauthLoginConfigurer ->
+                      oauthLoginConfigurer
+                          .clientRegistrationRepository(clientRegistrationRepository)
+                          .authorizedClientRepository(authorizedClientRepository)
+                          .redirectionEndpoint(
+                              redirectionEndpointConfig ->
+                                  redirectionEndpointConfig.baseUri("/sso-callback"))
+                          .authorizationEndpoint(
+                              authorization ->
+                                  authorization.authorizationRequestResolver(
+                                      authorizationRequestResolver(
+                                          clientRegistrationRepository, securityConfiguration)))
+                          .tokenEndpoint(tokenEndpointCustomizer))
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
                   (logout) ->
