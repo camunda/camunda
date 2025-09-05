@@ -27,16 +27,18 @@ public interface UnassignRoleFromUserCommandStep1 {
    */
   UnassignRoleFromUserCommandStep2 roleId(String roleId);
 
-  interface UnassignRoleFromUserCommandStep2
-      extends FinalCommandStep<UnassignUserFromRoleResponse> {
+  interface UnassignRoleFromUserCommandStep2 {
 
     /**
      * Sets the username for the unassignment.
      *
      * @param username the username of the user
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignRoleFromUserCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    UnassignRoleFromUserCommandStep2 username(String username);
+    UnassignRoleFromUserCommandStep3 username(String username);
   }
+
+  interface UnassignRoleFromUserCommandStep3
+      extends FinalCommandStep<UnassignUserFromRoleResponse> {}
 }
