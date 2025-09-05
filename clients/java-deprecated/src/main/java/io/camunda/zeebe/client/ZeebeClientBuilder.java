@@ -246,10 +246,10 @@ public interface ZeebeClientBuilder {
    * REST. Once done, this will also be removed.
    *
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
-   * ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
-   *
-   * <p>/**
-   *
+   */
+  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
+
+  /**
    * @return a new {@link ZeebeClient} with the provided configuration options.
    */
   ZeebeClient build();

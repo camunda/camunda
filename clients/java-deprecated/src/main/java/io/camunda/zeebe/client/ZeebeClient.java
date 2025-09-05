@@ -714,9 +714,18 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   FlownodeInstanceQuery newFlownodeInstanceQuery();
 
   /**
-   * zeebeClient .newDecisionRequirementsQuery() .filter((f) ->
-   * f.decisionRequirementsKey(decisionRequirementsKey)) .sort((s) -> s.version().asc()) .page((p)
-   * -> p.limit(100)) .send(); </pre>
+   * Command to query decision requirements.
+   *
+   * <pre>
+   * long decisionRequirementsKey = ...;
+   *
+   * zeebeClient
+   *  .newDecisionRequirementsQuery()
+   *  .filter((f) -> f.decisionRequirementsKey(decisionRequirementsKey))
+   *  .sort((s) -> s.version().asc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
    *
    * <p><strong>Experimental: This method is under development, and as such using it may have no
    * effect on the client builder when called. The respective API on compatible clusters is not
@@ -729,7 +738,8 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionRequirementsQuery newDecisionRequirementsQuery();
 
-  /*
+  /**
+   * Command to get the XML of a decision definition.
    *
    * <pre>
    * long decisionKey = ...;
@@ -745,12 +755,14 @@ public interface ZeebeClient extends AutoCloseable, JobClient {
    * warning is removed, anything described below may not yet have taken effect, and the interface
    * and its description are subject to change.</strong>
    *
+   * @param decisionKey the key of the decision definition to get the XML for
    * @return a builder for the request to get the XML of a decision definition
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/20596")
   DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(long decisionKey);
 
-  /*
+  /**
+   * Command to create a user.
    *
    * <pre>
    *
