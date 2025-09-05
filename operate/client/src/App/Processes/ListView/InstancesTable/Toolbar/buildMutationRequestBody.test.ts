@@ -31,9 +31,11 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
-      processInstanceKey: {$in: ['1', '2']},
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+        processInstanceKey: {$in: ['1', '2']},
+      },
     });
   });
 
@@ -45,9 +47,11 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
-      processInstanceKey: {$notIn: ['3', '4']},
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+        processInstanceKey: {$notIn: ['3', '4']},
+      },
     });
   });
 
@@ -59,9 +63,11 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
-      processInstanceKey: {$in: ['1', '2'], $notIn: ['3']},
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+        processInstanceKey: {$in: ['1', '2'], $notIn: ['3']},
+      },
     });
   });
 
@@ -74,9 +80,11 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
-      processDefinitionKey: '2251799813693459',
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+        processDefinitionKey: '2251799813693459',
+      },
     });
   });
 
@@ -88,9 +96,11 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
-      processInstanceKey: {$in: ['only'], $notIn: ['x']},
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+        processInstanceKey: {$in: ['only'], $notIn: ['x']},
+      },
     });
   });
 
@@ -102,8 +112,10 @@ describe('buildMutationRequestBody', () => {
     });
 
     expect(body).toEqual({
-      elementId: 'taskA',
-      hasIncident: true,
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+      },
     });
   });
 });
