@@ -21,7 +21,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
-import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
@@ -127,16 +126,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     return this;
   }
 
-  public CamundaMigrator update(final Map<String, String> envOverrides) {
-    /* Trigger snapshot of Zeebe's data to force flush ExporterMetadata */
-    PartitionsActuator.of(camundaContainer).takeSnapshot();
-    try {
-      Thread.sleep(3000);
-    } catch (final InterruptedException ignored) {
-      // ignore
-    }
-    /* Retake snapshot to increase chance of capturing the ExporterMetadata */
-    PartitionsActuator.of(camundaContainer).takeSnapshot();
+  public CamundaMigrator update(final Map<String, String> envOverrides, final Profile... profiles) {
 
     camundaContainer.close();
     extractVolume();
@@ -144,14 +134,16 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         new TestCamundaApplication()
             .withBasicAuth()
             .withAuthenticatedAccess()
-            .withAdditionalProfile(Profile.PROCESS_MIGRATION)
-            .withAdditionalProfile(Profile.TASK_MIGRATION)
             .withBrokerConfig(
                 cfg -> {
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
                   cfg.getGateway().setEnable(true);
                 })
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
+
+    if (profiles != null && profiles.length > 0) {
+      camunda.withAdditionalProfiles(profiles);
+    }
 
     final var multiDbConfigurator = new MultiDbConfigurator(camunda);
     if (isElasticsearch() || databaseType.equals(DatabaseType.LOCAL)) {
@@ -235,20 +227,21 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_URL", internalUrl);
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
         put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
-        put("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
+        put(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_ARGS_INDEX_PREFIX",
+            indexPrefix + "-zeebe-records");
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", internalUrl);
         put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", internalUrl);
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", "camunda:26500");
         put("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://camunda:8080");
         put("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", indexPrefix + "-tasklist");
-        put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", indexPrefix);
+        put("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", indexPrefix + "-zeebe-records");
         put("CAMUNDA_OPERATE_ELASTICSEARCH_URL", internalUrl);
         put("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", indexPrefix + "-operate");
-        put("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", indexPrefix);
+        put("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", indexPrefix + "-zeebe-records");
         put("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", internalUrl);
         put("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", "camunda:26500");
-        put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
         put("CAMUNDA_DATABASE_URL", internalUrl);
       }
     };
@@ -265,12 +258,14 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_URL", internalUrl);
         put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_SIZE", "1");
         put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_BULK_DELAY", "1");
-        put("ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_INDEX_PREFIX", indexPrefix);
+        put(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_ARGS_INDEX_PREFIX",
+            indexPrefix + "-zeebe-records");
         put("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITYMODE", "true");
         put("CAMUNDA_TASKLIST_DATABASE", "opensearch");
         put("CAMUNDA_TASKLIST_OPENSEARCH_URL", internalUrl);
         put("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", indexPrefix + "-tasklist");
-        put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX", indexPrefix);
+        put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX", indexPrefix + "-zeebe-records");
         put("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", internalUrl);
         put("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", "camunda:26500");
         put("CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://camunda:8080");
@@ -279,7 +274,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         put("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", internalUrl);
         put("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", "camunda:26500");
         put("CAMUNDA_OPERATE_OPENSEARCH_INDEXPREFIX", indexPrefix + "-operate");
-        put("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX", indexPrefix);
+        put("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_PREFIX", indexPrefix + "-zeebe-records");
         put("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
         put("CAMUNDA_DATABASE_URL", internalUrl);
       }
