@@ -59,7 +59,6 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
-import io.camunda.client.impl.CamundaClientEnvironmentVariables;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -693,7 +692,8 @@ public final class CamundaClientBuilderImpl
   private boolean shouldUseDefaultCredentialsProvider() {
     return credentialsProvider == null
         && (Environment.system().isDefined(OAUTH_ENV_CLIENT_ID)
-            || Environment.system().isDefined(CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID))
+            || Environment.system()
+                .isDefined(CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID))
         && (Environment.system().isDefined(OAUTH_ENV_CLIENT_SECRET)
             || Environment.system()
                 .isDefined(CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET));

@@ -23,13 +23,13 @@ import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.Resource;
 import io.camunda.zeebe.client.impl.Loggers;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecision;
-import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirements;
-import io.camunda.zeebe.client.protocol.rest.DeploymentForm;
-import io.camunda.zeebe.client.protocol.rest.DeploymentMetadata;
-import io.camunda.zeebe.client.protocol.rest.DeploymentProcess;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResource;
-import io.camunda.zeebe.client.protocol.rest.DeploymentResponse;
+import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirementsResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentFormResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentMetadataResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentProcessResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentResourceResult;
+import io.camunda.zeebe.client.protocol.rest.DeploymentResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployProcessResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeployResourceResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Deployment;
@@ -86,11 +86,11 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  public DeploymentEventImpl(final DeploymentResponse response) {
+  public DeploymentEventImpl(final DeploymentResult response) {
     key = response.getDeploymentKey();
     tenantId = response.getTenantId();
 
-    for (final DeploymentMetadata deployment : response.getDeployments()) {
+    for (final DeploymentMetadataResult deployment : response.getDeployments()) {
       addDeployedForm(deployment.getForm());
       addDeployedProcess(deployment.getProcessDefinition());
       addDeployedDecision(deployment.getDecisionDefinition());
@@ -99,7 +99,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
     }
   }
 
-  private void addDeployedForm(final DeploymentForm form) {
+  private void addDeployedForm(final DeploymentFormResult form) {
     Optional.ofNullable(form)
         .ifPresent(
             f ->
@@ -112,7 +112,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         f.getTenantId())));
   }
 
-  private void addDeployedResource(final DeploymentResource resource) {
+  private void addDeployedResource(final DeploymentResourceResult resource) {
     Optional.ofNullable(resource)
         .ifPresent(
             f ->
@@ -126,7 +126,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   private void addDeployedDecisionRequirements(
-      final DeploymentDecisionRequirements decisionRequirement) {
+      final DeploymentDecisionRequirementsResult decisionRequirement) {
     Optional.ofNullable(decisionRequirement)
         .ifPresent(
             dr ->
@@ -140,7 +140,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         dr.getTenantId())));
   }
 
-  private void addDeployedDecision(final DeploymentDecision decision) {
+  private void addDeployedDecision(final DeploymentDecisionResult decision) {
     Optional.ofNullable(decision)
         .ifPresent(
             d ->
@@ -155,7 +155,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getTenantId())));
   }
 
-  private void addDeployedProcess(final DeploymentProcess process) {
+  private void addDeployedProcess(final DeploymentProcessResult process) {
     Optional.ofNullable(process)
         .ifPresent(
             p ->

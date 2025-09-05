@@ -400,7 +400,9 @@ public final class OAuthCredentialsProviderBuilder {
         OAUTH_ENV_TOKEN_AUDIENCE,
         CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
     applyEnvironmentValueIfNotNull(
-        this::scope, OAUTH_ENV_TOKEN_SCOPE, CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
+        this::scope,
+        OAUTH_ENV_TOKEN_SCOPE,
+        CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
     applyEnvironmentValueIfNotNull(
         this::resource,
         OAUTH_ENV_TOKEN_RESOURCE,
