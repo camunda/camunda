@@ -42,6 +42,15 @@
     LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
     <where>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+      <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
+        OR (
+        <foreach collection="filter.orFilters" item="filter" separator=" OR ">
+          <trim prefix="(" suffix=")">
+            <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
+          </trim>
+        </foreach>
+        )
+      </if>
     </where>
   </select>
 
@@ -74,7 +83,7 @@
     <where>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
       <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
-        AND (
+        OR (
         <foreach collection="filter.orFilters" item="filter" separator=" OR ">
           <trim prefix="(" suffix=")">
             <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
