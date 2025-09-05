@@ -18,8 +18,8 @@ package io.camunda.spring.client.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.sdk.jobhandling.JobWorkerManager;
-import io.camunda.sdk.lifecycle.CamundaClientLifecycleAware;
+import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.spring.client.annotation.processor.AbstractCamundaAnnotationProcessor;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;

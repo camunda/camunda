@@ -23,9 +23,9 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.getVariablesAsT
 import static org.apache.commons.lang3.StringUtils.*;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.sdk.annotation.value.JobWorkerValue;
 import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.spring.client.bean.ParameterInfo;
 import java.lang.reflect.Field;

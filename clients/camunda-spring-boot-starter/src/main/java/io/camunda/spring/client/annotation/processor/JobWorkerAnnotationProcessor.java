@@ -20,10 +20,10 @@ import static io.camunda.spring.client.annotation.AnnotationUtil.isJobWorker;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.sdk.annotation.JobWorker;
-import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.sdk.annotation.value.JobWorkerValue;
-import io.camunda.sdk.jobhandling.JobWorkerManager;
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.spring.client.bean.ClassInfo;
 import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;

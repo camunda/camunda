@@ -19,10 +19,10 @@ import static java.util.function.Predicate.not;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.sdk.annotation.JobWorker;
-import io.camunda.sdk.annotation.Variable;
-import io.camunda.sdk.annotation.VariablesAsType;
-import io.camunda.sdk.exception.CamundaError;
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.Variable;
+import io.camunda.client.annotation.VariablesAsType;
+import io.camunda.client.exception.CamundaError;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;

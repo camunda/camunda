@@ -16,11 +16,11 @@
 package io.camunda.zeebe.spring.client.annotation;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.sdk.exception.BpmnError;
+import io.camunda.client.exception.BpmnError;
 import java.lang.annotation.*;
 
 /**
- * @deprecated please use {@link io.camunda.sdk.annotation.JobWorker}
+ * @deprecated please use {@link io.camunda.client.annotation.JobWorker}
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

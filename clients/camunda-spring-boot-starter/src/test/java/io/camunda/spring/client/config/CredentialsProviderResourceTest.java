@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import org.junit.jupiter.api.Test;
