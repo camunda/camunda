@@ -7,14 +7,16 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.filter.CorrelatedMessagesFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.CorrelatedMessagesSort;
 import io.camunda.util.ObjectBuilder;
+import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 
 public record CorrelatedMessagesDbQuery(
-    CorrelatedMessagesFilter filter, CorrelatedMessagesSort sort, SearchQueryPage page) {
+    CorrelatedMessagesFilter filter, DbQuerySorting<CorrelatedMessageEntity> sort, SearchQueryPage page) {
 
   public static CorrelatedMessagesDbQuery of(
       final Function<Builder, ObjectBuilder<CorrelatedMessagesDbQuery>> fn) {
@@ -22,8 +24,12 @@ public record CorrelatedMessagesDbQuery(
   }
 
   public static final class Builder implements ObjectBuilder<CorrelatedMessagesDbQuery> {
+    
+    private static final CorrelatedMessagesFilter EMPTY_FILTER =
+        new CorrelatedMessagesFilter.Builder().build();
+    
     private CorrelatedMessagesFilter filter;
-    private CorrelatedMessagesSort sort;
+    private DbQuerySorting<CorrelatedMessageEntity> sort;
     private SearchQueryPage page;
 
     public Builder filter(final CorrelatedMessagesFilter filter) {
@@ -31,9 +37,17 @@ public record CorrelatedMessagesDbQuery(
       return this;
     }
 
-    public Builder sort(final CorrelatedMessagesSort sort) {
+    public Builder sort(final DbQuerySorting<CorrelatedMessageEntity> sort) {
       this.sort = sort;
       return this;
+    }
+
+    public Builder sort(
+        final Function<
+                DbQuerySorting.Builder<CorrelatedMessageEntity>,
+                ObjectBuilder<DbQuerySorting<CorrelatedMessageEntity>>>
+            fn) {
+      return sort(DbQuerySorting.of(fn));
     }
 
     public Builder page(final SearchQueryPage page) {
@@ -43,6 +57,8 @@ public record CorrelatedMessagesDbQuery(
 
     @Override
     public CorrelatedMessagesDbQuery build() {
+      filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
       return new CorrelatedMessagesDbQuery(filter, sort, page);
     }
   }

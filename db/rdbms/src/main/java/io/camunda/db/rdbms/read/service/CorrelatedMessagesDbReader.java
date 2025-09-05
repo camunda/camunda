@@ -43,7 +43,7 @@ public class CorrelatedMessagesDbReader extends AbstractEntityReader<CorrelatedM
         convertSort(query.sort(), CorrelatedMessageSearchColumn.MESSAGE_KEY);
     final var dbQuery =
         CorrelatedMessagesDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b -> b.filter(query.filter()).sort(dbSort).page(query.page()));
 
     LOG.trace("[RDBMS DB] Search for correlated messages with filter {}", dbQuery);
     final var totalHits = mapper.count(dbQuery);
@@ -54,7 +54,7 @@ public class CorrelatedMessagesDbReader extends AbstractEntityReader<CorrelatedM
 
   public Optional<CorrelatedMessageEntity> findOne(final long key) {
     final var result =
-        search(CorrelatedMessagesQuery.of(b -> b.filter(f -> f.messageKey(key))));
+        search(CorrelatedMessagesQuery.of(b -> b.filter(f -> f.messageKeys(key))));
     return Optional.ofNullable(result.items()).flatMap(it -> it.stream().findFirst());
   }
 }
