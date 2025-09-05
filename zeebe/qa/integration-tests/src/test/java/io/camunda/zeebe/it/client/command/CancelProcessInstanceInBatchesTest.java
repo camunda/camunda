@@ -37,6 +37,9 @@ public final class CancelProcessInstanceInBatchesTest {
                 .setMaxMessageSize(DataSize.ofKilobytes(MAX_MESSAGE_SIZE_KB));
             // Note: this is a bout the batch for writing to the logstream, not the terminate batch
             cfg.getProcessing().setMaxCommandsInBatch(1);
+            cfg.getExperimental()
+                .getFeatures()
+                .setEnableStraightThroughProcessingLoopDetector(false);
           });
   private static final GrpcClientRule CLIENT_RULE =
       new GrpcClientRule(
