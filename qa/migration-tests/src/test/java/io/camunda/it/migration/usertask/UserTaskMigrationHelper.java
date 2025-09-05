@@ -49,7 +49,7 @@ public abstract class UserTaskMigrationHelper {
   protected static final Map<String, Long> USER_TASK_KEYS = new HashMap<>();
   protected static final Map<TaskImplementation, Long> PROCESS_DEFINITION_KEYS = new HashMap<>();
 
-  static void setup(
+  protected static void setup(
       final DatabaseType databaseType, final CamundaMigrator migrator, final String assignee) {
 
     final var jobWorkerProcessDefinitionKey =
@@ -76,7 +76,7 @@ public abstract class UserTaskMigrationHelper {
     USER_TASK_KEYS.put("third", taskKey);
   }
 
-  static void completeUserTaskAndWaitForArchiving(
+  protected static void completeUserTaskAndWaitForArchiving(
       final CamundaMigrator migrator, final long taskKey, final int waitPeriodSeconds) {
     try {
       final var res =

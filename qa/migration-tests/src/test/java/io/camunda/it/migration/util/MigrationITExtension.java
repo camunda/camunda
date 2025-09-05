@@ -152,7 +152,7 @@ public class MigrationITExtension
         && postUpdateProfiles.length > 0
         && (List.of(postUpdateProfiles).contains(Profile.PROCESS_MIGRATION)
             || List.of(postUpdateProfiles).contains(Profile.USAGE_METRIC_MIGRATION)
-        /*|| List.of(postUpdateProfiles).contains(Profile.TASK_MIGRATION)*/ );
+            || List.of(postUpdateProfiles).contains(Profile.TASK_MIGRATION));
   }
 
   private void awaitDemoUserIsPresent() {
