@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.Optional;
 import java.util.concurrent.CompletionException;
 import org.junit.jupiter.api.Test;

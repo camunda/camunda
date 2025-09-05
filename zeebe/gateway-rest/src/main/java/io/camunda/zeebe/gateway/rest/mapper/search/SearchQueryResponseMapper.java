@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.zeebe.gateway.rest.mapper.search;
 
-import static io.camunda.zeebe.gateway.rest.ResponseMapper.formatDate;
+import static io.camunda.zeebe.gateway.rest.mapper.ResponseMapper.formatDate;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;

@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.zeebe.gateway.rest.mapper;
 
 import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;

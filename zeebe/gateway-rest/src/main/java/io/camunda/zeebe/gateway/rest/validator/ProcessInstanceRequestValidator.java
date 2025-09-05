@@ -26,7 +26,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOp
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationTerminateInstruction;
-import io.camunda.zeebe.gateway.rest.SearchQueryRequestMapper;
+import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -80,7 +80,7 @@ public class ProcessInstanceRequestValidator {
     return validate(
         violations -> {
           final var filter =
-              SearchQueryRequestMapper.toRequiredProcessInstanceFilter(request.getFilter());
+              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
 
           final var migrationPlan = request.getMigrationPlan();
@@ -144,7 +144,7 @@ public class ProcessInstanceRequestValidator {
     return validate(
         violations -> {
           final var filter =
-              SearchQueryRequestMapper.toRequiredProcessInstanceFilter(request.getFilter());
+              SearchQueryFilterMapper.toRequiredProcessInstanceFilter(request.getFilter());
           filter.ifLeft(violations::addAll);
           if (request.getMoveInstructions() == null || request.getMoveInstructions().isEmpty()) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("moveInstructions"));
