@@ -213,7 +213,7 @@ jobs:
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
-      TEST_TYPE: accessibility
+      TEST_TYPE: Tool
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -389,7 +389,7 @@ jobs:
     env:
       DOCKER_IMAGE_TAG: current-test
       TEST_OWNER: Data Layer
-      TEST_TYPE: IT
+      TEST_TYPE: Integration
     services:
       registry:
         image: registry:3
