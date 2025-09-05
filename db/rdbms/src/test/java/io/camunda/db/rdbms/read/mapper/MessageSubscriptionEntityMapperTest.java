@@ -27,7 +27,7 @@ public class MessageSubscriptionEntityMapperTest {
             .processInstanceKey(1L)
             .flowNodeId("flowNodeId")
             .flowNodeInstanceKey(1L)
-            .messageSubscriptionType(MessageSubscriptionType.CORRELATED)
+            .messageSubscriptionType(MessageSubscriptionType.CREATED)
             .dateTime(OffsetDateTime.now().plusDays(1))
             .messageName("testMessageName")
             .correlationKey("testCorrelationKey")

@@ -39,7 +39,6 @@ public class MessageSubscriptionEntityTransformer
     return switch (value) {
       case CREATED -> MessageSubscriptionType.CREATED;
       case MIGRATED -> MessageSubscriptionType.MIGRATED;
-      case CORRELATED -> MessageSubscriptionType.CORRELATED;
       default -> throw new IllegalArgumentException("Unknown EventType: " + value);
     };
   }
