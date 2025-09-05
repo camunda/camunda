@@ -19,6 +19,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
+import io.camunda.search.filter.CorrelatedMessageFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -758,6 +759,51 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getCorrelationKey())
           .map(mapToOperations(String.class))
           .ifPresent(builder::correlationKeyOperations);
+      ofNullable(filter.getTenantId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::tenantIdOperations);
+    }
+    return builder.build();
+  }
+
+  static CorrelatedMessageFilter toCorrelatedMessageFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageFilter filter) {
+    final var builder = FilterBuilders.correlatedMessage();
+
+    if (filter != null) {
+      ofNullable(filter.getCorrelationKey())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::correlationKeyOperations);
+      ofNullable(filter.getCorrelationTime())
+          .map(mapToOperations(OffsetDateTime.class))
+          .ifPresent(builder::correlationTimeOperations);
+      ofNullable(filter.getElementId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::flowNodeIdOperations);
+      ofNullable(filter.getElementInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::flowNodeInstanceKeyOperations);
+      ofNullable(filter.getMessageKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::messageKeyOperations);
+      ofNullable(filter.getMessageName())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::messageNameOperations);
+      ofNullable(filter.getPartitionId())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::partitionIdOperations);
+      ofNullable(filter.getProcessDefinitionId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::processDefinitionIdOperations);
+      ofNullable(filter.getProcessDefinitionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processDefinitionKeyOperations);
+      ofNullable(filter.getProcessInstanceKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::processInstanceKeyOperations);
+      ofNullable(filter.getSubscriptionKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::subscriptionKeyOperations);
       ofNullable(filter.getTenantId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::tenantIdOperations);
