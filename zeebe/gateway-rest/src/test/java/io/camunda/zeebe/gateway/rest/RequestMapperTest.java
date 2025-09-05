@@ -18,6 +18,7 @@ import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOpera
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
+import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.junit.jupiter.api.Test;
