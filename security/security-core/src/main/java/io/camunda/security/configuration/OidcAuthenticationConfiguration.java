@@ -17,6 +17,7 @@ public class OidcAuthenticationConfiguration {
       "camunda.security.authentication.oidc.groupsClaim";
 
   private String issuerUri;
+  private String clientName;
   private String clientId;
   private String clientSecret;
   private String grantType = "authorization_code";
@@ -39,6 +40,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setIssuerUri(final String issuerUri) {
     this.issuerUri = issuerUri;
+  }
+
+  public String getClientName() {
+    return clientName;
+  }
+
+  public void setClientName(final String clientName) {
+    this.clientName = clientName;
   }
 
   public String getClientId() {
