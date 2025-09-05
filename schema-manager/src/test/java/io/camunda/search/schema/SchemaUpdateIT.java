@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -201,21 +200,5 @@ class SchemaUpdateIT {
               });
     }
     return archivePeriodInDays * indexTemplateDescriptors.size();
-  }
-
-  @AfterEach
-  void tearDown(
-      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
-      throws IOException {
-    if (config.connect().getTypeEnum().isElasticSearch()) {
-      // Delete the data streams to allow removal of associated index templates.
-      // Note: These stream is auto-created by Elasticsearch with the use of deprecated APIs in 8.7
-      // (ES client 7.x).
-      searchClientAdapter
-          .getElsClient()
-          .indices()
-          .deleteDataStream(
-              req -> req.name(".logs-deprecation.elasticsearch-default", "ilm-history-7"));
-    }
   }
 }
