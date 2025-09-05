@@ -11,7 +11,12 @@ import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 
 public record UsageMetricTUDbModel(
-    long key, OffsetDateTime eventTime, String tenantId, long assigneeHash, int partitionId) {
+    long key,
+    OffsetDateTime startTime,
+    OffsetDateTime endTime,
+    String tenantId,
+    long assigneeHash,
+    int partitionId) {
 
   public String getId() {
     return key + "_" + tenantId;
@@ -24,7 +29,8 @@ public record UsageMetricTUDbModel(
   public static class Builder implements ObjectBuilder<UsageMetricTUDbModel> {
 
     private long key;
-    private OffsetDateTime eventTime;
+    private OffsetDateTime startTime;
+    private OffsetDateTime endTime;
     private String tenantId;
     private long assigneeHash;
     private int partitionId;
@@ -34,8 +40,13 @@ public record UsageMetricTUDbModel(
       return this;
     }
 
-    public Builder eventTime(final OffsetDateTime eventTime) {
-      this.eventTime = eventTime;
+    public Builder startTime(final OffsetDateTime startTime) {
+      this.startTime = startTime;
+      return this;
+    }
+
+    public Builder endTime(final OffsetDateTime endTime) {
+      this.endTime = endTime;
       return this;
     }
 
@@ -56,7 +67,7 @@ public record UsageMetricTUDbModel(
 
     @Override
     public UsageMetricTUDbModel build() {
-      return new UsageMetricTUDbModel(key, eventTime, tenantId, assigneeHash, partitionId);
+      return new UsageMetricTUDbModel(key, startTime, endTime, tenantId, assigneeHash, partitionId);
     }
   }
 }

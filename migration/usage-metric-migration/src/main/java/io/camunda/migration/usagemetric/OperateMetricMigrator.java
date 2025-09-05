@@ -48,6 +48,11 @@ public class OperateMetricMigrator extends MetricMigrator {
       ctx._source.id = value;
       ctx._source.eventValue = 1;
       ctx._source.partitionId = -1;
+
+      ctx._source.startTime = ctx._source.eventTime;
+      ctx._source.endTime = ctx._source.eventTime;
+      ctx._source.remove("eventTime");
+
       String event = ctx._source.remove("event");
       if (event == "%s") {
         ctx._source.eventType = "%s";

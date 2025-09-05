@@ -49,6 +49,10 @@ public class TasklistMetricMigrator extends MetricMigrator {
       String value = ctx._source.remove("value");
       ctx._source.assigneeHash = params.hashes[value];
       ctx._source.partitionId = -1;
+
+      ctx._source.startTime = ctx._source.eventTime;
+      ctx._source.endTime = ctx._source.eventTime;
+      ctx._source.remove("eventTime");
       """;
   private final TasklistMigrationRepositoryIndex tasklistMigrationRepositoryIndex;
   private final TasklistImportPositionIndex tasklistImportPositionIndex;

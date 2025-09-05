@@ -17,7 +17,8 @@ public class UsageMetricIndex extends AbstractIndexDescriptor implements Prio5Ba
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String ID = "id";
-  public static final String EVENT_TIME = "eventTime";
+  public static final String START_TIME = "startTime";
+  public static final String END_TIME = "endTime";
   public static final String EVENT_TYPE = "eventType";
   public static final String EVENT_VALUE = "eventValue";
   public static final String TENANT_ID = "tenantId";

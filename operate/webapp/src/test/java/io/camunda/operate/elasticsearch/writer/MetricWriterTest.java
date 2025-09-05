@@ -50,7 +50,8 @@ public class MetricWriterTest {
                 .setId(ID_PATTERN.formatted(key, tenantId))
                 .setEventType(RPI)
                 .setEventValue(1L)
-                .setEventTime(now)
+                .setStartTime(now)
+                .setEndTime(now)
                 .setTenantId(tenantId)
                 .setPartitionId(0));
   }
@@ -73,7 +74,8 @@ public class MetricWriterTest {
                 .setId(ID_PATTERN.formatted(key, tenantId))
                 .setEventType(EDI)
                 .setEventValue(1L)
-                .setEventTime(now)
+                .setStartTime(now)
+                .setEndTime(now)
                 .setTenantId(tenantId)
                 .setPartitionId(0));
   }
