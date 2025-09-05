@@ -47,7 +47,7 @@ const TaskDetails: React.FC = observer(() => {
       variables,
     });
 
-    if (completedTask.state !== 'COMPLETED') {
+    if (completedTask.state === 'COMPLETING') {
       return;
     }
 
