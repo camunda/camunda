@@ -27,15 +27,17 @@ public interface AssignRoleToGroupCommandStep1 {
    */
   AssignRoleToGroupCommandStep2 roleId(String roleId);
 
-  interface AssignRoleToGroupCommandStep2 extends FinalCommandStep<AssignRoleToGroupResponse> {
+  interface AssignRoleToGroupCommandStep2 {
 
     /**
      * Sets the group ID.
      *
      * @param groupId the groupId of the group
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignRoleToGroupCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignRoleToGroupCommandStep2 groupId(String groupId);
+    AssignRoleToGroupCommandStep3 groupId(String groupId);
   }
+
+  interface AssignRoleToGroupCommandStep3 extends FinalCommandStep<AssignRoleToGroupResponse> {}
 }
