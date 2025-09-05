@@ -15,15 +15,13 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResult;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import java.io.InputStream;
 import java.util.Map;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a
- *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
- *     Java Client migration guide</a>
+ *     the <a href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda Java Client migration guide</a>
  */
 @Deprecated
 public interface EvaluateDecisionCommandStep1
@@ -49,7 +47,7 @@ public interface EvaluateDecisionCommandStep1
 
   interface EvaluateDecisionCommandStep2
       extends CommandWithTenantStep<EvaluateDecisionCommandStep2>,
-          FinalCommandStep<EvaluateDecisionResult> {
+          FinalCommandStep<EvaluateDecisionResponse> {
 
     /**
      * Set the variables for the decision evaluation.
