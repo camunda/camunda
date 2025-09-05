@@ -140,7 +140,12 @@ public class OidcIdentityMigrationIT {
     }
 
     IDENTITY.start();
-    BROKER.withCamundaExporter("http://" + ELASTIC.getHttpHostAddress()).start();
+    BROKER
+        .withCamundaExporter("http://" + ELASTIC.getHttpHostAddress())
+        .withProperty(
+            "camunda.data.secondary-storage.elasticsearch.url",
+            "http://" + ELASTIC.getHttpHostAddress())
+        .start();
   }
 
   @BeforeEach
