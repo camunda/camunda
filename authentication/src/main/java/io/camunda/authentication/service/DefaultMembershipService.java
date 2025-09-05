@@ -65,15 +65,15 @@ public class DefaultMembershipService implements MembershipService {
 
   @Override
   public CamundaAuthentication resolveMemberships(
-      final Map<String, Object> tokenClaims, final String username, final String clientId)
+      final Map<String, Object> tokenClaims,
+      final String principalId,
+      final PrincipalType principalType)
       throws OAuth2AuthenticationException {
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
-    if (username != null) {
-      ownerTypeToIds.put(EntityType.USER, Set.of(username));
-    }
-    if (clientId != null) {
-      ownerTypeToIds.put(EntityType.CLIENT, Set.of(clientId));
-    }
+
+    ownerTypeToIds.put(
+        principalType.equals(PrincipalType.USER) ? EntityType.USER : EntityType.CLIENT,
+        Set.of(principalId));
 
     final var mappingRules =
         mappingRuleServices
@@ -126,13 +126,17 @@ public class DefaultMembershipService implements MembershipService {
             .toList();
 
     return CamundaAuthentication.of(
-        a ->
-            a.user(username)
-                .clientId(clientId)
-                .roleIds(roles.stream().toList())
-                .groupIds(groups.stream().toList())
-                .mappingRule(mappingRules.stream().toList())
-                .tenants(tenants)
-                .claims(tokenClaims));
+        a -> {
+          if (principalType.equals(PrincipalType.CLIENT)) {
+            a.clientId(principalId);
+          } else {
+            a.user(principalId);
+          }
+          return a.roleIds(roles.stream().toList())
+              .groupIds(groups.stream().toList())
+              .mappingRule(mappingRules.stream().toList())
+              .tenants(tenants)
+              .claims(tokenClaims);
+        });
   }
 }
