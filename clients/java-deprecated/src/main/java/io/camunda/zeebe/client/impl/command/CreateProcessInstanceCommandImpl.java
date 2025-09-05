@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResultImpl;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -153,7 +154,7 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
     grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
-    httpRequestObject.setProcessDefinitionKey(processDefinitionKey);
+    httpRequestObject.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 

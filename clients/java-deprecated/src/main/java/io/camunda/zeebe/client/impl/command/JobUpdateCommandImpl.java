@@ -26,6 +26,7 @@ import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.JobChangeset;
 import io.camunda.zeebe.client.protocol.rest.JobUpdateRequest;
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -69,7 +70,10 @@ public class JobUpdateCommandImpl implements UpdateJobCommandStep1, UpdateJobCom
 
   @Override
   public UpdateJobCommandStep2 update(final JobChangeset jobChangeset) {
-    httpRequestObject.setChangeset(jobChangeset);
+    httpRequestObject.setChangeset(
+        Optional.ofNullable(jobChangeset)
+            .map(io.camunda.zeebe.client.protocol.rest.JobChangeset::getDelegate)
+            .orElse(null));
     return this;
   }
 

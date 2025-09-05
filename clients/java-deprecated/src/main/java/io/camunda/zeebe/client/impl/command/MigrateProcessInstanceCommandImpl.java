@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.MigrateProcessInstanceResponseImpl;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -84,7 +85,8 @@ public final class MigrateProcessInstanceCommandImpl
         MigrateProcessInstanceRequest.MigrationPlan.newBuilder()
             .setTargetProcessDefinitionKey(targetProcessDefinitionKey)
             .build());
-    httpRequestObject.setTargetProcessDefinitionKey(targetProcessDefinitionKey);
+    httpRequestObject.setTargetProcessDefinitionKey(
+        ParseUtil.keyToString(targetProcessDefinitionKey));
     return this;
   }
 
@@ -107,7 +109,8 @@ public final class MigrateProcessInstanceCommandImpl
   }
 
   private void buildRequestObject(final MigrationPlan migrationPlan) {
-    httpRequestObject.setTargetProcessDefinitionKey(migrationPlan.getTargetProcessDefinitionKey());
+    httpRequestObject.setTargetProcessDefinitionKey(
+        ParseUtil.keyToString(migrationPlan.getTargetProcessDefinitionKey()));
     httpRequestObject.setMappingInstructions(
         migrationPlan.getMappingInstructions().stream()
             .map(

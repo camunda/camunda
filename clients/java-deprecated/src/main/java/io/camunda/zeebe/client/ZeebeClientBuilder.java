@@ -242,10 +242,12 @@ public interface ZeebeClientBuilder {
 
   /**
    * If true, will prefer to use REST over gRPC for calls which can be done over both REST and gRPC.
-   * This is an experimental API which is present while we migrate the bulk of the API from gRPC to
-   * REST. Once done, this will also be removed.
+   * The default value is {@code false} (gRPC is preferred).
    *
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   *
+   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
+   * @return this builder for chaining
    */
   ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
 

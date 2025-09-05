@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package io.camunda.zeebe.client.impl;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -23,7 +22,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ActivateJobsCommandStep1;
-import io.camunda.zeebe.client.api.command.AddPermissionsCommandStep1;
 import io.camunda.zeebe.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.zeebe.client.api.command.BroadcastSignalCommandStep1;
 import io.camunda.zeebe.client.api.command.CancelProcessInstanceCommandStep1;
@@ -37,7 +35,6 @@ import io.camunda.zeebe.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
-import io.camunda.zeebe.client.api.command.CreateUserCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
@@ -69,7 +66,6 @@ import io.camunda.zeebe.client.api.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.client.api.search.query.UserTaskQuery;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.zeebe.client.impl.command.AddPermissionsCommandImpl;
 import io.camunda.zeebe.client.impl.command.AssignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.BroadcastSignalCommandImpl;
 import io.camunda.zeebe.client.impl.command.CancelProcessInstanceCommandImpl;
@@ -81,7 +77,6 @@ import io.camunda.zeebe.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
-import io.camunda.zeebe.client.impl.command.CreateUserCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
@@ -99,16 +94,9 @@ import io.camunda.zeebe.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.zeebe.client.impl.command.TopologyRequestImpl;
 import io.camunda.zeebe.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.zeebe.client.impl.command.UpdateUserTaskCommandImpl;
-import io.camunda.zeebe.client.impl.fetch.DecisionDefinitionGetXmlRequestImpl;
 import io.camunda.zeebe.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpClientFactory;
-import io.camunda.zeebe.client.impl.search.query.DecisionDefinitionQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.DecisionRequirementsQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.FlowNodeInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.IncidentQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.ProcessInstanceQueryImpl;
-import io.camunda.zeebe.client.impl.search.query.UserTaskQueryImpl;
 import io.camunda.zeebe.client.impl.util.ExecutorResource;
 import io.camunda.zeebe.client.impl.util.VersionUtil;
 import io.camunda.zeebe.client.impl.worker.JobClientImpl;
@@ -116,8 +104,12 @@ import io.camunda.zeebe.client.impl.worker.JobWorkerBuilderImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.CallCredentials;
+import io.grpc.CallOptions;
+import io.grpc.Channel;
+import io.grpc.ClientCall;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.grpc.MethodDescriptor;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
@@ -126,6 +118,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -133,8 +126,18 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class ZeebeClientImpl implements ZeebeClient {
+
+  private static final Logger LOG = LoggerFactory.getLogger(ZeebeClientImpl.class);
+  private static final String ZEEBE_DEPRECATION_WARNING =
+      "{} is deprecated and will be removed in version 8.10. Please migrate to io.camunda.client.CamundaClient.";
+  private static final String UNSUPPORTED_OPERATION_MSG =
+      String.format(
+          "Not supported with %s. Please use io.camunda.client.CamundaClient.",
+          ZeebeClient.class.getName());
   private final ZeebeClientConfiguration config;
   private final JsonMapper jsonMapper;
   private final GatewayStub asyncStub;
@@ -187,6 +190,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final GatewayStub gatewayStub,
       final ExecutorResource executorResource,
       final HttpClient httpClient) {
+    LOG.warn(ZEEBE_DEPRECATION_WARNING, ZeebeClient.class.getSimpleName());
     this.config = config;
     jsonMapper = config.getJsonMapper();
     this.channel = channel;
@@ -273,11 +277,38 @@ public final class ZeebeClientImpl implements ZeebeClient {
       final ManagedChannel channel, final ZeebeClientConfiguration config) {
     final CallCredentials credentials = buildCallCredentials(config);
     final GatewayStub gatewayStub = GatewayGrpc.newStub(channel).withCallCredentials(credentials);
-    if (!config.getInterceptors().isEmpty()) {
-      return gatewayStub.withInterceptors(
-          config.getInterceptors().toArray(new ClientInterceptor[] {}));
+    final List<ClientInterceptor> configInterceptors = config.getInterceptors();
+    final List<ClientInterceptor> defaultInterceptors = getDefaultInterceptors();
+
+    if (!configInterceptors.isEmpty()) {
+      final List<ClientInterceptor> allInterceptors = new ArrayList<>(configInterceptors);
+      allInterceptors.addAll(defaultInterceptors);
+      return gatewayStub.withInterceptors(allInterceptors.toArray(new ClientInterceptor[] {}));
     }
-    return gatewayStub;
+    return gatewayStub.withInterceptors(
+        defaultInterceptors.toArray(new ClientInterceptor[defaultInterceptors.size()]));
+  }
+
+  private static List<ClientInterceptor> getDefaultInterceptors() {
+    final List<ClientInterceptor> defaultInterceptors = new ArrayList<>();
+    defaultInterceptors.add(getZeebeGrpcDeprecationInterceptor());
+    return defaultInterceptors;
+  }
+
+  private static ClientInterceptor getZeebeGrpcDeprecationInterceptor() {
+    return new ClientInterceptor() {
+      @Override
+      public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
+          final MethodDescriptor<ReqT, RespT> methodDescriptor,
+          final CallOptions callOptions,
+          final Channel channel) {
+        LOG.warn(
+            ZEEBE_DEPRECATION_WARNING,
+            ZeebeClient.class.getSimpleName(),
+            CamundaClient.class.getSimpleName());
+        return channel.newCall(methodDescriptor, callOptions);
+      }
+    };
   }
 
   private static Map<String, Object> defaultServiceConfig() {
@@ -470,7 +501,8 @@ public final class ZeebeClientImpl implements ZeebeClient {
         config.getDefaultRequestTimeout(),
         credentialsProvider::shouldRetryRequest,
         httpClient,
-        config.preferRestOverGrpc());
+        config.preferRestOverGrpc(),
+        jsonMapper);
   }
 
   @Override
@@ -563,46 +595,40 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new ClockResetCommandImpl(httpClient);
   }
 
+  @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
-    return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public FlownodeInstanceQuery newFlownodeInstanceQuery() {
-    return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
+  @Override
   public UserTaskQuery newUserTaskQuery() {
-    return new UserTaskQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionRequirementsQuery newDecisionRequirementsQuery() {
-    return new DecisionRequirementsQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
+  @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
-    return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override
   public DecisionDefinitionGetXmlRequest newDecisionDefinitionGetXmlRequest(
       final long decisionKey) {
-    return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
+  @Override
   public IncidentQuery newIncidentQuery() {
-    return new IncidentQueryImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public CreateUserCommandStep1 newUserCreateCommand() {
-    return new CreateUserCommandImpl(httpClient, jsonMapper);
-  }
-
-  @Override
-  public AddPermissionsCommandStep1 newAddPermissionsCommand(final long ownerKey) {
-    return new AddPermissionsCommandImpl(ownerKey, httpClient, jsonMapper);
+    throw new UnsupportedOperationException(UNSUPPORTED_OPERATION_MSG);
   }
 
   @Override

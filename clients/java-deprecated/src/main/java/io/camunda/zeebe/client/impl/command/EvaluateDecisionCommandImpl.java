@@ -28,6 +28,7 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.EvaluateDecisionResultImpl;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -136,7 +137,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
     grpcRequestObjectBuilder.setDecisionKey(decisionKey);
-    httpRequestObject.setDecisionDefinitionKey(decisionKey);
+    httpRequestObject.setDecisionDefinitionKey(ParseUtil.keyToString(decisionKey));
     return this;
   }
 
