@@ -787,16 +787,6 @@ jobs:
             docker-file: Dockerfile
             owner: "General"
             module: "Zeebe"
-          - group: qa-migration-integration
-            name: "Migration QA"
-            maven-modules: "migration/process-migration,migration/usage-metric-migration,migration/task-migration"
-            maven-build-threads: 1
-            maven-test-fork-count: 10
-            runs-on: gcp-perf-core-8-default
-            docker-repository: localhost:5000/camunda/zeebe
-            docker-file: Dockerfile
-            owner: "Data Layer"
-            module: "Migration"
           - group: qa-update
             name: "Zeebe QA - Update"
             maven-modules: "zeebe/qa/update-tests"
