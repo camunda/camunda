@@ -28,15 +28,17 @@ public interface AssignRoleToTenantCommandStep1 {
    */
   AssignRoleToTenantCommandStep2 roleId(String roleId);
 
-  interface AssignRoleToTenantCommandStep2 extends FinalCommandStep<AssignRoleToTenantResponse> {
+  interface AssignRoleToTenantCommandStep2 {
 
     /**
      * Sets the tenant ID.
      *
      * @param tenantId the tenantId of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignRoleToTenantCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignRoleToTenantCommandStep2 tenantId(String tenantId);
+    AssignRoleToTenantCommandStep3 tenantId(String tenantId);
   }
+
+  interface AssignRoleToTenantCommandStep3 extends FinalCommandStep<AssignRoleToTenantResponse> {}
 }
