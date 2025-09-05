@@ -37,6 +37,13 @@ public interface BroadcastSignalCommandStep1
    */
   BroadcastSignalCommandStep2 signalName(String signalName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignalCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface BroadcastSignalCommandStep2
       extends CommandWithTenantStep<BroadcastSignalCommandStep2>,
           FinalCommandStep<BroadcastSignalResponse> {

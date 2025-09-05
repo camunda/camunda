@@ -39,6 +39,13 @@ public interface ThrowErrorCommandStep1
    */
   ThrowErrorCommandStep2 errorCode(String errorCode);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface ThrowErrorCommandStep2 extends FinalCommandStep<Void> {
     /**
      * Provide an error message describing the reason for the non-technical error. If the error is

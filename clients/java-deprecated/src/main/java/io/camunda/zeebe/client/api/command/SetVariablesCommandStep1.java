@@ -64,6 +64,13 @@ public interface SetVariablesCommandStep1
    */
   SetVariablesCommandStep2 variables(Object variables);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface SetVariablesCommandStep2
       extends CommandWithOperationReferenceStep<SetVariablesCommandStep2>,
           FinalCommandStep<SetVariablesResponse> {

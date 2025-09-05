@@ -35,6 +35,13 @@ public interface CorrelateMessageCommandStep1 {
    */
   CorrelateMessageCommandStep2 messageName(String messageName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessageCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface CorrelateMessageCommandStep2 {
     /**
      * Set the value of the correlation key of the message.
@@ -60,6 +67,13 @@ public interface CorrelateMessageCommandStep1 {
     CorrelateMessageCommandStep3 withoutCorrelationKey();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessageCommandStep3}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface CorrelateMessageCommandStep3
       extends CommandWithTenantStep<CorrelateMessageCommandStep3>,
           FinalCommandStep<CorrelateMessageResponse> {
