@@ -26,9 +26,8 @@ import io.camunda.zeebe.client.api.response.AddPermissionsResponse;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.ActionEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.PermissionTypeEnum;
-import io.camunda.zeebe.client.protocol.rest.AuthorizationRequest.ResourceTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.PermissionTypeEnum;
+import io.camunda.zeebe.client.protocol.rest.ResourceTypeEnum;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +35,9 @@ import org.apache.hc.client5.http.config.RequestConfig;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda Java Client migration guide</a>
+ *     the <a
+ *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+ *     Java Client migration guide</a>
  */
 @Deprecated
 public class AddPermissionsCommandImpl

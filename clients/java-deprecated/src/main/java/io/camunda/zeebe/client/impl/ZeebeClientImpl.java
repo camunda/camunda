@@ -563,7 +563,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new ClockResetCommandImpl(httpClient);
   }
 
-  @Override
   public ProcessInstanceQuery newProcessInstanceQuery() {
     return new ProcessInstanceQueryImpl(httpClient, jsonMapper);
   }
@@ -573,7 +572,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new FlowNodeInstanceQueryImpl(httpClient, jsonMapper);
   }
 
-  @Override
   public UserTaskQuery newUserTaskQuery() {
     return new UserTaskQueryImpl(httpClient, jsonMapper);
   }
@@ -583,7 +581,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new DecisionRequirementsQueryImpl(httpClient, jsonMapper);
   }
 
-  @Override
   public DecisionDefinitionQuery newDecisionDefinitionQuery() {
     return new DecisionDefinitionQueryImpl(httpClient, jsonMapper);
   }
@@ -594,7 +591,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     return new DecisionDefinitionGetXmlRequestImpl(httpClient, decisionKey);
   }
 
-  @Override
   public IncidentQuery newIncidentQuery() {
     return new IncidentQueryImpl(httpClient, jsonMapper);
   }

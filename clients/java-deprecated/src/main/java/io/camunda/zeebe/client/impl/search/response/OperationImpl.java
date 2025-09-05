@@ -21,7 +21,9 @@ import java.util.Optional;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda Java Client migration guide</a>
+ *     the <a
+ *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+ *     Java Client migration guide</a>
  */
 @Deprecated
 public class OperationImpl implements Operation {
@@ -34,12 +36,12 @@ public class OperationImpl implements Operation {
   private final String completedDate;
 
   public OperationImpl(final BatchOperationItemResponse item) {
-    this.id = item.getId();
-    this.batchOperationId = item.getBatchOperationId();
-    this.type = Optional.ofNullable(item.getType()).map(Enum::toString).orElse(null);
+    this.id = item.getItemKey();
+    this.batchOperationId = item.getBatchOperationKey();
+    this.type = Optional.ofNullable(item.getOperationType()).map(Enum::toString).orElse(null);
     this.state = Optional.ofNullable(item.getState()).map(Enum::toString).orElse(null);
     this.errorMessage = item.getErrorMessage();
-    this.completedDate = item.getCompletedDate();
+    this.completedDate = item.getProcessedDate();
   }
 
   @Override

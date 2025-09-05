@@ -27,7 +27,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentReferenceBatchResponseImpl;
 import io.camunda.zeebe.client.impl.util.DocumentBuilder;
-import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResult;
+import io.camunda.zeebe.client.protocol.rest.DocumentCreationBatchResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -46,7 +46,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda Java Client migration guide</a>
+ *     the <a
+ *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+ *     Java Client migration guide</a>
  */
 @Deprecated
 public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchCommandStep1 {
@@ -115,7 +117,7 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
           queryParams,
           entityBuilder,
           httpRequestConfig.build(),
-          DocumentCreationBatchResult.class,
+          DocumentCreationBatchResponse.class,
           DocumentReferenceBatchResponseImpl::new,
           result);
       return result;
