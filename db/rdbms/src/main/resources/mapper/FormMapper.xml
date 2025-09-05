@@ -74,6 +74,9 @@
         separator=", ">#{value}
       </foreach>
     </if>
+    <if test="filter.tenantId != null">
+      AND TENANT_ID = #{filter.tenantId}
+    </if>
   </sql>
 
 </mapper>
