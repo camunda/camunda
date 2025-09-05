@@ -67,7 +67,7 @@ const Clients: FC<ClientsProps> = ({ roleId }) => {
           childResourceTypeTranslationKey={"client"}
           parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
-          docsLinkPath="/docs/next/components/identity/role/"
+          docsLinkPath="/docs/next/components/identity/client/"
         />
         {assignClientModal}
       </>

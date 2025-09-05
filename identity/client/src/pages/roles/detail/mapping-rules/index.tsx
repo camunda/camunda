@@ -72,7 +72,7 @@ const MappingRules: FC<MappingRulesProps> = ({ roleId }) => {
           childResourceTypeTranslationKey={"mappingRule"}
           parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
-          docsLinkPath="/docs/next/self-managed/components/orchestration-cluster/identity/mapping-rules/managing-mapping-rules/"
+          docsLinkPath="/docs/next/components/identity/mapping-rules/manage-mapping-rules/"
         />
         {assignMappingRulesModal}
       </>
