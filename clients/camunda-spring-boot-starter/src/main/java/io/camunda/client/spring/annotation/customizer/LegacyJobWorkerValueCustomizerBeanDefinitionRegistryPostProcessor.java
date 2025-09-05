@@ -24,6 +24,7 @@ import org.springframework.beans.factory.support.BeanDefinitionBuilder;
 import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 
+@Deprecated(forRemoval = true)
 public class LegacyJobWorkerValueCustomizerBeanDefinitionRegistryPostProcessor
     implements BeanDefinitionRegistryPostProcessor {
 

@@ -20,6 +20,7 @@ import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.zeebe.spring.client.annotation.customizer.ZeebeWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 
+@Deprecated(forRemoval = true)
 public class JobWorkerValueCustomizerCompat implements JobWorkerValueCustomizer {
   private final ZeebeWorkerValueCustomizer customizer;
 
