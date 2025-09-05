@@ -8,7 +8,10 @@
 package io.camunda.it.migration.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Fail.fail;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.search.response.UserTaskImpl;
@@ -16,9 +19,15 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
@@ -52,7 +61,11 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
           .withInitialEnvOverrides(
               Map.of(
                   "CAMUNDA_TASKLIST_ARCHIVER_WAITPERIODBEFOREARCHIVING",
-                  ARCHIVING_WAITING_PERIOD_SECONDS + "s"));
+                  ARCHIVING_WAITING_PERIOD_SECONDS + "s"))
+          .withUpgradeSystemPropertyOverrides(Map.of("camunda.database.retention.enabled", "true"));
+
+  private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @Test
   @Order(1)
@@ -118,6 +131,15 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   @Test
   @Order(2)
+  void shouldApplyLifecyclePolicyToDatedIndices() {
+    Awaitility.await("wait until lifecycle policies are applied and initialized")
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(3))
+        .untilAsserted(this::assertAllDatedTaskIndicesHaveLifecyclePolicy);
+  }
+
+  @Test
+  @Order(3)
   void shouldCreateNewTask(final CamundaMigrator migrator) {
     final var zeebeProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(null));
@@ -140,5 +162,104 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
               assertThat(searchResponse.items()).hasSize(1);
             });
+  }
+
+  private void assertAllDatedTaskIndicesHaveLifecyclePolicy() {
+    if (PROVIDER.isElasticSearch()) {
+      assertAllDatedTaskIndicesHaveIlmPolicy();
+    } else {
+      assertAllDatedTaskIndicesHaveIsmPolicy();
+    }
+  }
+
+  private void assertAllDatedTaskIndicesHaveIlmPolicy() {
+    final var datedIndices = getDatedTaskIndexNames();
+    if (datedIndices.isEmpty()) {
+      fail("Dated task indices were expected but not found");
+    }
+    datedIndices.forEach(datedIndex -> assertIndexHasIlmPolicy(datedIndex));
+  }
+
+  private void assertIndexHasIlmPolicy(final String datedIndex) {
+    try {
+      final HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(
+                  URI.create(
+                      String.format("%s/%s/_settings", PROVIDER.getDatabaseUrl(), datedIndex)))
+              .header("Content-Type", "application/json")
+              .GET()
+              .build();
+      final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+      assertThat(jsonResponse.get(datedIndex)).isNotNull();
+      assertThat(jsonResponse.get(datedIndex).get("settings")).isNotNull();
+      assertThat(jsonResponse.get(datedIndex).get("settings").get("index")).isNotNull();
+      assertThat(jsonResponse.get(datedIndex).get("settings").get("index").get("lifecycle"))
+          .isNotNull();
+    } catch (final Exception e) {
+      fail("Failed to get ILM policy for index: " + datedIndex, e);
+    }
+  }
+
+  private void assertAllDatedTaskIndicesHaveIsmPolicy() {
+    final var datedIndices = getDatedTaskIndexNames();
+    if (datedIndices.isEmpty()) {
+      fail("Dated task indices were expected but not found");
+    }
+    datedIndices.forEach(this::assertIndexHasIsmPolicy);
+  }
+
+  private void assertIndexHasIsmPolicy(final String datedIndex) {
+    try {
+      final HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(
+                  URI.create(
+                      String.format(
+                          "%s/_plugins/_ism/explain/%s", PROVIDER.getDatabaseUrl(), datedIndex)))
+              .header("Content-Type", "application/json")
+              .GET()
+              .build();
+      final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+      assertThat(jsonResponse.get(datedIndex)).isNotNull();
+      assertThat(jsonResponse.get(datedIndex).get("index.plugins.index_state_management.policy_id"))
+          .isNotNull();
+      assertThat(jsonResponse.get(datedIndex).get("policy_id")).isNotNull();
+    } catch (final Exception e) {
+      fail("Failed to get ISM policy for index: " + datedIndex, e);
+    }
+  }
+
+  private List<String> getDatedTaskIndexNames() {
+    try {
+      final var taskIndexAlias =
+          String.format("%s-tasklist-task-8.8.0_alias", PROVIDER.getIndexPrefix());
+      final HttpRequest request =
+          HttpRequest.newBuilder()
+              .uri(
+                  URI.create(
+                      String.format("%s/_alias/%s", PROVIDER.getDatabaseUrl(), taskIndexAlias)))
+              .header("Content-Type", "application/json")
+              .GET()
+              .build();
+      final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+      final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+      final List<String> datedIndexNames = new ArrayList<>();
+
+      final Iterator<String> fieldNames = jsonResponse.fieldNames();
+      while (fieldNames.hasNext()) {
+        final var indexName = fieldNames.next();
+        if (!indexName.equals(
+            String.format("%s-tasklist-task-8.8.0_", PROVIDER.getIndexPrefix()))) {
+          datedIndexNames.add(indexName);
+        }
+      }
+      return datedIndexNames;
+    } catch (final Exception e) {
+      fail("Failed to get dated task index names", e);
+      throw new RuntimeException(e);
+    }
   }
 }

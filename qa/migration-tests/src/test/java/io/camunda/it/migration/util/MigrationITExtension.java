@@ -52,10 +52,9 @@ public class MigrationITExtension
     implements AfterAllCallback, BeforeAllCallback, ParameterResolver {
   private static final String TASKLIST = "tasklist";
   private static final String OPERATE = "operate";
-
   private final List<AutoCloseable> closables = new ArrayList<>();
   private Map<String, String> initialEnvOverrides = new HashMap<>();
-  private Map<String, String> upgradeEnvOverrides = new HashMap<>();
+  private Map<String, String> upgradeSystemPropertyOverrides = new HashMap<>();
   private final DatabaseType databaseType;
   private String indexPrefix;
   private String databaseUrl;
@@ -93,7 +92,7 @@ public class MigrationITExtension
       if (beforeUpgradeConsumer != null) {
         beforeUpgradeConsumer.accept(databaseType, migrator);
       }
-      upgrade(upgradeEnvOverrides);
+      upgrade(upgradeSystemPropertyOverrides);
     }
   }
 
@@ -115,8 +114,17 @@ public class MigrationITExtension
     return this;
   }
 
-  public MigrationITExtension withUpgradeEnvOverrides(final Map<String, String> envOverrides) {
-    upgradeEnvOverrides = envOverrides;
+  /**
+   * Allows the provision of system property overrides that will be used by the migration container.
+   * This can be used to enable features that are required for the upgrade process. For example
+   * "camunda.database.retention.enabled" -> "true".
+   *
+   * @param systemPropertyOverrides the system property overrides to set
+   * @return self for chaining
+   */
+  public MigrationITExtension withUpgradeSystemPropertyOverrides(
+      final Map<String, String> systemPropertyOverrides) {
+    upgradeSystemPropertyOverrides = systemPropertyOverrides;
     return this;
   }
 
@@ -128,6 +136,14 @@ public class MigrationITExtension
 
   public String getDatabaseUrl() {
     return databaseUrl;
+  }
+
+  public boolean isElasticSearch() {
+    return databaseType == DatabaseType.ES || databaseType == DatabaseType.LOCAL;
+  }
+
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 
   private void upgrade(final Map<String, String> envOverrides) {
