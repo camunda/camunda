@@ -47,6 +47,7 @@ public interface BackupIdentifierWildcard {
    * {@code ${partitionId}/${checkpointPattern.Prefix}}. If none of the fields are present, an empty
    * string is returned.
    */
+  @SuppressWarnings("checkstyle:MissingSwitchDefault")
   static String asPrefix(final BackupIdentifierWildcard wildcard) {
     final var prefix = new StringBuilder();
     if (wildcard.partitionId().isEmpty()) {
