@@ -27,12 +27,12 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import java.time.Duration;
 
 /**
+/**
  * A client with access to all job-related operation:
  * <li>complete a job
  * <li>mark a job as failed
  * <li>update the retries of a job
- */
-/**
+ *
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.worker.JobClient}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda

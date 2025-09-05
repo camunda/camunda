@@ -15,9 +15,8 @@
  */
 package io.camunda.zeebe.client.impl.http;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
@@ -28,35 +27,193 @@ import org.junit.jupiter.api.Test;
 
 class ApiCallbackTest {
 
+  public static final int DEFAULT_REMAINING_RETRIES = 2;
   private CompletableFuture<String> response;
-  private JsonResponseTransformer<String, String> transformer;
+  private JsonResponseAndStatusCodeTransformer<String, String> transformer;
   private Predicate<StatusCode> retryPredicate;
+  private Predicate<Integer> successPredicate;
   private Runnable retryAction;
   private ApiCallback<String, String> apiCallback;
 
   @BeforeEach
   void setUp() {
     response = new CompletableFuture<>();
-    transformer = mock(JsonResponseTransformer.class);
+    transformer = mock(JsonResponseAndStatusCodeTransformer.class);
     retryPredicate = mock(Predicate.class);
+    successPredicate = mock(Predicate.class);
     retryAction = mock(Runnable.class);
-    apiCallback = new ApiCallback<>(response, transformer, retryPredicate, retryAction);
+    apiCallback =
+        new ApiCallback<>(
+            response, transformer, null, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
   }
 
   @Test
-  void shouldLimitRetries() {
-    // Arrange
+  void shouldRetryWhenRetryPredicateIsTrue() {
+    // given
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
     when(retryPredicate.test(any())).thenReturn(true);
 
-    // Act
-    apiCallback.completed(apiResponse);
-    apiCallback.completed(apiResponse);
+    // when
     apiCallback.completed(apiResponse);
 
-    // Assert
-    verify(retryAction, times(2)).run();
-    assertTrue(response.isCompletedExceptionally());
+    // then
+    verify(retryAction, times(1)).run();
+  }
+
+  @Test
+  void shouldNotRetryWhenRetryPredicateIsFalse() {
+    // given
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(400);
+    when(retryPredicate.test(any())).thenReturn(false);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    verifyNoInteractions(retryAction);
+    assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldNotRetryWhenNoRetriesLeft() {
+    // given
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(500);
+    when(retryPredicate.test(any())).thenReturn(true);
+
+    // Exhaust retries
+    for (int i = 0; i < DEFAULT_REMAINING_RETRIES; i++) {
+      apiCallback.completed(apiResponse);
+    }
+
+    // when: another call, no retries left
+    apiCallback.completed(apiResponse);
+
+    // then: no new retry, future is exceptionally completed
+    verify(retryAction, times(DEFAULT_REMAINING_RETRIES)).run();
+    assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldReuseSameApiCallbackInstanceAcrossRetries() {
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(503);
+    when(retryPredicate.test(any())).thenReturn(true);
+
+    // First retry
+    apiCallback.completed(apiResponse);
+    verify(retryAction, times(1)).run();
+    reset(retryAction);
+
+    // Second retry
+    apiCallback.completed(apiResponse);
+    verify(retryAction, times(1)).run();
+    reset(retryAction);
+
+    // No retries left - should NOT call retryAction again
+    apiCallback.completed(apiResponse);
+    verifyNoInteractions(retryAction);
+    assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldFailGracefullyAfterRetriesExhausted() {
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(500);
+    when(retryPredicate.test(any())).thenReturn(true);
+
+    // Exhaust retries
+    for (int i = 0; i < DEFAULT_REMAINING_RETRIES; i++) {
+      apiCallback.completed(apiResponse);
+    }
+
+    // Final attempt - should complete exceptionally, no further retry
+    apiCallback.completed(apiResponse);
+    assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldUseStatusCodeTransformerWhenNoResponseBody() throws Exception {
+    // given
+    when(successPredicate.test(503)).thenReturn(true);
+    when(transformer.transform(null, 503)).thenReturn("DOWN");
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(503);
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    assertThat(response.isCompletedExceptionally()).isFalse();
+    assertThat(response.get()).isEqualTo("DOWN");
+    verify(transformer).transform(null, 503);
+  }
+
+  @Test
+  void shouldRetryWithStatusCodeTransformerWhenRetryPredicateIsTrue() {
+    // given
+    when(successPredicate.test(500)).thenReturn(false);
+    when(retryPredicate.test(any())).thenReturn(true);
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(500);
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    verify(retryAction, times(1)).run();
+    assertThat(response.isCompletedExceptionally()).isFalse();
+  }
+
+  @Test
+  void shouldFailWithStatusCodeTransformerWhenRetryPredicateIsFalse() {
+    // given
+    when(successPredicate.test(400)).thenReturn(false);
+    when(retryPredicate.test(any())).thenReturn(false);
+
+    apiCallback =
+        new ApiCallback<>(
+            response,
+            transformer,
+            successPredicate,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    final ApiResponse<String> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.getCode()).thenReturn(400);
+    when(apiResponse.getReasonPhrase()).thenReturn("Bad Request");
+    when(apiResponse.entity()).thenReturn(null);
+
+    // when
+    apiCallback.completed(apiResponse);
+
+    // then
+    verifyNoInteractions(retryAction);
+    assertThat(response.isCompletedExceptionally()).isTrue();
   }
 }
