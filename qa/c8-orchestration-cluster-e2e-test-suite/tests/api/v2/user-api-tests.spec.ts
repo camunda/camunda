@@ -18,7 +18,10 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
 } from '../../../utils/http';
-import {defaultAssertionOptions} from '../../../utils/constants';
+import {
+  defaultAssertionOptions,
+  generateUniqueId,
+} from '../../../utils/constants';
 import {
   assertUserInResponse,
   createUsersAndStoreResponseFields,
@@ -33,7 +36,7 @@ test.describe.parallel('Users API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async ({request}) => {
-    await createUsersAndStoreResponseFields(request, 5, state);
+    await createUsersAndStoreResponseFields(request, 8, state);
   });
 
   test('Create User', async ({request}) => {
@@ -149,30 +152,74 @@ test.describe.parallel('Users API Tests', () => {
     await assertBadRequest(res, 'No password provided', 'INVALID_ARGUMENT');
   });
 
-  test('Create User Missing Email Invalid Body 400', async ({request}) => {
+  test('Create User Missing Email Success', async ({request}) => {
     const body = {
-      username: 'username',
-      password: 'password',
+      username: `username-${generateUniqueId()}`,
       name: 'user',
+      password: 'password',
     };
+    const expectedBody = {
+      username: body.username,
+      name: body.name,
+      email: '',
+    };
+
     const res = await request.post(buildUrl('/users'), {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, 'No email provided', 'INVALID_ARGUMENT');
+
+    expect(res.status()).toBe(201);
+    const json = await res.json();
+    assertRequiredFields(json, userRequiredFields);
+    assertEqualsForKeys(json, expectedBody, userRequiredFields);
   });
 
-  test('Create User Missing Name Invalid Body 400', async ({request}) => {
+  test('Create User Missing Name Success', async ({request}) => {
     const body = {
-      email: 'onlyemail@example.com',
-      username: 'username',
+      username: `username-${generateUniqueId()}`,
+      email: 'user@example.com',
       password: 'password',
     };
+    const expectedBody = {
+      username: body.username,
+      email: body.email,
+      name: '',
+    };
+
     const res = await request.post(buildUrl('/users'), {
       headers: jsonHeaders(),
       data: body,
     });
-    await assertBadRequest(res, 'No name provided', 'INVALID_ARGUMENT');
+
+    expect(res.status()).toBe(201);
+    const json = await res.json();
+    assertRequiredFields(json, userRequiredFields);
+    assertEqualsForKeys(json, expectedBody, userRequiredFields);
+  });
+
+  test('Create User Empty Name Success', async ({request}) => {
+    const body = {
+      username: `username-${generateUniqueId()}`,
+      email: 'user@example.com',
+      password: 'password',
+      name: '',
+    };
+    const expectedBody = {
+      username: body.username,
+      email: body.email,
+      name: body.name,
+    };
+
+    const res = await request.post(buildUrl('/users'), {
+      headers: jsonHeaders(),
+      data: body,
+    });
+
+    expect(res.status()).toBe(201);
+    const json = await res.json();
+    assertRequiredFields(json, userRequiredFields);
+    assertEqualsForKeys(json, expectedBody, userRequiredFields);
   });
 
   test('Create User Empty Username Invalid Body 400', async ({request}) => {
@@ -268,53 +315,63 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update User Empty Name Invalid Body 400', async ({request}) => {
-    const p = {username: state['username1'] as string};
-    const requestBody = UPDATE_USER();
-    requestBody['name'] = '';
+  test('Update User Missing Name Success', async ({request}) => {
+    const p = {username: state['username6'] as string};
+    const requestBody = {
+      email: `updated-${generateUniqueId()}-email@example.com`,
+    };
+    const expectedBody = {
+      ...p,
+      ...requestBody,
+      name: state['name6'],
+    };
 
     await expect(async () => {
       const res = await request.put(buildUrl('/users/{username}', p), {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(400);
+      expect(res.status()).toBe(200);
+      const json = await res.json();
+      assertRequiredFields(json, userRequiredFields);
+      assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update User Missing Name Invalid Body 400', async ({request}) => {
-    const p = {username: state['username1'] as string};
+  test('Update User Missing Email Success', async ({request}) => {
+    const p = {username: state['username7'] as string};
+    const requestBody = {
+      name: `updated-${generateUniqueId()}-name`,
+    };
+    const expectedBody = {
+      ...p,
+      ...requestBody,
+      email: state['email7'],
+    };
 
     await expect(async () => {
       const res = await request.put(buildUrl('/users/{username}', p), {
         headers: jsonHeaders(),
-        data: {email: 'missingusername@example.com'},
+        data: requestBody,
       });
-      expect(res.status()).toBe(400);
+      expect(res.status()).toBe(200);
+      const json = await res.json();
+      assertRequiredFields(json, userRequiredFields);
+      assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update User Missing Email Invalid Body 400', async ({request}) => {
-    const p = {username: state['username1'] as string};
-
-    await expect(async () => {
-      const res = await request.put(buildUrl('/users/{username}', p), {
-        headers: jsonHeaders(),
-        data: {name: 'userwithmissingemail'},
-      });
-      expect(res.status()).toBe(400);
-    }).toPass(defaultAssertionOptions);
-  });
-
-  test('Update User Missing Password Success', async ({request}) => {
-    const p = {username: state['username4'] as string};
+  test('Update User With Password Success', async ({request}) => {
+    const p = {username: state['username8'] as string};
     const body = {
       name: 'userWithMissingPassword',
       email: 'userWithMissingPassword@example.com',
+      password: 'newPassword123',
     };
     const expectedResponseBody = {
       ...p,
-      ...body,
+      name: body.name,
+      email: body.email,
     };
 
     await expect(async () => {
