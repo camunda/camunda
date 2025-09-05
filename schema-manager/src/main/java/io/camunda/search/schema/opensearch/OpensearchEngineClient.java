@@ -9,6 +9,7 @@ package io.camunda.search.schema.opensearch;
 
 import static io.camunda.search.schema.utils.SearchEngineClientUtils.convertValue;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
@@ -28,6 +29,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -38,6 +40,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.apache.http.HttpStatus;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
@@ -69,6 +72,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
       new SuppressLogger(LoggerFactory.getLogger(OpensearchEngineClient.class));
   private static final String OPERATE_DELETE_ARCHIVED_POLICY =
       "/schema/opensearch/create/policy/operate_delete_archived_indices.json";
+  private static final String ISM_POLICIES_ENDPOINT = "_plugins/_ism/policies";
   private static final long AUTO_SLICES = 0; // see OS docs; 0 means auto
   private final ObjectReader objectReader;
   private final ObjectWriter objectWriter;
@@ -360,7 +364,7 @@ public class OpensearchEngineClient implements SearchEngineClient {
         .build();
   }
 
-  public Request createIndexStateManagementPolicy(
+  private Request createIndexStateManagementPolicy(
       final String policyName, final String deletionMinAge) {
     try (final var policyJson = getClass().getResourceAsStream(OPERATE_DELETE_ARCHIVED_POLICY)) {
       final var jsonMap = objectReader.readTree(policyJson);
@@ -377,16 +381,67 @@ public class OpensearchEngineClient implements SearchEngineClient {
 
       final var policy = objectWriter.writeValueAsBytes(jsonMap);
 
-      return Requests.builder()
-          .method("PUT")
-          .endpoint("_plugins/_ism/policies/" + policyName)
-          .body(Body.from(policy, "application/json"))
-          .build();
+      final var builder =
+          Requests.builder()
+              .method("PUT")
+              .endpoint(getPolicyEndpoint(policyName))
+              .body(Body.from(policy, "application/json"));
 
+      final var currentPolicyState = getCurrentISMPolicyState(policyName);
+      if (currentPolicyState.exists()) {
+        builder.query(
+            Map.of(
+                "if_seq_no",
+                String.valueOf(currentPolicyState.seqNo()),
+                "if_primary_term",
+                String.valueOf(currentPolicyState.primaryTerm())));
+      }
+
+      return builder.build();
     } catch (final IOException e) {
       throw new SearchEngineException(
           "Failed to deserialize policy file " + OPERATE_DELETE_ARCHIVED_POLICY, e);
     }
+  }
+
+  private String getPolicyEndpoint(final String policyName) {
+    return String.format("%s/%s", ISM_POLICIES_ENDPOINT, policyName);
+  }
+
+  @VisibleForTesting
+  ISMPolicyState getCurrentISMPolicyState(final String policyName) {
+    final var request =
+        Requests.builder().method("GET").endpoint(getPolicyEndpoint(policyName)).build();
+
+    try (final var response = client.generic().execute(request)) {
+      if (response.getStatus() == HttpStatus.SC_NOT_FOUND) {
+        // policy does not exist
+        return ISMPolicyState.empty();
+      }
+
+      if (response.getStatus() / 100 != 2) {
+        throw new SearchEngineException(
+            String.format(
+                "Retrieving the current index state management policy [%s] failed. Http response = [%s]",
+                policyName, response.getBody().get().bodyAsString()));
+      }
+
+      final var policyJson = response.getBody().get().bodyAsString();
+      final var policyJsonNode = objectReader.readTree(policyJson);
+      return fromPolicyJson(policyJsonNode);
+    } catch (final IOException e) {
+      throw new SearchEngineException(
+          String.format(
+              "Failed to retrieve current seq_no for index state management policy [%s]",
+              policyName),
+          e);
+    }
+  }
+
+  private ISMPolicyState fromPolicyJson(final JsonNode policyJsonNode) {
+    final var primaryTerm = policyJsonNode.path("_primary_term").asInt();
+    final var seqNo = policyJsonNode.path("_seq_no").asInt();
+    return new ISMPolicyState(seqNo, primaryTerm);
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(
@@ -640,6 +695,17 @@ public class OpensearchEngineClient implements SearchEngineClient {
       } catch (final IOException e) {
         throw new RuntimeException(e);
       }
+    }
+  }
+
+  record ISMPolicyState(boolean exists, int seqNo, int primaryTerm) {
+
+    public ISMPolicyState(final int seqNo, final int primaryTerm) {
+      this(true, seqNo, primaryTerm);
+    }
+
+    static ISMPolicyState empty() {
+      return new ISMPolicyState(false, 0, 0);
     }
   }
 }
