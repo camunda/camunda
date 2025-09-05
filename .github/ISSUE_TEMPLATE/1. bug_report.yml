@@ -101,6 +101,17 @@ body:
       description: A clear and concise description of what you expected to happen.
     validations:
       required: true
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Workaround
+      description: Description of the workaround if available.
+      value: |
+        1. do this
+        2. do that
+        3. now this happens and circumvents the bug
+    validations:
+      required: false
   - type: dropdown
     id: environment
     attributes:
