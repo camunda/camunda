@@ -466,6 +466,79 @@ describe('<Task />', () => {
     expect(screen.getByTestId('details-info')).toBeInTheDocument();
   });
 
+  it('should not show success notification when task is in completing state', async () => {
+    nodeMockServer.use(
+      http.get(
+        '/v2/user-tasks/:userTaskKey',
+        () => {
+          return HttpResponse.json(
+            taskMocks.assignedTask({
+              userTaskKey: MOCK_USER_TASK_KEY,
+              formKey: undefined,
+            }),
+          );
+        },
+        {once: true},
+      ),
+      http.get(
+        '/v2/authentication/me',
+        () => {
+          return HttpResponse.json(userMocks.currentUser);
+        },
+        {once: true},
+      ),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/completion',
+        () => {
+          return HttpResponse.json();
+        },
+        {once: true},
+      ),
+      http.get('/v2/user-tasks/:userTaskKey', () => {
+        return HttpResponse.json(
+          taskMocks.assignedTask({
+            userTaskKey: MOCK_USER_TASK_KEY,
+            formKey: undefined,
+            state: 'COMPLETING',
+          }),
+        );
+      }),
+      http.post(
+        '/v2/user-tasks/:userTaskKey/variables/search',
+        () => {
+          return HttpResponse.json(
+            getQueryVariablesResponseMock(variableMocks.variables),
+          );
+        },
+        {once: true},
+      ),
+      http.post('/v2/user-tasks/search', async () => {
+        return HttpResponse.json(getQueryTasksResponseMock(tasksMocks.tasks));
+      }),
+      http.get(
+        '/v2/process-definitions/:processDefinitionKey/xml',
+        async () => new HttpResponse(undefined, {status: 404}),
+      ),
+    );
+
+    const {user} = render(<Component />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      await screen.findByRole('button', {name: /complete task/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', {name: /complete task/i})).toBeEnabled();
+
+    await user.click(screen.getByRole('button', {name: /complete task/i}));
+
+    expect(notificationsStore.displayNotification).not.toHaveBeenCalledWith({
+      kind: 'success',
+      title: 'Task completed',
+      isDismissable: true,
+    });
+  });
+
   it('should reset variables', async () => {
     nodeMockServer.use(
       http.get('/v2/user-tasks/:userTaskKey', () => {
