@@ -38,6 +38,10 @@ public class NoDBMembershipService implements MembershipService {
       final String username,
       final String clientId)
       throws OAuth2AuthenticationException {
+    if (username != null && clientId != null) {
+      throw new OAuth2AuthenticationException(
+          "Both username and clientId are set. Only one of them must be set.");
+    }
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     final Set<String> groups =
         groupsClaimPresent
