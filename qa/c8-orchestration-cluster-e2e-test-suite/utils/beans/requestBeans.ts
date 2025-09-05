@@ -134,7 +134,6 @@ export function UPDATE_USER() {
   return {
     name: `updated-name-${uid}`,
     email: `updated-email-${uid}@example.com`,
-    password: `updated-password-${uid}`,
   };
 }
 
