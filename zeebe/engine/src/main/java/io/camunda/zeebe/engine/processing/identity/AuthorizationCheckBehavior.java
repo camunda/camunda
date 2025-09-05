@@ -95,25 +95,26 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    final var username = getUsername(request);
     final var clientId = getClientId(request);
+    final var username = getUsername(request);
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
-    if (username.isPresent()) {
-      final var userAuthorized =
-          isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
-      if (userAuthorized.isRight()) {
-        return Either.right(null);
-      } else {
-        aggregatedRejections.add(userAuthorized.getLeft());
-      }
-    } else if (clientId.isPresent()) {
+
+    if (clientId.isPresent()) {
       final var clientAuthorized =
           isEntityAuthorized(request, EntityType.CLIENT, Set.of(clientId.get()));
       if (clientAuthorized.isRight()) {
         return Either.right(null);
       } else {
         aggregatedRejections.add(clientAuthorized.getLeft());
+      }
+    } else if (username.isPresent()) {
+      final var userAuthorized =
+          isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
+      if (userAuthorized.isRight()) {
+        return Either.right(null);
+      } else {
+        aggregatedRejections.add(userAuthorized.getLeft());
       }
     }
 
