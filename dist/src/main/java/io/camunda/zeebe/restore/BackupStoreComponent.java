@@ -18,7 +18,6 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
-import java.util.concurrent.Executors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
@@ -69,6 +68,6 @@ final class BackupStoreComponent {
   private static BackupStore buildFilesystemBackupStore(final BackupStoreCfg backupStoreCfg) {
     final var storeConfig =
         FilesystemBackupStoreConfig.toStoreConfig(backupStoreCfg.getFilesystem());
-    return FilesystemBackupStore.of(storeConfig, Executors.newVirtualThreadPerTaskExecutor());
+    return FilesystemBackupStore.of(storeConfig);
   }
 }
