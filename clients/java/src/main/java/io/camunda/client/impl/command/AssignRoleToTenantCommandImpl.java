@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1;
 import io.camunda.client.api.command.AssignRoleToTenantCommandStep1.AssignRoleToTenantCommandStep2;
+import io.camunda.client.api.command.AssignRoleToTenantCommandStep1.AssignRoleToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignRoleToTenantCommandImpl
-    implements AssignRoleToTenantCommandStep1, AssignRoleToTenantCommandStep2 {
+    implements AssignRoleToTenantCommandStep1,
+        AssignRoleToTenantCommandStep2,
+        AssignRoleToTenantCommandStep3 {
 
   private String tenantId;
   private String roleId;
@@ -47,7 +50,7 @@ public final class AssignRoleToTenantCommandImpl
   }
 
   @Override
-  public AssignRoleToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignRoleToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }
