@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.impl.util.ParseUtil;
+import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
 import java.util.List;
@@ -49,8 +50,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final long decisionInstanceKey;
 
   public EvaluateDecisionResponseImpl(
-      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response,
-      final JsonMapper jsonMapper) {
+      final EvaluateDecisionResult response, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = response.getDecisionDefinitionId();
     decisionKey = ParseUtil.parseLongOrEmpty(response.getDecisionDefinitionKey());
@@ -67,7 +67,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   }
 
   public EvaluateDecisionResponseImpl(
-      final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResult response) {
+      final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResponse response) {
     this.jsonMapper = jsonMapper;
 
     decisionId = response.getDecisionId();
@@ -87,8 +87,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
         .forEach(evaluatedDecisions::add);
   }
 
-  private void buildEvaluatedDecisions(
-      final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response) {
+  private void buildEvaluatedDecisions(final EvaluateDecisionResult response) {
     if (response.getEvaluatedDecisions() == null) {
       return;
     }
