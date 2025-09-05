@@ -12,7 +12,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.createProblemDetail;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
