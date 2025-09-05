@@ -29,6 +29,7 @@ import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
+import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -55,8 +56,8 @@ public final class CreateProcessInstanceCommandImpl
   private boolean useRest;
   private HttpClient httpClient;
   private RequestConfig.Builder httpRequestConfig;
-  private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
-      httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest();
+  private final ProcessInstanceCreationInstruction httpRequestObject =
+      new ProcessInstanceCreationInstruction();
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,

@@ -26,7 +26,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.zeebe.client.impl.util.DocumentBuilder;
-import io.camunda.zeebe.client.protocol.rest.DocumentReferenceResult;
+import io.camunda.zeebe.client.protocol.rest.DocumentReference;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.HashMap;
@@ -100,7 +100,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
           queryParams,
           entityBuilder,
           httpRequestConfig.build(),
-          DocumentReferenceResult.class,
+          DocumentReference.class,
           DocumentReferenceResponseImpl::new,
           result);
       return result;
@@ -182,7 +182,7 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
 
   @Override
   public CreateDocumentCommandStep2 processInstanceKey(final long processInstanceKey) {
-    super.getMetadata().setProcessInstanceKey(processInstanceKey);
+    super.getMetadata().setProcessInstanceKey(String.valueOf(processInstanceKey));
     return this;
   }
 }

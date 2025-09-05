@@ -29,7 +29,7 @@ import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
 import io.camunda.zeebe.client.impl.response.PublishMessageResponseImpl;
 import io.camunda.zeebe.client.protocol.rest.MessagePublicationRequest;
-import io.camunda.zeebe.client.protocol.rest.MessagePublicationResponse;
+import io.camunda.zeebe.client.protocol.rest.MessagePublicationResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -148,7 +148,7 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
         "/messages/publication",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        MessagePublicationResponse.class,
+        MessagePublicationResult.class,
         PublishMessageResponseImpl::new,
         result);
     return result;

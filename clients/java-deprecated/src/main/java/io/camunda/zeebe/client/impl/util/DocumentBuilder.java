@@ -19,7 +19,7 @@ import static io.camunda.zeebe.client.impl.command.ArgumentUtil.ensureNotNull;
 
 import io.camunda.zeebe.client.api.command.DocumentBuilderStep1;
 import io.camunda.zeebe.client.api.command.DocumentBuilderStep1.DocumentBuilderStep2;
-import io.camunda.zeebe.client.protocol.rest.DocumentDetails;
+import io.camunda.zeebe.client.protocol.rest.DocumentMetadata;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.time.Duration;
@@ -37,7 +37,7 @@ import java.util.Map;
 public class DocumentBuilder implements DocumentBuilderStep1, DocumentBuilderStep2 {
 
   private InputStream content = null;
-  private final DocumentDetails metadata = new DocumentDetails();
+  private final DocumentMetadata metadata = new DocumentMetadata();
 
   @Override
   public DocumentBuilderStep2 content(final InputStream content) {
@@ -100,7 +100,7 @@ public class DocumentBuilder implements DocumentBuilderStep1, DocumentBuilderSte
     return this;
   }
 
-  public DocumentDetails getMetadata() {
+  public DocumentMetadata getMetadata() {
     return metadata;
   }
 

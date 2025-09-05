@@ -19,6 +19,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.ClientException;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
+import io.camunda.zeebe.client.protocol.rest.ActivatedJobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.HashMap;
 import java.util.Map;
@@ -70,11 +72,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
     tenantId = job.getTenantId();
   }
 
-  public ActivatedJobImpl(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.protocol.rest.ActivatedJob job) {
+  public ActivatedJobImpl(final JsonMapper jsonMapper, final ActivatedJobResult job) {
     this.jsonMapper = jsonMapper;
 
-    key = getOrEmpty(job.getJobKey());
+    key = ParseUtil.parseLongOrEmpty(job.getJobKey());
     type = getOrEmpty(job.getType());
     customHeaders =
         job.getCustomHeaders() == null
@@ -92,12 +93,12 @@ public final class ActivatedJobImpl implements ActivatedJob {
     deadline = getOrEmpty(job.getDeadline());
     variablesAsMap = job.getVariables() == null ? new HashMap<>() : job.getVariables();
     variables = jsonMapper.toJson(variablesAsMap);
-    processInstanceKey = getOrEmpty(job.getProcessInstanceKey());
+    processInstanceKey = ParseUtil.parseLongOrEmpty(job.getProcessInstanceKey());
     bpmnProcessId = getOrEmpty(job.getProcessDefinitionId());
     processDefinitionVersion = getOrEmpty(job.getProcessDefinitionVersion());
-    processDefinitionKey = getOrEmpty(job.getProcessDefinitionKey());
+    processDefinitionKey = ParseUtil.parseLongOrEmpty(job.getProcessDefinitionKey());
     elementId = getOrEmpty(job.getElementId());
-    elementInstanceKey = getOrEmpty(job.getElementInstanceKey());
+    elementInstanceKey = ParseUtil.parseLongOrEmpty(job.getElementInstanceKey());
     tenantId = getOrEmpty(job.getTenantId());
   }
 
