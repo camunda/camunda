@@ -15,7 +15,7 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import static io.camunda.spring.client.TestUtil.getBytes;
+import static io.camunda.client.spring.TestUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;

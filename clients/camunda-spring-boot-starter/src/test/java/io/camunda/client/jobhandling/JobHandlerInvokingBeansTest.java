@@ -45,9 +45,12 @@ import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandli
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
-import io.camunda.spring.client.test.util.JobWorkerPermutations;
-import io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator.*;
-import io.camunda.spring.client.testsupport.JobWorkerPermutationsUtil;
+import io.camunda.client.spring.test.util.JobWorkerPermutations;
+import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.AutoComplete;
+import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.JobResponse;
+import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.Response;
+import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.TestDimension;
+import io.camunda.client.spring.testsupport.JobWorkerPermutationsUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;

@@ -21,7 +21,7 @@ import io.camunda.client.api.command.InternalClientException;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
+import io.camunda.client.spring.annotation.value.DocumentValue.ParameterType;
 import java.util.Collections;
 import java.util.List;
 import org.slf4j.Logger;

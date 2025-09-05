@@ -646,7 +646,7 @@
     {
       "name": "camunda.client.auth.issuer",
       "type": "java.net.URI",
-      "sourceType": "io.camunda.spring.client.properties.CamundaClientAuthProperties",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientAuthProperties",
       "deprecation": {
         "replacement": "camunda.client.auth.token-url"
       }
@@ -654,7 +654,7 @@
     {
       "name": "camunda.client.cluster-id",
       "type": "java.lang.String",
-      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientProperties",
       "deprecation": {
         "replacement": "camunda.client.cloud.cluster-id"
       }
@@ -662,7 +662,7 @@
     {
       "name": "camunda.client.region",
       "type": "java.lang.String",
-      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientProperties",
       "deprecation": {
         "replacement": "camunda.client.cloud.region"
       }
@@ -670,7 +670,7 @@
     {
       "name": "camunda.client.tenant-ids",
       "type": "java.util.List<java.lang.String>",
-      "sourceType": "io.camunda.spring.client.properties.CamundaClientProperties",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientProperties",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.tenant-ids"
       }
@@ -841,7 +841,7 @@
     {
       "name": "camunda.client.cloud.base-url",
       "type": "java.lang.String",
-      "sourceType": "io.camunda.spring.client.properties.CamundaClientCloudProperties",
+      "sourceType": "io.camunda.client.spring.properties.CamundaClientCloudProperties",
       "deprecation": {
         "replacement": "camunda.client.cloud.domain"
       }
