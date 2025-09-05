@@ -11,10 +11,7 @@ import static io.camunda.operate.webapp.rest.ProcessRestService.PROCESS_URL;
 
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
-import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.ProcessReader;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.ProcessDto;
 import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
@@ -37,26 +34,8 @@ public class ProcessRestService extends InternalAPIErrorController {
   public static final String PROCESS_URL = "/api/processes";
 
   @Autowired private ProcessReader processReader;
-  @Autowired private ProcessInstanceReader processInstanceReader;
   @Autowired private PermissionsService permissionsService;
   @Autowired private BatchOperationWriter batchOperationWriter;
-
-  @Operation(summary = "Get process BPMN XML")
-  @GetMapping(path = "/{id}/xml")
-  public String getProcessDiagram(@PathVariable("id") final String processId) {
-    final Long processDefinitionKey = Long.valueOf(processId);
-    final ProcessEntity processEntity = processReader.getProcess(processDefinitionKey);
-    checkReadPermission(processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_DEFINITION);
-    return processReader.getDiagram(processDefinitionKey);
-  }
-
-  @Operation(summary = "Get process by id")
-  @GetMapping(path = "/{id}")
-  public ProcessDto getProcess(@PathVariable("id") final String processId) {
-    final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
-    checkReadPermission(processEntity.getBpmnProcessId(), PermissionType.READ_PROCESS_INSTANCE);
-    return DtoCreator.create(processEntity, ProcessDto.class);
-  }
 
   @Operation(summary = "List processes grouped by bpmnProcessId")
   @GetMapping(path = "/grouped")
@@ -80,14 +59,6 @@ public class ProcessRestService extends InternalAPIErrorController {
     final ProcessEntity processEntity = processReader.getProcess(Long.valueOf(processId));
     checkDeletePermission(processEntity.getKey());
     return batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
-  }
-
-  private void checkReadPermission(
-      final String bpmnProcessId, final PermissionType permissionType) {
-    if (!permissionsService.hasPermissionForProcess(bpmnProcessId, permissionType)) {
-      throw new NotAuthorizedException(
-          String.format("No read permission for process %s", bpmnProcessId));
-    }
   }
 
   private void checkDeletePermission(final Long processDefinitionKey) {

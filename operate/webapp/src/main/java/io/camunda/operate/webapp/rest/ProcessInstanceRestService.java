@@ -15,7 +15,6 @@ import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.FlowNodeStatisticsReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
@@ -24,12 +23,10 @@ import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -45,7 +42,6 @@ import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
@@ -70,7 +66,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private final IncidentReader incidentReader;
   private final VariableReader variableReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final FlowNodeStatisticsReader flowNodeStatisticsReader;
   private final SequenceFlowStore sequenceFlowStore;
 
   public ProcessInstanceRestService(
@@ -84,7 +79,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       final IncidentReader incidentReader,
       final VariableReader variableReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
-      final FlowNodeStatisticsReader flowNodeStatisticsReader,
       final SequenceFlowStore sequenceFlowStore) {
     this.permissionsService = permissionsService;
     this.processInstanceRequestValidator = processInstanceRequestValidator;
@@ -96,7 +90,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.incidentReader = incidentReader;
     this.variableReader = variableReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.flowNodeStatisticsReader = flowNodeStatisticsReader;
     this.sequenceFlowStore = sequenceFlowStore;
   }
 
@@ -140,15 +133,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 
-  @Operation(summary = "Create batch operation based on filter")
-  @PostMapping("/batch-operation")
-  public BatchOperationEntity createBatchOperation(
-      @RequestBody final CreateBatchOperationRequestDto batchOperationRequest) {
-    // TODO: Check permissions https://github.com/camunda/camunda/issues/32409
-    processInstanceRequestValidator.validateCreateBatchOperationRequest(batchOperationRequest);
-    return batchOperationWriter.scheduleBatchOperation(batchOperationRequest);
-  }
-
   @Operation(summary = "Get process instance by id")
   @GetMapping("/{id}")
   public ListViewProcessInstanceDto queryProcessInstanceById(
@@ -173,16 +157,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     final List<SequenceFlowEntity> sequenceFlows =
         sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
-  }
-
-  @Operation(summary = "Get variables by process instance id and scope id")
-  @PostMapping("/{processInstanceId}/variables")
-  public List<VariableDto> getVariables(
-      @PathVariable @ValidLongId final String processInstanceId,
-      @RequestBody final VariableRequestDto variableRequest) {
-    processInstanceRequestValidator.validateVariableRequest(variableRequest);
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return variableReader.getVariables(processInstanceId, variableRequest);
   }
 
   @Operation(summary = "Get full variable by id")
@@ -212,15 +186,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
-  @Operation(summary = "Get flow node statistic by process instance id")
-  @GetMapping("/{processInstanceId}/statistics")
-  public Collection<FlowNodeStatisticsDto> getStatistics(
-      @PathVariable @ValidLongId final String processInstanceId) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return flowNodeInstanceReader.getFlowNodeStatisticsForProcessInstance(
-        Long.parseLong(processInstanceId));
-  }
-
   @Operation(summary = "Get flow node metadata.")
   @PostMapping("/{processInstanceId}/flow-node-metadata")
   public FlowNodeMetadataDto getFlowNodeMetadata(
@@ -229,14 +194,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     processInstanceRequestValidator.validateFlowNodeMetadataRequest(request);
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
-  }
-
-  @Operation(summary = "Get activity instance statistics")
-  @PostMapping(path = "/statistics")
-  public Collection<FlowNodeStatisticsDto> getStatistics(
-      @RequestBody final ListViewQueryDto query) {
-    processInstanceRequestValidator.validateFlowNodeStatisticsRequest(query);
-    return flowNodeStatisticsReader.getFlowNodeStatistics(query);
   }
 
   @Operation(summary = "Get process instance core statistics (aggregations)")

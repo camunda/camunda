@@ -22,8 +22,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -74,20 +72,6 @@ public class AuthorizationIT {
                     new CreateOperationRequestDto()
                         .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)));
     verifyNoInteractions(batchOperationWriter);
-  }
-
-  @Test
-  public void testWritePermissionsForBatchOperation() {
-    when(batchOperationWriter.scheduleBatchOperation(any())).thenReturn(new BatchOperationEntity());
-
-    final BatchOperationEntity batchOperationEntity =
-        processInstanceRestService.createBatchOperation(
-            new CreateBatchOperationRequestDto()
-                .setOperationType(OperationType.DELETE_PROCESS_INSTANCE)
-                .setQuery(new ListViewQueryDto().setCompleted(true).setFinished(true)));
-
-    assertThat(batchOperationEntity).isNotNull();
-    verify(batchOperationWriter, times(1)).scheduleBatchOperation(any());
   }
 
   @Test
