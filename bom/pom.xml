@@ -44,7 +44,7 @@
     <plugin.version.flatten>1.7.2</plugin.version.flatten>
     <plugin.version.javadoc>3.11.2</plugin.version.javadoc>
     <plugin.version.license>5.0.0</plugin.version.license>
-    <plugin.version.spotless>2.44.5</plugin.version.spotless>
+    <plugin.version.spotless>2.46.1</plugin.version.spotless>
 
     <!--
       Define the skipChecks property here ONLY for the plugins defined in this module;
