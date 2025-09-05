@@ -69,6 +69,11 @@ public class DefaultMembershipService implements MembershipService {
       final String principalId,
       final PrincipalType principalType)
       throws OAuth2AuthenticationException {
+    if (username != null && clientId != null) {
+      throw new OAuth2AuthenticationException(
+          "Both username and clientId are set. Only one of them must be set.");
+    }
+
     final var ownerTypeToIds = new HashMap<EntityType, Set<String>>();
 
     ownerTypeToIds.put(
