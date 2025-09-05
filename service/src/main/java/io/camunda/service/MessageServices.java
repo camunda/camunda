@@ -7,8 +7,17 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.correlatedMessagesSearchQuery;
+import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
+
+import io.camunda.search.clients.CorrelatedMessagesSearchClient;
+import io.camunda.search.entities.CorrelatedMessageEntity;
+import io.camunda.search.query.CorrelatedMessagesQuery;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
+import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCorrelateMessageRequest;
@@ -17,8 +26,11 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
-public final class MessageServices extends ApiServices<MessageServices> {
+public final class MessageServices extends SearchQueryService<MessageServices, CorrelatedMessagesQuery, CorrelatedMessageEntity> {
+
+  private final CorrelatedMessagesSearchClient correlatedMessagesSearchClient;
 
   public MessageServices(
       final BrokerClient brokerClient,
@@ -26,12 +38,22 @@ public final class MessageServices extends ApiServices<MessageServices> {
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider) {
     super(brokerClient, securityContextProvider, authentication, executorProvider);
+    this.correlatedMessagesSearchClient = null;
+  }
+
+  public MessageServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final CorrelatedMessagesSearchClient correlatedMessagesSearchClient,
+      final CamundaAuthentication authentication,
+      final ApiServicesExecutorProvider executorProvider) {
+    super(brokerClient, securityContextProvider, authentication, executorProvider);
+    this.correlatedMessagesSearchClient = correlatedMessagesSearchClient;
   }
 
   @Override
   public MessageServices withAuthentication(final CamundaAuthentication authentication) {
-    return new MessageServices(
-        brokerClient, securityContextProvider, authentication, executorProvider);
+    return new MessageServices(brokerClient, securityContextProvider, correlatedMessagesSearchClient, authentication, executorProvider);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(
@@ -53,6 +75,30 @@ public final class MessageServices extends ApiServices<MessageServices> {
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId);
     return sendBrokerRequestWithFullResponse(brokerRequest);
+  }
+
+  @Override
+  public SearchQueryResult<CorrelatedMessageEntity> search(final CorrelatedMessagesQuery query) {
+    return searchCorrelatedMessages(query);
+  }
+
+  public SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessages(final CorrelatedMessagesQuery query) {
+    if (correlatedMessagesSearchClient == null) {
+      throw new UnsupportedOperationException("Correlated message search is not available");
+    }
+    
+    return executeSearchRequest(
+        () ->
+            correlatedMessagesSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
+                .searchCorrelatedMessages(query));
+  }
+
+  public SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessages(
+      final Function<CorrelatedMessagesQuery.Builder, ObjectBuilder<CorrelatedMessagesQuery>> fn) {
+    return searchCorrelatedMessages(correlatedMessagesSearchQuery(fn));
   }
 
   public record CorrelateMessageRequest(

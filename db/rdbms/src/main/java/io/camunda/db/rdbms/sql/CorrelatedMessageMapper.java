@@ -7,9 +7,15 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.CorrelatedMessagesDbQuery;
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageDbModel;
+import java.util.List;
 
 public interface CorrelatedMessageMapper extends HistoryCleanupMapper {
 
   void insert(CorrelatedMessageDbModel correlatedMessage);
+
+  Long count(CorrelatedMessagesDbQuery correlatedMessagesDbQuery);
+
+  List<CorrelatedMessageDbModel> search(CorrelatedMessagesDbQuery correlatedMessagesDbQuery);
 }

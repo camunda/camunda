@@ -31,7 +31,8 @@ public interface SearchClientsProxy
         BatchOperationSearchClient,
         SequenceFlowSearchClient,
         JobSearchClient,
-        MessageSubscriptionSearchClient {
+        MessageSubscriptionSearchClient,
+        CorrelatedMessagesSearchClient {
 
   @Override
   SearchClientsProxy withSecurityContext(SecurityContext securityContext);

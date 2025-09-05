@@ -14,8 +14,8 @@ import java.time.OffsetDateTime;
 public record CorrelatedMessageEntity(
     String correlationKey,
     OffsetDateTime correlationTime,
-    String flowNodeId,
-    Long flowNodeInstanceKey,
+    String elementId,
+    Long elementInstanceKey,
     Long messageKey,
     String messageName,
     String processDefinitionId,
@@ -31,8 +31,8 @@ public record CorrelatedMessageEntity(
   public static class Builder {
     private String correlationKey;
     private OffsetDateTime correlationTime;
-    private String flowNodeId;
-    private Long flowNodeInstanceKey;
+    private String elementId;
+    private Long elementInstanceKey;
     private Long messageKey;
     private String messageName;
     private String processDefinitionId;
@@ -51,13 +51,13 @@ public record CorrelatedMessageEntity(
       return this;
     }
 
-    public Builder flowNodeId(final String flowNodeId) {
-      this.flowNodeId = flowNodeId;
+    public Builder elementId(final String elementId) {
+      this.elementId = elementId;
       return this;
     }
 
-    public Builder flowNodeInstanceKey(final Long flowNodeInstanceKey) {
-      this.flowNodeInstanceKey = flowNodeInstanceKey;
+    public Builder elementInstanceKey(final Long elementInstanceKey) {
+      this.elementInstanceKey = elementInstanceKey;
       return this;
     }
 
@@ -100,8 +100,8 @@ public record CorrelatedMessageEntity(
       return new CorrelatedMessageEntity(
           correlationKey,
           correlationTime,
-          flowNodeId,
-          flowNodeInstanceKey,
+          elementId,
+          elementInstanceKey,
           messageKey,
           messageName,
           processDefinitionId,

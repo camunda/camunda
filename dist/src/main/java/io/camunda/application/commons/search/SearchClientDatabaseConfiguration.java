@@ -9,6 +9,7 @@ package io.camunda.application.commons.search;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.search.clients.CamundaSearchClients;
 import io.camunda.search.clients.auth.ResourceAccessDelegatingController;
 import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
@@ -25,6 +26,7 @@ import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
+import io.camunda.search.clients.reader.CorrelatedMessagesReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
@@ -116,6 +118,7 @@ public class SearchClientDatabaseConfiguration {
       final JobReader jobReader,
       final MappingRuleReader mappingRuleReader,
       final MessageSubscriptionReader messageSubscriptionReader,
+      final CorrelatedMessagesReader correlatedMessagesReader,
       final ProcessDefinitionReader processDefinitionReader,
       final ProcessDefinitionStatisticsReader processDefinitionFlowNodeStatisticsReader,
       final ProcessInstanceReader processInstanceReader,
@@ -145,6 +148,7 @@ public class SearchClientDatabaseConfiguration {
         jobReader,
         mappingRuleReader,
         messageSubscriptionReader,
+        correlatedMessagesReader,
         processDefinitionReader,
         processDefinitionFlowNodeStatisticsReader,
         processInstanceReader,

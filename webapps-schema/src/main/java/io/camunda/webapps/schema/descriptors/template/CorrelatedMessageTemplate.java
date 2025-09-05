@@ -30,6 +30,7 @@ public class CorrelatedMessageTemplate extends AbstractTemplateDescriptor
   public static final String MESSAGE_NAME = "messageName";
   public static final String POSITION = "position";
   public static final String PROCESS_DEFINITION_KEY = "processDefinitionKey";
+  public static final String PROCESS_INSTANCE_KEY = "processInstanceKey";
   public static final String SUBSCRIPTION_KEY = "subscriptionKey";
   public static final String TENANT_ID = "tenantId";
 
