@@ -39,7 +39,7 @@ public class MigrationWithoutTasklistDataIT {
   private static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
           .withPostUpdateAdditionalProfiles(
-              Profile.PROCESS_MIGRATION, Profile.USAGE_METRIC_MIGRATION)
+              Profile.PROCESS_MIGRATION, Profile.USAGE_METRIC_MIGRATION, Profile.TASK_MIGRATION)
           .withBeforeUpgradeConsumer(MigrationWithoutTasklistDataIT::setup);
 
   @Test

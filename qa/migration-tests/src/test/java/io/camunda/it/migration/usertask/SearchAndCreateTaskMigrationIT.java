@@ -9,6 +9,7 @@ package io.camunda.it.migration.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.Profile;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskResult;
@@ -41,6 +42,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          .withPostUpdateAdditionalProfiles(Profile.TASK_MIGRATION)
           .withBeforeUpgradeConsumer(
               (db, migrator) -> {
                 setup(db, migrator, null);
