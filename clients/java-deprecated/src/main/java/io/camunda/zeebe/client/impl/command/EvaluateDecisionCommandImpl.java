@@ -23,7 +23,6 @@ import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
@@ -141,7 +140,8 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   @Override
-  public FinalCommandStep<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse>
+      requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
@@ -156,8 +156,10 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     }
   }
 
-  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> sendRestRequest() {
-    final HttpZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
+  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse>
+      sendRestRequest() {
+    final HttpZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> result =
+        new HttpZeebeFuture<>();
     httpClient.post(
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
@@ -168,11 +170,13 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     return result;
   }
 
-  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> sendGrpcRequest() {
+  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse>
+      sendGrpcRequest() {
     final EvaluateDecisionRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<
-            io.camunda.zeebe.client.api.response.EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
+            io.camunda.zeebe.client.api.response.EvaluateDecisionResponse,
+            GatewayOuterClass.EvaluateDecisionResponse>
         future =
             new RetriableClientFutureImpl<>(
                 gatewayResponse -> new EvaluateDecisionResponseImpl(jsonMapper, gatewayResponse),

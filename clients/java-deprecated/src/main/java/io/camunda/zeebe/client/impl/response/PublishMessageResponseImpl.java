@@ -16,11 +16,8 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.PublishMessageResponse;
-import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.MessagePublicationResult;
-import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
-import io.camunda.zeebe.client.impl.util.ParseUtil;
 
 public final class PublishMessageResponseImpl implements PublishMessageResponse {
 

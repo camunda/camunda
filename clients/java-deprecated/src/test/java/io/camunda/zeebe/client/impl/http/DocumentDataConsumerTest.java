@@ -100,7 +100,8 @@ public class DocumentDataConsumerTest {
 
     assertThat(reportedCapacity.get()).isEqualTo(data.length - 1);
     // error is thrown when data exceeds buffer capacity
-    assertThatThrownBy(() -> consumer.consume(ByteBuffer.wrap(data))).isInstanceOf(IOException.class);
+    assertThatThrownBy(() -> consumer.consume(ByteBuffer.wrap(data)))
+        .isInstanceOf(IOException.class);
 
     final byte[] partialData = Arrays.copyOf(data, reportedCapacity.get());
     consumer.consume(ByteBuffer.wrap(partialData));

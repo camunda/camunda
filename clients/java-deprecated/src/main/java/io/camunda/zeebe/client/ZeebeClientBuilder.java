@@ -15,7 +15,6 @@
  */
 package io.camunda.zeebe.client;
 
-import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.worker.JobHandler;
@@ -29,8 +28,8 @@ import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 /**
- * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
- *     the <a
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+ *     io.camunda.client.CamundaClientBuilder}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
  *     Java Client migration guide</a>
  */
@@ -247,16 +246,10 @@ public interface ZeebeClientBuilder {
    * REST. Once done, this will also be removed.
    *
    * <p>NOTE: not all calls can be done over REST (or HTTP/1) yet, this is also subject to change.
+   * ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
    *
-   * @param preferRestOverGrpc if true, the client will use REST instead of gRPC whenever possible
-   * @deprecated since 8.5, will be removed in 8.8
-   * @return this builder for chaining
-   */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
-  @Deprecated
-  ZeebeClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc);
-
-  /**
+   * <p>/**
+   *
    * @return a new {@link ZeebeClient} with the provided configuration options.
    */
   ZeebeClient build();
