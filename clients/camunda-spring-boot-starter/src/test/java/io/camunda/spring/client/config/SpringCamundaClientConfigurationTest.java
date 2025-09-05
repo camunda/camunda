@@ -21,7 +21,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.NoopCredentialsProvider;
-import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.configuration.SpringCamundaClientConfiguration;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;

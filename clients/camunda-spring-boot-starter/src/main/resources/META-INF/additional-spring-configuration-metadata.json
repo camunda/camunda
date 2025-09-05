@@ -39,7 +39,7 @@
     },
     {
       "name": "camunda.client.zeebe.defaults",
-      "type": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "type": "io.camunda.client.annotation.value.JobWorkerValue",
       "description": "default properties for Zeebe job workers."
     },
     {
@@ -534,7 +534,7 @@
     {
       "name": "camunda.client.zeebe.defaults.auto-complete",
       "type": "java.lang.Boolean",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.auto-complete"
       }
@@ -542,7 +542,7 @@
     {
       "name": "camunda.client.zeebe.defaults.enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.enabled"
       }
@@ -550,7 +550,7 @@
     {
       "name": "camunda.client.zeebe.defaults.fetch-variables",
       "type": "java.util.List<java.lang.String>",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.fetch-variables"
       }
@@ -558,7 +558,7 @@
     {
       "name": "camunda.client.zeebe.defaults.force-fetch-all-variables",
       "type": "java.lang.Boolean",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.force-fetch-all-variables"
       }
@@ -566,7 +566,7 @@
     {
       "name": "camunda.client.zeebe.defaults.max-jobs-active",
       "type": "java.lang.Integer",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.max-jobs-active"
       }
@@ -574,7 +574,7 @@
     {
       "name": "camunda.client.zeebe.defaults.max-retries",
       "type": "java.lang.Integer",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.max-retries"
       }
@@ -582,7 +582,7 @@
     {
       "name": "camunda.client.zeebe.defaults.name",
       "type": "java.lang.String",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.name"
       }
@@ -590,7 +590,7 @@
     {
       "name": "camunda.client.zeebe.defaults.poll-interval",
       "type": "java.time.Duration",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.poll-interval"
       }
@@ -598,7 +598,7 @@
     {
       "name": "camunda.client.zeebe.defaults.request-timeout",
       "type": "java.time.Duration",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.request-timeout"
       }
@@ -606,7 +606,7 @@
     {
       "name": "camunda.client.zeebe.defaults.stream-enabled",
       "type": "java.lang.Boolean",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.stream-enabled"
       }
@@ -614,7 +614,7 @@
     {
       "name": "camunda.client.zeebe.defaults.stream-timeout",
       "type": "java.time.Duration",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.stream-timeout"
       }
@@ -622,7 +622,7 @@
     {
       "name": "camunda.client.zeebe.defaults.tenant-ids",
       "type": "java.util.List<java.lang.String>",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.tenant-ids"
       }
@@ -630,7 +630,7 @@
     {
       "name": "camunda.client.zeebe.defaults.timeout",
       "type": "java.time.Duration",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.timeout"
       }
@@ -638,7 +638,7 @@
     {
       "name": "camunda.client.zeebe.defaults.type",
       "type": "java.lang.String",
-      "sourceType": "io.camunda.sdk.annotation.value.JobWorkerValue",
+      "sourceType": "io.camunda.client.annotation.value.JobWorkerValue",
       "deprecation": {
         "replacement": "camunda.client.worker.defaults.type"
       }

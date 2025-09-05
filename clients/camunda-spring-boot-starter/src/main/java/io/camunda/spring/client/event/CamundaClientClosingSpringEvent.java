@@ -16,7 +16,7 @@
 package io.camunda.spring.client.event;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.sdk.event.CamundaClientClosingEvent;
+import io.camunda.client.event.CamundaClientClosingEvent;
 import org.springframework.context.ApplicationEvent;
 
 /**

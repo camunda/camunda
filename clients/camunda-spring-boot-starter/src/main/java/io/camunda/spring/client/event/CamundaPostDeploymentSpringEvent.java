@@ -16,7 +16,7 @@
 package io.camunda.spring.client.event;
 
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.sdk.event.CamundaPostDeploymentEvent;
+import io.camunda.client.event.CamundaPostDeploymentEvent;
 import org.springframework.context.ApplicationEvent;
 
 public class CamundaPostDeploymentSpringEvent extends ApplicationEvent

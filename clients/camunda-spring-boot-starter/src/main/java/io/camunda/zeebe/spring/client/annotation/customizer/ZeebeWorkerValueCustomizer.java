@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.spring.client.annotation.customizer;
 
-import io.camunda.sdk.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.zeebe.spring.client.annotation.value.ZeebeWorkerValue;
 
 /**

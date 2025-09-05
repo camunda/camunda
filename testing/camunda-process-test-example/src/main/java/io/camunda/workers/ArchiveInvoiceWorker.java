@@ -16,9 +16,9 @@
 package io.camunda.workers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.sdk.annotation.JobWorker;
-import io.camunda.sdk.annotation.Variable;
-import io.camunda.sdk.exception.BpmnError;
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.Variable;
+import io.camunda.client.exception.BpmnError;
 import io.camunda.services.ArchiveService;
 import io.camunda.services.WiredLegacyException;
 import org.springframework.stereotype.Component;

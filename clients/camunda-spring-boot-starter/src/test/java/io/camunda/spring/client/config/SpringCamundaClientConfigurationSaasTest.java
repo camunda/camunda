@@ -21,7 +21,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
-import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.configuration.CamundaClientAllAutoConfiguration;
 import io.camunda.spring.client.configuration.CamundaClientProdAutoConfiguration;
 import java.net.URI;

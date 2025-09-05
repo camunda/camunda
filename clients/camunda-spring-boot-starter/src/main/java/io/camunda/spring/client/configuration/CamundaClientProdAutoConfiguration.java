@@ -21,7 +21,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.client.impl.util.ExecutorResource;
-import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.camunda.spring.client.testsupport.CamundaSpringProcessTestContext;
