@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.2
+
+### 🩹 Fixes
+
+- incident resolutiona and cancellation batch operations schemas ([#37634](https://github.com/camunda/camunda/pull/37634))
+
+### ❤️ Contributors
+
+- Patrick Dehn ([@pedesen](https://github.com/pedesen))
+
 ## v0.0.1
 
 ### 🚀 Enhancements
