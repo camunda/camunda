@@ -12,7 +12,8 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery">
     SELECT COUNT(*)
-    FROM ${prefix}PROCESS_DEFINITION pi
+    FROM ${prefix}PROCESS_DEFINITION t
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.maxVersionFilter"/>
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
   </select>
 
@@ -31,13 +32,13 @@
     FROM ${prefix}PROCESS_DEFINITION
     <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
     ) t
-    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.join"/>
+    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.maxVersionFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
-  <sql id="join">
+  <sql id="maxVersionFilter">
     <if test="filter.isLatestVersion != null and filter.isLatestVersion == true">
       JOIN (
         SELECT pd.process_definition_id AS pd_id, pd.tenant_id AS t_id, MAX(version) AS max_version
