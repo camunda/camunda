@@ -27,15 +27,17 @@ public interface UnassignMappingRuleFromGroupStep1 {
    */
   UnassignMappingRuleFromGroupStep2 mappingRuleId(String mappingRuleId);
 
-  interface UnassignMappingRuleFromGroupStep2
-      extends FinalCommandStep<UnassignMappingRuleFromGroupResponse> {
+  interface UnassignMappingRuleFromGroupStep2 {
     /**
      * Sets the group ID.
      *
      * @param groupId the id of the group
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignMappingRuleFromGroupStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    UnassignMappingRuleFromGroupStep2 groupId(String groupId);
+    UnassignMappingRuleFromGroupStep3 groupId(String groupId);
   }
+
+  interface UnassignMappingRuleFromGroupStep3
+      extends FinalCommandStep<UnassignMappingRuleFromGroupResponse> {}
 }
