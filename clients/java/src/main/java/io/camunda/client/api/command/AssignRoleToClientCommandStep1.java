@@ -26,15 +26,17 @@ public interface AssignRoleToClientCommandStep1 {
    */
   AssignRoleToClientCommandStep2 roleId(String roleId);
 
-  interface AssignRoleToClientCommandStep2 extends FinalCommandStep<AssignRoleToClientResponse> {
+  interface AssignRoleToClientCommandStep2 {
 
     /**
      * Sets the client ID.
      *
      * @param clientId the clientId of the client
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignRoleToClientCommandStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignRoleToClientCommandStep2 clientId(String clientId);
+    AssignRoleToClientCommandStep3 clientId(String clientId);
   }
+
+  interface AssignRoleToClientCommandStep3 extends FinalCommandStep<AssignRoleToClientResponse> {}
 }
