@@ -22,8 +22,7 @@ import java.io.InputStream;
  * Command to get the content of a document from the document store.
  *
  * <p>The document content is returned as an {@link InputStream}.
- */
-/**
+ *
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.fetch.DocumentContentGetRequest}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda

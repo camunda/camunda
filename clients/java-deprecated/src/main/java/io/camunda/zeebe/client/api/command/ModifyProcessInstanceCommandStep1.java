@@ -64,6 +64,14 @@ public interface ModifyProcessInstanceCommandStep1
    */
   ModifyProcessInstanceCommandStep2 terminateElement(final long elementInstanceKey);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2}.
+   *     Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep2
       extends CommandWithOperationReferenceStep<ModifyProcessInstanceCommandStep2>,
           FinalCommandStep<ModifyProcessInstanceResponse> {
@@ -76,6 +84,14 @@ public interface ModifyProcessInstanceCommandStep1
     ModifyProcessInstanceCommandStep1 and();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3}.
+   *     Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface ModifyProcessInstanceCommandStep3 extends ModifyProcessInstanceCommandStep2 {
 
     /**

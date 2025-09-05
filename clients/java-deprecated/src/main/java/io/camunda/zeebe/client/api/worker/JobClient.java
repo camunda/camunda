@@ -27,7 +27,6 @@ import io.camunda.zeebe.client.api.response.ActivatedJob;
 import java.time.Duration;
 
 /**
-/**
  * A client with access to all job-related operation:
  * <li>complete a job
  * <li>mark a job as failed

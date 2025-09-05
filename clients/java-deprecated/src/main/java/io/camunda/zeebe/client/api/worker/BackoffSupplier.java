@@ -27,15 +27,14 @@ import java.time.Duration;
  *
  * <p>The supplier is called after a failed request. The worker will then await the supplied delay
  * before sending the next request.
- */
-@FunctionalInterface
-/**
+ *
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.worker.BackoffSupplier}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
  *     Java Client migration guide</a>
  */
 @Deprecated
+@FunctionalInterface
 public interface BackoffSupplier {
 
   /**

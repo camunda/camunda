@@ -18,15 +18,16 @@ package io.camunda.zeebe.client.api.worker;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 
-/** Implementations MUST be thread-safe. */
-@FunctionalInterface
 /**
+ * Implementations MUST be thread-safe.
+ *
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.worker.JobHandler}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
  *     Java Client migration guide</a>
  */
 @Deprecated
+@FunctionalInterface
 public interface JobHandler {
 
   /**

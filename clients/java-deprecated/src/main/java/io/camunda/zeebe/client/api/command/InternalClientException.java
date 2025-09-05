@@ -15,7 +15,15 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-/** Exception which is thrown on internal errors inside the client itself. */
+/**
+ * Exception which is thrown on internal errors inside the client itself.
+ *
+ * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+ *     io.camunda.client.api.command.InternalClientException}. Please see the <a
+ *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+ *     Java Client migration guide</a>.
+ */
+@Deprecated
 public final class InternalClientException extends ClientException {
 
   public InternalClientException(final String message) {

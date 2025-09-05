@@ -18,7 +18,6 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.ExperimentalApi;
 import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
 
-@ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1}. Please see the <a
@@ -26,6 +25,7 @@ import io.camunda.zeebe.client.api.response.MigrateProcessInstanceResponse;
  *     Java Client migration guide</a>
  */
 @Deprecated
+@ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
 public interface MigrateProcessInstanceCommandStep1
     extends CommandWithCommunicationApiStep<MigrateProcessInstanceCommandStep1> {
 
@@ -58,6 +58,14 @@ public interface MigrateProcessInstanceCommandStep1
    */
   MigrateProcessInstanceCommandFinalStep migrationPlan(final MigrationPlan migrationPlan);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateProcessInstanceCommandStep2}.
+   *     Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface MigrateProcessInstanceCommandStep2 {
     /**
      * Add a {@link

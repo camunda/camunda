@@ -52,6 +52,14 @@ public interface UpdateTimeoutJobCommandStep1
    */
   UpdateTimeoutJobCommandStep2 timeout(Duration timeout);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2}.
+   *     Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface UpdateTimeoutJobCommandStep2
       extends CommandWithOperationReferenceStep<UpdateTimeoutJobCommandStep2>,
           FinalCommandStep<UpdateTimeoutJobResponse> {

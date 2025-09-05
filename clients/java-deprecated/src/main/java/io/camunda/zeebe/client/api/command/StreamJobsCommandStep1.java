@@ -40,6 +40,13 @@ public interface StreamJobsCommandStep1 {
    */
   StreamJobsCommandStep2 jobType(String jobType);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface StreamJobsCommandStep2 {
 
     /**
@@ -53,6 +60,13 @@ public interface StreamJobsCommandStep1 {
     StreamJobsCommandStep3 consumer(final Consumer<ActivatedJob> consumer);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface StreamJobsCommandStep3
       extends CommandWithOneOrMoreTenantsStep<StreamJobsCommandStep3>,
           FinalCommandStep<StreamJobsResponse> {

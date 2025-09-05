@@ -48,6 +48,13 @@ public interface MigrationPlan {
    */
   public List<MappingInstruction> getMappingInstructions();
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep1}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface MigrationPlanBuilderStep1 {
 
     /**
@@ -59,6 +66,13 @@ public interface MigrationPlan {
     MigrationPlanBuilderStep2 withTargetProcessDefinitionKey(final long targetProcessDefinitionKey);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface MigrationPlanBuilderStep2 {
 
     /**
@@ -87,6 +101,13 @@ public interface MigrationPlan {
         final String sourceElementId, final String targetElementId);
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.MigrationPlan.MigrationPlanBuilderFinalStep}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface MigrationPlanBuilderFinalStep extends MigrationPlanBuilderStep2 {
 
     /**

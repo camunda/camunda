@@ -17,7 +17,6 @@ package io.camunda.zeebe.client.api.response;
 
 import io.camunda.zeebe.client.api.ExperimentalApi;
 
-@ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.response.StreamJobsResponse}. Please see the <a
@@ -25,4 +24,5 @@ import io.camunda.zeebe.client.api.ExperimentalApi;
  *     Java Client migration guide</a>
  */
 @Deprecated
+@ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 public interface StreamJobsResponse {}

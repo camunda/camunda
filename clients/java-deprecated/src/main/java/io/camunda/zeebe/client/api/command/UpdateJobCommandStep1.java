@@ -96,6 +96,13 @@ public interface UpdateJobCommandStep1 {
    */
   UpdateJobCommandStep2 updateTimeout(Duration timeout);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.UpdateJobCommandStep1.UpdateJobCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>.
+   */
+  @Deprecated
   interface UpdateJobCommandStep2 extends FinalCommandStep<UpdateJobResponse> {
     // the place for new optional parameters
   }
