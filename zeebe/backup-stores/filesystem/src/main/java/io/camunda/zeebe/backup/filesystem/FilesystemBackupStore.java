@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,10 @@ public final class FilesystemBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
+
+  FilesystemBackupStore(final FilesystemBackupConfig config) {
+    this(config, Executors.newVirtualThreadPerTaskExecutor());
+  }
 
   FilesystemBackupStore(final FilesystemBackupConfig config, final ExecutorService executor) {
     validateConfig(config);
@@ -166,24 +171,32 @@ public final class FilesystemBackupStore implements BackupStore {
             executor.shutdown();
             final var closed = executor.awaitTermination(1, TimeUnit.MINUTES);
             if (!closed) {
-              LOG.warn("Failed to orderly shutdown Filesystem Store Executor within one minute.");
+              LOG.debug(
+                  """
+                Expected file system backup store executor to shutdown within a minute, but one \
+                task is hanging; will forcefully shutdown, but some backup may not be written \
+                properly""");
               executor.shutdownNow();
             }
-          } catch (final Exception e) {
-            LOG.error("Failed to shutdown of Filesystem Store Executor.");
-            throw new RuntimeException(e);
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.debug(
+                """
+              Interrupted while awaiting shutdown of file system store executor, possible resource \
+              leak""",
+                e);
           }
         });
   }
 
   public static void validateConfig(final FilesystemBackupConfig config) {
     if (config.basePath() == null || config.basePath().isBlank()) {
-      throw new IllegalArgumentException("Base directory is required");
+      throw new IllegalArgumentException(
+          "Expected a basePath to be provided, but got [%s]".formatted(config.basePath()));
     }
   }
 
-  public static BackupStore of(
-      final FilesystemBackupConfig storeConfig, final ExecutorService executorService) {
-    return new FilesystemBackupStore(storeConfig, executorService).logging(LOG, Level.INFO);
+  public static BackupStore of(final FilesystemBackupConfig storeConfig) {
+    return new FilesystemBackupStore(storeConfig).logging(LOG, Level.INFO);
   }
 }
