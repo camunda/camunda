@@ -51,6 +51,13 @@ public interface CreateProcessInstanceCommandStep1
    */
   CreateProcessInstanceCommandStep3 processDefinitionKey(long processDefinitionKey);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface CreateProcessInstanceCommandStep2 {
     /**
      * Set the version of the process to create an instance of. The version is assigned by the
@@ -72,6 +79,13 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceCommandStep3 latestVersion();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface CreateProcessInstanceCommandStep3
       extends CommandWithTenantStep<CreateProcessInstanceCommandStep3>,
           FinalCommandStep<ProcessInstanceEvent> {
@@ -142,6 +156,13 @@ public interface CreateProcessInstanceCommandStep1
     CreateProcessInstanceWithResultCommandStep1 withResult();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface CreateProcessInstanceWithResultCommandStep1
       extends CommandWithTenantStep<CreateProcessInstanceWithResultCommandStep1>,
           CommandWithCommunicationApiStep<CreateProcessInstanceWithResultCommandStep1>,

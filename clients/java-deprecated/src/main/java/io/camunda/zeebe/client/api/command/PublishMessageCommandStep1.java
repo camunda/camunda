@@ -38,6 +38,13 @@ public interface PublishMessageCommandStep1
    */
   PublishMessageCommandStep2 messageName(String messageName);
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface PublishMessageCommandStep2 {
     /**
      * Set the value of the correlation key of the message.
@@ -63,6 +70,13 @@ public interface PublishMessageCommandStep1
     PublishMessageCommandStep3 withoutCorrelationKey();
   }
 
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface PublishMessageCommandStep3
       extends CommandWithTenantStep<PublishMessageCommandStep3>,
           FinalCommandStep<PublishMessageResponse> {
