@@ -7,9 +7,10 @@
  */
 package io.camunda.search.filter;
 
-import static io.camunda.search.filter.FilterUtil.collectValues;
-import static io.camunda.search.filter.FilterUtil.mapDefaultToOperation;
 import static io.camunda.util.CollectionUtil.addValuesToList;
+import static io.camunda.util.CollectionUtil.collectValues;
+
+import io.camunda.util.FilterUtil;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -52,7 +53,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder correlationKeys(final String value, final String... values) {
-      return correlationKeyOperations(mapDefaultToOperation(value, values));
+      return correlationKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -67,7 +68,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder correlationTimes(final OffsetDateTime value, final OffsetDateTime... values) {
-      return correlationTimeOperations(mapDefaultToOperation(value, values));
+      return correlationTimeOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -82,7 +83,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder elementIds(final String value, final String... values) {
-      return elementIdOperations(mapDefaultToOperation(value, values));
+      return elementIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -97,7 +98,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder elementInstanceKeys(final Long value, final Long... values) {
-      return elementInstanceKeyOperations(mapDefaultToOperation(value, values));
+      return elementInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -112,7 +113,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder messageKeys(final Long value, final Long... values) {
-      return messageKeyOperations(mapDefaultToOperation(value, values));
+      return messageKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -127,7 +128,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder messageNames(final String value, final String... values) {
-      return messageNameOperations(mapDefaultToOperation(value, values));
+      return messageNameOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -142,7 +143,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder processDefinitionIds(final String value, final String... values) {
-      return processDefinitionIdOperations(mapDefaultToOperation(value, values));
+      return processDefinitionIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -157,7 +158,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder processDefinitionKeys(final Long value, final Long... values) {
-      return processDefinitionKeyOperations(mapDefaultToOperation(value, values));
+      return processDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -172,7 +173,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder processInstanceKeys(final Long value, final Long... values) {
-      return processInstanceKeyOperations(mapDefaultToOperation(value, values));
+      return processInstanceKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -187,7 +188,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder subscriptionKeys(final Long value, final Long... values) {
-      return subscriptionKeyOperations(mapDefaultToOperation(value, values));
+      return subscriptionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs
@@ -202,7 +203,7 @@ public record CorrelatedMessagesFilter(
     }
 
     public Builder tenantIds(final String value, final String... values) {
-      return tenantIdOperations(mapDefaultToOperation(value, values));
+      return tenantIdOperations(FilterUtil.mapDefaultToOperation(value, values));
     }
 
     @SafeVarargs

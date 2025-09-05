@@ -13,7 +13,6 @@ import io.camunda.search.query.CorrelatedMessagesQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 
 public class CorrelatedMessagesDocumentReader extends DocumentBasedReader
     implements CorrelatedMessagesReader {
@@ -24,8 +23,8 @@ public class CorrelatedMessagesDocumentReader extends DocumentBasedReader
   }
 
   @Override
-  public SearchQueryResult<io.camunda.search.entities.CorrelatedMessageEntity> search(
+  public SearchQueryResult<CorrelatedMessageEntity> search(
       final CorrelatedMessagesQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    return getSearchExecutor().search(query, CorrelatedMessageEntity.class, resourceAccessChecks);
+    return getSearchExecutor().search(query, io.camunda.webapps.schema.entities.CorrelatedMessageEntity.class, resourceAccessChecks);
   }
 }

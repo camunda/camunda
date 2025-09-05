@@ -1144,19 +1144,18 @@ public final class SearchQueryResponseMapper {
 
   public static Object toCorrelatedMessagesSearchQueryResponse(
       final SearchQueryResult<io.camunda.search.entities.CorrelatedMessageEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
     final var searchResult =
         new io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessagesSearchQueryResult();
 
+    searchResult.setPage(page);
+    
     if (result.items() != null) {
       final var items =
           result.items().stream()
               .map(SearchQueryResponseMapper::toCorrelatedMessageResult)
               .toList();
       searchResult.setItems(items);
-    }
-
-    if (result.page() != null) {
-      searchResult.setPage(SearchQueryResponseMapper.toSearchQueryPageResponse(result.page()));
     }
 
     return searchResult;

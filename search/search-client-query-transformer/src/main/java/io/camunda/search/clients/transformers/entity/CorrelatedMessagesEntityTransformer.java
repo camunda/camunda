@@ -9,14 +9,13 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.CorrelatedMessageEntity;
-import io.camunda.webapps.schema.entities.CorrelatedMessageEntity;
 
 public class CorrelatedMessagesEntityTransformer
-    implements ServiceTransformer<CorrelatedMessageEntity, io.camunda.search.entities.CorrelatedMessageEntity> {
+    implements ServiceTransformer<io.camunda.webapps.schema.entities.CorrelatedMessageEntity, CorrelatedMessageEntity> {
 
   @Override
-  public io.camunda.search.entities.CorrelatedMessageEntity apply(final CorrelatedMessageEntity value) {
-    return new io.camunda.search.entities.CorrelatedMessageEntity(
+  public CorrelatedMessageEntity apply(final io.camunda.webapps.schema.entities.CorrelatedMessageEntity value) {
+    return new CorrelatedMessageEntity(
         value.getCorrelationKey(),
         value.getCorrelationTime(),
         value.getFlowNodeId(), // Maps to elementId in search domain

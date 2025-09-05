@@ -11,6 +11,7 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.CORRELATION_KEY;
@@ -53,6 +54,6 @@ public class CorrelatedMessagesFilterTransformer
 
   @Override
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
-    return stringOperations(BPMN_PROCESS_ID, authorization.resourceIds());
+    return stringTerms(BPMN_PROCESS_ID, authorization.resourceIds());
   }
 }
