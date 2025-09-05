@@ -42,14 +42,17 @@ public interface AssignRoleToUserCommandStep1 {
    */
   AssignRoleToUserCommandStep2 roleId(String roleId);
 
-  interface AssignRoleToUserCommandStep2 extends FinalCommandStep<AssignRoleToUserResponse> {
+  interface AssignRoleToUserCommandStep2 {
 
     /**
      * Sets the username of the user to assign the role to.
      *
      * @param username the username
-     * @return the builder for this command. Call {@link #send()} to execute.
+     * @return the builder for this command. Call {@link AssignRoleToUserCommandStep3#send()} to
+     *     execute.
      */
-    AssignRoleToUserCommandStep2 username(String username);
+    AssignRoleToUserCommandStep3 username(String username);
   }
+
+  interface AssignRoleToUserCommandStep3 extends FinalCommandStep<AssignRoleToUserResponse> {}
 }

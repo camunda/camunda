@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1;
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1.AssignRoleToUserCommandStep2;
+import io.camunda.client.api.command.AssignRoleToUserCommandStep1.AssignRoleToUserCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToUserResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public final class AssignRoleToUserCommandImpl
-    implements AssignRoleToUserCommandStep1, AssignRoleToUserCommandStep2 {
+    implements AssignRoleToUserCommandStep1,
+        AssignRoleToUserCommandStep2,
+        AssignRoleToUserCommandStep3 {
 
   private String roleId;
   private String username;
@@ -47,7 +50,7 @@ public final class AssignRoleToUserCommandImpl
   }
 
   @Override
-  public AssignRoleToUserCommandStep2 username(final String username) {
+  public AssignRoleToUserCommandStep3 username(final String username) {
     this.username = username;
     return this;
   }
