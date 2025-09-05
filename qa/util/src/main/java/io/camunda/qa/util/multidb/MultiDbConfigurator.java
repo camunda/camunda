@@ -63,13 +63,14 @@ public class MultiDbConfigurator {
     final Map<String, Object> elasticsearchProperties = new HashMap<>();
 
     /* Tasklist */
-    elasticsearchProperties.put("camunda.tasklist.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
     /* Operate */
-    elasticsearchProperties.put("camunda.operate.elasticsearch.indexPrefix", indexPrefix);
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.prefix", zeebeIndexPrefix());
 
+    // indexPrefix
+    elasticsearchProperties.put(
+        "camunda.data.secondary-storage.elasticsearch.index-prefix", indexPrefix);
     // db type
     elasticsearchProperties.put(PROPERTY_CAMUNDA_DATABASE_TYPE, DB_TYPE_ELASTICSEARCH);
     elasticsearchProperties.put(
@@ -86,7 +87,6 @@ public class MultiDbConfigurator {
     elasticsearchProperties.put("camunda.operate.zeebeElasticsearch.url", elasticsearchUrl);
 
     /* Camunda */
-    elasticsearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     elasticsearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
     elasticsearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
@@ -179,17 +179,17 @@ public class MultiDbConfigurator {
     final Map<String, Object> opensearchProperties = new HashMap<>();
 
     /* Tasklist */
-    opensearchProperties.put("camunda.tasklist.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.tasklist.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.tasklist.opensearch.username", userName);
     opensearchProperties.put("camunda.tasklist.opensearch.password", userPassword);
 
     /* Operate */
-    opensearchProperties.put("camunda.operate.opensearch.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.operate.zeebeOpensearch.prefix", zeebeIndexPrefix());
     opensearchProperties.put("camunda.operate.opensearch.username", userName);
     opensearchProperties.put("camunda.operate.opensearch.password", userPassword);
 
+    // index prefix
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.index-prefix", indexPrefix);
     // db url
     opensearchProperties.put("camunda.data.secondary-storage.opensearch.url", opensearchUrl);
     opensearchProperties.put("camunda.tasklist.opensearch.url", opensearchUrl);
@@ -203,7 +203,6 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.tasklist.database", DB_TYPE_OPENSEARCH);
 
     /* Camunda */
-    opensearchProperties.put("camunda.database.indexPrefix", indexPrefix);
     opensearchProperties.put("camunda.database.username", userName);
     opensearchProperties.put("camunda.database.password", userPassword);
     opensearchProperties.put("camunda.database.url", opensearchUrl);
@@ -212,6 +211,10 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+
+    /* Unified Config */
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.username", userName);
+    opensearchProperties.put("camunda.data.secondary-storage.opensearch.password", userPassword);
 
     testApplication.withAdditionalProperties(opensearchProperties);
 
