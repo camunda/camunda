@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.configuration;
 
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
-import io.camunda.spring.client.properties.CamundaClientProperties;
 import java.net.URI;
 import java.util.Objects;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;

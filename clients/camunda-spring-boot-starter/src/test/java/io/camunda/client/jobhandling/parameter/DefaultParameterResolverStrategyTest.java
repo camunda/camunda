@@ -15,7 +15,7 @@
  */
 package io.camunda.client.jobhandling.parameter;
 
-import static io.camunda.spring.client.testsupport.ClassInfoUtil.parameterInfos;
+import static io.camunda.client.spring.testsupport.ClassInfoUtil.parameterInfos;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
@@ -25,7 +25,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.jobhandling.DocumentContext;
-import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.client.spring.bean.ParameterInfo;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.Test;

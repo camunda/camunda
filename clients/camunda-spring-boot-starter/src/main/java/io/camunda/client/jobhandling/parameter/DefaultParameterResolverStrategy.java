@@ -15,21 +15,21 @@
  */
 package io.camunda.client.jobhandling.parameter;
 
-import static io.camunda.spring.client.annotation.AnnotationUtil.getDocumentValue;
-import static io.camunda.spring.client.annotation.AnnotationUtil.getVariableValue;
-import static io.camunda.spring.client.annotation.AnnotationUtil.isCustomHeaders;
-import static io.camunda.spring.client.annotation.AnnotationUtil.isDocument;
-import static io.camunda.spring.client.annotation.AnnotationUtil.isVariable;
-import static io.camunda.spring.client.annotation.AnnotationUtil.isVariablesAsType;
+import static io.camunda.client.spring.annotation.AnnotationUtil.getDocumentValue;
+import static io.camunda.client.spring.annotation.AnnotationUtil.getVariableValue;
+import static io.camunda.client.spring.annotation.AnnotationUtil.isCustomHeaders;
+import static io.camunda.client.spring.annotation.AnnotationUtil.isDocument;
+import static io.camunda.client.spring.annotation.AnnotationUtil.isVariable;
+import static io.camunda.client.spring.annotation.AnnotationUtil.isVariablesAsType;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.spring.client.annotation.value.DocumentValue;
-import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
-import io.camunda.spring.client.annotation.value.VariableValue;
-import io.camunda.spring.client.bean.ParameterInfo;
+import io.camunda.client.spring.annotation.value.DocumentValue;
+import io.camunda.client.spring.annotation.value.DocumentValue.ParameterType;
+import io.camunda.client.spring.annotation.value.VariableValue;
+import io.camunda.client.spring.bean.ParameterInfo;
 
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
   protected final JsonMapper jsonMapper;

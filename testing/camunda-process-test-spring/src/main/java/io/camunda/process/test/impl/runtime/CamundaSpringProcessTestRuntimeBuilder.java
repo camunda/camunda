@@ -18,14 +18,14 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
+import io.camunda.client.spring.properties.CamundaClientAuthProperties;
+import io.camunda.client.spring.properties.CamundaClientCloudProperties;
+import io.camunda.client.spring.properties.CamundaClientProperties;
+import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.spring.client.configuration.CredentialsProviderConfiguration;
-import io.camunda.spring.client.properties.CamundaClientAuthProperties;
-import io.camunda.spring.client.properties.CamundaClientCloudProperties;
-import io.camunda.spring.client.properties.CamundaClientProperties;
-import io.camunda.spring.client.properties.CamundaClientProperties.ClientMode;
 
 public class CamundaSpringProcessTestRuntimeBuilder {
 
