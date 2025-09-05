@@ -27,16 +27,18 @@ public interface AssignMappingRuleToGroupStep1 {
    */
   AssignMappingRuleToGroupStep2 mappingRuleId(String mappingRuleId);
 
-  interface AssignMappingRuleToGroupStep2
-      extends FinalCommandStep<AssignMappingRuleToGroupResponse> {
+  interface AssignMappingRuleToGroupStep2 {
 
     /**
      * Sets the group ID.
      *
      * @param groupId the groupId of the group
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link AssignMappingRuleToGroupStep3#send()} to
+     *     complete the command and send it to the broker.
      */
-    AssignMappingRuleToGroupStep2 groupId(String groupId);
+    AssignMappingRuleToGroupStep3 groupId(String groupId);
   }
+
+  interface AssignMappingRuleToGroupStep3
+      extends FinalCommandStep<AssignMappingRuleToGroupResponse> {}
 }
