@@ -18,7 +18,7 @@ package io.camunda.client.annotation;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
-import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
+import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import java.lang.annotation.*;
 
 @Target(ElementType.METHOD)

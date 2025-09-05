@@ -17,6 +17,8 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
+import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -33,8 +35,6 @@ import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuild
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
-import io.camunda.spring.client.event.CamundaClientClosingSpringEvent;
-import io.camunda.spring.client.event.CamundaClientCreatedSpringEvent;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.spring.client.event.ZeebeClientClosingEvent;
 import io.camunda.zeebe.spring.client.event.ZeebeClientCreatedEvent;
