@@ -16,6 +16,7 @@
 package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.health.HealthCheck;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
 import io.camunda.client.spring.actuator.MicrometerMetricsRecorder;
@@ -44,13 +45,19 @@ public class CamundaActuatorConfiguration {
   }
 
   @Bean
+  @ConditionalOnMissingBean
+  public HealthCheck camundaHealthCheck(final CamundaClient client) {
+    return new HealthCheck(client);
+  }
+
+  @Bean
   @ConditionalOnProperty(
       prefix = "management.health.camunda",
       name = "enabled",
       matchIfMissing = true)
   @ConditionalOnClass(HealthIndicator.class)
   @ConditionalOnMissingBean(name = "camundaClientHealthIndicator")
-  public CamundaClientHealthIndicator camundaClientHealthIndicator(final CamundaClient client) {
-    return new CamundaClientHealthIndicator(client);
+  public CamundaClientHealthIndicator camundaClientHealthIndicator(final HealthCheck healthCheck) {
+    return new CamundaClientHealthIndicator(healthCheck);
   }
 }
