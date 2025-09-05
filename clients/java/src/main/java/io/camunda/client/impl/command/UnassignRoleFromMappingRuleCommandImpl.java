@@ -19,6 +19,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1.UnassignRoleFromMappingRuleCommandStep2;
+import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1.UnassignRoleFromMappingRuleCommandStep3;
 import io.camunda.client.api.response.UnassignRoleFromMappingRuleResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UnassignRoleFromMappingRuleCommandImpl
-    implements UnassignRoleFromMappingRuleCommandStep1, UnassignRoleFromMappingRuleCommandStep2 {
+    implements UnassignRoleFromMappingRuleCommandStep1,
+        UnassignRoleFromMappingRuleCommandStep2,
+        UnassignRoleFromMappingRuleCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -47,7 +50,7 @@ public class UnassignRoleFromMappingRuleCommandImpl
   }
 
   @Override
-  public UnassignRoleFromMappingRuleCommandStep2 mappingRuleId(final String mappingRuleId) {
+  public UnassignRoleFromMappingRuleCommandStep3 mappingRuleId(final String mappingRuleId) {
     this.mappingRuleId = mappingRuleId;
     return this;
   }
