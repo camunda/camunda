@@ -162,7 +162,7 @@ test.describe.parallel('Users API Tests', () => {
     await assertBadRequest(res, 'No email provided', 'INVALID_ARGUMENT');
   });
 
-  test('Create User Missing Password Invalid Body 400', async ({request}) => {
+  test('Create User Missing Name Invalid Body 400', async ({request}) => {
     const body = {
       email: 'onlyemail@example.com',
       username: 'username',
