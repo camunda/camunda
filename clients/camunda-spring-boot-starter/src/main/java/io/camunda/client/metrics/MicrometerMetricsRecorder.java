@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.spring.actuator;
+package io.camunda.client.metrics;
 
-import io.camunda.client.metrics.MetricsRecorder;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
@@ -35,8 +34,7 @@ public class MicrometerMetricsRecorder implements MetricsRecorder {
   private final Map<String, Counter> counters = new ConcurrentHashMap<>();
 
   public MicrometerMetricsRecorder(final MeterRegistry meterRegistry) {
-    LOGGER.info(
-        "Enabling Micrometer based metrics for camunda-spring-sdk (available via Actuator)");
+    LOGGER.info("Enabling Micrometer based metrics for camunda-client (available via Actuator)");
     this.meterRegistry = meterRegistry;
   }
 
