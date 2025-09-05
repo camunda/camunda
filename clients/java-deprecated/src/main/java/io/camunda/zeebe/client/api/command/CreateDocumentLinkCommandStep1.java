@@ -18,8 +18,9 @@ package io.camunda.zeebe.client.api.command;
 import io.camunda.zeebe.client.api.response.DocumentLinkResponse;
 import java.time.Duration;
 
-/** Command to create a document link in the document store. */
 /**
+ * Command to create a document link in the document store.
+ *
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.command.CreateDocumentLinkCommandStep1}. Please see the <a
  *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
