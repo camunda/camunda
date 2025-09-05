@@ -15,8 +15,6 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
-import io.camunda.zeebe.client.impl.search.response.OperationImpl;
-import io.camunda.zeebe.client.impl.search.response.ProcessInstanceReferenceImpl;
 import java.util.List;
 
 /**
@@ -56,7 +54,7 @@ public interface ProcessInstance {
 
   String getRootInstanceId();
 
-  List<OperationImpl> getOperations();
+  List<Operation> getOperations();
 
-  List<ProcessInstanceReferenceImpl> getCallHierarchy();
+  List<ProcessInstanceReference> getCallHierarchy();
 }
