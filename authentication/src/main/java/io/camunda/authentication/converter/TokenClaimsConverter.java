@@ -52,15 +52,13 @@ public class TokenClaimsConverter {
           "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
               .formatted(usernameClaim, clientIdClaim));
     }
-    if (username != null) {
-      authenticatedClaims.put(AUTHORIZED_USERNAME, username);
-    }
 
     if (clientId != null) {
       authenticatedClaims.put(AUTHORIZED_CLIENT_ID, clientId);
+      return membershipService.resolveMemberships(tokenClaims, authenticatedClaims, null, clientId);
     }
 
-    return membershipService.resolveMemberships(
-        tokenClaims, authenticatedClaims, username, clientId);
+    authenticatedClaims.put(AUTHORIZED_USERNAME, username);
+    return membershipService.resolveMemberships(tokenClaims, authenticatedClaims, username, null);
   }
 }
