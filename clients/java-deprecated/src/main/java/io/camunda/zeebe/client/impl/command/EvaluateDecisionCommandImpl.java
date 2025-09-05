@@ -23,11 +23,11 @@ import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.zeebe.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResult;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.impl.response.EvaluateDecisionResultImpl;
+import io.camunda.zeebe.client.impl.response.EvaluateDecisionResponseImpl;
 import io.camunda.zeebe.client.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -141,14 +141,14 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   @Override
-  public FinalCommandStep<EvaluateDecisionResult> requestTimeout(final Duration requestTimeout) {
+  public FinalCommandStep<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     return this;
   }
 
   @Override
-  public ZeebeFuture<EvaluateDecisionResult> send() {
+  public ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> send() {
     if (useRest) {
       return sendRestRequest();
     } else {
@@ -156,26 +156,26 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     }
   }
 
-  private ZeebeFuture<EvaluateDecisionResult> sendRestRequest() {
-    final HttpZeebeFuture<EvaluateDecisionResult> result = new HttpZeebeFuture<>();
+  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> sendRestRequest() {
+    final HttpZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> result = new HttpZeebeFuture<>();
     httpClient.post(
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         EvaluateDecisionResult.class,
-        response -> new EvaluateDecisionResultImpl(response, jsonMapper),
+        response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
         result);
     return result;
   }
 
-  private ZeebeFuture<EvaluateDecisionResult> sendGrpcRequest() {
+  private ZeebeFuture<io.camunda.zeebe.client.api.response.EvaluateDecisionResponse> sendGrpcRequest() {
     final EvaluateDecisionRequest request = grpcRequestObjectBuilder.build();
 
     final RetriableClientFutureImpl<
-            EvaluateDecisionResult, GatewayOuterClass.EvaluateDecisionResult>
+            io.camunda.zeebe.client.api.response.EvaluateDecisionResponse, GatewayOuterClass.EvaluateDecisionResponse>
         future =
             new RetriableClientFutureImpl<>(
-                gatewayResponse -> new EvaluateDecisionResultImpl(jsonMapper, gatewayResponse),
+                gatewayResponse -> new EvaluateDecisionResponseImpl(jsonMapper, gatewayResponse),
                 retryPredicate,
                 streamObserver -> sendGrpcRequest(request, streamObserver));
 
@@ -193,7 +193,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
 
   private void sendGrpcRequest(
       final EvaluateDecisionRequest request,
-      final StreamObserver<GatewayOuterClass.EvaluateDecisionResult> streamObserver) {
+      final StreamObserver<GatewayOuterClass.EvaluateDecisionResponse> streamObserver) {
     asyncStub
         .withDeadlineAfter(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
         .evaluateDecision(request, streamObserver);

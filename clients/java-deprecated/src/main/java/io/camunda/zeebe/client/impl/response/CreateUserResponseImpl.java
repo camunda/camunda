@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.CreateUserResponse;
-import io.camunda.zeebe.client.protocol.rest.UserCreateResponse;
+import io.camunda.zeebe.client.protocol.rest.UserCreateResult;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by the new Camunda Client Java. Please see
@@ -40,7 +40,7 @@ public class CreateUserResponseImpl implements CreateUserResponse {
     return userKey;
   }
 
-  public CreateUserResponseImpl setResponse(final UserCreateResponse response) {
+  public CreateUserResponseImpl setResponse(final UserCreateResult response) {
     userKey = response.getUserKey();
     return this;
   }

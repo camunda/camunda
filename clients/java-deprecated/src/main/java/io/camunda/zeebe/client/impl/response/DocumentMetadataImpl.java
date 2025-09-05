@@ -28,10 +28,10 @@ import java.util.Map;
 @Deprecated
 public class DocumentMetadataImpl implements DocumentMetadata {
 
-  private final io.camunda.zeebe.client.protocol.rest.DocumentDetails response;
+  private final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response;
 
   public DocumentMetadataImpl(
-      final io.camunda.zeebe.client.protocol.rest.DocumentDetails response) {
+      final io.camunda.zeebe.client.protocol.rest.DocumentMetadata response) {
     this.response = response;
   }
 
