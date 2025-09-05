@@ -34,7 +34,7 @@ public class ConfigTest {
 
     Assertions.assertThatCode(
             () -> new FilesystemBackupStore(backupConfig, Mockito.mock(ExecutorService.class)))
-        .hasMessage("Base directory is required");
+        .hasMessage("Expected a basePath to be provided, but got [null]");
   }
 
   @Test
@@ -44,6 +44,6 @@ public class ConfigTest {
 
     Assertions.assertThatCode(
             () -> new FilesystemBackupStore(backupConfig, Mockito.mock(ExecutorService.class)))
-        .hasMessage("Base directory is required");
+        .hasMessage("Expected a basePath to be provided, but got []");
   }
 }
