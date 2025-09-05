@@ -571,4 +571,23 @@ public class AuthorizationStateTest {
     final var keys2 = authorizationState.getAuthorizationKeysForOwner(ownerType2, ownerId2);
     assertThat(keys2).containsExactly(authorizationKey2);
   }
+
+  @Test
+  void shouldReturnNewCopiesOnGet() {
+    // given
+    final long key = 123L;
+    authorizationState.create(
+        key,
+        new AuthorizationRecord()
+            .setOwnerId("ownerId")
+            .setOwnerType(AuthorizationOwnerType.CLIENT)
+            .setResourceMatcher(AuthorizationResourceMatcher.ID));
+
+    // when
+    final var auth1 = authorizationState.get(key).get();
+    final var auth2 = authorizationState.get(key).get();
+
+    // then
+    assertThat(auth1).isNotSameAs(auth2);
+  }
 }
