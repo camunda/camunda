@@ -197,6 +197,12 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
+  static List<SearchQuerySortRequest<CorrelatedMessageSearchQuerySortRequest.FieldEnum>>
+      fromCorrelatedMessageSearchQuerySortRequest(
+          final List<CorrelatedMessageSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
   private static <T> SearchQuerySortRequest<T> createFrom(
       final T field, final SortOrderEnum order) {
     return new SearchQuerySortRequest<T>(field, order);
@@ -699,6 +705,32 @@ public class SearchQuerySortRequestMapper {
         case OWNER_TYPE -> builder.ownerType();
         case RESOURCE_ID -> builder.resourceId();
         case RESOURCE_TYPE -> builder.resourceType();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyCorrelatedMessageSortField(
+      final CorrelatedMessageSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.CorrelatedMessageSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case CORRELATION_KEY -> builder.correlationKey();
+        case CORRELATION_TIME -> builder.correlationTime();
+        case ELEMENT_ID -> builder.elementId();
+        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case MESSAGE_KEY -> builder.messageKey();
+        case MESSAGE_NAME -> builder.messageName();
+        case PARTITION_ID -> builder.partitionId();
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
+        case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
+        case SUBSCRIPTION_KEY -> builder.subscriptionKey();
+        case TENANT_ID -> builder.tenantId();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

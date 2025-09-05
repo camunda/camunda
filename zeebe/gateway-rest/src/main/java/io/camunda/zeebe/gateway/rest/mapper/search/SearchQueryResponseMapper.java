@@ -17,6 +17,7 @@ import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.search.entities.BatchOperationEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationErrorEntity;
 import io.camunda.search.entities.BatchOperationEntity.BatchOperationItemEntity;
+import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.entities.DecisionDefinitionEntity;
 import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
@@ -59,6 +60,8 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationResponse;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.CamundaUserResult;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageResult;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionDefinitionTypeEnum;
@@ -504,6 +507,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static CorrelatedMessageSearchQueryResult toCorrelatedMessageSearchQueryResponse(
+      final SearchQueryResult<CorrelatedMessageEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new CorrelatedMessageSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toCorrelatedMessages)
+                .orElseGet(Collections::emptyList));
+  }
+
   private static SearchQueryPageResponse toSearchQueryPageResponse(
       final SearchQueryResult<?> result) {
 
@@ -839,14 +853,14 @@ public final class SearchQueryResponseMapper {
         .tenantId(t.tenantId());
   }
 
-  public static List<MessageSubscriptionResult> toMessageSubscriptions(
+  private static List<MessageSubscriptionResult> toMessageSubscriptions(
       final List<MessageSubscriptionEntity> messageSubscriptions) {
     return messageSubscriptions.stream()
         .map(SearchQueryResponseMapper::toMessageSubscription)
         .toList();
   }
 
-  public static MessageSubscriptionResult toMessageSubscription(
+  private static MessageSubscriptionResult toMessageSubscription(
       final MessageSubscriptionEntity messageSubscription) {
     return new MessageSubscriptionResult()
         .messageSubscriptionKey(KeyUtil.keyToString(messageSubscription.messageSubscriptionKey()))
@@ -862,6 +876,28 @@ public final class SearchQueryResponseMapper {
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())
         .tenantId(messageSubscription.tenantId());
+  }
+
+  private static List<CorrelatedMessageResult> toCorrelatedMessages(
+      final List<CorrelatedMessageEntity> correlatedMessages) {
+    return correlatedMessages.stream().map(SearchQueryResponseMapper::toCorrelatedMessage).toList();
+  }
+
+  private static CorrelatedMessageResult toCorrelatedMessage(
+      final CorrelatedMessageEntity correlatedMessage) {
+    return new CorrelatedMessageResult()
+        .correlationKey(correlatedMessage.correlationKey())
+        .correlationTime(formatDate(correlatedMessage.correlationTime()))
+        .elementId(correlatedMessage.flowNodeId())
+        .elementInstanceKey(KeyUtil.keyToString(correlatedMessage.flowNodeInstanceKey()))
+        .messageKey(KeyUtil.keyToString(correlatedMessage.messageKey()))
+        .messageName(correlatedMessage.messageName())
+        .partitionId(correlatedMessage.partitionId())
+        .processDefinitionId(correlatedMessage.processDefinitionId())
+        .processDefinitionKey(KeyUtil.keyToString(correlatedMessage.processDefinitionKey()))
+        .processInstanceKey(KeyUtil.keyToString(correlatedMessage.processInstanceKey()))
+        .subscriptionKey(KeyUtil.keyToString(correlatedMessage.subscriptionKey()))
+        .tenantId(correlatedMessage.tenantId());
   }
 
   public static UserTaskResult toUserTask(final UserTaskEntity t) {
