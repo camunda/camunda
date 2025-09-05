@@ -68,7 +68,7 @@ const Clients: FC<ClientsProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath=""
+          docsLinkPath="/docs/next/components/identity/client/"
         />
         {assignClientModal}
       </>

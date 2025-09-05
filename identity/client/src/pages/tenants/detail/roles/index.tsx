@@ -72,7 +72,7 @@ const Roles: FC<RolesProps> = ({ tenantId }) => {
           parentResourceTypeTranslationKey={"tenant"}
           handleClick={openAssignModal}
           description={t("emptyStateTenantAccessDisclaimer")}
-          docsLinkPath=""
+          docsLinkPath="/docs/next/components/identity/role/"
         />
         {assignRolesModal}
       </>

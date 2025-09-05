@@ -68,7 +68,7 @@ const Members: FC<MembersProps> = ({ roleId }) => {
           childResourceTypeTranslationKey={"user"}
           parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
-          docsLinkPath=""
+          docsLinkPath="/docs/next/components/identity/user/"
         />
         {assignUsersModal}
       </>
