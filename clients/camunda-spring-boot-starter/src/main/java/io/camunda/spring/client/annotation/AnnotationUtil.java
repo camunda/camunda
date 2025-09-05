@@ -17,15 +17,15 @@ package io.camunda.spring.client.annotation;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.client.annotation.CustomHeaders;
+import io.camunda.client.annotation.Deployment;
+import io.camunda.client.annotation.Document;
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.Variable;
+import io.camunda.client.annotation.VariablesAsType;
+import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.sdk.annotation.CustomHeaders;
-import io.camunda.sdk.annotation.Deployment;
-import io.camunda.sdk.annotation.Document;
-import io.camunda.sdk.annotation.JobWorker;
-import io.camunda.sdk.annotation.Variable;
-import io.camunda.sdk.annotation.VariablesAsType;
-import io.camunda.sdk.annotation.value.JobWorkerValue;
-import io.camunda.sdk.jobhandling.DocumentContext;
+import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;

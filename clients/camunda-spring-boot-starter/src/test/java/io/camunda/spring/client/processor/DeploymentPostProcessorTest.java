@@ -20,11 +20,11 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.Deployment;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
-import io.camunda.sdk.annotation.Deployment;
 import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.spring.client.bean.ClassInfo;
 import java.util.Collections;

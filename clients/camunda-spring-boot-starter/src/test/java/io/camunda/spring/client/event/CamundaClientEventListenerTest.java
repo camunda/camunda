@@ -18,7 +18,7 @@ package io.camunda.spring.client.event;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.sdk.event.CamundaClientCreatedEvent;
+import io.camunda.client.event.CamundaClientCreatedEvent;
 import io.camunda.spring.client.configuration.CamundaAutoConfiguration;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

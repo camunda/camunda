@@ -15,9 +15,9 @@
  */
 package io.camunda.spring.client.event;
 
-import io.camunda.sdk.event.CamundaClientClosingEvent;
-import io.camunda.sdk.event.CamundaClientCreatedEvent;
-import io.camunda.sdk.lifecycle.CamundaClientLifecycleAware;
+import io.camunda.client.event.CamundaClientClosingEvent;
+import io.camunda.client.event.CamundaClientCreatedEvent;
+import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import java.util.Set;
 import org.springframework.context.event.EventListener;
 

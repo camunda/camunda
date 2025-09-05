@@ -18,7 +18,7 @@ package io.camunda.spring.client.configuration;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.sdk.jobhandling.CamundaClientExecutorService;
+import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.spring.client.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
 import java.net.MalformedURLException;
