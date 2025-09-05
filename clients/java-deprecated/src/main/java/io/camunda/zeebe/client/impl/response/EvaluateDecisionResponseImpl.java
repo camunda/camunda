@@ -17,7 +17,7 @@ package io.camunda.zeebe.client.impl.response;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.client.api.JsonMapper;
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResult;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
   private final String tenantId;
   private final long decisionInstanceKey;
 
-  public EvaluateDecisionResponseImpl(
+  public EvaluateDecisionResultImpl(
       final io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult response,
       final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
@@ -65,8 +65,8 @@ public class EvaluateDecisionResponseImpl implements EvaluateDecisionResponse {
     buildEvaluatedDecisions(response);
   }
 
-  public EvaluateDecisionResponseImpl(
-      final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResponse response) {
+  public EvaluateDecisionResultImpl(
+      final JsonMapper jsonMapper, final GatewayOuterClass.EvaluateDecisionResult response) {
     this.jsonMapper = jsonMapper;
 
     decisionId = response.getDecisionId();

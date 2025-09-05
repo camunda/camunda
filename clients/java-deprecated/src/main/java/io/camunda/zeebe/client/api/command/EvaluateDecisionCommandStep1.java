@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResult;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -49,7 +49,7 @@ public interface EvaluateDecisionCommandStep1
 
   interface EvaluateDecisionCommandStep2
       extends CommandWithTenantStep<EvaluateDecisionCommandStep2>,
-          FinalCommandStep<EvaluateDecisionResponse> {
+          FinalCommandStep<EvaluateDecisionResult> {
 
     /**
      * Set the variables for the decision evaluation.

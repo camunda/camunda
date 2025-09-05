@@ -16,7 +16,7 @@
 package io.camunda.zeebe.client.impl.response;
 
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
-import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResponse;
+import io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 
 public final class CreateProcessInstanceResponseImpl implements ProcessInstanceEvent {
@@ -27,8 +27,8 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
   private final long processInstanceKey;
   private final String tenantId;
 
-  public CreateProcessInstanceResponseImpl(
-      final GatewayOuterClass.CreateProcessInstanceResponse response) {
+  public CreateProcessInstanceResultImpl(
+      final GatewayOuterClass.CreateProcessInstanceResult response) {
     processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getBpmnProcessId();
     version = response.getVersion();
@@ -36,7 +36,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     tenantId = response.getTenantId();
   }
 
-  public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResponse response) {
+  public CreateProcessInstanceResultImpl(final CreateProcessInstanceResult response) {
     processDefinitionKey = response.getProcessDefinitionKey();
     bpmnProcessId = response.getProcessDefinitionId();
     version = response.getProcessDefinitionVersion();
@@ -71,7 +71,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
 
   @Override
   public String toString() {
-    return "CreateProcessInstanceResponseImpl{"
+    return "CreateProcessInstanceResultImpl{"
         + "processDefinitionKey="
         + processDefinitionKey
         + ", bpmnProcessId='"
