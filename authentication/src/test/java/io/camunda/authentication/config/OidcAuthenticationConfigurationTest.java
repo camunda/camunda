@@ -7,8 +7,11 @@
  */
 package io.camunda.authentication.config;
 
-import io.camunda.security.configuration.AssertionKeystoreConfiguration;
+import io.camunda.security.configuration.AssertionConfiguration;
+import io.camunda.security.configuration.AssertionConfiguration.KidDigestAlgorithm;
+import io.camunda.security.configuration.AssertionConfiguration.KidEncoding;
 import io.camunda.security.configuration.AuthorizeRequestConfiguration;
+import io.camunda.security.configuration.KeystoreConfiguration;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,7 +32,9 @@ public class OidcAuthenticationConfigurationTest {
       final String description,
       final OidcAuthenticationConfiguration oidcAuthenticationConfiguration,
       final boolean expected) {
-    Assertions.assertThat(oidcAuthenticationConfiguration.isSet()).isEqualTo(expected);
+    Assertions.assertThat(oidcAuthenticationConfiguration.isSet())
+        .withFailMessage(description)
+        .isEqualTo(expected);
   }
 
   static Stream<Arguments> oidcAuthentications() {
@@ -45,6 +50,10 @@ public class OidcAuthenticationConfigurationTest {
         Arguments.of(
             "clientId is set",
             OidcAuthenticationConfiguration.builder().clientId("cid").build(),
+            true),
+        Arguments.of(
+            "clientName is set",
+            OidcAuthenticationConfiguration.builder().clientName("clientName").build(),
             true),
         Arguments.of(
             "clientSecret is set",
@@ -128,31 +137,78 @@ public class OidcAuthenticationConfigurationTest {
                 .build(),
             true),
         Arguments.of(
-            "AssertionKeystoreConfiguration.path is set",
+            "AssertionConfiguration.path is set",
             OidcAuthenticationConfiguration.builder()
-                .assertionKeystoreConfiguration(
-                    AssertionKeystoreConfiguration.builder().path("/path/to/keystore.p12").build())
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .keystoreConfiguration(
+                            KeystoreConfiguration.builder().path("/path/to/keystore.p12").build())
+                        .build())
                 .build(),
             true),
         Arguments.of(
-            "AssertionKeystoreConfiguration.password is set",
+            "AssertionConfiguration.password is set",
             OidcAuthenticationConfiguration.builder()
-                .assertionKeystoreConfiguration(
-                    AssertionKeystoreConfiguration.builder().password("keystorepass").build())
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .keystoreConfiguration(
+                            KeystoreConfiguration.builder().password("keystorepass").build())
+                        .build())
                 .build(),
             true),
         Arguments.of(
-            "AssertionKeystoreConfiguration.keyAlias is set",
+            "AssertionConfiguration.keyAlias is set",
             OidcAuthenticationConfiguration.builder()
-                .assertionKeystoreConfiguration(
-                    AssertionKeystoreConfiguration.builder().keyAlias("alias").build())
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .keystoreConfiguration(
+                            KeystoreConfiguration.builder().keyAlias("keyalias").build())
+                        .build())
                 .build(),
             true),
         Arguments.of(
-            "AssertionKeystoreConfiguration.keyPassword is set",
+            "AssertionConfiguration.keyPassword is set",
             OidcAuthenticationConfiguration.builder()
-                .assertionKeystoreConfiguration(
-                    AssertionKeystoreConfiguration.builder().keyPassword("keypass").build())
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .keystoreConfiguration(
+                            KeystoreConfiguration.builder().keyPassword("keypass").build())
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionConfiguration.kidSource is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .kidSource(AssertionConfiguration.KidSource.CERTIFICATE)
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionConfiguration.kidDigestAlgorithm is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .kidDigestAlgorithm(KidDigestAlgorithm.SHA1)
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionConfiguration.kidEncoding is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionConfiguration(
+                    AssertionConfiguration.builder().kidEncoding(KidEncoding.HEX).build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionConfiguration.kidCase is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionConfiguration(
+                    AssertionConfiguration.builder()
+                        .kidEncoding(KidEncoding.HEX)
+                        .kidCase(AssertionConfiguration.KidCase.LOWER)
+                        .build())
                 .build(),
             true),
         Arguments.of("default", new OidcAuthenticationConfiguration(), false),
@@ -181,9 +237,9 @@ public class OidcAuthenticationConfigurationTest {
                 .build(),
             false),
         Arguments.of(
-            "AssertionKeystoreConfiguration values are not set",
+            "AssertionConfiguration values are not set",
             OidcAuthenticationConfiguration.builder()
-                .assertionKeystoreConfiguration(AssertionKeystoreConfiguration.builder().build())
+                .assertionConfiguration(AssertionConfiguration.builder().build())
                 .build(),
             false));
   }

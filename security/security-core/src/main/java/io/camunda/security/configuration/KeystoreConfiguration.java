@@ -10,7 +10,7 @@ package io.camunda.security.configuration;
 import java.io.FileInputStream;
 import java.security.KeyStore;
 
-public final class AssertionKeystoreConfiguration {
+public class KeystoreConfiguration {
   private String path;
   private String password;
   private String keyAlias;
@@ -50,44 +50,45 @@ public final class AssertionKeystoreConfiguration {
 
   public KeyStore loadKeystore() throws Exception {
     final KeyStore keyStore = KeyStore.getInstance("PKCS12");
-    try (final FileInputStream fis = new FileInputStream(path)) {
-      keyStore.load(fis, password.toCharArray());
+    try (final FileInputStream fis = new FileInputStream(getPath())) {
+      keyStore.load(fis, getPassword().toCharArray());
     }
     return keyStore;
   }
 
-  public static Builder builder() {
-    return new Builder();
+  public static KeystoreConfiguration.Builder builder() {
+    return new KeystoreConfiguration.Builder();
   }
 
   public static class Builder {
+
     private String path;
     private String password;
     private String keyAlias;
     private String keyPassword;
 
-    public AssertionKeystoreConfiguration.Builder path(final String path) {
+    public KeystoreConfiguration.Builder path(final String path) {
       this.path = path;
       return this;
     }
 
-    public AssertionKeystoreConfiguration.Builder password(final String password) {
+    public KeystoreConfiguration.Builder password(final String password) {
       this.password = password;
       return this;
     }
 
-    public AssertionKeystoreConfiguration.Builder keyAlias(final String keyAlias) {
+    public KeystoreConfiguration.Builder keyAlias(final String keyAlias) {
       this.keyAlias = keyAlias;
       return this;
     }
 
-    public AssertionKeystoreConfiguration.Builder keyPassword(final String keyPassword) {
+    public KeystoreConfiguration.Builder keyPassword(final String keyPassword) {
       this.keyPassword = keyPassword;
       return this;
     }
 
-    public AssertionKeystoreConfiguration build() {
-      final AssertionKeystoreConfiguration config = new AssertionKeystoreConfiguration();
+    public KeystoreConfiguration build() {
+      final KeystoreConfiguration config = new KeystoreConfiguration();
       config.setPath(path);
       config.setPassword(password);
       config.setKeyAlias(keyAlias);
