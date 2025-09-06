@@ -21,11 +21,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.util.Arrays;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -77,7 +81,9 @@ class OidcPrivateKeyJwtFlowTest {
           .failOnUnmatchedRequests(true)
           .build();
 
-  static final String CLIENT_ID = "camunda-test";
+  static final String CLIENT_ID = "camunda-client";
+  static final String REALM = "camunda-test";
+  static final String ENDPOINT_TOKEN = "/realms/" + REALM + "/oauth/token";
 
   @Autowired MockMvcTester mockMvcTester;
 
@@ -85,13 +91,13 @@ class OidcPrivateKeyJwtFlowTest {
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
     registry.add(
         "camunda.security.authentication.oidc.issuer-uri",
-        () -> "http://localhost:" + wireMock.getPort() + "/realms/camunda-test");
+        () -> "http://localhost:" + wireMock.getPort() + "/realms/" + REALM);
   }
 
   @BeforeAll
   static void stubWellKnownForStartup() {
     stubFor(
-        get(urlEqualTo("/realms/camunda-test/.well-known/openid-configuration"))
+        get(urlEqualTo("/realms/" + REALM + "/.well-known/openid-configuration"))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
@@ -108,10 +114,10 @@ class OidcPrivateKeyJwtFlowTest {
   }
 
   @Test
-  public void tokenEndpointShouldReceiveJwt() {
+  public void tokenEndpointShouldReceiveJwt() throws ParseException {
     // having an IdP token endpoint
     stubFor(
-        post(urlEqualTo("/realms/camunda-test/oauth/token"))
+        post(urlEqualTo(ENDPOINT_TOKEN))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
@@ -119,7 +125,7 @@ class OidcPrivateKeyJwtFlowTest {
 
     // and a dummy jwks well-known edpont to prevent Spring from breaking
     stubFor(
-        get(urlEqualTo("/realms/camunda-test/.well-known/jwks.json"))
+        get(urlEqualTo("/realms/" + REALM + "/.well-known/jwks.json"))
             .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
 
     // with an established session, we notify Spring Security we want to authenticate
@@ -152,7 +158,7 @@ class OidcPrivateKeyJwtFlowTest {
         .queryParam("code", "test_authorization_code")
         .queryParam("state", state)
         .queryParam("session_state", "test_session_state")
-        .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/camunda-test")
+        .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/" + REALM)
         .exchange();
 
     // then the IdP receives the authorization code
@@ -160,7 +166,7 @@ class OidcPrivateKeyJwtFlowTest {
     // in the form of a client id and client assertion
     verify(
         1,
-        postRequestedFor(urlEqualTo("/realms/camunda-test/oauth/token"))
+        postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
             .withRequestBody(matching(".*grant_type=authorization_code.*"))
             .withRequestBody(matching(".*code=test_authorization_code.*"))
@@ -172,16 +178,56 @@ class OidcPrivateKeyJwtFlowTest {
             .withRequestBody(
                 matching(
                     ".*client_assertion=[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*.*")));
+
+    final var tokenEvents = wireMock.findAll(postRequestedFor(urlEqualTo(ENDPOINT_TOKEN)));
+    assertThat(tokenEvents).hasSize(1);
+
+    final var exchangeEvent = tokenEvents.getFirst();
+    final var clientAssertion =
+        Arrays.stream(exchangeEvent.getBodyAsString().split("&"))
+            .filter(field -> field.startsWith("client_assertion="))
+            .map(field -> field.split("=")[1])
+            .findFirst()
+            .orElseThrow();
+
+    final var jwt = SignedJWT.parse(clientAssertion);
+    assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.RS256);
+
+    // 1) JWK thumbprint (no x5c): yi9Pmwffl4pT8p9u_zc2ZDfhFt99S_wwK59POwoIZH8
+    // 2) JWK thumbprint (with x5c): yi9Pmwffl4pT8p9u_zc2ZDfhFt99S_wwK59POwoIZH8
+    // 3) Cert SHA-256 fingerprint (hex):
+    // affa167328babf87344faaea8f3217528f72facf90e446ae86a2685b6853a6b1
+    //   Cert SHA-256 fingerprint (b64url): r_oWcyi6v4c0T6rqjzIXUo9y-s-Q5EauhqJoW2hTprE
+    // 4) Cert SHA-1 fingerprint (hex): 998e337b674f847bfa22e3a3f333642ade674657
+    //   Cert SHA-1 fingerprint (b64url): mY4ze2dPhHv6IuOj8zNkKt5nRlc
+    // 5) PublicKey SPKI SHA-256 (b64url): Wjx0sv5LM3dUcsNs_NlUBb_sCcGOL7vxzX6Zk9J791s
+
+    // {
+    //  "header" : {
+    //    "kid" : "Wjx0sv5LM3dUcsNs_NlUBb_sCcGOL7vxzX6Zk9J791s",
+    //    "alg" : "RS256"
+    //  },
+    //  "payload" : {
+    //    "iss" : "camunda-client",
+    //    "sub" : "camunda-client",
+    //    "aud" : "http://localhost:57402/realms/camunda-test/oauth/token",
+    //    "exp" : 1757178991,
+    //    "iat" : 1757178931,
+    //    "jti" : "82780890-12bb-4a41-8ceb-9ed675a67eef"
+    //  },
+    //  "signature" :
+    // "DO3p1Ca4wEcjG7XdbElV1K1FmujjwqwaN2nyoMK-UEck_jGx0GEHh5MDPOV_hgTLC8g14DA6QbF-t5WlzRIAf3nYgZJdcFIbUcaNPK9dr-_doE7n9NEXWOfElWXS0QTmngcPDeWbzeDQ7gTxlgLaruQ3ryz7kboSt8cXcFNFysCbSeLiU5ryX5RnrmSbasDxyE15G0hMdVdloKiQ6dvc70IXiSM79NbgNDRsrIS_1P3q6NbeW1Yfv_vfka5VOa3PCV750ajhSs31bFxovZRXR_rUS8-kB2V_5ZA-ThoH9vDKrlGuJqk3TO17b6s-Tf2wp016alCVbYVhNuV-1rEY9g"
+    // }
   }
 
   private static String wellKnownResponse() {
     return """
             {
-                "issuer": "http://localhost:000000/realms/camunda-test",
-                "authorization_endpoint": "http://localhost:000000/realms/camunda-test/oauth/authorize",
-                "token_endpoint": "http://localhost:000000/realms/camunda-test/oauth/token",
-                "userinfo_endpoint": "http://localhost:000000/realms/camunda-test/userinfo",
-                "jwks_uri": "http://localhost:000000/realms/camunda-test/.well-known/jwks.json",
+                "issuer": "http://localhost:000000/realms/KEYCLOAKREALM",
+                "authorization_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/oauth/authorize",
+                "token_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/oauth/token",
+                "userinfo_endpoint": "http://localhost:000000/realms/KEYCLOAKREALM/userinfo",
+                "jwks_uri": "http://localhost:000000/realms/KEYCLOAKREALM/.well-known/jwks.json",
                 "response_types_supported": [
                     "code",
                     "token",
@@ -205,7 +251,8 @@ class OidcPrivateKeyJwtFlowTest {
                 ]
             }
         """
-        .replaceAll("000000", String.valueOf(wireMock.getPort()));
+        .replaceAll("000000", String.valueOf(wireMock.getPort()))
+        .replaceAll("KEYCLOAKREALM", REALM);
   }
 
   private static String tokenResponse() {
