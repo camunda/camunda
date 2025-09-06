@@ -163,7 +163,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        EvaluateDecisionResult.class,
+        io.camunda.zeebe.client.protocol.rest.EvaluateDecisionResult.class,
         response -> new EvaluateDecisionResultImpl(response, jsonMapper),
         result);
     return result;

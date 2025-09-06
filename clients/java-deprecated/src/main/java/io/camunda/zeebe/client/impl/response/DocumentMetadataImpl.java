@@ -72,7 +72,7 @@ public class DocumentMetadataImpl implements DocumentMetadata {
 
   @Override
   public Long getProcessInstanceKey() {
-    return ParseUtil.parseLongOrEmpty(response.getProcessInstanceKey());
+    return ParseUtil.parseLongOrNull(response.getProcessInstanceKey());
   }
 
   @Override

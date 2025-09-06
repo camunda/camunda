@@ -38,6 +38,17 @@ import static io.camunda.zeebe.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.PREFER_REST_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.zeebe.client.impl.util.DataSizeUtil.ONE_MB;
 
@@ -64,24 +75,11 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
-  public static final String PLAINTEXT_CONNECTION_VAR = "ZEEBE_INSECURE_CONNECTION";
-  public static final String CA_CERTIFICATE_VAR = "ZEEBE_CA_CERTIFICATE_PATH";
-  public static final String KEEP_ALIVE_VAR = "ZEEBE_KEEP_ALIVE";
-  public static final String OVERRIDE_AUTHORITY_VAR = "ZEEBE_OVERRIDE_AUTHORITY";
-  public static final String CAMUNDA_CLIENT_WORKER_STREAM_ENABLED =
-      "ZEEBE_CLIENT_WORKER_STREAM_ENABLED";
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
   public static final URI DEFAULT_REST_ADDRESS = getURIFromString("http://0.0.0.0:8080");
-  public static final String REST_ADDRESS_VAR = "ZEEBE_REST_ADDRESS";
-  public static final String GRPC_ADDRESS_VAR = "ZEEBE_GRPC_ADDRESS";
-  public static final String PREFER_REST_VAR = "ZEEBE_PREFER_REST";
-  public static final String DEFAULT_TENANT_ID_VAR = "ZEEBE_DEFAULT_TENANT_ID";
-  public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
-      "ZEEBE_DEFAULT_JOB_WORKER_TENANT_IDS";
   public static final String DEFAULT_JOB_WORKER_NAME_VAR = "default";
-  public static final String USE_DEFAULT_RETRY_POLICY_VAR = "ZEEBE_CLIENT_USE_DEFAULT_RETRY_POLICY";
   public static final Duration DEFAULT_MESSAGE_TTL = Duration.ofHours(1);
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private static final boolean DEFAULT_PREFER_REST_OVER_GRPC = false;
@@ -621,7 +619,7 @@ public final class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeCl
         });
 
     BuilderUtils.applyIfNotNull(
-        CAMUNDA_CLIENT_WORKER_STREAM_ENABLED,
+        ZEEBE_CLIENT_WORKER_STREAM_ENABLED,
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)));
 
     BuilderUtils.applyIfNotNull(
