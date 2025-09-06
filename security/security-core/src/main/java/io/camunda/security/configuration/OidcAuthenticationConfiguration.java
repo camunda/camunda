@@ -227,7 +227,11 @@ public class OidcAuthenticationConfiguration {
         || assertionKeystoreConfiguration.getPath() != null
         || assertionKeystoreConfiguration.getPassword() != null
         || assertionKeystoreConfiguration.getKeyAlias() != null
-        || assertionKeystoreConfiguration.getKeyPassword() != null;
+        || assertionKeystoreConfiguration.getKeyPassword() != null
+        || assertionKeystoreConfiguration.getKidSource() != null
+        || assertionKeystoreConfiguration.getKidDigestAlgorithm() != null
+        || assertionKeystoreConfiguration.getKidEncoding() != null
+        || assertionKeystoreConfiguration.getKidCase() != null;
   }
 
   public static Builder builder() {
