@@ -66,6 +66,13 @@ public interface MigrateProcessInstanceCommandStep1
    *     Java Client migration guide</a>.
    */
   @Deprecated
+  /**
+   * @deprecated since 8.8 for removal in 8.10, replaced by {@link
+   *     io.camunda.client.api.command.MigrateProcessInstanceCommandStep2}. Please see the <a
+   *     href="https://docs.camunda.io/docs/8.8/apis-tools/migration-manuals/migrate-to-camunda-java-client/">Camunda
+   *     Java Client migration guide</a>
+   */
+  @Deprecated
   interface MigrateProcessInstanceCommandStep2 {
     /**
      * Add a {@link

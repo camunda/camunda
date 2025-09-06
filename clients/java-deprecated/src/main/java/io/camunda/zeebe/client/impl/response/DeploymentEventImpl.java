@@ -23,6 +23,7 @@ import io.camunda.zeebe.client.api.response.Form;
 import io.camunda.zeebe.client.api.response.Process;
 import io.camunda.zeebe.client.api.response.Resource;
 import io.camunda.zeebe.client.impl.Loggers;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionRequirementsResult;
 import io.camunda.zeebe.client.protocol.rest.DeploymentDecisionResult;
 import io.camunda.zeebe.client.protocol.rest.DeploymentFormResult;
@@ -87,7 +88,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
   }
 
   public DeploymentEventImpl(final DeploymentResult response) {
-    key = response.getDeploymentKey();
+    key = ParseUtil.parseLongOrEmpty(response.getDeploymentKey());
     tenantId = response.getTenantId();
 
     for (final DeploymentMetadataResult deployment : response.getDeployments()) {
@@ -107,7 +108,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                     new FormImpl(
                         f.getFormId(),
                         f.getVersion(),
-                        f.getFormKey(),
+                        ParseUtil.parseLongOrEmpty(f.getFormKey()),
                         f.getResourceName(),
                         f.getTenantId())));
   }
@@ -119,7 +120,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                 resources.add(
                     new ResourceImpl(
                         f.getResourceId(),
-                        f.getResourceKey(),
+                        ParseUtil.parseLongOrEmpty(f.getResourceKey()),
                         f.getVersion(),
                         f.getResourceName(),
                         f.getTenantId())));
@@ -135,7 +136,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         dr.getDecisionRequirementsId(),
                         dr.getDecisionRequirementsName(),
                         dr.getVersion(),
-                        dr.getDecisionRequirementsKey(),
+                        ParseUtil.parseLongOrEmpty(dr.getDecisionRequirementsKey()),
                         dr.getResourceName(),
                         dr.getTenantId())));
   }
@@ -149,9 +150,9 @@ public final class DeploymentEventImpl implements DeploymentEvent {
                         d.getDecisionDefinitionId(),
                         d.getName(),
                         d.getVersion(),
-                        d.getDecisionDefinitionKey(),
+                        ParseUtil.parseLongOrEmpty(d.getDecisionDefinitionKey()),
                         d.getDecisionRequirementsId(),
-                        d.getDecisionRequirementsKey(),
+                        ParseUtil.parseLongOrEmpty(d.getDecisionRequirementsKey()),
                         d.getTenantId())));
   }
 
@@ -161,7 +162,7 @@ public final class DeploymentEventImpl implements DeploymentEvent {
             p ->
                 processes.add(
                     new ProcessImpl(
-                        p.getProcessDefinitionKey(),
+                        ParseUtil.parseLongOrEmpty(p.getProcessDefinitionKey()),
                         p.getProcessDefinitionId(),
                         p.getProcessDefinitionVersion(),
                         p.getResourceName(),

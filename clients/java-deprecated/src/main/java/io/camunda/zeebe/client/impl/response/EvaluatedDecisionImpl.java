@@ -20,6 +20,7 @@ import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.response.EvaluatedDecision;
 import io.camunda.zeebe.client.api.response.EvaluatedDecisionInput;
 import io.camunda.zeebe.client.api.response.MatchedDecisionRule;
+import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.EvaluatedDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class EvaluatedDecisionImpl implements EvaluatedDecision {
       final EvaluatedDecisionResult evaluatedDecisionItem, final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     decisionId = evaluatedDecisionItem.getDecisionDefinitionId();
-    decisionKey = evaluatedDecisionItem.getDecisionDefinitionKey();
+    decisionKey = ParseUtil.parseLongOrEmpty(evaluatedDecisionItem.getDecisionDefinitionKey());
     decisionVersion = evaluatedDecisionItem.getDecisionDefinitionVersion();
     decisionName = evaluatedDecisionItem.getDecisionDefinitionName();
     decisionType = evaluatedDecisionItem.getDecisionDefinitionType();
