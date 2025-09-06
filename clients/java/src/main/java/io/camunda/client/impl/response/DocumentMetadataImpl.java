@@ -35,16 +35,7 @@ public class DocumentMetadataImpl implements DocumentMetadata {
 
   @Override
   public OffsetDateTime getExpiresAt() {
-    final String expiresAt = response.getExpiresAt();
-    if (expiresAt == null) {
-      return null;
-    }
-    try {
-      return OffsetDateTime.parse(expiresAt);
-    } catch (final Exception e) {
-      throw new IllegalArgumentException(
-          "Failed to parse expiresAt date: " + response.getExpiresAt(), e);
-    }
+    return response.getExpiresAt();
   }
 
   @Override

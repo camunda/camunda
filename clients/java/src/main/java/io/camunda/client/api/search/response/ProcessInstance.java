@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 package io.camunda.client.api.search.response;
+import java.time.OffsetDateTime;
 
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import java.util.Set;
@@ -36,9 +37,9 @@ public interface ProcessInstance {
 
   Long getParentElementInstanceKey();
 
-  String getStartDate();
+  OffsetDateTime getStartDate();
 
-  String getEndDate();
+  OffsetDateTime getEndDate();
 
   ProcessInstanceState getState();
 

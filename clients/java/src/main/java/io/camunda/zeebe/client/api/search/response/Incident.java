@@ -15,6 +15,8 @@
  */
 package io.camunda.zeebe.client.api.search.response;
 
+import java.time.OffsetDateTime;
+
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
  *     io.camunda.client.api.search.response.Incident}
@@ -38,7 +40,7 @@ public interface Incident {
 
   Long getFlowNodeInstanceKey();
 
-  String getCreationTime();
+  OffsetDateTime getCreationTime();
 
   String getState();
 

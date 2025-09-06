@@ -21,7 +21,6 @@ import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class DateTimePropertyImpl extends TypedSearchRequestPropertyProvider<DateTimeFilterProperty>
     implements DateTimeProperty {
@@ -29,37 +28,37 @@ public class DateTimePropertyImpl extends TypedSearchRequestPropertyProvider<Dat
 
   @Override
   public DateTimeProperty gt(final OffsetDateTime value) {
-    filterProperty.set$Gt(value.toString());
+    filterProperty.set$Gt(value);
     return this;
   }
 
   @Override
   public DateTimeProperty gte(final OffsetDateTime value) {
-    filterProperty.set$Gte(value.toString());
+    filterProperty.set$Gte(value);
     return this;
   }
 
   @Override
   public DateTimeProperty lt(final OffsetDateTime value) {
-    filterProperty.set$Lt(value.toString());
+    filterProperty.set$Lt(value);
     return this;
   }
 
   @Override
   public DateTimeProperty lte(final OffsetDateTime value) {
-    filterProperty.set$Lte(value.toString());
+    filterProperty.set$Lte(value);
     return this;
   }
 
   @Override
   public DateTimeProperty eq(final OffsetDateTime value) {
-    filterProperty.set$Eq(value.toString());
+    filterProperty.set$Eq(value);
     return this;
   }
 
   @Override
   public DateTimeProperty neq(final OffsetDateTime value) {
-    filterProperty.set$Neq(value.toString());
+    filterProperty.set$Neq(value);
     return this;
   }
 
@@ -71,8 +70,7 @@ public class DateTimePropertyImpl extends TypedSearchRequestPropertyProvider<Dat
 
   @Override
   public DateTimeProperty in(final List<OffsetDateTime> values) {
-    filterProperty.set$In(
-        values.stream().map(OffsetDateTime::toString).collect(Collectors.toList()));
+    filterProperty.set$In(values);
     return this;
   }
 

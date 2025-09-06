@@ -54,8 +54,8 @@ public final class UserTaskPropertiesImpl implements UserTaskProperties {
     candidateGroups = props.getCandidateGroups();
     candidateUsers = props.getCandidateUsers();
     changedAttributes = props.getChangedAttributes();
-    dueDate = props.getDueDate();
-    followUpDate = props.getFollowUpDate();
+    dueDate = props.getDueDate() != null ? props.getDueDate().toString() : null;
+    followUpDate = props.getFollowUpDate() != null ? props.getFollowUpDate().toString() : null;
     formKey = ParseUtil.parseLongOrNull(props.getFormKey());
     priority = props.getPriority();
     userTaskKey = ParseUtil.parseLongOrNull(props.getUserTaskKey());

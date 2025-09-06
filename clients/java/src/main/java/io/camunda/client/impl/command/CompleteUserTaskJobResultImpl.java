@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.command.CompleteUserTaskJobResultStep1;
 import io.camunda.client.api.command.JobResultCorrections;
 import io.camunda.client.api.command.enums.JobResultType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
@@ -73,13 +74,13 @@ public class CompleteUserTaskJobResultImpl implements CompleteUserTaskJobResultS
   }
 
   @Override
-  public CompleteUserTaskJobResultImpl correctDueDate(final String dueDate) {
+  public CompleteUserTaskJobResultImpl correctDueDate(final OffsetDateTime dueDate) {
     corrections.dueDate(dueDate);
     return this;
   }
 
   @Override
-  public CompleteUserTaskJobResultImpl correctFollowUpDate(final String followUpDate) {
+  public CompleteUserTaskJobResultImpl correctFollowUpDate(final OffsetDateTime followUpDate) {
     corrections.followUpDate(followUpDate);
     return this;
   }

@@ -21,6 +21,7 @@ import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentResult;
+import java.time.OffsetDateTime;
 import java.util.Objects;
 
 public class IncidentImpl implements Incident {
@@ -33,7 +34,7 @@ public class IncidentImpl implements Incident {
   private final String errorMessage;
   private final String elementId;
   private final Long elementInstanceKey;
-  private final String creationTime;
+  private final OffsetDateTime creationTime;
   private final IncidentState state;
   private final Long jobKey;
   private final String tenantId;
@@ -94,7 +95,7 @@ public class IncidentImpl implements Incident {
   }
 
   @Override
-  public String getCreationTime() {
+  public OffsetDateTime getCreationTime() {
     return creationTime;
   }
 

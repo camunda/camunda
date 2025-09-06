@@ -26,11 +26,7 @@ public class DocumentLinkResponseImpl implements DocumentLinkResponse {
 
   public DocumentLinkResponseImpl(final DocumentLink documentLink) {
     url = documentLink.getUrl();
-    if (documentLink.getExpiresAt() != null) {
-      expiresAt = OffsetDateTime.parse(documentLink.getExpiresAt());
-    } else {
-      expiresAt = null;
-    }
+    expiresAt = documentLink.getExpiresAt();
   }
 
   @Override

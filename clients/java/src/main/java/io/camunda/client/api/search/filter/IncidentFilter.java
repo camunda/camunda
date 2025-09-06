@@ -18,6 +18,7 @@ package io.camunda.client.api.search.filter;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.time.OffsetDateTime;
 
 public interface IncidentFilter extends SearchRequestFilter {
 
@@ -91,7 +92,7 @@ public interface IncidentFilter extends SearchRequestFilter {
    * @param creationTime the creation time of incident
    * @return the updated filter
    */
-  IncidentFilter creationTime(final String creationTime);
+  IncidentFilter creationTime(final OffsetDateTime creationTime);
 
   /**
    * Filters incidents by the state of incident.

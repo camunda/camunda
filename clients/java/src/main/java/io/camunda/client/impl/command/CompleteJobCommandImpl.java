@@ -43,6 +43,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -161,10 +162,10 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
       correctionsGrpc.setAssignee(jobResult.getCorrections().getAssignee());
     }
     if (jobResult.getCorrections().getDueDate() != null) {
-      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate());
+      correctionsGrpc.setDueDate(jobResult.getCorrections().getDueDate().toString());
     }
     if (jobResult.getCorrections().getFollowUpDate() != null) {
-      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate());
+      correctionsGrpc.setFollowUpDate(jobResult.getCorrections().getFollowUpDate().toString());
     }
     if (jobResult.getCorrections().getCandidateUsers() != null) {
       correctionsGrpc.setCandidateUsers(

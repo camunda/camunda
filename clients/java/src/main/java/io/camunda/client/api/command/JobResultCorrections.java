@@ -15,13 +15,14 @@
  */
 package io.camunda.client.api.command;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class JobResultCorrections {
 
   private String assignee;
-  private String dueDate;
-  private String followUpDate;
+  private OffsetDateTime dueDate;
+  private OffsetDateTime followUpDate;
   private List<String> candidateGroups;
   private List<String> candidateUsers;
   private Integer priority;
@@ -43,7 +44,7 @@ public class JobResultCorrections {
    * @param dueDate due date of the task
    * @return this corrections
    */
-  public JobResultCorrections dueDate(final String dueDate) {
+  public JobResultCorrections dueDate(final OffsetDateTime dueDate) {
     this.dueDate = dueDate;
     return this;
   }
@@ -54,7 +55,7 @@ public class JobResultCorrections {
    * @param followUpDate follow up date of the task
    * @return this corrections
    */
-  public JobResultCorrections followUpDate(final String followUpDate) {
+  public JobResultCorrections followUpDate(final OffsetDateTime followUpDate) {
     this.followUpDate = followUpDate;
     return this;
   }
@@ -96,11 +97,11 @@ public class JobResultCorrections {
     return assignee;
   }
 
-  public String getDueDate() {
+  public OffsetDateTime getDueDate() {
     return dueDate;
   }
 
-  public String getFollowUpDate() {
+  public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
 

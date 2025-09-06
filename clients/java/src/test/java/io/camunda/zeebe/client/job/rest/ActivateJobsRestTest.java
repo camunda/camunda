@@ -35,6 +35,7 @@ import io.camunda.zeebe.client.impl.response.ActivatedJobImpl;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -160,8 +161,8 @@ public final class ActivateJobsRestTest extends ClientRestTest {
                 .addCandidateUsersItem("jarvis")
                 .addCandidateUsersItem("friday")
                 .addChangedAttributesItem("assignee")
-                .dueDate("2019-04-22T00:00:00Z")
-                .followUpDate("2018-04-23T00:00:00Z")
+                .dueDate(OffsetDateTime.parse("2019-04-22T00:00:00Z"))
+                .followUpDate(OffsetDateTime.parse("2018-04-23T00:00:00Z"))
                 .formKey("1")
                 .priority(10)
                 .userTaskKey("100"),

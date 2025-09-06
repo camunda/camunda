@@ -29,6 +29,7 @@ import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
@@ -85,7 +86,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .errorMessage("Can't decide")
                     .elementId("element")
                     .elementInstanceKey(4L)
-                    .creationTime("2024-05-23T23:05:00.000+000")
+                    .creationTime(OffsetDateTime.parse("2024-05-23T23:05:00.000+00:00"))
                     .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
