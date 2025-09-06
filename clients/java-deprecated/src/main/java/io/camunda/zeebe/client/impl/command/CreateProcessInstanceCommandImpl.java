@@ -28,7 +28,7 @@ import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.impl.RetriableClientFutureImpl;
 import io.camunda.zeebe.client.impl.http.HttpClient;
 import io.camunda.zeebe.client.impl.http.HttpZeebeFuture;
-import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResultImpl;
+import io.camunda.zeebe.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.zeebe.client.impl.util.ParseUtil;
 import io.camunda.zeebe.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -193,7 +193,7 @@ public final class CreateProcessInstanceCommandImpl
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceResult.class,
-        CreateProcessInstanceResultImpl::new,
+        CreateProcessInstanceResponseImpl::new,
         result);
     return result;
   }
@@ -203,7 +203,7 @@ public final class CreateProcessInstanceCommandImpl
 
     final RetriableClientFutureImpl<ProcessInstanceEvent, CreateProcessInstanceResult> future =
         new RetriableClientFutureImpl<>(
-            CreateProcessInstanceResultImpl::new,
+            CreateProcessInstanceResponseImpl::new,
             retryPredicate,
             streamObserver -> sendGrpcRequest(request, streamObserver));
 
