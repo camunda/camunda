@@ -24,7 +24,7 @@ import io.camunda.zeebe.client.api.command.MalformedResponseException;
 import io.camunda.zeebe.client.api.command.ProblemException;
 import io.camunda.zeebe.client.impl.HttpStatusCode;
 import io.camunda.zeebe.client.impl.http.ApiResponseConsumer.ApiResponse;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.wrapper.ProblemDetail;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;

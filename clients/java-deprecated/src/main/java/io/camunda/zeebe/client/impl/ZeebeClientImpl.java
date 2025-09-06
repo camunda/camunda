@@ -37,7 +37,6 @@ import io.camunda.zeebe.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.zeebe.client.api.command.DeleteResourceCommandStep1;
-import io.camunda.zeebe.client.api.command.DeployProcessCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1;
@@ -79,7 +78,6 @@ import io.camunda.zeebe.client.impl.command.CreateDocumentLinkCommandImpl;
 import io.camunda.zeebe.client.impl.command.CreateProcessInstanceCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeleteResourceCommandImpl;
-import io.camunda.zeebe.client.impl.command.DeployProcessCommandImpl;
 import io.camunda.zeebe.client.impl.command.DeployResourceCommandImpl;
 import io.camunda.zeebe.client.impl.command.EvaluateDecisionCommandImpl;
 import io.camunda.zeebe.client.impl.command.JobUpdateCommandImpl;
@@ -302,10 +300,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
           final MethodDescriptor<ReqT, RespT> methodDescriptor,
           final CallOptions callOptions,
           final Channel channel) {
-        LOG.warn(
-            ZEEBE_DEPRECATION_WARNING,
-            ZeebeClient.class.getSimpleName(),
-            CamundaClient.class.getSimpleName());
+        LOG.warn(ZEEBE_DEPRECATION_WARNING, ZeebeClient.class.getSimpleName());
         return channel.newCall(methodDescriptor, callOptions);
       }
     };
@@ -388,12 +383,6 @@ public final class ZeebeClientImpl implements ZeebeClient {
     } catch (final Exception e) {
       throw new ClientException("Failed closing http client.", e);
     }
-  }
-
-  @Override
-  public DeployProcessCommandStep1 newDeployCommand() {
-    return new DeployProcessCommandImpl(
-        asyncStub, config.getDefaultRequestTimeout(), credentialsProvider::shouldRetryRequest);
   }
 
   @Override

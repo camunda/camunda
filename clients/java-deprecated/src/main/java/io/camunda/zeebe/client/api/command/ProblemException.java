@@ -15,7 +15,7 @@
  */
 package io.camunda.zeebe.client.api.command;
 
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
+import io.camunda.zeebe.client.protocol.rest.wrapper.ProblemDetail;
 
 /**
  * @deprecated since 8.8 for removal in 8.10, replaced by {@link
