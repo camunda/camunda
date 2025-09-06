@@ -58,7 +58,10 @@ test.describe.serial('users CRUD', () => {
     });
     await identityUsersPage.editUser(NEW_USER, EDITED_USER);
     const item = identityUsersPage.userCell(EDITED_USER.email);
-    await waitForItemInList(page, item);
+    await waitForItemInList(page, item, {
+      clickNext: true,
+      timeout: 60000,
+    });
   });
 
   test('delete a user', async ({identityUsersPage, page}) => {

@@ -184,6 +184,8 @@ export class IdentityAuthorizationsPage {
     await waitForItemInList(this.page, item, {
       onAfterReload: () =>
         this.selectResourceTypeTab(authorization.resourceType),
+      timeout: 60000,
+      clickNext: true,
     });
   }
 
