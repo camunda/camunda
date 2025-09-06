@@ -159,6 +159,10 @@
       <groupId>org.agrona</groupId>
       <artifactId>agrona</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-validation</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
