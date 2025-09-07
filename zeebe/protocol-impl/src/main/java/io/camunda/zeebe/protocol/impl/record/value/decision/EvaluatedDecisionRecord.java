@@ -32,7 +32,7 @@ public final class EvaluatedDecisionRecord extends UnifiedRecordValue
 
   private final StringProperty decisionIdProp = new StringProperty("decisionId");
   private final StringProperty decisionEvaluationInstanceKeyProp =
-      new StringProperty("decisionEvaluationInstanceKey");
+      new StringProperty("decisionEvaluationInstanceKey", "");
   private final StringProperty decisionNameProp = new StringProperty("decisionName");
   private final LongProperty decisionKeyProp = new LongProperty("decisionKey");
   private final IntegerProperty decisionVersionProp = new IntegerProperty("decisionVersion");
