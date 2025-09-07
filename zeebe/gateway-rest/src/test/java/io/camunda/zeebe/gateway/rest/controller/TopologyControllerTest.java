@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
 import io.camunda.zeebe.util.VersionUtil;
@@ -44,6 +45,7 @@ public class TopologyControllerTest extends RestControllerTest {
     final var expectedResponse =
         """
         {
+          "clusterId": "cluster-id",
           "gatewayVersion": "%s",
           "clusterSize": 3,
           "partitionsCount": 1,
@@ -94,6 +96,9 @@ public class TopologyControllerTest extends RestControllerTest {
         """
             .formatted(version, version, version, version);
     final var brokerClusterState = new TestBrokerClusterState(version);
+    final ClusterConfiguration clusterConfiguration = Mockito.mock(ClusterConfiguration.class);
+    Mockito.when(clusterConfiguration.clusterId()).thenReturn(java.util.Optional.of("cluster-id"));
+    Mockito.when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
     Mockito.when(topologyManager.getTopology()).thenReturn(brokerClusterState);
 
     // when / then

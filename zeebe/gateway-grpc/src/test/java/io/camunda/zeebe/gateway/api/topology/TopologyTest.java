@@ -41,6 +41,15 @@ public final class TopologyTest extends GatewayTest {
   }
 
   @Test
+  public void clusterIdShouldBePresent() {
+    // when
+    final var response = client.topology(TopologyRequest.newBuilder().build());
+
+    // then
+    assertThat(response.getClusterId()).isNotEmpty();
+  }
+
+  @Test
   public void shouldUpdatePartitionHealthHealthy() {
     // given
     final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
@@ -65,6 +74,7 @@ public final class TopologyTest extends GatewayTest {
 
     // then
     final var health = response.getBrokers(0).getPartitions(0).getHealth();
+
     assertThat(health).isEqualTo(PartitionBrokerHealth.UNHEALTHY);
   }
 
