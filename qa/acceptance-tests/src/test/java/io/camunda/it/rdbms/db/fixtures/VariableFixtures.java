@@ -41,7 +41,7 @@ public final class VariableFixtures extends CommonFixtures {
             .name(
                 "variable-name-"
                     + RANDOM.nextInt(10)) // We sometimes want variables with the same name
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .tenantId("tenant-" + key);
 
     if (RANDOM.nextInt(10) != 5) {
       builder.value(generateRandomStringWithRandomTypes());
