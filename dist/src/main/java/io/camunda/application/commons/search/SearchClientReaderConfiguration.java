@@ -17,6 +17,8 @@ import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.CorrelatedMessageDocumentReader;
+import io.camunda.search.clients.reader.CorrelatedMessageReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
@@ -83,6 +85,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -136,6 +139,13 @@ public class SearchClientReaderConfiguration {
   public BatchOperationItemReader batchOperationItemReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new BatchOperationItemDocumentReader(executor, descriptors.get(OperationTemplate.class));
+  }
+
+  @Bean
+  public CorrelatedMessageReader correlatedMessagesReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new CorrelatedMessageDocumentReader(
+        executor, descriptors.get(CorrelatedMessageTemplate.class));
   }
 
   @Bean

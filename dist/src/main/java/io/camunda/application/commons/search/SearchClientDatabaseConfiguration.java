@@ -15,6 +15,7 @@ import io.camunda.search.clients.impl.NoDBSearchClientsProxy;
 import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
+import io.camunda.search.clients.reader.CorrelatedMessageReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
@@ -105,6 +106,7 @@ public class SearchClientDatabaseConfiguration {
       final AuthorizationReader authorizationReader,
       final BatchOperationReader batchOperationReader,
       final BatchOperationItemReader batchOperationItemReader,
+      final CorrelatedMessageReader correlatedMessageReader,
       final DecisionDefinitionReader decisionDefinitionReader,
       final DecisionInstanceReader decisionInstanceReader,
       final DecisionRequirementsReader decisionRequirementsReader,
@@ -134,6 +136,7 @@ public class SearchClientDatabaseConfiguration {
         authorizationReader,
         batchOperationReader,
         batchOperationItemReader,
+        correlatedMessageReader,
         decisionDefinitionReader,
         decisionInstanceReader,
         decisionRequirementsReader,
