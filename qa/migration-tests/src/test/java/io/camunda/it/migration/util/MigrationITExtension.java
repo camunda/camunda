@@ -126,6 +126,10 @@ public class MigrationITExtension
     return this;
   }
 
+  public String getDatabaseUrl() {
+    return databaseUrl;
+  }
+
   private void upgrade(final Map<String, String> envOverrides) {
 
     // Ensure that the importers have flushed their positions before starting the upgrade
