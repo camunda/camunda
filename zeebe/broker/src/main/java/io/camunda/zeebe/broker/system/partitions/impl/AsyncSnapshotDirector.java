@@ -22,6 +22,7 @@ import io.camunda.zeebe.snapshots.TransientSnapshot;
 import io.camunda.zeebe.snapshots.transfer.SnapshotTransferService;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.stream.impl.StreamProcessorMode;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.health.FailureListener;
 import io.camunda.zeebe.util.health.HealthMonitorable;
 import io.camunda.zeebe.util.health.HealthReport;
@@ -370,7 +371,7 @@ public final class AsyncSnapshotDirector extends Actor
   public void newPositionCommitted(final long currentCommitPosition) {
     actor.run(
         () -> {
-          commitPosition = currentCommitPosition;
+          commitPosition = Math.max(currentCommitPosition, commitPosition);
           final var futuresToComplete = commitAwaiters.headMap(commitPosition, true);
           futuresToComplete.forEach((k, f) -> f.complete(null));
           futuresToComplete.clear();
@@ -392,6 +393,11 @@ public final class AsyncSnapshotDirector extends Actor
     final var result = actor.<PersistedSnapshot>createFuture();
     actor.run(() -> snapshot(inProgressSnapshot, true).onComplete(result));
     return result;
+  }
+
+  @VisibleForTesting
+  public ActorFuture<Long> getCommitPosition() {
+    return actor.call(() -> commitPosition);
   }
 
   private static final class InProgressSnapshot {

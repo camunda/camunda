@@ -8,8 +8,8 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -22,41 +22,54 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
-import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.logstreams.log.LogStream;
+import io.camunda.zeebe.logstreams.log.LogStreamReader;
+import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.testing.ControlledActorSchedulerExtension;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.stream.impl.StreamProcessor;
 import io.camunda.zeebe.util.health.HealthMonitor;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 import org.junit.jupiter.params.provider.EnumSource;
 
 class SnapshotDirectorPartitionTransitionStepTest {
 
+  private static final long LAST_LOG_POSITION = 9;
   TestPartitionTransitionContext transitionContext = new TestPartitionTransitionContext();
+
+  @RegisterExtension
+  private final ControlledActorSchedulerExtension schedulerExtension =
+      new ControlledActorSchedulerExtension();
 
   private SnapshotDirectorPartitionTransitionStep step;
   private final RaftPartition raftPartition = mock(RaftPartition.class);
   private final RaftPartitionServer raftServer = mock(RaftPartitionServer.class);
-  private final ActorSchedulingService actorSchedulingService = mock(ActorSchedulingService.class);
   private final AsyncSnapshotDirector snapshotDirectorFromPrevRole =
       mock(AsyncSnapshotDirector.class);
+  private final LogStream logStream = mock(LogStream.class);
+  private final LogStreamReader logstreamReader = mock(LogStreamReader.class);
 
   @BeforeEach
   void setup() {
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
     transitionContext.setStreamProcessor(mock(StreamProcessor.class));
     transitionContext.setBrokerCfg(new BrokerCfg());
+    transitionContext.setLogStream(logStream);
 
     when(raftPartition.getServer()).thenReturn(raftServer);
     transitionContext.setRaftPartition(raftPartition);
 
-    when(actorSchedulingService.submitActor(any(), any()))
-        .thenReturn(TestActorFuture.completedFuture(null));
-    transitionContext.setActorSchedulingService(actorSchedulingService);
+    // Use the real ActorScheduler from the extension instead of a mock
+    transitionContext.setActorSchedulingService(schedulerExtension.getActorScheduler());
 
     when(snapshotDirectorFromPrevRole.closeAsync())
         .thenReturn(TestActorFuture.completedFuture(null));
+
+    when(logStream.newLogStreamReader()).thenReturn(logstreamReader);
+    when(logstreamReader.seekToEnd()).thenReturn(LAST_LOG_POSITION);
 
     step = new SnapshotDirectorPartitionTransitionStep();
   }
@@ -89,6 +102,14 @@ class SnapshotDirectorPartitionTransitionStepTest {
     assertThat(transitionContext.getSnapshotDirector())
         .isNotNull()
         .isNotEqualTo(existingSnapshotDirector);
+    if (Role.LEADER.equals(targetRole)) {
+      // verify that the last position is read to notify snapshot director
+      verify(logstreamReader, times(1)).seekToEnd();
+      final ActorFuture<Long> commitPosition =
+          transitionContext.getSnapshotDirector().getCommitPosition();
+      schedulerExtension.workUntilDone();
+      assertThat(commitPosition.join()).isEqualTo(LAST_LOG_POSITION);
+    }
   }
 
   @ParameterizedTest
@@ -128,8 +149,12 @@ class SnapshotDirectorPartitionTransitionStepTest {
   }
 
   private void transitionTo(final Role role) {
-    step.prepareTransition(transitionContext, 1, role).join();
-    step.transitionTo(transitionContext, 1, role).join();
+    final ActorFuture<Void> prepareFuture = step.prepareTransition(transitionContext, 1, role);
+    schedulerExtension.workUntilDone();
+    prepareFuture.join();
+    final ActorFuture<Void> transition = step.transitionTo(transitionContext, 1, role);
+    schedulerExtension.workUntilDone();
+    transition.join();
     transitionContext.setCurrentRole(role);
   }
 }
