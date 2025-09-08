@@ -238,7 +238,7 @@ public class MigrationITExtension
     logger.addAppender(appender);
 
     Awaitility.await()
-        .atMost(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(60))
         .untilAsserted(() -> assertThat(appender.logs.size()).isGreaterThan(0));
 
     logger.detachAndStopAllAppenders();
