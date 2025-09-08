@@ -98,7 +98,7 @@ test.describe('task panel page', () => {
       await expect(taskPanelPage.availableTasks.getByText('user')).toHaveCount(
         0,
       );
-    }).toPass({timeout: 10000});
+    }).toPass();
 
     await taskPanelPage.filterBy('Completed');
 
