@@ -118,6 +118,9 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               // "camunda.tasklist.elasticsearch.ssl.verifyHostname=true",
               "camunda.tasklist.zeebeElasticsearch.username=elastic",
               "camunda.tasklist.zeebeElasticsearch.password=elastic",
+              // Unified config
+              "camunda.data.secondary-storage.elasticsearch.username=elastic",
+              "camunda.data.secondary-storage.elasticsearch.password=elastic",
               // "camunda.tasklist.zeebeElasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
               // "camunda.tasklist.zeebeElasticsearch.ssl.selfSigned=true",
               // "camunda.tasklist.zeebeElasticsearch.ssl.verifyHostname=true",

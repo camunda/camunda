@@ -8,7 +8,9 @@
 package io.camunda.tasklist.properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
@@ -34,9 +36,16 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class PropertiesTest {
 
   @Autowired private TasklistProperties tasklistProperties;
+  @Autowired private UnifiedConfiguration unifiedConfiguration;
 
   @Test
   public void testProperties() {
+    // The file application-test-properties.yml only has data related to Elasticsearch.
+    assumeTrue(
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
+            == SecondaryStorageType.elasticsearch,
+        "Skipping because DB is not Elasticsearch");
+
     assertThat(tasklistProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(tasklistProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
     assertThat(tasklistProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");

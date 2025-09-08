@@ -80,6 +80,8 @@ final class SecuredClusteredMessagingIT {
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
+          // unified configuration: index prefix
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
           // unified configuration: type
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
           .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
@@ -92,9 +94,7 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
-          // ---
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
-          .withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", "zeebe")
+          // ---.withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", "zeebe")
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME", "io.camunda.exporter.CamundaExporter")
           .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDA_ARGS_CONNECT_URL", esUrl)
@@ -121,7 +121,8 @@ final class SecuredClusteredMessagingIT {
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
+          // Unified Configuration: index prefix
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
           // Unified Configuration: db type
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
           .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
@@ -135,7 +136,6 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           // ---
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
@@ -164,7 +164,8 @@ final class SecuredClusteredMessagingIT {
               "/tmp/certificate.pem")
           .withCopyToContainer(
               MountableFile.forHostPath(CERTIFICATE.privateKey().toPath(), 0777), "/tmp/key.pem")
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEXPREFIX", testPrefix)
+          // Unified Configuration: index prefix
+          .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", testPrefix)
           // Unified Configuration: db type
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DB_TYPE_ELASTICSEARCH)
           .withEnv("CAMUNDA_DATABASE_TYPE", DB_TYPE_ELASTICSEARCH)
@@ -178,7 +179,6 @@ final class SecuredClusteredMessagingIT {
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           // ---
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv(
