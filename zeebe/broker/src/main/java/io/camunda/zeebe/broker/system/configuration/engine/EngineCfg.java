@@ -121,6 +121,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
         .setEnableAuthorization(authorizations.isEnableAuthorization())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
+        .setCommandRedistributionInterval(distribution.getRedistributionInterval())
+        .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
