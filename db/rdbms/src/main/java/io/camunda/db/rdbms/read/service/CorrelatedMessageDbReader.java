@@ -7,6 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.domain.CorrelatedMessageDbQuery;
+import io.camunda.db.rdbms.read.mapper.CorrelatedMessageEntityMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
 import io.camunda.db.rdbms.sql.columns.CorrelatedMessageSearchColumn;
 import io.camunda.search.clients.reader.CorrelatedMessageReader;
@@ -14,14 +16,20 @@ import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.query.CorrelatedMessageQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
-import java.util.Collections;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CorrelatedMessageDbReader extends AbstractEntityReader<CorrelatedMessageEntity>
     implements CorrelatedMessageReader {
 
+  private static final Logger LOG = LoggerFactory.getLogger(CorrelatedMessageDbReader.class);
+
+  private final CorrelatedMessageMapper mapper;
+
   public CorrelatedMessageDbReader(final CorrelatedMessageMapper mapper) {
     super(CorrelatedMessageSearchColumn.values());
+    this.mapper = mapper;
   }
 
   public SearchQueryResult<CorrelatedMessageEntity> search(final CorrelatedMessageQuery query) {
@@ -36,8 +44,15 @@ public class CorrelatedMessageDbReader extends AbstractEntityReader<CorrelatedMe
             query.sort(),
             CorrelatedMessageSearchColumn.MESSAGE_KEY,
             CorrelatedMessageSearchColumn.SUBSCRIPTION_KEY);
-    // TODO add RDBMS search capabilities
-    return buildSearchQueryResult(0, Collections.emptyList(), dbSort);
+    final var dbQuery =
+        CorrelatedMessageDbQuery.of(
+            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+
+    LOG.trace("[RDBMS DB] Search for correlated messages with filter {}", dbQuery);
+    final var totalHits = mapper.count(dbQuery);
+    final var hits =
+        mapper.search(dbQuery).stream().map(CorrelatedMessageEntityMapper::toEntity).toList();
+    return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   public Optional<CorrelatedMessageEntity> findOne(

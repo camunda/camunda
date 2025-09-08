@@ -16,6 +16,7 @@ public enum CorrelatedMessageSearchColumn implements SearchColumn<CorrelatedMess
   FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey"),
   MESSAGE_KEY("messageKey"),
   MESSAGE_NAME("messageName"),
+  PARTITION_ID("partitionId"),
   PROCESS_DEFINITION_ID("processDefinitionId"),
   PROCESS_DEFINITION_KEY("processDefinitionKey"),
   PROCESS_INSTANCE_KEY("processInstanceKey"),
