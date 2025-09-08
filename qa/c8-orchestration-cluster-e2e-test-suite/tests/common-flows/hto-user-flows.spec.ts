@@ -149,7 +149,7 @@ test.describe('HTO User Flow Tests', () => {
         '"updatedValue"',
       );
       await taskDetailsPage.clickCompleteTaskButton();
-      // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     });
   });
 
@@ -178,7 +178,7 @@ test.describe('HTO User Flow Tests', () => {
       await taskDetailsPage.clickAssignToMeButton();
       await taskDetailsPage.fillTextInput('Name*', 'Test User');
       await taskDetailsPage.clickCompleteTaskButton();
-      // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');

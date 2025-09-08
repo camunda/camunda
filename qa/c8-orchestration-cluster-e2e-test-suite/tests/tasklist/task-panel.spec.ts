@@ -92,7 +92,7 @@ test.describe('task panel page', () => {
 
     await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await expect(async () => {
       await expect(taskPanelPage.availableTasks.getByText('user')).toHaveCount(

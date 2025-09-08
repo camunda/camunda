@@ -185,7 +185,7 @@ test.describe('task details page', () => {
       value: '{"Name":"John","Age":20}',
     });
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.openTask('JobWorker_user_task');
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
@@ -198,7 +198,7 @@ test.describe('task details page', () => {
       value: '{"Name":"John","Age":22}',
     });
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -252,7 +252,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Address*', 'Earth');
     await taskDetailsPage.fillTextInput('Age', '21');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -355,7 +355,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Age', '55');
 
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -383,7 +383,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillTextInput('Age', '21');
 
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -416,7 +416,7 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.fillTextInput('Number', '4');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -440,7 +440,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.clickDecrementButton();
     await taskDetailsPage.assertFieldValue('Number', '1');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -458,7 +458,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.fillDatetimeField('Date', '1/1/3000');
     await taskDetailsPage.fillDatetimeField('Time', '12:00 PM');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Date and Time Task');
@@ -476,7 +476,7 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.checkCheckbox();
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -496,7 +496,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.unassignButton).toBeVisible();
     await taskDetailsPage.selectDropdownValue('Value');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -515,7 +515,7 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.clickRadioButton('Value');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -534,7 +534,7 @@ test.describe('task details page', () => {
     await taskDetailsPage.checkChecklistBox('Value1');
     await taskDetailsPage.checkChecklistBox('Value2');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -557,7 +557,7 @@ test.describe('task details page', () => {
 
     await taskDetailsPage.selectTaglistValues(['Value 2', 'Value']);
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
@@ -583,7 +583,7 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('Hello Jane');
     await expect(taskDetailsPage.form).toContainText('You are 50 years old');
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('Text_Templating_Form_Task');
