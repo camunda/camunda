@@ -21,6 +21,7 @@ public class TestApiController {
   public static final String DUMMY_V2_API_ENDPOINT = "/v2/foo";
   public static final String DUMMY_WEBAPP_ENDPOINT = "/decisions";
   public static final String DUMMY_UNPROTECTED_ENDPOINT = "/new/foo";
+  public static final String DUMMY_UNHANDLED_ENDPOINT = "/non-existent-endpoint";
 
   @RequestMapping(DUMMY_OPERATE_INTERNAL_API_ENDPOINT)
   public @ResponseBody String dummyOperateInternalApiEndpoint() {
