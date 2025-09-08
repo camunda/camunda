@@ -28,6 +28,9 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import {getScopeId} from 'modules/utils/variables';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
+import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 type Props = {
   isVariableModificationAllowed?: boolean;
@@ -49,6 +52,14 @@ const Variables: React.FC<Props> = observer(
     } = variablesStore;
     const [footerVariant, setFooterVariant] =
       useState<FooterVariant>('initial');
+
+    const processDefinitionKey = useProcessDefinitionKeyContext();
+    const {
+      error: processDefinitionError,
+      isLoading: isProcessDefinitionLoading,
+    } = useProcessInstanceXml({
+      processDefinitionKey,
+    });
 
     const scopeId = getScopeId() ?? newScopeIdForFlowNode;
 
@@ -83,6 +94,14 @@ const Variables: React.FC<Props> = observer(
       const isSelectedInstanceRunning =
         flowNodeMetaDataStore.isSelectedInstanceRunning;
 
+      if (
+        isProcessDefinitionLoading ||
+        processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN
+      ) {
+        setFooterVariant('hidden');
+        return;
+      }
+
       if (!isProcessInstanceRunning) {
         setFooterVariant('disabled');
         return;
@@ -110,6 +129,8 @@ const Variables: React.FC<Props> = observer(
       initialValues,
       isViewMode,
       isRootNodeSelected,
+      isProcessDefinitionLoading,
+      processDefinitionError,
     ]);
 
     if (displayStatus === 'no-content') {

@@ -28,6 +28,7 @@ import {
   useInstanceExecutionHistory,
   useIsInstanceExecutionHistoryAvailable,
 } from 'modules/hooks/flowNodeInstance';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const instanceExecutionHistory = useInstanceExecutionHistory();
@@ -38,9 +39,17 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   } = flowNodeInstanceStore;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {isSuccess, isError, isPending} = useProcessInstanceXml({
+  const {
+    isSuccess,
+    isError,
+    isPending,
+    error: processDefinitionError,
+  } = useProcessInstanceXml({
     processDefinitionKey,
   });
+
+  const isForbiddenError =
+    processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
 
   const LOADING_STATES = ['initial', 'first-fetch'];
 
@@ -78,7 +87,18 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
-            <ErrorMessage message="Instance History could not be fetched" />
+            <ErrorMessage
+              message={
+                isForbiddenError
+                  ? 'Missing permissions to access Instance History'
+                  : 'Instance History could not be fetched'
+              }
+              additionalInfo={
+                isForbiddenError
+                  ? 'Please contact your organization owner or admin to give you the necessary permissions to access this instance history'
+                  : undefined
+              }
+            />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
             <Skeleton />
