@@ -30,10 +30,13 @@ public final class VariableFixtures extends CommonFixtures {
 
   public static VariableDbModel createRandomized(
       final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
+    final var key = nextKey();
     final var builder =
         new VariableDbModelBuilder()
-            .variableKey(nextKey())
+            .variableKey(key)
             .processInstanceKey(nextKey())
+            .processDefinitionId("process-definition-id-" + key)
+            .tenantId("tenant-id-" + key)
             .scopeKey(nextKey())
             .name(
                 "variable-name-"

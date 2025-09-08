@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.processinstance;
 
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstance;
 import static io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures.createAndSaveRandomProcessInstances;
@@ -17,6 +18,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -145,6 +147,49 @@ public class ProcessInstanceIT {
     assertThat(instance.parentProcessInstanceKey()).isEqualTo(-1L);
     assertThat(instance.parentFlowNodeInstanceKey()).isEqualTo(-1L);
     assertThat(instance.processDefinitionVersion()).isEqualTo(1);
+  }
+
+  @TestTemplate
+  public void shouldFindProcessInstanceByAuthorizationResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processInstance = createAndSaveRandomProcessInstance(rdbmsWriter, b -> b);
+    createAndSaveRandomProcessInstances(rdbmsWriter);
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromResourceIds(
+                processInstance.processDefinitionId()));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processInstanceKey())
+        .isEqualTo(processInstance.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldFindProcessInstanceByAuthorizationTenantId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessInstanceDbReader processInstanceReader = rdbmsService.getProcessInstanceReader();
+
+    final var processInstance = createAndSaveRandomProcessInstance(rdbmsWriter, b -> b);
+    createAndSaveRandomProcessInstances(rdbmsWriter);
+
+    final var searchResult =
+        processInstanceReader.search(
+            ProcessInstanceQuery.of(b -> b),
+            resourceAccessChecksFromTenantIds(processInstance.tenantId()));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().processInstanceKey())
+        .isEqualTo(processInstance.processInstanceKey());
   }
 
   @TestTemplate
