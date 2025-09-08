@@ -26,6 +26,14 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
+vi.mock('modules/feature-flags', async () => {
+  const actual = await vi.importActual('modules/feature-flags');
+  return {
+    ...actual,
+    IS_INCIDENT_RESOLUTION_V2: true,
+  };
+});
+
 const getWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     return (
