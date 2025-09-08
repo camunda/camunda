@@ -40,7 +40,7 @@ export class IdentityUsersPage {
   readonly deleteUserModalDeleteButton: Locator;
   readonly emptyState: Locator;
   readonly userCell: (name: string) => Locator;
-  private usersHeading: Locator;
+  readonly usersHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -192,6 +192,10 @@ export class IdentityUsersPage {
     currentUser: {email: string},
     updatedUser: {name: string; email: string},
   ) {
+    await waitForItemInList(this.page, this.userCell(currentUser.email), {
+      clickNext: true,
+      timeout: 60000,
+    });
     await this.editUserButton(currentUser.email).click();
     await expect(this.editUserModal).toBeVisible();
     await this.editNameField.fill(updatedUser.name);
@@ -201,6 +205,10 @@ export class IdentityUsersPage {
   }
 
   async deleteUser(user: {username: string; email: string}) {
+    await waitForItemInList(this.page, this.userCell(user.email), {
+      clickNext: true,
+      timeout: 60000,
+    });
     await expect(async () => {
       await expect(this.deleteUserButton(user.username)).toBeVisible({
         timeout: 20000,

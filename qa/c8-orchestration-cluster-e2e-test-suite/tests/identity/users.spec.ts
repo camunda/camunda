@@ -52,10 +52,6 @@ test.describe.serial('users CRUD', () => {
   });
 
   test('edit a user', async ({identityUsersPage, page}) => {
-    await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
-      clickNext: true,
-      timeout: 60000,
-    });
     await identityUsersPage.editUser(NEW_USER, EDITED_USER);
     const item = identityUsersPage.userCell(EDITED_USER.email);
     await waitForItemInList(page, item, {
@@ -66,10 +62,6 @@ test.describe.serial('users CRUD', () => {
 
   test('delete a user', async ({identityUsersPage, page}) => {
     const item = identityUsersPage.userCell(EDITED_USER.email);
-    await waitForItemInList(page, item, {
-      clickNext: true,
-      timeout: 60000,
-    });
     await identityUsersPage.deleteUser(EDITED_USER);
 
     await waitForItemInList(page, item, {

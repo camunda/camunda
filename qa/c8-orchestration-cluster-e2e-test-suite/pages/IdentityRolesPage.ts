@@ -135,6 +135,10 @@ export class IdentityRolesPage {
   }
 
   async deleteRole(roleName: string) {
+    await waitForItemInList(this.page, this.roleCell(roleName), {
+      clickNext: true,
+      timeout: 60000,
+    });
     await expect(async () => {
       await expect(this.deleteRoleButton(roleName)).toBeVisible({
         timeout: 20000,

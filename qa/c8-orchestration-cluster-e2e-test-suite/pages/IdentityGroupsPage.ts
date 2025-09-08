@@ -10,6 +10,7 @@ import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {sleep} from 'utils/sleep';
 import {defaultAssertionOptions} from '../utils/constants';
+import {waitForItemInList} from '../utils/waitForItemInList';
 
 export class IdentityGroupsPage {
   private page: Page;
@@ -168,6 +169,11 @@ export class IdentityGroupsPage {
   }
 
   async deleteGroup(groupName: string) {
+    const group = this.groupCell(groupName);
+    await waitForItemInList(this.page, group, {
+      clickNext: true,
+      timeout: 60000,
+    });
     await expect(async () => {
       await expect(this.deleteGroupButton(groupName)).toBeVisible({
         timeout: 20000,

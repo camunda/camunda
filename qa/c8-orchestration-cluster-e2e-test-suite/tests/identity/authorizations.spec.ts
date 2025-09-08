@@ -174,6 +174,7 @@ test.describe.serial('component authorizations CRUD', () => {
         LOGIN_CREDENTIALS.username,
         LOGIN_CREDENTIALS.password,
       );
+      await expect(identityUsersPage.usersHeading).toBeVisible();
       await identityUsersPage.deleteUser(NEW_USER);
       const userItem = identityUsersPage.userCell(NEW_USER.username);
       await waitForItemInList(page, userItem, {shouldBeVisible: false});

@@ -10,15 +10,10 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
-  assertEqualsForKeys,
   assertUnauthorizedRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
-import {
-  ROLE_EXPECTED_BODY,
-  roleRequiredFields,
-} from '../../../../utils/beans/requestBeans';
+import {ROLE_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 import {
   assignRoleToGroups,
   createGroupAndStoreResponseFields,

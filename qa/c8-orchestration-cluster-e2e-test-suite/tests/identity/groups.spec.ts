@@ -80,12 +80,6 @@ test.describe.serial('groups CRUD', () => {
   });
 
   test('deletes a group', async ({page, identityGroupsPage}) => {
-    const group = identityGroupsPage.groupCell(EDITED_GROUP.name);
-    await waitForItemInList(page, group, {
-      clickNext: true,
-      timeout: 60000,
-    });
-
     await identityGroupsPage.deleteGroup(EDITED_GROUP.name);
 
     const item = identityGroupsPage.groupCell(EDITED_GROUP.name);
