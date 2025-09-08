@@ -256,7 +256,7 @@
             </goals>
             <phase>generate-test-sources</phase>
             <configuration>
-              <mainClass>io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator</mainClass>
+              <mainClass>io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator</mainClass>
               <arguments>
                 <argument>${generated.test.sources.path}</argument>
               </arguments>

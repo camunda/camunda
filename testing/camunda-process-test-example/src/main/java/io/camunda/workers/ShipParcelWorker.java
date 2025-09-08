@@ -15,10 +15,10 @@
  */
 package io.camunda.workers;
 
+import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.annotation.Variable;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.services.ShippingService;
-import io.camunda.spring.client.annotation.JobWorker;
-import io.camunda.spring.client.annotation.Variable;
 import java.util.Map;
 import org.springframework.stereotype.Component;
 
