@@ -30,6 +30,7 @@ public class ApiRestExecutorTest {
         "camunda.api.rest.executor.core-pool-size-multiplier=5",
         "camunda.api.rest.executor.max-pool-size-multiplier=10",
         "camunda.api.rest.executor.keep-alive=120s",
+        "camunda.api.rest.executor.queue-capacity=128",
       })
   class WithOnlyUnifiedConfigSet {
     final GatewayRestProperties gatewayRestProperties;
@@ -53,6 +54,11 @@ public class ApiRestExecutorTest {
     void shouldSetKeepAliveSeconds() {
       assertThat(gatewayRestProperties.getApiExecutor().getKeepAliveSeconds()).isEqualTo(120);
     }
+
+    @Test
+    void shouldSetQueueCapacity() {
+      assertThat(gatewayRestProperties.getApiExecutor().getQueueCapacity()).isEqualTo(128);
+    }
   }
 
   @Nested
@@ -61,6 +67,7 @@ public class ApiRestExecutorTest {
         "camunda.rest.apiExecutor.corePoolSizeMultiplier=10",
         "camunda.rest.apiExecutor.maxPoolSizeMultiplier=15",
         "camunda.rest.apiExecutor.keepAliveSeconds=180",
+        "camunda.rest.apiExecutor.queueCapacity=192",
       })
   class WithOnlyLegacySet {
     final GatewayRestProperties gatewayRestProperties;
@@ -83,6 +90,11 @@ public class ApiRestExecutorTest {
     void shouldSetKeepAliveSeconds() {
       assertThat(gatewayRestProperties.getApiExecutor().getKeepAliveSeconds()).isEqualTo(180);
     }
+
+    @Test
+    void shouldSetQueueCapacity() {
+      assertThat(gatewayRestProperties.getApiExecutor().getQueueCapacity()).isEqualTo(192);
+    }
   }
 
   @Nested
@@ -92,10 +104,12 @@ public class ApiRestExecutorTest {
         "camunda.api.rest.executor.core-pool-size-multiplier=5",
         "camunda.api.rest.executor.max-pool-size-multiplier=10",
         "camunda.api.rest.executor.keep-alive=120s",
+        "camunda.api.rest.executor.queue-capacity=128",
         // legacy
         "camunda.rest.apiExecutor.corePoolSizeMultiplier=10",
         "camunda.rest.apiExecutor.maxPoolSizeMultiplier=15",
         "camunda.rest.apiExecutor.keepAliveSeconds=180",
+        "camunda.rest.apiExecutor.queueCapacity=192",
       })
   class WithNewAndLegacySet {
     final GatewayRestProperties gatewayRestProperties;
@@ -117,6 +131,11 @@ public class ApiRestExecutorTest {
     @Test
     void shouldSetKeepAliveSecondsFromNew() {
       assertThat(gatewayRestProperties.getApiExecutor().getKeepAliveSeconds()).isEqualTo(120);
+    }
+
+    @Test
+    void shouldSetQueueCapacity() {
+      assertThat(gatewayRestProperties.getApiExecutor().getQueueCapacity()).isEqualTo(128);
     }
   }
 }
