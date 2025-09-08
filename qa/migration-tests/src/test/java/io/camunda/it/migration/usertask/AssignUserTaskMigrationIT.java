@@ -9,6 +9,7 @@ package io.camunda.it.migration.usertask;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
@@ -28,6 +29,7 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          .withPostUpdateAdditionalProfiles(Profile.TASK_MIGRATION)
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, null));
 
   @Test
