@@ -40,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: [v1, v2] # Run both V1 and V2 modes
+        tasklist_mode: [v1, v2]
     runs-on: ubuntu-latest
     needs: [detect-changes]
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}

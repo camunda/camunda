@@ -130,7 +130,7 @@ test.describe('process page', () => {
 
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(page.getByText('Task completed')).toBeVisible();
+    await expect(page.getByText('Task completed')).toBeVisible();
   });
 
   test('complete process with start node having deployed form', async ({
@@ -191,8 +191,8 @@ test.describe('process page', () => {
     ).toBeVisible();
     await taskDetailsPage.clickAssignToMeButton();
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-    //   timeout: 60000,
-    // });
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 60000,
+    });
   });
 });

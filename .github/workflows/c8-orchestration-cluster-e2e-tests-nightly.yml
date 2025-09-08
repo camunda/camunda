@@ -18,7 +18,7 @@ jobs:
       fail-fast: false
       matrix:
         branch: [stable/8.6, stable/8.7, stable/8.8, main]
-        tasklist_mode: [v1, v2] # Run both V1 and V2 modes
+        tasklist_mode: [v1, v2]
         exclude:
           # V2 mode only supported on main branch - exclude V2 for older branches
           - branch: stable/8.6

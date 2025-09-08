@@ -58,7 +58,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: [v1, v2] # Run both V1 and V2 modes
+        tasklist_mode: [v1, v2]
     needs: validate-branch
     runs-on: ubuntu-latest
     steps:
