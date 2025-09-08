@@ -14,20 +14,11 @@ import {AddVariableButton} from './AddVariableButton';
 import {CopyVariablesButton as CopyVariablesButtonV2} from './CopyVariablesButton';
 
 type Props = {
-  variant:
-    | 'initial'
-    | 'disabled'
-    | 'add-variable'
-    | 'pending-variable'
-    | 'hidden';
+  variant: 'initial' | 'disabled' | 'add-variable' | 'pending-variable';
 };
 
 const Footer: React.FC<Props> = ({variant}) => {
   const form = useForm();
-
-  if (variant === 'hidden') {
-    return null;
-  }
 
   return (
     <FooterContainer>
