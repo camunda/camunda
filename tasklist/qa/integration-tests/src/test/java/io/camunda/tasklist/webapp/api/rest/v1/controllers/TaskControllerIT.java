@@ -1707,5 +1707,92 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       // then
       assertThat(errorResult).hasHttpStatus(HttpStatus.NO_CONTENT);
     }
+
+    @Test
+    public void searchTasksShouldReturnFullLargeVariableValueWhenRequested() throws Exception {
+      // given
+      final String bpmnProcessId = "largeVariableTestProcess";
+      final String flowNodeBpmnId = "taskLargeVariable_".concat(UUID.randomUUID().toString());
+      final String largeValue = "x".repeat(10_000); // Simulate a large variable value
+
+      createTask(bpmnProcessId, flowNodeBpmnId, 1)
+          .claimAndCompleteHumanTask(flowNodeBpmnId, "largeVariable", "\"" + largeValue + "\"");
+
+      final var variablesRequest =
+          new TaskSearchRequest()
+              .setIncludeVariables(
+                  new IncludeVariable[] {
+                    new IncludeVariable().setName("largeVariable").setAlwaysReturnFullValue(true)
+                  });
+
+      // when
+      final var result =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/search")), variablesRequest);
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .satisfies(
+              tasks -> {
+                assertThat(tasks).hasSize(1);
+                tasks.forEach(
+                    task -> {
+                      assertThat(task.getVariables()).hasSize(1);
+                      final var variable = task.getVariables()[0];
+                      assertThat(variable.getName()).isEqualTo("largeVariable");
+                      assertThat(variable.getValue()).isEqualTo("\"" + largeValue + "\"");
+                      assertThat(variable.getIsValueTruncated()).isTrue();
+                      assertThat(variable.getPreviewValue().length())
+                          .isLessThan(largeValue.length());
+                    });
+              });
+    }
+
+    @Test
+    public void searchTasksShouldReturnTruncatedLargeVariableValueOnlyWhenNotRequested()
+        throws Exception {
+      // given
+      final String bpmnProcessId = "largeVariableTestProcess";
+      final String flowNodeBpmnId = "taskLargeVariable_".concat(UUID.randomUUID().toString());
+      final String largeValue = "x".repeat(10_000); // Simulate a large variable value
+
+      createTask(bpmnProcessId, flowNodeBpmnId, 1)
+          .claimAndCompleteHumanTask(flowNodeBpmnId, "largeVariable", "\"" + largeValue + "\"");
+
+      final var variablesRequest =
+          new TaskSearchRequest()
+              .setIncludeVariables(
+                  new IncludeVariable[] {
+                    new IncludeVariable().setName("largeVariable").setAlwaysReturnFullValue(false)
+                  });
+
+      // when
+      final var result =
+          mockMvcHelper.doRequest(
+              post(TasklistURIs.TASKS_URL_V1.concat("/search")), variablesRequest);
+
+      // then
+      assertThat(result)
+          .hasOkHttpStatus()
+          .hasApplicationJsonContentType()
+          .extractingListContent(objectMapper, TaskSearchResponse.class)
+          .satisfies(
+              tasks -> {
+                assertThat(tasks).hasSize(1);
+                tasks.forEach(
+                    task -> {
+                      assertThat(task.getVariables()).hasSize(1);
+                      final var variable = task.getVariables()[0];
+                      assertThat(variable.getName()).isEqualTo("largeVariable");
+                      assertThat(variable.getValue()).isNull();
+                      assertThat(variable.getIsValueTruncated()).isTrue();
+                      assertThat(variable.getPreviewValue().length())
+                          .isLessThan(largeValue.length());
+                    });
+              });
+    }
   }
 }

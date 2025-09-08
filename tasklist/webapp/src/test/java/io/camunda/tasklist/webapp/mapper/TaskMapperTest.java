@@ -16,6 +16,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.graphql.entity.TaskDTO;
 import io.camunda.tasklist.webapp.graphql.entity.TaskQueryDTO;
+import io.camunda.tasklist.webapp.graphql.entity.VariableDTO;
 import java.time.OffsetDateTime;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
@@ -65,12 +66,12 @@ class TaskMapperTest {
   @ParameterizedTest
   @MethodSource("toTaskSearchResponseTestData")
   void toTaskSearchResponse(
-      String cachedTaskName,
-      String flowNodeBpmnId,
-      String cachedProcessName,
-      String bpmnProcessId,
-      String name,
-      String processName) {
+      final String cachedTaskName,
+      final String flowNodeBpmnId,
+      final String cachedProcessName,
+      final String bpmnProcessId,
+      final String name,
+      final String processName) {
     // Given
     final String processDefinitionId = "2251799813685257";
     final OffsetDateTime dueDate = OffsetDateTime.now().plusDays(3);
@@ -168,5 +169,49 @@ class TaskMapperTest {
 
     // Then
     assertThat(result).isEqualTo(expectedTaskQuery);
+  }
+
+  @Test
+  void toTaskSearchResponseSetsVariableValueToFullValue() {
+    // Given
+    final var variableFull =
+        new VariableDTO()
+            .setId("var1")
+            .setName("varName1")
+            .setValue("fullValue")
+            .setIsValueTruncated(false)
+            .setPreviewValue("previewValue");
+    final var variableTruncated =
+        new VariableDTO()
+            .setId("var2")
+            .setName("varName2")
+            .setValue("truncatedFullValue")
+            .setIsValueTruncated(true)
+            .setPreviewValue("truncatedPreviewValue");
+    final var providedTask =
+        new TaskDTO()
+            .setId("111111")
+            .setFlowNodeBpmnId("flowNodeBpmnId")
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessDefinitionId("processDefinitionId")
+            .setVariables(new VariableDTO[] {variableFull, variableTruncated});
+    when(processCache.getTaskName("processDefinitionId", "flowNodeBpmnId")).thenReturn("taskName");
+    when(processCache.getProcessName("processDefinitionId")).thenReturn("processName");
+
+    // When
+    final var result = instance.toTaskSearchResponse(providedTask);
+
+    // Then
+    assertThat(result.getVariables()).hasSize(2);
+    assertThat(result.getVariables()[0].getId()).isEqualTo("var1");
+    assertThat(result.getVariables()[0].getName()).isEqualTo("varName1");
+    assertThat(result.getVariables()[0].getValue()).isEqualTo("previewValue");
+    assertThat(result.getVariables()[0].getIsValueTruncated()).isFalse();
+    assertThat(result.getVariables()[0].getPreviewValue()).isEqualTo("previewValue");
+    assertThat(result.getVariables()[1].getId()).isEqualTo("var2");
+    assertThat(result.getVariables()[1].getName()).isEqualTo("varName2");
+    assertThat(result.getVariables()[1].getIsValueTruncated()).isTrue();
+    assertThat(result.getVariables()[1].getPreviewValue()).isEqualTo("truncatedPreviewValue");
+    assertThat(result.getVariables()[1].getValue()).isEqualTo("truncatedFullValue");
   }
 }
