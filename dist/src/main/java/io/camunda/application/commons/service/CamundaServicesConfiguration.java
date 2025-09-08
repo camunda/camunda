@@ -246,10 +246,7 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final CorrelatedMessageSearchClient correlatedMessageSearchClient) {
     return new MessageServices(
-        brokerClient,
-        securityContextProvider,
-        correlatedMessageSearchClient,
-        null);
+        brokerClient, securityContextProvider, correlatedMessageSearchClient, null);
   }
 
   @Bean
