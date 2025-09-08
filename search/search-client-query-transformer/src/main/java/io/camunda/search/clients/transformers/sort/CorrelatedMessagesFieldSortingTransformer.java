@@ -15,6 +15,7 @@ import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTe
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.FLOW_NODE_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.MESSAGE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.MESSAGE_NAME;
+import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.PARTITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.SUBSCRIPTION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.TENANT_ID;
@@ -30,6 +31,7 @@ public class CorrelatedMessagesFieldSortingTransformer implements FieldSortingTr
       case "elementInstanceKey" -> FLOW_NODE_INSTANCE_KEY;
       case "messageKey" -> MESSAGE_KEY;
       case "messageName" -> MESSAGE_NAME;
+      case "partitionId" -> PARTITION_ID;
       case "processDefinitionId" -> BPMN_PROCESS_ID;
       case "processDefinitionKey" -> PROCESS_DEFINITION_KEY;
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;

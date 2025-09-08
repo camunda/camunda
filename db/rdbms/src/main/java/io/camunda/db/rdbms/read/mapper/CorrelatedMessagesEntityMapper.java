@@ -20,6 +20,7 @@ public class CorrelatedMessagesEntityMapper {
         .elementInstanceKey(dbModel.flowNodeInstanceKey()) // Map flowNodeInstanceKey to elementInstanceKey
         .messageKey(dbModel.messageKey())
         .messageName(dbModel.messageName())
+        .partitionId(dbModel.partitionId())
         .processDefinitionId(dbModel.processDefinitionId())
         .processDefinitionKey(dbModel.processDefinitionKey())
         .processInstanceKey(dbModel.processInstanceKey())

@@ -22,6 +22,7 @@ public class CorrelatedMessagesEntityTransformer
         value.getFlowNodeInstanceKey(), // Maps to elementInstanceKey in search domain
         value.getMessageKey(),
         value.getMessageName(),
+        value.getPartitionId(),
         value.getBpmnProcessId(), // Maps to processDefinitionId in search domain
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),

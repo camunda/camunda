@@ -57,6 +57,11 @@ public record CorrelatedMessagesSort(List<FieldSorting> orderings) implements So
       return this;
     }
 
+    public Builder partitionId() {
+      currentOrdering = new FieldSorting("partitionId", null);
+      return this;
+    }
+
     public Builder processDefinitionId() {
       currentOrdering = new FieldSorting("processDefinitionId", null);
       return this;

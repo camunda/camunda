@@ -1171,6 +1171,7 @@ public final class SearchQueryResponseMapper {
     result.setElementInstanceKey(String.valueOf(entity.elementInstanceKey()));
     result.setMessageKey(String.valueOf(entity.messageKey()));
     result.setMessageName(entity.messageName());
+    result.setPartitionId(entity.partitionId());
     result.setProcessDefinitionId(entity.processDefinitionId());
     result.setProcessDefinitionKey(String.valueOf(entity.processDefinitionKey()));
     result.setProcessInstanceKey(String.valueOf(entity.processInstanceKey()));

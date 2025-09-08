@@ -2047,6 +2047,8 @@ public final class SearchQueryRequestMapper {
       ofNullable(filter.getMessageName())
           .map(mapToOperations(String.class))
           .ifPresent(builder::messageNameOperations);
+      ofNullable(filter.getPartitionId())
+          .ifPresent(builder::partitionId);
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);
@@ -2080,6 +2082,7 @@ public final class SearchQueryRequestMapper {
         case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
         case MESSAGE_KEY -> builder.messageKey();
         case MESSAGE_NAME -> builder.messageName();
+        case PARTITION_ID -> builder.partitionId();
         case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();

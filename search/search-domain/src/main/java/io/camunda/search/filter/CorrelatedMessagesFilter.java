@@ -25,6 +25,7 @@ public record CorrelatedMessagesFilter(
     List<Operation<Long>> elementInstanceKeyOperations,
     List<Operation<Long>> messageKeyOperations,
     List<Operation<String>> messageNameOperations,
+    Integer partitionId,
     List<Operation<String>> processDefinitionIdOperations,
     List<Operation<Long>> processDefinitionKeyOperations,
     List<Operation<Long>> processInstanceKeyOperations,
@@ -41,6 +42,7 @@ public record CorrelatedMessagesFilter(
     private List<Operation<Long>> elementInstanceKeyOperations;
     private List<Operation<Long>> messageKeyOperations;
     private List<Operation<String>> messageNameOperations;
+    private Integer partitionId;
     private List<Operation<String>> processDefinitionIdOperations;
     private List<Operation<Long>> processDefinitionKeyOperations;
     private List<Operation<Long>> processInstanceKeyOperations;
@@ -137,6 +139,11 @@ public record CorrelatedMessagesFilter(
       return messageNameOperations(collectValues(operation, operations));
     }
 
+    public Builder partitionId(final Integer partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     public Builder processDefinitionIdOperations(final List<Operation<String>> operations) {
       processDefinitionIdOperations = addValuesToList(processDefinitionIdOperations, operations);
       return this;
@@ -221,6 +228,7 @@ public record CorrelatedMessagesFilter(
           Objects.requireNonNullElse(elementInstanceKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(messageNameOperations, Collections.emptyList()),
+          partitionId,
           Objects.requireNonNullElse(processDefinitionIdOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processDefinitionKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(processInstanceKeyOperations, Collections.emptyList()),

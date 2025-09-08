@@ -114,6 +114,9 @@
             <property name="operations" value="filter.messageNameOperations"/>
           </include>
         </if>
+        <if test="filter.partitionId != null">
+          AND PARTITION_ID = #{filter.partitionId}
+        </if>
         <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
           <include refid="io.camunda.db.rdbms.sql.Commons.filterOperations">
             <property name="column" value="PROCESS_DEFINITION_ID"/>

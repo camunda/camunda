@@ -7340,6 +7340,10 @@ components:
         messageName:
           description: The name of the message.
           type: string
+        partitionId:
+          description: The partition ID where the message was processed.
+          type: integer
+          format: int32
         processDefinitionId:
           description: The process definition ID associated with this correlated message.
           type: string
@@ -7391,6 +7395,7 @@ components:
             - elementInstanceKey
             - messageKey
             - messageName
+            - partitionId
             - processDefinitionId
             - processDefinitionKey
             - processInstanceKey
@@ -7428,6 +7433,10 @@ components:
           description: The name of the message.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
+        partitionId:
+          description: The partition ID where the message was processed.
+          type: integer
+          format: int32
         processDefinitionId:
           description: The process definition ID associated with this correlated message.
           allOf:

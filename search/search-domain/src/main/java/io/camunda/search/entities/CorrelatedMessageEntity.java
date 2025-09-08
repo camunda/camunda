@@ -18,6 +18,7 @@ public record CorrelatedMessageEntity(
     Long elementInstanceKey,
     Long messageKey,
     String messageName,
+    Integer partitionId,
     String processDefinitionId,
     Long processDefinitionKey,
     Long processInstanceKey,
@@ -35,6 +36,7 @@ public record CorrelatedMessageEntity(
     private Long elementInstanceKey;
     private Long messageKey;
     private String messageName;
+    private Integer partitionId;
     private String processDefinitionId;
     private Long processDefinitionKey;
     private Long processInstanceKey;
@@ -71,6 +73,11 @@ public record CorrelatedMessageEntity(
       return this;
     }
 
+    public Builder partitionId(final Integer partitionId) {
+      this.partitionId = partitionId;
+      return this;
+    }
+
     public Builder processDefinitionId(final String processDefinitionId) {
       this.processDefinitionId = processDefinitionId;
       return this;
@@ -104,6 +111,7 @@ public record CorrelatedMessageEntity(
           elementInstanceKey,
           messageKey,
           messageName,
+          partitionId,
           processDefinitionId,
           processDefinitionKey,
           processInstanceKey,
