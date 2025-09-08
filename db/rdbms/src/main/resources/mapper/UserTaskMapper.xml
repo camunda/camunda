@@ -131,164 +131,184 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <!-- basic filters -->
-    <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
-      AND ut.USER_TASK_KEY IN
-      <foreach close=")" collection="filter.userTaskKeys" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
-      AND ut.ELEMENT_ID IN
-      <foreach close=")" collection="filter.elementIds" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.names != null and !filter.names.isEmpty()">
-      AND ut.NAME IN
-      <foreach close=")" collection="filter.names" item="value" open="("
-               separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">
-      AND ut.ELEMENT_INSTANCE_KEY IN
-      <foreach close=")" collection="filter.elementInstanceKeys" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.bpmnProcessIds != null and !filter.bpmnProcessIds.isEmpty()">
-      AND ut.PROCESS_DEFINITION_ID IN
-      <foreach close=")" collection="filter.bpmnProcessIds" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
-      <foreach collection="filter.assigneeOperations" item="operation">
-        AND ut.ASSIGNEE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.priorityOperations != null and !filter.priorityOperations.isEmpty()">
-      <foreach collection="filter.priorityOperations" item="operation">
-        AND ut.PRIORITY
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
-      <foreach collection="filter.stateOperations" item="operation">
-        AND ut.STATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-    <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
-      AND ut.PROCESS_INSTANCE_KEY IN
-      <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
-      AND ut.PROCESS_DEFINITION_KEY IN
-      <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
-        separator=", ">#{value}
-      </foreach>
-    </if>
-    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
-      <foreach collection="filter.tenantIdOperations" item="operation">
-        AND ut.TENANT_ID <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND ut.PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND ut.TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <!-- basic filters -->
+      <if test="filter.userTaskKeys != null and !filter.userTaskKeys.isEmpty()">
+        AND ut.USER_TASK_KEY IN
+        <foreach close=")" collection="filter.userTaskKeys" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.elementIds != null and !filter.elementIds.isEmpty()">
+        AND ut.ELEMENT_ID IN
+        <foreach close=")" collection="filter.elementIds" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.names != null and !filter.names.isEmpty()">
+        AND ut.NAME IN
+        <foreach close=")" collection="filter.names" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.elementInstanceKeys != null and !filter.elementInstanceKeys.isEmpty()">
+        AND ut.ELEMENT_INSTANCE_KEY IN
+        <foreach close=")" collection="filter.elementInstanceKeys" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.bpmnProcessIds != null and !filter.bpmnProcessIds.isEmpty()">
+        AND ut.PROCESS_DEFINITION_ID IN
+        <foreach close=")" collection="filter.bpmnProcessIds" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.assigneeOperations != null and !filter.assigneeOperations.isEmpty()">
+        <foreach collection="filter.assigneeOperations" item="operation">
+          AND ut.ASSIGNEE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.priorityOperations != null and !filter.priorityOperations.isEmpty()">
+        <foreach collection="filter.priorityOperations" item="operation">
+          AND ut.PRIORITY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+        <foreach collection="filter.stateOperations" item="operation">
+          AND ut.STATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.processInstanceKeys != null and !filter.processInstanceKeys.isEmpty()">
+        AND ut.PROCESS_INSTANCE_KEY IN
+        <foreach close=")" collection="filter.processInstanceKeys" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.processDefinitionKeys != null and !filter.processDefinitionKeys.isEmpty()">
+        AND ut.PROCESS_DEFINITION_KEY IN
+        <foreach close=")" collection="filter.processDefinitionKeys" item="value" open="("
+          separator=", ">#{value}
+        </foreach>
+      </if>
+      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+        <foreach collection="filter.tenantIdOperations" item="operation">
+          AND ut.TENANT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
 
-    <!-- candidate groups and users -->
-    <if
-      test="filter.candidateGroupOperations != null and !filter.candidateGroupOperations.isEmpty()">
-      AND EXISTS (Select * from ${prefix}CANDIDATE_GROUP cg where cg.USER_TASK_KEY = ut.USER_TASK_KEY
-      <foreach collection="filter.candidateGroupOperations" item="operation">
-        AND cg.CANDIDATE_GROUP
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-      )
-    </if>
-    <if test="filter.candidateUserOperations != null and !filter.candidateUserOperations.isEmpty()">
-      AND EXISTS (Select * from ${prefix}CANDIDATE_USER cu where cu.USER_TASK_KEY = ut.USER_TASK_KEY
-      <foreach collection="filter.candidateUserOperations" item="operation">
-        AND cu.CANDIDATE_USER
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-      )
-    </if>
-
-    <!-- Creation Date Filters -->
-    <if test="filter.creationDateOperations != null and !filter.creationDateOperations.isEmpty()">
-      <foreach collection="filter.creationDateOperations" item="operation">
-        AND ut.CREATION_DATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-
-    <!-- Completion Date Filters -->
-    <if test="filter.completionDateOperations != null and !filter.completionDateOperations.isEmpty()">
-      <foreach collection="filter.completionDateOperations" item="operation">
-        AND ut.COMPLETION_DATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-
-    <!-- Due Date Filters -->
-    <if test="filter.dueDateOperations != null and !filter.dueDateOperations.isEmpty()">
-      <foreach collection="filter.dueDateOperations" item="operation">
-        AND ut.DUE_DATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-
-    <!-- Follow-Up Date Filters -->
-    <if test="filter.followUpDateOperations != null and !filter.followUpDateOperations.isEmpty()">
-      <foreach collection="filter.followUpDateOperations" item="operation">
-        AND ut.FOLLOW_UP_DATE
-        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-      </foreach>
-    </if>
-
-
-    <!-- Variables Filter -->
-    <if test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
-      AND EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY = ut.PROCESS_INSTANCE_KEY
-      AND ( 1 = 1
-      <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
-        AND ( v.VAR_NAME = #{variableValueFilter.name}
-        <if
-          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-          <foreach collection="variableValueFilter.valueOperations" item="operation">
-            AND
-            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-          </foreach>
-        </if>
+      <!-- candidate groups and users -->
+      <if
+        test="filter.candidateGroupOperations != null and !filter.candidateGroupOperations.isEmpty()">
+        AND EXISTS (Select * from ${prefix}CANDIDATE_GROUP cg where cg.USER_TASK_KEY =
+        ut.USER_TASK_KEY
+        <foreach collection="filter.candidateGroupOperations" item="operation">
+          AND cg.CANDIDATE_GROUP
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
         )
-      </foreach>
-      ))
-    </if>
-
-    <!-- Local Variables Filter -->
-    <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
-      AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
-      AND (
-      <foreach collection="filter.localVariableFilters" item="variableValueFilter" separator=" AND ">
-        ( v.VAR_NAME = #{variableValueFilter.name}
-        <if
-          test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
-          <foreach collection="variableValueFilter.valueOperations" item="operation">
-            AND
-            <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
-          </foreach>
-        </if>
+      </if>
+      <if
+        test="filter.candidateUserOperations != null and !filter.candidateUserOperations.isEmpty()">
+        AND EXISTS (Select * from ${prefix}CANDIDATE_USER cu where cu.USER_TASK_KEY =
+        ut.USER_TASK_KEY
+        <foreach collection="filter.candidateUserOperations" item="operation">
+          AND cu.CANDIDATE_USER
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
         )
-      </foreach>
-      ))
-    </if>
+      </if>
+
+      <!-- Creation Date Filters -->
+      <if test="filter.creationDateOperations != null and !filter.creationDateOperations.isEmpty()">
+        <foreach collection="filter.creationDateOperations" item="operation">
+          AND ut.CREATION_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- Completion Date Filters -->
+      <if
+        test="filter.completionDateOperations != null and !filter.completionDateOperations.isEmpty()">
+        <foreach collection="filter.completionDateOperations" item="operation">
+          AND ut.COMPLETION_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- Due Date Filters -->
+      <if test="filter.dueDateOperations != null and !filter.dueDateOperations.isEmpty()">
+        <foreach collection="filter.dueDateOperations" item="operation">
+          AND ut.DUE_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- Follow-Up Date Filters -->
+      <if test="filter.followUpDateOperations != null and !filter.followUpDateOperations.isEmpty()">
+        <foreach collection="filter.followUpDateOperations" item="operation">
+          AND ut.FOLLOW_UP_DATE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
 
 
+      <!-- Variables Filter -->
+      <if
+        test="filter.processInstanceVariableFilter != null and !filter.processInstanceVariableFilter.isEmpty()">
+        AND EXISTS (Select * from ${prefix}VARIABLE v where v.PROCESS_INSTANCE_KEY =
+        ut.PROCESS_INSTANCE_KEY
+        AND ( 1 = 1
+        <foreach collection="filter.processInstanceVariableFilter" item="variableValueFilter">
+          AND ( v.VAR_NAME = #{variableValueFilter.name}
+          <if
+            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+            <foreach collection="variableValueFilter.valueOperations" item="operation">
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+            </foreach>
+          </if>
+          )
+        </foreach>
+        ))
+      </if>
 
+      <!-- Local Variables Filter -->
+      <if test="filter.localVariableFilters != null and !filter.localVariableFilters.isEmpty()">
+        AND EXISTS (Select * from ${prefix}VARIABLE v where v.SCOPE_KEY = ut.ELEMENT_INSTANCE_KEY
+        AND (
+        <foreach collection="filter.localVariableFilters" item="variableValueFilter"
+          separator=" AND ">
+          ( v.VAR_NAME = #{variableValueFilter.name}
+          <if
+            test="variableValueFilter.valueOperations != null and !variableValueFilter.valueOperations.isEmpty()">
+            <foreach collection="variableValueFilter.valueOperations" item="operation">
+              AND
+              <include refid="io.camunda.db.rdbms.sql.Commons.variableOperationCondition"/>
+            </foreach>
+          </if>
+          )
+        </foreach>
+        ))
+      </if>
+    </where>
   </sql>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
