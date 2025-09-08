@@ -574,7 +574,7 @@ class TaskServiceTest {
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
 
-  protected void setAuthenticatedClient(String id) {
+  protected void setAuthenticatedClient(final String id) {
 
     final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
     when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
