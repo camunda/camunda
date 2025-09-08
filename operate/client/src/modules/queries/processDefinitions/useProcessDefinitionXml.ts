@@ -13,6 +13,7 @@ import {getFlowNodes} from 'modules/utils/flowNodes';
 import type {DiagramModel} from 'bpmn-moddle';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {RequestError} from 'modules/request';
 
 const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
 
@@ -38,7 +39,7 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   select?: (data: ParsedXmlData) => T;
   enabled?: boolean;
 }) {
-  return useQuery({
+  return useQuery<ParsedXmlData, RequestError, T>({
     queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
     queryFn:
       enabled && !!processDefinitionKey

@@ -46,8 +46,12 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {http, HttpResponse} from 'msw';
 import {mockServer} from 'modules/mock-server/node';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData.ts';
-import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance.ts';
+import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 
 const mockIncidents = {
   count: 1,
@@ -219,6 +223,26 @@ describe('TopPanel', () => {
         },
       ],
     });
+    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchDecisionInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+    mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockServer.use(
       http.post('/api/process-instances/:instanceId/flow-node-metadata', () => {
         return HttpResponse.json(calledInstanceMetadata);
@@ -291,6 +315,26 @@ describe('TopPanel', () => {
     ).toBeInTheDocument();
 
     consoleErrorMock.mockRestore();
+  });
+
+  it('should show permissions error when access to the process definition is forbidden', async () => {
+    mockFetchProcessDefinitionXml().withServerError(403);
+    mockFetchProcessDefinitionXml().withServerError(403);
+
+    render(<TopPanel />, {
+      wrapper: getWrapper(),
+    });
+
+    processInstanceDetailsStore.init({id: 'instance_with_incident'});
+
+    expect(
+      await screen.findByText('Missing permissions to view the Definition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+      ),
+    ).toBeInTheDocument();
   });
 
   it('should toggle incident bar', async () => {
