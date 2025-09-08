@@ -7,6 +7,8 @@
  */
 package io.camunda.it.rdbms.db.decisionrequirements;
 
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromResourceIds;
+import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveDecisionRequirement;
 import static io.camunda.it.rdbms.db.fixtures.DecisionRequirementsFixtures.createAndSaveRandomDecisionRequirements;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -96,6 +98,56 @@ public class DecisionRequirementsIT {
         .isEqualTo(decisionRequirements.decisionRequirementsId());
     assertThat(instance.resourceName()).isEqualTo(decisionRequirements.resourceName());
     assertThat(instance.xml()).isEqualTo(decisionRequirements.xml());
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionRequirementsDbReader decisionRequirementsReader =
+        rdbmsService.getDecisionRequirementsReader();
+
+    final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
+    createAndSaveRandomDecisionRequirements(rdbmsWriter);
+
+    final var searchResult =
+        decisionRequirementsReader.search(
+            DecisionRequirementsQuery.of(b -> b),
+            resourceAccessChecksFromResourceIds(decisionRequirements.decisionRequirementsId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance.decisionRequirementsKey())
+        .isEqualTo(decisionRequirements.decisionRequirementsKey());
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedTenantId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionRequirementsDbReader decisionRequirementsReader =
+        rdbmsService.getDecisionRequirementsReader();
+
+    final var decisionRequirements = DecisionRequirementsFixtures.createRandomized(b -> b);
+    createAndSaveDecisionRequirement(rdbmsWriter, decisionRequirements);
+    createAndSaveRandomDecisionRequirements(rdbmsWriter);
+
+    final var searchResult =
+        decisionRequirementsReader.search(
+            DecisionRequirementsQuery.of(b -> b),
+            resourceAccessChecksFromTenantIds(decisionRequirements.tenantId()));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance.decisionRequirementsKey())
+        .isEqualTo(decisionRequirements.decisionRequirementsKey());
   }
 
   @TestTemplate
