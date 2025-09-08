@@ -62,5 +62,6 @@ public class GatewayRestPropertiesOverride {
     apiExecutorConfiguration.setCorePoolSizeMultiplier(executor.getCorePoolSizeMultiplier());
     apiExecutorConfiguration.setMaxPoolSizeMultiplier(executor.getMaxPoolSizeMultiplier());
     apiExecutorConfiguration.setKeepAliveSeconds(executor.getKeepAlive().getSeconds());
+    apiExecutorConfiguration.setQueueCapacity(executor.getQueueCapacity());
   }
 }
