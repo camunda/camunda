@@ -16,7 +16,11 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record IncidentDbQuery(
-    IncidentFilter filter, DbQuerySorting<IncidentEntity> sort, DbQueryPage page) {
+    IncidentFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
+    DbQuerySorting<IncidentEntity> sort,
+    DbQueryPage page) {
 
   public static IncidentDbQuery of(
       final Function<IncidentDbQuery.Builder, ObjectBuilder<IncidentDbQuery>> fn) {
@@ -28,11 +32,23 @@ public record IncidentDbQuery(
     private static final IncidentFilter EMPTY_FILTER = FilterBuilders.incident().build();
 
     private IncidentFilter filter;
+    private List<String> authorizedResourceIds = List.of();
+    private List<String> authorizedTenantIds = List.of();
     private DbQuerySorting<IncidentEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final IncidentFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -63,7 +79,9 @@ public record IncidentDbQuery(
     public IncidentDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new IncidentDbQuery(filter, sort, page);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
+      return new IncidentDbQuery(filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }
