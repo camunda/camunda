@@ -106,6 +106,8 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
+        .setCommandRedistributionInterval(distribution.getRedistributionInterval())
+        .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth());
   }
 }
