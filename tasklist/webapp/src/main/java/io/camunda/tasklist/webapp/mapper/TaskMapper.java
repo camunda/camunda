@@ -94,15 +94,7 @@ public class TaskMapper {
     return new VariableSearchResponse()
         .setId(variableDTO.getId())
         .setName(variableDTO.getName())
-        .setValue(
-            variableDTO.getIsValueTruncated()
-                ? null
-                : variableDTO
-                    .getPreviewValue()) // Currently, for big variables, only truncated values are
-        // included in the Task Search response. So, we avoid
-        // retrieving the fullValue from the database and populate
-        // the output value with previewValue if it is not
-        // truncated.
+        .setValue(variableDTO.getValue())
         .setIsValueTruncated(variableDTO.getIsValueTruncated())
         .setPreviewValue(variableDTO.getPreviewValue());
   }
