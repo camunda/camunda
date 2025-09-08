@@ -1,0 +1,30 @@
+{
+  "generatedAt": "2025-09-08T04:28:13.967Z",
+  "counts": {
+    "missing-required": 74,
+    "missing-required-combo": 55,
+    "type-mismatch": 88,
+    "union": 2,
+    "constraint-violation": 33,
+    "enum-violation": 168,
+    "oneof-ambiguous": 2,
+    "oneof-none-match": 2,
+    "param-missing": 4,
+    "param-type-mismatch": 11,
+    "missing-body": 74,
+    "body-top-type-mismatch": 74,
+    "unique-items-violation": 12,
+    "additional-prop-general": 73,
+    "oneof-cross-bleed": 2
+  },
+  "specCommit": "177fb9193d6c4d0ab558734d76c501bbac1f2454",
+  "generationTimestamp": "2025-09-08T04:28:13.914Z",
+  "total": 674,
+  "options": {
+    "deep": true,
+    "maxMissing": null,
+    "maxTypeMismatch": null,
+    "onlyKinds": null,
+    "onlyOperations": null
+  }
+}
