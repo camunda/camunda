@@ -83,7 +83,7 @@ test.describe('variables page', () => {
       value: '"updatedValue"',
     });
     await taskDetailsPage.clickCompleteTaskButton();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
     await page.reload();
@@ -184,7 +184,7 @@ test.describe('variables page', () => {
     });
 
     await taskDetailsPage.completeTaskButton.click();
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
     await expect(taskDetailsPage.pickATaskHeader).toBeVisible();
 
     await page.reload();
