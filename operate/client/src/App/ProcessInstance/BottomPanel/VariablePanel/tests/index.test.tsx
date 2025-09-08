@@ -644,4 +644,33 @@ describe('VariablePanel', () => {
       ).toBeInTheDocument();
     },
   );
+
+  it('should display forbidden error message when variables access is forbidden', async () => {
+    mockFetchVariables().withSuccess([createVariable()]);
+    mockSearchVariables().withServerError(403);
+    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+
+    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
+      wrapper: getWrapper(),
+    });
+
+    expect(
+      await screen.findByText('Missing permissions to access Variables'),
+    ).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access variables',
+      ),
+    ).toBeInTheDocument();
+
+    expect(screen.queryByTestId('variables-list')).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', {name: /add variable/i}),
+    ).not.toBeInTheDocument();
+  });
 });
