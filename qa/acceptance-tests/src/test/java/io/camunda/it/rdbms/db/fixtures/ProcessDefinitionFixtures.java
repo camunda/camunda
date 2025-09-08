@@ -30,7 +30,7 @@ public final class ProcessDefinitionFixtures extends CommonFixtures {
             .resourceName("process_" + processDefinitionKey + ".bpmn")
             .version(version)
             .versionTag("Version " + version)
-            .tenantId("tenant-" + RANDOM.nextInt(1000));
+            .tenantId("tenant-" + processDefinitionKey);
 
     return builderFunction.apply(builder).build();
   }

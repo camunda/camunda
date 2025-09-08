@@ -24,12 +24,13 @@ public final class FormFixtures extends CommonFixtures {
 
   public static FormDbModel createRandomized(
       final Function<FormDbModelBuilder, FormDbModelBuilder> builderFunction) {
+    final Long formKey = nextKey();
     final var builder =
         new FormDbModelBuilder()
-            .formKey(nextKey())
-            .tenantId("tenant-" + RANDOM.nextInt(1000))
+            .formKey(formKey)
+            .tenantId("tenant-" + formKey)
             .formId(nextStringId())
-            .schema("schema-" + RANDOM.nextInt(1000))
+            .schema("schema-" + formKey)
             .version(RANDOM.nextLong(1000))
             .isDeleted(false);
 
