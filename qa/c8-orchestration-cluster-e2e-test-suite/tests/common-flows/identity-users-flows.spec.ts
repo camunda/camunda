@@ -14,7 +14,8 @@ import {createTestData, createComponentAuthorization} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {waitForItemInList} from 'utils/waitForItemInList';
-import {createInstances, deploy} from 'utils/zeebeClient'; // Add these imports
+import {createInstances, deploy} from 'utils/zeebeClient';
+import {sleep} from 'utils/sleep';
 
 test.describe('Identity User Flows', () => {
   // Add deployment setup before all tests
@@ -260,14 +261,13 @@ test.describe('Identity User Flows', () => {
       });
     });
 
-    await test.step('Create test group with process permissions', async () => {
+    await test.step('Create test group', async () => {
       await identityGroupsPage.navigateToGroups();
       await identityGroupsPage.createGroup(
         TEST_GROUP.groupId,
         TEST_GROUP.name,
         TEST_GROUP.description,
       );
-
       const item = identityGroupsPage.groupCell(TEST_GROUP.groupId);
       await waitForItemInList(page, item, {
         clickNext: true,
@@ -284,11 +284,13 @@ test.describe('Identity User Flows', () => {
     await test.step('Create authorization for the test group', async () => {
       await identityHeader.navigateToAuthorizations();
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
-      const COMPONENT_AUTH = createComponentAuthorization(
-        {name: TEST_GROUP.name},
-        'Group',
-      );
-      await identityAuthorizationsPage.createAuthorization(COMPONENT_AUTH);
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'Group',
+        ownerId: TEST_GROUP.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
     });
 
     await test.step('Assign test user to group', async () => {
