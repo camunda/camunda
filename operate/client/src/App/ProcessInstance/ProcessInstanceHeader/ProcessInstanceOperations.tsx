@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
@@ -26,6 +26,9 @@ import {getStateLocally} from 'modules/utils/localStorage';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
+import {useOperations} from 'modules/queries/operations/useOperations';
+import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import {IS_INCIDENT_RESOLUTION_V2} from 'modules/feature-flags';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -40,6 +43,23 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   ] = useState(false);
 
   const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const [isV1ResolveIncidentPending, setIsV1ResolveIncidentPending] =
+    useState<boolean>(false);
+
+  const {data: operationsData} = useOperations();
+
+  useEffect(() => {
+    if (
+      !IS_INCIDENT_RESOLUTION_V2 &&
+      !operationsData?.some(
+        (operation) =>
+          operation.type === 'RESOLVE_INCIDENT' &&
+          ACTIVE_OPERATION_STATES.includes(operation.state),
+      )
+    ) {
+      setIsV1ResolveIncidentPending(false);
+    }
+  }, [operationsData]);
 
   const {
     mutate: cancelProcessInstance,
@@ -167,11 +187,22 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     processInstance.hasIncident &&
     !isModificationModeEnabled
   ) {
-    operations.push({
-      type: 'RESOLVE_INCIDENT',
-      onExecute: resolveIncident,
-      disabled: isResolveIncidentPending,
-    });
+    if (IS_INCIDENT_RESOLUTION_V2) {
+      operations.push({
+        type: 'RESOLVE_INCIDENT',
+        onExecute: resolveIncident,
+        disabled: isResolveIncidentPending,
+      });
+    } else {
+      operations.push({
+        type: 'RESOLVE_INCIDENT',
+        onExecute: () => {
+          setIsV1ResolveIncidentPending(true);
+          applyOperation('RESOLVE_INCIDENT');
+        },
+        disabled: isV1ResolveIncidentPending,
+      });
+    }
   }
 
   if (isInstanceActive && !isModificationModeEnabled) {
@@ -202,7 +233,8 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       processInstance.processInstanceKey,
     ) ||
     isCancelProcessInstancePending ||
-    isResolveIncidentPending;
+    isResolveIncidentPending ||
+    isV1ResolveIncidentPending;
 
   return (
     <>
