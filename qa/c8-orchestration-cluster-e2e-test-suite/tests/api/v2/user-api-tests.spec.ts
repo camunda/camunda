@@ -30,7 +30,7 @@ import {
   CREATE_NEW_USER,
   UPDATE_USER,
   userRequiredFields,
-} from 'utils/beans/requestBeans';
+} from '../../../utils/beans/requestBeans';
 
 test.describe.parallel('Users API Tests', () => {
   const state: Record<string, unknown> = {};
