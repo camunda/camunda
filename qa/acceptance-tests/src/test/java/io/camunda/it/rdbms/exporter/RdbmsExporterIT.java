@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.MappingRuleRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
+import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
 import io.camunda.zeebe.protocol.record.value.TenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserRecordValue;
@@ -610,6 +611,30 @@ class RdbmsExporterIT {
     final var messageSubscription =
         rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isNotEmpty();
+  }
+
+  @Test
+  public void shouldExportCorrelatedMessage() {
+    // given
+    final Record<ProcessMessageSubscriptionRecordValue> correlatedMessageRecord =
+        ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    // when
+    exporter.export(correlatedMessageRecord);
+
+    // then
+    final var correlatedMessage =
+        rdbmsService
+            .getCorrelatedMessageReader()
+            .findOne(
+                correlatedMessageRecord.getValue().getMessageKey(),
+                correlatedMessageRecord.getKey());
+    assertThat(correlatedMessage).isNotEmpty();
   }
 
   @Test

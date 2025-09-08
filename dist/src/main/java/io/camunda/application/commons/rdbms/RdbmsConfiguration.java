@@ -67,7 +67,6 @@ import io.camunda.db.rdbms.sql.UserTaskMapper;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
-import io.camunda.search.clients.reader.CorrelatedMessageReader;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.context.annotation.Bean;
@@ -236,7 +235,7 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public CorrelatedMessageReader correlatedMessageReader(
+  public CorrelatedMessageDbReader correlatedMessageReader(
       final CorrelatedMessageMapper correlatedMessageMapper) {
     return new CorrelatedMessageDbReader(correlatedMessageMapper);
   }
