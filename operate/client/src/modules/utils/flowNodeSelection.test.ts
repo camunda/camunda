@@ -9,11 +9,14 @@
 import {
   getSelectedFlowNodeName,
   getSelectedRunningInstanceCount,
+  selectAdHocSubProcessInnerInstance,
 } from './flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {createInstance} from 'modules/testUtils';
+import {vi} from 'vitest';
 
 describe('getSelectedRunningInstanceCount', () => {
   beforeEach(() => {
@@ -112,5 +115,132 @@ describe('getSelectedRunningInstanceCount', () => {
     });
 
     expect(result).toBe('Start Event');
+  });
+});
+
+describe('selectAdHocSubProcessInnerInstance', () => {
+  beforeEach(() => {
+    flowNodeSelectionStore.reset();
+    flowNodeInstanceStore.reset();
+  });
+
+  const createMockFlowNodeInstance = (overrides = {}) => ({
+    id: 'mock-id',
+    type: 'SERVICE_TASK' as const,
+    state: 'ACTIVE' as const,
+    flowNodeId: 'mock-flow-node',
+    startDate: '2020-08-18T12:07:33.953+0000',
+    endDate: null,
+    treePath: 'mock/path',
+    sortValues: ['1606300828415', 'mock-id'] as [string, string],
+    ...overrides,
+  });
+
+  it('should select the first child when children are already loaded', () => {
+    const mockRootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const mockInnerInstance = createMockFlowNodeInstance({
+      id: 'inner-1',
+      flowNodeId: 'adhoc-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    const mockChild = createMockFlowNodeInstance({
+      id: 'child-1',
+      flowNodeId: 'task-1',
+      type: 'SERVICE_TASK',
+    });
+
+    // Mock that children are already loaded
+    const getVisibleChildNodesSpy = vi
+      .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
+      .mockReturnValue([mockChild]);
+
+    selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
+
+    expect(getVisibleChildNodesSpy).toHaveBeenCalledWith(mockInnerInstance);
+    expect(flowNodeSelectionStore.state.selection).toEqual({
+      flowNodeId: 'task-1',
+      flowNodeInstanceId: 'child-1',
+    });
+
+    getVisibleChildNodesSpy.mockRestore();
+  });
+
+  it('should handle case when there are no children available', () => {
+    const mockRootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const mockInnerInstance = createMockFlowNodeInstance({
+      id: 'inner-1',
+      flowNodeId: 'adhoc-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    // Mock that no children are loaded initially
+    const getVisibleChildNodesSpy = vi
+      .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
+      .mockReturnValue([]);
+
+    selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
+
+    expect(getVisibleChildNodesSpy).toHaveBeenCalledWith(mockInnerInstance);
+    expect(flowNodeSelectionStore.state.selection).toBeNull();
+
+    getVisibleChildNodesSpy.mockRestore();
+  });
+
+  it('should wait for lazy-loaded children and select first child when available', () => {
+    const mockRootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const mockInnerInstance = createMockFlowNodeInstance({
+      id: 'inner-1',
+      flowNodeId: 'adhoc-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    const getVisibleChildNodesSpy = vi
+      .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
+      .mockReturnValue([]); // Always return empty for this test
+
+    selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
+
+    expect(flowNodeSelectionStore.state.selection).toBeNull();
+    expect(getVisibleChildNodesSpy).toHaveBeenCalledWith(mockInnerInstance);
+
+    getVisibleChildNodesSpy.mockRestore();
+  });
+
+  it('should handle multiple children and select only the first one', () => {
+    const mockRootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
+    const mockInnerInstance = createMockFlowNodeInstance({
+      id: 'inner-1',
+      flowNodeId: 'adhoc-subprocess',
+      type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+    });
+
+    const mockFirstChild = createMockFlowNodeInstance({
+      id: 'child-1',
+      flowNodeId: 'task-1',
+      type: 'SERVICE_TASK',
+    });
+
+    const mockSecondChild = createMockFlowNodeInstance({
+      id: 'child-2',
+      flowNodeId: 'task-2',
+      type: 'USER_TASK',
+    });
+
+    // Mock multiple children
+    const getVisibleChildNodesSpy = vi
+      .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
+      .mockReturnValue([mockFirstChild, mockSecondChild]);
+
+    selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
+
+    expect(getVisibleChildNodesSpy).toHaveBeenCalledWith(mockInnerInstance);
+    // Should select first child, not second
+    expect(flowNodeSelectionStore.state.selection).toEqual({
+      flowNodeId: 'task-1',
+      flowNodeInstanceId: 'child-1',
+    });
+
+    getVisibleChildNodesSpy.mockRestore();
   });
 });
