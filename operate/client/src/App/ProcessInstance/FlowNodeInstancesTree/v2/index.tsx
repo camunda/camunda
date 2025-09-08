@@ -37,7 +37,10 @@ import {
   fetchSubTree,
 } from 'modules/utils/flowNodeInstance';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {
+  selectFlowNode,
+  selectAdHocSubProcessInnerInstance,
+} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -150,7 +153,8 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       : processInstanceXmlData?.businessObjects[flowNodeInstance.flowNodeId];
 
     const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
-    const isAdHocSubProcessInnerInstance = flowNodeInstance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
+    const isAdHocSubProcessInnerInstance =
+      flowNodeInstance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
 
     const isFoldable =
       isMultiInstanceBody ||
@@ -241,11 +245,13 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
         value={flowNodeInstance.id}
         aria-label={nodeName}
         renderIcon={() => {
-          return <FlowNodeIcon
-            flowNodeInstanceType={flowNodeInstance.type}
-            diagramBusinessObject={businessObject}
-            hasLeftMargin={!hasChildren}
-          />;
+          return (
+            <FlowNodeIcon
+              flowNodeInstanceType={flowNodeInstance.type}
+              diagramBusinessObject={businessObject}
+              hasLeftMargin={!hasChildren}
+            />
+          );
         }}
         onSelect={() => {
           if (
@@ -259,14 +265,21 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             );
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
-            selectFlowNode(rootNode, {
-              flowNodeId: isProcessInstance
-                ? undefined
-                : flowNodeInstance.flowNodeId,
-              flowNodeInstanceId: flowNodeInstance.id,
-              isMultiInstance: isMultiInstanceBody,
-              isPlaceholder: flowNodeInstance.isPlaceholder,
-            });
+            if (isAdHocSubProcessInnerInstance) {
+              if (!isExpanded) {
+                expandSubtree(flowNodeInstance);
+              }
+              selectAdHocSubProcessInnerInstance(rootNode, flowNodeInstance);
+            } else {
+              selectFlowNode(rootNode, {
+                flowNodeId: isProcessInstance
+                  ? undefined
+                  : flowNodeInstance.flowNodeId,
+                flowNodeInstanceId: flowNodeInstance.id,
+                isMultiInstance: isMultiInstanceBody,
+                isPlaceholder: flowNodeInstance.isPlaceholder,
+              });
+            }
           }
         }}
         onToggle={

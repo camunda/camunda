@@ -15,6 +15,10 @@ import {
 } from 'modules/stores/flowNodeSelection';
 import {reaction, when} from 'mobx';
 import {modificationsStore} from 'modules/stores/modifications';
+import {
+  flowNodeInstanceStore,
+  type FlowNodeInstance,
+} from 'modules/stores/flowNodeInstance';
 
 const init = (
   rootNode: Selection | null,
@@ -92,6 +96,40 @@ const selectFlowNode = (rootNode: Selection, selection: Selection) => {
   }
 };
 
+const selectAdHocSubProcessInnerInstance = (
+  rootNode: Selection,
+  flowNodeInstance: FlowNodeInstance,
+) => {
+  const children = flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
+
+  if (children.length > 0) {
+    const firstChild = children[0];
+    if (firstChild !== undefined) {
+      selectFlowNode(rootNode, {
+        flowNodeId: firstChild.flowNodeId,
+        flowNodeInstanceId: firstChild.id,
+      });
+    }
+  } else {
+    const disposer = when(
+      () =>
+        flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance).length > 0,
+      () => {
+        const children =
+          flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
+        const firstChild = children[0];
+        if (firstChild !== undefined) {
+          selectFlowNode(rootNode, {
+            flowNodeId: firstChild.flowNodeId,
+            flowNodeInstanceId: firstChild.id,
+          });
+        }
+        disposer();
+      },
+    );
+  }
+};
+
 const getSelectedRunningInstanceCount = ({
   totalRunningInstancesForFlowNode,
   isRootNodeSelected,
@@ -154,6 +192,7 @@ export {
   init,
   clearSelection,
   selectFlowNode,
+  selectAdHocSubProcessInnerInstance,
   getSelectedRunningInstanceCount,
   getSelectedFlowNodeName,
 };

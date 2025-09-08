@@ -94,8 +94,11 @@ import FlowNodeEventCompensationBoundary from 'modules/components/Icon/flow-node
 
 const getSVGComponent = (
   businessObject: BusinessObject | undefined,
-  flowNodeInstanceType: String,
+  flowNodeInstanceType: string,
 ) => {
+  if (businessObject === undefined) {
+    return FlowNodeTask;
+  }
   if (flowNodeInstanceType === 'MULTI_INSTANCE_BODY') {
     switch (getMultiInstanceType(businessObject)) {
       case 'parallel':
