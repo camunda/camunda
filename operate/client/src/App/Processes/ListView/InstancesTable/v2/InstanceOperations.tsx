@@ -16,6 +16,7 @@ import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/proce
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
 import {logger} from 'modules/logger';
+import {IS_INCIDENT_RESOLUTION_V2} from 'modules/feature-flags';
 
 type Props = {
   processInstanceKey: string;
@@ -120,19 +121,29 @@ const InstanceOperations: React.FC<Props> = ({
   const operations: OperationConfig[] = [];
 
   if (isInstanceActive && hasIncident) {
-    operations.push({
-      type: 'RESOLVE_INCIDENT',
-      onExecute: () => {
-        processInstancesStore.markProcessInstancesWithActiveOperations({
-          ids: [processInstanceKey],
-          operationType: 'RESOLVE_INCIDENT',
-        });
-        resolveIncident();
-      },
-      disabled:
-        isResolveIncidentPending ||
-        activeOperations.includes('RESOLVE_INCIDENT'),
-    });
+    if (IS_INCIDENT_RESOLUTION_V2) {
+      operations.push({
+        type: 'RESOLVE_INCIDENT',
+        onExecute: () => {
+          processInstancesStore.markProcessInstancesWithActiveOperations({
+            ids: [processInstanceKey],
+            operationType: 'RESOLVE_INCIDENT',
+          });
+          resolveIncident();
+        },
+        disabled:
+          isResolveIncidentPending ||
+          activeOperations.includes('RESOLVE_INCIDENT'),
+      });
+    } else {
+      operations.push({
+        type: 'RESOLVE_INCIDENT',
+        onExecute: () => {
+          applyOperation('RESOLVE_INCIDENT');
+        },
+        disabled: activeOperations.includes('RESOLVE_INCIDENT'),
+      });
+    }
   }
 
   if (isInstanceActive) {
