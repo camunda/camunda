@@ -58,6 +58,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -95,6 +96,7 @@ import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequest
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest.Builder;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
@@ -837,6 +839,12 @@ public class WebSecurityConfig {
 
         if (additionalParameters != null && !additionalParameters.isEmpty()) {
           customizer.additionalParameters(additionalParameters);
+        }
+        final List<String> resource =
+            securityConfiguration.getAuthentication().getOidc().getResource();
+        if (resource != null && !resource.isEmpty()) {
+          // add `resource` parameter to authorization request
+          customizer.additionalParameters(Map.of(OAuth2ParameterNames.RESOURCE, resource));
         }
       };
     }
