@@ -128,7 +128,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   @Override
   public SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessages(
       final CorrelatedMessageQuery query) {
-    throw new RuntimeException("Not implemented yet");
+    return doSearchWithReader(readers.correlatedMessageReader(), query);
   }
 
   @Override

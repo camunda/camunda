@@ -11,6 +11,7 @@ public record SearchClientReaders(
     AuthorizationReader authorizationReader,
     BatchOperationReader batchOperationReader,
     BatchOperationItemReader batchOperationItemReader,
+    CorrelatedMessageReader correlatedMessageReader,
     DecisionDefinitionReader decisionDefinitionReader,
     DecisionInstanceReader decisionInstanceReader,
     DecisionRequirementsReader decisionRequirementsReader,
