@@ -77,7 +77,7 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
       // get() can be used safely here as isVariable() verifies that an annotation is present
       final VariableValue variableValue = getVariableValue(parameterInfo).get();
       final String variableName = variableValue.getName();
-      final boolean optional = variableValue.isOptional();
+      final boolean optional = !variableValue.isRequired();
       return new VariableParameterResolver(variableName, parameterType, jsonMapper, optional);
     } else if (isVariablesAsType(parameterInfo)) {
       return new VariablesAsTypeParameterResolver(parameterType);
@@ -86,7 +86,7 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
     } else if (isDocument(parameterInfo)) {
       final DocumentValue documentValue = getDocumentValue(parameterInfo).get();
       final String variableName = documentValue.getName();
-      final boolean optional = documentValue.isOptional();
+      final boolean optional = !documentValue.isRequired();
       final ParameterType documentParameterType = documentValue.getParameterType();
       return new DocumentParameterResolver(
           variableName, optional, documentParameterType, camundaClient);
