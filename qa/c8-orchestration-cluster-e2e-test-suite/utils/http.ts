@@ -15,14 +15,18 @@ export type Credentials = {
 
 export const credentials: Credentials = {
   baseUrl: 'http://localhost:8080',
-  accessToken: Buffer.from(`demo:demo`).toString('base64'),
+  accessToken: encode(`demo:demo`),
 };
+
+export function encode(auth: string) {
+  return Buffer.from(auth).toString('base64');
+}
 
 export const paginatedResponseFields: string[] = ['items', 'page'];
 
 export function authHeaders(token?: string): Record<string, string> {
   const h: Record<string, string> = {};
-  if (token) h.Authorization = `Basic ${credentials.accessToken}`;
+  if (token) h.Authorization = `Basic ${token}`;
   return h;
 }
 
@@ -174,10 +178,12 @@ export function assertEqualsForKeys(
   }
 }
 
-export function jsonHeaders(): Record<string, string> {
+export function jsonHeaders(
+  auth: string = credentials.accessToken,
+): Record<string, string> {
   return {
     'Content-Type': 'application/json',
-    ...authHeaders(credentials.accessToken),
+    ...authHeaders(auth),
   };
 }
 

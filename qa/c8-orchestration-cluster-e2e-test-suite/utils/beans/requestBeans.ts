@@ -35,7 +35,19 @@ export const mappingRuleRequiredFields: string[] = [
   'mappingRuleId',
 ];
 export const roleRequiredFields: string[] = ['roleId', 'name', 'description'];
+export const authorizedComponentRequiredFields: string[] = ['authorizationKey'];
 export const userRequiredFields: string[] = ['username', 'name', 'email'];
+export const authenticationRequiredFields: string[] = [
+  'username',
+  'displayName',
+  'email',
+  'authorizedComponents',
+  'tenants',
+  'groups',
+  'roles',
+  'c8Links',
+  'canLogout',
+];
 export const licenseRequiredFields: string[] = [
   'validLicense',
   'licenseType',
@@ -159,6 +171,18 @@ export function UPDATE_TENANT() {
   return {
     name: `tenant-updated-${uid}`,
     description: `Updated description-${uid}`,
+  };
+}
+
+export function TENANT_EXPECTED_BODY(
+  name: string,
+  tenantId: string,
+  description: string,
+) {
+  return {
+    name: name,
+    tenantId: tenantId,
+    description: description,
   };
 }
 
@@ -328,6 +352,48 @@ export function CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
 export function GROUPS_EXPECTED_BODY(groupId: string) {
   return {
     groupId: groupId,
+  };
+}
+
+export function CREATE_COMPONENT_AUTHORIZATION(
+  ownerType: 'ROLE' | 'USER' | 'GROUP',
+  ownerId: string,
+) {
+  return {
+    ownerType: ownerType,
+    ownerId: ownerId,
+    resourceType: 'COMPONENT',
+    resourceId: '*',
+    permissionTypes: ['ACCESS'],
+  };
+}
+
+export function GET_CURRENT_USER_EXPECTED_BODY(
+  username: string,
+  name: string,
+  email: string,
+  assignedResources: {
+    authorizedComponents?: string[];
+    tenants?: {name: string; tenantId: string; description: string}[];
+    groups?: string[];
+    roles?: string[];
+  } = {
+    authorizedComponents: [],
+    tenants: [],
+    groups: [],
+    roles: [],
+  },
+) {
+  return {
+    username: username,
+    displayName: name,
+    email: email,
+    authorizedComponents: assignedResources.authorizedComponents ?? [],
+    tenants: assignedResources.tenants ?? [],
+    groups: assignedResources.groups ?? [],
+    roles: assignedResources.roles ?? [],
+    c8Links: {},
+    canLogout: true,
   };
 }
 

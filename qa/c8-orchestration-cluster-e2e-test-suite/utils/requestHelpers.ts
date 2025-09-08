@@ -12,6 +12,7 @@ import {
   CREATE_NEW_ROLE,
   CREATE_NEW_TENANT,
   CREATE_NEW_USER,
+  authorizedComponentRequiredFields,
   groupRequiredFields,
   roleRequiredFields,
   tenantRequiredFields,
@@ -400,6 +401,20 @@ export async function createRole(
   return body;
 }
 
+export async function createComponentAuthorization(
+  request: APIRequestContext,
+  body: Serializable,
+) {
+  const res = await request.post(buildUrl('/authorizations'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+
+  expect(res.status()).toBe(201);
+  const json = await res.json();
+  assertRequiredFields(json, authorizedComponentRequiredFields);
+}
+
 export async function createUser(
   request: APIRequestContext,
   state?: Record<string, unknown>,
@@ -419,6 +434,7 @@ export async function createUser(
     state[`username${key}`] = json.username;
     state[`name${key}`] = json.name;
     state[`email${key}`] = json.email;
+    state[`password${key}`] = body.password;
   }
   return body;
 }

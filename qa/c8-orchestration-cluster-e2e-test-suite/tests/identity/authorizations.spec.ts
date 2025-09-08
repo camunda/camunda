@@ -115,14 +115,18 @@ test.describe.serial('component authorizations CRUD', () => {
     identityAuthorizationsPage,
     identityHeader,
     loginPage,
+    page,
   }) => {
     await identityAuthorizationsPage.createAuthorization(
       NEW_COMPONENT_AUTHORIZATION,
     );
     await identityHeader.logout();
     await loginPage.login(NEW_USER.username, NEW_USER.password);
-    await expect(identityUsersPage.userCell(NEW_USER.email)).toBeVisible();
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
+    await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
+      clickNext: true,
+      timeout: 60000,
+    });
   });
 
   test('delete component authorization for role', async ({
