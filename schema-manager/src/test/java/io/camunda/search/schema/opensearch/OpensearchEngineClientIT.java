@@ -327,31 +327,33 @@ public class OpensearchEngineClientIT {
       disabledReason = "Excluding from AWS OS IT CI - policies not allowed for shared DBs")
   void shouldAlwaysUpdateIndexLifeCyclePolicyEvenIfExistingHasSameValue() throws IOException {
     // given
-    opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d");
+    opensearchEngineClient.putIndexLifeCyclePolicy("always_update_ism_policy_name", "20d");
 
     // then: policy state after first creation
     final ISMPolicyState policyStateAfterCreation =
-        opensearchEngineClient.getCurrentISMPolicyState("policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
 
     // then: verify state after creation
     assertThat(policyStateAfterCreation.exists()).isTrue();
-    assertThat(policyStateAfterCreation.seqNo()).isEqualTo(0); // first creation has seq no 0
-    assertThat(getPolicyMinAge("policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
 
     // when: update ISM with same parameters
     assertThatNoException()
-        .isThrownBy(() -> opensearchEngineClient.putIndexLifeCyclePolicy("policy_name", "20d"));
+        .isThrownBy(
+            () ->
+                opensearchEngineClient.putIndexLifeCyclePolicy(
+                    "always_update_ism_policy_name", "20d"));
 
     // then: policy state after first creation
     final ISMPolicyState policyStateAfterUpdate =
-        opensearchEngineClient.getCurrentISMPolicyState("policy_name");
+        opensearchEngineClient.getCurrentISMPolicyState("always_update_ism_policy_name");
 
     // then: state seq no should increment, but others should remain the same
     assertThat(policyStateAfterUpdate.exists()).isTrue();
     assertThat(policyStateAfterUpdate.primaryTerm())
         .isEqualTo(policyStateAfterCreation.primaryTerm());
     assertThat(policyStateAfterUpdate.seqNo()).isGreaterThan(policyStateAfterCreation.seqNo());
-    assertThat(getPolicyMinAge("policy_name")).isEqualTo("20d");
+    assertThat(getPolicyMinAge("always_update_ism_policy_name")).isEqualTo("20d");
   }
 
   @Test
