@@ -11,6 +11,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
@@ -95,8 +96,14 @@ public class CommandRedistributorTest {
   }
 
   private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+    final var config =
+        new EngineConfiguration()
+            .setCommandDistributionPaused(commandDistributionPaused)
+            .setCommandRedistributionInterval(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL)
+            .setCommandRedistributionMaxBackoff(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION);
+
     return new CommandRedistributor(
-        processingState.getDistributionState(), mockCommandSender, commandDistributionPaused);
+        processingState.getDistributionState(), mockCommandSender, config);
   }
 
   @Nested
