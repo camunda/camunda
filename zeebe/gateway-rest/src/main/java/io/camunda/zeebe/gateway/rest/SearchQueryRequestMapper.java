@@ -2048,7 +2048,8 @@ public final class SearchQueryRequestMapper {
           .map(mapToOperations(String.class))
           .ifPresent(builder::messageNameOperations);
       ofNullable(filter.getPartitionId())
-          .ifPresent(builder::partitionId);
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::partitionIdOperations);
       ofNullable(filter.getProcessDefinitionId())
           .map(mapToOperations(String.class))
           .ifPresent(builder::processDefinitionIdOperations);

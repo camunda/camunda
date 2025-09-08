@@ -7435,8 +7435,8 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
         partitionId:
           description: The partition ID where the message was processed.
-          type: integer
-          format: int32
+          allOf:
+            - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionId:
           description: The process definition ID associated with this correlated message.
           allOf:

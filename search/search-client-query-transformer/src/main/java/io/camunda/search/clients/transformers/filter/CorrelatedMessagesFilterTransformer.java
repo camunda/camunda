@@ -9,10 +9,10 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
+import static io.camunda.search.clients.query.SearchQueryBuilders.intOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.longOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
-import static io.camunda.search.clients.query.SearchQueryBuilders.term;
 import static io.camunda.webapps.schema.descriptors.ProcessInstanceDependant.PROCESS_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.BPMN_PROCESS_ID;
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate.CORRELATION_KEY;
@@ -49,9 +49,7 @@ public class CorrelatedMessagesFilterTransformer
     queries.addAll(longOperations(FLOW_NODE_INSTANCE_KEY, filter.elementInstanceKeyOperations()));
     queries.addAll(longOperations(MESSAGE_KEY, filter.messageKeyOperations()));
     queries.addAll(stringOperations(MESSAGE_NAME, filter.messageNameOperations()));
-    if (filter.partitionId() != null) {
-      queries.add(term(PARTITION_ID, filter.partitionId()));
-    }
+    queries.addAll(intOperations(PARTITION_ID, filter.partitionIdOperations()));
     queries.addAll(stringOperations(BPMN_PROCESS_ID, filter.processDefinitionIdOperations()));
     queries.addAll(longOperations(PROCESS_DEFINITION_KEY, filter.processDefinitionKeyOperations()));
     queries.addAll(longOperations(PROCESS_INSTANCE_KEY, filter.processInstanceKeyOperations()));
