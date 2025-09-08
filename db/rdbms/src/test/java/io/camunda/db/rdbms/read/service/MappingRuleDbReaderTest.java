@@ -10,8 +10,8 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.db.rdbms.sql.RoleMapper;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.db.rdbms.sql.MappingRuleMapper;
+import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
@@ -19,29 +19,30 @@ import io.camunda.security.reader.TenantCheck;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
-class RoleDbReaderTest {
-  private final RoleMapper roleMapper = mock(RoleMapper.class);
-  private final RoleDbReader roleDbReader = new RoleDbReader(roleMapper);
+class MappingRuleDbReaderTest {
+  private final MappingRuleMapper mappingRuleMapper = mock(MappingRuleMapper.class);
+  private final MappingRuleDbReader mappingRuleDbReader =
+      new MappingRuleDbReader(mappingRuleMapper);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final MappingRuleQuery query = MappingRuleQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(Authorization.of(a -> a.role().read())),
+            AuthorizationCheck.enabled(Authorization.of(a -> a.mappingRule().read())),
             TenantCheck.disabled());
 
-    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    final var items = mappingRuleDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedTenantIdsIsNull() {
-    final RoleQuery query = RoleQuery.of(b -> b);
+    final MappingRuleQuery query = MappingRuleQuery.of(b -> b);
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
-    final var items = roleDbReader.search(query, resourceAccessChecks).items();
+    final var items = mappingRuleDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 }

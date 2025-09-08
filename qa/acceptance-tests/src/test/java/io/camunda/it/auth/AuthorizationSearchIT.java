@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class AuthorizationSearchIT {
 
@@ -97,7 +96,7 @@ class AuthorizationSearchIT {
   }
 
   @Test
-  void getAuthorizationByAuthorizationKeyShouldReturnNotFoundIfAuthorized(
+  void getAuthorizationByAuthorizationKeyShouldReturnNotFoundIfNotAuthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(() -> camundaClient.newAuthorizationGetRequest(100L).send().join())
         .isInstanceOf(ProblemException.class)
@@ -164,13 +163,15 @@ class AuthorizationSearchIT {
                 assertThat(
                         adminClient
                             .newAuthorizationSearchRequest()
-                            .filter(f -> f.ownerId(ADMIN))
-                            .filter(f -> f.resourceType(PROCESS_DEFINITION))
-                            .filter(f -> f.resourceIds(List.of(resourceId)))
+                            .filter(
+                                f ->
+                                    f.ownerId(ADMIN)
+                                        .resourceType(PROCESS_DEFINITION)
+                                        .resourceIds(List.of(resourceId)))
                             .send()
                             .join()
                             .items())
-                    .isEmpty());
+                    .hasSize(1));
   }
 
   @Test

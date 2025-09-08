@@ -15,6 +15,7 @@ import io.camunda.search.entities.UserEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +40,18 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
   public SearchQueryResult<UserEntity> search(
       final UserQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort = convertSort(query.sort(), UserSearchColumn.USER_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         UserDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for users with filter {}", dbQuery);
     final var totalHits = userMapper.count(dbQuery);
@@ -61,5 +71,17 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
   public SearchQueryResult<UserEntity> search(final UserQuery query) {
     return search(query, ResourceAccessChecks.disabled());
+  }
+
+  /**
+   * Checks if the search result should be empty based on resource and tenant authorization.
+   * Returns {@code true} if authorization is enabled but no authorized resource IDs are present.
+   *
+   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
+   * @return {@code true} if the search result should be empty, {@code false
+   */
+  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
+    return (resourceAccessChecks.authorizationCheck().enabled()
+        && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

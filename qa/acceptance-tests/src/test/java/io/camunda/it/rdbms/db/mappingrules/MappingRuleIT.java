@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.MappingRuleDbModel;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.MappingRuleFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -123,6 +124,35 @@ public class MappingRuleIT {
                         .build(),
                     MappingRuleSort.of(b -> b),
                     SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    // Verify the search result
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    final var instance = searchResult.items().getFirst();
+    assertThat(instance).isNotNull();
+    assertThat(instance).usingRecursiveComparison().isEqualTo(randomizedMappingRule);
+  }
+
+  @TestTemplate
+  public void shouldFindMappingRuleByAuthorizationResourceId(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+
+    // Create and save a mapping rule
+    final MappingRuleDbModel randomizedMappingRule = MappingRuleFixtures.createRandomized();
+    createAndSaveMappingRule(rdbmsWriter, randomizedMappingRule);
+    createAndSaveRandomMappingRules(rdbmsWriter, b -> b);
+
+    // Search for the mapping rule by claimValue
+    final var searchResult =
+        rdbmsService
+            .getMappingRuleReader()
+            .search(
+                MappingRuleQuery.of(b -> b),
+                CommonFixtures.resourceAccessChecksFromResourceIds(
+                    randomizedMappingRule.mappingRuleId()));
 
     // Verify the search result
     assertThat(searchResult).isNotNull();

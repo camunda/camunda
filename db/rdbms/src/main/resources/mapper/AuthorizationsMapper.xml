@@ -39,14 +39,6 @@
     RESOURCE_ID
     FROM ${prefix}AUTHORIZATIONS
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
-    <!--
-    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-      AND RESOURCE_ID IN
-      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
-        close=")">
-        #{resourceId}
-      </foreach>
-    </if> -->
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <!-- inner orderBy for keyset pagination -->
@@ -60,39 +52,51 @@
   </select>
 
   <sql id="searchFilter">
-    WHERE 1 = 1
-    <if test="filter.authorizationKey != null">AND AUTHORIZATION_KEY = #{filter.authorizationKey}</if>
-    <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
-    <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
-    <if test="filter.resourceMatcher != null">AND RESOURCE_MATCHER = #{filter.resourceMatcher}</if>
-    <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND RESOURCE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="filter.authorizationKey != null">AND AUTHORIZATION_KEY =
+        #{filter.authorizationKey}
+      </if>
+      <if test="filter.ownerType != null">AND OWNER_TYPE = #{filter.ownerType}</if>
+      <if test="filter.resourceType != null">AND RESOURCE_TYPE = #{filter.resourceType}</if>
+      <if test="filter.resourceMatcher != null">AND RESOURCE_MATCHER = #{filter.resourceMatcher}
+      </if>
+      <if test="filter.permissionTypes != null and !filter.permissionTypes.isEmpty()">
         AND PERMISSION_TYPE IN
-      <foreach collection="filter.permissionTypes" item="value" open="(" separator=", "
-        close=")">#{value}
-      </foreach>
-    </if>
-    <if test="filter.ownerIds != null and !filter.ownerIds.isEmpty()">
-      AND OWNER_ID IN
-      <foreach collection="filter.ownerIds" item="value" open="(" separator=", "
-        close=")">#{value}
-      </foreach>
-    </if>
-    <if test="filter.ownerTypeToOwnerIds != null and !filter.ownerTypeToOwnerIds.isEmpty()">
-      <foreach collection="filter.ownerTypeToOwnerIds" index="ownerType" item="values" open="AND (" separator=" OR " close=")">
-        <if test="values != null and !values.isEmpty()">
-          OWNER_TYPE = #{ownerType} AND OWNER_ID IN
-          <foreach collection="values" item="value" open="(" separator=" , " close=")">
-            #{value}
-          </foreach>
-        </if>
-      </foreach>
-    </if>
-    <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
-      AND RESOURCE_ID IN
-      <foreach collection="filter.resourceIds" item="value" open="(" separator=", "
-        close=")">#{value}
-      </foreach>
-    </if>
+        <foreach collection="filter.permissionTypes" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+      <if test="filter.ownerIds != null and !filter.ownerIds.isEmpty()">
+        AND OWNER_ID IN
+        <foreach collection="filter.ownerIds" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+      <if test="filter.ownerTypeToOwnerIds != null and !filter.ownerTypeToOwnerIds.isEmpty()">
+        <foreach collection="filter.ownerTypeToOwnerIds" index="ownerType" item="values"
+          open="AND (" separator=" OR " close=")">
+          <if test="values != null and !values.isEmpty()">
+            OWNER_TYPE = #{ownerType} AND OWNER_ID IN
+            <foreach collection="values" item="value" open="(" separator=" , " close=")">
+              #{value}
+            </foreach>
+          </if>
+        </foreach>
+      </if>
+      <if test="filter.resourceIds != null and !filter.resourceIds.isEmpty()">
+        AND RESOURCE_ID IN
+        <foreach collection="filter.resourceIds" item="value" open="(" separator=", "
+          close=")">#{value}
+        </foreach>
+      </if>
+    </where>
   </sql>
 
   <resultMap id="authorizationResultMap"
