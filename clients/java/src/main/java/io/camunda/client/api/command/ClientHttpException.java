@@ -27,13 +27,13 @@ public class ClientHttpException extends ClientException {
   }
 
   public ClientHttpException(final String message, final int code, final String reason) {
-    super(message);
+    super(String.format("Failed with code %d: '%s'. %s", code, reason, message));
     this.code = code;
     this.reason = reason;
   }
 
   public ClientHttpException(final int code, final String reason) {
-    this(String.format("Failed with code %d: '%s'", code, reason), code, reason);
+    this("", code, reason);
   }
 
   public int code() {
