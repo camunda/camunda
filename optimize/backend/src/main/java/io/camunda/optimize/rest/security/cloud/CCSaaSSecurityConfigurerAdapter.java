@@ -197,7 +197,12 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                       .redirectionEndpoint(
                           redirectionEndpointConfig ->
                               redirectionEndpointConfig.baseUri(OAUTH_REDIRECT_ENDPOINT))
-                      .successHandler(getAuthenticationSuccessHandler()))
+                      .successHandler(getAuthenticationSuccessHandler())
+                      .failureHandler(
+                          (request, response, exception) -> {
+                            LOG.error("OAuth2 authentication failed", exception);
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                          }))
           .addFilterBefore(
               authenticationCookieFilter(http), OAuth2AuthorizationRequestRedirectFilter.class)
           .exceptionHandling(
@@ -229,28 +234,60 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   @Bean
   public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
     final var decoderFactory = new OidcIdTokenDecoderFactory();
-    decoderFactory.setJwtValidatorFactory(clientRegistration -> createWebappJwtValidators());
+    // Apply only role validation for ID tokens - audience validation happens elsewhere
+    decoderFactory.setJwtValidatorFactory(clientRegistration -> createIdTokenValidators());
     return decoderFactory;
+  }
+
+  /**
+   * Creates JWT validators specifically for ID token validation during OAuth2 login. Only includes
+   * role validation - audience and scope validation are handled by other components.
+   */
+  private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
+    LOG.info("Creating JWT validators for ID token validation during OAuth2 login");
+
+    // Only include role validation for ID tokens
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+    LOG.info("Created role validator for ID token with allowed roles: {}", ALLOWED_ORG_ROLES);
+
+    // NOTE: We skip AudienceValidator and ScopeValidator here as ID tokens don't contain these
+    // claims
+    // The role validation uses organization claims which are present in ID tokens
+    final OAuth2TokenValidator<Jwt> combinedValidator =
+        JwtValidators.createDefaultWithValidators(roleValidator);
+    LOG.info("Combined JWT validators created for ID token validation (role validation only)");
+
+    return combinedValidator;
   }
 
   @SuppressWarnings("unchecked")
   private JwtDecoder jwtDecoder() {
+    LOG.info("Creating JWT decoder for webapp endpoints");
     final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
+    LOG.info(
+        "Setting JWT validator for webapp decoder with JWK Set URI: {}",
+        configurationService.getOptimizeApiConfiguration().getJwtSetUri());
     jwtDecoder.setJwtValidator(createWebappJwtValidators());
+    LOG.info("JWT decoder for webapp endpoints configured successfully");
     return jwtDecoder;
   }
 
   @Override
   @SuppressWarnings("unchecked")
   protected JwtDecoder publicApiJwtDecoder() {
+    LOG.info("Creating JWT decoder for public API endpoints");
     final NimbusJwtDecoder jwtDecoder =
         NimbusJwtDecoder.withJwkSetUri(
                 configurationService.getOptimizeApiConfiguration().getJwtSetUri())
             .build();
+    LOG.info(
+        "Setting JWT validator for public API decoder with JWK Set URI: {}",
+        configurationService.getOptimizeApiConfiguration().getJwtSetUri());
     jwtDecoder.setJwtValidator(createPublicApiJwtValidators());
+    LOG.info("JWT decoder for public API endpoints configured successfully");
     return jwtDecoder;
   }
 
@@ -259,6 +296,8 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
    * Includes audience, scope, and role validation for comprehensive security.
    */
   private OAuth2TokenValidator<Jwt> createWebappJwtValidators() {
+    LOG.info("Creating JWT validators for webapp endpoints");
+
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(
             configurationService
@@ -266,11 +305,26 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getCloudAuthConfiguration()
                 .getUserAccessTokenAudience()
                 .orElse(""));
-    final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
-    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+    LOG.info(
+        "Created audience validator for webapp with audience: {}",
+        configurationService
+            .getAuthConfiguration()
+            .getCloudAuthConfiguration()
+            .getUserAccessTokenAudience()
+            .orElse(""));
 
-    return JwtValidators.createDefaultWithValidators(
-        audienceValidator, profileValidator, roleValidator);
+    final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
+    LOG.info("Created profile scope validator for webapp");
+
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+    LOG.info("Created role validator for webapp with allowed roles: {}", ALLOWED_ORG_ROLES);
+
+    final OAuth2TokenValidator<Jwt> combinedValidator =
+        JwtValidators.createDefaultWithValidators(
+            audienceValidator, profileValidator, roleValidator);
+    LOG.info("Combined JWT validators created for webapp endpoints");
+
+    return combinedValidator;
   }
 
   /**
@@ -278,86 +332,151 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
    * for API access control.
    */
   private OAuth2TokenValidator<Jwt> createPublicApiJwtValidators() {
+    LOG.info("Creating JWT validators for public API endpoints");
+
     final OAuth2TokenValidator<Jwt> audienceValidator =
         new AudienceValidator(getAuth0Configuration().getAudience());
+    LOG.info(
+        "Created audience validator for public API with audience: {}",
+        getAuth0Configuration().getAudience());
+
     final OAuth2TokenValidator<Jwt> clusterIdValidator =
         new CustomClaimValidator(
             CAMUNDA_CLUSTER_ID_CLAIM_NAME, getAuth0Configuration().getClusterId());
+    LOG.info(
+        "Created cluster ID validator for public API with cluster ID: {}",
+        getAuth0Configuration().getClusterId());
 
-    return JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
+    final OAuth2TokenValidator<Jwt> combinedValidator =
+        JwtValidators.createDefaultWithValidators(audienceValidator, clusterIdValidator);
+    LOG.info("Combined JWT validators created for public API endpoints");
+
+    return combinedValidator;
   }
 
   private AuthenticationSuccessHandler getAuthenticationSuccessHandler() {
     return (request, response, authentication) -> {
-      final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
-      final String userId = user.getIdToken().getSubject();
-      final String sessionToken = sessionService.createAuthToken(userId);
+      try {
+        LOG.info("Authentication success handler invoked for user authentication");
 
-      if (hasAccess(user)) {
-        // spring security internally stores the access token as an authorized client, we retrieve
-        // it here to store it
-        // in a cookie to allow potential other Optimize webapps to reuse it and keep the server
-        // stateless
-        final OAuth2AccessToken serviceAccessToken =
-            oAuth2AuthorizedClientService
-                .loadAuthorizedClient(AUTH_0_CLIENT_REGISTRATION_ID, userId)
-                .getAccessToken();
+        final DefaultOidcUser user = (DefaultOidcUser) authentication.getPrincipal();
+        final String userId = user.getIdToken().getSubject();
+        LOG.info("Processing authentication success for user ID: {}", userId);
+        LOG.info("User ID token claims: {}", user.getIdToken().getClaims().keySet());
+        LOG.info(
+            "User info claims: {}",
+            user.getUserInfo() != null ? user.getUserInfo().getClaims().keySet() : "null");
 
-        final Instant cookieExpiryDate =
-            determineCookieExpiryDate(sessionToken, serviceAccessToken)
-                .orElseThrow(
-                    () ->
-                        new OptimizeRuntimeException(
-                            "Could not determine a cookie expiry date. This is likely a bug, please report."));
-        authCookieService
-            .createOptimizeServiceTokenCookies(
-                serviceAccessToken, cookieExpiryDate, request.getScheme())
-            .forEach(response::addCookie);
-        authCookieService
-            .createOptimizeAuthCookies(sessionToken, cookieExpiryDate, request.getScheme())
-            .forEach(response::addCookie);
+        final String sessionToken = sessionService.createAuthToken(userId);
+        LOG.info("Created session token for user: {}", userId);
 
-        // we can't redirect to the previously accesses path or the root of the application as the
-        // Optimize Cookie
-        // won't be sent by the browser in this case. This is because the chain of requests that
-        // lead to the
-        // authenticationOptimizeWebSecurityConfigurerAdapter success are initiated by the auth0
-        // server and the
-        // same-site:strict property prevents the cookie to be transmitted in such a case.
-        // See https://stackoverflow.com/a/42220786
-        // This static page breaks the redirect chain initiated from the auth0 login and forces the
-        // browser to start
-        // a new request chain which then allows the Optimize auth cookie to be provided to be read
-        // by the
-        // authenticationCookieFilter granting the user access.
-        // This is also a technique documented at w3.org
-        // https://www.w3.org/TR/WCAG20-TECHS/H76.html
-        response.setContentType(MediaType.TEXT_HTML_VALUE);
-        response
-            .getWriter()
-            // @formatter:off
-            .print(
-                String.format(
-                    """
-            <html>
-              <head><meta http-equiv="refresh" content="1; URL='%s/'"/></head>
-              <body>
-                <script>
-                  var path = '%s/';
-                  if (location.hash) {
-                    path += location.hash;
-                  }
-                  location = path;
-                </script>
-                <p align="center">Successfully authenticated!</p>
-                <p align="center">Click <a href="%s/">here</a> if you don't get redirected automatically.</p>
-              </body>
-            </html>
-            """,
-                    getClusterIdPath(), getClusterIdPath(), getClusterIdPath()));
-        // @formatter:on
-      } else {
-        response.setStatus(HttpStatus.FORBIDDEN.value());
+        LOG.info("Checking user access permissions");
+        if (hasAccess(user)) {
+          LOG.info("User has access - proceeding with token and cookie creation");
+
+          // spring security internally stores the access token as an authorized client, we retrieve
+          // it here to store it
+          // in a cookie to allow potential other Optimize webapps to reuse it and keep the server
+          // stateless
+          final OAuth2AccessToken serviceAccessToken =
+              oAuth2AuthorizedClientService
+                  .loadAuthorizedClient(AUTH_0_CLIENT_REGISTRATION_ID, userId)
+                  .getAccessToken();
+          LOG.info(
+              "Retrieved service access token for user: {}, token expires at: {}",
+              userId,
+              serviceAccessToken.getExpiresAt());
+
+          final Instant cookieExpiryDate =
+              determineCookieExpiryDate(sessionToken, serviceAccessToken)
+                  .orElseThrow(
+                      () ->
+                          new OptimizeRuntimeException(
+                              "Could not determine a cookie expiry date. This is likely a bug, please report."));
+          LOG.info("Determined cookie expiry date: {}", cookieExpiryDate);
+
+          authCookieService
+              .createOptimizeServiceTokenCookies(
+                  serviceAccessToken, cookieExpiryDate, request.getScheme())
+              .forEach(response::addCookie);
+          LOG.info("Added service token cookies to response");
+
+          authCookieService
+              .createOptimizeAuthCookies(sessionToken, cookieExpiryDate, request.getScheme())
+              .forEach(response::addCookie);
+          LOG.info("Added auth cookies to response");
+
+          // we can't redirect to the previously accesses path or the root of the application as the
+          // Optimize Cookie
+          // won't be sent by the browser in this case. This is because the chain of requests that
+          // lead to the
+          // authenticationOptimizeWebSecurityConfigurerAdapter success are initiated by the auth0
+          // server and the
+          // same-site:strict property prevents the cookie to be transmitted in such a case.
+          // See https://stackoverflow.com/a/42220786
+          // This static page breaks the redirect chain initiated from the auth0 login and forces
+          // the
+          // browser to start
+          // a new request chain which then allows the Optimize auth cookie to be provided to be
+          // read
+          // by the
+          // authenticationCookieFilter granting the user access.
+          // This is also a technique documented at w3.org
+          // https://www.w3.org/TR/WCAG20-TECHS/H76.html
+          response.setContentType(MediaType.TEXT_HTML_VALUE);
+          final String redirectPath = getClusterIdPath();
+
+          // Enhanced logging for debugging the redirect path
+          LOG.info("=== Authentication Success Handler Redirect DEBUG ===");
+          LOG.info("Cluster ID from config: {}", getAuth0Configuration().getClusterId());
+          LOG.info("Generated redirect path: '{}'", redirectPath);
+          LOG.info("Full redirect URL will be: '{}/{}'", redirectPath, "");
+          LOG.info("Request scheme: {}", request.getScheme());
+          LOG.info("Request server name: {}", request.getServerName());
+          LOG.info("Request server port: {}", request.getServerPort());
+          LOG.info("Request context path: {}", request.getContextPath());
+          LOG.info("Request servlet path: {}", request.getServletPath());
+          LOG.info("Request path info: {}", request.getPathInfo());
+          LOG.info("Request request URI: {}", request.getRequestURI());
+          LOG.info("Request request URL: {}", request.getRequestURL());
+
+          LOG.info(
+              "Sending authentication success HTML response with redirect path: {}", redirectPath);
+          response
+              .getWriter()
+              // @formatter:off
+              .print(
+                  String.format(
+                      """
+              <html>
+                <head><meta http-equiv="refresh" content="1; URL='%s/'"/></head>
+                <body>
+                  <script>
+                    var path = '%s/';
+                    if (location.hash) {
+                      path += location.hash;
+                    }
+                    location = path;
+                  </script>
+                  <p align="center">Successfully authenticated!</p>
+                  <p align="center">Click <a href="%s/">here</a> if you don't get redirected automatically.</p>
+                </body>
+              </html>
+              """,
+                      redirectPath, redirectPath, redirectPath));
+          // @formatter:on
+        } else {
+          LOG.info("User does not have access - returning 403 Forbidden");
+          response.setStatus(HttpStatus.FORBIDDEN.value());
+        }
+      } catch (final Exception e) {
+        LOG.error("Exception in authentication success handler", e);
+        try {
+          response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR.value());
+          response.getWriter().write("Authentication succeeded but post-processing failed");
+        } catch (final Exception writeException) {
+          LOG.error("Failed to write error response", writeException);
+        }
       }
     };
   }
@@ -373,18 +492,62 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   }
 
   private boolean hasAccess(final DefaultOidcUser user) {
+    LOG.info("Checking access permissions for user");
+
     boolean accessGranted = false;
     final OidcUserInfo userInfo = user.getUserInfo();
+    LOG.info("User info available: {}", userInfo != null);
+
+    if (userInfo == null) {
+      LOG.info("No user info available - access denied");
+      return false;
+    }
+
     final String organizationClaimName = getAuth0Configuration().getOrganizationClaimName();
+    LOG.info("Checking organization claim: {}", organizationClaimName);
+
+    final Object organizationClaim = userInfo.getClaim(organizationClaimName);
+    LOG.info("Organization claim value: {}", organizationClaim);
+    LOG.info(
+        "Organization claim type: {}",
+        organizationClaim != null ? organizationClaim.getClass().getSimpleName() : "null");
+
     if (userInfo.getClaim(organizationClaimName) instanceof List) {
       final List<Map<String, Object>> organisations = userInfo.getClaim(organizationClaimName);
+      LOG.info("Found {} organizations in user claims", organisations.size());
+      LOG.info("Organizations: {}", organisations);
+
+      final String targetOrganizationId = getAuth0Configuration().getOrganizationId();
+      LOG.info("Target organization ID from config: {}", targetOrganizationId);
+
       accessGranted =
           organisations.stream()
-              .map(orgEntry -> (String) orgEntry.get("id"))
+              .map(
+                  orgEntry -> {
+                    final String orgId = (String) orgEntry.get("id");
+                    LOG.info(
+                        "Checking organization entry - ID: {}, Full entry: {}", orgId, orgEntry);
+                    return orgId;
+                  })
               .anyMatch(
-                  organisationId ->
-                      getAuth0Configuration().getOrganizationId().equals(organisationId));
+                  organisationId -> {
+                    final boolean matches = targetOrganizationId.equals(organisationId);
+                    LOG.info(
+                        "Organization ID '{}' matches target '{}': {}",
+                        organisationId,
+                        targetOrganizationId,
+                        matches);
+                    return matches;
+                  });
+
+      LOG.info("Access granted based on organization membership: {}", accessGranted);
+    } else {
+      LOG.info(
+          "Organization claim is not a List, actual type: {}",
+          organizationClaim != null ? organizationClaim.getClass().getSimpleName() : "null");
     }
+
+    LOG.info("Final access decision for user: {}", accessGranted);
     return accessGranted;
   }
 

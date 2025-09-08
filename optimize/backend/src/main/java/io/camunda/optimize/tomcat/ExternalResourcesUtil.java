@@ -16,10 +16,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.util.StreamUtils;
 
 public class ExternalResourcesUtil extends HttpServlet {
 
+  private static final Logger LOG = LoggerFactory.getLogger(ExternalResourcesUtil.class);
   private static final String INDEX_FILE = "/index.html";
   private static final String DEFAULT_MIME_TYPE = "application/octet-stream";
   private static final Map<String, String> MIME_TYPE_MAP = new HashMap<>();
@@ -59,7 +62,7 @@ public class ExternalResourcesUtil extends HttpServlet {
       response.setContentType(mimeType != null ? mimeType : DEFAULT_MIME_TYPE);
       StreamUtils.copy(fileStream, response.getOutputStream());
       response.flushBuffer();
-    } catch (Exception exception) {
+    } catch (final Exception exception) {
       throw new IOException("Cannot stream external resource: " + filename, exception);
     }
   }
@@ -67,6 +70,7 @@ public class ExternalResourcesUtil extends HttpServlet {
   public static boolean shouldServeStaticResource(
       final HttpServletRequest request, final String clusterId) {
     String requestURI = request.getRequestURI();
+    final String originalURI = requestURI;
     requestURI = stripContextPath(requestURI, request);
     requestURI = stripClusterIdPath(requestURI, clusterId);
     final boolean result =
@@ -74,6 +78,21 @@ public class ExternalResourcesUtil extends HttpServlet {
             && requestURI.startsWith("/external")
             && !requestURI.startsWith("/external/api")
             && "GET".equals(request.getMethod());
+
+    // Enhanced logging for debugging
+    LOG.info("=== ExternalResourcesUtil.shouldServeStaticResource DEBUG ===");
+    LOG.info("Original URI: {}", originalURI);
+    LOG.info("After stripContextPath: {}", stripContextPath(originalURI, request));
+    LOG.info("After stripClusterIdPath: {}", requestURI);
+    LOG.info("Cluster ID: {}", clusterId);
+    LOG.info("Method: {}", request.getMethod());
+    LOG.info(
+        "Starts with /external: {}", (requestURI != null && requestURI.startsWith("/external")));
+    LOG.info(
+        "NOT starts with /external/api: {}",
+        (requestURI != null && !requestURI.startsWith("/external/api")));
+    LOG.info("Is GET method: {}", "GET".equals(request.getMethod()));
+    LOG.info("Final result: {}", result);
 
     return result;
   }
