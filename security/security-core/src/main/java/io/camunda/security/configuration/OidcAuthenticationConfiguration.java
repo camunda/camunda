@@ -41,6 +41,9 @@ public class OidcAuthenticationConfiguration {
   private String groupsClaim;
   private String organizationId;
   private List<String> resource;
+  private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
+  private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
+      new AssertionKeystoreConfiguration();
 
   public List<String> getResource() {
     return resource;
@@ -49,9 +52,6 @@ public class OidcAuthenticationConfiguration {
   public void setResource(final List<String> resource) {
     this.resource = resource;
   }
-  private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
-  private AssertionKeystoreConfiguration assertionKeystoreConfiguration =
-      new AssertionKeystoreConfiguration();
 
   public String getIssuerUri() {
     return issuerUri;

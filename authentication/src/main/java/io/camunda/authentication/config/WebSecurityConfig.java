@@ -86,9 +86,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
-import org.springframework.security.oauth2.client.endpoint.OAuth2AccessTokenResponseClient;
-import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
-import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
@@ -117,8 +114,6 @@ import org.springframework.security.web.header.writers.CrossOriginEmbedderPolicy
 import org.springframework.security.web.header.writers.CrossOriginOpenerPolicyHeaderWriter.CrossOriginOpenerPolicy;
 import org.springframework.security.web.header.writers.CrossOriginResourcePolicyHeaderWriter.CrossOriginResourcePolicy;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -817,27 +812,6 @@ public class WebSecurityConfig {
       applyCsrfConfiguration(httpSecurity, securityConfiguration, csrfTokenRepository);
 
       return filterChainBuilder.build();
-    }
-
-    @Bean
-    public OAuth2AccessTokenResponseClient<OAuth2AuthorizationCodeGrantRequest>
-        authorizationCodeAccessTokenResponseClient() {
-      // Adding custom parameter converter to default client for access token request
-      final RestClientAuthorizationCodeTokenResponseClient accessTokenResponseClient =
-          new RestClientAuthorizationCodeTokenResponseClient();
-      accessTokenResponseClient.addParametersConverter(
-          request -> {
-            final List<String> resource =
-                securityConfiguration.getAuthentication().getOidc().getResource();
-            if (resource != null && !resource.isEmpty()) {
-              final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
-              parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, resource);
-              return parametersToAdd;
-            }
-            return null;
-          });
-
-      return accessTokenResponseClient;
     }
 
     private OAuth2AuthorizationRequestResolver authorizationRequestResolver(
