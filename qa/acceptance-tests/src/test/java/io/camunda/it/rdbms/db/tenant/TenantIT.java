@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.read.service.UserDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantDbModel;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
+import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.fixtures.TenantFixtures;
 import io.camunda.it.rdbms.db.fixtures.UserFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -67,6 +68,27 @@ public class TenantIT {
                 new TenantFilter.Builder().tenantId(tenant.tenantId()).build(),
                 TenantSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+
+    compareTenant(searchResult.items().getFirst(), tenant);
+  }
+
+  @TestTemplate
+  public void shouldFindByAuthorizedResourceId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final TenantDbReader reader = rdbmsService.getTenantReader();
+
+    final var tenant = createAndSaveTenant(rdbmsWriter);
+    createAndSaveRandomTenants(rdbmsWriter);
+
+    final var searchResult =
+        reader.search(
+            TenantQuery.of(b -> b),
+            CommonFixtures.resourceAccessChecksFromResourceIds(tenant.tenantId()));
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(1);

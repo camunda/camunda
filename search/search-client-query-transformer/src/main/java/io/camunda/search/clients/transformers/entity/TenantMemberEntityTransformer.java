@@ -16,6 +16,7 @@ public class TenantMemberEntityTransformer
   @Override
   public TenantMemberEntity apply(
       final io.camunda.webapps.schema.entities.usermanagement.TenantMemberEntity source) {
-    return new TenantMemberEntity(source.getMemberId(), source.getMemberType());
+    return new TenantMemberEntity(
+        source.getTenantId(), source.getMemberId(), source.getMemberType());
   }
 }

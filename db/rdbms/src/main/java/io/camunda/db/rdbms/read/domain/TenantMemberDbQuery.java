@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.search.entities.TenantEntity;
+import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.util.ObjectBuilder;
@@ -16,23 +16,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record TenantDbQuery(
+public record TenantMemberDbQuery(
     TenantFilter filter,
     List<String> authorizedResourceIds,
-    DbQuerySorting<TenantEntity> sort,
+    DbQuerySorting<TenantMemberEntity> sort,
     DbQueryPage page) {
 
-  public static TenantDbQuery of(
-      final Function<TenantDbQuery.Builder, ObjectBuilder<TenantDbQuery>> fn) {
-    return fn.apply(new TenantDbQuery.Builder()).build();
+  public static TenantMemberDbQuery of(
+      final Function<TenantMemberDbQuery.Builder, ObjectBuilder<TenantMemberDbQuery>> fn) {
+    return fn.apply(new TenantMemberDbQuery.Builder()).build();
   }
 
-  public static final class Builder implements ObjectBuilder<TenantDbQuery> {
+  public static final class Builder implements ObjectBuilder<TenantMemberDbQuery> {
 
     private static final TenantFilter EMPTY_FILTER = FilterBuilders.tenant().build();
 
     private TenantFilter filter;
-    private DbQuerySorting<TenantEntity> sort;
+    private DbQuerySorting<TenantMemberEntity> sort;
     private DbQueryPage page;
     private List<String> authorizedResourceIds = Collections.emptyList();
 
@@ -41,7 +41,7 @@ public record TenantDbQuery(
       return this;
     }
 
-    public Builder sort(final DbQuerySorting<TenantEntity> value) {
+    public Builder sort(final DbQuerySorting<TenantMemberEntity> value) {
       sort = value;
       return this;
     }
@@ -62,16 +62,17 @@ public record TenantDbQuery(
 
     public Builder sort(
         final Function<
-                DbQuerySorting.Builder<TenantEntity>, ObjectBuilder<DbQuerySorting<TenantEntity>>>
+                DbQuerySorting.Builder<TenantMemberEntity>,
+                ObjectBuilder<DbQuerySorting<TenantMemberEntity>>>
             fn) {
       return sort(DbQuerySorting.of(fn));
     }
 
     @Override
-    public TenantDbQuery build() {
+    public TenantMemberDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new TenantDbQuery(filter, authorizedResourceIds, sort, page);
+      return new TenantMemberDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

@@ -542,9 +542,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("client1", EntityType.CLIENT),
-                        new TenantMemberEntity("client2", EntityType.CLIENT),
-                        new TenantMemberEntity("client3", EntityType.CLIENT)))
+                        new TenantMemberEntity("tenant1", "client1", EntityType.CLIENT),
+                        new TenantMemberEntity("tenant1", "client2", EntityType.CLIENT),
+                        new TenantMemberEntity("tenant1", "client3", EntityType.CLIENT)))
                 .build());
 
     // when / then
@@ -586,9 +586,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("user1", EntityType.USER),
-                        new TenantMemberEntity("user2", EntityType.USER),
-                        new TenantMemberEntity("user3", EntityType.USER)))
+                        new TenantMemberEntity("tenant1", "user1", EntityType.USER),
+                        new TenantMemberEntity("tenant1", "user2", EntityType.USER),
+                        new TenantMemberEntity("tenant1", "user3", EntityType.USER)))
                 .build());
 
     // when / then
@@ -630,9 +630,9 @@ public class TenantQueryControllerTest extends RestControllerTest {
                 .total(3)
                 .items(
                     List.of(
-                        new TenantMemberEntity("group1", EntityType.GROUP),
-                        new TenantMemberEntity("group2", EntityType.GROUP),
-                        new TenantMemberEntity("group3", EntityType.GROUP)))
+                        new TenantMemberEntity("tenant1", "group1", EntityType.GROUP),
+                        new TenantMemberEntity("tenant1", "group2", EntityType.GROUP),
+                        new TenantMemberEntity("tenant1", "group3", EntityType.GROUP)))
                 .build());
 
     // when / then
