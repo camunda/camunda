@@ -544,6 +544,33 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Search Users By Email', async ({request}) => {
+    const body = {
+      filter: {
+        email: state['email5'],
+      },
+    };
+    const expectedBody = {
+      username: state['username5'],
+      name: state['name5'],
+      email: state['email5'],
+    };
+
+    await expect(async () => {
+      const res = await request.post(buildUrl('/users/search'), {
+        headers: jsonHeaders(),
+        data: body,
+      });
+
+      await assertPaginatedRequest(res, {
+        itemsLengthEqualTo: 1,
+        totalItemsEqualTo: 1,
+      });
+      const json = await res.json();
+      assertUserInResponse(json, expectedBody, expectedBody.username as string);
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Search Users By Multiple Fields', async ({request}) => {
     const requestBody = {
       filter: {
