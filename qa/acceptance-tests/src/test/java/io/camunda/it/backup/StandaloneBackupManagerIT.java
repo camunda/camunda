@@ -75,7 +75,9 @@ final class StandaloneBackupManagerIT {
       new TestStandaloneBackupManager()
           .withProperty("camunda.database.username", ADMIN_USER)
           .withProperty("camunda.database.password", ADMIN_PASSWORD)
-          .withProperty("camunda.data.backup.repository-name", "els-test");
+          .withProperty("camunda.data.backup.repository-name", "els-test")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD);
 
   // Configure the schema manager to create indices and templates in test setup
   @TestZeebe(autoStart = false)
@@ -83,6 +85,8 @@ final class StandaloneBackupManagerIT {
       new TestStandaloneSchemaManager()
           .withProperty("camunda.database.username", ADMIN_USER)
           .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.retention.enabled", "true");
 
   // Configure the Camunda single application with restricted access to the Elasticsearch
@@ -104,6 +108,8 @@ final class StandaloneBackupManagerIT {
           .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
           .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
           .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {

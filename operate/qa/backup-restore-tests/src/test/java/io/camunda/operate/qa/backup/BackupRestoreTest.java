@@ -66,6 +66,7 @@ public class BackupRestoreTest {
   @Before
   public void setup() {
     testContext = new BackupRestoreTestContext().setZeebeIndexPrefix(INDEX_PREFIX);
+    testContext.setConnectionType("elasticsearch");
   }
 
   @Test
@@ -147,6 +148,7 @@ public class BackupRestoreTest {
             .withLogConsumer(new Slf4jLogConsumer(LOGGER))
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", INDEX_PREFIX)
             .withEnv("CAMUNDA_OPERATE_IMPORTERENABLED", "false")
             .withEnv("CAMUNDA_OPERATE_BACKUP_REPOSITORYNAME", REPOSITORY_NAME);
 

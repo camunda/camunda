@@ -86,7 +86,13 @@ class SchemaUpdateIT {
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
             .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
-            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")) {
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
+            .withEnv(
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)
+            .withEnv(
+                "CAMUNDA_DATA_SECONDARY_STORAGE_%s_INDEX_PREFIX".formatted(databaseType.name()),
+                indexPrefix)) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
     }

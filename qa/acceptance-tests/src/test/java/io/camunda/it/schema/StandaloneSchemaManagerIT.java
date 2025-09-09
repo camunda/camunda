@@ -74,6 +74,8 @@ final class StandaloneSchemaManagerIT {
               "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.username", ADMIN_USER)
           .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.retention.enabled", "true");
 
   @TestZeebe(autoStart = false)
@@ -98,6 +100,8 @@ final class StandaloneSchemaManagerIT {
           .withProperty("camunda.tasklist.elasticsearch.password", APP_PASSWORD)
           .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
           .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
+          .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
           .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
           .withExporter(
               CamundaExporter.class.getSimpleName(),
