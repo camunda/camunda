@@ -38,8 +38,6 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_J
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
@@ -56,9 +54,9 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
-import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
+import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -586,9 +584,6 @@ public final class CamundaClientBuilderImpl
         this::overrideAuthority,
         OVERRIDE_AUTHORITY_VAR,
         LegacyZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR);
-    if (shouldUseDefaultCredentialsProvider()) {
-      credentialsProvider = createDefaultCredentialsProvider();
-    }
     applyEnvironmentValueIfNotNull(
         value -> grpcAddress(getURIFromString(value)),
         GRPC_ADDRESS_VAR,
@@ -643,28 +638,6 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 
     return sb.toString();
-  }
-
-  private boolean shouldUseDefaultCredentialsProvider() {
-    return credentialsProvider == null
-        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_ID)
-            || Environment.system()
-                .isDefined(LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID))
-        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_SECRET)
-            || Environment.system()
-                .isDefined(LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET));
-  }
-
-  private CredentialsProvider createDefaultCredentialsProvider() {
-    final OAuthCredentialsProviderBuilder builder =
-        CredentialsProvider.newCredentialsProviderBuilder();
-    final String gatewayAddress = AddressUtil.composeGatewayAddress(grpcAddress);
-    final int separatorIndex = gatewayAddress.lastIndexOf(':');
-    if (separatorIndex > 0) {
-      builder.audience(gatewayAddress.substring(0, separatorIndex));
-    }
-
-    return builder.build();
   }
 
   private static URI getURIFromString(final String uri) {
