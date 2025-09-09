@@ -20,12 +20,13 @@ import {
 } from '../../../../utils/http';
 import {
   CREATE_NEW_TENANT,
-  tenantRequiredFields, UPDATE_TENANT,
+  tenantRequiredFields,
+  UPDATE_TENANT,
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertTenantInResponse,
-  createTenantAndStoreResponseFields
+  createTenantAndStoreResponseFields,
 } from '../../../../utils/requestHelpers';
 
 test.describe.parallel('Tenants API Tests', () => {
