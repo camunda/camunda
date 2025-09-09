@@ -17,11 +17,11 @@ package io.camunda.client.spring.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.health.HealthCheck;
-import io.camunda.spring.client.actuator.JobWorkerController;
+import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.metrics.MicrometerMetricsRecorder;
 import io.camunda.client.spring.actuator.CamundaClientHealthIndicator;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import io.camunda.client.spring.actuator.JobWorkerController;
 import io.camunda.client.spring.configuration.condition.ConditionalOnCamundaClientEnabled;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.boot.actuate.autoconfigure.endpoint.EndpointAutoConfiguration;

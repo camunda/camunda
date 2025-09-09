@@ -15,14 +15,8 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.CommandWithVariables;
-import io.camunda.spring.client.exception.JobError;
 import io.camunda.client.exception.JobError;
-import io.camunda.client.jobhandling.parameter.ParameterResolver;
-import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.client.jobhandling.result.ResultProcessor;
-import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import java.io.InputStream;
 import java.util.Map;
 import org.apache.commons.lang3.exception.ExceptionUtils;

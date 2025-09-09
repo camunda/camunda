@@ -15,16 +15,14 @@
  */
 package io.camunda.client.annotation.value;
 
-import static io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource.EMPTY_FIELD;
+import static io.camunda.client.annotation.value.JobWorkerValue.FieldSource.EMPTY_FIELD;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.spring.client.bean.MethodInfo;
 import io.camunda.client.spring.bean.MethodInfo;
-import io.camunda.spring.client.jobhandling.JobHandlerFactory;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
