@@ -12,6 +12,7 @@ import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
@@ -33,7 +34,8 @@ public class BatchOperationLifecycleManagementExportHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED);
+          BatchOperationIntent.COMPLETED,
+          BatchOperationIntent.FAILED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -66,16 +68,27 @@ public class BatchOperationLifecycleManagementExportHandler
       scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
     } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
       batchOperationWriter.suspend(batchOperationKey);
+    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
+      batchOperationWriter.resume(batchOperationKey);
     } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
       if (value.getErrors().isEmpty()) {
         batchOperationWriter.finish(batchOperationKey, endDate);
       } else {
         batchOperationWriter.finishWithErrors(
-            batchOperationKey, endDate, mapErrors(batchOperationKey, value.getErrors()));
+            batchOperationKey,
+            endDate,
+            mapErrors(batchOperationKey, value.getErrors()),
+            BatchOperationState.PARTIALLY_COMPLETED);
       }
       scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
-    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      batchOperationWriter.resume(batchOperationKey);
+    } else if (record.getIntent().equals(BatchOperationIntent.FAILED)) {
+      batchOperationWriter.finishWithErrors(
+          batchOperationKey,
+          endDate,
+          mapErrors(batchOperationKey, value.getErrors()),
+          BatchOperationState.FAILED);
+
+      scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
     }
   }
 

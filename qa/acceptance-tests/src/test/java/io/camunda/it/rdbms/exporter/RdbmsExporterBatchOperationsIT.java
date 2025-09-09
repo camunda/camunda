@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.exporter;
 
+import static io.camunda.it.rdbms.exporter.RecordFixtures.generateLifecycleRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationChunkRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getBatchOperationCompletedWithErrorsRecord;
@@ -33,6 +34,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
+import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.List;
@@ -138,6 +140,36 @@ class RdbmsExporterBatchOperationsIT {
     batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
+    assertThat(batchOperation.errors()).isNotEmpty();
+  }
+
+  @Test
+  public void shouldExportFailedBatchOperation() {
+    // given
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var failedRecord =
+        generateLifecycleRecord(batchOperationKey, 3L, BatchOperationIntent.FAILED, true);
+
+    // when
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+
+    // then
+    var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation).isNotNull();
+    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+
+    // and when we complete it
+    exporter.export(failedRecord);
+
+    // then it should be completed
+    batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.FAILED);
     assertThat(batchOperation.errors()).isNotEmpty();
   }
 

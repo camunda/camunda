@@ -40,7 +40,8 @@ public class BatchOperationLifecycleManagementHandler
           BatchOperationIntent.CANCELED,
           BatchOperationIntent.SUSPENDED,
           BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED);
+          BatchOperationIntent.COMPLETED,
+          BatchOperationIntent.FAILED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -96,6 +97,12 @@ public class BatchOperationLifecycleManagementHandler
         entity.setErrors(mapErrors(value.getErrors()));
         entity.setState(BatchOperationState.PARTIALLY_COMPLETED);
       }
+    } else if (record.getIntent().equals(BatchOperationIntent.FAILED)) {
+      final var value = record.getValue();
+      // set the endDate to null so that the BatchOperationUpdateTask does run again
+      entity.setEndDate(null);
+      entity.setErrors(mapErrors(value.getErrors()));
+      entity.setState(BatchOperationState.FAILED);
     }
   }
 
