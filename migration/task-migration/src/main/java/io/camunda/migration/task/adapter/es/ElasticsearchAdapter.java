@@ -30,6 +30,7 @@ import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
@@ -42,6 +43,7 @@ import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -64,7 +66,8 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   private static final Logger LOG = LoggerFactory.getLogger(ElasticsearchAdapter.class);
 
   private final ElasticsearchClient client;
-  private final MigrationConfiguration configuration;
+  private final MigrationConfiguration migrationConfiguration;
+  private final RetentionConfiguration retentionConfiguration;
   private final TaskLegacyIndex legacyIndex;
   private final TaskTemplate destinationIndex;
   private final TasklistMigrationRepositoryIndex migrationIndex;
@@ -72,11 +75,13 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   private final TasklistImportPositionIndex importPositionIndex;
 
   public ElasticsearchAdapter(
-      final MigrationConfiguration configuration, final ConnectConfiguration connectConfiguration) {
-    this.configuration = configuration;
+      final MigrationConfiguration migrationConfiguration,
+      final ConnectConfiguration connectConfiguration,
+      final RetentionConfiguration retentionConfiguration) {
+    this.migrationConfiguration = migrationConfiguration;
     client = new ElasticsearchConnector(connectConfiguration).createClient();
     retryDecorator =
-        new RetryDecorator(configuration.getRetry())
+        new RetryDecorator(migrationConfiguration.getRetry())
             .withRetryOnException(
                 e -> e instanceof IOException || e instanceof ElasticsearchException);
 
@@ -86,6 +91,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
         new TasklistMigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
     importPositionIndex =
         new TasklistImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
+    this.retentionConfiguration = retentionConfiguration;
   }
 
   @Override
@@ -129,6 +135,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
     reindex(legacyDatedIndex, newDatedIndex);
     updateIndexAlias(newDatedIndex);
+    setIndexLifecycle(newDatedIndex);
   }
 
   @Override
@@ -171,7 +178,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(destinationIndex.getAlias())
-            .size(configuration.getBatchSize())
+            .size(migrationConfiguration.getBatchSize())
             .sort(s -> s.field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc)))
             .query(q -> q.bool(getBoolQueryForTasksToUpdate(lastMigratedTaskId)))
             .build();
@@ -392,10 +399,36 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                                     .value(TaskJoinRelationshipType.TASK.getType()))));
   }
 
+  private void setIndexLifecycle(final String newDatedIndex) throws MigrationException {
+    if (!retentionConfiguration.isEnabled()) {
+      return;
+    }
+
+    final var settingsRequest =
+        new PutIndicesSettingsRequest.Builder()
+            .settings(
+                settings ->
+                    settings.lifecycle(
+                        lifecycle -> lifecycle.name(retentionConfiguration.getPolicyName())))
+            .index(newDatedIndex)
+            .allowNoIndices(true)
+            .ignoreUnavailable(true)
+            .build();
+    try {
+      client.indices().putSettings(settingsRequest);
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to apply index lifecycle to index: " + newDatedIndex, e);
+    }
+  }
+
   private void reindex(final String source, final String destination) throws MigrationException {
     final ReindexRequest createMissingRequest =
         new ReindexRequest.Builder()
-            .source(new Source.Builder().index(source).size(configuration.getBatchSize()).build())
+            .source(
+                new Source.Builder()
+                    .index(source)
+                    .size(migrationConfiguration.getBatchSize())
+                    .build())
             .dest(
                 new Destination.Builder()
                     .index(destination)

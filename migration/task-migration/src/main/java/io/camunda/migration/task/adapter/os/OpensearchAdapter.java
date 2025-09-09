@@ -9,6 +9,7 @@ package io.camunda.migration.task.adapter.os;
 
 import static java.util.stream.Collectors.toMap;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.storage.ProcessorStep;
@@ -20,6 +21,7 @@ import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -55,6 +57,8 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
 import org.slf4j.Logger;
@@ -65,7 +69,9 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchAdapter.class);
 
   private final OpenSearchClient client;
-  private final MigrationConfiguration configuration;
+  private final OpenSearchGenericClient genericClient;
+  private final MigrationConfiguration migrationConfiguration;
+  private final RetentionConfiguration retentionConfiguration;
   private final TaskLegacyIndex legacyIndex;
   private final TaskTemplate destinationIndex;
   private final TasklistMigrationRepositoryIndex migrationIndex;
@@ -73,11 +79,14 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   private final TasklistImportPositionIndex importPositionIndex;
 
   public OpensearchAdapter(
-      final MigrationConfiguration configuration, final ConnectConfiguration connectConfiguration) {
-    this.configuration = configuration;
+      final MigrationConfiguration migrationConfiguration,
+      final ConnectConfiguration connectConfiguration,
+      final RetentionConfiguration retentionConfiguration) {
+    this.migrationConfiguration = migrationConfiguration;
     client = new OpensearchConnector(connectConfiguration).createClient();
+    genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
     retryDecorator =
-        new RetryDecorator(configuration.getRetry())
+        new RetryDecorator(migrationConfiguration.getRetry())
             .withRetryOnException(
                 e -> e instanceof IOException || e instanceof OpenSearchException);
 
@@ -87,6 +96,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
         new TasklistMigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
     importPositionIndex =
         new TasklistImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
+    this.retentionConfiguration = retentionConfiguration;
   }
 
   @Override
@@ -130,6 +140,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
     reindex(legacyDatedIndex, newDatedIndex);
     updateIndexAlias(newDatedIndex);
+    setIndexLifecycle(newDatedIndex);
   }
 
   @Override
@@ -172,7 +183,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     final SearchRequest searchRequest =
         new SearchRequest.Builder()
             .index(destinationIndex.getAlias())
-            .size(configuration.getBatchSize())
+            .size(migrationConfiguration.getBatchSize())
             .sort(s -> s.field(f -> f.field(TaskTemplate.KEY).order(SortOrder.Asc)))
             .query(q -> q.bool(getBoolQueryForTasksToUpdate(lastMigratedTaskId)))
             .build();
@@ -396,7 +407,11 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   private void reindex(final String source, final String destination) throws MigrationException {
     final ReindexRequest createMissingRequest =
         new ReindexRequest.Builder()
-            .source(new Source.Builder().index(source).size(configuration.getBatchSize()).build())
+            .source(
+                new Source.Builder()
+                    .index(source)
+                    .size(migrationConfiguration.getBatchSize())
+                    .build())
             .dest(
                 new Destination.Builder()
                     .index(destination)
@@ -433,6 +448,22 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     }
   }
 
+  private void setIndexLifecycle(final String newDatedIndex) throws MigrationException {
+    if (!retentionConfiguration.isEnabled()) {
+      return;
+    }
+
+    final AddPolicyRequestBody value =
+        new AddPolicyRequestBody(retentionConfiguration.getPolicyName());
+    final var request =
+        Requests.builder().method("POST").endpoint("_plugins/_ism/add/" + newDatedIndex);
+    try {
+      genericClient.execute(request.json(value, genericClient._transport().jsonpMapper()).build());
+    } catch (final Exception e) {
+      throw new MigrationException("Failed to apply index lifecycle to index: " + newDatedIndex, e);
+    }
+  }
+
   private void addEntityToBulkRequest(
       final TaskWithIndex taskWithIndex, final BulkRequest.Builder bulkRequest) {
     bulkRequest.operations(
@@ -453,4 +484,6 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     }
     return Objects.requireNonNull(sorted.getLast().id());
   }
+
+  private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
 }
