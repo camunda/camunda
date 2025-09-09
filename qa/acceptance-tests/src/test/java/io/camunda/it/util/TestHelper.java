@@ -14,6 +14,7 @@ import static org.awaitility.Awaitility.await;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
@@ -167,6 +168,16 @@ public final class TestHelper {
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
+        .send()
+        .join();
+  }
+
+  public static CorrelateMessageResponse startProcessInstanceWithMessage(
+      final CamundaClient camundaClient, final String messageName) {
+    return camundaClient
+        .newCorrelateMessageCommand()
+        .messageName(messageName)
+        .withoutCorrelationKey()
         .send()
         .join();
   }
@@ -923,6 +934,18 @@ public final class TestHelper {
             () -> {
               final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
               assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
+            });
+  }
+
+  public static void waitForCorrelatedMessages(
+      final CamundaClient camundaClient, final int expectedCorrelatedMessages) {
+    Awaitility.await("should wait until correlated messages are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result = camundaClient.newCorrelatedMessageSearchRequest().send().join();
+              assertThat(result.page().totalItems()).isEqualTo(expectedCorrelatedMessages);
             });
   }
 
