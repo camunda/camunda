@@ -116,6 +116,10 @@ class SchemaUpdateIT {
     // enable retention policy for the test and set replicas to 1
     config.retention().setEnabled(true);
     config.index().setNumberOfReplicas(1);
+    if (config.connect().getTypeEnum().isOpenSearch()) {
+      // Opensearch uses optimistic lock on ISM policies update, so we need to increase the retries
+      config.schemaManager().getRetry().setMaxRetries(10);
+    }
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
