@@ -220,8 +220,8 @@ public class DecisionBehavior {
         .forEach(
             evaluatedInput -> addInputToEvaluationEvent(evaluatedInput, evaluatedDecisionRecord));
 
-    evaluatedDecision
-        .matchedRules()
+    evaluatedDecision.matchedRules().stream()
+        .filter(r -> r.ruleId() != null && !r.ruleId().isBlank())
         .forEach(
             matchedRule -> addMatchedRuleToEvaluationEvent(matchedRule, evaluatedDecisionRecord));
   }

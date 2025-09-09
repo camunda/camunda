@@ -12,7 +12,9 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import io.camunda.zeebe.dmn.DecisionContext;
 import io.camunda.zeebe.dmn.DecisionEngine;
 import io.camunda.zeebe.dmn.DecisionEvaluationResult;
+import io.camunda.zeebe.dmn.DecisionType;
 import io.camunda.zeebe.dmn.EvaluatedDecision;
+import io.camunda.zeebe.dmn.MatchedRule;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.feel.impl.FeelToMessagePackTransformer;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
@@ -102,6 +104,11 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
     final var evaluatedDecisions =
         Optional.ofNullable(auditLog).map(this::getEvaluatedDecisions).orElse(List.of());
 
+    final var ruleValidation = validateMatchedRules(evaluatedDecisions, decisionId);
+    if (ruleValidation.isPresent()) {
+      return ruleValidation.get();
+    }
+
     if (result.isLeft()) {
       final var reason = result.left().get().failure().message();
 
@@ -133,6 +140,61 @@ public final class DmnScalaDecisionEngine implements DecisionEngine {
         String.format(
             "Expected DMN evaluation result to be of type '%s' but was '%s'",
             Val.class, output.getClass()));
+  }
+
+  /**
+   * Validates that all matched rules of every evaluated decision table have a non-empty {@code
+   * ruleId}.
+   *
+   * @param evaluatedDecisions decisions obtained from the DMN audit log; may include multiple
+   *     entries
+   * @param rootDecisionId the originally requested decision id; used as a fallback context in
+   *     messages
+   * @return {@code Optional<String>} with validation message if any matched rule has a
+   *     missing/blank id, otherwise {@code Optional.empty()}
+   */
+  private Optional<EvaluationFailure> validateMatchedRules(
+      final List<EvaluatedDecision> evaluatedDecisions, final String rootDecisionId) {
+
+    // Collect offending rule indices per decision table (ordered for readability)
+    final List<Map.Entry<EvaluatedDecision, List<Integer>>> offenders =
+        evaluatedDecisions.stream()
+            .filter(d -> d.decisionType() == DecisionType.DECISION_TABLE)
+            .map(
+                d ->
+                    Map.entry(
+                        d,
+                        d.matchedRules().stream()
+                            .filter(r -> r.ruleId() == null || r.ruleId().isBlank())
+                            .map(MatchedRule::ruleIndex)
+                            .sorted()
+                            .toList()))
+            .filter(e -> !e.getValue().isEmpty())
+            .toList();
+
+    if (offenders.isEmpty()) {
+      return Optional.empty();
+    }
+
+    final String offenderDetails =
+        offenders.stream()
+            .map(
+                e ->
+                    "decision '%s' -> rule indices %s"
+                        .formatted(e.getKey().decisionId(), e.getValue()))
+            .collect(java.util.stream.Collectors.joining("; "));
+
+    final String message =
+        """
+            Expected to evaluate decision '%s', but matched rule(s) without id (ruleId) were found.
+            Offending locations: %s.
+            Fix: add an 'id' attribute to every <rule> in the affected decision table(s),
+            deploy a new DMN version, then retry the evaluation.
+            """
+            .strip()
+            .formatted(rootDecisionId, offenderDetails);
+
+    return Optional.of(new EvaluationFailure(message, rootDecisionId, evaluatedDecisions));
   }
 
   private List<EvaluatedDecision> getEvaluatedDecisions(final AuditLog auditLog) {

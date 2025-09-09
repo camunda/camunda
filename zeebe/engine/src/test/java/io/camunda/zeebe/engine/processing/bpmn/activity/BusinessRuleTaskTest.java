@@ -21,9 +21,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedOutputValue;
 import io.camunda.zeebe.protocol.record.value.MatchedRuleValue;
@@ -62,6 +64,11 @@ public final class BusinessRuleTaskTest {
       "/dmn/decision-table-with-version-tag-v1-new.dmn";
   private static final String DMN_DECISION_TABLE_WITH_VERSION_TAG_V2 =
       "/dmn/decision-table-with-version-tag-v2.dmn";
+  private static final String DMN_DECISION_WITH_MISSING_RULE_ID =
+      "/dmn/decision-table-with-missing-ruleId.dmn";
+  private static final String DMN_DECISION_WITH_FIXED_RULE_ID =
+      "/dmn/decision-table-with-fixed-ruleId_v2.dmn";
+  private static final String DMN_MISSING_RULE_DECISION_ID = "shippingDecision";
   private static final String PROCESS_ID = "process";
   private static final String TASK_ID = "task";
   private static final String RESULT_VARIABLE = "result";
@@ -854,5 +861,102 @@ public final class BusinessRuleTaskTest {
         .hasDecisionKey(lastDeployedDecision.getDecisionKey())
         .hasDecisionRequirementsKey(lastDeployedDecisionRequirements.getDecisionRequirementsKey())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+  }
+
+  @Test
+  public void shouldCreateIncidentWhenBusinessRuleHitsRuleWithoutId() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .businessRuleTask(
+                "br",
+                t ->
+                    t.zeebeCalledDecisionId(DMN_MISSING_RULE_DECISION_ID)
+                        .zeebeResultVariable("shippingType"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_DECISION_WITH_MISSING_RULE_ID)
+        .withXmlResource(process)
+        .deploy();
+
+    // when
+    final long piKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("amount", 200).create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .getFirst();
+
+    assertThat(incident.getValue())
+        .hasElementId("br")
+        .hasErrorType(ErrorType.DECISION_EVALUATION_ERROR)
+        .hasErrorMessage(
+            """
+                Expected to evaluate decision 'shippingDecision', but matched rule(s) without id (ruleId) were found.
+                Offending locations: decision 'shippingDecision' -> rule indices [2].
+                Fix: add an 'id' attribute to every <rule> in the affected decision table(s),
+                deploy a new DMN version, then retry the evaluation.""");
+  }
+
+  @Test
+  public void
+      shouldEvaluateRuleAfterDeployingNewDmnVersionWithCorrectRuleDefinitionsAndResolvingIncident() {
+    // given
+    final var process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .businessRuleTask(
+                "br",
+                t ->
+                    t.zeebeCalledDecisionId(DMN_MISSING_RULE_DECISION_ID)
+                        .zeebeResultVariable("shippingType"))
+            .endEvent()
+            .done();
+
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_DECISION_WITH_MISSING_RULE_ID)
+        .withXmlResource(process)
+        .deploy();
+
+    // when
+    final long piKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("amount", 200).create();
+
+    // then
+    final var incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .getFirst();
+
+    assertThat(incident.getValue())
+        .hasElementId("br")
+        .hasErrorType(ErrorType.DECISION_EVALUATION_ERROR);
+
+    // when
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource(DMN_DECISION_WITH_FIXED_RULE_ID)
+        .withXmlResource(process)
+        .deploy();
+
+    ENGINE.incident().ofInstance(incident.getKey()).withKey(incident.getKey()).resolve();
+
+    // then
+    final var shippingDecisionVariableRecordValue =
+        RecordingExporter.variableRecords(VariableIntent.CREATED)
+            .withProcessInstanceKey(piKey)
+            .withScopeKey(piKey)
+            .withName("shippingType")
+            .getFirst()
+            .getValue();
+
+    assertThat(shippingDecisionVariableRecordValue).hasValue("\"EXPRESS\"");
   }
 }
