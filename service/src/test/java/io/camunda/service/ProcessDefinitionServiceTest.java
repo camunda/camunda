@@ -32,6 +32,7 @@ public class ProcessDefinitionServiceTest {
   private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
   private FormServices formServices;
+  private ApiServicesExecutorProvider executorProvider;
 
   @BeforeEach
   public void before() {
@@ -42,13 +43,15 @@ public class ProcessDefinitionServiceTest {
     authentication = CamundaAuthentication.none();
     brokerClient = mock(BrokerClient.class);
     formServices = mock(FormServices.class);
+    executorProvider = mock(ApiServicesExecutorProvider.class);
     services =
         new ProcessDefinitionServices(
             brokerClient,
             securityContextProvider,
             processDefinitionSearchClient,
             formServices,
-            authentication);
+            authentication,
+            executorProvider);
   }
 
   @Test

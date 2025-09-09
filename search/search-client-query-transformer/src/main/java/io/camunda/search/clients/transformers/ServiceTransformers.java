@@ -335,7 +335,6 @@ public final class ServiceTransformers {
             ProcessDefinitionQuery.class,
             ProcessDefinitionFlowNodeStatisticsQuery.class,
             ProcessDefinitionInstanceStatisticsQuery.class,
-            ProcessDefinitionProcessInstanceStatisticsQuery.class,
             ProcessInstanceQuery.class,
             ProcessInstanceFlowNodeStatisticsQuery.class,
             RoleQuery.class,
@@ -479,10 +478,6 @@ public final class ServiceTransformers {
         CorrelatedMessageFilter.class,
         new CorrelatedMessageFilterTransformer(
             indexDescriptors.get(CorrelatedMessageTemplate.class)));
-    mappers.put(
-        ProcessDefinitionProcessInstanceStatisticsFilter.class,
-        new ProcessDefinitionProcessInstanceStatisticsFilterTransformer(
-            indexDescriptors.get(ListViewTemplate.class)));
 
     // result config -> source config
     mappers.put(
