@@ -37,13 +37,13 @@ public record CorrelatedMessageSort(List<FieldSorting> orderings) implements Sor
       return this;
     }
 
-    public Builder elementId() {
-      currentOrdering = new FieldSorting("elementId", null);
+    public Builder flowNodeId() {
+      currentOrdering = new FieldSorting("flowNodeId", null);
       return this;
     }
 
-    public Builder elementInstanceKey() {
-      currentOrdering = new FieldSorting("elementInstanceKey", null);
+    public Builder flowNodeInstanceKey() {
+      currentOrdering = new FieldSorting("flowNodeInstanceKey", null);
       return this;
     }
 

@@ -20,6 +20,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
 import static io.camunda.zeebe.protocol.record.ValueType.JOB;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.ValueType.MESSAGE_START_EVENT_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
@@ -286,10 +287,7 @@ public class CamundaExporter implements Exporter {
 
     if (writer.getBatchSize() == configuration.getBulk().getSize()) {
       LOG.info(
-          """
-Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish
-processing records from previous version
-""",
+          "Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish processing records from previous version",
           configuration.getBulk().getSize(),
           record.getPosition());
     }
@@ -426,6 +424,7 @@ processing records from previous version
             VARIABLE,
             VARIABLE_DOCUMENT,
             PROCESS_MESSAGE_SUBSCRIPTION,
+            MESSAGE_START_EVENT_SUBSCRIPTION,
             JOB,
             INCIDENT,
             DECISION_EVALUATION,

@@ -11,7 +11,6 @@ import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessInstanceSearchColumn;
 import io.camunda.search.clients.reader.ProcessInstanceReader;
-import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
@@ -70,24 +69,5 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
 
   public SearchQueryResult<ProcessInstanceEntity> search(final ProcessInstanceQuery query) {
     return search(query, ResourceAccessChecks.disabled());
-  }
-
-  public List<ProcessFlowNodeStatisticsEntity> flowNodeStatistics(final long processInstanceKey) {
-    LOG.trace("[RDBMS DB] Query process instance flow node statistics with {}", processInstanceKey);
-    return processInstanceMapper.flowNodeStatistics(processInstanceKey);
-  }
-
-  /**
-   * Checks if the search result should be empty based on resource and tenant authorization.
-   * Returns {@code true} if authorization is enabled but no authorized resource or tenant IDs are present.
-   *
-   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
-   * @return {@code true} if the search result should be empty, {@code false
-   */
-  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
-        || resourceAccessChecks.tenantCheck().enabled()
-            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
   }
 }

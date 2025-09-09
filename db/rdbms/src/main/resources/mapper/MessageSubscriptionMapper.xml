@@ -15,7 +15,7 @@
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
     FROM ${prefix}MESSAGE_SUBSCRIPTION
-    <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchFilter" />
+    <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -38,15 +38,34 @@
     HISTORY_CLEANUP_DATE
     FROM ${prefix}MESSAGE_SUBSCRIPTION
 
-    <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchFilter" />
+    <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchAndAuthFilter" />
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter" />
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy" />
     <include refid="io.camunda.db.rdbms.sql.Commons.paging" />
   </select>
 
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.MessageSubscriptionMapper.searchFilter"/>
+
+    </where>
+  </sql>
+
   <sql id="searchFilter">
-    WHERE 1 = 1
     <!-- basic filter -->
     <if test="filter.messageSubscriptionKeyOperations != null and !filter.messageSubscriptionKeyOperations.isEmpty()">
       <foreach collection="filter.messageSubscriptionKeyOperations" item="operation">

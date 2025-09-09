@@ -76,18 +76,4 @@ public class FlowNodeInstanceDbReader extends AbstractEntityReader<FlowNodeInsta
   public SearchQueryResult<FlowNodeInstanceEntity> search(final FlowNodeInstanceQuery query) {
     return search(query, ResourceAccessChecks.disabled());
   }
-
-  /**
-   * Checks if the search result should be empty based on resource and tenant authorization.
-   * Returns {@code true} if authorization is enabled but no authorized resource or tenant IDs are present.
-   *
-   * @param resourceAccessChecks the resource access checks containing authorization and tenant checks
-   * @return {@code true} if the search result should be empty, {@code false
-   */
-  private boolean shouldReturnEmptyResult(final ResourceAccessChecks resourceAccessChecks) {
-    return resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty()
-        || resourceAccessChecks.tenantCheck().enabled()
-            && resourceAccessChecks.getAuthorizedTenantIds().isEmpty();
-  }
 }
