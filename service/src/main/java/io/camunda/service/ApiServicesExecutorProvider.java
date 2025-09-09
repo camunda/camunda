@@ -61,7 +61,6 @@ public final class ApiServicesExecutorProvider {
     final int cap = Math.max(1, queueCapacity);
     final BlockingQueue<Runnable> workQueue = new ArrayBlockingQueue<>(cap);
 
-    // TODO - possibly need to map RejectedExecutionException
     final ThreadPoolExecutor executor =
         new ThreadPoolExecutor(
             corePoolSize,
