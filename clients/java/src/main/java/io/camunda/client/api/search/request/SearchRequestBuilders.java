@@ -26,6 +26,7 @@ import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -49,6 +50,7 @@ import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.IncidentSort;
 import io.camunda.client.api.search.sort.JobSort;
 import io.camunda.client.api.search.sort.MappingRuleSort;
+import io.camunda.client.api.search.sort.CorrelatedMessageSort;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
@@ -73,6 +75,7 @@ import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.JobFilterImpl;
 import io.camunda.client.impl.search.filter.MappingRuleFilterImpl;
+import io.camunda.client.impl.search.filter.CorrelatedMessageFilterImpl;
 import io.camunda.client.impl.search.filter.MessageSubscriptionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.ProcessInstanceFilterImpl;
@@ -97,6 +100,7 @@ import io.camunda.client.impl.search.sort.GroupUserSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
 import io.camunda.client.impl.search.sort.JobSortImpl;
 import io.camunda.client.impl.search.sort.MappingRuleSortImpl;
+import io.camunda.client.impl.search.sort.CorrelatedMessageSortImpl;
 import io.camunda.client.impl.search.sort.MessageSubscriptionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.ProcessInstanceSortImpl;
@@ -415,6 +419,20 @@ public final class SearchRequestBuilders {
   public static MessageSubscriptionSort messageSubscriptionSort(
       final Consumer<MessageSubscriptionSort> fn) {
     final MessageSubscriptionSort sort = new MessageSubscriptionSortImpl();
+    fn.accept(sort);
+    return sort;
+  }
+
+  public static CorrelatedMessageFilter correlatedMessageFilter(
+      final Consumer<CorrelatedMessageFilter> fn) {
+    final CorrelatedMessageFilter filter = new CorrelatedMessageFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static CorrelatedMessageSort correlatedMessageSort(
+      final Consumer<CorrelatedMessageSort> fn) {
+    final CorrelatedMessageSort sort = new CorrelatedMessageSortImpl();
     fn.accept(sort);
     return sort;
   }

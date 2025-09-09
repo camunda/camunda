@@ -132,6 +132,7 @@ import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
+import io.camunda.client.api.search.request.CorrelatedMessageSearchRequest;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
@@ -2704,4 +2705,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the message subscription search request
    */
   MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest();
+
+  /**
+   * Executes a search request to query correlated messages.
+   *
+   * <pre>
+   * camundaClient
+   *  .newCorrelatedMessageSearchRequest()
+   *  .filter((f) -> f.messageName("order-processed"))
+   *  .sort((s) -> s.correlationTime().desc())
+   *  .page((p) -> p.limit(100))
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the correlated message search request
+   */
+  CorrelatedMessageSearchRequest newCorrelatedMessageSearchRequest();
 }

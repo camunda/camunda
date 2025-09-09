@@ -33,6 +33,7 @@ import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.MappingRule;
+import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -406,6 +407,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<MessageSubscription> instances =
         toSearchResponseInstances(response.getItems(), MessageSubscriptionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<CorrelatedMessage> toCorrelatedMessageSearchResponse(
+      final CorrelatedMessageSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<CorrelatedMessage> instances =
+        toSearchResponseInstances(response.getItems(), CorrelatedMessageImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 }
