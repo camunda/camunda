@@ -257,11 +257,14 @@ public final class HttpClient implements AutoCloseable {
       final HttpZeebeFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
+<<<<<<< HEAD
 
     LOGGER.warn(
         "{} is deprecated and will be removed in version 8.10. Please migrate to {}",
         ZeebeClient.class.getSimpleName(),
         CamundaClient.class.getSimpleName());
+=======
+>>>>>>> 7b91bbe1 (fix: properly decrement http client retries in zeebe rest client)
 
     final URI target = buildRequestURI(path);
 
