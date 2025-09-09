@@ -35,26 +35,15 @@ import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.CamundaObjectMapper;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
-import io.camunda.spring.client.jobhandling.parameter.DefaultParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
-import io.camunda.spring.client.jobhandling.result.DefaultResultProcessorStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.spring.client.metrics.DefaultNoopMetricsRecorder;
-import io.camunda.spring.client.metrics.MetricsRecorder;
-import io.camunda.spring.client.test.util.JobWorkerPermutations;
-import io.camunda.spring.client.test.util.JobWorkerPermutationsGenerator.*;
-import io.camunda.spring.client.testsupport.JobWorkerPermutationsUtil;
+import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy;
-import io.camunda.client.jobhandling.parameter.ParameterResolver;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.DefaultDocumentResultProcessorFailureHandlingStrategy;
 import io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy;
-import io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy;
-import io.camunda.client.jobhandling.result.ResultProcessor;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.metrics.DefaultNoopMetricsRecorder;
 import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.client.spring.test.util.JobWorkerPermutations;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.AutoComplete;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.JobResponse;
@@ -81,7 +70,7 @@ public class JobHandlerInvokingBeansTest {
     final TestDimension testDimension = new TestDimension(AutoComplete.YES, response, List.of());
     final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        new SpringBeanJobHandlerFactory(
+        new BeanJobHandlerFactory(
                 methodInfo(testDimension),
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
@@ -112,7 +101,7 @@ public class JobHandlerInvokingBeansTest {
         new TestDimension(AutoComplete.NO, Response.VOID, List.of());
     final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        new SpringBeanJobHandlerFactory(
+        new BeanJobHandlerFactory(
                 methodInfo(testDimension),
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
@@ -135,7 +124,7 @@ public class JobHandlerInvokingBeansTest {
     final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
     final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        new SpringBeanJobHandlerFactory(
+        new BeanJobHandlerFactory(
                 methodInfo(testDimension),
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),
@@ -159,7 +148,7 @@ public class JobHandlerInvokingBeansTest {
     final TestDimension testDimension = new TestDimension(autoComplete, response, List.of());
     final JobWorkerValue jobWorkerValue = jobWorkerValue(testDimension);
     final JobHandler jobHandler =
-        new SpringBeanJobHandlerFactory(
+        new BeanJobHandlerFactory(
                 methodInfo(testDimension),
                 commandExceptionHandlingStrategy(),
                 parameterResolverStrategy(),

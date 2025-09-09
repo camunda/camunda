@@ -15,7 +15,6 @@
  */
 package io.camunda.client.spring.configuration;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.worker.BackoffSupplier;
@@ -24,7 +23,7 @@ import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultCommandExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.DefaultJobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
-import io.camunda.spring.client.jobhandling.JobWorkerFactory;
+import io.camunda.client.jobhandling.JobWorkerFactory;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;

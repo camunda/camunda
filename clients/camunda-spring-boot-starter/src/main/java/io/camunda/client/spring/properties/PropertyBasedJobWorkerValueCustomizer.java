@@ -15,23 +15,17 @@
  */
 package io.camunda.client.spring.properties;
 
-import static io.camunda.client.annotation.AnnotationUtil.getVariableParameters;
-import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
-import static io.camunda.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
-import io.camunda.spring.client.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.Name;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.Type;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue.Name;
+import io.camunda.client.annotation.value.JobWorkerValue.Type;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;

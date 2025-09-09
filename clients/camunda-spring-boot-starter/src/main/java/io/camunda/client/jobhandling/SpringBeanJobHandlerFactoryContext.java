@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling;
+package io.camunda.client.jobhandling;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.client.metrics.MetricsRecorder;
 
 public record SpringBeanJobHandlerFactoryContext(
     CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,

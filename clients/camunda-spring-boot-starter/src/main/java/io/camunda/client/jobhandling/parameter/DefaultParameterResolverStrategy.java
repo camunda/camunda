@@ -24,7 +24,6 @@ import static io.camunda.client.annotation.AnnotationUtil.isKey;
 import static io.camunda.client.annotation.AnnotationUtil.isVariable;
 import static io.camunda.client.annotation.AnnotationUtil.isVariablesAsType;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.VariableValue;

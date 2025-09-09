@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
@@ -23,9 +22,6 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.FailJobResponse;
 import io.camunda.client.api.response.ThrowErrorResponse;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.spring.client.exception.BpmnError;
-import io.camunda.spring.client.exception.JobError;
-import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.impl.worker.JobExceptionHandlerImpl;
