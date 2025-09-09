@@ -181,8 +181,6 @@ public class TaskService {
 
     if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
       // Zeebe User Task
-      taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
-
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
       tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
@@ -238,7 +236,6 @@ public class TaskService {
       final TaskEntity task = taskStore.getTask(taskId);
       if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
         // Zeebe User Task
-        taskValidator.validateCanComplete(task);
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
         // persist completion and variables
@@ -317,7 +314,6 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
       // Zeebe User Task
-      taskValidator.validateCanUnassign(taskBefore);
       final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
       try {
         tasklistServicesAdapter.unassignUserTask(taskEntity);
