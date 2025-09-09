@@ -721,8 +721,8 @@ public class SearchQuerySortRequestMapper {
       switch (field) {
         case CORRELATION_KEY -> builder.correlationKey();
         case CORRELATION_TIME -> builder.correlationTime();
-        case ELEMENT_ID -> builder.elementId();
-        case ELEMENT_INSTANCE_KEY -> builder.elementInstanceKey();
+        case ELEMENT_ID -> builder.flowNodeId();
+        case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
         case MESSAGE_KEY -> builder.messageKey();
         case MESSAGE_NAME -> builder.messageName();
         case PARTITION_ID -> builder.partitionId();

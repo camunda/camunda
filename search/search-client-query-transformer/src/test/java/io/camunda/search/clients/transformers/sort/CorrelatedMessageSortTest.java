@@ -26,8 +26,8 @@ public class CorrelatedMessageSortTest extends AbstractSortTransformerTest {
     return Stream.of(
         new TestArguments("correlationKey", SortOrder.ASC, s -> s.correlationKey().asc()),
         new TestArguments("correlationTime", SortOrder.ASC, s -> s.correlationTime().asc()),
-        new TestArguments("flowNodeId", SortOrder.ASC, s -> s.elementId().asc()),
-        new TestArguments("flowNodeInstanceKey", SortOrder.ASC, s -> s.elementInstanceKey().asc()),
+        new TestArguments("flowNodeId", SortOrder.ASC, s -> s.flowNodeId().asc()),
+        new TestArguments("flowNodeInstanceKey", SortOrder.ASC, s -> s.flowNodeInstanceKey().asc()),
         new TestArguments("messageKey", SortOrder.ASC, s -> s.messageKey().asc()),
         new TestArguments("messageName", SortOrder.ASC, s -> s.messageName().asc()),
         new TestArguments("partitionId", SortOrder.ASC, s -> s.partitionId().asc()),
