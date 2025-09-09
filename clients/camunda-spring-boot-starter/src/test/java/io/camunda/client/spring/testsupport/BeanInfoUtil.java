@@ -18,7 +18,7 @@ package io.camunda.client.spring.testsupport;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.spring.client.bean.MethodInfo;
+import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import java.beans.Introspector;
 import java.lang.reflect.InvocationTargetException;

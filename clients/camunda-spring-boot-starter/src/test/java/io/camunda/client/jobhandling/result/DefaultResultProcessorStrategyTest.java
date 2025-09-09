@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.bean.MethodInfo;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
+import io.camunda.client.spring.bean.MethodInfo;
 import org.junit.jupiter.api.Test;
 
 class DefaultResultProcessorStrategyTest {

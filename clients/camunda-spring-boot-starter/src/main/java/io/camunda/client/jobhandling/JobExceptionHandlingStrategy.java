@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
