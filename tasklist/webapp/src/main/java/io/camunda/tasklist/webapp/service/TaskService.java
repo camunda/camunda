@@ -179,7 +179,21 @@ public class TaskService {
 
     final TaskEntity taskBefore = taskStore.getTask(taskId);
 
-    if (true) {
+    if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+      // Zeebe User Task
+      taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
+
+      final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
+      tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+
+      final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
+      final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
+      updateClaimedMetric(assignedTaskMetrics);
+      updateTaskAssignedMetric(claimedTask);
+      return TaskDTO.createFrom(claimedTask, objectMapper);
+
+    } else {
+      // Job-based User Task
       taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
@@ -222,7 +236,29 @@ public class TaskService {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
-      if (true) {
+      if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+        // Zeebe User Task
+        taskValidator.validateCanComplete(task);
+        tasklistServicesAdapter.completeUserTask(task, variablesMap);
+
+        // persist completion and variables
+        final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
+        try {
+          LOGGER.info("Start variable persistence: {}", taskId);
+          variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+          deleteDraftTaskVariablesSafely(taskId);
+          updateCompletedMetric(completedTaskEntity);
+          LOGGER.info("Task with ID {} completed successfully.", taskId);
+        } catch (final Exception e) {
+          LOGGER.error(
+              "Task with key {} was COMPLETED but error happened after completion: {}.",
+              taskId,
+              e.getMessage());
+        }
+
+        return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+      } else {
+        // Job-based User Task
         taskValidator.validateCanComplete(task);
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
@@ -279,7 +315,19 @@ public class TaskService {
 
   public TaskDTO unassignTask(final String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
-    if (true) {
+    if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
+      // Zeebe User Task
+      taskValidator.validateCanUnassign(taskBefore);
+      final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
+      try {
+        tasklistServicesAdapter.unassignUserTask(taskEntity);
+      } catch (final Exception e) {
+        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+        throw e;
+      }
+      return TaskDTO.createFrom(taskEntity, objectMapper);
+    } else {
+      // Job-based User Task
       taskValidator.validateCanUnassign(taskBefore);
       final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
       try {
