@@ -98,7 +98,7 @@
     <version.testcontainer-mariadb>1.20.0</version.testcontainer-mariadb>
     <version.postgressql-testcontainer>1.20.1</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.3</version.netflix.concurrency>
-    <version.zeebe-test-container>3.6.5</version.zeebe-test-container>
+    <version.zeebe-test-container>3.6.7</version.zeebe-test-container>
     <version.feel-scala>1.19.3</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
     <version.rest-assured>5.5.5</version.rest-assured>
