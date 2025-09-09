@@ -15,23 +15,16 @@
  */
 package io.camunda.client.spring.configuration;
 
-import io.camunda.spring.client.annotation.processor.CamundaClientLifecycleAware;
-import io.camunda.spring.client.annotation.processor.DeploymentAnnotationProcessor;
-import io.camunda.spring.client.annotation.processor.JobWorkerAnnotationProcessor;
-import io.camunda.spring.client.event.CamundaClientEventListener;
-import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.spring.client.metrics.MetricsRecorder;
-import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
+import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
+import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientEventListener;
-import java.util.List;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;

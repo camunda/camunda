@@ -16,10 +16,10 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.Name;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.Type;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue.Name;
+import io.camunda.client.annotation.value.JobWorkerValue.Type;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;

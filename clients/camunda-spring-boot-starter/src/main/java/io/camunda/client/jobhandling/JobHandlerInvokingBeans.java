@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivatedJob;
@@ -23,11 +22,6 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
-import io.camunda.spring.client.jobhandling.result.ResultProcessor;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorContext;
-import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;

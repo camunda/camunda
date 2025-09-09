@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.actuator;
+package io.camunda.client.spring.actuator;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.MaxRetriesChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NameChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.PollIntervalChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TimeoutChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerChangeSet.TypeChangeSet;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.jobhandling.JobWorkerChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.MaxRetriesChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.NameChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.PollIntervalChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.TimeoutChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.TypeChangeSet;
+import io.camunda.client.jobhandling.JobWorkerManager;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;

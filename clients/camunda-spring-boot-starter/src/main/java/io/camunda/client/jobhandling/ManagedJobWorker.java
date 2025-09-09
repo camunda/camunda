@@ -13,14 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling;
+package io.camunda.client.jobhandling;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.api.worker.JobHandler;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue;
 
-public interface JobHandlerFactory {
-  JobHandler getJobHandler(final JobHandlerFactoryContext context);
-
-  record JobHandlerFactoryContext(JobWorkerValue jobWorkerValue, CamundaClient camundaClient) {}
-}
+public record ManagedJobWorker(
+    JobWorkerValue jobWorkerValue, JobHandlerFactory jobHandlerFactory) {}

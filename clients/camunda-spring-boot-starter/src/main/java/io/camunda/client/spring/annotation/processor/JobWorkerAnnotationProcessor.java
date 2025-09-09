@@ -20,22 +20,18 @@ import static io.camunda.client.annotation.AnnotationUtil.isJobWorker;
 import static org.springframework.util.ReflectionUtils.doWithMethods;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.spring.client.bean.ClassInfo;
-import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.configuration.AnnotationProcessorConfiguration;
-import io.camunda.spring.client.jobhandling.CommandExceptionHandlingStrategy;
-import io.camunda.spring.client.jobhandling.JobExceptionHandlingStrategy;
-import io.camunda.spring.client.jobhandling.JobWorkerManager;
-import io.camunda.spring.client.jobhandling.ManagedJobWorker;
-import io.camunda.spring.client.jobhandling.SpringBeanJobHandlerFactory;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.spring.client.metrics.MetricsRecorder;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
-import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.jobhandling.BeanJobHandlerFactory;
+import io.camunda.client.jobhandling.CommandExceptionHandlingStrategy;
+import io.camunda.client.jobhandling.JobExceptionHandlingStrategy;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.jobhandling.JobWorkerManager;
+import io.camunda.client.jobhandling.ManagedJobWorker;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,9 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.ReflectionUtils;
 
 /**
- * Always created by {@link AnnotationProcessorConfiguration}
- *
- * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
+ * Triggered by {@link AbstractCamundaAnnotationProcessor#onStart(CamundaClient)} to add Handler
  * subscriptions for {@link JobWorker} method-annotations.
  *
  * <p>Triggered by {@link AbstractCamundaAnnotationProcessor#onStop(CamundaClient)} to remove all
@@ -97,7 +91,7 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
                   jobWorkerValue ->
                       new ManagedJobWorker(
                           jobWorkerValue,
-                          new SpringBeanJobHandlerFactory(
+                          new BeanJobHandlerFactory(
                               methodInfo,
                               commandExceptionHandlingStrategy,
                               parameterResolverStrategy,

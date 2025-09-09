@@ -16,7 +16,7 @@
 package io.camunda.client.spring.annotation;
 
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
-import static io.camunda.spring.client.testsupport.ClassInfoUtil.methodInfo;
+import static io.camunda.client.spring.testsupport.ClassInfoUtil.methodInfo;
 import static io.camunda.client.spring.testsupport.BeanInfoUtil.parameterInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -24,15 +24,22 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
+import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.spring.bean.ParameterInfo;
 import io.camunda.spring.client.annotation.value.DeploymentValue;
 import io.camunda.spring.client.annotation.value.DocumentValue;
 import io.camunda.spring.client.annotation.value.JobWorkerValue;
@@ -100,19 +107,18 @@ public class AnnotationUtilTest {
           .containsExactly(new FetchVariable("value", FieldSource.GENERATED_FROM_METHOD_INFO));
     }
 
-    @io.camunda.spring.client.annotation.JobWorker
+    @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithEmptyJsonProperty(
         @VariablesAsType final PropertyAnnotatedClassEmptyValue annotatedClass) {}
 
-    @io.camunda.spring.client.annotation.JobWorker
-    public void sampleWorker(
-        @io.camunda.spring.client.annotation.Variable final String helloWorld) {}
+    @io.camunda.client.annotation.JobWorker
+    public void sampleWorker(@io.camunda.client.annotation.Variable final String helloWorld) {}
 
-    @io.camunda.spring.client.annotation.JobWorker
+    @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithVariablesType(
         @VariablesAsType final VariablesType annotatedClass) {}
 
-    @io.camunda.spring.client.annotation.JobWorker
+    @io.camunda.client.annotation.JobWorker
     public void sampleWorkerWithJsonProperty(
         @VariablesAsType final PropertyAnnotatedClass annotatedClass) {}
 
