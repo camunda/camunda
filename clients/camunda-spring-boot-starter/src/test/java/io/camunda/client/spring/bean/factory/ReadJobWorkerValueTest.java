@@ -19,8 +19,8 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.bean.ClassInfoTest;
 import io.camunda.client.spring.bean.ClassInfoTest.WithJobWorker;

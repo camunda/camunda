@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling;
+package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolver;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy;
-import io.camunda.spring.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
-import io.camunda.spring.client.jobhandling.result.ResultProcessor;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy;
-import io.camunda.spring.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
-import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.client.jobhandling.parameter.ParameterResolver;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
+import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
+import io.camunda.client.jobhandling.result.ResultProcessor;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
+import io.camunda.client.metrics.MetricsRecorder;
+import io.camunda.client.spring.bean.MethodInfo;
 import java.util.List;
 
-public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
+public class BeanJobHandlerFactory implements JobHandlerFactory {
   private final MethodInfo methodInfo;
   private final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy;
   private final ParameterResolverStrategy parameterResolverStrategy;
@@ -35,7 +35,7 @@ public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
   private final MetricsRecorder metricsRecorder;
   private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
-  public SpringBeanJobHandlerFactory(
+  public BeanJobHandlerFactory(
       final MethodInfo methodInfo,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final ParameterResolverStrategy parameterResolverStrategy,
@@ -64,7 +64,7 @@ public class SpringBeanJobHandlerFactory implements JobHandlerFactory {
 
   @Override
   public JobHandler getJobHandler(final JobHandlerFactoryContext context) {
-    return new JobHandlerInvokingSpringBeans(
+    return new JobHandlerInvokingBeans(
         context.jobWorkerValue().getName().value(),
         methodInfo::invoke,
         context.jobWorkerValue().getAutoComplete(),

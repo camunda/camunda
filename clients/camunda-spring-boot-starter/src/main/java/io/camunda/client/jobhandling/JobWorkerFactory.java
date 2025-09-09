@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.spring.client.jobhandling;
+package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
-import io.camunda.spring.client.metrics.CamundaClientMetricsBridge;
-import io.camunda.spring.client.metrics.MetricsRecorder;
+import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
+import io.camunda.client.metrics.CamundaClientMetricsBridge;
+import io.camunda.client.metrics.MetricsRecorder;
 import java.time.Duration;
 
 public class JobWorkerFactory {

@@ -17,8 +17,9 @@ package io.camunda.spring.client.annotation.value;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
 import java.time.Duration;
 import java.util.List;
 import org.junit.jupiter.api.Test;

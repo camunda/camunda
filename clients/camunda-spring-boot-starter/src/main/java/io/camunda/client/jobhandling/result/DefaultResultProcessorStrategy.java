@@ -15,9 +15,6 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.client.spring.bean.MethodInfo;
-
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
   private final DocumentResultProcessorFailureHandlingStrategy
       documentResultProcessorFailureHandlingStrategy;
