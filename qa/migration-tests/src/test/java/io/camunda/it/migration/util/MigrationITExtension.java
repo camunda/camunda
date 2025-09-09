@@ -238,8 +238,9 @@ public class MigrationITExtension
     logger.addAppender(appender);
 
     Awaitility.await()
+        .pollInterval(Duration.ofSeconds(5))
         .atMost(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertThat(appender.logs.size()).isGreaterThan(0));
+        .untilAsserted(() -> assertThat(appender.completed).isTrue());
 
     logger.detachAndStopAllAppenders();
   }
@@ -289,12 +290,14 @@ public class MigrationITExtension
 
   static class LogAppender extends AppenderBase<ILoggingEvent> {
 
-    final List<ILoggingEvent> logs = new ArrayList<>();
+    boolean completed = false;
 
     @Override
     protected void append(final ILoggingEvent iLoggingEvent) {
       if (iLoggingEvent.getMessage().contains("All migration tasks completed")) {
-        logs.add(iLoggingEvent);
+        synchronized (this) {
+          completed = true;
+        }
       }
     }
   }
