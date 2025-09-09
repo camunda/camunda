@@ -278,8 +278,28 @@ public class RecordGoldenFilesTest {
     LOG.warn(
         """
         Record classes are part of the protocol and must remain compatible across versions.
-        Golden files ensure that changes are explicit and reviewed for backward compatibility.
-        If you change a record, update the golden file only after careful review.
+        Golden files exist to make changes explicit and to ensure backward compatibility is
+        carefully reviewed before being accepted.
+
+        Incompatible changes can break replay, interoperability between cluster
+        members, or upgrades. Golden files help reviewers detect unintended protocol
+        modifications and force deliberate updates.
+
+        If this test fails, consider the following scenarios:
+
+        1) You added a new property:
+           - Add a safe default value so older versions can continue to operate.
+
+        2) You removed a property:
+           - This is breaking and must be coordinated as a protocol change; do not remove
+             fields without an explicit compatibility plan.
+
+        3) Golden file is missing for a new record:
+           - Create the golden file after careful review.
+
+        To update the golden file, use the command printed by the test logs (see
+        printGoldenFileCommand) to copy or create the golden file. Always double-check
+        the change and add appropriate justification in the PR.
         """);
   }
 
