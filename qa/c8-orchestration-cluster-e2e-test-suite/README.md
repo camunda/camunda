@@ -55,7 +55,7 @@ npx playwright install
 
 ### 3. Configure Environment Variables
 
-Create a `.env` file inside `c8-orchestration-cluster-e2e-test-suite`.  
+Create a `.env` file inside `c8-orchestration-cluster-e2e-test-suite`.
 This file configures test parameters, including application URLs and credentials.
 **Note**: Do not commit the `.env` file to GitHub to avoid exposing sensitive information.
 
@@ -138,7 +138,7 @@ This test suite follows the **Page Object Model (POM)** pattern for reusability 
 
 1. Go to [C8 Orchestration Cluster E2E Tests On Demand](https://github.com/camunda/camunda/actions/workflows/c8-orchestration-cluster-e2e-tests-on-demand.yml)
 2. Click **"Run workflow"**
-3. Choose the desired branch (e.g., `main`, `stable/8.6`, `stable/8.7`)
+3. Choose the desired branch (e.g., `main`, `stable/8.6`, `stable/8.7`, `stable/8.8`)
 4. Click **"Run workflow"**
 
 ---
@@ -200,5 +200,5 @@ If you want to suggest a new test case without submitting code:
 
 ---
 
-Thank you for using the C8 Orchestration Cluster End-to-End Test Suite.  
+Thank you for using the C8 Orchestration Cluster End-to-End Test Suite.
 Happy testing! 🚀 For help, reach out to the DRI.
