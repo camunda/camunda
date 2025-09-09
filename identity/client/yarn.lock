@@ -4013,7 +4013,7 @@ __metadata:
     sass: "npm:1.89.2"
     styled-components: "npm:6.1.13"
     typescript: "npm:5.8.2"
-    vite: "npm:7.0.0"
+    vite: "npm:7.0.7"
     vite-plugin-svgr: "npm:^4.3.0"
   languageName: unknown
   linkType: soft
@@ -5312,6 +5312,13 @@ __metadata:
   version: 4.0.2
   resolution: "picomatch@npm:4.0.2"
   checksum: 10c0/7c51f3ad2bb42c776f49ebf964c644958158be30d0a510efd5a395e8d49cb5acfed5b82c0c5b365523ce18e6ab85013c9ebe574f60305892ec3fa8eee8304ccc
+  languageName: node
+  linkType: hard
+
+"picomatch@npm:^4.0.3":
+  version: 4.0.3
+  resolution: "picomatch@npm:4.0.3"
+  checksum: 10c0/9582c951e95eebee5434f59e426cddd228a7b97a0161a375aed4be244bd3fe8e3a31b846808ea14ef2c8a2527a6eeab7b3946a67d5979e81694654f939473ae2
   languageName: node
   linkType: hard
 
@@ -6763,14 +6770,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite@npm:7.0.0":
-  version: 7.0.0
-  resolution: "vite@npm:7.0.0"
+"vite@npm:7.0.7":
+  version: 7.0.7
+  resolution: "vite@npm:7.0.7"
   dependencies:
     esbuild: "npm:^0.25.0"
     fdir: "npm:^6.4.6"
     fsevents: "npm:~2.3.3"
-    picomatch: "npm:^4.0.2"
+    picomatch: "npm:^4.0.3"
     postcss: "npm:^8.5.6"
     rollup: "npm:^4.40.0"
     tinyglobby: "npm:^0.2.14"
@@ -6814,7 +6821,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/860838d223f877dd8e04bd2b8f33cf67a38706643bdf07e3153e2857d7c0d33c3ee94cea7e86e60937cc91b3793272912cc7af14565641476f814bd61b3a1374
+  checksum: 10c0/ccede60fced8a738f10c804a47d82b551a4250114ceb3026dc65a7ef8ba4700154ad59a85674862271a53eecc3c300bfe4d41672ae26212d9f0a99fb995344fc
   languageName: node
   linkType: hard
 
