@@ -36,7 +36,9 @@ import io.camunda.tasklist.webapp.security.TasklistAuthenticationUtil;
 import io.camunda.tasklist.zeebe.TasklistServicesAdapter;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
+import io.camunda.webapps.schema.entities.usertask.TaskState;
 import java.io.IOException;
+import java.time.OffsetDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import org.apache.commons.collections4.CollectionUtils;
@@ -184,7 +186,8 @@ public class TaskService {
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
       tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
-      final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
+      taskStore.persistTaskClaim(taskBefore, taskAssignee);
+      final TaskEntity claimedTask = taskStore.makeCopyOf(taskBefore).setAssignee(taskAssignee);
       final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
       updateClaimedMetric(assignedTaskMetrics);
       updateTaskAssignedMetric(claimedTask);
@@ -239,7 +242,12 @@ public class TaskService {
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
         // persist completion and variables
-        final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
+        taskStore.persistTaskCompletion(task);
+        final TaskEntity completedTaskEntity =
+            taskStore
+                .makeCopyOf(task)
+                .setState(TaskState.COMPLETED)
+                .setCompletionTime(OffsetDateTime.now());
         try {
           LOGGER.info("Start variable persistence: {}", taskId);
           variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
@@ -314,7 +322,8 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
       // Zeebe User Task
-      final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
+      taskStore.persistTaskUnclaim(taskBefore);
+      final TaskEntity taskEntity = taskStore.makeCopyOf(taskBefore).setAssignee(null);
       try {
         tasklistServicesAdapter.unassignUserTask(taskEntity);
       } catch (final Exception e) {
