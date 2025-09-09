@@ -24,6 +24,7 @@ import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.BatchOperationItems;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
 import io.camunda.client.api.search.response.Client;
+import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -406,6 +407,14 @@ public final class SearchResponseMapper {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<MessageSubscription> instances =
         toSearchResponseInstances(response.getItems(), MessageSubscriptionImpl::new);
+    return new SearchResponseImpl<>(instances, page);
+  }
+
+  public static SearchResponse<CorrelatedMessage> toCorrelatedMessageSearchResponse(
+      final CorrelatedMessageSearchQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<CorrelatedMessage> instances =
+        toSearchResponseInstances(response.getItems(), CorrelatedMessageImpl::new);
     return new SearchResponseImpl<>(instances, page);
   }
 }
