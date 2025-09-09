@@ -19,6 +19,8 @@ public class Executor {
       Set.of("camunda.rest.apiExecutor.maxPoolSizeMultiplier");
   private static final Set<String> LEGACY_KEEP_ALIVE_SECONDS_PROPERTIES =
       Set.of("camunda.rest.apiExecutor.keepAliveSeconds");
+  private static final Set<String> LEGACY_KEEP_QUEUE_CAPACITY_PROPERTIES =
+      Set.of("camunda.rest.apiExecutor.queueCapacity");
 
   /**
    * Multiplier applied to the number of available processors to compute the executor's core pool
@@ -57,6 +59,14 @@ public class Executor {
    * ApiExecutorConfiguration#DEFAULT_KEEP_ALIVE_SECONDS})
    */
   private Duration keepAlive = Duration.ofSeconds(60);
+
+  /**
+   * Capacity of the executor's task queue. A small bounded queue (e.g. 64) is recommended to handle
+   * short bursts while still allowing the pool to grow.
+   *
+   * <p>Default value: 64 (as defined in ApiExecutorConfiguration#DEFAULT_QUEUE_CAPACITY)
+   */
+  private int queueCapacity = 64;
 
   public int getCorePoolSizeMultiplier() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -97,5 +107,18 @@ public class Executor {
 
   public void setKeepAlive(final Duration keepAlive) {
     this.keepAlive = keepAlive;
+  }
+
+  public int getQueueCapacity() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".queue-capacity",
+        queueCapacity,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_KEEP_QUEUE_CAPACITY_PROPERTIES);
+  }
+
+  public void setQueueCapacity(final int queueCapacity) {
+    this.queueCapacity = queueCapacity;
   }
 }
