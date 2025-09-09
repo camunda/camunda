@@ -39,6 +39,8 @@ export const waitForItemInList = async (
     emptyStateLocator?: Locator;
     onAfterReload?: () => Promise<void>;
     clickNext?: boolean;
+    retries?: number;
+    retryDelay?: number;
   },
 ) => {
   const {
@@ -47,16 +49,57 @@ export const waitForItemInList = async (
     emptyStateLocator,
     onAfterReload,
     clickNext = false,
+    retries = 3,
+    retryDelay = 1000,
   } = options || {};
 
   const poll = expect.poll(
     async () => {
-      await page.reload();
+      let lastError: Error | undefined;
 
-      if (onAfterReload) {
-        await onAfterReload();
+      for (let retry = 0; retry <= retries; retry++) {
+        try {
+          await page.reload();
+
+          if (onAfterReload) {
+            await onAfterReload();
+          }
+
+          if (emptyStateLocator) {
+            await Promise.race([
+              page
+                .getByRole('cell')
+                .filter({hasText: /.+/, hasNot: page.locator('div')})
+                .first()
+                .waitFor(),
+              emptyStateLocator?.waitFor(),
+            ]);
+          } else {
+            await page
+              .getByRole('cell')
+              .filter({hasText: /.+/, hasNot: page.locator('div')})
+              .first()
+              .waitFor();
+          }
+
+          return clickNext
+            ? await findLocatorInPaginatedList(page, item)
+            : await item.isVisible();
+        } catch (error) {
+          lastError = error instanceof Error ? error : new Error(String(error));
+
+          if (retry === retries) {
+            throw lastError;
+          }
+
+          console.log(
+            `Wait attempt ${retry + 1} failed, retrying in ${retryDelay}ms...`,
+          );
+          await sleep(retryDelay);
+        }
       }
 
+<<<<<<< HEAD
       if (emptyStateLocator) {
         await Promise.race([
           page
@@ -79,6 +122,9 @@ export const waitForItemInList = async (
       } else {
         return await item.isVisible();
       }
+=======
+      throw lastError || new Error('All retry attempts failed');
+>>>>>>> cb9acd7b1df (test: identity e2e User inherits permissions through role assignment)
     },
     {timeout},
   );
