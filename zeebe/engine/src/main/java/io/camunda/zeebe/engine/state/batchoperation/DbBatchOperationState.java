@@ -133,17 +133,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   @Override
   public void fail(final long batchOperationKey) {
     LOGGER.trace("Failing batch operation with key {}", batchOperationKey);
-    batchKey.wrapLong(batchOperationKey);
-    final var batchOperation = get(batchOperationKey);
-    if (batchOperation.isPresent()) {
-      batchOperation.get().setStatus(BatchOperationStatus.FAILED);
-      batchOperationColumnFamily.update(batchKey, batchOperation.get());
-
-      // remove from pending batch operations, the initialization failed and will not be retried
-      pendingBatchOperationColumnFamily.deleteIfExists(batchKey);
-    } else {
-      LOGGER.error("Batch operation with key {} not found, cannot fail it.", batchOperationKey);
-    }
+    deleteBatchOperation(batchOperationKey);
   }
 
   @Override
