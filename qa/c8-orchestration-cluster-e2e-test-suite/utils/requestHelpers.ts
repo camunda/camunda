@@ -11,9 +11,12 @@ import {
   CREATE_NEW_MAPPING_RULE,
   CREATE_NEW_ROLE,
   CREATE_NEW_TENANT,
+  CREATE_NEW_USER,
+  authorizedComponentRequiredFields,
   groupRequiredFields,
   roleRequiredFields,
   tenantRequiredFields,
+  userRequiredFields,
 } from './beans/requestBeans';
 import {
   assertEqualsForKeys,
@@ -80,6 +83,16 @@ export async function createRoleAndStoreResponseFields(
 ) {
   for (let i = 1; i <= numberOfRoles; i++) {
     await createRole(request, state, `${i}`);
+  }
+}
+
+export async function createUsersAndStoreResponseFields(
+  request: APIRequestContext,
+  numberOfUsers: number,
+  state: Record<string, unknown>,
+) {
+  for (let i = 1; i <= numberOfUsers; i++) {
+    await createUser(request, state, `${i}`);
   }
 }
 
@@ -388,6 +401,44 @@ export async function createRole(
   return body;
 }
 
+export async function createComponentAuthorization(
+  request: APIRequestContext,
+  body: Serializable,
+) {
+  const res = await request.post(buildUrl('/authorizations'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+
+  expect(res.status()).toBe(201);
+  const json = await res.json();
+  assertRequiredFields(json, authorizedComponentRequiredFields);
+}
+
+export async function createUser(
+  request: APIRequestContext,
+  state?: Record<string, unknown>,
+  key?: string,
+) {
+  const body = CREATE_NEW_USER();
+
+  const res = await request.post(buildUrl('/users'), {
+    headers: jsonHeaders(),
+    data: body,
+  });
+
+  expect(res.status()).toBe(201);
+  const json = await res.json();
+  assertRequiredFields(json, userRequiredFields);
+  if (state && key) {
+    state[`username${key}`] = json.username;
+    state[`name${key}`] = json.name;
+    state[`email${key}`] = json.email;
+    state[`password${key}`] = body.password;
+  }
+  return body;
+}
+
 export async function createTenant(
   request: APIRequestContext,
   state?: Record<string, unknown>,
@@ -411,13 +462,26 @@ export async function createTenant(
   return body;
 }
 
-export function assertUsersInResponse(json: Serializable, user: string) {
+export function assertUserNameInResponse(json: Serializable, user: string) {
   const matchingItem = json.items.find(
     (it: {username: string}) => it.username === user,
   );
   expect(matchingItem).toBeDefined();
   assertRequiredFields(matchingItem, ['username']);
   assertEqualsForKeys(matchingItem, {username: user}, ['username']);
+}
+
+export function assertUserInResponse(
+  json: Serializable,
+  expectedBody: Serializable,
+  user: string,
+) {
+  const matchingItem = json.items.find(
+    (it: {username: string}) => it.username === user,
+  );
+  expect(matchingItem).toBeDefined();
+  assertRequiredFields(matchingItem, userRequiredFields);
+  assertEqualsForKeys(matchingItem, expectedBody, userRequiredFields);
 }
 
 export function assertClientsInResponse(json: Serializable, client: string) {

@@ -20,7 +20,7 @@ import {
   generateUniqueId,
 } from '../../../../utils/constants';
 import {
-  assertUsersInResponse,
+  assertUserNameInResponse,
   assignUsersToTenant,
   createTenant,
   userFromState,
@@ -131,9 +131,9 @@ test.describe.parallel('Tenant Users API Tests', () => {
         itemsLengthEqualTo: 3,
       });
       const json = await res.json();
-      assertUsersInResponse(json, user1);
-      assertUsersInResponse(json, user2);
-      assertUsersInResponse(json, user3);
+      assertUserNameInResponse(json, user1);
+      assertUserNameInResponse(json, user2);
+      assertUserNameInResponse(json, user3);
     }).toPass(defaultAssertionOptions);
   });
 

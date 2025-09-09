@@ -47,16 +47,12 @@ test.describe.serial('roles CRUD', () => {
 
   test('deletes a role', async ({page, identityRolesPage}) => {
     const item = identityRolesPage.roleCell(NEW_ROLE.name);
-    await waitForItemInList(page, item, {
-      clickNext: true,
-      timeout: 60000,
-    });
     await identityRolesPage.deleteRole(NEW_ROLE.name);
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 });

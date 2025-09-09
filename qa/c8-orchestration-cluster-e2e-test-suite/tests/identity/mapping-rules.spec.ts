@@ -105,7 +105,7 @@ test.describe.serial('mapping rules CRUD', () => {
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 });

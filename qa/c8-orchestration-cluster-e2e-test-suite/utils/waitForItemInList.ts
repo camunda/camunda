@@ -71,7 +71,7 @@ export const waitForItemInList = async (
           .getByRole('cell')
           .filter({hasText: /.+/, hasNot: page.locator('div')})
           .first()
-          .waitFor();
+          .waitFor({timeout: 20000});
       }
 
       if (clickNext) {
