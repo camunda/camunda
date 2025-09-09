@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [stable/8.6, stable/8.7, main] # Run all three branches in parallel
+        branch: [stable/8.6, stable/8.7, stable/8.8, main] # Run all four branches in parallel
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
