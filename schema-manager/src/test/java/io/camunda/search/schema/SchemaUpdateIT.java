@@ -20,7 +20,6 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.time.Duration;
@@ -57,11 +56,8 @@ class SchemaUpdateIT {
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
-    final var previousSemanticVersion =
-        SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
     previousMinorSnapshotVersion =
-        "%d.%d-SNAPSHOT"
-            .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
+        "%d.%d-SNAPSHOT".formatted(semanticVersion.major(), semanticVersion.minor() - 1);
   }
 
   @BeforeEach
@@ -86,8 +82,6 @@ class SchemaUpdateIT {
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
             .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
             .withEnv("CAMUNDA_OPERATE_%s_NUMBEROFREPLICAS".formatted(databaseType.name()), "1")
             .withEnv(
