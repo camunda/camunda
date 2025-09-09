@@ -85,9 +85,10 @@ class BatchOperationControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldReturnFailedBatchOperation() {
+  void shouldReturnPartiallyCompletedBatchOperation() {
     final var batchOperationKey = "1";
-    final var batchOperationEntity = getFailedBatchOperationEntity(batchOperationKey);
+    final var batchOperationEntity =
+        getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.PARTIALLY_COMPLETED);
 
     when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
 
@@ -104,6 +105,49 @@ class BatchOperationControllerTest extends RestControllerTest {
           {
               "batchOperationKey":"1",
               "state":"PARTIALLY_COMPLETED",
+              "batchOperationType":"CANCEL_PROCESS_INSTANCE",
+              "startDate":"2025-03-18T10:57:44.000+01:00",
+              "endDate":"2025-03-18T10:57:45.000+01:00",
+              "operationsTotalCount":10,
+              "operationsFailedCount":0,
+              "operationsCompletedCount":10,
+              "errors":[
+                {
+                  "partitionId":1,
+                  "type":"QUERY_FAILED",
+                  "message":"Stack Trace"
+                },
+                {
+                  "partitionId":2,
+                  "type":"QUERY_FAILED",
+                  "message":"Stack Trace"
+                }
+              ]
+          }""",
+            JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldReturnFailedBatchOperation() {
+    final var batchOperationKey = "1";
+    final var batchOperationEntity =
+        getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.FAILED);
+
+    when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
+
+    webClient
+        .get()
+        .uri("/v2/batch-operations/{batchOperationKey}", batchOperationKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+          {
+              "batchOperationKey":"1",
+              "state":"FAILED",
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
@@ -283,10 +327,10 @@ class BatchOperationControllerTest extends RestControllerTest {
   }
 
   private static BatchOperationEntity getFailedBatchOperationEntity(
-      final String batchOperationKey) {
+      final String batchOperationKey, final BatchOperationState batchOperationState) {
     return new BatchOperationEntity(
         batchOperationKey,
-        BatchOperationState.PARTIALLY_COMPLETED,
+        batchOperationState,
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
