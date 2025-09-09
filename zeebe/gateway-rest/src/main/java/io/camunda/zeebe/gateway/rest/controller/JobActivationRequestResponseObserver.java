@@ -10,7 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller;
 import io.camunda.service.exception.ErrorMapper;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.gateway.protocol.rest.JobActivationResult;
-import io.camunda.zeebe.gateway.rest.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 

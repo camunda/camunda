@@ -14,6 +14,7 @@ import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.AuthorizationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.read.service.BatchOperationItemDbReader;
+import io.camunda.db.rdbms.read.service.CorrelatedMessageDbReader;
 import io.camunda.db.rdbms.read.service.DecisionDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
@@ -234,6 +235,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public CorrelatedMessageDbReader correlatedMessageReader(
+      final CorrelatedMessageMapper correlatedMessageMapper) {
+    return new CorrelatedMessageDbReader(correlatedMessageMapper);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
@@ -301,7 +308,8 @@ public class RdbmsConfiguration {
       final JobDbReader jobReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
-      final MessageSubscriptionDbReader messageSubscriptionReader) {
+      final MessageSubscriptionDbReader messageSubscriptionReader,
+      final CorrelatedMessageDbReader correlatedMessageReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         authorizationReader,
@@ -326,6 +334,7 @@ public class RdbmsConfiguration {
         jobReader,
         usageMetricReader,
         usageMetricTUDbReader,
-        messageSubscriptionReader);
+        messageSubscriptionReader,
+        correlatedMessageReader);
   }
 }

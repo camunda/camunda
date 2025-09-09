@@ -5,8 +5,10 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.gateway.rest;
+package io.camunda.search.clients.reader;
 
-import io.camunda.zeebe.gateway.protocol.rest.SortOrderEnum;
+import io.camunda.search.entities.CorrelatedMessageEntity;
+import io.camunda.search.query.CorrelatedMessageQuery;
 
-public record SearchQuerySortRequest<T>(T field, SortOrderEnum order) {}
+public interface CorrelatedMessageReader
+    extends SearchEntityReader<CorrelatedMessageEntity, CorrelatedMessageQuery> {}

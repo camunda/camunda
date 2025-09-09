@@ -198,4 +198,13 @@ public final class SearchQueryBuilders {
   public static MessageSubscriptionQuery.Builder messageSubscriptionSearchQuery() {
     return new MessageSubscriptionQuery.Builder();
   }
+
+  public static CorrelatedMessageQuery.Builder correlatedMessageSearchQuery() {
+    return new CorrelatedMessageQuery.Builder();
+  }
+
+  public static CorrelatedMessageQuery correlatedMessageSearchQuery(
+      final Function<CorrelatedMessageQuery.Builder, ObjectBuilder<CorrelatedMessageQuery>> fn) {
+    return fn.apply(correlatedMessageSearchQuery()).build();
+  }
 }
