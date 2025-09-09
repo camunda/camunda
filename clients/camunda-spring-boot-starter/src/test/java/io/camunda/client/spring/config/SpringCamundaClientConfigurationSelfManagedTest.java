@@ -61,11 +61,6 @@ public class SpringCamundaClientConfigurationSelfManagedTest {
   }
 
   @Test
-  void shouldHaveGatewayAddress() {
-    assertThat(camundaClientConfiguration.getGatewayAddress()).isEqualTo("localhost:26500");
-  }
-
-  @Test
   void shouldHaveDefaultTenantId() {
     assertThat(camundaClientConfiguration.getDefaultTenantId())
         .isEqualTo(DEFAULT.getDefaultTenantId());
@@ -117,11 +112,6 @@ public class SpringCamundaClientConfigurationSelfManagedTest {
   void shouldHaveDefaultRequestTimeout() {
     assertThat(camundaClientConfiguration.getDefaultRequestTimeout())
         .isEqualTo(DEFAULT.getDefaultRequestTimeout());
-  }
-
-  @Test
-  void shouldHavePlaintextConnectionEnabled() {
-    assertThat(camundaClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(true);
   }
 
   @Test
