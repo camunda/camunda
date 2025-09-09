@@ -36,7 +36,11 @@ public final class UsageMetricsServiceTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     services =
         new UsageMetricsServices(
-            mock(BrokerClient.class), mock(SecurityContextProvider.class), client, null);
+            mock(BrokerClient.class),
+            mock(SecurityContextProvider.class),
+            client,
+            null,
+            mock(ApiServicesExecutorProvider.class));
   }
 
   @Test
