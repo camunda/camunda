@@ -190,7 +190,7 @@ public class TaskService {
     return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
-  public void updateTaskAssignedMetric(TaskEntity task) {
+  public void updateTaskAssignedMetric(final TaskEntity task) {
     // Only write metrics when completing a Job-based User Tasks. With 8.7,
     // metrics for completed (not Job-based) User Tasks are written by the
     // handler "TaskCompletedMetricHandler" in the camunda-exporter
