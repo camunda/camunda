@@ -16,8 +16,8 @@ public class CorrelatedMessageFieldSortingTransformer implements FieldSortingTra
     return switch (domainField) {
       case "correlationKey" -> CORRELATION_KEY;
       case "correlationTime" -> CORRELATION_TIME;
-      case "elementId" -> FLOW_NODE_ID;
-      case "elementInstanceKey" -> FLOW_NODE_INSTANCE_KEY;
+      case "flowNodeId" -> FLOW_NODE_ID;
+      case "flowNodeInstanceKey" -> FLOW_NODE_INSTANCE_KEY;
       case "messageKey" -> MESSAGE_KEY;
       case "messageName" -> MESSAGE_NAME;
       case "partitionId" -> PARTITION_ID;
