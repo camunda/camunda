@@ -112,7 +112,6 @@ public class ClientRestInterceptorTest {
 
   private CamundaClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
     return CamundaClient.newClientBuilder()
-        .usePlaintext()
         .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))
         .withChainHandlers(new TestTopologyInterceptor(), new TestUserTasksInterceptor())

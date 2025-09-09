@@ -27,14 +27,6 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 public interface CamundaClientConfiguration {
 
   /**
-   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     CamundaClientConfiguration#getGrpcAddress()}
-   * @see CamundaClientBuilder#grpcAddress(URI)
-   */
-  @Deprecated
-  String getGatewayAddress();
-
-  /**
    * @see CamundaClientBuilder#restAddress(URI)
    */
   URI getRestAddress();
@@ -93,11 +85,6 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#defaultRequestTimeoutOffset(Duration)
    */
   Duration getDefaultRequestTimeoutOffset();
-
-  /**
-   * @see CamundaClientBuilder#usePlaintext()
-   */
-  boolean isPlaintextConnectionEnabled();
 
   /**
    * @see CamundaClientBuilder#caCertificatePath(String)

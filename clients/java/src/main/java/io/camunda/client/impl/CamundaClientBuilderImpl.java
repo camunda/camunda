@@ -31,7 +31,6 @@ import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
-import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
@@ -56,6 +55,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.DataSizeUtil;
@@ -71,10 +71,12 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
+import org.apache.hc.core5.net.URIBuilder;
 
 public final class CamundaClientBuilderImpl
     implements CamundaClientBuilder, CamundaClientConfiguration {
-
+  public static final List<String> PLAINTEXT_PROTOCOLS = Arrays.asList("http", "grpc");
+  public static final List<String> ENCRYPTED_PROTOCOLS = Arrays.asList("https", "grpcs");
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
@@ -99,7 +101,6 @@ public final class CamundaClientBuilderImpl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private final List<AsyncExecChainHandler> chainHandlers = new ArrayList<>();
-  private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
@@ -114,7 +115,6 @@ public final class CamundaClientBuilderImpl
   private Duration defaultMessageTimeToLive = DEFAULT_MESSAGE_TTL;
   private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
-  private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
@@ -123,15 +123,9 @@ public final class CamundaClientBuilderImpl
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private int maxMetadataSize = DEFAULT_MAX_METADATA_SIZE;
   private boolean streamEnabled = DEFAULT_STREAM_ENABLED;
-  private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
-
-  @Override
-  public String getGatewayAddress() {
-    return gatewayAddress;
-  }
 
   @Override
   public URI getRestAddress() {
@@ -191,11 +185,6 @@ public final class CamundaClientBuilderImpl
   @Override
   public Duration getDefaultRequestTimeoutOffset() {
     return defaultRequestTimeoutOffset;
-  }
-
-  @Override
-  public boolean isPlaintextConnectionEnabled() {
-    return usePlaintextConnection;
   }
 
   @Override
@@ -266,6 +255,10 @@ public final class CamundaClientBuilderImpl
   @Override
   public boolean preferRestOverGrpc() {
     return preferRestOverGrpc;
+  }
+
+  private void gatewayAddress(final String gatewayAddress) {
+    composeGrpcAddress(gatewayAddress);
   }
 
   @Override
@@ -355,24 +348,6 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> {
-          /**
-           * The following condition is phrased in this particular way in order to be backwards
-           * compatible with older versions of the software. In older versions the content of the
-           * property was not interpreted. It was assumed to be true, whenever it was set. Because
-           * of that, code examples in this code base set the flag to an empty string. By phrasing
-           * the condition this way, the old code will still work with this new implementation. Only
-           * if somebody deliberately sets the flag to false, the behavior will change
-           */
-          if (!"false".equalsIgnoreCase(value)) {
-            usePlaintext();
-          }
-        },
-        USE_PLAINTEXT_CONNECTION,
-        LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION);
-
-    BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
         this::caCertificatePath,
         CA_CERTIFICATE_PATH,
         LegacyZeebeClientProperties.CA_CERTIFICATE_PATH);
@@ -416,13 +391,6 @@ public final class CamundaClientBuilderImpl
   public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
-    return this;
-  }
-
-  @Override
-  public CamundaClientBuilder gatewayAddress(final String gatewayAddress) {
-    this.gatewayAddress = gatewayAddress;
-    grpcAddressUsed = false;
     return this;
   }
 
@@ -511,11 +479,6 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder usePlaintext() {
-    return usePlaintext(true);
-  }
-
-  @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
     return this;
@@ -596,17 +559,11 @@ public final class CamundaClientBuilderImpl
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
     }
-
-    if (!grpcAddressUsed) {
-      final String scheme = usePlaintextConnection ? "http://" : "https://";
-      grpcAddress(getURIFromString(scheme + getGatewayAddress()));
-    }
-
     return new CamundaClientImpl(this);
   }
 
   private CamundaClientBuilder usePlaintext(final boolean usePlaintext) {
-    usePlaintextConnection = usePlaintext;
+    composeAddresses(usePlaintext);
     return this;
   }
 
@@ -666,7 +623,6 @@ public final class CamundaClientBuilderImpl
   public String toString() {
     final StringBuilder sb = new StringBuilder();
 
-    BuilderUtils.appendProperty(sb, "gatewayAddress", gatewayAddress);
     BuilderUtils.appendProperty(sb, "grpcAddress", grpcAddress);
     BuilderUtils.appendProperty(sb, "restAddress", restAddress);
     BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
@@ -702,12 +658,37 @@ public final class CamundaClientBuilderImpl
   private CredentialsProvider createDefaultCredentialsProvider() {
     final OAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newCredentialsProviderBuilder();
+    final String gatewayAddress = composeGatewayAddress();
     final int separatorIndex = gatewayAddress.lastIndexOf(':');
     if (separatorIndex > 0) {
       builder.audience(gatewayAddress.substring(0, separatorIndex));
     }
 
     return builder.build();
+  }
+
+  private String composeGatewayAddress() {
+    final int port = grpcAddress.getPort();
+    if (port == -1) {
+      return grpcAddress.getHost();
+    }
+    return String.format("%s:%d", grpcAddress.getHost(), port);
+  }
+
+  private void composeGrpcAddress(final String gatewayAddress) {
+    final String composedGrpcAddress =
+        String.format("%s://%s", grpcAddress.getScheme(), gatewayAddress);
+    grpcAddress = URI.create(composedGrpcAddress);
+  }
+
+  private void composeAddresses(final boolean usePlaintext) {
+    final String protocol = usePlaintext ? "http" : "https";
+    try {
+      grpcAddress = new URIBuilder(grpcAddress).setScheme(protocol).build();
+      restAddress = new URIBuilder(restAddress).setScheme(protocol).build();
+    } catch (final URISyntaxException e) {
+      throw new ClientException("Error while composing addresses with protocol " + protocol, e);
+    }
   }
 
   private static URI getURIFromString(final String uri) {
