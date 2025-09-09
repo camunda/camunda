@@ -62,7 +62,12 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
               Map.of(
                   "CAMUNDA_TASKLIST_ARCHIVER_WAITPERIODBEFOREARCHIVING",
                   ARCHIVING_WAITING_PERIOD_SECONDS + "s"))
-          .withUpgradeSystemPropertyOverrides(Map.of("camunda.database.retention.enabled", "true"));
+          .withUpgradeSystemPropertyOverrides(
+              Map.of(
+                  "camunda.database.retention.enabled",
+                  "true",
+                  "camunda.database.retention.minimumAge",
+                  "30d"));
 
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
