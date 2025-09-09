@@ -185,7 +185,7 @@ public class AuthorizationCheckerTest {
       // then
       Assertions.assertThat(isAuthorized)
           .describedAs(displayName)
-          .isEqualTo(expected == Expected.ACCESS_ALLOWED);
+          .isEqualTo(expected.isAuthorized());
     }
 
     Stream<Arguments> anonymousAuthorizationScenarios() {
@@ -423,7 +423,14 @@ public class AuthorizationCheckerTest {
 
     private enum Expected {
       ACCESS_ALLOWED,
-      ACCESS_DENIED
+      ACCESS_DENIED;
+
+      boolean isAuthorized() {
+        return switch (this) {
+          case ACCESS_ALLOWED -> true;
+          case ACCESS_DENIED -> false;
+        };
+      }
     }
   }
 
