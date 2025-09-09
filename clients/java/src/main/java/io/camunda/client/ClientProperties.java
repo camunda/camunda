@@ -100,6 +100,7 @@ public final class ClientProperties {
   /**
    * @see CamundaClientBuilder#usePlaintext()
    */
+  @Deprecated
   public static final String USE_PLAINTEXT_CONNECTION = "camunda.client.security.plaintext";
 
   /**
