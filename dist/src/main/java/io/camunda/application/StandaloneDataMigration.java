@@ -9,6 +9,9 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import io.camunda.application.commons.migration.MigrationFinishedEvent;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import java.io.IOException;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
@@ -41,7 +44,12 @@ public class StandaloneDataMigration implements ApplicationListener<MigrationFin
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
-            .sources(StandaloneDataMigration.class, AsyncMigrationsRunner.class)
+            .sources(
+                StandaloneDataMigration.class,
+                AsyncMigrationsRunner.class,
+                UnifiedConfigurationHelper.class,
+                UnifiedConfiguration.class,
+                SearchEngineConnectPropertiesOverride.class)
             .profiles(
                 Profile.USAGE_METRIC_MIGRATION.getId(),
                 Profile.PROCESS_MIGRATION.getId(),

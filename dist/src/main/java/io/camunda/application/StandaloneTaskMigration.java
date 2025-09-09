@@ -9,6 +9,9 @@ package io.camunda.application;
 
 import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import io.camunda.application.commons.migration.MigrationFinishedEvent;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.WebApplicationType;
@@ -39,7 +42,12 @@ public class StandaloneTaskMigration implements ApplicationListener<MigrationFin
         new SpringApplicationBuilder()
             .logStartupInfo(true)
             .web(WebApplicationType.SERVLET)
-            .sources(StandaloneTaskMigration.class, AsyncMigrationsRunner.class)
+            .sources(
+                StandaloneTaskMigration.class,
+                AsyncMigrationsRunner.class,
+                UnifiedConfigurationHelper.class,
+                UnifiedConfiguration.class,
+                SearchEngineConnectPropertiesOverride.class)
             .profiles(Profile.TASK_MIGRATION.getId())
             .addCommandLineProperties(true)
             .build(args);
