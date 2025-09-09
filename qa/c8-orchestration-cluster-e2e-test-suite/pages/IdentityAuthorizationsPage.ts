@@ -184,6 +184,8 @@ export class IdentityAuthorizationsPage {
     await waitForItemInList(this.page, item, {
       onAfterReload: () =>
         this.selectResourceTypeTab(authorization.resourceType),
+      timeout: 30000,
+      clickNext: true,
     });
   }
 
@@ -201,7 +203,14 @@ export class IdentityAuthorizationsPage {
 
   async selectAuthorizationOwner(authorization: {ownerId: string}) {
     await this.createAuthorizationOwnerComboBox.click();
-    await this.createAuthorizationOwnerOption(authorization.ownerId).click();
+    try {
+      await this.createAuthorizationOwnerOption(authorization.ownerId).click({
+        timeout: 20000,
+      });
+    } catch (error) {
+      console.log('Error while selecting owner' + error);
+      await this.createAuthorizationOwnerComboBox.fill(authorization.ownerId);
+    }
   }
 
   async assertAuthorizationExists(

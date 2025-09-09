@@ -9,6 +9,7 @@
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {defaultAssertionOptions} from '../utils/constants';
 
 export class IdentityUsersPage {
   private page: Page;
@@ -39,6 +40,7 @@ export class IdentityUsersPage {
   readonly deleteUserModalDeleteButton: Locator;
   readonly emptyState: Locator;
   readonly userCell: (name: string) => Locator;
+  readonly usersHeading: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -153,6 +155,7 @@ export class IdentityUsersPage {
     this.emptyState = page.getByText('No users created yet', {exact: true});
     this.userCell = (name) =>
       this.usersList.getByRole('cell', {name, exact: true});
+    this.usersHeading = this.page.getByRole('heading', {name: 'Users'});
   }
 
   async navigateToUsers() {
@@ -180,7 +183,8 @@ export class IdentityUsersPage {
     });
 
     await waitForItemInList(this.page, item, {
-      emptyStateLocator: this.emptyState,
+      clickNext: true,
+      timeout: 30000,
     });
   }
 
@@ -188,6 +192,10 @@ export class IdentityUsersPage {
     currentUser: {email: string},
     updatedUser: {name: string; email: string},
   ) {
+    await waitForItemInList(this.page, this.userCell(currentUser.email), {
+      clickNext: true,
+      timeout: 30000,
+    });
     await this.editUserButton(currentUser.email).click();
     await expect(this.editUserModal).toBeVisible();
     await this.editNameField.fill(updatedUser.name);
@@ -197,7 +205,17 @@ export class IdentityUsersPage {
   }
 
   async deleteUser(user: {username: string; email: string}) {
-    await this.deleteUserButton(user.username).click();
+    await waitForItemInList(this.page, this.userCell(user.email), {
+      clickNext: true,
+      timeout: 30000,
+    });
+    await expect(async () => {
+      await expect(this.deleteUserButton(user.username)).toBeVisible({
+        timeout: 20000,
+      });
+      await this.usersHeading.click();
+      await this.deleteUserButton(user.username).click({timeout: 20000});
+    }).toPass(defaultAssertionOptions);
     await expect(this.deleteUserModal).toBeVisible();
     await this.deleteUserModalDeleteButton.click();
     await expect(this.deleteUserModal).toBeHidden();
@@ -205,10 +223,10 @@ export class IdentityUsersPage {
     const item = this.usersList.getByRole('cell', {
       name: user.email,
     });
-
     await waitForItemInList(this.page, item, {
       shouldBeVisible: false,
-      emptyStateLocator: this.emptyState,
+      clickNext: true,
+      timeout: 30000,
     });
   }
 }

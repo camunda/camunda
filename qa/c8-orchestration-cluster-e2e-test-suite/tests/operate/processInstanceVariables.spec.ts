@@ -15,7 +15,7 @@ import {
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
-import { expectInViewport } from 'utils/expectInViewport';
+import {expectInViewport} from 'utils/expectInViewport';
 
 test.beforeAll(async () => {
   await deploy([
@@ -203,12 +203,12 @@ test.describe('Process Instance Variables', () => {
       await expect(page.getByText('hr', {exact: true})).toBeVisible();
       await page.getByText('hr', {exact: true}).scrollIntoViewIfNeeded();
 
-      await expectInViewport(page.getByTestId('variable-aa'), false);  
+      await expectInViewport(page.getByTestId('variable-aa'), false);
       await expect(page.getByText('by', {exact: true})).toBeVisible();
       await expect(page.getByText('jp', {exact: true})).toBeVisible();
 
       await page.getByText('by', {exact: true}).scrollIntoViewIfNeeded();
-       await expect(
+      await expect(
         operateProcessInstancePage.variablesList.getByRole('row'),
       ).toHaveCount(251);
 
