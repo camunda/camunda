@@ -47,7 +47,7 @@ test.describe.serial('users CRUD', () => {
     await identityUsersPage.createUser(NEW_USER);
     await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 
@@ -56,7 +56,7 @@ test.describe.serial('users CRUD', () => {
     const item = identityUsersPage.userCell(EDITED_USER.email);
     await waitForItemInList(page, item, {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 
@@ -67,7 +67,7 @@ test.describe.serial('users CRUD', () => {
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 });

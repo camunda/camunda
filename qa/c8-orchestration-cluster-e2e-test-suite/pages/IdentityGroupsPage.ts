@@ -172,7 +172,7 @@ export class IdentityGroupsPage {
     const group = this.groupCell(groupName);
     await waitForItemInList(this.page, group, {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
     await expect(async () => {
       await expect(this.deleteGroupButton(groupName)).toBeVisible({

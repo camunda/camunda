@@ -125,7 +125,7 @@ test.describe.serial('component authorizations CRUD', () => {
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
     await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   });
 

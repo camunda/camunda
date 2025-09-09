@@ -184,7 +184,7 @@ export class IdentityUsersPage {
 
     await waitForItemInList(this.page, item, {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   }
 
@@ -194,7 +194,7 @@ export class IdentityUsersPage {
   ) {
     await waitForItemInList(this.page, this.userCell(currentUser.email), {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
     await this.editUserButton(currentUser.email).click();
     await expect(this.editUserModal).toBeVisible();
@@ -207,7 +207,7 @@ export class IdentityUsersPage {
   async deleteUser(user: {username: string; email: string}) {
     await waitForItemInList(this.page, this.userCell(user.email), {
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
     await expect(async () => {
       await expect(this.deleteUserButton(user.username)).toBeVisible({
@@ -226,7 +226,7 @@ export class IdentityUsersPage {
     await waitForItemInList(this.page, item, {
       shouldBeVisible: false,
       clickNext: true,
-      timeout: 60000,
+      timeout: 30000,
     });
   }
 }
