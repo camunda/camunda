@@ -178,16 +178,19 @@ public class TaskService {
     }
 
     final TaskEntity taskBefore = taskStore.getTask(taskId);
-    taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
-    final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
-    tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+    if (true) {
+      taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
 
-    final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
-    final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
-    updateClaimedMetric(assignedTaskMetrics);
-    updateTaskAssignedMetric(claimedTask);
-    return TaskDTO.createFrom(claimedTask, objectMapper);
+      final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
+      tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
+
+      final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
+      final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
+      updateClaimedMetric(assignedTaskMetrics);
+      updateTaskAssignedMetric(claimedTask);
+      return TaskDTO.createFrom(claimedTask, objectMapper);
+    }
   }
 
   public void updateTaskAssignedMetric(final TaskEntity task) {
@@ -219,25 +222,27 @@ public class TaskService {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
-      taskValidator.validateCanComplete(task);
-      tasklistServicesAdapter.completeUserTask(task, variablesMap);
+      if (true) {
+        taskValidator.validateCanComplete(task);
+        tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
-      // persist completion and variables
-      final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
-      try {
-        LOGGER.info("Start variable persistence: {}", taskId);
-        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
-        deleteDraftTaskVariablesSafely(taskId);
-        updateCompletedMetric(completedTaskEntity);
-        LOGGER.info("Task with ID {} completed successfully.", taskId);
-      } catch (final Exception e) {
-        LOGGER.error(
-            "Task with key {} was COMPLETED but error happened after completion: {}.",
-            taskId,
-            e.getMessage());
+        // persist completion and variables
+        final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
+        try {
+          LOGGER.info("Start variable persistence: {}", taskId);
+          variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+          deleteDraftTaskVariablesSafely(taskId);
+          updateCompletedMetric(completedTaskEntity);
+          LOGGER.info("Task with ID {} completed successfully.", taskId);
+        } catch (final Exception e) {
+          LOGGER.error(
+              "Task with key {} was COMPLETED but error happened after completion: {}.",
+              taskId,
+              e.getMessage());
+        }
+
+        return TaskDTO.createFrom(completedTaskEntity, objectMapper);
       }
-
-      return TaskDTO.createFrom(completedTaskEntity, objectMapper);
     } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
@@ -274,15 +279,17 @@ public class TaskService {
 
   public TaskDTO unassignTask(final String taskId) {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
-    taskValidator.validateCanUnassign(taskBefore);
-    final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
-    try {
-      tasklistServicesAdapter.unassignUserTask(taskEntity);
-    } catch (final Exception e) {
-      taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-      throw e;
+    if (true) {
+      taskValidator.validateCanUnassign(taskBefore);
+      final TaskEntity taskEntity = taskStore.persistTaskUnclaim(taskBefore);
+      try {
+        tasklistServicesAdapter.unassignUserTask(taskEntity);
+      } catch (final Exception e) {
+        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
+        throw e;
+      }
+      return TaskDTO.createFrom(taskEntity, objectMapper);
     }
-    return TaskDTO.createFrom(taskEntity, objectMapper);
   }
 
   private boolean taskFormLinkIsNotComplete(final TaskEntity task) {
