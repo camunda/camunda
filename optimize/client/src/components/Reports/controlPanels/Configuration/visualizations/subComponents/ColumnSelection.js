@@ -12,9 +12,9 @@ import {Checkbox, FormGroup, Stack} from '@carbon/react';
 import {t} from 'translation';
 import {getReportResult} from 'services';
 import {getVariableLabel} from 'variables';
+import {Popover} from 'components';
 
 import AllColumnsButtons from './AllColumnsButtons';
-import CollapsibleSection from './CollapsibleSection';
 import ColumnSwitch from './ColumnSwitch';
 
 import './ColumnSelection.scss';
@@ -99,7 +99,7 @@ export default function ColumnSelection({report, onChange, disabled}) {
               const sectionKey = labels[groupKey] || groupKey;
 
               return (
-                <CollapsibleSection
+                <Popover.CollapsibleSection
                   key={groupKey}
                   sectionKey={groupKey}
                   isSectionOpen={isSectionOpen[groupKey]}
@@ -123,7 +123,7 @@ export default function ColumnSelection({report, onChange, disabled}) {
                       );
                     })}
                   </Stack>
-                </CollapsibleSection>
+                </Popover.CollapsibleSection>
               );
             }
             const label = t('report.table.rawData.' + groupKey);
