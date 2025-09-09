@@ -39,8 +39,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   private final List<AsyncExecChainHandler> chainHandlers;
   private final CamundaClientExecutorService zeebeClientExecutorService;
   private final CredentialsProvider credentialsProvider;
-  private final String gatewayAddress;
-  private final boolean plaintext;
 
   public SpringCamundaClientConfiguration(
       final CamundaClientProperties camundaClientProperties,
@@ -55,13 +53,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
     this.chainHandlers = chainHandlers;
     this.zeebeClientExecutorService = zeebeClientExecutorService;
     this.credentialsProvider = credentialsProvider;
-    gatewayAddress = composeGatewayAddress();
-    plaintext = composePlaintext();
-  }
-
-  @Override
-  public String getGatewayAddress() {
-    return gatewayAddress;
   }
 
   @Override
@@ -122,11 +113,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   @Override
   public Duration getDefaultRequestTimeoutOffset() {
     return camundaClientProperties.getRequestTimeoutOffset();
-  }
-
-  @Override
-  public boolean isPlaintextConnectionEnabled() {
-    return plaintext;
   }
 
   @Override
@@ -260,11 +246,6 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
         + zeebeClientExecutorService
         + ", credentialsProvider="
         + (credentialsProvider == null ? "null" : credentialsProvider.getClass())
-        + ", gatewayAddress='"
-        + gatewayAddress
-        + '\''
-        + ", plaintext="
-        + plaintext
         + '}';
   }
 }
