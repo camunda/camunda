@@ -33,7 +33,7 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
   @Test
   void shouldUnassignGroupFromTenant() {
     // when
-    client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join();
+    client.newUnassignGroupFromTenantCommand().groupId(GROUP_ID).tenantId(TENANT_ID).send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -51,7 +51,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(GROUP_ID)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -66,7 +71,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(GROUP_ID)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -81,7 +91,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(GROUP_ID)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 500: 'Internal Server Error'");
   }
@@ -96,7 +111,12 @@ public class UnassignGroupFromTenantTest extends ClientRestTest {
     // when / then
     assertThatThrownBy(
             () ->
-                client.newUnassignGroupFromTenantCommand(TENANT_ID).groupId(GROUP_ID).send().join())
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(GROUP_ID)
+                    .tenantId(TENANT_ID)
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 403: 'Forbidden'");
   }
