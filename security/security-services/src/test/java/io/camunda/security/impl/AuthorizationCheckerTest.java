@@ -7,9 +7,6 @@
  */
 package io.camunda.security.impl;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.COMPONENT;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.search.entities.AuthorizationEntity;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -35,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,17 +54,18 @@ public class AuthorizationCheckerTest {
             SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
-    assertThat(result).isEmpty();
+    Assertions.assertThat(result).isEmpty();
   }
 
   @Test
   public void noPermissionTypesReturnedWhenOwnerIdsIsEmpty() {
     // when
     final var result =
-        authorizationChecker.collectPermissionTypes("foo", COMPONENT, CamundaAuthentication.none());
+        authorizationChecker.collectPermissionTypes(
+            "foo", AuthorizationResourceType.COMPONENT, CamundaAuthentication.none());
 
     // then
-    assertThat(result).isEmpty();
+    Assertions.assertThat(result).isEmpty();
   }
 
   @Test
@@ -81,11 +80,11 @@ public class AuthorizationCheckerTest {
             SecurityContext.of(c -> c.withAuthentication(a -> a).withAuthorization(a -> a)));
 
     // then
-    assertThat(result).isFalse();
+    Assertions.assertThat(result).isFalse();
   }
 
   @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @TestInstance(Lifecycle.PER_CLASS)
   class IsAuthorizedTests {
 
     public static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
@@ -435,7 +434,7 @@ public class AuthorizationCheckerTest {
   }
 
   @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @TestInstance(Lifecycle.PER_CLASS)
   class CollectPermissionTypesTests {
 
     private static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
@@ -922,7 +921,7 @@ public class AuthorizationCheckerTest {
   }
 
   @Nested
-  @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+  @TestInstance(Lifecycle.PER_CLASS)
   class RetrieveAuthorizedAuthorizationScopesTests {
 
     private static final String WILDCARD_RESOURCE_ID = AuthorizationScope.WILDCARD.getResourceId();
@@ -952,7 +951,7 @@ public class AuthorizationCheckerTest {
         final var actual = checker.retrieveAuthorizedAuthorizationScopes(securityContext);
 
         // then
-        assertThat(actual)
+        Assertions.assertThat(actual)
             .describedAs(scenario.displayName())
             .containsExactlyElementsOf(scenario.expected());
       }
