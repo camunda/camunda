@@ -29,7 +29,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.TestTemplate;
@@ -48,23 +47,16 @@ class SchemaUpdateIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaUpdateIT.class);
 
-  private static String currentMinorVersion; // e.g. "8.8"
+  private static String currentMinorVersion; // e.g. "8.9"
 
-  private static String previousMinorSnapshotVersion; // e.g. "8.7-SNAPSHOT"
+  private static String previousMinorSnapshotVersion; // e.g. "8.8-SNAPSHOT"
 
   @BeforeAll
   static void beforeAll() {
     final var semanticVersion = VersionUtil.getSemanticVersion().get();
     currentMinorVersion = "%d.%d".formatted(semanticVersion.major(), semanticVersion.minor());
-    // TODO find a better way to get the previous version image
-    // final var previousSemanticVersion =
-    //    SemanticVersion.parse(VersionUtil.getPreviousVersion()).get();
-    // previousMinorSnapshotVersion =
-    //   "%d.%d-SNAPSHOT"
-    //       .formatted(previousSemanticVersion.major(), previousSemanticVersion.minor());
-
-    // FIXME using SNAPSHOT for now, as it is the only one that has tasklist-task-8.8.0_ index
-    previousMinorSnapshotVersion = "SNAPSHOT";
+    previousMinorSnapshotVersion =
+        "%d.%d-SNAPSHOT".formatted(semanticVersion.major(), semanticVersion.minor() - 1);
   }
 
   @BeforeEach
@@ -88,21 +80,13 @@ class SchemaUpdateIT {
                     .forPort(9600)
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
-            .withEnv("CAMUNDA_DATABASE_TYPE", databaseType.toString())
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
+            .withEnv("SPRING_PROFILES_ACTIVE", "broker,standalone")
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", databaseType.toString())
-            .withEnv("CAMUNDA_DATABASE_URL", url)
-            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_%s_URL".formatted(databaseType.name()), url)
             .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", indexPrefix)
+            .withEnv("CAMUNDA_DATABASE_INDEX_NUMBEROFREPLICAS", "1")
             .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")
-            .withEnv("CAMUNDA_OPERATE_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_OPERATE_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_OPERATE_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
-            .withEnv("CAMUNDA_OPERATE_ZEEBE%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_DATABASE", databaseType.toString())
-            .withEnv("CAMUNDA_TASKLIST_%s_URL".formatted(databaseType.name()), url)
-            .withEnv("CAMUNDA_TASKLIST_%s_INDEXPREFIX".formatted(databaseType.name()), indexPrefix)
-            .withEnv("CAMUNDA_TASKLIST_ZEEBE%s_URL".formatted(databaseType.name()), url)) {
+            .withEnv("CAMUNDA_DATABASE_RETENTION_ENABLED", "true")) {
       previousVersionContainer.start();
       previousVersionContainer.followOutput(new Slf4jLogConsumer(LOG));
     }
@@ -131,10 +115,7 @@ class SchemaUpdateIT {
             config,
             searchClientAdapter,
             indexDescriptors.templates().stream()
-                .filter(
-                    template ->
-                        !template.getVersion().startsWith(currentMinorVersion)
-                            && !template.getIndexName().contains("correlated-message"))
+                .filter(template -> !template.getVersion().startsWith(currentMinorVersion))
                 .toList());
     final SchemaManager schemaManager =
         createSchemaManager(indexDescriptors.indices(), indexDescriptors.templates(), config);
@@ -224,21 +205,5 @@ class SchemaUpdateIT {
               });
     }
     return archivePeriodInDays * indexTemplateDescriptors.size();
-  }
-
-  @AfterEach
-  void tearDown(
-      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
-      throws IOException {
-    if (config.connect().getTypeEnum().isElasticSearch()) {
-      // Delete the data streams to allow removal of associated index templates.
-      // Note: These stream is auto-created by Elasticsearch with the use of deprecated APIs in 8.7
-      // (ES client 7.x).
-      searchClientAdapter
-          .getElsClient()
-          .indices()
-          .deleteDataStream(
-              req -> req.name(".logs-deprecation.elasticsearch-default", "ilm-history-7"));
-    }
   }
 }
