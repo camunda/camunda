@@ -33,8 +33,9 @@ public interface UnassignClientFromTenantCommandStep1 {
      * Sets the tenant ID.
      *
      * @param tenantId the ID of the tenant
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link
+     *     UnassignClientFromTenantCommandStep3#send()} to complete the command and send it to the
+     *     broker.
      */
     UnassignClientFromTenantCommandStep3 tenantId(String tenantId);
   }
