@@ -99,32 +99,7 @@ export const waitForItemInList = async (
         }
       }
 
-<<<<<<< HEAD
-      if (emptyStateLocator) {
-        await Promise.race([
-          page
-            .getByRole('cell')
-            .filter({hasText: /.+/, hasNot: page.locator('div')})
-            .first()
-            .waitFor(),
-          emptyStateLocator?.waitFor(),
-        ]);
-      } else {
-        await page
-          .getByRole('cell')
-          .filter({hasText: /.+/, hasNot: page.locator('div')})
-          .first()
-          .waitFor({timeout: 20000});
-      }
-
-      if (clickNext) {
-        return await findLocatorInPaginatedList(page, item);
-      } else {
-        return await item.isVisible();
-      }
-=======
       throw lastError || new Error('All retry attempts failed');
->>>>>>> cb9acd7b1df (test: identity e2e User inherits permissions through role assignment)
     },
     {timeout},
   );
