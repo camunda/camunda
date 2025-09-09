@@ -27,8 +27,6 @@ import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
-import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
-import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
@@ -39,7 +37,6 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_T
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
@@ -60,6 +57,7 @@ import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
 import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentExtension;
 import java.io.FileNotFoundException;
@@ -97,7 +95,6 @@ public final class CamundaClientTest {
       final CamundaClientConfiguration configuration = client.getConfiguration();
 
       // then
-      assertThat(configuration.getGatewayAddress()).isEqualTo(DEFAULT_GATEWAY_ADDRESS);
       assertThat(configuration.getGrpcAddress()).isEqualTo(DEFAULT_GRPC_ADDRESS);
       assertThat(configuration.getRestAddress()).isEqualTo(DEFAULT_REST_ADDRESS);
       assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(32);
@@ -123,19 +120,29 @@ public final class CamundaClientTest {
   @Test
   public void shouldFailIfCertificateDoesNotExist() {
     assertThatThrownBy(
-            () -> CamundaClient.newClientBuilder().caCertificatePath("/wrong/path").build())
+            () ->
+                CamundaClient.newClientBuilder()
+                    .grpcAddress(URI.create("https://localhost:10000"))
+                    .caCertificatePath("/wrong/path")
+                    .build())
         .hasCauseInstanceOf(FileNotFoundException.class);
   }
 
   @Test
   public void shouldFailWithEmptyCertificatePath() {
-    assertThatThrownBy(() -> CamundaClient.newClientBuilder().caCertificatePath("").build())
+    assertThatThrownBy(
+            () ->
+                CamundaClient.newClientBuilder()
+                    .grpcAddress(URI.create("https://localhost:10000"))
+                    .caCertificatePath("")
+                    .build())
         .isInstanceOf(IllegalArgumentException.class);
   }
 
   @Test
-  public void shouldHaveTlsEnabledByDefault() {
-    assertThat(new CamundaClientBuilderImpl().isPlaintextConnectionEnabled()).isFalse();
+  public void shouldHaveTlsDisabledByDefault() {
+    assertThat(AddressUtil.isPlaintextConnection(new CamundaClientBuilderImpl().getGrpcAddress()))
+        .isTrue();
   }
 
   @ParameterizedTest
@@ -485,7 +492,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldOverrideCloudProperties() {
     // given
-    final String gatewayAddress = "localhost:10000";
+    final URI grpcAddress = URI.create("https://localhost:10000");
     final URI restAddress = URI.create("https://localhost:10001");
     final NoopCredentialsProvider credentialsProvider = new NoopCredentialsProvider();
     try (final CamundaClient client =
@@ -493,12 +500,12 @@ public final class CamundaClientTest {
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
-            .gatewayAddress(gatewayAddress)
+            .grpcAddress(grpcAddress)
             .restAddress(restAddress)
             .credentialsProvider(credentialsProvider)
             .build()) {
       final CamundaClientConfiguration configuration = client.getConfiguration();
-      assertThat(configuration.getGatewayAddress()).isEqualTo(gatewayAddress);
+      assertThat(configuration.getGrpcAddress()).isEqualTo(grpcAddress);
       assertThat(configuration.getRestAddress()).isEqualTo(restAddress);
       assertThat(configuration.getCredentialsProvider()).isEqualTo(credentialsProvider);
     }
@@ -829,7 +836,7 @@ public final class CamundaClientTest {
   }
 
   @Test
-  public void shouldSetGrpcAddressFromGatewayAddressIfUnderfined() throws URISyntaxException {
+  public void shouldSetGrpcAddressFromGatewayAddressIfUndefined() throws URISyntaxException {
     // given
     final String gatewayAddress = "localhost:26500";
     final Properties properties = new Properties();

@@ -49,16 +49,6 @@ public interface CamundaClientBuilder {
       final boolean applyEnvironmentVariableOverrides);
 
   /**
-   * @deprecated since 8.5 for removal with 8.8, replaced by {@link
-   *     CamundaClientBuilder#grpcAddress(URI)}
-   * @param gatewayAddress the IP socket address of a gateway that the client can initially connect
-   *     to. Must be in format <code>host:port</code>. The default value is <code>0.0.0.0:26500
-   *     </code> .
-   */
-  @Deprecated
-  CamundaClientBuilder gatewayAddress(String gatewayAddress);
-
-  /**
    * @param restAddress the REST API address of a gateway that the client can connect to. The
    *     address must be an absolute URL, including the scheme.
    *     <p>The default value is {@code https://0.0.0.0:8080}.
@@ -157,9 +147,6 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder defaultRequestTimeoutOffset(Duration requestTimeoutOffset);
 
-  /** Use a plaintext connection between the client and the gateway. */
-  CamundaClientBuilder usePlaintext();
-
   /**
    * Path to a root CA certificate to be used instead of the certificate in the default default
    * store.
@@ -178,7 +165,7 @@ public interface CamundaClientBuilder {
   /**
    * Custom implementations of the gRPC {@code ClientInterceptor} middleware API. The interceptors
    * will be applied to every gRPC call that the client makes. More details can be found at {@link
-   * https://grpc.io/docs/guides/interceptors/}.
+   * <a href="https://grpc.io/docs/guides/interceptors/">grpc.io</a>}.
    */
   CamundaClientBuilder withInterceptors(ClientInterceptor... interceptor);
 
@@ -197,7 +184,7 @@ public interface CamundaClientBuilder {
    * <p>This method is intended for testing, but may safely be used outside of tests as an
    * alternative to DNS overrides.
    *
-   * <p>This setting does nothing if a {@link #usePlaintext() plaintext} connection is used.
+   * <p>This setting does nothing if a plaintext connection is used.
    *
    * @param authority The alternative authority to use, commonly in the form <code>host</code> or
    *     <code>host:port</code>

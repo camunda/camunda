@@ -44,7 +44,6 @@ public abstract class ClientRestTest {
 
   private CamundaClient createClient(final WireMockRuntimeInfo mockInfo) throws URISyntaxException {
     return CamundaClient.newClientBuilder()
-        .usePlaintext()
         .preferRestOverGrpc(true)
         .restAddress(new URI(mockInfo.getHttpBaseUrl()))
         .build();

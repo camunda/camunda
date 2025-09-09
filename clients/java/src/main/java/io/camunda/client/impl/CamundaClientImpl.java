@@ -294,6 +294,7 @@ import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessInstanceElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.UsageMetricsStatisticsRequestImpl;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.ExecutorResource;
 import io.camunda.client.impl.util.VersionUtil;
 import io.camunda.client.impl.worker.JobClientImpl;
@@ -429,7 +430,8 @@ public final class CamundaClientImpl implements CamundaClient {
 
   private static void configureConnectionSecurity(
       final CamundaClientConfiguration config, final NettyChannelBuilder channelBuilder) {
-    if (!config.isPlaintextConnectionEnabled()) {
+    final URI grpcAddress = config.getGrpcAddress();
+    if (!AddressUtil.isPlaintextConnection(grpcAddress)) {
       final String certificatePath = config.getCaCertificatePath();
       SslContext sslContext = null;
 

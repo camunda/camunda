@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.impl.NoopCredentialsProvider;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
 import java.io.FileInputStream;
@@ -109,7 +110,6 @@ public class HttpClientFactory {
 
     try {
       final URIBuilder builder = new URIBuilder(basePath).appendPath(REST_API_PATH);
-      builder.setScheme(config.isPlaintextConnectionEnabled() ? "http" : "https");
 
       return builder.build();
     } catch (final URISyntaxException e) {
@@ -168,7 +168,8 @@ public class HttpClientFactory {
   }
 
   private SSLContext createSslContext() {
-    if (config.isPlaintextConnectionEnabled() || config.getCaCertificatePath() == null) {
+    if (AddressUtil.isPlaintextConnection(config.getRestAddress())
+        || config.getCaCertificatePath() == null) {
       return SSLContexts.createDefault();
     }
 
