@@ -113,9 +113,15 @@ class SchemaUpdateIT {
       final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
       throws InterruptedException, IOException {
     // given
+    final int numberOfThreads = 12;
     // enable retention policy for the test and set replicas to 1
     config.retention().setEnabled(true);
     config.index().setNumberOfReplicas(1);
+    if (config.connect().getTypeEnum().isOpenSearch()) {
+      // Opensearch uses optimistic lock on ISM policies update, so we need to increase the retries
+      config.schemaManager().getRetry().setMaxRetries(numberOfThreads);
+      config.schemaManager().getRetry().setMaxRetryDelay(Duration.ofSeconds(1));
+    }
     final var indexDescriptors =
         new IndexDescriptors(
             config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
@@ -135,7 +141,6 @@ class SchemaUpdateIT {
     final var exceptions = new ConcurrentLinkedQueue<Throwable>();
 
     // when
-    final int numberOfThreads = 12;
     final var threads =
         IntStream.range(0, numberOfThreads)
             .mapToObj(
