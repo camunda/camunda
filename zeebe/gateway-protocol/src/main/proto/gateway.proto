@@ -648,18 +648,18 @@ message TopologyRequest {
 }
 
 message TopologyResponse {
-  // the cluster's unique ID
-  string clusterId = 1;
   // list of brokers part of this cluster
-  repeated BrokerInfo brokers = 2;
+  repeated BrokerInfo brokers = 1;
   // how many nodes are in the cluster
-  int32 clusterSize = 3;
+  int32 clusterSize = 2;
   // how many partitions are spread across the cluster
-  int32 partitionsCount = 4;
+  int32 partitionsCount = 3;
   // configured replication factor for this cluster
-  int32 replicationFactor = 5;
+  int32 replicationFactor = 4;
   // gateway version
-  string gatewayVersion = 6;
+  string gatewayVersion = 5;
+  // the cluster's unique ID
+  string clusterId = 6;
 }
 
 message BrokerInfo {
