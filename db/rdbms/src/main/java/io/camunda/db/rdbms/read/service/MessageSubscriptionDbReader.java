@@ -16,6 +16,7 @@ import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,9 +42,19 @@ public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSub
       final MessageSubscriptionQuery query, final ResourceAccessChecks resourceAccessChecks) {
     final var dbSort =
         convertSort(query.sort(), MessageSubscriptionColumn.MESSAGE_SUBSCRIPTION_KEY);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return buildSearchQueryResult(0, List.of(), dbSort);
+    }
+
     final var dbQuery =
         MessageSubscriptionDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for message subscriptions with filter {}", dbQuery);
     final var totalHits = mapper.count(dbQuery);

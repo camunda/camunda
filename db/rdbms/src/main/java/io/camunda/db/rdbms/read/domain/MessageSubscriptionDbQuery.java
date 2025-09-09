@@ -17,6 +17,8 @@ import java.util.function.Function;
 
 public record MessageSubscriptionDbQuery(
     MessageSubscriptionFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
     DbQuerySorting<MessageSubscriptionEntity> sort,
     DbQueryPage page) {
   public static MessageSubscriptionDbQuery of(
@@ -29,11 +31,23 @@ public record MessageSubscriptionDbQuery(
         FilterBuilders.messageSubscription().build();
 
     private MessageSubscriptionFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<MessageSubscriptionEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final MessageSubscriptionFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -64,8 +78,11 @@ public record MessageSubscriptionDbQuery(
     @Override
     public MessageSubscriptionDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new MessageSubscriptionDbQuery(filter, sort, page);
+      return new MessageSubscriptionDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

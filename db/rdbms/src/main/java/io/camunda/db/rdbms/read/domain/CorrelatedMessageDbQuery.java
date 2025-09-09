@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
+import io.camunda.db.rdbms.read.domain.MessageSubscriptionDbQuery.Builder;
 import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.filter.CorrelatedMessageFilter;
 import io.camunda.search.filter.FilterBuilders;
@@ -17,6 +18,8 @@ import java.util.function.Function;
 
 public record CorrelatedMessageDbQuery(
     CorrelatedMessageFilter filter,
+    List<String> authorizedResourceIds,
+    List<String> authorizedTenantIds,
     DbQuerySorting<CorrelatedMessageEntity> sort,
     DbQueryPage page) {
 
@@ -30,11 +33,23 @@ public record CorrelatedMessageDbQuery(
         FilterBuilders.correlatedMessage().build();
 
     private CorrelatedMessageFilter filter;
+    private List<String> authorizedResourceIds = java.util.Collections.emptyList();
+    private List<String> authorizedTenantIds = java.util.Collections.emptyList();
     private DbQuerySorting<CorrelatedMessageEntity> sort;
     private DbQueryPage page;
 
     public Builder filter(final CorrelatedMessageFilter value) {
       filter = value;
+      return this;
+    }
+
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
+      this.authorizedTenantIds = authorizedTenantIds;
       return this;
     }
 
@@ -65,8 +80,11 @@ public record CorrelatedMessageDbQuery(
     @Override
     public CorrelatedMessageDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
+      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
+      authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new CorrelatedMessageDbQuery(filter, sort, page);
+      return new CorrelatedMessageDbQuery(
+          filter, authorizedResourceIds, authorizedTenantIds, sort, page);
     }
   }
 }

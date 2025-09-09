@@ -66,7 +66,7 @@
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessageDbQuery" resultType="long">
     SELECT COUNT(*)
     FROM ${prefix}CORRELATED_MESSAGE
-    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchAndAuthFilter"/>
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -87,15 +87,33 @@
         SUBSCRIPTION_KEY,
         TENANT_ID
       FROM ${prefix}CORRELATED_MESSAGE
-    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchAndAuthFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
   </select>
 
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageMapper.searchFilter"/>
+    </where>
+  </sql>
+
   <sql id="searchFilter">
-    WHERE 1 = 1
     <!-- basic filter -->
     <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
       <foreach collection="filter.correlationKeyOperations" item="operation">
