@@ -1176,9 +1176,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand(
-      final String tenantId) {
-    return new UnassignGroupFromTenantCommandImpl(httpClient, tenantId);
+  public UnassignGroupFromTenantCommandStep1 newUnassignGroupFromTenantCommand() {
+    return new UnassignGroupFromTenantCommandImpl(httpClient);
   }
 
   @Override
