@@ -55,9 +55,9 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
@@ -71,12 +71,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
-import org.apache.hc.core5.net.URIBuilder;
 
 public final class CamundaClientBuilderImpl
     implements CamundaClientBuilder, CamundaClientConfiguration {
-  public static final List<String> PLAINTEXT_PROTOCOLS = Arrays.asList("http", "grpc");
-  public static final List<String> ENCRYPTED_PROTOCOLS = Arrays.asList("https", "grpcs");
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
@@ -258,7 +255,9 @@ public final class CamundaClientBuilderImpl
   }
 
   private void gatewayAddress(final String gatewayAddress) {
-    composeGrpcAddress(gatewayAddress);
+    grpcAddress =
+        AddressUtil.composeGrpcAddress(
+            gatewayAddress, AddressUtil.isPlaintextConnection(grpcAddress));
   }
 
   @Override
@@ -563,7 +562,8 @@ public final class CamundaClientBuilderImpl
   }
 
   private CamundaClientBuilder usePlaintext(final boolean usePlaintext) {
-    composeAddresses(usePlaintext);
+    grpcAddress = AddressUtil.composeAddress(usePlaintext, grpcAddress);
+    restAddress = AddressUtil.composeAddress(usePlaintext, restAddress);
     return this;
   }
 
@@ -658,37 +658,13 @@ public final class CamundaClientBuilderImpl
   private CredentialsProvider createDefaultCredentialsProvider() {
     final OAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newCredentialsProviderBuilder();
-    final String gatewayAddress = composeGatewayAddress();
+    final String gatewayAddress = AddressUtil.composeGatewayAddress(grpcAddress);
     final int separatorIndex = gatewayAddress.lastIndexOf(':');
     if (separatorIndex > 0) {
       builder.audience(gatewayAddress.substring(0, separatorIndex));
     }
 
     return builder.build();
-  }
-
-  private String composeGatewayAddress() {
-    final int port = grpcAddress.getPort();
-    if (port == -1) {
-      return grpcAddress.getHost();
-    }
-    return String.format("%s:%d", grpcAddress.getHost(), port);
-  }
-
-  private void composeGrpcAddress(final String gatewayAddress) {
-    final String composedGrpcAddress =
-        String.format("%s://%s", grpcAddress.getScheme(), gatewayAddress);
-    grpcAddress = URI.create(composedGrpcAddress);
-  }
-
-  private void composeAddresses(final boolean usePlaintext) {
-    final String protocol = usePlaintext ? "http" : "https";
-    try {
-      grpcAddress = new URIBuilder(grpcAddress).setScheme(protocol).build();
-      restAddress = new URIBuilder(restAddress).setScheme(protocol).build();
-    } catch (final URISyntaxException e) {
-      throw new ClientException("Error while composing addresses with protocol " + protocol, e);
-    }
   }
 
   private static URI getURIFromString(final String uri) {
