@@ -73,7 +73,7 @@ public class TokenClaimsConverterTest {
 
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
-      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn("not-tested");
+      when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
       when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
 
       when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -110,7 +110,7 @@ public class TokenClaimsConverterTest {
       assertThat(exception.getMessage())
           .isEqualTo(
               "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
-                  .formatted("not-tested", APPLICATION_ID_CLAIM));
+                  .formatted(USERNAME_CLAIM, APPLICATION_ID_CLAIM));
     }
 
     @Test
