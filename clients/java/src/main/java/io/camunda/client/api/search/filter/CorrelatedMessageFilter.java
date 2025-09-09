@@ -15,9 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
+import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
@@ -84,7 +84,8 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
   /**
    * Filter by element instance key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn the element instance key {@link BasicLongProperty} consumer for the correlated message
+   * @param fn the element instance key {@link BasicLongProperty} consumer for the correlated
+   *     message
    * @return the updated filter
    */
   CorrelatedMessageFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
@@ -164,7 +165,8 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
   /**
    * Filter by process definition key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn the process definition key {@link BasicLongProperty} consumer for the correlated message
+   * @param fn the process definition key {@link BasicLongProperty} consumer for the correlated
+   *     message
    * @return the updated filter
    */
   CorrelatedMessageFilter processDefinitionKey(Consumer<BasicLongProperty> fn);
@@ -180,7 +182,8 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
   /**
    * Filter by process instance key using a {@link BasicLongProperty} consumer.
    *
-   * @param fn the process instance key {@link BasicLongProperty} consumer for the correlated message
+   * @param fn the process instance key {@link BasicLongProperty} consumer for the correlated
+   *     message
    * @return the updated filter
    */
   CorrelatedMessageFilter processInstanceKey(Consumer<BasicLongProperty> fn);
