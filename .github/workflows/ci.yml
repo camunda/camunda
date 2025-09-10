@@ -404,6 +404,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     strategy:
+      fail-fast: false
       matrix:
         module:
           - name: QA Acceptance Tests
@@ -505,6 +506,7 @@ jobs:
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     strategy:
+      fail-fast: false
       matrix:
         module:
           - name: QA Acceptance Tests
