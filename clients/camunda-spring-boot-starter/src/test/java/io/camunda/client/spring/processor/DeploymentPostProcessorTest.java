@@ -15,6 +15,7 @@
  */
 package io.camunda.client.spring.processor;
 
+import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -25,8 +26,8 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
-import io.camunda.client.spring.bean.ClassInfo;
 import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,7 +64,7 @@ public class DeploymentPostProcessorTest {
   @Test
   public void shouldDeploySingleResourceTest() {
     // given
-    final ClassInfo classInfo = ClassInfo.builder().bean(new WithSingleClassPathResource()).build();
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final Resource resource = mock(FileSystemResource.class);
 
@@ -94,7 +95,7 @@ public class DeploymentPostProcessorTest {
   @Test
   public void shouldDeployMultipleResourcesTest() {
     // given
-    final ClassInfo classInfo = ClassInfo.builder().bean(new WithDoubleClassPathResource()).build();
+    final BeanInfo classInfo = beanInfo(new WithDoubleClassPathResource());
 
     final Resource[] resources = {mock(FileSystemResource.class), mock(FileSystemResource.class)};
 
@@ -133,7 +134,7 @@ public class DeploymentPostProcessorTest {
   @Test
   public void shouldDeployDistinctResources() {
     // given
-    final ClassInfo classInfo = ClassInfo.builder().bean(new WithDoubleClassPathResource()).build();
+    final BeanInfo classInfo = beanInfo(new WithDoubleClassPathResource());
     final Resource resource = mock(FileSystemResource.class);
     final Resource[] resources = {resource, resource};
 
@@ -173,8 +174,7 @@ public class DeploymentPostProcessorTest {
         .isThrownBy(
             () -> {
               // given
-              final ClassInfo classInfo =
-                  ClassInfo.builder().bean(new WithNoClassPathResource()).build();
+              final BeanInfo classInfo = beanInfo(new WithNoClassPathResource());
 
               // when
               deploymentPostProcessor.configureFor(classInfo);
