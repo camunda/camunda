@@ -7,12 +7,11 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {defaultAssertionOptions} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
-import {defaultAssertionOptions} from '../utils/constants';
 export class IdentityRolesPage {
   readonly page: Page;
   readonly rolesList: Locator;
-  readonly usersList: Locator;
   readonly createRoleButton: Locator;
   readonly editRoleButton: (rowName?: string) => Locator;
   readonly deleteRoleButton: (rowName?: string) => Locator;
@@ -32,7 +31,6 @@ export class IdentityRolesPage {
   readonly deleteRoleModalCancelButton: Locator;
   readonly deleteRoleModalDeleteButton: Locator;
   readonly roleCell: (name: string) => Locator;
-  readonly userCell: (name: string) => Locator;
   readonly rolesHeading: Locator;
   readonly assignUserButton: Locator;
   readonly assignUserButtonModal: Locator;
@@ -40,11 +38,11 @@ export class IdentityRolesPage {
   readonly searchBoxResult: Locator;
   readonly removeButton: Locator;
   readonly removeUserModalButton: Locator;
+  readonly emptyStateLocator: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.rolesList = page.getByRole('table');
-    this.usersList = page.getByRole('table');
     this.createRoleButton = page.getByRole('button', {
       name: 'Create role',
     });
@@ -107,8 +105,6 @@ export class IdentityRolesPage {
     );
     this.roleCell = (roleID: string) =>
       this.rolesList.getByRole('cell', {name: roleID, exact: true});
-    this.userCell = (userID: string) =>
-      this.usersList.getByRole('cell', {name: userID, exact: true});
     this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.searchBox = page.getByRole('searchbox');
@@ -120,6 +116,7 @@ export class IdentityRolesPage {
     this.removeUserModalButton = page.getByRole('button', {
       name: 'Remove user',
     });
+    this.emptyStateLocator = page.getByText('No roles created yet');
   }
   async clickCreateRoles() {
     await this.createRoleButton.click();
@@ -161,14 +158,6 @@ export class IdentityRolesPage {
       })
       .click({timeout: 60000});
     await this.assignUserButtonModal.click();
-  }
-
-  async unassignUserFromRole(userName: string): Promise<void> {
-    const userRow = this.page.getByRole('row').filter({hasText: userName});
-    await expect(userRow).toBeVisible({timeout: 30000});
-
-    await this.removeButton.click();
-    await this.removeUserModalButton.click({timeout: 30000});
   }
 
   async deleteRole(roleName: string) {
