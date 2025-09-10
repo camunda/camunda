@@ -186,7 +186,6 @@ public class TaskService {
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
       tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
 
-      taskStore.persistTaskClaim(taskBefore, taskAssignee);
       final TaskEntity claimedTask = taskStore.makeCopyOf(taskBefore).setAssignee(taskAssignee);
       final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
       updateClaimedMetric(assignedTaskMetrics);
@@ -241,8 +240,6 @@ public class TaskService {
         // Zeebe User Task
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
 
-        // persist completion and variables
-        taskStore.persistTaskCompletion(task);
         final TaskEntity completedTaskEntity =
             taskStore
                 .makeCopyOf(task)
@@ -322,15 +319,10 @@ public class TaskService {
     final TaskEntity taskBefore = taskStore.getTask(taskId);
     if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
       // Zeebe User Task
-      taskStore.persistTaskUnclaim(taskBefore);
+      tasklistServicesAdapter.unassignUserTask(taskBefore);
       final TaskEntity taskEntity = taskStore.makeCopyOf(taskBefore).setAssignee(null);
-      try {
-        tasklistServicesAdapter.unassignUserTask(taskEntity);
-      } catch (final Exception e) {
-        taskStore.persistTaskClaim(taskBefore, taskBefore.getAssignee());
-        throw e;
-      }
       return TaskDTO.createFrom(taskEntity, objectMapper);
+
     } else {
       // Job-based User Task
       taskValidator.validateCanUnassign(taskBefore);
