@@ -22,6 +22,11 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+<<<<<<< HEAD
+=======
+import java.time.Duration;
+import java.util.Set;
+>>>>>>> 25ce09a8 (feat: Implement configurable command distribution retry intervals)
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -104,8 +109,89 @@ public class CommandRedistributorTest {
   }
 
   private CommandRedistributor getCommandRedistributor(final boolean commandDistributionPaused) {
+<<<<<<< HEAD
     return new CommandRedistributor(
         processingState.getDistributionState(), mockCommandSender, commandDistributionPaused);
+=======
+    final var fakeProcessingResultBuilder = new FakeProcessingResultBuilder<>();
+    final Writers writers =
+        new Writers(() -> fakeProcessingResultBuilder, mock(EventAppliers.class));
+
+    final RoutingInfo routingInfo =
+        RoutingInfo.dynamic(routingState, new StaticRoutingInfo(Set.of(1, 2), 2));
+
+    final CommandDistributionBehavior behavior =
+        new CommandDistributionBehavior(
+            processingState.getDistributionState(),
+            writers,
+            1,
+            routingInfo,
+            mockCommandSender,
+            mockDistributionMetrics);
+
+    return new CommandRedistributor(
+        behavior,
+        routingInfo,
+        commandDistributionPaused,
+        Duration.ofSeconds(10), // Use default interval for tests
+        Duration.ofMinutes(5)); // Use default max backoff for tests
+  }
+
+  @Nested
+  class ScalingUpPartitions {
+
+    @BeforeEach
+    void setUp() {
+      // Simulate scaling up partition 3
+      routingState.setDesiredPartitions(Set.of(1, 2, 3), 111L);
+
+      distributionState.addRetriableDistribution(distributionKey, 3);
+    }
+
+    @Test
+    void shouldNotRedistributeToScalingPartitions() {
+      // given
+      // when
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+
+      // then
+      verify(mockCommandSender, times(1))
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, times(1))
+          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, never())
+          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+    }
+
+    @Test
+    void shouldRedistributeToScaledPartition() {
+      // given
+      // when
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+
+      // then
+      verify(mockCommandSender, times(1))
+          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, times(1))
+          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+      verify(mockCommandSender, never())
+          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+
+      // then
+      // Partition 3 is now scaled up, so it should be redistributed to
+      routingState.activatePartition(3);
+
+      // run cycle twice, since first one always does not try distributing the records
+      commandRedistributor.runRetryCycle();
+      commandRedistributor.runRetryCycle();
+      verify(mockCommandSender, times(1))
+          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+    }
+>>>>>>> 25ce09a8 (feat: Implement configurable command distribution retry intervals)
   }
 
   @Nested
