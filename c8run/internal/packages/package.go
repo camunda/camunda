@@ -119,6 +119,7 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 		filepath.Join("c8run", "camunda-zeebe-"+camundaVersion),
 		filepath.Join("c8run", ".env"),
 		filepath.Join("c8run", composeExtractionPath),
+		filepath.Join("c8run", "configuration", "application.yaml"),
 	}
 
 	switch osType {
