@@ -41,7 +41,7 @@ public abstract class AbstractCamundaAnnotationProcessor
   @Override
   public void onStart(final CamundaClient client) {
     for (final String beanName : applicationContext.getBeanDefinitionNames()) {
-      final Class<?> beanType = applicationContext.getType(beanName);
+      final Class<?> beanType = applicationContext.getType(beanName, false);
       if (beanType != null) {
         final BeanInfo beanInfo =
             BeanInfo.builder()
