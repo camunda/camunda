@@ -135,7 +135,18 @@ class BackupReplicatedPartitionTest {
             .findAny()
             .map(b -> b.getConfig().getCluster().getNodeId())
             .orElseThrow();
+    final var initialSnapshot = clusteringRule.getSnapshot(clusteringRule.getBroker(anyFollower));
     clusteringRule.forceNewLeaderForPartition(anyFollower, 1);
+    // On leader change, we take a new snapshot. Make sure that happened before taking a new
+    // backup, otherwise the backup might fail when the initial snapshot is deleted right before
+    // reservation.
+    Awaitility.await()
+        .timeout(Duration.ofSeconds(15))
+        .untilAsserted(
+            () ->
+                assertThat(clusteringRule.getSnapshot(clusteringRule.getBroker(anyFollower)))
+                    .isNotEqualTo(initialSnapshot));
+
     client.createSingleJob(JOB_TYPE);
 
     // then
