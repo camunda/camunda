@@ -33,12 +33,18 @@ public record BrokerClientTopologyImpl(
 
   public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
   public static final long NO_COMPLETED_LAST_CHANGE_ID = -1;
+  public static final String NO_CLUSTER_ID = null;
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(
         new LiveClusterState(Set.of()),
         new ConfiguredClusterState(
-            UNINITIALIZED_CLUSTER_SIZE, 0, 0, List.of(), NO_COMPLETED_LAST_CHANGE_ID));
+            UNINITIALIZED_CLUSTER_SIZE,
+            0,
+            0,
+            List.of(),
+            NO_COMPLETED_LAST_CHANGE_ID,
+            NO_CLUSTER_ID));
   }
 
   @Override
@@ -122,6 +128,11 @@ public record BrokerClientTopologyImpl(
     return configuredClusterState.lastChangeId;
   }
 
+  @Override
+  public String getClusterId() {
+    return configuredClusterState.clusterId;
+  }
+
   public static BrokerClientTopologyImpl fromMemberProperties(
       final Collection<BrokerInfo> values, final ConfiguredClusterState clusterConfiguration) {
     return new BrokerClientTopologyImpl(new LiveClusterState(values), clusterConfiguration);
@@ -132,7 +143,8 @@ public record BrokerClientTopologyImpl(
       int partitionCount,
       int replicationFactor,
       List<Integer> partitionIds,
-      long lastChangeId) {}
+      long lastChangeId,
+      String clusterId) {}
 
   static class LiveClusterState {
     private static final Long TERM_NONE = -1L;

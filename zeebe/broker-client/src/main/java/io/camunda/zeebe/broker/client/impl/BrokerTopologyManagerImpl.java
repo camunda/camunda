@@ -218,6 +218,9 @@ public final class BrokerTopologyManagerImpl extends Actor
     final var newClusterSize = clusterTopology.clusterSize();
     final var newPartitionsCount = clusterTopology.partitionCount();
     final var newReplicationFactor = clusterTopology.minReplicationFactor();
+    // cluster id is never null as the cluster id is always initialized in the cluster topology.
+    // Unless the persisted topology is modified manually, and set to null.
+    final var clusterId = clusterTopology.clusterId().orElse("");
     final long newLastChange =
         clusterTopology
             .lastChange()
@@ -248,7 +251,8 @@ public final class BrokerTopologyManagerImpl extends Actor
               newPartitionsCount,
               newReplicationFactor,
               partitionIds,
-              newLastChange);
+              newLastChange,
+              clusterId);
 
       return new BrokerClientTopologyImpl(oldTopology.liveClusterState(), newClusterInfo);
     }

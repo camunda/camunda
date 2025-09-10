@@ -48,4 +48,6 @@ public interface BrokerClusterState {
   PartitionHealthStatus getPartitionHealth(int brokerId, int partition);
 
   long getLastCompletedChangeId();
+
+  String getClusterId();
 }
