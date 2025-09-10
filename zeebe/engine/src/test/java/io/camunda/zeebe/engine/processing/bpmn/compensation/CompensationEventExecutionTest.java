@@ -3406,6 +3406,44 @@ public class CompensationEventExecutionTest {
             tuple(CompensationSubscriptionIntent.DELETED, "ActivityToCompensate"));
   }
 
+  @Test
+  public void shouldTriggerCompensationWithAdHocSubprocessesHandler() {
+    final var process =
+        createModelFromClasspathResource(
+            "/compensation/compensation-adhoc-subprocess-handler.bpmn");
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSABLE_ACTIVITY)
+        .complete();
+    ENGINE
+        .job()
+        .ofInstance(processInstanceKey)
+        .withType(SERVICE_TASK_TYPE_COMPENSATION_HANDLER)
+        .complete();
+
+    // then
+    assertThat(
+            RecordingExporter.compensationSubscriptionRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limit(2))
+        .extracting(Record::getIntent, r -> r.getValue().getCompensationHandlerId())
+        .contains(tuple(CompensationSubscriptionIntent.TRIGGERED, "adhoc-subprocess"));
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence(
+            "compensationHandler",
+            "adhoc-subprocess#innerInstance",
+            "adhoc-subprocess",
+            PROCESS_ID);
+  }
+
   private BpmnModelInstance createModelFromClasspathResource(final String classpath) {
     final var resourceAsStream = getClass().getResourceAsStream(classpath);
     return Bpmn.readModelFromStream(resourceAsStream);
