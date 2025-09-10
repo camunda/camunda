@@ -26,7 +26,6 @@ import io.camunda.optimize.service.util.importing.ZeebeConstants;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
@@ -101,19 +100,14 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
       camundaClient =
           CamundaClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
-              .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-              .usePlaintext()
+              .grpcAddress(zeebeContainer.getGrpcAddress())
               .build();
     } else {
       camundaClient =
           CamundaClient.newClientBuilder()
               .defaultRequestTimeout(Duration.ofMillis(15000))
-              .grpcAddress(
-                  URI.create(
-                      String.format("http://%s", zeebeContainer.getExternalGatewayAddress())))
-              .restAddress(
-                  URI.create(String.format("http://%s", zeebeContainer.getExternalAddress(8080))))
-              .usePlaintext()
+              .grpcAddress(zeebeContainer.getGrpcAddress())
+              .restAddress(zeebeContainer.getRestAddress())
               .build();
     }
   }

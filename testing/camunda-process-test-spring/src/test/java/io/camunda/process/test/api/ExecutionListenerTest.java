@@ -112,8 +112,7 @@ public class ExecutionListenerTest {
             () ->
                 CamundaClient.newClientBuilder()
                     .grpcAddress(GRPC_API_ADDRESS)
-                    .restAddress(REST_API_ADDRESS)
-                    .usePlaintext());
+                    .restAddress(REST_API_ADDRESS));
 
     when(processCoverageBuilder.build()).thenReturn(processCoverage);
     when(testContext.getApplicationContext()).thenReturn(applicationContext);

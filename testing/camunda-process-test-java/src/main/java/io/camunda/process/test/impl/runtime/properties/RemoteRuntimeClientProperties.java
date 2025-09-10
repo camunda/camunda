@@ -165,7 +165,7 @@ public class RemoteRuntimeClientProperties {
   }
 
   private CamundaClientBuilder buildSelfManagedClientFactory() {
-    return CamundaClient.newClientBuilder().usePlaintext();
+    return CamundaClient.newClientBuilder();
   }
 
   public enum ClientMode {

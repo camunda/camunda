@@ -96,8 +96,7 @@ public class NonDefaultContainerSetupTest {
       try (final CamundaClient client =
           CamundaClient.newClientBuilder()
               .preferRestOverGrpc(false)
-              .usePlaintext()
-              .gatewayAddress(gateway.getExternalGatewayAddress())
+              .grpcAddress(gateway.getGrpcAddress())
               .build()) {
         // when
         client

@@ -537,8 +537,7 @@ public class TestContainerUtil {
 
       testContext.setInternalZeebeContactPoint(
           broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
-      testContext.setExternalZeebeContactPoint(
-          broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
+      testContext.setZeebeGrpcAddress(broker.getGrpcAddress());
     } else {
       throw new IllegalStateException("Broker is already started. Call stopZeebe first.");
     }
@@ -602,7 +601,7 @@ public class TestContainerUtil {
       broker = null;
     }
     testContext.setInternalZeebeContactPoint(null);
-    testContext.setExternalZeebeContactPoint(null);
+    testContext.setZeebeGrpcAddress(null);
   }
 
   protected void stopTasklist(final TestContext testContext) {

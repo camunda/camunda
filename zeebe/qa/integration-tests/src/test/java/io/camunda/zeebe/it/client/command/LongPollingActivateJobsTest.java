@@ -157,7 +157,7 @@ public class LongPollingActivateJobsTest {
   private void sendActivateRequestsAndClose(final boolean useRest, final String jobType)
       throws InterruptedException {
     for (int i = 0; i < 3; i++) {
-      final CamundaClient tempClient = zeebe.newClientBuilder().usePlaintext().build();
+      final CamundaClient tempClient = zeebe.newClientBuilder().build();
 
       getCommand(tempClient, useRest)
           .jobType(jobType)
