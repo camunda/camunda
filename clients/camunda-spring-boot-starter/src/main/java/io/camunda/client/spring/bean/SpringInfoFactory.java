@@ -15,34 +15,30 @@
  */
 package io.camunda.client.spring.bean;
 
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.InfoFactory;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
+import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.function.Supplier;
 
-public class ParameterInfoImpl implements ParameterInfo {
-  private final MethodInfo methodInfo;
-  private final String parameterName;
-  private final Parameter parameter;
+public class SpringInfoFactory implements InfoFactory {
 
-  public ParameterInfoImpl(
-      final MethodInfo methodInfo, final String parameterName, final Parameter parameter) {
-    this.methodInfo = methodInfo;
-    this.parameterName = parameterName;
-    this.parameter = parameter;
+  @Override
+  public BeanInfo beanInfo(
+      final String beanName, final Supplier<Object> beanSupplier, final Class<?> targetClass) {
+    return new BeanInfoImpl(beanSupplier, beanName, targetClass);
   }
 
   @Override
-  public Parameter getParameter() {
-    return parameter;
+  public MethodInfo methodInfo(final BeanInfo beanInfo, final Method method) {
+    return new MethodInfoImpl(beanInfo, method);
   }
 
   @Override
-  public String getParameterName() {
-    return parameterName;
-  }
-
-  @Override
-  public MethodInfo getMethodInfo() {
-    return methodInfo;
+  public ParameterInfo parameterInfo(
+      final Parameter parameter, final String parameterName, final MethodInfo methodInfo) {
+    return new ParameterInfoImpl(methodInfo, parameterName, parameter);
   }
 }
