@@ -18,8 +18,10 @@
     "* 20-23,0-8 * * 1-5",
     "* * * * 0,6"
   ],
+  "labels": ["dependencies"],
   "vulnerabilityAlerts": {
     "labels": [
+      "dependencies",
       "area/security"
     ],
     "enabled": true
