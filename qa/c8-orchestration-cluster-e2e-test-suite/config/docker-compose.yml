@@ -126,3 +126,5 @@ services:
       - ${DATABASE}
     networks:
       - zeebe_network
+    env_file:
+      - envs/.env.database.${DATABASE}
