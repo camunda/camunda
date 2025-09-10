@@ -7,16 +7,18 @@
  */
 package io.camunda.exporter.rdbms.handlers.batchoperation;
 
+import static io.camunda.zeebe.protocol.record.intent.BatchOperationIntent.*;
+
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.write.service.BatchOperationWriter;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
+import io.camunda.search.entities.BatchOperationEntity.BatchOperationState;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
@@ -24,16 +26,15 @@ import io.camunda.zeebe.util.DateUtil;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BatchOperationLifecycleManagementExportHandler
     implements RdbmsExportHandler<BatchOperationLifecycleManagementRecordValue> {
-
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationLifecycleManagementExportHandler.class);
   private static final Set<Intent> EXPORTABLE_INTENTS =
-      Set.of(
-          BatchOperationIntent.CANCELED,
-          BatchOperationIntent.SUSPENDED,
-          BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED);
+      Set.of(CANCELED, SUSPENDED, RESUMED, COMPLETED, FAILED);
 
   private final BatchOperationWriter batchOperationWriter;
 
@@ -61,21 +62,38 @@ public class BatchOperationLifecycleManagementExportHandler
     final var value = record.getValue();
     final var batchOperationKey = String.valueOf(value.getBatchOperationKey());
     final var endDate = DateUtil.toOffsetDateTime(record.getTimestamp());
-    if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
-      batchOperationWriter.cancel(batchOperationKey, endDate);
-      scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
-    } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
-      batchOperationWriter.suspend(batchOperationKey);
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      if (value.getErrors().isEmpty()) {
-        batchOperationWriter.finish(batchOperationKey, endDate);
-      } else {
-        batchOperationWriter.finishWithErrors(
-            batchOperationKey, endDate, mapErrors(batchOperationKey, value.getErrors()));
+    switch (record.getIntent()) {
+      case CANCELED -> {
+        batchOperationWriter.cancel(batchOperationKey, endDate);
+        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
       }
-      scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
-    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      batchOperationWriter.resume(batchOperationKey);
+      case SUSPENDED -> batchOperationWriter.suspend(batchOperationKey);
+      case RESUMED -> batchOperationWriter.resume(batchOperationKey);
+      case COMPLETED -> {
+        if (value.getErrors().isEmpty()) {
+          batchOperationWriter.finish(batchOperationKey, endDate);
+        } else {
+          batchOperationWriter.finishWithErrors(
+              batchOperationKey,
+              endDate,
+              mapErrors(batchOperationKey, value.getErrors()),
+              BatchOperationState.PARTIALLY_COMPLETED);
+        }
+        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
+      }
+      case FAILED -> {
+        batchOperationWriter.finishWithErrors(
+            batchOperationKey,
+            endDate,
+            mapErrors(batchOperationKey, value.getErrors()),
+            BatchOperationState.FAILED);
+
+        scheduleBatchOperationForHistoryCleanup(batchOperationKey, endDate);
+      }
+      default -> // should never happen
+          LOGGER.warn(
+              "Trying to export an un-supported batch operation lifecycle management intent: {}",
+              record.getIntent());
     }
   }
 
