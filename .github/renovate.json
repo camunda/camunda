@@ -43,6 +43,7 @@
   ],
   "packageRules": [
     {
+      "description": "This rule is a Renovate performance optimization specifying only one URL to avoid redundant Maven Central lookups in mirrors.",
       "matchDatasources": [
         "maven"
       ],
@@ -193,10 +194,17 @@
       "enabled": false
     },
     {
-      "description": "This additional prefix is used to skip Operate backend tests.",
+      "description": "This additional prefix is used to skip Operate backend tests based on branch name.",
       "matchManagers": [
         "npm",
         "nvm"
+      ],
+      "additionalBranchPrefix": "fe-"
+    },
+    {
+      "description": "This additional prefix is used to skip Operate backend tests based on branch name.",
+      "matchPackageNames": [
+        "mcr.microsoft.com/playwright"
       ],
       "additionalBranchPrefix": "fe-"
     },
@@ -246,12 +254,6 @@
         "parent-root"
       ],
       "enabled": false
-    },
-    {
-      "matchPackageNames": [
-        "mcr.microsoft.com/playwright"
-      ],
-      "additionalBranchPrefix": "fe-"
     },
     {
       "matchPackageNames": [
