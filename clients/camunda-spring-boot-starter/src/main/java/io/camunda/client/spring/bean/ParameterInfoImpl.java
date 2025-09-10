@@ -17,9 +17,10 @@ package io.camunda.client.spring.bean;
 
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
+import io.camunda.client.bean.ParameterInfoBuilder;
 import java.lang.reflect.Parameter;
 
-public class ParameterInfoImpl implements ParameterInfo, ParameterInfo.Builder {
+public class ParameterInfoImpl implements ParameterInfo, ParameterInfoBuilder {
   private MethodInfo methodInfo;
   private String parameterName;
   private Parameter parameter;
@@ -40,30 +41,30 @@ public class ParameterInfoImpl implements ParameterInfo, ParameterInfo.Builder {
   }
 
   @Override
+  public ParameterInfoBuilder parameter(final Parameter parameter) {
+    this.parameter = parameter;
+    return this;
+  }
+
+  @Override
+  public ParameterInfoBuilder parameterName(final String parameterName) {
+    this.parameterName = parameterName;
+    return this;
+  }
+
+  @Override
+  public ParameterInfoBuilder methodInfo(final MethodInfo methodInfo) {
+    this.methodInfo = methodInfo;
+    return this;
+  }
+
+  @Override
   public ParameterInfo build() {
     assert methodInfo != null : "methodInfo is null";
     assert parameter != null : "parameter is null";
     if (parameterName == null) {
       parameterName = parameter.getName();
     }
-    return this;
-  }
-
-  @Override
-  public Builder parameter(final Parameter parameter) {
-    this.parameter = parameter;
-    return this;
-  }
-
-  @Override
-  public Builder parameterName(final String parameterName) {
-    this.parameterName = parameterName;
-    return this;
-  }
-
-  @Override
-  public Builder methodInfo(final MethodInfo methodInfo) {
-    this.methodInfo = methodInfo;
     return this;
   }
 }

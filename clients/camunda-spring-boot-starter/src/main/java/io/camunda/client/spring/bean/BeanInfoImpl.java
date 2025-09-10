@@ -19,13 +19,14 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
 import static org.springframework.util.ReflectionUtils.getAllDeclaredMethods;
 
 import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.BeanInfoBuilder;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.springframework.aop.support.AopUtils;
 
-public final class BeanInfoImpl implements BeanInfo, BeanInfo.Builder {
+public final class BeanInfoImpl implements BeanInfo, BeanInfoBuilder {
   private Supplier<Object> beanSupplier;
   private String beanName;
   private Class<?> targetClass;
@@ -57,19 +58,19 @@ public final class BeanInfoImpl implements BeanInfo, BeanInfo.Builder {
   }
 
   @Override
-  public Builder beanName(final String beanName) {
+  public BeanInfoBuilder beanName(final String beanName) {
     this.beanName = beanName;
     return this;
   }
 
   @Override
-  public Builder beanSupplier(final Supplier<Object> beanSupplier) {
+  public BeanInfoBuilder beanSupplier(final Supplier<Object> beanSupplier) {
     this.beanSupplier = beanSupplier;
     return this;
   }
 
   @Override
-  public Builder targetClass(final Class<?> targetClass) {
+  public BeanInfoBuilder targetClass(final Class<?> targetClass) {
     this.targetClass = targetClass;
     return this;
   }
