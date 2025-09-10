@@ -194,7 +194,7 @@ public class CamundaDockerIT {
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
             .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
             // ---
-            .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", "some-prefix");
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_INDEXPREFIX", "some-prefix");
 
     // when - then the container should start without errors
     startContainer(createContainer(() -> prefixMigrationContainer));
@@ -240,6 +240,8 @@ public class CamundaDockerIT {
         // Unified Configuration
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
         // ---
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
@@ -247,6 +249,7 @@ public class CamundaDockerIT {
 
   private GenericContainer createCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withLogConsumer(new Slf4jLogConsumer(LOGGER))
         .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
         .withNetwork(Network.SHARED)
         .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
@@ -267,6 +270,8 @@ public class CamundaDockerIT {
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
         // ---
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticsearchUrl())
         .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", gatewayAddress())
         .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true");
   }
