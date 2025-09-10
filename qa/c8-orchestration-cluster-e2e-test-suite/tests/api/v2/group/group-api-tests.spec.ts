@@ -23,12 +23,23 @@ import {
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {createGroupAndStoreResponseFields} from '../../../../utils/requestHelpers';
+import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Groups API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdGroups: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
+    createdGroups.push(
+      state['groupId1'] as string,
+      state['groupId2'] as string,
+      state['groupId3'] as string,
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupGroups(request, createdGroups);
   });
 
   test('Create Group', async ({request}) => {
@@ -41,6 +52,9 @@ test.describe.parallel('Groups API Tests', () => {
 
     expect(res.status()).toBe(201);
     const json = await res.json();
+
+    createdGroups.push(json.groupId);
+
     assertRequiredFields(json, groupRequiredFields);
     assertEqualsForKeys(json, requestBody, groupRequiredFields);
   });
