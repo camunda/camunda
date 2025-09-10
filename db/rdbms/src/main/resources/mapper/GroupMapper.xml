@@ -57,6 +57,7 @@ SELECT
       </foreach>
     </if>
     <if test="filter.name != null">AND g.NAME = #{filter.name}</if>
+    <if test="filter.description != null">AND g.DESCRIPTION = #{filter.description}</if>
 
     <if
       test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
