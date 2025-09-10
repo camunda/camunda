@@ -26,22 +26,16 @@ import org.springframework.context.annotation.Configuration;
 public class OidcFlowTestContext {
 
   @Bean
-  public TestApiController createTestController() {
-    return new TestApiController();
+  public TestApiController createTestController(
+      final CamundaAuthenticationProvider authenticationProvider) {
+    return new TestApiController(authenticationProvider);
   }
 
   @Bean
   public CamundaAuthenticationProvider createCamundaAuthenticationProvider() {
-    return new CamundaAuthenticationProvider() {
-      @Override
-      public CamundaAuthentication getCamundaAuthentication() {
-        return new CamundaAuthentication(
+    return () ->
+        new CamundaAuthentication(
             "dummyUsername", "dummyClientId", List.of(), List.of(), List.of(), List.of(), Map.of());
-      }
-
-      @Override
-      public void refresh() {}
-    };
   }
 
   @Bean
