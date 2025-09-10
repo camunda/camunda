@@ -356,6 +356,25 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
+        value -> {
+          /**
+           * The following condition is phrased in this particular way in order to be backwards
+           * compatible with older versions of the software. In older versions the content of the
+           * property was not interpreted. It was assumed to be true, whenever it was set. Because
+           * of that, code examples in this code base set the flag to an empty string. By phrasing
+           * the condition this way, the old code will still work with this new implementation. Only
+           * if somebody deliberately sets the flag to false, the behavior will change
+           */
+          if ("false".equalsIgnoreCase(value)) {
+            usePlaintext(false);
+          } else {
+            usePlaintext(true);
+          }
+        },
+        LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
         value -> maxMessageSize(DataSizeUtil.parse(value)),
         MAX_MESSAGE_SIZE,
         LegacyZeebeClientProperties.MAX_MESSAGE_SIZE);
