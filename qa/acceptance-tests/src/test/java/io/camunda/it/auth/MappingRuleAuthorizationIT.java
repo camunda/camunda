@@ -35,6 +35,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Base64;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -129,16 +130,18 @@ class MappingRuleAuthorizationIT {
     final var deleteResponse =
         camundaClient.newDeleteMappingRuleCommand("authTestMappingRule2").send().join();
 
-    // Add a small delay to ensure the deletion is processed
-    Thread.sleep(1000);
-
-    // then - verify the mapping rule was deleted
-    final var searchResponseAfter =
-        searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
-    assertThat(searchResponseAfter.items())
-        .map(MappingRuleResponse::name)
-        .doesNotContain("authTestMappingRule2");
-    assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
+    // then - wait until the mapping rule is deleted
+    Awaitility.await("Mapping rule is deleted")
+        .ignoreExceptionsInstanceOf(IOException.class)
+        .untilAsserted(
+            () -> {
+              final var searchResponseAfter =
+                  searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
+              assertThat(searchResponseAfter.items())
+                  .map(MappingRuleResponse::name)
+                  .doesNotContain("authTestMappingRule2");
+              assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
+            });
   }
 
   // TODO once available, this test should use the client to make the request
