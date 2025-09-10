@@ -337,12 +337,15 @@ public class OpenSearchDocumentOperations extends OpenSearchRetryOperation {
   }
 
   public DeleteByQueryResponse delete(final String index, final String field, final String value) {
-    final var deleteRequestBuilder =
-        new DeleteByQueryRequest.Builder().index(index).query(term(field, value));
+    return executeWithRetries(
+        () -> {
+          final var deleteRequestBuilder =
+              new DeleteByQueryRequest.Builder().index(index).query(term(field, value));
 
-    return safe(
-        () -> openSearchClient.deleteByQuery(deleteRequestBuilder.build()),
-        e -> defaultDeleteErrorMessage(index));
+          return safe(
+              () -> openSearchClient.deleteByQuery(deleteRequestBuilder.build()),
+              e -> defaultDeleteErrorMessage(index));
+        });
   }
 
   public long deleteByQuery(final String index, final Query query) {

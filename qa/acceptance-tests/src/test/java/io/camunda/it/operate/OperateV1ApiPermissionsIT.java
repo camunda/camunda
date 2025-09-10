@@ -539,11 +539,9 @@ public class OperateV1ApiPermissionsIT {
 
   private static Stream<Arguments> deleteRequestParameters() {
     return Stream.of(
-        /* depends on fix for https://github.com/camunda/camunda/issues/36067
         Arguments.of(AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(ROLE_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(GROUP_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
-        */
         Arguments.of(UNAUTHORIZED_USERNAME, HttpStatus.FORBIDDEN.value()));
   }
 }
