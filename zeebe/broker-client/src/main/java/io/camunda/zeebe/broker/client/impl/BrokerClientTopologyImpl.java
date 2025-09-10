@@ -33,7 +33,7 @@ public record BrokerClientTopologyImpl(
 
   public static final int UNINITIALIZED_CLUSTER_SIZE = -1;
   public static final long NO_COMPLETED_LAST_CHANGE_ID = -1;
-  public static final String NO_CLUSTER_ID = null;
+  public static final String NO_CLUSTER_ID = "";
 
   public static BrokerClientTopologyImpl uninitialized() {
     return new BrokerClientTopologyImpl(
