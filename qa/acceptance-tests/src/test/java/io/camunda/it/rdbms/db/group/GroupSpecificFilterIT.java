@@ -94,7 +94,11 @@ public class GroupSpecificFilterIT {
     createAndSaveGroup(
         rdbmsWriter,
         GroupFixtures.createRandomized(
-            b -> b.groupId("groupId").groupKey(1337L).name("Group 1337")));
+            b ->
+                b.groupId("groupId")
+                    .groupKey(1337L)
+                    .name("Group 1337")
+                    .description("This is group 1337")));
     GroupMemberFixtures.createAndSaveRandomGroupMember(
         rdbmsWriter,
         b -> b.groupId("groupId").entityId("entityId").entityType(EntityType.USER.name()));
@@ -143,6 +147,7 @@ public class GroupSpecificFilterIT {
     return List.of(
         new GroupFilter.Builder().groupKey(1337L).build(),
         new GroupFilter.Builder().name("Group 1337").build(),
+        new GroupFilter.Builder().description("This is group 1337").build(),
         new GroupFilter.Builder().memberId("entityId").childMemberType(EntityType.USER).build());
   }
 
