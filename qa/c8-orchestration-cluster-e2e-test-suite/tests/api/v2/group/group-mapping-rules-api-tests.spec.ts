@@ -28,14 +28,21 @@ import {
   mappingRuleIdFromState,
 } from '../../../../utils/requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Group Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
+  state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
+
     await assignMappingToGroup(request, 1, state['groupId2'] as string, state);
     await assignMappingToGroup(request, 1, state['groupId3'] as string, state);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupGroups(request, state['createdIds'] as string[]);
   });
 
   test('Assign Mapping Rule To Group', async ({request}) => {
