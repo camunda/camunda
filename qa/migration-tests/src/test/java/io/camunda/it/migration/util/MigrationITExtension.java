@@ -13,11 +13,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.PROP_CAMUNDA_IT
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATABASE_READINESS;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.AppenderBase;
 import io.camunda.application.Profile;
-import io.camunda.application.commons.migration.AsyncMigrationsRunner;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
@@ -45,7 +41,6 @@ import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
 import org.junit.platform.commons.support.ModifierSupport;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 public class MigrationITExtension
@@ -247,18 +242,10 @@ public class MigrationITExtension
   }
 
   private void awaitMigrationsFinished() {
-    final var logger = (Logger) LoggerFactory.getLogger(AsyncMigrationsRunner.class);
-    final var appender = new LogAppender();
-    appender.setContext(logger.getLoggerContext());
-    appender.start();
-    logger.addAppender(appender);
-
     Awaitility.await()
-        .pollInterval(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(60))
-        .untilAsserted(() -> assertThat(appender.completed).isTrue());
-
-    logger.detachAndStopAllAppenders();
+        .untilAsserted(() -> assertThat(migrator.isMigrationCompleted()).isTrue());
   }
 
   private void ingestRecordToTriggerImporters(final CamundaClient client) {
@@ -302,19 +289,5 @@ public class MigrationITExtension
       return migrator;
     }
     return null;
-  }
-
-  static class LogAppender extends AppenderBase<ILoggingEvent> {
-
-    boolean completed = false;
-
-    @Override
-    protected void append(final ILoggingEvent iLoggingEvent) {
-      if (iLoggingEvent.getMessage().contains("All migration tasks completed")) {
-        synchronized (this) {
-          completed = true;
-        }
-      }
-    }
   }
 }

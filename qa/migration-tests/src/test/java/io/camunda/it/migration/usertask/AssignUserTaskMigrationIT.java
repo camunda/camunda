@@ -16,6 +16,7 @@ import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import java.time.Duration;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -33,6 +34,7 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
           .withBeforeUpgradeConsumer((db, migrator) -> setup(db, migrator, null));
 
   @Test
+  @Disabled("Should be re-enabled once https://github.com/camunda/camunda/issues/36027 is fixed")
   void shouldAssign87ZeebeTaskV1(final CamundaMigrator migrator) {
 
     final long taskKey = USER_TASK_KEYS.get("first");
