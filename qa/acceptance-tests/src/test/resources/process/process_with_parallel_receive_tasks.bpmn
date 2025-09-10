@@ -14,12 +14,6 @@
     <bpmn:sequenceFlow id="Flow_16hb8p0" sourceRef="Gateway_0odbxib" targetRef="receive_task_2" />
     <bpmn:sequenceFlow id="Flow_0pmud6h" sourceRef="Gateway_0odbxib" targetRef="receive_task_1" />
     <bpmn:sequenceFlow id="Flow_1qegipd" sourceRef="Gateway_0odbxib" targetRef="receive_task_3" />
-    <bpmn:exclusiveGateway id="Gateway_0gjrsdh">
-      <bpmn:incoming>Flow_024cxbr</bpmn:incoming>
-      <bpmn:incoming>Flow_1gyzrz7</bpmn:incoming>
-      <bpmn:incoming>Flow_06m5ik7</bpmn:incoming>
-      <bpmn:outgoing>Flow_1qk65aq</bpmn:outgoing>
-    </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="Flow_024cxbr" sourceRef="receive_task_2" targetRef="Gateway_0gjrsdh" />
     <bpmn:sequenceFlow id="Flow_1gyzrz7" sourceRef="receive_task_1" targetRef="Gateway_0gjrsdh" />
     <bpmn:sequenceFlow id="Flow_06m5ik7" sourceRef="receive_task_3" targetRef="Gateway_0gjrsdh" />
@@ -27,7 +21,7 @@
       <bpmn:incoming>Flow_1qk65aq</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1qk65aq" sourceRef="Gateway_0gjrsdh" targetRef="Event_17qoged" />
-    <bpmn:receiveTask id="receive_task_1" name="Receive task 1" messageRef="Message_0ulqidk">
+    <bpmn:receiveTask id="receive_task_1" name="Receive task 1" messageRef="Message_0fa2uvi">
       <bpmn:incoming>Flow_0pmud6h</bpmn:incoming>
       <bpmn:outgoing>Flow_1gyzrz7</bpmn:outgoing>
     </bpmn:receiveTask>
@@ -35,12 +29,28 @@
       <bpmn:incoming>Flow_16hb8p0</bpmn:incoming>
       <bpmn:outgoing>Flow_024cxbr</bpmn:outgoing>
     </bpmn:receiveTask>
-    <bpmn:receiveTask id="receive_task_3" name="Receive task 3" messageRef="Message_0ulqidk">
+    <bpmn:receiveTask id="receive_task_3" name="Receive task 3" messageRef="Message_0euq7ob">
       <bpmn:incoming>Flow_1qegipd</bpmn:incoming>
       <bpmn:outgoing>Flow_06m5ik7</bpmn:outgoing>
     </bpmn:receiveTask>
+    <bpmn:parallelGateway id="Gateway_0gjrsdh">
+      <bpmn:incoming>Flow_024cxbr</bpmn:incoming>
+      <bpmn:incoming>Flow_1gyzrz7</bpmn:incoming>
+      <bpmn:incoming>Flow_06m5ik7</bpmn:incoming>
+      <bpmn:outgoing>Flow_1qk65aq</bpmn:outgoing>
+    </bpmn:parallelGateway>
   </bpmn:process>
-  <bpmn:message id="Message_0ulqidk" name="Message_0ulqidk">
+  <bpmn:message id="Message_0ulqidk" name="Message2">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=&#34;correlation_key_2&#34;" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_0fa2uvi" name="Message1">
+    <bpmn:extensionElements>
+      <zeebe:subscription correlationKey="=&#34;correlation_key_1&#34;" />
+    </bpmn:extensionElements>
+  </bpmn:message>
+  <bpmn:message id="Message_0euq7ob" name="Message3">
     <bpmn:extensionElements>
       <zeebe:subscription correlationKey="=&#34;correlation_key_3&#34;" />
     </bpmn:extensionElements>
@@ -52,9 +62,6 @@
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Gateway_1ndi1s7_di" bpmnElement="Gateway_0odbxib">
         <dc:Bounds x="275" y="225" width="50" height="50" />
-      </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Gateway_0gjrsdh_di" bpmnElement="Gateway_0gjrsdh" isMarkerVisible="true">
-        <dc:Bounds x="555" y="225" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_17qoged_di" bpmnElement="Event_17qoged">
         <dc:Bounds x="672" y="232" width="36" height="36" />
@@ -70,6 +77,9 @@
       <bpmndi:BPMNShape id="Activity_1f89r10_di" bpmnElement="receive_task_3">
         <dc:Bounds x="390" y="330" width="100" height="80" />
         <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_09wrgit_di" bpmnElement="Gateway_0gjrsdh">
+        <dc:Bounds x="555" y="225" width="50" height="50" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="Flow_0jpbrva_di" bpmnElement="Flow_0jpbrva">
         <di:waypoint x="218" y="250" />
