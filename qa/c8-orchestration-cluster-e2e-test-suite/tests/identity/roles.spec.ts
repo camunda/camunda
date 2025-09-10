@@ -182,4 +182,135 @@ test.describe('Roles functionalities', () => {
       });
     });
   });
+
+  test('As an Admin user I can unassign role from user', async ({
+    page,
+    identityRolesPage,
+    identityAuthorizationsPage,
+    identityUsersPage,
+    identityGroupsPage,
+    identityHeader,
+    loginPage,
+  }) => {
+    test.slow();
+    const testData = createTestData({
+      authRole: true,
+      user: true,
+    });
+    const TEST_ROLE = testData.authRole!;
+    const TEST_USER = testData.user!;
+
+    await test.step('Create test user', async () => {
+      await identityUsersPage.createUser({
+        username: TEST_USER.username,
+        password: TEST_USER.password,
+        email: TEST_USER.email!,
+        name: TEST_USER.name ?? TEST_USER.username,
+      });
+
+      const userName = identityUsersPage.userCell(TEST_USER.username);
+      await waitForItemInList(page, userName, {
+        clickNext: true,
+        shouldBeVisible: true,
+        onAfterReload: async () => {
+          await identityHeader.navigateToUsers();
+          await expect(identityUsersPage.usersList).toBeVisible({
+            timeout: 30000,
+          });
+        },
+      });
+    });
+
+    await test.step('Create * permission for applications for Test user', async () => {
+      await identityHeader.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: TEST_USER.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+    });
+
+    await test.step('Create TestRole with Authorizations CRUD permissions', async () => {
+      await identityHeader.navigateToRoles();
+      await identityRolesPage.createRole(TEST_ROLE);
+
+      const item = identityRolesPage.roleCell(TEST_ROLE.id);
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 60000,
+        onAfterReload: async () => {
+          await identityHeader.navigateToRoles();
+          await expect(identityRolesPage.rolesList).toBeVisible({
+            timeout: 60000,
+          });
+        },
+      });
+
+      await identityHeader.navigateToAuthorizations();
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'Role',
+        ownerId: TEST_ROLE.name,
+        resourceType: 'Authorization',
+        resourceId: '*',
+        accessPermissions: ['Update', 'Read', 'Create', 'Delete'],
+      });
+    });
+
+    await test.step('Give Test user CRUD permissions on Group', async () => {
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: TEST_USER.name,
+        resourceType: 'Group',
+        resourceId: '*',
+        accessPermissions: ['Create', 'Read', 'Update', 'Delete'],
+      });
+    });
+
+    await test.step('Assign Test user to TestRole', async () => {
+      await identityHeader.navigateToRoles();
+      await identityRolesPage.clickRole(TEST_ROLE.id);
+      await identityRolesPage.assignUserToRole(TEST_USER.username);
+    });
+
+    await test.step('Verify Test user has access to Groups before unassignment', async () => {
+      await identityHeader.logout();
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+
+      await identityHeader.navigateToGroups();
+      await expect(identityGroupsPage.groupsList).toBeVisible({
+        timeout: 60000,
+      });
+
+      await identityHeader.logout();
+      await loginPage.login('demo', 'demo');
+    });
+
+    await test.step('Unassign Test user from TestRole', async () => {
+      await identityHeader.navigateToRoles();
+      await identityRolesPage.clickRole(TEST_ROLE.id);
+      await waitForItemInList(
+        page,
+        identityRolesPage.userCell(TEST_USER.username),
+      );
+      await identityRolesPage.unassignUserFromRole(TEST_USER.username);
+    });
+
+    await test.step('Verify Test user sees empty state on Group tab after unassignment', async () => {
+      await identityHeader.logout();
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+
+      await identityHeader.navigateToGroups();
+
+      await expect(identityGroupsPage.emptyStateLocator).toBeVisible({
+        timeout: 60000,
+      });
+
+      await expect(identityGroupsPage.groupsList).not.toBeVisible({
+        timeout: 30000,
+      });
+    });
+  });
 });
