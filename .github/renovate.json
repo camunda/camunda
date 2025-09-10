@@ -18,11 +18,6 @@
     "before 8am every weekday",
     "after 8pm every weekday"
   ],
-  "helmv3": {
-    "registryAliases": {
-      "helm-camunda-io": "https://helm.camunda.io"
-    }
-  },
   "vulnerabilityAlerts": {
     "labels": [
       "area/security"
