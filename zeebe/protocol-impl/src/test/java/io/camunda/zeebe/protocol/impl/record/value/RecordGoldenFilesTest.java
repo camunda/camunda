@@ -123,16 +123,17 @@ public class RecordGoldenFilesTest {
       final Map<String, Property> goldenProps, final Map<String, Property> sourceProps) {
 
     for (final var golden : goldenProps.values()) {
-      assertThat(sourceProps)
-          .describedAs("Expected property %s from golden file to exist in source", golden.name())
-          .containsKey(golden.name());
-
+      if (!sourceProps.containsKey(golden.name())) {
+        warnAboutGoldenFileChanges();
+        fail("Expected property %s from golden file to exist in source", golden.name());
+      }
       final var source = sourceProps.get(golden.name());
-      assertThat(source.type())
-          .describedAs(
-              "Property %s type changed (golden: %s, source: %s)",
-              golden.name(), golden.type(), source.type())
-          .isEqualTo(golden.type());
+      if (!source.type().equals(golden.type())) {
+        warnAboutGoldenFileChanges();
+        fail(
+            "Property %s type changed (golden: %s, source: %s)",
+            golden.name(), golden.type(), source.type());
+      }
     }
   }
 
@@ -277,6 +278,7 @@ public class RecordGoldenFilesTest {
   private static void warnAboutGoldenFileChanges() {
     LOG.warn(
         """
+        ====================================================================
         Record classes are part of the protocol and must remain compatible across versions.
         Golden files exist to make changes explicit and to ensure backward compatibility is
         carefully reviewed before being accepted.
@@ -290,9 +292,11 @@ public class RecordGoldenFilesTest {
         1) You added a new property:
            - Add a safe default value so older versions can continue to operate.
 
-        2) You removed a property:
-           - This is breaking and must be coordinated as a protocol change; do not remove
-             fields without an explicit compatibility plan.
+        2) You removed or changed a property:
+           - Removing or changing properties is a breaking protocol change and must not be done
+           without an explicit compatibility plan. Properties in records may only be modified
+           if they have not yet been released. For backward compatibility, always review carefully
+           to ensure the property does not exist in any released version before making changes.
 
         3) Golden file is missing for a new record:
            - Create the golden file after careful review.
