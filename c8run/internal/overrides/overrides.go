@@ -50,7 +50,7 @@ func AdjustJavaOpts(javaOpts string, settings types.C8RunSettings) string {
 		javaOpts = javaOpts + " -Dserver.ssl.keystore=file:" + settings.Keystore + " -Dserver.ssl.enabled=true" + " -Dserver.ssl.key-password=" + settings.KeystorePassword
 		protocol = "https"
 	}
-	if settings.Port != 8080 {
+	if settings.Port != 8088 {
 		javaOpts = javaOpts + " -Dserver.port=" + strconv.Itoa(settings.Port)
 	}
 	// as demo is set in the default config, we only add the user settings if they differ

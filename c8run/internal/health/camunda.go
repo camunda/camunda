@@ -88,12 +88,12 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
-	operatePort, tasklistPort, identityPort, camundaPort := 8080, 8080, 8080, 8080
+	operatePort, tasklistPort, identityPort, camundaPort := 8088, 8088, 8088, 8088
 
 	// Overwrite ports if Docker is enabled
 	if settings.Docker {
-		operatePort = 8081
-		tasklistPort = 8082
+		operatePort = 8088
+		tasklistPort = 8088
 		identityPort = 8084
 		camundaPort = 8088
 	}
