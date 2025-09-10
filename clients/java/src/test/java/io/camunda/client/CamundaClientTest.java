@@ -146,31 +146,13 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        PLAINTEXT_CONNECTION_VAR,
-        LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
-      })
-  public void shouldUseInsecureWithEnvVar(final String envVarName) {
-    // given
-    Environment.system().put(envVarName, "true");
-    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-
-    // when
-    builder.build();
-
-    // then
-    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
-  }
-
-  @ParameterizedTest
   @CsvSource({
-    PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    PLAINTEXT_CONNECTION_VAR + "," + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION,
-    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
+    PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC,
+    LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC,
+    PREFER_REST_VAR + "," + LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC,
+    LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR
         + ","
-        + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION
+        + LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC
   })
   public void shouldOverridePropertyWithEnvVariable(
       final String envName, final String propertyName) {
@@ -185,17 +167,17 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.isPlaintextConnectionEnabled()).isFalse();
+    assertThat(builder.preferRestOverGrpc()).isFalse();
   }
 
   @ParameterizedTest
   @CsvSource({
-    PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    PLAINTEXT_CONNECTION_VAR + "," + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION,
-    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
+    PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC,
+    LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR + "," + PREFER_REST_OVER_GRPC,
+    PREFER_REST_VAR + "," + LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC,
+    LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR
         + ","
-        + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION
+        + LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC
   })
   public void shouldNotOverridePropertyWithEnvVariableIfOverridingIsDisabled(
       final String envName, final String propertyName) {
@@ -211,7 +193,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.isPlaintextConnectionEnabled()).isTrue();
+    assertThat(builder.preferRestOverGrpc()).isTrue();
   }
 
   @ParameterizedTest
