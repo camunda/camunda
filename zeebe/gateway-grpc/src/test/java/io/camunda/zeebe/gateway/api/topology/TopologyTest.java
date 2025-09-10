@@ -42,11 +42,15 @@ public final class TopologyTest extends GatewayTest {
 
   @Test
   public void clusterIdShouldBePresent() {
+    // given
+    final var topologyManager = (StubbedTopologyManager) brokerClient.getTopologyManager();
+    topologyManager.setClusterId("test-cluster-id");
+
     // when
     final var response = client.topology(TopologyRequest.newBuilder().build());
 
     // then
-    assertThat(response.getClusterId()).isNotEmpty();
+    assertThat(response.getClusterId()).isEqualTo("test-cluster-id");
   }
 
   @Test

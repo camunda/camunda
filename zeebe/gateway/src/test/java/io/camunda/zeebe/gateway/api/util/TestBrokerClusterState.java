@@ -29,6 +29,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
       new HashMap<>();
   private final Map<Integer, Set<Integer>> inactivePartitionsToNodeIds = new HashMap<>();
   private final Map<Integer, Set<Integer>> followerPartitionToNodeIds = new HashMap<>();
+  private String clusterId = null;
 
   public TestBrokerClusterState() {
     this(0);
@@ -117,6 +118,15 @@ public final class TestBrokerClusterState implements BrokerClusterState {
   @Override
   public long getLastCompletedChangeId() {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public String getClusterId() {
+    return clusterId;
+  }
+
+  public void setClusterId(final String clusterId) {
+    this.clusterId = clusterId;
   }
 
   public void addBroker(final int nodeId, final String address) {

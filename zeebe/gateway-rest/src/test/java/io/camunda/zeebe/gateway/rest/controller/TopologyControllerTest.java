@@ -226,5 +226,10 @@ public class TopologyControllerTest extends RestControllerTest {
     public long getLastCompletedChangeId() {
       return 1;
     }
+
+    @Override
+    public String getClusterId() {
+      return null;
+    }
   }
 }
