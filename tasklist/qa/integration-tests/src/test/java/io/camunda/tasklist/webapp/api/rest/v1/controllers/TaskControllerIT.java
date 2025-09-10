@@ -554,7 +554,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           .extractingListContent(objectMapper, TaskSearchResponse.class)
           .hasSize(2)
           .flatExtracting("variables")
-          .extracting("name", "value")
+          .extracting("name", "previewValue")
           .containsExactlyInAnyOrder(
               tuple("a", "1"), tuple("c", "3"), tuple("a", "1"), tuple("c", "3"));
     }
