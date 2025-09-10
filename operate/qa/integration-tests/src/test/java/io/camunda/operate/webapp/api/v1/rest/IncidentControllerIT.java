@@ -102,7 +102,7 @@ public class IncidentControllerIT {
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
     assertPostToWithSucceed(
-        URI + SEARCH, "{\"filter\": { \"" + Incident.PROCESS_INSTANCE_KEY + "\": \"1\" } }");
+        URI + SEARCH, "{\"filter\": { \"" + Incident.PROCESS_INSTANCE_KEY + "\": 1 } }");
     verify(incidentDao)
         .search(new Query<Incident>().setFilter(new Incident().setProcessInstanceKey(1L)));
   }
