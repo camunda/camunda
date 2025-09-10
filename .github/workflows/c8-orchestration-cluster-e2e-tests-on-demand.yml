@@ -96,7 +96,7 @@ jobs:
         run: |
           echo "Checking if services are up..."
           ready=false
-          for i in {1..10}; do
+          for i in {1..90}; do
             if [[ "$NON_STANDALONE" == "true" ]]; then
               tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
               operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
