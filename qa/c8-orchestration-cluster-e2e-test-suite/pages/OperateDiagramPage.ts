@@ -47,7 +47,7 @@ export class OperateDiagramPage {
   }
 
   clickFlowNode(flowNodeName: string) {
-    return this.getFlowNode(flowNodeName).click();
+    return this.getFlowNode(flowNodeName).first().click();
   }
 
   clickSubProcess(subProcessName: string) {
