@@ -257,9 +257,9 @@ public final class CamundaClientBuilderImpl
   }
 
   private void gatewayAddress(final String gatewayAddress) {
-    grpcAddress =
-        AddressUtil.composeGrpcAddress(
-            gatewayAddress, AddressUtil.isPlaintextConnection(grpcAddress));
+    // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
+    // plaintext is checked AFTER the gateway address
+    grpcAddress = AddressUtil.composeGrpcAddress(gatewayAddress, false);
   }
 
   @Override
@@ -582,10 +582,9 @@ public final class CamundaClientBuilderImpl
     return new CamundaClientImpl(this);
   }
 
-  private CamundaClientBuilder usePlaintext(final boolean usePlaintext) {
+  private void usePlaintext(final boolean usePlaintext) {
     grpcAddress = AddressUtil.composeAddress(usePlaintext, grpcAddress);
     restAddress = AddressUtil.composeAddress(usePlaintext, restAddress);
-    return this;
   }
 
   private void keepAlive(final String keepAlive) {
