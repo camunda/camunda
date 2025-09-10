@@ -12,7 +12,6 @@ public class AppCfg {
   private String brokerUrl;
   private String brokerRestUrl;
   private boolean preferRest;
-  private boolean tls;
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
@@ -40,14 +39,6 @@ public class AppCfg {
 
   public void setPreferRest(final boolean preferRest) {
     this.preferRest = preferRest;
-  }
-
-  public boolean isTls() {
-    return tls;
-  }
-
-  public void setTls(final boolean tls) {
-    this.tls = tls;
   }
 
   public StarterCfg getStarter() {

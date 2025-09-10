@@ -16,6 +16,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientStatusException;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -36,9 +37,9 @@ import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import io.netty.util.NetUtil;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -113,13 +114,9 @@ class UnavailableBrokersTest {
             mock(JwtDecoder.class));
     gateway.start().join();
 
-    final String gatewayAddress = NetUtil.toSocketAddressString(networkCfg.toSocketAddress());
+    final URI grpcAddress = AddressUtil.composeGrpcAddress(networkCfg.toSocketAddress(), true);
     client =
-        CamundaClient.newClientBuilder()
-            .preferRestOverGrpc(false)
-            .gatewayAddress(gatewayAddress)
-            .usePlaintext()
-            .build();
+        CamundaClient.newClientBuilder().preferRestOverGrpc(false).grpcAddress(grpcAddress).build();
   }
 
   @AfterAll

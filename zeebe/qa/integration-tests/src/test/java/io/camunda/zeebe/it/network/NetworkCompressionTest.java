@@ -10,7 +10,6 @@ package io.camunda.zeebe.it.network;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.gateway.impl.configuration.GatewayCfg;
@@ -28,12 +27,7 @@ public class NetworkCompressionTest {
 
   public final ClusteringRule clusteringRule =
       new ClusteringRule(
-          1,
-          3,
-          3,
-          this::configureClusterWithCompression,
-          this::configureGatewayWithCompression,
-          CamundaClientBuilder::usePlaintext);
+          1, 3, 3, this::configureClusterWithCompression, this::configureGatewayWithCompression);
 
   public final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 

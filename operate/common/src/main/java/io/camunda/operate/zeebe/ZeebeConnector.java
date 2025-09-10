@@ -9,6 +9,7 @@ package io.camunda.operate.zeebe;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.property.ZeebeProperties;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
@@ -39,13 +40,13 @@ public class ZeebeConnector {
     final CamundaClientBuilder builder =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .gatewayAddress(gatewayAddress)
+            .grpcAddress(
+                AddressUtil.composeGrpcAddress(gatewayAddress, !zeebeProperties.isSecure()))
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
     if (zeebeProperties.isSecure()) {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
       LOGGER.info("Use TLS connection to zeebe");
     } else {
-      builder.usePlaintext();
       LOGGER.info("Use plaintext connection to zeebe");
     }
     return builder.build();

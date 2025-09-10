@@ -9,6 +9,7 @@ package io.camunda.tasklist.zeebe;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.property.ZeebeProperties;
 import io.camunda.tasklist.util.ConditionalOnTasklistCompatibility;
@@ -44,7 +45,9 @@ public class ZeebeConnector {
     final CamundaClientBuilder builder =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .gatewayAddress(zeebeProperties.getGatewayAddress())
+            .grpcAddress(
+                AddressUtil.composeGrpcAddress(
+                    zeebeProperties.getGatewayAddress(), !zeebeProperties.isSecure()))
             // .restAddress(getURIFromString(zeebeProperties.getRestAddress()))
             .restAddress(getURIFromSaaSOrProperties(zeebeProperties.getRestAddress()))
             .defaultJobWorkerMaxJobsActive(JOB_WORKER_MAX_JOBS_ACTIVE);
@@ -52,7 +55,6 @@ public class ZeebeConnector {
       builder.caCertificatePath(zeebeProperties.getCertificatePath());
       LOGGER.info("Use TLS connection to zeebe");
     } else {
-      builder.usePlaintext();
       LOGGER.info("Use plaintext connection to zeebe");
     }
 

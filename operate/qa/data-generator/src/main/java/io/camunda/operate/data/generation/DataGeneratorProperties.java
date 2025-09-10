@@ -9,6 +9,7 @@ package io.camunda.operate.data.generation;
 
 import static io.camunda.operate.data.generation.DataGeneratorProperties.PROPERTIES_PREFIX;
 
+import java.net.URI;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,7 @@ public class DataGeneratorProperties {
 
   private int resolvedIncidentCount = 100;
 
-  private String zeebeGatewayAddress = "localhost:26500";
+  private URI zeebeGrpcAddress = URI.create("http://localhost:26500");
 
   private String elasticsearchHost = "localhost";
 
@@ -44,7 +45,7 @@ public class DataGeneratorProperties {
     return processCount;
   }
 
-  public void setProcessCount(int processCount) {
+  public void setProcessCount(final int processCount) {
     this.processCount = processCount;
   }
 
@@ -52,7 +53,7 @@ public class DataGeneratorProperties {
     return processInstanceCount;
   }
 
-  public void setProcessInstanceCount(int processInstanceCount) {
+  public void setProcessInstanceCount(final int processInstanceCount) {
     this.processInstanceCount = processInstanceCount;
   }
 
@@ -70,7 +71,7 @@ public class DataGeneratorProperties {
     return incidentCount;
   }
 
-  public void setIncidentCount(int incidentCount) {
+  public void setIncidentCount(final int incidentCount) {
     this.incidentCount = incidentCount;
   }
 
@@ -83,19 +84,19 @@ public class DataGeneratorProperties {
     return this;
   }
 
-  public String getZeebeGatewayAddress() {
-    return zeebeGatewayAddress;
+  public URI getZeebeGrpcAddress() {
+    return zeebeGrpcAddress;
   }
 
-  public void setZeebeGatewayAddress(String gatewayAddress) {
-    this.zeebeGatewayAddress = gatewayAddress;
+  public void setZeebeGrpcAddress(final URI gatewayAddress) {
+    zeebeGrpcAddress = gatewayAddress;
   }
 
   public String getElasticsearchHost() {
     return elasticsearchHost;
   }
 
-  public void setElasticsearchHost(String elasticsearchHost) {
+  public void setElasticsearchHost(final String elasticsearchHost) {
     this.elasticsearchHost = elasticsearchHost;
   }
 
@@ -103,7 +104,7 @@ public class DataGeneratorProperties {
     return elasticsearchPort;
   }
 
-  public void setElasticsearchPort(int elasticsearchPort) {
+  public void setElasticsearchPort(final int elasticsearchPort) {
     this.elasticsearchPort = elasticsearchPort;
   }
 
@@ -111,7 +112,7 @@ public class DataGeneratorProperties {
     return zeebeElasticsearchPrefix;
   }
 
-  public void setZeebeElasticsearchPrefix(String zeebeElasticsearchPrefix) {
+  public void setZeebeElasticsearchPrefix(final String zeebeElasticsearchPrefix) {
     this.zeebeElasticsearchPrefix = zeebeElasticsearchPrefix;
   }
 
@@ -119,7 +120,7 @@ public class DataGeneratorProperties {
     return queueSize;
   }
 
-  public void setQueueSize(int queueSize) {
+  public void setQueueSize(final int queueSize) {
     this.queueSize = queueSize;
   }
 

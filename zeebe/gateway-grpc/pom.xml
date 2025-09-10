@@ -201,12 +201,6 @@
 
     <dependency>
       <groupId>io.netty</groupId>
-      <artifactId>netty-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.netty</groupId>
       <artifactId>netty-handler</artifactId>
     </dependency>
 

@@ -62,8 +62,7 @@ public abstract class ZeebeContainerManager {
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
-            .usePlaintext()
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
 

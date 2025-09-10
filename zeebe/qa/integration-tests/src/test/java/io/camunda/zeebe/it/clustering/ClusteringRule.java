@@ -34,6 +34,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.response.BrokerInfo;
 import io.camunda.client.api.response.Topology;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.security.configuration.SecurityConfigurations;
@@ -172,7 +173,7 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         configurator,
         gatewayCfg -> {},
-        CamundaClientBuilder::usePlaintext);
+        builder -> {});
   }
 
   public ClusteringRule(
@@ -187,7 +188,7 @@ public class ClusteringRule extends ExternalResource {
         clusterSize,
         brokerConfigurator,
         gatewayConfigurator,
-        CamundaClientBuilder::usePlaintext);
+        builder -> {});
   }
 
   public ClusteringRule(
@@ -543,11 +544,12 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private CamundaClient createClient() {
-    final String contactPoint =
-        NetUtil.toSocketAddressString(
-            gatewayResource.gateway.getGatewayCfg().getNetwork().toSocketAddress());
     final CamundaClientBuilder camundaClientBuilder =
-        CamundaClient.newClientBuilder().gatewayAddress(contactPoint).preferRestOverGrpc(false);
+        CamundaClient.newClientBuilder()
+            .grpcAddress(
+                AddressUtil.composeGrpcAddress(
+                    gatewayResource.gateway.getGatewayCfg().getNetwork().toSocketAddress(), true))
+            .preferRestOverGrpc(false);
 
     clientConfigurator.accept(camundaClientBuilder);
 

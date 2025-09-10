@@ -124,14 +124,13 @@ public class CamundaDockerIT {
     startContainer(camundaContainer);
 
     final String host = "http://" + createCamundaContainer().getHost() + ":";
-    final String camundaEndpoint = host + camundaContainer.getMappedPort(SERVER_PORT);
+    final URI camundaEndpoint = URI.create(host + camundaContainer.getMappedPort(SERVER_PORT));
     try (final CamundaClient camundaClient =
         new CamundaClientBuilderImpl()
             // set a longer timeout because containers in CI infrastructure can be slow
             .defaultRequestTimeout(Duration.ofSeconds(60))
-            .usePlaintext()
             .preferRestOverGrpc(true)
-            .restAddress(new URI(camundaEndpoint))
+            .restAddress(camundaEndpoint)
             .build()) {
 
       camundaClient

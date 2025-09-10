@@ -9,6 +9,7 @@ package io.camunda.zeebe.it.util;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.zeebe.containers.ZeebeGatewayNode;
 import io.zeebe.containers.cluster.ZeebeCluster;
 import io.zeebe.containers.engine.ContainerEngine;
@@ -24,14 +25,12 @@ public final class ZeebeContainerUtil {
 
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
-        .usePlaintext()
-        .gatewayAddress(gateway.getExternalGatewayAddress());
+        .grpcAddress(gateway.getGrpcAddress());
   }
 
   public static CamundaClientBuilder newClientBuilder(final ContainerEngine containerEngine) {
     return CamundaClient.newClientBuilder()
         .preferRestOverGrpc(false)
-        .usePlaintext()
-        .gatewayAddress(containerEngine.getGatewayAddress());
+        .grpcAddress(AddressUtil.composeGrpcAddress(containerEngine.getGatewayAddress(), true));
   }
 }

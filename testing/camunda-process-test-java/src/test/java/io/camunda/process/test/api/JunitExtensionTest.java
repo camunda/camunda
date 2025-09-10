@@ -91,8 +91,7 @@ public class JunitExtensionTest {
             () ->
                 CamundaClient.newClientBuilder()
                     .grpcAddress(GRPC_API_ADDRESS)
-                    .restAddress(REST_API_ADDRESS)
-                    .usePlaintext());
+                    .restAddress(REST_API_ADDRESS));
 
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));

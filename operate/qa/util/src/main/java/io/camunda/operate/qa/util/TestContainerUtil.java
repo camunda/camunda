@@ -585,8 +585,7 @@ public class TestContainerUtil {
 
       testContext.setInternalZeebeContactPoint(
           broker.getInternalAddress(ZeebePort.GATEWAY.getPort()));
-      testContext.setExternalZeebeContactPoint(
-          broker.getExternalAddress(ZeebePort.GATEWAY.getPort()));
+      testContext.setZeebeGrpcAddress(broker.getGrpcAddress());
     } else {
       throw new IllegalStateException("Broker is already started. Call stopZeebe first.");
     }
@@ -674,7 +673,7 @@ public class TestContainerUtil {
   public void stopZeebe(final TestContext testContext, final File tmpFolder) {
     stopZeebe(tmpFolder);
     testContext.setInternalZeebeContactPoint(null);
-    testContext.setExternalZeebeContactPoint(null);
+    testContext.setZeebeGrpcAddress(null);
   }
 
   @SuppressWarnings("checkstyle:NestedIfDepth")

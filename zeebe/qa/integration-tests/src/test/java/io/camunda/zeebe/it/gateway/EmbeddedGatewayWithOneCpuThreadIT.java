@@ -13,6 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import java.net.URI;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,8 +40,7 @@ public final class EmbeddedGatewayWithOneCpuThreadIT {
     final var port = gtwConfig.getNetwork().getPort();
 
     return CamundaClient.newClientBuilder()
-        .usePlaintext()
-        .gatewayAddress("localhost:" + port)
+        .grpcAddress(URI.create("http://localhost:" + port))
         .build();
   }
 

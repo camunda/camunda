@@ -16,6 +16,8 @@
 package io.camunda.client.impl.util;
 
 import io.camunda.client.api.command.ClientException;
+import io.netty.util.NetUtil;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -48,6 +50,11 @@ public final class AddressUtil {
       return grpcAddress.getHost();
     }
     return String.format("%s:%d", grpcAddress.getHost(), port);
+  }
+
+  public static URI composeGrpcAddress(
+      final InetSocketAddress gatewayAddress, final boolean plaintext) {
+    return composeGrpcAddress(NetUtil.toSocketAddressString(gatewayAddress), plaintext);
   }
 
   public static URI composeGrpcAddress(final String gatewayAddress, final boolean plaintext) {
