@@ -16,6 +16,7 @@ import {
   findLocatorInPaginatedList,
   waitForItemInList,
 } from 'utils/waitForItemInList';
+import {cleanupGroupsSafely} from 'utils/groupsCleanup';
 
 test.describe.serial('groups CRUD', () => {
   let NEW_GROUP: NonNullable<ReturnType<typeof createTestData>['group']>;
@@ -93,6 +94,8 @@ test.describe.serial('groups CRUD', () => {
 });
 
 test.describe('Groups functionalities', () => {
+  const createdGroupIds: string[] = [];
+
   test.beforeEach(async ({page, loginPage, identityGroupsPage}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -104,15 +107,33 @@ test.describe('Groups functionalities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
+  test.afterAll(async ({browser}) => {
+    if (createdGroupIds.length > 0) {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+
+      try {
+        await cleanupGroupsSafely(page, createdGroupIds);
+      } catch (error) {
+        console.warn('Cleanup failed:', error);
+      } finally {
+        await context.close();
+      }
+    }
+  });
+
   test('As an Admin user can create a group with particular permissions and assign it to Test user', async ({
     page,
     identityGroupsPage,
     identityAuthorizationsPage,
+    identityHeader,
   }) => {
     const testData = createTestData({
       group: true,
     });
     const TEST_GROUP = testData.group!;
+
+    createdGroupIds.push(TEST_GROUP.groupId);
 
     await test.step('Create test group', async () => {
       await identityGroupsPage.navigateToGroups();
@@ -125,6 +146,7 @@ test.describe('Groups functionalities', () => {
       const item = identityGroupsPage.groupCell(TEST_GROUP.name);
       await waitForItemInList(page, item, {
         clickNext: true,
+        timeout: 60000,
       });
       await expect(item).toBeVisible();
     });
@@ -136,7 +158,7 @@ test.describe('Groups functionalities', () => {
     });
 
     await test.step('Create authorization for group', async () => {
-      await identityAuthorizationsPage.navigateToAuthorizations();
+      await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
         ownerType: 'Group',
         ownerId: TEST_GROUP.name,
