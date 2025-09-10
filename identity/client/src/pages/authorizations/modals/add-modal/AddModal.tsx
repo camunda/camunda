@@ -295,7 +295,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 <Translate i18nKey="selectPermission">
                   Select at least one permission. For a full overview, see{" "}
                   <DocumentationLink
-                    path="/docs/next/components/concepts/access-control/authorizations/#resources-and-permissions"
+                    path="/docs/components/concepts/access-control/authorizations/#resources-and-permissions"
                     withIcon
                   >
                     documentation
