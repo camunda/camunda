@@ -23,8 +23,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.jobhandling.JobWorkerManager;
-import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,12 +58,12 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   }
 
   @Override
-  public boolean isApplicableFor(final ClassInfo beanInfo) {
+  public boolean isApplicableFor(final BeanInfo beanInfo) {
     return isJobWorker(beanInfo);
   }
 
   @Override
-  public void configureFor(final ClassInfo beanInfo) {
+  public void configureFor(final BeanInfo beanInfo) {
     final List<JobWorkerValue> newJobWorkerValues = new ArrayList<>();
 
     doWithMethods(

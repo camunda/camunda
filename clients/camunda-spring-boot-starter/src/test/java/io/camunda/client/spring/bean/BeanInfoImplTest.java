@@ -15,46 +15,47 @@
  */
 package io.camunda.client.spring.bean;
 
-import static io.camunda.client.spring.testsupport.ClassInfoUtil.classInfo;
+import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.Deployment;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.bean.BeanInfo;
 import org.junit.jupiter.api.Test;
 
-public class ClassInfoTest {
+public class BeanInfoImplTest {
 
   @Test
   public void getBeanInfo() {
     final WithDeploymentAnnotation withDeploymentAnnotation = new WithDeploymentAnnotation();
 
-    final ClassInfo beanInfo = classInfo(withDeploymentAnnotation);
+    final BeanInfo beanInfo = beanInfo(withDeploymentAnnotation);
 
-    assertThat(beanInfo.getBean()).isEqualTo(withDeploymentAnnotation);
+    assertThat(beanInfo.getBeanSupplier().get()).isEqualTo(withDeploymentAnnotation);
     assertThat(beanInfo.getBeanName()).isEqualTo("withDeploymentAnnotation");
     assertThat(beanInfo.getTargetClass()).isEqualTo(WithDeploymentAnnotation.class);
   }
 
   @Test
   public void hasDeploymentAnnotation() {
-    assertThat(classInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
+    assertThat(beanInfo(new WithDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isTrue();
   }
 
   @Test
   public void hasNoDeploymentAnnotation() {
-    assertThat(classInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
+    assertThat(beanInfo(new WithoutDeploymentAnnotation()).hasClassAnnotation(Deployment.class))
         .isFalse();
   }
 
   @Test
   public void hasJobWorkerMethod() {
-    assertThat(classInfo(new WithJobWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
+    assertThat(beanInfo(new WithJobWorker()).hasMethodAnnotation(JobWorker.class)).isTrue();
   }
 
   @Test
   public void hasNotJobWorkerMethod() {
-    assertThat(classInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
+    assertThat(beanInfo("normal String").hasMethodAnnotation(JobWorker.class)).isFalse();
   }
 
   @Deployment(resources = "classpath*:/1.bpmn")

@@ -26,8 +26,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.spring.bean.MethodInfo;
-import io.camunda.client.spring.bean.ParameterInfo;
+import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.bean.ParameterInfo;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -91,7 +91,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
 
   private boolean hasActivatedJobInjected(final JobWorkerValue jobWorkerValue) {
     return jobWorkerValue.getMethodInfo().getParameters().stream()
-        .anyMatch(p -> p.getParameterInfo().getType().isAssignableFrom(ActivatedJob.class));
+        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
   }
 
   private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
@@ -109,7 +109,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     parameters.forEach(
         pi ->
             ReflectionUtils.doWithFields(
-                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
+                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
     return result;
   }
 
@@ -197,7 +197,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         jobWorkerValue.setName(defaultJobWorkerName);
       } else {
         final String generatedJobWorkerName =
-            jobWorkerValue.getMethodInfo().getBeanName()
+            jobWorkerValue.getMethodInfo().getBeanInfo().getBeanName()
                 + "#"
                 + jobWorkerValue.getMethodInfo().getMethodName();
         LOG.debug(
