@@ -200,7 +200,6 @@ public class CamundaProcessTestContainerRuntime
         CamundaClient.newClientBuilder()
             .restAddress(getCamundaRestApiAddress())
             .grpcAddress(getCamundaGrpcApiAddress())
-            .usePlaintext()
             .defaultRequestTimeout(camundaClientRequestTimeout);
   }
 

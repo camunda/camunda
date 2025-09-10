@@ -200,7 +200,6 @@ final class SecuredClusteredMessagingIT {
     final Topology topology;
     try (final var client =
         CamundaClient.newClientBuilder()
-            .usePlaintext()
             .restAddress(
                 URI.create("http://" + zeebe.getExternalHost() + ":" + zeebe.getMappedPort(8080)))
             .grpcAddress(

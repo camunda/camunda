@@ -8,6 +8,7 @@
 package io.camunda.tasklist.qa.util;
 
 import java.io.File;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import junit.framework.AssertionFailedError;
@@ -39,7 +40,7 @@ public class TestContext<T extends TestContext<T>> {
   private String internalKeycloakHost;
   private Integer internalKeycloakPort;
 
-  private String externalZeebeContactPoint;
+  private URI zeebeGrpcAddress;
   private String internalZeebeContactPoint;
 
   private String zeebeIndexPrefix;
@@ -141,12 +142,12 @@ public class TestContext<T extends TestContext<T>> {
     return (T) this;
   }
 
-  public String getExternalZeebeContactPoint() {
-    return externalZeebeContactPoint;
+  public URI getZeebeGrpcAddress() {
+    return zeebeGrpcAddress;
   }
 
-  public T setExternalZeebeContactPoint(final String externalZeebeContactPoint) {
-    this.externalZeebeContactPoint = externalZeebeContactPoint;
+  public T setZeebeGrpcAddress(final URI zeebeGrpcAddress) {
+    this.zeebeGrpcAddress = zeebeGrpcAddress;
     return (T) this;
   }
 

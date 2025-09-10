@@ -61,7 +61,6 @@ final class DefaultAdvertisedAddressIT {
     // given
     final var clientBuilder =
         CamundaClient.newClientBuilder()
-            .usePlaintext()
             .restAddress(
                 URI.create("http://localhost:" + cluster.getAvailableGateway().getMappedPort(8080)))
             .grpcAddress(

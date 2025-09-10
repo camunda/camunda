@@ -87,11 +87,10 @@ public abstract class TasklistZeebeExtension
     client =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .gatewayAddress(zeebeContainer.getExternalGatewayAddress())
+            .grpcAddress(zeebeContainer.getGrpcAddress())
             .restAddress(
                 getURIFromString(
                     String.format("http://%s:%s", zeebeContainer.getExternalHost(), zeebeRestPort)))
-            .usePlaintext()
             .defaultRequestTimeout(REQUEST_TIMEOUT)
             .build();
   }

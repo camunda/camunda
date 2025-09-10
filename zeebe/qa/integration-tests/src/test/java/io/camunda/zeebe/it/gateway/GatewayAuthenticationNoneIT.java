@@ -204,8 +204,7 @@ public class GatewayAuthenticationNoneIT {
     return CamundaClient.newClientBuilder()
         .grpcAddress(zeebe.grpcAddress())
         .restAddress(zeebe.restAddress())
-        .defaultRequestTimeout(Duration.ofMinutes(1))
-        .usePlaintext();
+        .defaultRequestTimeout(Duration.ofMinutes(1));
   }
 
   private static String getIdentityImageTag() {

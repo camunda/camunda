@@ -18,6 +18,7 @@ import io.camunda.tasklist.qa.util.TestContainerUtil;
 import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import org.apache.http.HttpHost;
 import org.elasticsearch.action.admin.cluster.repositories.put.PutRepositoryRequest;
@@ -140,7 +141,7 @@ public class BackupRestoreTest {
     createElsSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
-    createZeebeClient(testContext.getExternalZeebeContactPoint());
+    createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
   private OpenSearchClient createOsClient() {
@@ -164,7 +165,7 @@ public class BackupRestoreTest {
     createOsSnapshotRepository(testContext);
 
     testContainerUtil.startZeebe(IMAGE_REPO, VERSION, testContext);
-    createZeebeClient(testContext.getExternalZeebeContactPoint());
+    createCamundaClient(testContext.getZeebeGrpcAddress());
   }
 
   private void startTasklist() {
@@ -286,12 +287,9 @@ public class BackupRestoreTest {
                         .settings(s -> s.location(REPOSITORY_NAME))));
   }
 
-  private CamundaClient createZeebeClient(final String zeebeGateway) {
+  private CamundaClient createCamundaClient(final URI grpcAddress) {
     final CamundaClientBuilder builder =
-        CamundaClient.newClientBuilder()
-            .gatewayAddress(zeebeGateway)
-            .defaultJobWorkerMaxJobsActive(5)
-            .usePlaintext();
+        CamundaClient.newClientBuilder().grpcAddress(grpcAddress).defaultJobWorkerMaxJobsActive(5);
     camundaClient = builder.build();
     return camundaClient;
   }

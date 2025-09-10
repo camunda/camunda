@@ -70,7 +70,7 @@ abstract class App implements Runnable {
     Path credentialsCachePath = null;
     try {
       credentialsCachePath = Files.createTempDirectory(".camunda").resolve("credentials.json");
-    } catch (IOException e) {
+    } catch (final IOException e) {
       LOG.warn(
           """
           Failed to create credentials cache directory; there will be no credentials cache, and \
@@ -127,7 +127,7 @@ abstract class App implements Runnable {
     if (credentialsCachePath != null) {
       try {
         FileUtil.deleteFolderIfExists(credentialsCachePath.getParent());
-      } catch (IOException e) {
+      } catch (final IOException e) {
         LOG.debug("Failed to delete credentials cache directory", e);
       }
     }
@@ -167,10 +167,6 @@ abstract class App implements Runnable {
             .preferRestOverGrpc(config.isPreferRest())
             .withProperties(System.getProperties())
             .withInterceptors(monitoringInterceptor);
-
-    if (!config.isTls()) {
-      builder.usePlaintext();
-    }
 
     final var auth = config.getAuth();
     final var credentialsProvider =
