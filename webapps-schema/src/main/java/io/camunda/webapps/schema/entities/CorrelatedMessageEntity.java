@@ -30,6 +30,7 @@ public class CorrelatedMessageEntity
   private Long processDefinitionKey;
   private Long processInstanceKey;
   private long subscriptionKey;
+  private String subscriptionType;
   private String tenantId;
 
   @Override
@@ -153,6 +154,15 @@ public class CorrelatedMessageEntity
     return this;
   }
 
+  public String getSubscriptionType() {
+    return subscriptionType;
+  }
+
+  public CorrelatedMessageEntity setSubscriptionType(final String subscriptionType) {
+    this.subscriptionType = subscriptionType;
+    return this;
+  }
+
   @Override
   public String getTenantId() {
     return tenantId;
@@ -179,6 +189,7 @@ public class CorrelatedMessageEntity
         processDefinitionKey,
         processInstanceKey,
         subscriptionKey,
+        subscriptionType,
         tenantId);
   }
 
@@ -204,6 +215,7 @@ public class CorrelatedMessageEntity
         && Objects.equals(position, that.position)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(subscriptionType, that.subscriptionType)
         && Objects.equals(tenantId, that.tenantId);
   }
 
@@ -241,6 +253,9 @@ public class CorrelatedMessageEntity
         + processInstanceKey
         + ", subscriptionKey="
         + subscriptionKey
+        + ", subscriptionType='"
+        + subscriptionType
+        + '\''
         + ", tenantId='"
         + tenantId
         + '\''

@@ -13,12 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.response;
 
-public enum MessageSubscriptionType {
-  CREATED,
-  MIGRATED,
-  START_EVENT,
-  PROCESS_MESSAGE,
-  UNKNOWN_ENUM_VALUE
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
+
+public interface CorrelatedMessageSubscription {
+
+  String getCorrelationKey();
+
+  String getCorrelationTime();
+
+  String getElementId();
+
+  Long getElementInstanceKey();
+
+  Long getMessageKey();
+
+  String getMessageName();
+
+  Integer getPartitionId();
+
+  String getProcessDefinitionId();
+
+  Long getProcessDefinitionKey();
+
+  Long getProcessInstanceKey();
+
+  Long getSubscriptionKey();
+
+  MessageSubscriptionType getSubscriptionType();
+
+  String getTenantId();
 }

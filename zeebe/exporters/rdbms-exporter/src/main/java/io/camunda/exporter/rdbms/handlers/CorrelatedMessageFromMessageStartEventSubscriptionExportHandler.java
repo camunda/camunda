@@ -41,6 +41,7 @@ public class CorrelatedMessageFromMessageStartEventSubscriptionExportHandler
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        .subscriptionType("START_EVENT")
         .tenantId(tenantOrDefault(value.getTenantId()));
   }
 

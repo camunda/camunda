@@ -24,6 +24,7 @@ public record CorrelatedMessageDbModel(
     Long processDefinitionKey,
     Long processInstanceKey,
     Long subscriptionKey,
+    String subscriptionType,
     String tenantId)
     implements DbModel<CorrelatedMessageDbModel> {
 
@@ -47,6 +48,7 @@ public record CorrelatedMessageDbModel(
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
                 .subscriptionKey(subscriptionKey)
+                .subscriptionType(subscriptionType)
                 .tenantId(tenantId))
         .build();
   }
@@ -64,6 +66,7 @@ public record CorrelatedMessageDbModel(
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long subscriptionKey;
+    private String subscriptionType;
     private String tenantId;
 
     public Builder() {}
@@ -128,6 +131,11 @@ public record CorrelatedMessageDbModel(
       return this;
     }
 
+    public Builder subscriptionType(final String subscriptionType) {
+      this.subscriptionType = subscriptionType;
+      return this;
+    }
+
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
@@ -148,6 +156,7 @@ public record CorrelatedMessageDbModel(
           processDefinitionKey,
           processInstanceKey,
           subscriptionKey,
+          subscriptionType,
           tenantId);
     }
   }
