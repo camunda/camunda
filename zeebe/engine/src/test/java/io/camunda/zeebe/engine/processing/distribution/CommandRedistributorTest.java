@@ -169,9 +169,9 @@ public class CommandRedistributorTest {
       // Cycle 9: no retry
 
       verify(mockCommandSender, times(4))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(1, ValueType.SIGNAL, SignalIntent.BROADCAST, distributionKey, recordValue);
       verify(mockCommandSender, times(4))
-          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(2, ValueType.SIGNAL, SignalIntent.BROADCAST, distributionKey, recordValue);
     }
   }
 }
