@@ -35,6 +35,7 @@ public class DecisionEvaluationHandler
     implements ExportHandler<DecisionInstanceEntity, DecisionEvaluationRecordValue> {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionEvaluationHandler.class);
+  private static final String ID_PATTERN = "%s-%d";
   private final String indexName;
 
   public DecisionEvaluationHandler(final String indexName) {
@@ -58,9 +59,19 @@ public class DecisionEvaluationHandler
 
   @Override
   public List<String> generateIds(final Record<DecisionEvaluationRecordValue> record) {
-    return record.getValue().getEvaluatedDecisions().stream()
-        .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
-        .collect(Collectors.toList());
+    // To ensure compatibility with older Zeebe versions, we first check if the IDs are already
+    // present in the record. If they are, we use them directly. If not,
+    // we fall back to the legacy ID generation method.
+    final var ids =
+        record.getValue().getEvaluatedDecisions().stream()
+            .map(EvaluatedDecisionValue::getDecisionEvaluationInstanceKey)
+            .toList();
+    // If none of the IDs are empty, we can safely return the list.
+    // "" is the default value for the decisionEvaluationInstanceKey field.
+    if (!ids.contains("")) {
+      return ids;
+    }
+    return generateIdsLegacy(record);
   }
 
   @Override
@@ -76,7 +87,7 @@ public class DecisionEvaluationHandler
         getEvaluatedDecisionValueIndex(decisionEvaluation, record.getKey(), entity.getId());
 
     final EvaluatedDecisionValue decision =
-        getEvaluatedDecision(decisionEvaluation, entity.getId());
+        decisionEvaluation.getEvaluatedDecisions().get(decisionIndex - 1);
     final OffsetDateTime timestamp =
         OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC);
     final DecisionInstanceState state = getState(record, decisionEvaluation, decisionIndex);
@@ -121,25 +132,12 @@ public class DecisionEvaluationHandler
     return indexName;
   }
 
-  private EvaluatedDecisionValue getEvaluatedDecision(
-      final DecisionEvaluationRecordValue decisionEvaluation, final String id) {
-    return decisionEvaluation.getEvaluatedDecisions().stream()
-        .filter(
-            evaluatedDecision ->
-                Objects.equals(evaluatedDecision.getDecisionEvaluationInstanceKey(), id))
-        .findFirst()
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Evaluated decision with id " + id + " not found in decision evaluation"));
-  }
-
   private int getEvaluatedDecisionValueIndex(
       final DecisionEvaluationRecordValue decisionEvaluation,
       final long key,
       final String entityId) {
     for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
-      final String id = "%s-%d".formatted(key, i);
+      final String id = ID_PATTERN.formatted(key, i);
       if (Objects.equals(entityId, id)) {
         LOGGER.debug(
             "Decision evaluation: id {} key {}, decisionId {}",
@@ -198,5 +196,14 @@ public class DecisionEvaluationHandler
                                 .setValue(output.getOutputValue()))
                     .toList()));
     return outputs;
+  }
+
+  private List<String> generateIdsLegacy(final Record<DecisionEvaluationRecordValue> record) {
+    final var ids = new ArrayList<String>();
+    final var decisionEvaluation = record.getValue();
+    for (int i = 1; i <= decisionEvaluation.getEvaluatedDecisions().size(); i++) {
+      ids.add(ID_PATTERN.formatted(record.getKey(), i));
+    }
+    return ids;
   }
 }
