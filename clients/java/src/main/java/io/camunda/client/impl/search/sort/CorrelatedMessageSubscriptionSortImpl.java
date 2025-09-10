@@ -15,74 +15,74 @@
  */
 package io.camunda.client.impl.search.sort;
 
-import io.camunda.client.api.search.sort.CorrelatedMessageSort;
+import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class CorrelatedMessageSortImpl extends SearchRequestSortBase<CorrelatedMessageSort>
-    implements CorrelatedMessageSort {
+public class CorrelatedMessageSubscriptionSortImpl extends SearchRequestSortBase<CorrelatedMessageSubscriptionSort>
+    implements CorrelatedMessageSubscriptionSort {
 
   @Override
-  public CorrelatedMessageSort correlationKey() {
+  public CorrelatedMessageSubscriptionSort correlationKey() {
     return field("correlationKey");
   }
 
   @Override
-  public CorrelatedMessageSort correlationTime() {
+  public CorrelatedMessageSubscriptionSort correlationTime() {
     return field("correlationTime");
   }
 
   @Override
-  public CorrelatedMessageSort elementId() {
+  public CorrelatedMessageSubscriptionSort elementId() {
     return field("elementId");
   }
 
   @Override
-  public CorrelatedMessageSort elementInstanceKey() {
+  public CorrelatedMessageSubscriptionSort elementInstanceKey() {
     return field("elementInstanceKey");
   }
 
   @Override
-  public CorrelatedMessageSort messageKey() {
+  public CorrelatedMessageSubscriptionSort messageKey() {
     return field("messageKey");
   }
 
   @Override
-  public CorrelatedMessageSort messageName() {
+  public CorrelatedMessageSubscriptionSort messageName() {
     return field("messageName");
   }
 
   @Override
-  public CorrelatedMessageSort partitionId() {
+  public CorrelatedMessageSubscriptionSort partitionId() {
     return field("partitionId");
   }
 
   @Override
-  public CorrelatedMessageSort processDefinitionId() {
+  public CorrelatedMessageSubscriptionSort processDefinitionId() {
     return field("processDefinitionId");
   }
 
   @Override
-  public CorrelatedMessageSort processDefinitionKey() {
+  public CorrelatedMessageSubscriptionSort processDefinitionKey() {
     return field("processDefinitionKey");
   }
 
   @Override
-  public CorrelatedMessageSort processInstanceKey() {
+  public CorrelatedMessageSubscriptionSort processInstanceKey() {
     return field("processInstanceKey");
   }
 
   @Override
-  public CorrelatedMessageSort subscriptionKey() {
+  public CorrelatedMessageSubscriptionSort subscriptionKey() {
     return field("subscriptionKey");
   }
 
   @Override
-  public CorrelatedMessageSort tenantId() {
+  public CorrelatedMessageSubscriptionSort tenantId() {
     return field("tenantId");
   }
 
   @Override
-  protected CorrelatedMessageSort self() {
+  protected CorrelatedMessageSubscriptionSort self() {
     return this;
   }
 }

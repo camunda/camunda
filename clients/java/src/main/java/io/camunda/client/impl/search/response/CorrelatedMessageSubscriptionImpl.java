@@ -50,7 +50,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     subscriptionKey = ParseUtil.parseLongOrNull(item.getSubscriptionKey());
-    subscriptionType = EnumUtil.convert(item.getSubscriptionType(), MessageSubscriptionType.class);
+    subscriptionType = MessageSubscriptionType.UNKNOWN_ENUM_VALUE; // TODO: Add to OpenAPI spec
     tenantId = item.getTenantId();
   }
 

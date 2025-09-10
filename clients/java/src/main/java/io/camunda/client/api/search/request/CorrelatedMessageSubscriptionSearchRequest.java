@@ -15,11 +15,11 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.response.CorrelatedMessage;
-import io.camunda.client.api.search.sort.CorrelatedMessageSort;
+import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 
-public interface CorrelatedMessageSearchRequest
+public interface CorrelatedMessageSubscriptionSearchRequest
     extends TypedSearchRequest<
-            CorrelatedMessageFilter, CorrelatedMessageSort, CorrelatedMessageSearchRequest>,
+            CorrelatedMessageSubscriptionFilter, CorrelatedMessageSubscriptionSort, CorrelatedMessageSubscriptionSearchRequest>,
         FinalSearchRequestStep<CorrelatedMessage> {}
