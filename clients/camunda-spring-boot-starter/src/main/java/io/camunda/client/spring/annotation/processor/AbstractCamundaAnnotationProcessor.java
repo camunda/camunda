@@ -16,8 +16,8 @@
 package io.camunda.client.spring.annotation.processor;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
-import io.camunda.client.spring.bean.ClassInfo;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
@@ -30,9 +30,9 @@ public abstract class AbstractCamundaAnnotationProcessor
     this.applicationContext = applicationContext;
   }
 
-  protected abstract boolean isApplicableFor(ClassInfo beanInfo);
+  protected abstract boolean isApplicableFor(final BeanInfo beanInfo);
 
-  protected abstract void configureFor(final ClassInfo beanInfo);
+  protected abstract void configureFor(final BeanInfo beanInfo);
 
   protected abstract void start(CamundaClient client);
 
@@ -41,10 +41,17 @@ public abstract class AbstractCamundaAnnotationProcessor
   @Override
   public void onStart(final CamundaClient client) {
     for (final String beanName : applicationContext.getBeanDefinitionNames()) {
-      final Object bean = applicationContext.getBean(beanName);
-      final ClassInfo classInfo = ClassInfo.builder().beanName(beanName).bean(bean).build();
-      if (isApplicableFor(classInfo)) {
-        configureFor(classInfo);
+      final Class<?> beanType = applicationContext.getType(beanName);
+      if (beanType != null) {
+        final BeanInfo beanInfo =
+            BeanInfo.builder()
+                .beanName(beanName)
+                .targetClass(beanType)
+                .beanSupplier(() -> applicationContext.getBean(beanName))
+                .build();
+        if (isApplicableFor(beanInfo)) {
+          configureFor(beanInfo);
+        }
       }
     }
     start(client);

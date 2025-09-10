@@ -15,15 +15,16 @@
  */
 package io.camunda.client.spring.bean.factory;
 
+import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.ClassInfoTest;
-import io.camunda.client.spring.bean.ClassInfoTest.WithJobWorker;
-import io.camunda.client.spring.bean.ClassInfoTest.WithJobWorkerAllValues;
-import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.spring.bean.BeanInfoImplTest;
+import io.camunda.client.spring.bean.BeanInfoImplTest.WithJobWorker;
+import io.camunda.client.spring.bean.BeanInfoImplTest.WithJobWorkerAllValues;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
@@ -58,7 +59,7 @@ public class ReadJobWorkerValueTest {
   @Test
   void shouldReadTenantIds() {
     // given
-    final MethodInfo methodInfo = extract(ClassInfoTest.TenantBound.class);
+    final MethodInfo methodInfo = extract(BeanInfoImplTest.TenantBound.class);
 
     // when
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
@@ -96,7 +97,7 @@ public class ReadJobWorkerValueTest {
             .filter(m -> m.getName().equals("handle"))
             .findFirst()
             .get();
-    final ClassInfo classInfo = ClassInfo.builder().build();
-    return MethodInfo.builder().classInfo(classInfo).method(method).build();
+    final BeanInfo classInfo = beanInfo(clazz);
+    return MethodInfo.builder().beanInfo(classInfo).method(method).build();
   }
 }

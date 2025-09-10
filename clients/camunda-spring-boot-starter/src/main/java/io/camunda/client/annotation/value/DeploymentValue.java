@@ -15,17 +15,15 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.bean.BeanInfo;
 import java.util.List;
 import java.util.Objects;
 
 public final class DeploymentValue {
-
   private final List<String> resources;
+  private final BeanInfo beanInfo;
 
-  private final ClassInfo beanInfo;
-
-  private DeploymentValue(final List<String> resources, final ClassInfo beanInfo) {
+  private DeploymentValue(final List<String> resources, final BeanInfo beanInfo) {
     this.resources = resources;
     this.beanInfo = beanInfo;
   }
@@ -34,7 +32,7 @@ public final class DeploymentValue {
     return resources;
   }
 
-  public ClassInfo getClassInfo() {
+  public BeanInfo getClassInfo() {
     return beanInfo;
   }
 
@@ -67,7 +65,7 @@ public final class DeploymentValue {
   public static final class DeploymentValueBuilder {
 
     private List<String> resources;
-    private ClassInfo beanInfo;
+    private BeanInfo beanInfo;
 
     private DeploymentValueBuilder() {}
 
@@ -76,7 +74,7 @@ public final class DeploymentValue {
       return this;
     }
 
-    public DeploymentValueBuilder beanInfo(final ClassInfo beanInfo) {
+    public DeploymentValueBuilder beanInfo(final BeanInfo beanInfo) {
       this.beanInfo = beanInfo;
       return this;
     }

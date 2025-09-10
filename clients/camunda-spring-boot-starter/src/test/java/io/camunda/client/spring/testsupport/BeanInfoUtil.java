@@ -17,20 +17,37 @@ package io.camunda.client.spring.testsupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.ParameterInfo;
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.ParameterInfo;
 import java.beans.Introspector;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.List;
 
-public final class ClassInfoUtil {
-  private ClassInfoUtil() {}
+public final class BeanInfoUtil {
+  private BeanInfoUtil() {}
 
-  public static ClassInfo classInfo(final Object bean) {
-    return ClassInfo.builder()
+  public static BeanInfo beanInfo(final Object bean) {
+    return BeanInfo.builder()
         .bean(bean)
         .beanName(Introspector.decapitalize(bean.getClass().getSimpleName()))
+        .build();
+  }
+
+  public static BeanInfo beanInfo(final Class<?> beanClass) {
+    return BeanInfo.builder()
+        .beanSupplier(
+            () -> {
+              try {
+                return beanClass.getConstructors()[0].newInstance();
+              } catch (final InstantiationException
+                  | IllegalAccessException
+                  | InvocationTargetException e) {
+                throw new RuntimeException("Error while constructing bean of type " + beanClass, e);
+              }
+            })
+        .beanName(Introspector.decapitalize(beanClass.getSimpleName()))
         .build();
   }
 
@@ -41,7 +58,7 @@ public final class ClassInfoUtil {
   }
 
   public static List<ParameterInfo> parameterInfos(final Object bean, final String methodName) {
-    return classInfo(bean).toMethodInfo(method(bean, methodName)).getParameters();
+    return beanInfo(bean).toMethodInfo(method(bean, methodName)).getParameters();
   }
 
   public static Method method(final Object bean, final String name) {
