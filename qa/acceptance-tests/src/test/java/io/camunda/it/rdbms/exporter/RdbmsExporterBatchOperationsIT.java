@@ -24,6 +24,7 @@ import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperatio
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getFailedBatchOperationResolveIncidentRecord;
 import static io.camunda.it.rdbms.exporter.RecordFixtures.getRejectedCancelProcessRecord;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assumptions.assumeThat;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
@@ -85,59 +86,52 @@ class RdbmsExporterBatchOperationsIT {
   }
 
   @Test
-  public void shouldExportBatchOperation() {
+  public void shouldExportActiveBatchOperation() {
     // given
     final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
     final var batchOperationKey = batchOperationCreatedRecord.getKey();
     final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationCompletedRecord =
-        getBatchOperationCompletedRecord(batchOperationKey, 3L);
 
     // when
     exporter.export(batchOperationCreatedRecord);
     exporter.export(batchOperationChunkRecord);
 
     // then
-    var batchOperation =
+    final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation).isNotNull();
     assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
 
-    // and when we complete it
+  @Test
+  public void shouldExportCompletedBatchOperation() {
+    // given
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
+    final var batchOperationCompletedRecord =
+        getBatchOperationCompletedRecord(batchOperationKey, 3L);
+
+    // when
     exporter.export(batchOperationCompletedRecord);
 
-    // then it should be completed
-    batchOperation =
+    // then
+    final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.COMPLETED);
   }
 
   @Test
-  public void shouldExportBatchOperationWithErrors() {
+  public void shouldExportCompletedBatchOperationWithErrors() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
-    final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
-    final var batchOperationCompletedRecord =
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
+    final var completedWithErrorsRecord =
         getBatchOperationCompletedWithErrorsRecord(batchOperationKey, 3L);
 
     // when
-    exporter.export(batchOperationCreatedRecord);
-    exporter.export(batchOperationChunkRecord);
+    exporter.export(completedWithErrorsRecord);
 
     // then
-    var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
-    assertThat(batchOperation).isNotNull();
-    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
-    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
-
-    // and when we complete it
-    exporter.export(batchOperationCompletedRecord);
-
-    // then it should be completed
-    batchOperation =
+    final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
     assertThat(batchOperation.errors()).isNotEmpty();
@@ -146,28 +140,15 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldExportFailedBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
-    final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var failedRecord =
         generateLifecycleRecord(batchOperationKey, 3L, BatchOperationIntent.FAILED, true);
 
     // when
-    exporter.export(batchOperationCreatedRecord);
-    exporter.export(batchOperationChunkRecord);
-
-    // then
-    var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
-    assertThat(batchOperation).isNotNull();
-    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
-    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
-
-    // and when we complete it
     exporter.export(failedRecord);
 
-    // then it should be completed
-    batchOperation =
+    // then
+    final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.FAILED);
     assertThat(batchOperation.errors()).isNotEmpty();
@@ -176,28 +157,15 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldCancelBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
-    final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var batchOperationCanceledRecord =
         getBatchOperationLifecycleCanceledRecord(batchOperationKey, 3L);
 
     // when
-    exporter.export(batchOperationCreatedRecord);
-    exporter.export(batchOperationChunkRecord);
-
-    // then
-    var batchOperation =
-        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
-    assertThat(batchOperation).isNotNull();
-    assertThat(batchOperation.operationsTotalCount()).isEqualTo(3);
-    assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
-
-    // and when we cancel it
     exporter.export(batchOperationCanceledRecord);
 
-    // then it should be canceled
-    batchOperation =
+    // then
+    final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.CANCELED);
 
@@ -213,19 +181,14 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldSuspendBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
-    final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
+
     final var batchOperationSuspendedRecord =
         getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
-
-    exporter.export(batchOperationCreatedRecord);
-    exporter.export(batchOperationChunkRecord);
-
-    // when we suspend it
+    // when
     exporter.export(batchOperationSuspendedRecord);
 
-    // then it should be canceled
+    // then
     final var batchOperation =
         rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.SUSPENDED);
@@ -234,18 +197,13 @@ class RdbmsExporterBatchOperationsIT {
   @Test
   public void shouldResumeBatchOperation() {
     // given
-    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
-    final var batchOperationKey = batchOperationCreatedRecord.getKey();
-    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+    final var batchOperationKey = givenBatchOperationIsCreatedAndIsActive();
     final var batchOperationSuspendedRecord =
         getBatchOperationLifecycleSuspendedRecord(batchOperationKey, 3L);
-    final var batchOperationResumeRecord =
-        getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
-
-    exporter.export(batchOperationCreatedRecord);
-    exporter.export(batchOperationChunkRecord);
     exporter.export(batchOperationSuspendedRecord);
 
+    final var batchOperationResumeRecord =
+        getBatchOperationLifecycleResumeRecord(batchOperationKey, 4L);
     // when we resume it
     exporter.export(batchOperationResumeRecord);
 
@@ -522,6 +480,22 @@ class RdbmsExporterBatchOperationsIT {
     assertThat(batchOperation.operationsCompletedCount()).isEqualTo(0);
     assertThat(batchOperation.operationsFailedCount()).isEqualTo(1);
     assertThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+  }
+
+  private long givenBatchOperationIsCreatedAndIsActive() {
+    final var batchOperationCreatedRecord = getBatchOperationCreatedRecord(1L);
+    final var batchOperationKey = batchOperationCreatedRecord.getKey();
+    final var batchOperationChunkRecord = getBatchOperationChunkRecord(batchOperationKey, 2L);
+
+    exporter.export(batchOperationCreatedRecord);
+    exporter.export(batchOperationChunkRecord);
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey)).get();
+
+    assumeThat(batchOperation).isNotNull();
+    assumeThat(batchOperation.operationsTotalCount()).isEqualTo(3);
+    assumeThat(batchOperation.state()).isEqualTo(BatchOperationState.ACTIVE);
+    return batchOperationKey;
   }
 
   private List<BatchOperationItemEntity> getItems(final long batchOperationKey) {
