@@ -44,13 +44,12 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   @MethodSource("getAllInvalidProperties")
   void invalidConfigurationApplicationFailed(final Map<String, Object> invalidProperties) {
     assertThatThrownBy(
-            () -> {
-              new SpringApplicationBuilder(TestApplication.class)
-                  .web(WebApplicationType.NONE)
-                  .properties(invalidProperties)
-                  .run();
-            })
-        .getCause()
+            () ->
+                new SpringApplicationBuilder(TestApplication.class)
+                    .web(WebApplicationType.NONE)
+                    .properties(invalidProperties)
+                    .run())
+        .cause()
         .hasMessageContaining(
             "Oidc configuration is not supported with `BASIC` authentication method");
   }
@@ -67,7 +66,18 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
         getProperties("camunda.security.authentication.oidc.redirect-uri", "http://uri"),
         getProperties("camunda.security.authentication.oidc.groups-claim", "group"),
         getProperties("camunda.security.authentication.oidc.username-claim", "sub1"),
-        getProperties("camunda.security.authentication.oidc.grant-type", "client_credentials"));
+        getProperties("camunda.security.authentication.oidc.grant-type", "client_credentials"),
+        getProperties(
+            "camunda.security.authentication.oidc.client-authentication-method", "private_key_jwt"),
+        getProperties(
+            "camunda.security.authentication.oidc.assertion-keystore.path",
+            "/path/to/keystore.p12"),
+        getProperties(
+            "camunda.security.authentication.oidc.assertion-keystore.password", "keystorepass"),
+        getProperties(
+            "camunda.security.authentication.oidc.assertion-keystore.key-alias", "myalias"),
+        getProperties(
+            "camunda.security.authentication.oidc.assertion-keystore.key-password", "keypass"));
   }
 
   private Map<String, Object> getProperties(final String property, final String value) {

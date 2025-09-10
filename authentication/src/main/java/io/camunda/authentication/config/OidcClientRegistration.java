@@ -7,11 +7,14 @@
  */
 package io.camunda.authentication.config;
 
+import static io.camunda.security.configuration.OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHODS;
+
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistration.Builder;
 import org.springframework.security.oauth2.client.registration.ClientRegistrations;
 import org.springframework.security.oauth2.core.AuthorizationGrantType;
+import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 
 public final class OidcClientRegistration {
   public static final String REGISTRATION_ID = "oidc";
@@ -52,6 +55,19 @@ public final class OidcClientRegistration {
     if (configuration.getGrantType() != null) {
       builder.authorizationGrantType(new AuthorizationGrantType(configuration.getGrantType()));
     }
+    if (configuration.getClientAuthenticationMethod() != null) {
+      requireSupportedClientAuthenticationMethod(configuration.getClientAuthenticationMethod());
+      builder.clientAuthenticationMethod(
+          ClientAuthenticationMethod.valueOf(configuration.getClientAuthenticationMethod()));
+    }
     return builder.build();
+  }
+
+  private static void requireSupportedClientAuthenticationMethod(
+      final String clientAuthenticationMethod) {
+    if (!CLIENT_AUTHENTICATION_METHODS.contains(clientAuthenticationMethod)) {
+      throw new IllegalArgumentException(
+          "unsupported client authentication method: " + clientAuthenticationMethod);
+    }
   }
 }
