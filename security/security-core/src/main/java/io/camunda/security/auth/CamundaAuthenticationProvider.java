@@ -11,8 +11,6 @@ public interface CamundaAuthenticationProvider {
 
   CamundaAuthentication getCamundaAuthentication();
 
-  void refresh();
-
   default CamundaAuthentication getAnonymousCamundaAuthentication() {
     return CamundaAuthentication.anonymous();
   }

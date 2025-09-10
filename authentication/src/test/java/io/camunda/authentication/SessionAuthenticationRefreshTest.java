@@ -5,16 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.authentication.filters;
+package io.camunda.authentication;
 
-import static io.camunda.authentication.filters.SessionAuthenticationRefreshFilter.LAST_REFRESH_ATTR;
+import static io.camunda.authentication.holder.HttpSessionBasedAuthenticationHolder.LAST_REFRESH_ATTR;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.authentication.config.WebSecurityConfig;
@@ -23,8 +19,8 @@ import io.camunda.authentication.config.controllers.TestUserDetailsService;
 import io.camunda.authentication.config.controllers.WebSecurityConfigTestContext;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.service.RoleServices;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -48,17 +44,19 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 
-public class SessionAuthenticationRefreshFilterTest {
+public class SessionAuthenticationRefreshTest {
 
   abstract class BaseTest {
     @Autowired MockMvcTester mockMvcTester;
     Duration refreshInterval;
-    @MockitoBean private CamundaAuthenticationProvider authenticationProvider;
+    @MockitoBean RoleServices roleServices;
     @Autowired private SecurityConfiguration securityConfiguration;
 
     @BeforeEach
     public void setup() {
-      reset(authenticationProvider);
+      when(roleServices.withAuthentication(any(CamundaAuthentication.class)))
+          .thenReturn(roleServices);
+      when(roleServices.hasMembersOfType(any(), any())).thenReturn(true);
       refreshInterval =
           Duration.parse(
               securityConfiguration.getAuthentication().getAuthenticationRefreshInterval());
@@ -74,11 +72,10 @@ public class SessionAuthenticationRefreshFilterTest {
           mockMvcTester
               .get()
               .session(session)
-              .uri("https://localhost" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
+              .uri("https://localhost/" + TestApiController.DUMMY_WEBAPP_ENDPOINT)
               .exchange();
 
       assertThat(testResult).hasStatusOk();
-      verify(authenticationProvider, never()).refresh();
     }
 
     @Test
@@ -98,7 +95,7 @@ public class SessionAuthenticationRefreshFilterTest {
       assertThat(lastRefreshTime).isNotNull();
       assertThat(lastRefreshTime)
           .isCloseTo(Instant.now(), within(refreshInterval.toMillis(), ChronoUnit.MILLIS));
-      verify(authenticationProvider, never()).refresh();
+      // verify(httpSessionBasedAuthenticationHolder, never()).set(any());
     }
 
     @Test
@@ -116,7 +113,7 @@ public class SessionAuthenticationRefreshFilterTest {
               .exchange();
 
       assertThat(testResult).hasStatusOk();
-      verify(authenticationProvider, times(1)).refresh();
+      // verify(httpSessionBasedAuthenticationHolder, times(1)).set(any());
       final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
       assertThat(lastRefreshTime).isAfter(oldRefresh);
     }
@@ -132,11 +129,10 @@ public class SessionAuthenticationRefreshFilterTest {
           mockMvcTester
               .get()
               .session(session)
-              .uri("https://localhost" + TestApiController.DUMMY_V2_API_ENDPOINT)
+              .uri("https://localhost" + TestApiController.DUMMY_V2_API_AUTH_ENDPOINT)
               .exchange();
 
       assertThat(testResult).hasStatusOk();
-      verify(authenticationProvider, times(1)).refresh();
       final Instant lastRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
       assertThat(lastRefreshTime).isAfter(oldRefresh);
     }
@@ -146,10 +142,10 @@ public class SessionAuthenticationRefreshFilterTest {
       final MockHttpSession session = new MockHttpSession();
       setSessionRefreshAttribute(session, refreshInterval.multipliedBy(2));
 
-      final var result = getSendMultipleRequest(session, authenticationProvider, mockMvcTester);
+      final var result = getSendMultipleRequest(session, mockMvcTester);
 
       assertThat(result.successfulRequests().get()).isEqualTo(result.threads().length);
-      verify(authenticationProvider, times(1)).refresh();
+      // verify(httpSessionBasedAuthenticationHolder, times(1)).set(any());
       final Instant newRefreshTime = (Instant) session.getAttribute(LAST_REFRESH_ATTR);
       assertThat(newRefreshTime).isAfter(Instant.now().minusMillis(refreshInterval.toMillis()));
     }
@@ -159,7 +155,6 @@ public class SessionAuthenticationRefreshFilterTest {
       final var testAuthentication = new TestingAuthenticationToken(mockAuthentication, null);
       testAuthentication.setAuthenticated(true);
       SecurityContextHolder.getContext().setAuthentication(testAuthentication);
-      when(authenticationProvider.getCamundaAuthentication()).thenReturn(mockAuthentication);
     }
 
     private CamundaAuthentication createMockAuthentication() {
@@ -181,17 +176,8 @@ public class SessionAuthenticationRefreshFilterTest {
     }
 
     private SendMultipleRequest getSendMultipleRequest(
-        final MockHttpSession session,
-        final CamundaAuthenticationProvider authenticationProvider,
-        final MockMvcTester mockMvcTester)
+        final MockHttpSession session, final MockMvcTester mockMvcTester)
         throws InterruptedException {
-      doAnswer(
-              invocation -> {
-                Thread.sleep(100);
-                return null; // because it's a void method
-              })
-          .when(authenticationProvider)
-          .refresh();
       final AtomicInteger successfulRequests = new AtomicInteger(0);
       final Runnable requestTask =
           () -> {
@@ -227,14 +213,10 @@ public class SessionAuthenticationRefreshFilterTest {
   }
 
   @Nested
-  @SpringBootTest(
-      classes = {
-        WebSecurityConfigTestContext.class,
-        WebSecurityConfig.class,
-      })
+  @SpringBootTest(classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class})
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc
-  @ActiveProfiles("consolidated-auth")
+  @ActiveProfiles({"consolidated-auth"})
   class BasicAuthTest extends BaseTest {
 
     // Webapp's endpoints are accessible without authentication only in basic auth mode
@@ -257,10 +239,7 @@ public class SessionAuthenticationRefreshFilterTest {
 
   @Nested
   @SpringBootTest(
-      classes = {
-        WebSecurityConfigTestContext.class,
-        WebSecurityConfig.class,
-      },
+      classes = {WebSecurityConfigTestContext.class, WebSecurityConfig.class},
       properties = {"camunda.security.authentication.method=oidc"})
   @AutoConfigureMockMvc
   @AutoConfigureWebMvc

@@ -17,6 +17,7 @@ import io.camunda.authentication.holder.RequestContextBasedAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -44,8 +45,9 @@ public class RestApiConfiguration {
 
   @Bean
   public CamundaAuthenticationHolder httpSessionBasedAuthenticationHolder(
-      final HttpServletRequest request) {
-    return new HttpSessionBasedAuthenticationHolder(request);
+      final HttpServletRequest request, final SecurityConfiguration securityConfiguration) {
+    return new HttpSessionBasedAuthenticationHolder(
+        request, securityConfiguration.getAuthentication());
   }
 
   @Bean
