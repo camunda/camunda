@@ -84,8 +84,7 @@ public class DataGenerator {
     camundaClient =
         CamundaClient.newClientBuilder()
             .preferRestOverGrpc(false)
-            .gatewayAddress(testContext.getExternalZeebeContactPoint())
-            .usePlaintext()
+            .grpcAddress(testContext.getZeebeGrpcAddress())
             .build();
     esClient = testContext.getEsClient();
     operateRestClient = testContext.getOperateRestClient();

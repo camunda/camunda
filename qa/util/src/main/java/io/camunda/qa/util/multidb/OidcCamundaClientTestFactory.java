@@ -101,7 +101,6 @@ public final class OidcCamundaClientTestFactory implements CamundaClientTestFact
             .preferRestOverGrpc(true)
             .restAddress(gateway.restAddress())
             .grpcAddress(gateway.grpcAddress())
-            .usePlaintext()
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
                 new OAuthCredentialsProviderBuilder()

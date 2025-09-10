@@ -141,7 +141,6 @@ public class OidcAuthOverRestIT {
         CamundaClient.newClientBuilder()
             .grpcAddress(broker.grpcAddress())
             .restAddress(broker.restAddress())
-            .usePlaintext()
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(
@@ -162,7 +161,6 @@ public class OidcAuthOverRestIT {
         CamundaClient.newClientBuilder()
             .grpcAddress(broker.grpcAddress())
             .restAddress(broker.restAddress())
-            .usePlaintext()
             .preferRestOverGrpc(true)
             .defaultRequestTimeout(Duration.ofSeconds(15))
             .credentialsProvider(

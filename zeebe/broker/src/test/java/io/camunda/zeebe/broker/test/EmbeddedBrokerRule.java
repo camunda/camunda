@@ -16,6 +16,7 @@ import static io.camunda.zeebe.broker.test.EmbeddedBrokerConfigurator.setInterna
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.broker.PartitionListener;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -189,6 +191,10 @@ public final class EmbeddedBrokerRule extends ExternalResource {
     return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
 
+  public URI getGrpcAddress() {
+    return AddressUtil.composeGrpcAddress(NetUtil.toSocketAddressString(getGatewayAddress()), true);
+  }
+
   public Broker getBroker() {
     return broker;
   }
@@ -268,8 +274,9 @@ public final class EmbeddedBrokerRule extends ExternalResource {
       try (final var client =
           CamundaClient.newClientBuilder()
               .preferRestOverGrpc(false)
-              .gatewayAddress(NetUtil.toSocketAddressString(getGatewayAddress()))
-              .usePlaintext()
+              .grpcAddress(
+                  AddressUtil.composeGrpcAddress(
+                      NetUtil.toSocketAddressString(getGatewayAddress()), true))
               .build()) {
         Awaitility.await("until we have a complete topology")
             .ignoreExceptions()

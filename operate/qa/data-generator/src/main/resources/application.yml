@@ -4,7 +4,7 @@ camunda.operate.qa.data:
   processInstanceCount: 240000
   callActivityProcessInstanceCount: 20000
   incidentCount: 20000
-  zeebeGatewayAddress: localhost:26500
+  zeebeGrpcAddress: http://localhost:26500
   elasticsearchHost: localhost
   elasticsearchPort: 9200
   queueSize: 50

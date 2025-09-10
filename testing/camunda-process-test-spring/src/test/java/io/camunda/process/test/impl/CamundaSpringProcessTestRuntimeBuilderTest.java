@@ -165,13 +165,13 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     assertThat(configuration.getRestAddress())
         .hasHost("0.0.0.0")
-        .hasPort(ContainerRuntimePorts.CAMUNDA_REST_API);
+        .hasPort(ContainerRuntimePorts.CAMUNDA_REST_API)
+        .hasScheme("http");
 
     assertThat(configuration.getGrpcAddress())
         .hasHost("0.0.0.0")
-        .hasPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API);
-
-    assertThat(configuration.isPlaintextConnectionEnabled()).isTrue();
+        .hasPort(ContainerRuntimePorts.CAMUNDA_GATEWAY_API)
+        .hasScheme("http");
   }
 
   @Test
@@ -215,7 +215,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     assertThat(configuration.getRestAddress()).isEqualTo(remoteCamundaRestApiAddress);
     assertThat(configuration.getGrpcAddress()).isEqualTo(remoteCamundaGrpcApiAddress);
-    assertThat(configuration.isPlaintextConnectionEnabled()).isTrue();
     assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofHours(1));
   }
 

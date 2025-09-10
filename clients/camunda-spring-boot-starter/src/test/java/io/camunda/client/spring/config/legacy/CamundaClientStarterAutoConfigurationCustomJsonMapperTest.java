@@ -108,13 +108,10 @@ public class CamundaClientStarterAutoConfigurationCustomJsonMapperTest {
         AopTestUtils.getUltimateTargetObject(configuration.getJsonMapper());
     assertThat(clientJsonMapper).isSameAs(jsonMapper);
     assertThat(clientJsonMapper).isSameAs(applicationContext.getBean("overridingJsonMapper"));
-    assertThat(configuration.getGatewayAddress()).isEqualTo("localhost:1234");
     assertThat(configuration.getGrpcAddress().toString()).isEqualTo("https://localhost:1234");
     assertThat(configuration.getRestAddress().toString()).isEqualTo("https://localhost:8080");
     assertThat(configuration.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(99));
     assertThat(configuration.getCaCertificatePath()).isEqualTo("aPath");
-    assertThat(configuration.isPlaintextConnectionEnabled())
-        .isFalse(); // because the grpc address points to https
     assertThat(configuration.getDefaultJobWorkerMaxJobsActive()).isEqualTo(99);
     assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofSeconds(99));
     assertThat(configuration.preferRestOverGrpc()).isTrue();

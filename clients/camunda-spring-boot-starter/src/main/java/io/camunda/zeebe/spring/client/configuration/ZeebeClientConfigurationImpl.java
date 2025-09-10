@@ -16,6 +16,7 @@
 package io.camunda.zeebe.spring.client.configuration;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.zeebe.client.CredentialsProvider;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
@@ -39,7 +40,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public String getGatewayAddress() {
-    return camundaClientConfiguration.getGatewayAddress();
+    return AddressUtil.composeGatewayAddress(getGrpcAddress());
   }
 
   @Override
@@ -104,7 +105,7 @@ public class ZeebeClientConfigurationImpl implements ZeebeClientConfiguration {
 
   @Override
   public boolean isPlaintextConnectionEnabled() {
-    return camundaClientConfiguration.isPlaintextConnectionEnabled();
+    return AddressUtil.isPlaintextConnection(getGrpcAddress());
   }
 
   @Override

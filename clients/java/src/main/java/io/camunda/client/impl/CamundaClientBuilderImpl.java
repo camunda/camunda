@@ -31,8 +31,9 @@ import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
-import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
@@ -42,7 +43,6 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
@@ -57,7 +57,9 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
@@ -74,7 +76,6 @@ import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 
 public final class CamundaClientBuilderImpl
     implements CamundaClientBuilder, CamundaClientConfiguration {
-
   public static final String DEFAULT_GATEWAY_ADDRESS = "0.0.0.0:26500";
   public static final URI DEFAULT_GRPC_ADDRESS =
       getURIFromString("http://" + DEFAULT_GATEWAY_ADDRESS);
@@ -99,7 +100,6 @@ public final class CamundaClientBuilderImpl
 
   private final List<ClientInterceptor> interceptors = new ArrayList<>();
   private final List<AsyncExecChainHandler> chainHandlers = new ArrayList<>();
-  private String gatewayAddress = DEFAULT_GATEWAY_ADDRESS;
   private URI restAddress = DEFAULT_REST_ADDRESS;
   private URI grpcAddress = DEFAULT_GRPC_ADDRESS;
   private boolean preferRestOverGrpc = DEFAULT_PREFER_REST_OVER_GRPC;
@@ -114,7 +114,6 @@ public final class CamundaClientBuilderImpl
   private Duration defaultMessageTimeToLive = DEFAULT_MESSAGE_TTL;
   private Duration defaultRequestTimeout = DEFAULT_REQUEST_TIMEOUT;
   private Duration defaultRequestTimeoutOffset = DEFAULT_REQUEST_TIMEOUT_OFFSET;
-  private boolean usePlaintextConnection = false;
   private String certificatePath;
   private CredentialsProvider credentialsProvider;
   private Duration keepAlive = DEFAULT_KEEP_ALIVE;
@@ -123,15 +122,9 @@ public final class CamundaClientBuilderImpl
   private int maxMessageSize = DEFAULT_MAX_MESSAGE_SIZE;
   private int maxMetadataSize = DEFAULT_MAX_METADATA_SIZE;
   private boolean streamEnabled = DEFAULT_STREAM_ENABLED;
-  private boolean grpcAddressUsed = true;
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
-
-  @Override
-  public String getGatewayAddress() {
-    return gatewayAddress;
-  }
 
   @Override
   public URI getRestAddress() {
@@ -191,11 +184,6 @@ public final class CamundaClientBuilderImpl
   @Override
   public Duration getDefaultRequestTimeoutOffset() {
     return defaultRequestTimeoutOffset;
-  }
-
-  @Override
-  public boolean isPlaintextConnectionEnabled() {
-    return usePlaintextConnection;
   }
 
   @Override
@@ -266,6 +254,12 @@ public final class CamundaClientBuilderImpl
   @Override
   public boolean preferRestOverGrpc() {
     return preferRestOverGrpc;
+  }
+
+  private void gatewayAddress(final String gatewayAddress) {
+    // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
+    // plaintext is checked AFTER the gateway address
+    grpcAddress = AddressUtil.composeGrpcAddress(gatewayAddress, false);
   }
 
   @Override
@@ -364,11 +358,12 @@ public final class CamundaClientBuilderImpl
            * the condition this way, the old code will still work with this new implementation. Only
            * if somebody deliberately sets the flag to false, the behavior will change
            */
-          if (!"false".equalsIgnoreCase(value)) {
-            usePlaintext();
+          if ("false".equalsIgnoreCase(value)) {
+            usePlaintext(false);
+          } else {
+            usePlaintext(true);
           }
         },
-        USE_PLAINTEXT_CONNECTION,
         LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION);
 
     BuilderUtils.applyPropertyValueIfNotNull(
@@ -416,13 +411,6 @@ public final class CamundaClientBuilderImpl
   public CamundaClientBuilder applyEnvironmentVariableOverrides(
       final boolean applyEnvironmentVariableOverrides) {
     this.applyEnvironmentVariableOverrides = applyEnvironmentVariableOverrides;
-    return this;
-  }
-
-  @Override
-  public CamundaClientBuilder gatewayAddress(final String gatewayAddress) {
-    this.gatewayAddress = gatewayAddress;
-    grpcAddressUsed = false;
     return this;
   }
 
@@ -511,11 +499,6 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder usePlaintext() {
-    return usePlaintext(true);
-  }
-
-  @Override
   public CamundaClientBuilder caCertificatePath(final String certificatePath) {
     this.certificatePath = certificatePath;
     return this;
@@ -596,18 +579,12 @@ public final class CamundaClientBuilderImpl
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
     }
-
-    if (!grpcAddressUsed) {
-      final String scheme = usePlaintextConnection ? "http://" : "https://";
-      grpcAddress(getURIFromString(scheme + getGatewayAddress()));
-    }
-
     return new CamundaClientImpl(this);
   }
 
-  private CamundaClientBuilder usePlaintext(final boolean usePlaintext) {
-    usePlaintextConnection = usePlaintext;
-    return this;
+  private void usePlaintext(final boolean usePlaintext) {
+    grpcAddress = AddressUtil.composeAddress(usePlaintext, grpcAddress);
+    restAddress = AddressUtil.composeAddress(usePlaintext, restAddress);
   }
 
   private void keepAlive(final String keepAlive) {
@@ -617,7 +594,6 @@ public final class CamundaClientBuilderImpl
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(
         value -> usePlaintext(Boolean.parseBoolean(value)),
-        PLAINTEXT_CONNECTION_VAR,
         LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR);
     applyEnvironmentValueIfNotNull(
         this::caCertificatePath,
@@ -629,8 +605,11 @@ public final class CamundaClientBuilderImpl
         this::overrideAuthority,
         OVERRIDE_AUTHORITY_VAR,
         LegacyZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR);
-    if (shouldUseDefaultCredentialsProvider()) {
-      credentialsProvider = createDefaultCredentialsProvider();
+    if (shouldUseOAuthCredentialsProvider()) {
+      credentialsProvider = createOAuthCredentialsProvider();
+    }
+    if (shouldUseBasicAuthCredentialsProvider()) {
+      credentialsProvider = createBasicAuthCredentialsProvider();
     }
     applyEnvironmentValueIfNotNull(
         value -> grpcAddress(getURIFromString(value)),
@@ -666,7 +645,6 @@ public final class CamundaClientBuilderImpl
   public String toString() {
     final StringBuilder sb = new StringBuilder();
 
-    BuilderUtils.appendProperty(sb, "gatewayAddress", gatewayAddress);
     BuilderUtils.appendProperty(sb, "grpcAddress", grpcAddress);
     BuilderUtils.appendProperty(sb, "restAddress", restAddress);
     BuilderUtils.appendProperty(sb, "defaultTenantId", defaultTenantId);
@@ -689,7 +667,7 @@ public final class CamundaClientBuilderImpl
     return sb.toString();
   }
 
-  private boolean shouldUseDefaultCredentialsProvider() {
+  private boolean shouldUseOAuthCredentialsProvider() {
     return credentialsProvider == null
         && (Environment.system().isDefined(OAUTH_ENV_CLIENT_ID)
             || Environment.system()
@@ -699,14 +677,21 @@ public final class CamundaClientBuilderImpl
                 .isDefined(LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET));
   }
 
-  private CredentialsProvider createDefaultCredentialsProvider() {
+  private CredentialsProvider createOAuthCredentialsProvider() {
     final OAuthCredentialsProviderBuilder builder =
         CredentialsProvider.newCredentialsProviderBuilder();
-    final int separatorIndex = gatewayAddress.lastIndexOf(':');
-    if (separatorIndex > 0) {
-      builder.audience(gatewayAddress.substring(0, separatorIndex));
-    }
+    return builder.build();
+  }
 
+  private boolean shouldUseBasicAuthCredentialsProvider() {
+    return credentialsProvider == null
+        && Environment.system().isDefined(BASIC_AUTH_ENV_USERNAME)
+        && Environment.system().isDefined(BASIC_AUTH_ENV_PASSWORD);
+  }
+
+  private CredentialsProvider createBasicAuthCredentialsProvider() {
+    final BasicAuthCredentialsProviderBuilder builder =
+        CredentialsProvider.newBasicAuthCredentialsProviderBuilder();
     return builder.build();
   }
 

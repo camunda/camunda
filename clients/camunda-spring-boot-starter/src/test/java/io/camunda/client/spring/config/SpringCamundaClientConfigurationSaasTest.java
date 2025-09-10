@@ -124,11 +124,6 @@ public class SpringCamundaClientConfigurationSaasTest {
   }
 
   @Test
-  void shouldHavePlaintextConnectionEnabled() {
-    assertThat(camundaClientConfiguration.isPlaintextConnectionEnabled()).isEqualTo(false);
-  }
-
-  @Test
   void shouldHaveCaCertificatePath() {
     assertThat(camundaClientConfiguration.getCaCertificatePath())
         .isEqualTo(DEFAULT.getCaCertificatePath());

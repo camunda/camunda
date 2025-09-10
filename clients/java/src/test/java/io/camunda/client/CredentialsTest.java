@@ -73,20 +73,18 @@ public final class CredentialsTest {
     // given
     final String bearerToken = "Bearer someToken";
 
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier applier) {
-                applier.put("Authorization", bearerToken);
-              }
+    builder.credentialsProvider(
+        new CredentialsProvider() {
+          @Override
+          public void applyCredentials(final CredentialsApplier applier) {
+            applier.put("Authorization", bearerToken);
+          }
 
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            });
+          @Override
+          public boolean shouldRetryRequest(final StatusCode statusCode) {
+            return false;
+          }
+        });
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
@@ -120,7 +118,7 @@ public final class CredentialsTest {
                 return true;
               }
             });
-    builder.usePlaintext().credentialsProvider(provider);
+    builder.credentialsProvider(provider);
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
@@ -155,7 +153,7 @@ public final class CredentialsTest {
               }
             });
 
-    builder.usePlaintext().credentialsProvider(provider);
+    builder.credentialsProvider(provider);
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when/then
@@ -169,7 +167,6 @@ public final class CredentialsTest {
   @Test
   public void shouldNotChangeHeadersWithNoProvider() {
     // given
-    builder.usePlaintext();
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when
@@ -183,20 +180,18 @@ public final class CredentialsTest {
   public void shouldCredentialsProviderRunFromGRPCThreadPool() {
     // given
     final AtomicReference<String> credentialsProviderThreadReference = new AtomicReference<>();
-    builder
-        .usePlaintext()
-        .credentialsProvider(
-            new CredentialsProvider() {
-              @Override
-              public void applyCredentials(final CredentialsApplier ignored) {
-                credentialsProviderThreadReference.set(Thread.currentThread().getName());
-              }
+    builder.credentialsProvider(
+        new CredentialsProvider() {
+          @Override
+          public void applyCredentials(final CredentialsApplier ignored) {
+            credentialsProviderThreadReference.set(Thread.currentThread().getName());
+          }
 
-              @Override
-              public boolean shouldRetryRequest(final StatusCode statusCode) {
-                return false;
-              }
-            });
+          @Override
+          public boolean shouldRetryRequest(final StatusCode statusCode) {
+            return false;
+          }
+        });
     client = new CamundaClientImpl(builder, serverRule.getChannel());
 
     // when

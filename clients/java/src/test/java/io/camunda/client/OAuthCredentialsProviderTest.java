@@ -734,7 +734,6 @@ public final class OAuthCredentialsProviderTest {
 
     private CamundaClientBuilder clientBuilder() throws URISyntaxException {
       return CamundaClient.newClientBuilder()
-          .usePlaintext()
           .grpcAddress(new URI("http://localhost:" + grpcServer.getPort()))
           .restAddress(new URI(currentWiremockRuntimeInfo.getHttpBaseUrl()))
           .credentialsProvider(
