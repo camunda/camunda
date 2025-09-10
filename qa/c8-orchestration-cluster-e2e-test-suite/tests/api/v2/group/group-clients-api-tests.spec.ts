@@ -30,22 +30,16 @@ import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Groups Clients API Tests', () => {
   const state: Record<string, unknown> = {};
-  const createdGroups: string[] = [];
+  state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
     await assignClientToGroup(request, 1, state['groupId2'] as string, state);
     await assignClientToGroup(request, 1, state['groupId3'] as string, state);
-
-    createdGroups.push(
-      state['groupId1'] as string,
-      state['groupId2'] as string,
-      state['groupId3'] as string,
-    );
   });
 
   test.afterAll(async ({request}) => {
-    await cleanupGroups(request, createdGroups);
+    await cleanupGroups(request, state['createdIds'] as string[]);
   });
 
   test('Assign Client To Group', async ({request}) => {

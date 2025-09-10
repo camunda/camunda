@@ -26,18 +26,16 @@ import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Group Roles API Tests', () => {
   const state: Record<string, unknown> = {};
-  const createdGroups: string[] = [];
+  state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 1, state);
-
-    createdGroups.push(state['groupId1'] as string);
 
     await assignRoleToGroups(request, 2, state['groupId1'] as string, state);
   });
 
   test.afterAll(async ({request}) => {
-    await cleanupGroups(request, createdGroups);
+    await cleanupGroups(request, state['createdIds'] as string[]);
   });
 
   test('Search Group Roles', async ({request}) => {

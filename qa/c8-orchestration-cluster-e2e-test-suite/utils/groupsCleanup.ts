@@ -20,9 +20,20 @@ export async function cleanupGroups(
   await Promise.allSettled(
     groupIds.map(async (groupId) => {
       try {
-        await request.delete(buildUrl('/groups/{groupId}', {groupId}), {
-          headers: jsonHeaders(),
-        });
+        const response = await request.delete(
+          buildUrl('/groups/{groupId}', {groupId}),
+          {
+            headers: jsonHeaders(),
+          },
+        );
+
+        if (response.status() === 204) {
+          console.log(`Successfully deleted group: ${groupId}`);
+        } else {
+          console.warn(
+            `Unexpected response status ${response.status()} for group ${groupId}`,
+          );
+        }
       } catch {}
     }),
   );
