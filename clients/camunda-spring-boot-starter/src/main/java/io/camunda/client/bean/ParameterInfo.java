@@ -25,6 +25,6 @@ public interface ParameterInfo {
   MethodInfo getMethodInfo();
 
   static ParameterInfoBuilder builder() {
-    return BuilderUtil.getBuilder(ParameterInfoBuilder.class);
+    return new ParameterInfoBuilder();
   }
 }

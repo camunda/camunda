@@ -40,6 +40,6 @@ public interface BeanInfo {
   }
 
   static BeanInfoBuilder builder() {
-    return BuilderUtil.getBuilder(BeanInfoBuilder.class);
+    return new BeanInfoBuilder();
   }
 }

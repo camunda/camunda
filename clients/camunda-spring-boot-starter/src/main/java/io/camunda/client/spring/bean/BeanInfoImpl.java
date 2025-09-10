@@ -19,17 +19,24 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
 import static org.springframework.util.ReflectionUtils.getAllDeclaredMethods;
 
 import io.camunda.client.bean.BeanInfo;
-import io.camunda.client.bean.BeanInfoBuilder;
 import java.lang.annotation.Annotation;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.springframework.aop.support.AopUtils;
 
-public final class BeanInfoImpl implements BeanInfo, BeanInfoBuilder {
-  private Supplier<Object> beanSupplier;
-  private String beanName;
-  private Class<?> targetClass;
+public final class BeanInfoImpl implements BeanInfo {
+  private final Supplier<Object> beanSupplier;
+  private final String beanName;
+  private final Class<?> targetClass;
+
+  public BeanInfoImpl(
+      final Supplier<Object> beanSupplier, final String beanName, final Class<?> targetClass) {
+    this.beanSupplier = beanSupplier;
+    this.beanName = beanName;
+    this.targetClass =
+        targetClass == null ? AopUtils.getTargetClass(beanSupplier.get()) : targetClass;
+  }
 
   @Override
   public String getBeanName() {
@@ -55,33 +62,5 @@ public final class BeanInfoImpl implements BeanInfo, BeanInfoBuilder {
   @Override
   public Class<?> getTargetClass() {
     return targetClass;
-  }
-
-  @Override
-  public BeanInfoBuilder beanName(final String beanName) {
-    this.beanName = beanName;
-    return this;
-  }
-
-  @Override
-  public BeanInfoBuilder beanSupplier(final Supplier<Object> beanSupplier) {
-    this.beanSupplier = beanSupplier;
-    return this;
-  }
-
-  @Override
-  public BeanInfoBuilder targetClass(final Class<?> targetClass) {
-    this.targetClass = targetClass;
-    return this;
-  }
-
-  @Override
-  public BeanInfo build() {
-    assert beanName != null : "beanName is null";
-    assert beanSupplier != null : "beanSupplier is null";
-    if (targetClass == null) {
-      targetClass = AopUtils.getTargetClass(beanSupplier.get());
-    }
-    return this;
   }
 }

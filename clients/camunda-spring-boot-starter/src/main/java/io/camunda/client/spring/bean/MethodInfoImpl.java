@@ -19,7 +19,6 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
 
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.bean.MethodInfoBuilder;
 import io.camunda.client.bean.ParameterInfo;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
@@ -34,15 +33,20 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
-public class MethodInfoImpl implements MethodInfo, MethodInfoBuilder {
+public class MethodInfoImpl implements MethodInfo {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final StandardReflectionParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
       new StandardReflectionParameterNameDiscoverer();
 
-  protected BeanInfo beanInfo;
-  protected Method method;
+  private final BeanInfo beanInfo;
+  private final Method method;
+
+  public MethodInfoImpl(final BeanInfo beanInfo, final Method method) {
+    this.beanInfo = beanInfo;
+    this.method = method;
+  }
 
   @Override
   public BeanInfo getBeanInfo() {
@@ -122,24 +126,5 @@ public class MethodInfoImpl implements MethodInfo, MethodInfoBuilder {
       }
     }
     return parameterNames;
-  }
-
-  @Override
-  public MethodInfo build() {
-    assert method != null : "method is null";
-    assert beanInfo != null : "beanInfo is null";
-    return this;
-  }
-
-  @Override
-  public MethodInfoBuilder beanInfo(final BeanInfo beanInfo) {
-    this.beanInfo = beanInfo;
-    return this;
-  }
-
-  @Override
-  public MethodInfoBuilder method(final Method method) {
-    this.method = method;
-    return this;
   }
 }

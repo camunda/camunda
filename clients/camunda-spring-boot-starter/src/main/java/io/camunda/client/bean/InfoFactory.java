@@ -15,29 +15,33 @@
  */
 package io.camunda.client.bean;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.ServiceLoader;
-import org.slf4j.Logger;
+import java.util.function.Supplier;
 import org.slf4j.LoggerFactory;
 
-final class BuilderUtil {
-  private static final Logger LOG = LoggerFactory.getLogger(BuilderUtil.class);
-
-  private BuilderUtil() {}
-
-  public static <T> T getBuilder(final Class<T> builderType) {
-    final ServiceLoader<T> serviceLoader = ServiceLoader.load(builderType);
+public interface InfoFactory {
+  static InfoFactory instance() {
+    final ServiceLoader<InfoFactory> serviceLoader = ServiceLoader.load(InfoFactory.class);
     final long count = serviceLoader.stream().count();
     if (count == 0) {
-      throw new IllegalStateException("No Builders found of type " + builderType.getName());
+      throw new IllegalStateException("No Builders found for InfoFactory");
     } else if (count == 1) {
       return serviceLoader.iterator().next();
     } else {
-      final T builder = serviceLoader.iterator().next();
-      LOG.warn(
-          "Found more than one Builder instance of type {}, returning instance of type {}",
-          builderType,
-          builder.getClass());
-      return builder;
+      final InfoFactory factory = serviceLoader.iterator().next();
+      LoggerFactory.getLogger(InfoFactory.class)
+          .warn(
+              "Found more than one Builder for InfoFactory, returning instance of type {}",
+              factory.getClass());
+      return factory;
     }
   }
+
+  BeanInfo beanInfo(String beanName, Supplier<Object> beanSupplier, Class<?> targetClass);
+
+  MethodInfo methodInfo(BeanInfo beanInfo, Method method);
+
+  ParameterInfo parameterInfo(Parameter parameter, String parameterName, MethodInfo methodInfo);
 }
