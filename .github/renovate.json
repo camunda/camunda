@@ -15,8 +15,8 @@
   "prHourlyLimit": 10,
   "updateNotScheduled": false,
   "schedule": [
-    "before 8am every weekday",
-    "after 8pm every weekday"
+    "* 20-23,0-8 * * 1-5",
+    "* * * * 0,6"
   ],
   "helmv3": {
     "registryAliases": {
