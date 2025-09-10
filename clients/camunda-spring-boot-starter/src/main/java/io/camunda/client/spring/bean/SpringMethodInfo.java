@@ -33,7 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
-public class MethodInfoImpl implements MethodInfo {
+public class SpringMethodInfo implements MethodInfo {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -43,7 +43,7 @@ public class MethodInfoImpl implements MethodInfo {
   private final BeanInfo beanInfo;
   private final Method method;
 
-  public MethodInfoImpl(final BeanInfo beanInfo, final Method method) {
+  public SpringMethodInfo(final BeanInfo beanInfo, final Method method) {
     this.beanInfo = beanInfo;
     this.method = method;
   }

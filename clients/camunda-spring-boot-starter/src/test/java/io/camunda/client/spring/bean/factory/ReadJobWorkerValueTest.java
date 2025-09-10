@@ -22,9 +22,9 @@ import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.spring.bean.BeanInfoImplTest;
-import io.camunda.client.spring.bean.BeanInfoImplTest.WithJobWorker;
-import io.camunda.client.spring.bean.BeanInfoImplTest.WithJobWorkerAllValues;
+import io.camunda.client.spring.bean.SpringBeanInfoTest;
+import io.camunda.client.spring.bean.SpringBeanInfoTest.WithJobWorker;
+import io.camunda.client.spring.bean.SpringBeanInfoTest.WithJobWorkerAllValues;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;
@@ -59,7 +59,7 @@ public class ReadJobWorkerValueTest {
   @Test
   void shouldReadTenantIds() {
     // given
-    final MethodInfo methodInfo = extract(BeanInfoImplTest.TenantBound.class);
+    final MethodInfo methodInfo = extract(SpringBeanInfoTest.TenantBound.class);
 
     // when
     final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);

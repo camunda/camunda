@@ -25,12 +25,12 @@ import java.util.function.Supplier;
 import java.util.stream.Stream;
 import org.springframework.aop.support.AopUtils;
 
-public final class BeanInfoImpl implements BeanInfo {
+public final class SpringBeanInfo implements BeanInfo {
   private final Supplier<Object> beanSupplier;
   private final String beanName;
   private final Class<?> targetClass;
 
-  public BeanInfoImpl(
+  public SpringBeanInfo(
       final Supplier<Object> beanSupplier, final String beanName, final Class<?> targetClass) {
     this.beanSupplier = beanSupplier;
     this.beanName = beanName;

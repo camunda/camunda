@@ -28,17 +28,17 @@ public class SpringInfoFactory implements InfoFactory {
   @Override
   public BeanInfo beanInfo(
       final String beanName, final Supplier<Object> beanSupplier, final Class<?> targetClass) {
-    return new BeanInfoImpl(beanSupplier, beanName, targetClass);
+    return new SpringBeanInfo(beanSupplier, beanName, targetClass);
   }
 
   @Override
   public MethodInfo methodInfo(final BeanInfo beanInfo, final Method method) {
-    return new MethodInfoImpl(beanInfo, method);
+    return new SpringMethodInfo(beanInfo, method);
   }
 
   @Override
   public ParameterInfo parameterInfo(
       final Parameter parameter, final String parameterName, final MethodInfo methodInfo) {
-    return new ParameterInfoImpl(methodInfo, parameterName, parameter);
+    return new SpringParameterInfo(methodInfo, parameterName, parameter);
   }
 }

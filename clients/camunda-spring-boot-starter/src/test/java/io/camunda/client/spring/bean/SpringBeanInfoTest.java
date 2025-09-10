@@ -23,7 +23,7 @@ import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.bean.BeanInfo;
 import org.junit.jupiter.api.Test;
 
-public class BeanInfoImplTest {
+public class SpringBeanInfoTest {
 
   @Test
   public void getBeanInfo() {

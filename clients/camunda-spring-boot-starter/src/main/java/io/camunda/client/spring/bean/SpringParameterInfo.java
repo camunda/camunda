@@ -19,12 +19,12 @@ import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import java.lang.reflect.Parameter;
 
-public class ParameterInfoImpl implements ParameterInfo {
+public class SpringParameterInfo implements ParameterInfo {
   private final MethodInfo methodInfo;
   private final String parameterName;
   private final Parameter parameter;
 
-  public ParameterInfoImpl(
+  public SpringParameterInfo(
       final MethodInfo methodInfo, final String parameterName, final Parameter parameter) {
     this.methodInfo = methodInfo;
     this.parameterName = parameterName;
