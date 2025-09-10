@@ -7,7 +7,7 @@
  */
 package io.camunda.exporter.handlers;
 
-import static io.camunda.exporter.handlers.EventFromIncidentHandler.ID_PATTERN;
+import static io.camunda.exporter.handlers.EventFromProcessMessageSubscriptionHandler.ID_PATTERN;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.CORRELATION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.EventTemplate.MESSAGE_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
