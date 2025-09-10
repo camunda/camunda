@@ -22,7 +22,7 @@ func TestCamundaCmdWithKeystoreSettings(t *testing.T) {
 	settings := types.C8RunSettings{
 		Config:           "",
 		Detached:         false,
-		Port:             8080,
+		Port:             8088,
 		Keystore:         "/tmp/camundatest/certs/secret.jks",
 		KeystorePassword: "changeme",
 		Username:         "demo",
@@ -51,7 +51,7 @@ func TestCamundaCmdKeystoreRequiresPassword(t *testing.T) {
 	settings := types.C8RunSettings{
 		Config:           "",
 		Detached:         false,
-		Port:             8080,
+		Port:             8088,
 		Keystore:         "/tmp/camundatest/certs/secret.jks",
 		KeystorePassword: "",
 	}
