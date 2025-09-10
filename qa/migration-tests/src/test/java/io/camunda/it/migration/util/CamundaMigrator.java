@@ -27,7 +27,6 @@ import io.camunda.zeebe.util.FileUtil;
 import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -289,11 +288,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   }
 
   private void extractVolume() {
-    try {
-      volume.extract(zeebeDataPath);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+    volume.extract(zeebeDataPath);
   }
 
   private ConnectConfiguration getConnectConfiguration(final DatabaseType databaseType) {

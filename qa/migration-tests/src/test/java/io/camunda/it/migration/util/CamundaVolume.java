@@ -56,8 +56,8 @@ public class CamundaVolume extends ZeebeVolume {
    * @throws IOException
    */
   @Override
-  public void extract(final Path destination, final UnaryOperator<ContainerArchiveBuilder> modifier)
-      throws IOException {
+  public void extract(
+      final Path destination, final UnaryOperator<ContainerArchiveBuilder> modifier) {
     try (final TinyContainer container = new TinyContainer()) {
       container.withCreateContainerCmdModifier(this::attachVolumeToContainer);
       container.start();
@@ -112,7 +112,7 @@ public class CamundaVolume extends ZeebeVolume {
           }
         }
       }
-    } catch (final InterruptedException e) {
+    } catch (final InterruptedException | IOException e) {
       throw new RuntimeException(e);
     }
   }
