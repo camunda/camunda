@@ -41,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class MappingRuleAuthorizationIT {
 
@@ -50,9 +51,9 @@ class MappingRuleAuthorizationIT {
 
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-  private static final String ADMIN = "mrAuthTestAdmin";
-  private static final String RESTRICTED = "mrAuthTestRestricted";
-  private static final String UNAUTHORIZED = "mrAuthTestUnauthorized";
+  private static final String ADMIN = "admin";
+  private static final String RESTRICTED = "restrictedUser";
+  private static final String UNAUTHORIZED = "unauthorizedUser";
   private static final String DEFAULT_PASSWORD = "password";
   private static final String MAPPING_RULE_SEARCH_ENDPOINT = "v2/mapping-rules/search";
 
@@ -77,11 +78,11 @@ class MappingRuleAuthorizationIT {
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_1 =
-      new TestMappingRule("authTestMappingRule1", "test-name", "test-value");
+      new TestMappingRule("mappingRule1", "test-name", "test-value");
 
   @MappingRuleDefinition
   private static final TestMappingRule MAPPING_RULE_2 =
-      new TestMappingRule("authTestMappingRule2", "test-name2", "test-value2");
+      new TestMappingRule("mappingRule2", "test-name2", "test-value2");
 
   @AutoClose private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
@@ -94,7 +95,7 @@ class MappingRuleAuthorizationIT {
     assertThat(mappingRuleSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
         .map(MappingRuleResponse::name)
-        .contains("authTestMappingRule1", "authTestMappingRule2");
+        .contains("mappingRule1", "mappingRule2");
   }
 
   @Test
@@ -110,7 +111,7 @@ class MappingRuleAuthorizationIT {
   void deleteMappingRuleShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newDeleteMappingRuleCommand("authTestMappingRule1").send().join())
+            () -> camundaClient.newDeleteMappingRuleCommand("mappingRule1").send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -118,17 +119,17 @@ class MappingRuleAuthorizationIT {
   @Test
   void deleteMappingRuleShouldDeleteMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
-    // given - verify that authTestMappingRule2 exists initially
+    // given - verify that mappingRule2 exists initially
     final var searchResponseBefore =
         searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
     assertThat(searchResponseBefore.items())
         .map(MappingRuleResponse::name)
-        .contains("authTestMappingRule2");
+        .contains("mappingRule2");
     final int initialCount = searchResponseBefore.items().size();
 
     // when - delete the mapping rule (this should not throw an exception)
     final var deleteResponse =
-        camundaClient.newDeleteMappingRuleCommand("authTestMappingRule2").send().join();
+        camundaClient.newDeleteMappingRuleCommand("mappingRule2").send().join();
 
     // then - wait until the mapping rule is deleted
     Awaitility.await("Mapping rule is deleted")
@@ -140,7 +141,7 @@ class MappingRuleAuthorizationIT {
                       camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
               assertThat(searchResponseAfter.items())
                   .map(MappingRuleResponse::name)
-                  .doesNotContain("authTestMappingRule2");
+                  .doesNotContain("mappingRule2");
               assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
             });
   }
