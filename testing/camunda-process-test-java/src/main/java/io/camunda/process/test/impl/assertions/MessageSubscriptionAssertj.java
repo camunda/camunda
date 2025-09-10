@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractAssert;
 
 public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscriptionAssertj, String> {
@@ -76,8 +77,8 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
-                    "%s has an active message subscription [message-name: '%s'], but such a subscription was not expected.",
-                    actual, expectedMessageName)
+                    "%s should have no active message subscription [message-name: '%s'], but the following subscriptions were active:\n%s",
+                    actual, expectedMessageName, formatMessageSubscriptions(messageSubscriptions))
                 .isEmpty());
   }
 
@@ -92,8 +93,11 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
-                    "%s has an active message subscription [message-name: '%s', correlation-key: '%s'], but such a subscription was not expected.",
-                    actual, expectedMessageName, correlationKey)
+                    "%s should have no active message subscription [message-name: '%s', correlation-key: '%s'], but the following subscriptions were active:\n%s",
+                    actual,
+                    expectedMessageName,
+                    correlationKey,
+                    formatMessageSubscriptions(messageSubscriptions))
                 .isEmpty());
   }
 
@@ -107,5 +111,16 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
             dataSource.getMessageSubscriptions(
                 f -> filter.accept(f.processInstanceKey(processInstanceKey))),
         assertionCallback);
+  }
+
+  private static String formatMessageSubscriptions(
+      final List<MessageSubscription> messageSubscriptions) {
+    return messageSubscriptions.stream()
+        .map(
+            subscription ->
+                String.format(
+                    "\t- name: '%s', correlation-key: '%s'",
+                    subscription.getMessageName(), subscription.getCorrelationKey()))
+        .collect(Collectors.joining("\n"));
   }
 }

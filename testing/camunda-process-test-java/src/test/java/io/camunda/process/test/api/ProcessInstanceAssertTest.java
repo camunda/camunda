@@ -1020,7 +1020,10 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
-                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+                  new MessageSubscriptionImpl(
+                      new MessageSubscriptionResult()
+                          .messageName("expected")
+                          .correlationKey("correlation-key"))));
 
       // then
       Assertions.assertThatThrownBy(
@@ -1028,7 +1031,8 @@ public class ProcessInstanceAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected"))
           .hasMessage(
-              "Process instance [key: 1] has an active message subscription [message-name: 'expected'], but such a subscription was not expected.");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected'], but the following subscriptions were active:\n"
+                  + "\t- name: 'expected', correlation-key: 'correlation-key'");
     }
 
     @Test
@@ -1044,7 +1048,10 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
-                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+                  new MessageSubscriptionImpl(
+                      new MessageSubscriptionResult()
+                          .messageName("expected")
+                          .correlationKey("correlation-key"))));
 
       // then
       Assertions.assertThatThrownBy(
@@ -1052,7 +1059,8 @@ public class ProcessInstanceAssertTest {
                   CamundaAssert.assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected", "correlation-key"))
           .hasMessage(
-              "Process instance [key: 1] has an active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but such a subscription was not expected.");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but the following subscriptions were active:\n"
+                  + "\t- name: 'expected', correlation-key: 'correlation-key'");
     }
   }
 }
