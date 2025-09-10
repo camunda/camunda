@@ -17,14 +17,12 @@ package io.camunda.client.bean;
 
 import java.lang.reflect.Parameter;
 
-public interface ParameterInfo {
-  Parameter getParameter();
+public interface ParameterInfoBuilder {
+  ParameterInfoBuilder parameter(Parameter parameter);
 
-  String getParameterName();
+  ParameterInfoBuilder parameterName(String parameterName);
 
-  MethodInfo getMethodInfo();
+  ParameterInfoBuilder methodInfo(MethodInfo methodInfo);
 
-  static ParameterInfoBuilder builder() {
-    return BuilderUtil.getBuilder(ParameterInfoBuilder.class);
-  }
+  ParameterInfo build();
 }

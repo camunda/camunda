@@ -15,16 +15,18 @@
  */
 package io.camunda.client.bean;
 
-import java.lang.reflect.Parameter;
+import java.util.function.Supplier;
 
-public interface ParameterInfo {
-  Parameter getParameter();
+public interface BeanInfoBuilder {
+  BeanInfoBuilder beanName(String beanName);
 
-  String getParameterName();
+  BeanInfoBuilder beanSupplier(Supplier<Object> beanSupplier);
 
-  MethodInfo getMethodInfo();
-
-  static ParameterInfoBuilder builder() {
-    return BuilderUtil.getBuilder(ParameterInfoBuilder.class);
+  default BeanInfoBuilder bean(final Object bean) {
+    return beanSupplier(() -> bean);
   }
+
+  BeanInfoBuilder targetClass(Class<?> targetClass);
+
+  BeanInfo build();
 }
