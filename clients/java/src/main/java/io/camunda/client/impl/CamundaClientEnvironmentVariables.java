@@ -16,7 +16,6 @@
 package io.camunda.client.impl;
 
 public final class CamundaClientEnvironmentVariables {
-  public static final String PLAINTEXT_CONNECTION_VAR = "CAMUNDA_INSECURE_CONNECTION";
   public static final String CA_CERTIFICATE_VAR = "CAMUNDA_CA_CERTIFICATE_PATH";
   public static final String KEEP_ALIVE_VAR = "CAMUNDA_KEEP_ALIVE";
   public static final String OVERRIDE_AUTHORITY_VAR = "CAMUNDA_OVERRIDE_AUTHORITY";

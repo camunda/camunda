@@ -39,7 +39,6 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_T
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
@@ -56,8 +55,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
-import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
-import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -572,7 +569,6 @@ public final class CamundaClientBuilderImpl
   private void applyOverrides() {
     applyEnvironmentValueIfNotNull(
         value -> usePlaintext(Boolean.parseBoolean(value)),
-        PLAINTEXT_CONNECTION_VAR,
         LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR);
     applyEnvironmentValueIfNotNull(
         this::caCertificatePath,
