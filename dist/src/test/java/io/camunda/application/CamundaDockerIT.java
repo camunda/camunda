@@ -113,60 +113,61 @@ public class CamundaDockerIT {
   }
 
   @Test
-  public void testStartStandaloneCamundaWithUnifiedConfiguration()
-      throws URISyntaxException, InterruptedException {
+  public void testStartStandaloneCamundaWithUnifiedConfiguration() throws URISyntaxException {
     final ElasticsearchContainer elasticsearchContainer =
         createContainer(this::createElasticsearchContainer);
-
     elasticsearchContainer.start();
 
     final GenericContainer camundaContainer =
         createContainer(this::createUnauthenticatedUnifiedConfigCamundaContainer);
 
-    camundaContainer.start();
+    startContainer(camundaContainer);
 
     final String host = "http://" + createCamundaContainer().getHost() + ":";
     final String camundaEndpoint = host + camundaContainer.getMappedPort(SERVER_PORT);
-    final CamundaClient camundaClient =
+    try (final CamundaClient camundaClient =
         new CamundaClientBuilderImpl()
+            // set a longer timeout because containers in CI infrastructure can be slow
+            .defaultRequestTimeout(Duration.ofSeconds(60))
             .usePlaintext()
             .preferRestOverGrpc(true)
             .restAddress(new URI(camundaEndpoint))
-            .build();
+            .build()) {
 
-    camundaClient
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("test")
-                .zeebeJobType("type")
-                .endEvent()
-                .done(),
-            "test.bpmn")
-        .send()
-        .join();
+      camundaClient
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("process")
+                  .startEvent()
+                  .serviceTask("test")
+                  .zeebeJobType("type")
+                  .endEvent()
+                  .done(),
+              "test.bpmn")
+          .send()
+          .join();
 
-    final var instance =
-        camundaClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersion()
-            .send()
-            .join();
+      final var instance =
+          camundaClient
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .send()
+              .join();
 
-    Awaitility.await("Process instance is visible via search")
-        .atMost(Duration.ofMinutes(2))
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var response = camundaClient.newProcessInstanceSearchRequest().send().join();
-              assertThat(response.items()).hasSize(1);
+      Awaitility.await("Process instance is visible via search")
+          .atMost(Duration.ofMinutes(2))
+          .ignoreExceptions()
+          .untilAsserted(
+              () -> {
+                final var response = camundaClient.newProcessInstanceSearchRequest().send().join();
+                assertThat(response.items()).hasSize(1);
 
-              final var processInstance = response.items().getFirst();
-              assertThat(processInstance.getProcessInstanceKey())
-                  .isEqualTo(instance.getProcessInstanceKey());
-            });
+                final var processInstance = response.items().getFirst();
+                assertThat(processInstance.getProcessInstanceKey())
+                    .isEqualTo(instance.getProcessInstanceKey());
+              });
+    }
   }
 
   private void startContainer(final GenericContainer container) {
