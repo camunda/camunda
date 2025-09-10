@@ -342,20 +342,6 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        this::caCertificatePath,
-        CA_CERTIFICATE_PATH,
-        LegacyZeebeClientProperties.CA_CERTIFICATE_PATH);
-
-    BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
-
-    BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::overrideAuthority,
-        OVERRIDE_AUTHORITY,
-        LegacyZeebeClientProperties.OVERRIDE_AUTHORITY);
-
-    BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
         value -> {
           /**
            * The following condition is phrased in this particular way in order to be backwards
@@ -372,6 +358,20 @@ public final class CamundaClientBuilderImpl
           }
         },
         LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::caCertificatePath,
+        CA_CERTIFICATE_PATH,
+        LegacyZeebeClientProperties.CA_CERTIFICATE_PATH);
+
+    BuilderUtils.applyPropertyValueIfNotNull(properties, this::keepAlive, KEEP_ALIVE);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties,
+        this::overrideAuthority,
+        OVERRIDE_AUTHORITY,
+        LegacyZeebeClientProperties.OVERRIDE_AUTHORITY);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
