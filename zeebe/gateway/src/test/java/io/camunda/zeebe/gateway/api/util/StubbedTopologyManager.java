@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyListener;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.protocol.record.PartitionHealthStatus;
+import java.util.UUID;
 
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
@@ -28,6 +29,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
     clusterConfiguration = ClusterConfiguration.uninitialized();
     clusterState = new TestBrokerClusterState(partitionsCount);
     clusterState.addBroker(0, "localhost:26501");
+    clusterState.setClusterId(UUID.randomUUID().toString());
     for (int partitionOffset = 0; partitionOffset < partitionsCount; partitionOffset++) {
       clusterState.setPartitionLeader(START_PARTITION_ID + partitionOffset, 0, 1);
       clusterState.addPartition(START_PARTITION_ID + partitionOffset);
@@ -62,6 +64,10 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   public void setPartitionHealthStatus(
       final int nodeId, final int partitionId, final PartitionHealthStatus partitionHealthStatus) {
     clusterState.setPartitionHealthStatus(nodeId, partitionId, partitionHealthStatus);
+  }
+
+  public void setClusterId(final String clusterId) {
+    clusterState.setClusterId(clusterId);
   }
 
   public void addPartitionInactive(final int partitionId, final int nodeId) {

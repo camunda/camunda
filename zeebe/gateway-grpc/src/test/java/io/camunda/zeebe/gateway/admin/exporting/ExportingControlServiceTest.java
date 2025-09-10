@@ -222,6 +222,11 @@ public class ExportingControlServiceTest {
       public long getLastCompletedChangeId() {
         return 0;
       }
+
+      @Override
+      public String getClusterId() {
+        throw new UnsupportedOperationException();
+      }
     };
   }
 
