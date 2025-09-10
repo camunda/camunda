@@ -183,12 +183,12 @@ test.describe('Roles functionalities', () => {
     });
   });
 
-  test('As an Admin user I can unassign role from user', async ({
+  test('As an Admin user I can unassign user from a role', async ({
     page,
     identityRolesPage,
+    identityRolesDetailsPage,
     identityAuthorizationsPage,
     identityUsersPage,
-    identityGroupsPage,
     identityHeader,
     loginPage,
   }) => {
@@ -259,13 +259,14 @@ test.describe('Roles functionalities', () => {
       });
     });
 
-    await test.step('Give Test user CRUD permissions on Group', async () => {
+    await test.step('Give TestRole CRUD permissions on Role resource', async () => {
+      await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
-        ownerType: 'User',
-        ownerId: TEST_USER.name,
-        resourceType: 'Group',
+        ownerType: 'Role',
+        ownerId: TEST_ROLE.name,
+        resourceType: 'Role',
         resourceId: '*',
-        accessPermissions: ['Create', 'Read', 'Update', 'Delete'],
+        accessPermissions: ['Create', 'Delete', 'Read', 'Update'],
       });
     });
 
@@ -275,14 +276,20 @@ test.describe('Roles functionalities', () => {
       await identityRolesPage.assignUserToRole(TEST_USER.username);
     });
 
-    await test.step('Verify Test user has access to Groups before unassignment', async () => {
+    await test.step('Verify Test user has access to Roles before unassignment', async () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
 
-      await identityHeader.navigateToGroups();
-      await expect(identityGroupsPage.groupsList).toBeVisible({
-        timeout: 60000,
-      });
+      await identityHeader.navigateToRoles();
+
+      await waitForItemInList(
+        page,
+        identityRolesPage.roleCell(TEST_ROLE.name),
+        {
+          clickNext: true,
+          timeout: 60000,
+        },
+      );
 
       await identityHeader.logout();
       await loginPage.login('demo', 'demo');
@@ -293,23 +300,21 @@ test.describe('Roles functionalities', () => {
       await identityRolesPage.clickRole(TEST_ROLE.id);
       await waitForItemInList(
         page,
-        identityRolesPage.userCell(TEST_USER.username),
+        identityRolesDetailsPage.userCell(TEST_USER.username),
       );
-      await identityRolesPage.unassignUserFromRole(TEST_USER.username);
+      await identityRolesDetailsPage.unassignUserFromRole(TEST_USER.username);
     });
 
-    await test.step('Verify Test user sees empty state on Group tab after unassignment', async () => {
+    await test.step('Verify Test user sees empty state on Roles tab after unassignment', async () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
 
-      await identityHeader.navigateToGroups();
+      await identityHeader.navigateToRoles();
 
-      await expect(identityGroupsPage.emptyStateLocator).toBeVisible({
+      await waitForItemInList(page, identityRolesPage.rolesList, {
+        shouldBeVisible: false,
         timeout: 60000,
-      });
-
-      await expect(identityGroupsPage.groupsList).not.toBeVisible({
-        timeout: 30000,
+        emptyStateLocator: identityRolesPage.emptyStateLocator,
       });
     });
   });
