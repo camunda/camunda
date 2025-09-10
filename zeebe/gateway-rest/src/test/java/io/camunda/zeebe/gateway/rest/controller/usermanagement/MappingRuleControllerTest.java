@@ -333,6 +333,13 @@ public class MappingRuleControllerTest extends RestControllerTest {
   void updateMappingRuleRuleShouldReturnOk(final String id) {
     // given
     final var dto = validUpdateMappingRuleRuleRequest(id);
+    final var request =
+        """
+            {
+              "claimName": "newClaimName",
+              "claimValue": "newClaimValue",
+              "name": "mapName"
+            }""";
     final var mappingRecord =
         new MappingRuleRecord()
             .setMappingRuleKey(1L)
@@ -350,7 +357,7 @@ public class MappingRuleControllerTest extends RestControllerTest {
         .uri(MAPPING_RULES_PATH + "/" + id)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(dto)
+        .bodyValue(request)
         .exchange()
         .expectStatus()
         .isOk();
