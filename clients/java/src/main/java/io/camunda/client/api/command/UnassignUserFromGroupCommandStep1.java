@@ -27,16 +27,18 @@ public interface UnassignUserFromGroupCommandStep1 {
    */
   UnassignUserFromGroupCommandStep2 username(String username);
 
-  interface UnassignUserFromGroupCommandStep2
-      extends FinalCommandStep<UnassignUserFromGroupResponse> {
+  interface UnassignUserFromGroupCommandStep2 {
 
     /**
      * Sets the group ID for the unassignment.
      *
      * @param groupId the groupId of the group
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link UnassignUserFromGroupCommandStep3#send()}
+     *     to complete the command and send it to the broker.
      */
-    UnassignUserFromGroupCommandStep2 groupId(String groupId);
+    UnassignUserFromGroupCommandStep3 groupId(String groupId);
   }
+
+  interface UnassignUserFromGroupCommandStep3
+      extends FinalCommandStep<UnassignUserFromGroupResponse> {}
 }
