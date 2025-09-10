@@ -32,12 +32,16 @@ import static io.camunda.client.ClientProperties.REST_ADDRESS;
 import static io.camunda.client.ClientProperties.STREAM_ENABLED;
 import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.impl.BuilderUtils.applyEnvironmentValueIfNotNull;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_PASSWORD;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIVE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
@@ -53,8 +57,11 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
+import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
+import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -599,6 +606,12 @@ public final class CamundaClientBuilderImpl
         this::overrideAuthority,
         OVERRIDE_AUTHORITY_VAR,
         LegacyZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR);
+    if (shouldUseOAuthCredentialsProvider()) {
+      credentialsProvider = createOAuthCredentialsProvider();
+    }
+    if (shouldUseBasicAuthCredentialsProvider()) {
+      credentialsProvider = createBasicAuthCredentialsProvider();
+    }
     applyEnvironmentValueIfNotNull(
         value -> grpcAddress(getURIFromString(value)),
         GRPC_ADDRESS_VAR,
@@ -653,6 +666,34 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.appendProperty(sb, "preferRestOverGrpc", preferRestOverGrpc);
 
     return sb.toString();
+  }
+
+  private boolean shouldUseOAuthCredentialsProvider() {
+    return credentialsProvider == null
+        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_ID)
+            || Environment.system()
+                .isDefined(LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID))
+        && (Environment.system().isDefined(OAUTH_ENV_CLIENT_SECRET)
+            || Environment.system()
+                .isDefined(LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET));
+  }
+
+  private CredentialsProvider createOAuthCredentialsProvider() {
+    final OAuthCredentialsProviderBuilder builder =
+        CredentialsProvider.newCredentialsProviderBuilder();
+    return builder.build();
+  }
+
+  private boolean shouldUseBasicAuthCredentialsProvider() {
+    return credentialsProvider == null
+        && Environment.system().isDefined(BASIC_AUTH_ENV_USERNAME)
+        && Environment.system().isDefined(BASIC_AUTH_ENV_PASSWORD);
+  }
+
+  private CredentialsProvider createBasicAuthCredentialsProvider() {
+    final BasicAuthCredentialsProviderBuilder builder =
+        CredentialsProvider.newBasicAuthCredentialsProviderBuilder();
+    return builder.build();
   }
 
   private static URI getURIFromString(final String uri) {
