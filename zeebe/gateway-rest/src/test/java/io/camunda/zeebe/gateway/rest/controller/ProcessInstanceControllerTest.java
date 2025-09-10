@@ -434,7 +434,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "version": 1,
+                "processDefinitionVersion": 1,
                 "awaitCompletion": true
             }""";
 
@@ -472,7 +472,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
                 "processDefinitionId": "bpmnProcessId",
                 "processDefinitionKey": 123,
-                "version": 1
+                "processDefinitionVersion": 1
             }""";
 
     final var expectedBody =

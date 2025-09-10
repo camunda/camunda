@@ -148,9 +148,7 @@ public class DecisionDefinitionQueryControllerTest extends RestControllerTest {
                 "version": 1,
                 "decisionRequirementsId": "drId",
                 "decisionRequirementsKey": "2",
-                "decisionDefinitionId": "dId",
-                "decisionRequirementsName": "drName",
-                "decisionRequirementsVersion": 3
+                "decisionDefinitionId": "dId"
               }
             }""";
 
