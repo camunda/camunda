@@ -24,7 +24,7 @@ const getSuccessMessage = (
     return `${completedCount} ${completedCount === 1 ? 'retry' : 'retries'} succeeded`;
   }
 
-  return `${pluralSuffix(completedCount, 'instance')} succeeded`;
+  return `${pluralSuffix(completedCount, 'operation')} succeeded`;
 };
 
 const getFailureMessage = (
@@ -34,16 +34,16 @@ const getFailureMessage = (
 ): string => {
   if (type === 'RESOLVE_INCIDENT') {
     if (completedCount > 0) {
-      return `${failedCount} failed`;
+      return `${failedCount} rejected`;
     }
-    return `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} failed`;
+    return `${failedCount} ${failedCount === 1 ? 'retry' : 'retries'} rejected`;
   }
 
   if (completedCount > 0) {
     return `${failedCount} failed`;
   }
 
-  return `${pluralSuffix(failedCount, 'instance')} failed`;
+  return `${pluralSuffix(failedCount, 'operation')} failed`;
 };
 
 const OperationEntryStatus: React.FC<Props> = ({
