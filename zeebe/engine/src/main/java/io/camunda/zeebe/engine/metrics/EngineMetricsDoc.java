@@ -196,7 +196,7 @@ public enum EngineMetricsDoc implements ExtendedMeterDocumentation {
 
     @Override
     public String getName() {
-      return "zeebe.incidents.events.total";
+      return "zeebe.incident.events.total";
     }
 
     @Override
