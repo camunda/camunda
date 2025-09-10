@@ -443,7 +443,10 @@ public class BrokerBasedPropertiesOverride {
 
     /* Override config map values */
 
-    final Map<String, Object> args = exporter.getArgs();
+    // https://github.com/camunda/camunda/issues/37880
+    // it is possible to have an exporter with no args defined
+    final Map<String, Object> args =
+        exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());

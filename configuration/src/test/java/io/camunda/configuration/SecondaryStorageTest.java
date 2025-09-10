@@ -250,4 +250,39 @@ public class SecondaryStorageTest {
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.type=elasticsearch",
+        "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
+        "zeebe.broker.exporters.camunda.class-name=io.camunda.exporter.CamundaExporter"
+      })
+  class ExporterTestWithoutArgs {
+    final OperateProperties operateProperties;
+    final TasklistProperties tasklistProperties;
+    final BrokerBasedProperties brokerBasedProperties;
+    final SearchEngineConnectProperties searchEngineConnectProperties;
+
+    ExporterTestWithoutArgs(
+        @Autowired final OperateProperties operateProperties,
+        @Autowired final TasklistProperties tasklistProperties,
+        @Autowired final BrokerBasedProperties brokerBasedProperties,
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+      this.operateProperties = operateProperties;
+      this.tasklistProperties = tasklistProperties;
+      this.brokerBasedProperties = brokerBasedProperties;
+      this.searchEngineConnectProperties = searchEngineConnectProperties;
+    }
+
+    // https://github.com/camunda/camunda/issues/37880
+    // it is possible to have an exporter with no args defined
+    @Test
+    void testSecondaryStorageExporterCanWorkWithoutArgs() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNull();
+    }
+  }
 }
