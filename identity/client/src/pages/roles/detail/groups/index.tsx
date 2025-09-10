@@ -68,7 +68,7 @@ const Groups: FC<GroupsProps> = ({ roleId }) => {
           childResourceTypeTranslationKey={"group"}
           parentResourceTypeTranslationKey={"role"}
           handleClick={openAssignModal}
-          docsLinkPath="/docs/next/components/identity/group/"
+          docsLinkPath="/docs/components/identity/group/"
         />
         {assignGroupsModal}
       </>
