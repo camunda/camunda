@@ -136,7 +136,8 @@ class MappingRuleAuthorizationIT {
         .untilAsserted(
             () -> {
               final var searchResponseAfter =
-                  searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
+                  searchMappingRules(
+                      camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
               assertThat(searchResponseAfter.items())
                   .map(MappingRuleResponse::name)
                   .doesNotContain("authTestMappingRule2");
