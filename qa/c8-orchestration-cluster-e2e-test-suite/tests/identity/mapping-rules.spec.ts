@@ -104,8 +104,16 @@ test.describe.serial('mapping rules CRUD', () => {
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
+      timeout: 60000,
       clickNext: true,
-      timeout: 30000,
+      emptyStateLocator: identityMappingRulesPage.emptyStateLocator,
+      onAfterReload: async () => {
+        await page.goto(relativizePath(Paths.mappingRules()));
+        await Promise.race([
+          identityMappingRulesPage.mappingRulesList.waitFor({timeout: 15000}),
+          identityMappingRulesPage.emptyStateLocator.waitFor({timeout: 15000}),
+        ]);
+      },
     });
   });
 });

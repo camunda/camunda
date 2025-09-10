@@ -36,7 +36,7 @@ export class IdentityMappingRulesPage {
   readonly closeDeleteMappingRuleModal: Locator;
   readonly deleteMappingRuleModalCancelButton: Locator;
   readonly deleteMappingRuleModalDeleteButton: Locator;
-  readonly emptyState: Locator;
+  readonly emptyStateLocator: Locator;
   readonly usersNavItem: Locator;
   readonly selectMappingRuleRow: (name: string) => Locator;
   readonly mappingRuleCell: (name: string) => Locator;
@@ -149,7 +149,7 @@ export class IdentityMappingRulesPage {
         name: 'Delete mapping rule',
       });
 
-    this.emptyState = page.getByText('No mapping rules created yet');
+    this.emptyStateLocator = page.getByText('No mapping rules created yet');
     this.usersNavItem = page.getByText('Users');
   }
 

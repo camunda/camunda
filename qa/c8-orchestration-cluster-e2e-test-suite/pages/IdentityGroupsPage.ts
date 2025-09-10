@@ -35,7 +35,7 @@ export class IdentityGroupsPage {
   readonly closeDeleteGroupModal: Locator;
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
-  readonly emptyState: Locator;
+  readonly emptyStateLocator: Locator;
   readonly assignUserButton: Locator;
   readonly searchBox: Locator;
   readonly searchBoxResult: Locator;
@@ -128,7 +128,7 @@ export class IdentityGroupsPage {
         name: 'Delete group',
       },
     );
-    this.emptyState = page.getByText('No groups created yet');
+    this.emptyStateLocator = page.getByText('No groups created yet');
     this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
     this.searchBox = page.getByRole('searchbox');
     this.searchBoxResult = page.getByRole('listitem');

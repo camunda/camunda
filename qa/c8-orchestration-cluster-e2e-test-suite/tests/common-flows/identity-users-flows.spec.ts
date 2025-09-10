@@ -13,7 +13,6 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 import {createTestData, createComponentAuthorization} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
-import {sleep} from 'utils/sleep';
 import {waitForItemInList} from 'utils/waitForItemInList';
 
 test.describe('Identity User Flows', () => {
