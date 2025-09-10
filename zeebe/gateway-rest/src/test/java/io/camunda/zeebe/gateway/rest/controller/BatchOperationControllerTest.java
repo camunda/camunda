@@ -88,7 +88,8 @@ class BatchOperationControllerTest extends RestControllerTest {
   void shouldReturnPartiallyCompletedBatchOperation() {
     final var batchOperationKey = "1";
     final var batchOperationEntity =
-        getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.PARTIALLY_COMPLETED);
+        getFailedBatchOperationEntity(
+            batchOperationKey, BatchOperationState.PARTIALLY_COMPLETED, 10, 0, 10);
 
     when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
 
@@ -131,7 +132,7 @@ class BatchOperationControllerTest extends RestControllerTest {
   void shouldReturnFailedBatchOperation() {
     final var batchOperationKey = "1";
     final var batchOperationEntity =
-        getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.FAILED);
+        getFailedBatchOperationEntity(batchOperationKey, BatchOperationState.FAILED, 0, 0, 0);
 
     when(batchOperationServices.getById(batchOperationKey)).thenReturn(batchOperationEntity);
 
@@ -151,9 +152,9 @@ class BatchOperationControllerTest extends RestControllerTest {
               "batchOperationType":"CANCEL_PROCESS_INSTANCE",
               "startDate":"2025-03-18T10:57:44.000+01:00",
               "endDate":"2025-03-18T10:57:45.000+01:00",
-              "operationsTotalCount":10,
+              "operationsTotalCount":0,
               "operationsFailedCount":0,
-              "operationsCompletedCount":10,
+              "operationsCompletedCount":0,
               "errors":[
                 {
                   "partitionId":1,
@@ -327,16 +328,20 @@ class BatchOperationControllerTest extends RestControllerTest {
   }
 
   private static BatchOperationEntity getFailedBatchOperationEntity(
-      final String batchOperationKey, final BatchOperationState batchOperationState) {
+      final String batchOperationKey,
+      final BatchOperationState batchOperationState,
+      final int operationsTotalCount,
+      final int operationsFailedCount,
+      final int operationsCompletedCount) {
     return new BatchOperationEntity(
         batchOperationKey,
         batchOperationState,
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         OffsetDateTime.parse("2025-03-18T10:57:45+01:00"),
-        10,
-        0,
-        10,
+        operationsTotalCount,
+        operationsFailedCount,
+        operationsCompletedCount,
         List.of(
             new BatchOperationErrorEntity(1, "QUERY_FAILED", "Stack Trace"),
             new BatchOperationErrorEntity(2, "QUERY_FAILED", "Stack Trace")));
