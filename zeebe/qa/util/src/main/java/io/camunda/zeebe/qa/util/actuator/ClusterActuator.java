@@ -84,7 +84,7 @@ public interface ClusterActuator {
    */
   @RequestLine("POST /brokers/{brokerId}/partitions/{partitionId}")
   @Headers({"Content-Type: application/json", "Accept: application/json"})
-  @Body("%7B\"priority\": \"{priority}\"%7D")
+  @Body("%7B\"priority\": {priority}%7D")
   PlannedOperationsResponse joinPartition(
       @Param final int brokerId, @Param final int partitionId, @Param final int priority);
 

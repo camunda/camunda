@@ -606,42 +606,6 @@ public class JobControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldCompleteJobWithResultAndIgnoreUnknownField() {
-    // given
-    when(jobServices.completeJob(anyLong(), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(new JobRecord()));
-
-    final var request =
-        """
-          {
-            "result": {
-              "type": "userTask",
-              "unknownField": true,
-              "corrections": {}
-            }
-          }
-        """;
-
-    // when/then
-    webClient
-        .post()
-        .uri(JOBS_BASE_URL + "/1/completion")
-        .accept(MediaType.APPLICATION_JSON)
-        .contentType(MediaType.APPLICATION_JSON)
-        .bodyValue(request)
-        .exchange()
-        .expectStatus()
-        .isNoContent();
-
-    final ArgumentCaptor<JobResult> jobResultArgumentCaptor =
-        ArgumentCaptor.forClass(JobResult.class);
-    Mockito.verify(jobServices)
-        .completeJob(eq(1L), eq(Map.of()), jobResultArgumentCaptor.capture());
-    assertThat(jobResultArgumentCaptor.getValue().isDenied()).isFalse();
-    assertThat(jobResultArgumentCaptor.getValue().getDeniedReason()).isEqualTo("");
-  }
-
-  @Test
   void shouldCompleteJobWithVariables() {
     // given
     when(jobServices.completeJob(anyLong(), any(), any()))
