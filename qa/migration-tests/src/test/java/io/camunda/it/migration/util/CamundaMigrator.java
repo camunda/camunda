@@ -35,8 +35,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.CloseHelper;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.context.ApplicationListener;
+import org.springframework.lang.NonNull;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaMigrator extends ApiCallable implements AutoCloseable {
@@ -328,7 +328,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     boolean migrationCompleted = false;
 
     @Override
-    public void onApplicationEvent(final @NotNull MigrationFinishedEvent event) {
+    public void onApplicationEvent(final @NonNull MigrationFinishedEvent event) {
       migrationCompleted = true;
     }
   }
