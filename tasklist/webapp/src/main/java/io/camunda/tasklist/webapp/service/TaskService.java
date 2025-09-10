@@ -181,30 +181,24 @@ public class TaskService {
 
     final TaskEntity taskBefore = taskStore.getTask(taskId);
 
+    final TaskEntity claimedTask;
     if (taskBefore.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
       // Zeebe User Task
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
       tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
-
-      final TaskEntity claimedTask = taskStore.makeCopyOf(taskBefore).setAssignee(taskAssignee);
-      final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
-      updateClaimedMetric(assignedTaskMetrics);
-      updateTaskAssignedMetric(claimedTask);
-      return TaskDTO.createFrom(claimedTask, objectMapper);
-
+      claimedTask = taskStore.makeCopyOf(taskBefore).setAssignee(taskAssignee);
     } else {
       // Job-based User Task
       taskValidator.validateCanAssign(taskBefore, allowOverrideAssignment);
-
       final String taskAssignee = determineTaskAssignee(assignee, currentUsername);
       tasklistServicesAdapter.assignUserTask(taskBefore, taskAssignee);
-
-      final TaskEntity claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
-      final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
-      updateClaimedMetric(assignedTaskMetrics);
-      updateTaskAssignedMetric(claimedTask);
-      return TaskDTO.createFrom(claimedTask, objectMapper);
+      claimedTask = taskStore.persistTaskClaim(taskBefore, taskAssignee);
     }
+
+    final var assignedTaskMetrics = getTaskMetricLabels(claimedTask, currentUsername);
+    updateClaimedMetric(assignedTaskMetrics);
+    updateTaskAssignedMetric(claimedTask);
+    return TaskDTO.createFrom(claimedTask, objectMapper);
   }
 
   public void updateTaskAssignedMetric(final TaskEntity task) {
@@ -236,51 +230,38 @@ public class TaskService {
       LOGGER.info("Starting completion of task with ID: {}", taskId);
 
       final TaskEntity task = taskStore.getTask(taskId);
+
+      final TaskEntity completedTaskEntity;
       if (task.getImplementation() == TaskImplementation.ZEEBE_USER_TASK) {
         // Zeebe User Task
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
-
-        final TaskEntity completedTaskEntity =
+        completedTaskEntity =
             taskStore
                 .makeCopyOf(task)
                 .setState(TaskState.COMPLETED)
                 .setCompletionTime(OffsetDateTime.now());
-        try {
-          LOGGER.info("Start variable persistence: {}", taskId);
-          variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
-          deleteDraftTaskVariablesSafely(taskId);
-          updateCompletedMetric(completedTaskEntity);
-          LOGGER.info("Task with ID {} completed successfully.", taskId);
-        } catch (final Exception e) {
-          LOGGER.error(
-              "Task with key {} was COMPLETED but error happened after completion: {}.",
-              taskId,
-              e.getMessage());
-        }
-
-        return TaskDTO.createFrom(completedTaskEntity, objectMapper);
       } else {
         // Job-based User Task
         taskValidator.validateCanComplete(task);
         tasklistServicesAdapter.completeUserTask(task, variablesMap);
-
-        // persist completion and variables
-        final TaskEntity completedTaskEntity = taskStore.persistTaskCompletion(task);
-        try {
-          LOGGER.info("Start variable persistence: {}", taskId);
-          variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
-          deleteDraftTaskVariablesSafely(taskId);
-          updateCompletedMetric(completedTaskEntity);
-          LOGGER.info("Task with ID {} completed successfully.", taskId);
-        } catch (final Exception e) {
-          LOGGER.error(
-              "Task with key {} was COMPLETED but error happened after completion: {}.",
-              taskId,
-              e.getMessage());
-        }
-
-        return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+        completedTaskEntity = taskStore.persistTaskCompletion(task);
       }
+
+      try {
+        LOGGER.info("Start variable persistence: {}", taskId);
+        variableService.persistTaskVariables(taskId, variables, withDraftVariableValues);
+        deleteDraftTaskVariablesSafely(taskId);
+        updateCompletedMetric(completedTaskEntity);
+        LOGGER.info("Task with ID {} completed successfully.", taskId);
+      } catch (final Exception e) {
+        LOGGER.error(
+            "Task with key {} was COMPLETED but error happened after completion: {}.",
+            taskId,
+            e.getMessage());
+      }
+
+      return TaskDTO.createFrom(completedTaskEntity, objectMapper);
+
     } catch (final HttpServerErrorException e) { // Track only internal server errors
       LOGGER.error("Error completing task with ID: {}. Details: {}", taskId, e.getMessage(), e);
       throw new TasklistRuntimeException("Error completing task with ID: " + taskId, e);
