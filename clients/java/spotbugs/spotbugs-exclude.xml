@@ -21,8 +21,4 @@
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
 
-  <Match>
-    <Class name="io.camunda.zeebe.client.impl.worker.JobStreamerImpl"/>
-    <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
-  </Match>
 </FindBugsFilter>

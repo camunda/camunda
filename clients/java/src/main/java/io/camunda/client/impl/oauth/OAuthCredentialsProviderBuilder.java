@@ -35,7 +35,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE;
 
-import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
+import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -390,57 +390,61 @@ public final class OAuthCredentialsProviderBuilder {
 
   private void checkEnvironmentOverrides() {
     applyEnvironmentValueIfNotNull(
-        this::clientId, OAUTH_ENV_CLIENT_ID, ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID);
+        this::clientId,
+        OAUTH_ENV_CLIENT_ID,
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID);
     applyEnvironmentValueIfNotNull(
         this::clientSecret,
         OAUTH_ENV_CLIENT_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET);
     applyEnvironmentValueIfNotNull(
         this::audience,
         OAUTH_ENV_TOKEN_AUDIENCE,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_AUDIENCE);
     applyEnvironmentValueIfNotNull(
-        this::scope, OAUTH_ENV_TOKEN_SCOPE, ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
+        this::scope,
+        OAUTH_ENV_TOKEN_SCOPE,
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_SCOPE);
     applyEnvironmentValueIfNotNull(
         this::resource,
         OAUTH_ENV_TOKEN_RESOURCE,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_TOKEN_RESOURCE);
     applyEnvironmentValueIfNotNull(
         this::authorizationServerUrl,
         OAUTH_ENV_AUTHORIZATION_SERVER,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_AUTHORIZATION_SERVER);
     applyEnvironmentValueIfNotNull(
         this::keystorePath,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_PATH);
     applyEnvironmentValueIfNotNull(
         this::keystorePassword,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_SECRET);
     applyEnvironmentValueIfNotNull(
         this::keystoreKeyPassword,
         OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_KEYSTORE_KEY_SECRET);
     applyEnvironmentValueIfNotNull(
         this::truststorePath,
         OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_PATH);
     applyEnvironmentValueIfNotNull(
         this::truststorePassword,
         OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_SSL_CLIENT_TRUSTSTORE_SECRET);
     applyEnvironmentValueIfNotNull(
         this::credentialsCachePath,
         OAUTH_ENV_CACHE_PATH,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CACHE_PATH);
     applyEnvironmentValueIfNotNull(
         this::readTimeout,
         OAUTH_ENV_READ_TIMEOUT,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_READ_TIMEOUT);
     applyEnvironmentValueIfNotNull(
         this::connectTimeout,
         OAUTH_ENV_CONNECT_TIMEOUT,
-        ZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
+        LegacyZeebeClientEnvironmentVariables.OAUTH_ENV_CONNECT_TIMEOUT);
   }
 
   private void applyDefaults() {

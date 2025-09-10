@@ -15,7 +15,7 @@
  */
 package io.camunda.client.process;
 
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;

@@ -2624,23 +2624,6 @@
                 </rules>
               </configuration>
             </execution>
-            <execution>
-              <id>forbid-banned-dependencies</id>
-              <goals>
-                <goal>enforce</goal>
-              </goals>
-              <configuration>
-                <rules>
-                  <!-- ban the direct usage of the zeebe-client-java dependency -->
-                  <bannedDependencies>
-                    <excludes>
-                      <exclude>io.camunda:zeebe-client-java</exclude>
-                    </excludes>
-                    <searchTransitive>false</searchTransitive>
-                  </bannedDependencies>
-                </rules>
-              </configuration>
-            </execution>
           </executions>
         </plugin>
 

@@ -30,6 +30,7 @@ import static io.camunda.client.ClientProperties.USE_DEFAULT_RETRY_POLICY;
 import static io.camunda.client.ClientProperties.USE_PLAINTEXT_CONNECTION;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GATEWAY_ADDRESS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_GRPC_ADDRESS;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TTL;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
@@ -42,10 +43,9 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PLAINTEXT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR;
+import static io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_KB;
 import static io.camunda.client.impl.util.DataSizeUtil.ONE_MB;
-import static io.camunda.zeebe.client.impl.ZeebeClientBuilderImpl.DEFAULT_MESSAGE_TTL;
-import static io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables.ZEEBE_CLIENT_WORKER_STREAM_ENABLED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -57,11 +57,11 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
+import io.camunda.client.impl.LegacyZeebeClientEnvironmentVariables;
 import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.impl.util.Environment;
 import io.camunda.client.impl.util.EnvironmentExtension;
-import io.camunda.zeebe.client.impl.ZeebeClientEnvironmentVariables;
 import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -142,7 +142,7 @@ public final class CamundaClientTest {
   @ValueSource(
       strings = {
         PLAINTEXT_CONNECTION_VAR,
-        ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
+        LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
       })
   public void shouldUseInsecureWithEnvVar(final String envVarName) {
     // given
@@ -159,13 +159,11 @@ public final class CamundaClientTest {
   @ParameterizedTest
   @CsvSource({
     PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    PLAINTEXT_CONNECTION_VAR
+    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
+    PLAINTEXT_CONNECTION_VAR + "," + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION,
+    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
         + ","
-        + io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION,
-    ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
-        + ","
-        + io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION
+        + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION
   })
   public void shouldOverridePropertyWithEnvVariable(
       final String envName, final String propertyName) {
@@ -186,13 +184,11 @@ public final class CamundaClientTest {
   @ParameterizedTest
   @CsvSource({
     PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
-    PLAINTEXT_CONNECTION_VAR
+    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR + "," + USE_PLAINTEXT_CONNECTION,
+    PLAINTEXT_CONNECTION_VAR + "," + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION,
+    LegacyZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
         + ","
-        + io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION,
-    ZeebeClientEnvironmentVariables.PLAINTEXT_CONNECTION_VAR
-        + ","
-        + io.camunda.zeebe.client.ClientProperties.USE_PLAINTEXT_CONNECTION
+        + LegacyZeebeClientProperties.USE_PLAINTEXT_CONNECTION
   })
   public void shouldNotOverridePropertyWithEnvVariableIfOverridingIsDisabled(
       final String envName, final String propertyName) {
@@ -212,7 +208,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {STREAM_ENABLED, io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED})
+  @ValueSource(strings = {STREAM_ENABLED, LegacyZeebeClientProperties.STREAM_ENABLED})
   public void shouldEnableStreamingWithProperty(final String propertyName) {
     // given
     final Properties properties = new Properties();
@@ -249,12 +245,8 @@ public final class CamundaClientTest {
   @CsvSource({
     CAMUNDA_CLIENT_WORKER_STREAM_ENABLED + "," + STREAM_ENABLED,
     ZEEBE_CLIENT_WORKER_STREAM_ENABLED + "," + STREAM_ENABLED,
-    CAMUNDA_CLIENT_WORKER_STREAM_ENABLED
-        + ","
-        + io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED,
-    ZEEBE_CLIENT_WORKER_STREAM_ENABLED
-        + ","
-        + io.camunda.zeebe.client.ClientProperties.STREAM_ENABLED
+    CAMUNDA_CLIENT_WORKER_STREAM_ENABLED + "," + LegacyZeebeClientProperties.STREAM_ENABLED,
+    ZEEBE_CLIENT_WORKER_STREAM_ENABLED + "," + LegacyZeebeClientProperties.STREAM_ENABLED
   })
   public void environmentVariableShouldOverrideProperty(
       final String envName, final String propertyName) {
@@ -272,7 +264,8 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {CA_CERTIFICATE_VAR, ZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR})
+  @ValueSource(
+      strings = {CA_CERTIFICATE_VAR, LegacyZeebeClientEnvironmentVariables.CA_CERTIFICATE_VAR})
   public void shouldCaCertificateWithEnvVar(final String envName) {
     // given
     final String certPath = getClass().getClassLoader().getResource("ca.cert.pem").getPath();
@@ -300,7 +293,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {KEEP_ALIVE_VAR, ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
+  @ValueSource(strings = {KEEP_ALIVE_VAR, LegacyZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
   public void shouldOverrideKeepAliveWithEnvVar(final String envName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -329,7 +322,10 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {OVERRIDE_AUTHORITY_VAR, ZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR})
+      strings = {
+        OVERRIDE_AUTHORITY_VAR,
+        LegacyZeebeClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR
+      })
   public void shouldOverrideAuthorityWithEnvVar(final String envName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -370,8 +366,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {MAX_MESSAGE_SIZE, io.camunda.zeebe.client.ClientProperties.MAX_MESSAGE_SIZE})
+  @ValueSource(strings = {MAX_MESSAGE_SIZE, LegacyZeebeClientProperties.MAX_MESSAGE_SIZE})
   public void shouldSetMaxMessageSizeWithProperty(final String propertyName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -387,8 +382,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {MAX_METADATA_SIZE, io.camunda.zeebe.client.ClientProperties.MAX_METADATA_SIZE})
+  @ValueSource(strings = {MAX_METADATA_SIZE, LegacyZeebeClientProperties.MAX_METADATA_SIZE})
   public void shouldSetMaxMetadataSizeWithProperty(final String propertyName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -404,7 +398,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {KEEP_ALIVE_VAR, ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
+  @ValueSource(strings = {KEEP_ALIVE_VAR, LegacyZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
   public void shouldRejectUnsupportedTimeUnitWithEnvVar(final String envName) {
     // when/then
     Environment.system().put(envName, "30d");
@@ -421,7 +415,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {KEEP_ALIVE_VAR, ZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
+  @ValueSource(strings = {KEEP_ALIVE_VAR, LegacyZeebeClientEnvironmentVariables.KEEP_ALIVE_VAR})
   public void shouldRejectNegativeTimeAsEnvVar(final String envName) {
     // when/then
     Environment.system().put(envName, "-2s");
@@ -511,7 +505,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {CLOUD_REGION, io.camunda.zeebe.client.ClientProperties.CLOUD_REGION})
+  @ValueSource(strings = {CLOUD_REGION, LegacyZeebeClientProperties.CLOUD_REGION})
   public void shouldCloudBuilderBuildProperClientWithRegionPropertyProvided(
       final String propertyName) {
     // given
@@ -634,7 +628,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {REST_ADDRESS, io.camunda.zeebe.client.ClientProperties.REST_ADDRESS})
+  @ValueSource(strings = {REST_ADDRESS, LegacyZeebeClientProperties.REST_ADDRESS})
   public void shouldSetRestAddressPortFromPropertyWithClientBuilder(final String propertyName)
       throws URISyntaxException {
     // given
@@ -672,7 +666,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {REST_ADDRESS, io.camunda.zeebe.client.ClientProperties.REST_ADDRESS})
+  @ValueSource(strings = {REST_ADDRESS, LegacyZeebeClientProperties.REST_ADDRESS})
   public void shouldThrowExceptionWhenRestAddressIsNotAbsoluteFromPropertyWithClientBuilder(
       final String propertyName) throws URISyntaxException {
     // given
@@ -708,7 +702,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {GRPC_ADDRESS, io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS})
+  @ValueSource(strings = {GRPC_ADDRESS, LegacyZeebeClientProperties.GRPC_ADDRESS})
   public void shouldThrowExceptionWhenGrpcAddressIsNotAbsoluteFromPropertyWithClientBuilder(
       final String propertyName) throws URISyntaxException {
     // given
@@ -724,7 +718,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {REST_ADDRESS_VAR, ZeebeClientEnvironmentVariables.REST_ADDRESS_VAR})
+  @ValueSource(strings = {REST_ADDRESS_VAR, LegacyZeebeClientEnvironmentVariables.REST_ADDRESS_VAR})
   public void shouldSetRestAddressPortFromEnvVarWithClientBuilder(final String envName)
       throws URISyntaxException {
     // given
@@ -754,7 +748,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {GRPC_ADDRESS, io.camunda.zeebe.client.ClientProperties.GRPC_ADDRESS})
+  @ValueSource(strings = {GRPC_ADDRESS, LegacyZeebeClientProperties.GRPC_ADDRESS})
   public void shouldSetGrpcAddressFromPropertyWithClientBuilder(final String propertyName)
       throws URISyntaxException {
     // given
@@ -772,7 +766,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {GRPC_ADDRESS_VAR, ZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR})
+  @ValueSource(strings = {GRPC_ADDRESS_VAR, LegacyZeebeClientEnvironmentVariables.GRPC_ADDRESS_VAR})
   public void shouldSetGrpcAddressFromEnvVarWithClientBuilder(final String envName)
       throws URISyntaxException {
     // given
@@ -802,11 +796,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {
-        PREFER_REST_OVER_GRPC,
-        io.camunda.zeebe.client.ClientProperties.PREFER_REST_OVER_GRPC
-      })
+  @ValueSource(strings = {PREFER_REST_OVER_GRPC, LegacyZeebeClientProperties.PREFER_REST_OVER_GRPC})
   public void shouldSetPreferRestFromPropertyWithClientBuilder(final String propertyName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -823,7 +813,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {PREFER_REST_VAR, ZeebeClientEnvironmentVariables.PREFER_REST_VAR})
+  @ValueSource(strings = {PREFER_REST_VAR, LegacyZeebeClientEnvironmentVariables.PREFER_REST_VAR})
   public void shouldSetPreferRestFromEnvVarWithClientBuilder(final String envName) {
     // given
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -843,8 +833,7 @@ public final class CamundaClientTest {
     // given
     final String gatewayAddress = "localhost:26500";
     final Properties properties = new Properties();
-    properties.setProperty(
-        io.camunda.zeebe.client.ClientProperties.GATEWAY_ADDRESS, gatewayAddress);
+    properties.setProperty(LegacyZeebeClientProperties.GATEWAY_ADDRESS, gatewayAddress);
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -883,8 +872,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {DEFAULT_TENANT_ID, io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID})
+  @ValueSource(strings = {DEFAULT_TENANT_ID, LegacyZeebeClientProperties.DEFAULT_TENANT_ID})
   public void shouldSetDefaultTenantIdFromPropertyWithClientBuilder(final String propertyName) {
     // given
     final String tenantId = "test-tenant";
@@ -902,7 +890,10 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {DEFAULT_TENANT_ID_VAR, ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR})
+      strings = {
+        DEFAULT_TENANT_ID_VAR,
+        LegacyZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR
+      })
   public void shouldSetDefaultTenantIdFromEnvVarWithClientBuilder(final String envName) {
     // given
     final String overrideTenant = "override-tenant";
@@ -919,11 +910,11 @@ public final class CamundaClientTest {
   @ParameterizedTest
   @CsvSource({
     DEFAULT_TENANT_ID_VAR + "," + DEFAULT_TENANT_ID,
-    ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR + "," + DEFAULT_TENANT_ID,
-    DEFAULT_TENANT_ID_VAR + "," + io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID,
-    ZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR
+    LegacyZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR + "," + DEFAULT_TENANT_ID,
+    DEFAULT_TENANT_ID_VAR + "," + LegacyZeebeClientProperties.DEFAULT_TENANT_ID,
+    LegacyZeebeClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR
         + ","
-        + io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID
+        + LegacyZeebeClientProperties.DEFAULT_TENANT_ID
   })
   public void shouldSetFinalDefaultTenantIdFromEnvVarWithClientBuilder(
       final String envName, final String propertyName) {
@@ -945,8 +936,7 @@ public final class CamundaClientTest {
   }
 
   @ParameterizedTest
-  @ValueSource(
-      strings = {DEFAULT_TENANT_ID, io.camunda.zeebe.client.ClientProperties.DEFAULT_TENANT_ID})
+  @ValueSource(strings = {DEFAULT_TENANT_ID, LegacyZeebeClientProperties.DEFAULT_TENANT_ID})
   public void shouldNotSetDefaultTenantIdFromPropertyWithCloudClientBuilder(
       final String propertyName) {
     // given
@@ -1018,7 +1008,7 @@ public final class CamundaClientTest {
   @ValueSource(
       strings = {
         DEFAULT_JOB_WORKER_TENANT_IDS,
-        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
+        LegacyZeebeClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
       })
   public void shouldSetDefaultJobWorkerTenantIdsFromPropertyWithClientBuilder(
       final String propertyName) {
@@ -1040,7 +1030,7 @@ public final class CamundaClientTest {
   @ValueSource(
       strings = {
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
-        ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
+        LegacyZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
       })
   public void shouldSetDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder(final String envName) {
     // given
@@ -1058,15 +1048,15 @@ public final class CamundaClientTest {
   @ParameterizedTest
   @CsvSource({
     DEFAULT_JOB_WORKER_TENANT_IDS_VAR + "," + DEFAULT_JOB_WORKER_TENANT_IDS,
-    ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
+    LegacyZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
         + ","
         + DEFAULT_JOB_WORKER_TENANT_IDS,
     DEFAULT_JOB_WORKER_TENANT_IDS_VAR
         + ","
-        + io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
-    ZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
+        + LegacyZeebeClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS,
+    LegacyZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR
         + ","
-        + io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
+        + LegacyZeebeClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
   })
   public void shouldSetFinalDefaultJobWorkerTenantIdsFromEnvVarWithClientBuilder(
       final String envName, final String propertyName) {
@@ -1091,7 +1081,7 @@ public final class CamundaClientTest {
   @ValueSource(
       strings = {
         DEFAULT_JOB_WORKER_TENANT_IDS,
-        io.camunda.zeebe.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
+        LegacyZeebeClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS
       })
   public void shouldNotSetDefaultJobWorkerTenantIdsFromPropertyWithCloudClientBuilder(
       final String propertyName) {
@@ -1150,7 +1140,7 @@ public final class CamundaClientTest {
   @ValueSource(
       strings = {
         USE_DEFAULT_RETRY_POLICY_VAR,
-        ZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR
+        LegacyZeebeClientEnvironmentVariables.USE_DEFAULT_RETRY_POLICY_VAR
       })
   public void shouldOverrideDefaultRetryPolicyWithEnvVar(final String envName) {
     // given
@@ -1167,10 +1157,7 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {
-        USE_DEFAULT_RETRY_POLICY,
-        io.camunda.zeebe.client.ClientProperties.USE_DEFAULT_RETRY_POLICY
-      })
+      strings = {USE_DEFAULT_RETRY_POLICY, LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY})
   public void shouldOverrideDefaultRetryPolicyWithProperty(final String propertyName) {
     // given
     final Properties properties = new Properties();
@@ -1188,10 +1175,7 @@ public final class CamundaClientTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {
-        DEFAULT_REQUEST_TIMEOUT,
-        io.camunda.zeebe.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT
-      })
+      strings = {DEFAULT_REQUEST_TIMEOUT, LegacyZeebeClientProperties.DEFAULT_REQUEST_TIMEOUT})
   public void shouldSetTimeoutInMillis(final String propertyName) {
     // given
     final Properties properties = new Properties();
