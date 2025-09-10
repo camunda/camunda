@@ -616,7 +616,6 @@ public class JobControllerTest extends RestControllerTest {
           {
             "result": {
               "type": "userTask",
-              "unknownField": true,
               "corrections": {}
             }
           }
