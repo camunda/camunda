@@ -9,12 +9,14 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForCorrelatedMessages;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
@@ -45,6 +47,15 @@ public class MessageSubscriptionSearchTest {
     waitForProcessInstancesToStart(camundaClient, 1);
 
     waitForMessageSubscriptions(camundaClient, NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+
+    camundaClient
+        .newCorrelateMessageCommand()
+        .messageName("Message1")
+        .correlationKey("correlation_key_1")
+        .send()
+        .join();
+
+    waitForCorrelatedMessages(camundaClient, 1);
 
     orderedMessageSubscriptions =
         camundaClient
@@ -97,6 +108,21 @@ public class MessageSubscriptionSearchTest {
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedMessageSubscription);
+  }
+
+  @Test
+  void shouldFilterCorrelatedSubscriptions() {
+    // When
+    final var searchResponse =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.messageSubscriptionType(MessageSubscriptionType.CORRELATED))
+            .send()
+            .join();
+
+    // Then
+    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items().getFirst().getMessageName()).isEqualTo("Message1");
   }
 
   @Test

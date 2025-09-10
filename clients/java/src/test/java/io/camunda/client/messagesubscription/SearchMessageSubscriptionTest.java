@@ -66,7 +66,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .processInstanceKey(456L)
                     .elementId("element-id")
                     .elementInstanceKey(789L)
-                    .messageSubscriptionType(MessageSubscriptionType.CREATED)
+                    .messageSubscriptionType(MessageSubscriptionType.CORRELATED)
                     .lastUpdatedDate(lastUpdatedDate)
                     .messageName("message-name")
                     .correlationKey("correlation-key")
@@ -91,7 +91,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("789");
     assertThat(request.getFilter().getMessageSubscriptionType()).isNotNull();
     assertThat(request.getFilter().getMessageSubscriptionType().get$Eq())
-        .isEqualTo(MessageSubscriptionTypeEnum.CREATED);
+        .isEqualTo(MessageSubscriptionTypeEnum.CORRELATED);
     assertThat(request.getFilter().getLastUpdatedDate()).isNotNull();
     assertThat(request.getFilter().getLastUpdatedDate().get$Eq())
         .isEqualTo(lastUpdatedDate.toString());

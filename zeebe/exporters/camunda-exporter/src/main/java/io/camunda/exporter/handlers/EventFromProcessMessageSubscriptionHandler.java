@@ -25,7 +25,11 @@ public class EventFromProcessMessageSubscriptionHandler
     extends AbstractEventHandler<ProcessMessageSubscriptionRecordValue> {
 
   public static final Set<Intent> STATES =
-      Set.of(ProcessMessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.MIGRATED);
+      Set.of(
+          ProcessMessageSubscriptionIntent.CORRELATED,
+          ProcessMessageSubscriptionIntent.CREATED,
+          ProcessMessageSubscriptionIntent.DELETED,
+          ProcessMessageSubscriptionIntent.MIGRATED);
 
   public EventFromProcessMessageSubscriptionHandler(final String indexName) {
     super(indexName);

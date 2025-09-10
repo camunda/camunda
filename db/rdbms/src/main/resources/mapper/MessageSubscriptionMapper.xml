@@ -189,7 +189,7 @@
         MESSAGE_NAME = #{messageName},
         CORRELATION_KEY = #{correlationKey},
         TENANT_ID = #{tenantId},
-        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP},
+        HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
     WHERE MESSAGE_SUBSCRIPTION_KEY = #{messageSubscriptionKey}
   </update>
 

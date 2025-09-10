@@ -24,7 +24,11 @@ public class MessageSubscriptionExportHandler
     implements RdbmsExportHandler<ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> STATES =
-      Set.of(ProcessMessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.MIGRATED);
+      Set.of(
+          ProcessMessageSubscriptionIntent.CORRELATED,
+          ProcessMessageSubscriptionIntent.CREATED,
+          ProcessMessageSubscriptionIntent.DELETED,
+          ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
 
   public MessageSubscriptionExportHandler(
@@ -41,7 +45,7 @@ public class MessageSubscriptionExportHandler
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
     if (record.getIntent() == ProcessMessageSubscriptionIntent.CREATED) {
       messageSubscriptionWriter.create(map(record));
-    } else if (record.getIntent() == ProcessMessageSubscriptionIntent.MIGRATED) {
+    } else {
       messageSubscriptionWriter.update(map(record));
     }
   }

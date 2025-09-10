@@ -31,6 +31,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.exporter.rdbms.RdbmsExporterWrapper;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.search.entities.ProcessDefinitionEntity;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.UserEntity;
@@ -611,6 +612,36 @@ class RdbmsExporterIT {
     final var messageSubscription =
         rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
     assertThat(messageSubscription).isNotEmpty();
+  }
+
+  @Test
+  public void shouldUpdateDeletedMessageSubscription() {
+    // given
+    final var messageSubscriptionRecord =
+        ImmutableRecord.builder()
+            .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
+            .withIntent(ProcessMessageSubscriptionIntent.CREATED)
+            .withPosition(2L)
+            .withTimestamp(System.currentTimeMillis())
+            .build();
+
+    exporter.export(messageSubscriptionRecord);
+
+    // when
+    exporter.export(
+        ImmutableRecord.builder()
+            .from(messageSubscriptionRecord)
+            .withIntent(ProcessMessageSubscriptionIntent.DELETED)
+            .withPosition(3L)
+            .withTimestamp(System.currentTimeMillis())
+            .build());
+
+    // then
+    final var messageSubscription =
+        rdbmsService.getMessageSubscriptionReader().findOne(messageSubscriptionRecord.getKey());
+    assertThat(messageSubscription).isPresent();
+    assertThat(messageSubscription.get().messageSubscriptionType())
+        .isEqualTo(MessageSubscriptionType.DELETED);
   }
 
   @Test
