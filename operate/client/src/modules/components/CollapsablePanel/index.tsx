@@ -56,7 +56,6 @@ const CollapsablePanel = forwardRef<HTMLDivElement, Props>(
       <Collapsable
         {...props}
         aria-label={label}
-        title={label}
         $isCollapsed={isCollapsed}
         $panelPosition={panelPosition}
         $isOverlay={isOverlay}
