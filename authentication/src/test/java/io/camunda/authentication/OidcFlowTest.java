@@ -52,6 +52,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
       "camunda.security.authentication.oidc.client-id=" + OidcFlowTest.CLIENT_ID,
       "camunda.security.authentication.oidc.client-secret=" + OidcFlowTest.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
+      "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       // uncomment to debug the filter chain
       //      "logging.level.org.springframework.security=TRACE",
     })
@@ -193,7 +194,9 @@ class OidcFlowTest {
               keycloak.getAuthServerUrl() + "/realms/" + REALM + "/protocol/openid-connect/auth")
           .contains("client_id=" + CLIENT_ID)
           .contains("response_type=code")
-          .contains("scope=openid%20profile");
+          .contains("scope=openid%20profile")
+          .contains(
+              "resource=https://api.example.com/app1/&resource=https://api.example.com/app2/");
     }
 
     @Test

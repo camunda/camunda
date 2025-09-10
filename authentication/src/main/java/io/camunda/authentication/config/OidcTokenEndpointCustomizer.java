@@ -24,7 +24,10 @@ import org.springframework.security.config.annotation.web.configurers.oauth2.cli
 import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
 import org.springframework.security.oauth2.client.endpoint.OAuth2AuthorizationCodeGrantRequest;
 import org.springframework.security.oauth2.client.endpoint.RestClientAuthorizationCodeTokenResponseClient;
+import org.springframework.security.oauth2.core.endpoint.OAuth2ParameterNames;
 import org.springframework.security.oauth2.jose.jws.SignatureAlgorithm;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 
 public class OidcTokenEndpointCustomizer
     implements Customizer<OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig> {
@@ -37,13 +40,19 @@ public class OidcTokenEndpointCustomizer
 
   @Override
   public void customize(final OAuth2LoginConfigurer<HttpSecurity>.TokenEndpointConfig config) {
-    if (oidcConfig.isClientAuthenticationPrivateKeyJwt()) {
-      config.accessTokenResponseClient(createPrivateKeyJwtTokenResponseClient());
-    }
+    final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient =
+        new RestClientAuthorizationCodeTokenResponseClient();
+
+    addResourceParameter(tokenResponseClient);
+
     // fallback is Spring default client_secret_basic
+    if (oidcConfig.isClientAuthenticationPrivateKeyJwt()) {
+      config.accessTokenResponseClient(createPrivateKeyJwtTokenResponseClient(tokenResponseClient));
+    }
   }
 
-  private RestClientAuthorizationCodeTokenResponseClient createPrivateKeyJwtTokenResponseClient() {
+  private RestClientAuthorizationCodeTokenResponseClient createPrivateKeyJwtTokenResponseClient(
+      final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient) {
     final var jwk = resolveJwk();
     final var converter =
         new NimbusJwtClientAuthenticationParametersConverter<OAuth2AuthorizationCodeGrantRequest>(
@@ -51,10 +60,21 @@ public class OidcTokenEndpointCustomizer
     converter.setJwtClientAssertionCustomizer(
         ctx -> ctx.getHeaders().algorithm(SignatureAlgorithm.RS256));
 
-    final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient =
-        new RestClientAuthorizationCodeTokenResponseClient();
     tokenResponseClient.addParametersConverter(converter);
     return tokenResponseClient;
+  }
+
+  private void addResourceParameter(
+      final RestClientAuthorizationCodeTokenResponseClient tokenResponseClient) {
+    tokenResponseClient.addParametersConverter(
+        request -> {
+          if (oidcConfig.getResource() != null && !oidcConfig.getResource().isEmpty()) {
+            final MultiValueMap<String, String> parametersToAdd = new LinkedMultiValueMap<>();
+            parametersToAdd.addAll(OAuth2ParameterNames.RESOURCE, oidcConfig.getResource());
+            return parametersToAdd;
+          }
+          return null;
+        });
   }
 
   private JWK resolveJwk() {

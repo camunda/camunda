@@ -63,6 +63,7 @@ import org.springframework.web.util.UriComponentsBuilder;
       "camunda.security.authentication.oidc.assertionKeystore.password=password",
       "camunda.security.authentication.oidc.assertionKeystore.keyAlias=camunda-standalone",
       "camunda.security.authentication.oidc.assertionKeystore.keyPassword=password",
+      "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       // essential for debugging the flow
       //      "logging.level.org.springframework.security=TRACE",
     })
@@ -165,6 +166,9 @@ class OidcPrivateKeyJwtFlowTest {
             .withRequestBody(matching(".*grant_type=authorization_code.*"))
             .withRequestBody(matching(".*code=test_authorization_code.*"))
             .withRequestBody(matching(".*client_id=" + CLIENT_ID + ".*"))
+            .withRequestBody(
+                matching(
+                    ".*resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F&resource=https%3A%2F%2Fapi.example.com%2Fapp2%2F.*"))
             .withRequestBody(
                 matching(
                     ".*client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer.*"))
