@@ -60,7 +60,7 @@ public class TenantSpecificFilterIT {
   }
 
   @Test
-  public void shouldFindTenantWithChildMember() {
+  public void shouldFindTenantWithChildMemberWithMemberIdsByType() {
     createAndSaveRandomTenants(rdbmsWriter, b -> b);
     final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
     addGroupToTenant(tenant.tenantId(), "group-1");
@@ -72,6 +72,28 @@ public class TenantSpecificFilterIT {
         tenantReader.search(
             new TenantQuery(
                 TenantFilter.of(b -> b.memberIdsByType(Map.of(EntityType.USER, Set.of("user-1")))),
+                TenantSort.of(b -> b),
+                SearchQueryPage.of(b -> b)));
+
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertThat(searchResult.items().getFirst().key()).isEqualTo(tenant.tenantKey());
+  }
+
+  @Test
+  public void shouldFindTenantWithChildMemberWithChildMemberTypeAndId() {
+    createAndSaveRandomTenants(rdbmsWriter, b -> b);
+    final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
+    addGroupToTenant(tenant.tenantId(), "group-1");
+    addGroupToTenant(tenant.tenantId(), "group-2");
+    addUserToTenant(tenant.tenantId(), "user-1");
+    addUserToTenant(tenant.tenantId(), "user-2");
+
+    final var searchResult =
+        tenantReader.search(
+            new TenantQuery(
+                TenantFilter.of(
+                    b -> b.childMemberType(EntityType.USER).memberIds(Set.of("user-1"))),
                 TenantSort.of(b -> b),
                 SearchQueryPage.of(b -> b)));
 
