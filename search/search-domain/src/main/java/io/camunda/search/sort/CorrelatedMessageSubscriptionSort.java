@@ -11,21 +11,21 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record CorrelatedMessageSort(List<FieldSorting> orderings) implements SortOption {
+public record CorrelatedMessageSubscriptionSort(List<FieldSorting> orderings) implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
     return orderings;
   }
 
-  public static CorrelatedMessageSort of(
-      final Function<CorrelatedMessageSort.Builder, ObjectBuilder<CorrelatedMessageSort>> fn) {
+  public static CorrelatedMessageSubscriptionSort of(
+      final Function<CorrelatedMessageSubscriptionSort.Builder, ObjectBuilder<CorrelatedMessageSubscriptionSort>> fn) {
     return SortOptionBuilders.correlatedMessage(fn);
   }
 
   public static final class Builder
-      extends SortOption.AbstractBuilder<CorrelatedMessageSort.Builder>
-      implements ObjectBuilder<CorrelatedMessageSort> {
+      extends SortOption.AbstractBuilder<CorrelatedMessageSubscriptionSort.Builder>
+      implements ObjectBuilder<CorrelatedMessageSubscriptionSort> {
 
     public Builder correlationKey() {
       currentOrdering = new FieldSorting("correlationKey", null);
@@ -88,13 +88,13 @@ public record CorrelatedMessageSort(List<FieldSorting> orderings) implements Sor
     }
 
     @Override
-    protected CorrelatedMessageSort.Builder self() {
+    protected CorrelatedMessageSubscriptionSort.Builder self() {
       return this;
     }
 
     @Override
-    public CorrelatedMessageSort build() {
-      return new CorrelatedMessageSort(orderings);
+    public CorrelatedMessageSubscriptionSort build() {
+      return new CorrelatedMessageSubscriptionSort(orderings);
     }
   }
 }

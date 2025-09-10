@@ -7,13 +7,13 @@
  */
 package io.camunda.search.clients;
 
-import io.camunda.search.entities.CorrelatedMessageEntity;
-import io.camunda.search.query.CorrelatedMessageQuery;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 
-public interface CorrelatedMessageSearchClient {
-  SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessages(CorrelatedMessageQuery query);
+public interface CorrelatedMessageSubscriptionSearchClient {
+  SearchQueryResult<CorrelatedMessageSubscriptionEntity> searchCorrelatedMessageSubscriptions(CorrelatedMessageSubscriptionQuery query);
 
-  CorrelatedMessageSearchClient withSecurityContext(SecurityContext securityContext);
+  CorrelatedMessageSubscriptionSearchClient withSecurityContext(SecurityContext securityContext);
 }

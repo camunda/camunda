@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record CorrelatedMessageEntity(
+public record CorrelatedMessageSubscriptionEntity(
     String correlationKey,
     OffsetDateTime correlationTime,
     String flowNodeId,
@@ -103,8 +103,8 @@ public record CorrelatedMessageEntity(
       return this;
     }
 
-    public CorrelatedMessageEntity build() {
-      return new CorrelatedMessageEntity(
+    public CorrelatedMessageSubscriptionEntity build() {
+      return new CorrelatedMessageSubscriptionEntity(
           correlationKey,
           correlationTime,
           flowNodeId,

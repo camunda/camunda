@@ -17,7 +17,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public record CorrelatedMessageFilter(
+public record CorrelatedMessageSubscriptionFilter(
     List<Operation<String>> correlationKeyOperations,
     List<Operation<OffsetDateTime>> correlationTimeOperations,
     List<Operation<String>> flowNodeIdOperations,
@@ -32,9 +32,9 @@ public record CorrelatedMessageFilter(
     List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
-  public static final CorrelatedMessageFilter EMPTY = new CorrelatedMessageFilter.Builder().build();
+  public static final CorrelatedMessageSubscriptionFilter EMPTY = new CorrelatedMessageSubscriptionFilter.Builder().build();
 
-  public static final class Builder implements ObjectBuilder<CorrelatedMessageFilter> {
+  public static final class Builder implements ObjectBuilder<CorrelatedMessageSubscriptionFilter> {
     private List<Operation<String>> correlationKeyOperations;
     private List<Operation<OffsetDateTime>> correlationTimeOperations;
     private List<Operation<String>> flowNodeIdOperations;
@@ -229,8 +229,8 @@ public record CorrelatedMessageFilter(
     }
 
     @Override
-    public CorrelatedMessageFilter build() {
-      return new CorrelatedMessageFilter(
+    public CorrelatedMessageSubscriptionFilter build() {
+      return new CorrelatedMessageSubscriptionFilter(
           Objects.requireNonNullElse(correlationKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(correlationTimeOperations, Collections.emptyList()),
           Objects.requireNonNullElse(flowNodeIdOperations, Collections.emptyList()),
