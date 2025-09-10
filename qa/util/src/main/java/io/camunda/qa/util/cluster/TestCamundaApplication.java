@@ -52,6 +52,7 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.context.ApplicationListener;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -203,6 +204,12 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     withAuthenticatedAccess();
     withProperty("camunda.security.multiTenancy.checksEnabled", false);
     return withSecurityConfig(cfg -> cfg.getMultiTenancy().setChecksEnabled(false));
+  }
+
+  public TestCamundaApplication withApplicationEventListener(
+      final String qualifier, final ApplicationListener<?> listener) {
+    withBean(qualifier, listener, ApplicationListener.class);
+    return this;
   }
 
   @Override

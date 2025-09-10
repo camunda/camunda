@@ -8,6 +8,7 @@
 package io.camunda.it.migration.util;
 
 import io.camunda.application.Profile;
+import io.camunda.application.commons.migration.MigrationFinishedEvent;
 import io.camunda.client.CamundaClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
@@ -34,6 +35,8 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.CloseHelper;
+import org.jetbrains.annotations.NotNull;
+import org.springframework.context.ApplicationListener;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaMigrator extends ApiCallable implements AutoCloseable {
@@ -53,6 +56,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private TestRestOperateClient operateClient;
   private DocumentBasedSearchClient searchClients;
   private final DatabaseType databaseType;
+  private MigrationCompletedEventListener migrationCompletedEventListener;
 
   public CamundaMigrator(
       final String indexPrefix,
@@ -130,8 +134,11 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
     camundaContainer.close();
     extractVolume();
+    migrationCompletedEventListener = new MigrationCompletedEventListener();
     camunda =
         new TestCamundaApplication()
+            .withApplicationEventListener(
+                "migration-completed-event-listener", migrationCompletedEventListener)
             .withBasicAuth()
             .withAuthenticatedAccess()
             .withBrokerConfig(
@@ -308,5 +315,21 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
   public boolean isElasticsearch() {
     return databaseType.equals(DatabaseType.ES);
+  }
+
+  public boolean isMigrationCompleted() {
+    return migrationCompletedEventListener != null
+        && migrationCompletedEventListener.migrationCompleted;
+  }
+
+  public static class MigrationCompletedEventListener
+      implements ApplicationListener<MigrationFinishedEvent> {
+
+    boolean migrationCompleted = false;
+
+    @Override
+    public void onApplicationEvent(final @NotNull MigrationFinishedEvent event) {
+      migrationCompleted = true;
+    }
   }
 }
