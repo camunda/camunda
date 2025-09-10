@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.gateway.rest.config;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import io.camunda.zeebe.gateway.protocol.rest.BasicStringFilterProperty;
@@ -84,6 +85,8 @@ public class JacksonConfig {
   public ObjectMapper objectMapper() {
     final var builder = Jackson2ObjectMapperBuilder.json();
     gatewayRestObjectMapperCustomizer().accept(builder);
-    return builder.build();
+    final var mapper = builder.build();
+    mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, true);
+    return mapper;
   }
 }
