@@ -46,7 +46,7 @@ public class TenantMemberIT {
 
   @Autowired private RdbmsService rdbmsService;
 
-  @Autowired private TenantMemberDbReader tenantMemberDbReaderr;
+  @Autowired private TenantMemberDbReader tenantMemberDbReader;
 
   private RdbmsWriter rdbmsWriter;
 
@@ -63,7 +63,7 @@ public class TenantMemberIT {
     addUserToTenant(tenant.tenantId(), "user-2");
 
     final var searchResult =
-        tenantMemberDbReaderr.search(
+        tenantMemberDbReader.search(
             new TenantQuery(
                 TenantFilter.of(b -> b.memberType(EntityType.USER).joinParentId(tenant.tenantId())),
                 TenantSort.of(b -> b),
