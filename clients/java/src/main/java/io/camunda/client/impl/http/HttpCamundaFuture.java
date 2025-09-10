@@ -83,6 +83,8 @@ public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
     final Throwable cause = e.getCause();
     if (cause instanceof ProblemException) {
       throw (ProblemException) cause;
+    } else if (cause instanceof ClientException) {
+      throw (ClientException) cause;
     } else {
       throw new ClientException(cause);
     }
