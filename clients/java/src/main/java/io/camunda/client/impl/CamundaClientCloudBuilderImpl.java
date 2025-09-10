@@ -353,7 +353,11 @@ public class CamundaClientCloudBuilderImpl
 
       if (AddressUtil.isPlaintextConnection(innerBuilder.getGrpcAddress())
           || AddressUtil.isPlaintextConnection(innerBuilder.getRestAddress())) {
-        Loggers.LOGGER.debug("Expected a secured protocol {} for gRPC and REST, but got {} and {}.", AddressUtil.ENCRYPTED_SCHEMES, innerBuilder.getGrpcAddress(), innerBuilder.getRestAddress());
+        Loggers.LOGGER.debug(
+            "Expected a secured protocol {} for gRPC and REST, but got {} and {}.",
+            AddressUtil.ENCRYPTED_SCHEMES,
+            innerBuilder.getGrpcAddress(),
+            innerBuilder.getRestAddress());
       }
       return builder
           .audience(String.format("%s.%s", ZEEBE_DOMAIN_COMPONENT, domain))
