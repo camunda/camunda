@@ -19,6 +19,7 @@ import static org.springframework.core.annotation.AnnotationUtils.findAnnotation
 
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.bean.MethodInfoBuilder;
 import io.camunda.client.bean.ParameterInfo;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
@@ -33,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
-public class MethodInfoImpl implements MethodInfo, MethodInfo.Builder {
+public class MethodInfoImpl implements MethodInfo, MethodInfoBuilder {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -131,13 +132,13 @@ public class MethodInfoImpl implements MethodInfo, MethodInfo.Builder {
   }
 
   @Override
-  public Builder beanInfo(final BeanInfo beanInfo) {
+  public MethodInfoBuilder beanInfo(final BeanInfo beanInfo) {
     this.beanInfo = beanInfo;
     return this;
   }
 
   @Override
-  public Builder method(final Method method) {
+  public MethodInfoBuilder method(final Method method) {
     this.method = method;
     return this;
   }

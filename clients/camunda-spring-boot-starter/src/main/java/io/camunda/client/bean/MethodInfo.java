@@ -15,7 +15,6 @@
  */
 package io.camunda.client.bean;
 
-import io.camunda.client.spring.bean.MethodInfoImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.List;
@@ -42,15 +41,7 @@ public interface MethodInfo {
     return getMethod().getReturnType();
   }
 
-  static Builder builder() {
-    return new MethodInfoImpl();
-  }
-
-  interface Builder {
-    MethodInfo build();
-
-    Builder beanInfo(BeanInfo beanInfo);
-
-    Builder method(Method method);
+  static MethodInfoBuilder builder() {
+    return BuilderUtil.getBuilder(MethodInfoBuilder.class);
   }
 }

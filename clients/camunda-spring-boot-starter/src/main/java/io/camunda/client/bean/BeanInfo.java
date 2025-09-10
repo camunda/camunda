@@ -15,7 +15,6 @@
  */
 package io.camunda.client.bean;
 
-import io.camunda.client.spring.bean.BeanInfoImpl;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Optional;
@@ -40,21 +39,7 @@ public interface BeanInfo {
     return MethodInfo.builder().beanInfo(this).method(method).build();
   }
 
-  static Builder builder() {
-    return new BeanInfoImpl();
-  }
-
-  interface Builder {
-    Builder beanName(String beanName);
-
-    Builder beanSupplier(Supplier<Object> beanSupplier);
-
-    default Builder bean(final Object bean) {
-      return beanSupplier(() -> bean);
-    }
-
-    Builder targetClass(Class<?> targetClass);
-
-    BeanInfo build();
+  static BeanInfoBuilder builder() {
+    return BuilderUtil.getBuilder(BeanInfoBuilder.class);
   }
 }
