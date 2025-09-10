@@ -11,12 +11,12 @@ import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveRandom
 import static io.camunda.it.rdbms.db.fixtures.TenantFixtures.createAndSaveTenant;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.TenantMemberDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
-import io.camunda.it.rdbms.db.util.RdbmsTestConfiguration;
+import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
+import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -25,45 +25,30 @@ import io.camunda.search.sort.TenantSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
+import org.junit.jupiter.api.TestTemplate;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
-@DataJdbcTest
-@ContextConfiguration(classes = {RdbmsTestConfiguration.class, RdbmsConfiguration.class})
-@AutoConfigurationPackage
-@TestPropertySource(
-    properties = {"spring.liquibase.enabled=false", "camunda.data.secondary-storage.type=rdbms"})
+@ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class TenantMemberIT {
 
+  public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
 
-  @Autowired private RdbmsService rdbmsService;
+  @TestTemplate
+  public void shouldFindTenantMember(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
+    final TenantMemberDbReader reader = rdbmsService.getTenantMemberReader();
 
-  @Autowired private TenantMemberDbReader tenantMemberDbReader;
-
-  private RdbmsWriter rdbmsWriter;
-
-  @BeforeEach
-  public void beforeAll() {
-    rdbmsWriter = rdbmsService.createWriter(0L);
-  }
-
-  @Test
-  public void shouldFindTenantMember() {
     createAndSaveRandomTenants(rdbmsWriter, b -> b);
     final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
-    addUserToTenant(tenant.tenantId(), "user-1");
-    addUserToTenant(tenant.tenantId(), "user-2");
+    addUserToTenant(rdbmsWriter, tenant.tenantId(), "user-1");
+    addUserToTenant(rdbmsWriter, tenant.tenantId(), "user-2");
 
     final var searchResult =
-        tenantMemberDbReader.search(
+        reader.search(
             new TenantQuery(
                 TenantFilter.of(b -> b.memberType(EntityType.USER).joinParentId(tenant.tenantId())),
                 TenantSort.of(b -> b),
@@ -76,7 +61,8 @@ public class TenantMemberIT {
         .contains("user-1", "user-2");
   }
 
-  private void addUserToTenant(final String tenantId, final String entityId) {
+  private void addUserToTenant(
+      final RdbmsWriter rdbmsWriter, final String tenantId, final String entityId) {
     rdbmsWriter.getTenantWriter().addMember(new TenantMemberDbModel(tenantId, entityId, "USER"));
     rdbmsWriter.flush();
   }
