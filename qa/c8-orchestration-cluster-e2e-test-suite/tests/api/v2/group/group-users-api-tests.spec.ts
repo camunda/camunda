@@ -96,6 +96,18 @@ test.describe('Group Users API Tests', () => {
       const expectedBody = {username: state['username'] as string};
       const requiredFields = Object.keys(expectedBody);
 
+<<<<<<< HEAD
+=======
+  test('Search Users For Group', async ({request}) => {
+    const groupId: string = state['groupId2'] as string;
+    const expectedBody = CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP(
+      'groupId2',
+      state,
+    );
+    const requiredFields = Object.keys(expectedBody);
+
+    await expect(async () => {
+>>>>>>> 4fa4510d (test: v2 role endpoints implemented)
       const res = await request.post(
         buildUrl('/groups/{groupId}/users/search', stateParams),
         {headers: jsonHeaders()},

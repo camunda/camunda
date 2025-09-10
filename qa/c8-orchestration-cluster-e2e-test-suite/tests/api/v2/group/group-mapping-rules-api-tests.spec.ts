@@ -16,12 +16,25 @@ import {
   paginatedResponseFields,
 } from '../../../../utils/http';
 import {
+<<<<<<< HEAD
   CREATE_NEW_GROUP,
   groupRequiredFields,
   mappingRuleRequiredFields,
 } from '../../../../utils/beans/request-beans';
 import {sleep} from '../../../../utils/sleep';
 import {CREATE_NEW_MAPPING_RULE} from '../../../../utils/beans/request-beans';
+=======
+  MAPPING_RULE_EXPECTED_BODY_USING_STATE,
+  mappingRuleRequiredFields,
+} from '../../../../utils/beans/requestBeans';
+import {
+  assignMappingToGroup,
+  createGroupAndStoreResponseFields,
+  createMappingRule,
+  mappingRuleIdFromState,
+} from '../../../../utils/requestHelpers';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+>>>>>>> 4fa4510d (test: v2 role endpoints implemented)
 
 test.describe('Group Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -64,6 +77,7 @@ test.describe('Group Mapping Rules API Tests', () => {
       expect(res.status()).toBe(204);
     });
 
+<<<<<<< HEAD
     await test.step('Search Mapping Rules For Group', async () => {
       await sleep(10000);
       const p = {groupId: state['groupId'] as string};
@@ -74,6 +88,35 @@ test.describe('Group Mapping Rules API Tests', () => {
         mappingRuleId: state['mappingRuleId'] as string,
       };
 
+=======
+  test('Assign Already Added Mapping Rule To Group Conflict', async ({
+    request,
+  }) => {
+    const stateParams: Record<string, string> = {
+      groupId: state['groupId2'] as string,
+      mappingRuleId: mappingRuleIdFromState('groupId2', state) as string,
+    };
+
+    await expect(async () => {
+      const res = await request.put(
+        buildUrl(
+          '/groups/{groupId}/mapping-rules/{mappingRuleId}',
+          stateParams,
+        ),
+        {
+          headers: jsonHeaders(),
+        },
+      );
+
+      await assertConflictRequest(res);
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Mapping Rules For Group', async ({request}) => {
+    const groupId: string = state['groupId2'] as string;
+
+    await expect(async () => {
+>>>>>>> 4fa4510d (test: v2 role endpoints implemented)
       const res = await request.post(
         buildUrl('/groups/{groupId}/mapping-rules/search', p),
         {
@@ -88,7 +131,7 @@ test.describe('Group Mapping Rules API Tests', () => {
       assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
         json.items[0],
-        expectedBody,
+        MAPPING_RULE_EXPECTED_BODY_USING_STATE('groupId2', state),
         mappingRuleRequiredFields,
       );
     });
@@ -123,8 +166,13 @@ test.describe('Group Mapping Rules API Tests', () => {
 
     await test.step('Unassign Mapping Rule From Group', async () => {
       const p = {
+<<<<<<< HEAD
         groupId: state['groupId'] as string,
         mappingRuleId: state['mappingRuleId'] as string,
+=======
+        groupId: state['groupId3'] as string,
+        mappingRuleId: mappingRuleIdFromState('groupId3', state) as string,
+>>>>>>> 4fa4510d (test: v2 role endpoints implemented)
       };
       const res = await request.delete(
         buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', p),
@@ -153,6 +201,7 @@ test.describe('Group Mapping Rules API Tests', () => {
       expect(json.items.length).toBe(0);
     });
 
+<<<<<<< HEAD
     await test.step('Unassign Mapping Rule From Group Unauthorized', async () => {
       const p = {
         groupId: state['groupId'] as string,
@@ -180,5 +229,36 @@ test.describe('Group Mapping Rules API Tests', () => {
       );
       expect(res.status()).toBe(404);
     });
+=======
+  test('Unassign Mapping Rule From Group Unauthorized', async ({request}) => {
+    const p = {
+      groupId: state['groupId2'] as string,
+      mappingRuleId: mappingRuleIdFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', p),
+      {
+        headers: {},
+      },
+    );
+    await assertUnauthorizedRequest(res);
+  });
+
+  test('Unassign Mapping Rule From Group Not Found', async ({request}) => {
+    const p = {
+      groupId: 'invalidGroupId',
+      mappingRuleId: mappingRuleIdFromState('groupId2', state) as string,
+    };
+    const res = await request.delete(
+      buildUrl('/groups/{groupId}/mapping-rules/{mappingRuleId}', p),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `Command 'REMOVE_ENTITY' rejected with code 'NOT_FOUND'`,
+    );
+>>>>>>> 4fa4510d (test: v2 role endpoints implemented)
   });
 });
