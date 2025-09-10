@@ -17,16 +17,34 @@ package io.camunda.client.bean;
 
 import java.util.function.Supplier;
 
-public interface BeanInfoBuilder {
-  BeanInfoBuilder beanName(String beanName);
+public final class BeanInfoBuilder {
+  private String beanName;
+  private Supplier<Object> beanSupplier;
+  private Class<?> targetClass;
 
-  BeanInfoBuilder beanSupplier(Supplier<Object> beanSupplier);
+  public BeanInfoBuilder beanName(final String beanName) {
+    this.beanName = beanName;
+    return this;
+  }
 
-  default BeanInfoBuilder bean(final Object bean) {
+  public BeanInfoBuilder beanSupplier(final Supplier<Object> beanSupplier) {
+    this.beanSupplier = beanSupplier;
+    return this;
+  }
+
+  public BeanInfoBuilder bean(final Object bean) {
     return beanSupplier(() -> bean);
   }
 
-  BeanInfoBuilder targetClass(Class<?> targetClass);
+  public BeanInfoBuilder targetClass(final Class<?> targetClass) {
+    this.targetClass = targetClass;
+    return this;
+  }
 
-  BeanInfo build();
+  public BeanInfo build() {
+    assert beanName != null : "beanName is null";
+    assert beanSupplier != null : "beanSupplier is null";
+
+    return InfoFactory.instance().beanInfo(beanName, beanSupplier, targetClass);
+  }
 }

@@ -42,6 +42,6 @@ public interface MethodInfo {
   }
 
   static MethodInfoBuilder builder() {
-    return BuilderUtil.getBuilder(MethodInfoBuilder.class);
+    return new MethodInfoBuilder();
   }
 }

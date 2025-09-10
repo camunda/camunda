@@ -17,10 +17,23 @@ package io.camunda.client.bean;
 
 import java.lang.reflect.Method;
 
-public interface MethodInfoBuilder {
-  MethodInfo build();
+public final class MethodInfoBuilder {
+  private BeanInfo beanInfo;
+  private Method method;
 
-  MethodInfoBuilder beanInfo(BeanInfo beanInfo);
+  public MethodInfoBuilder beanInfo(final BeanInfo beanInfo) {
+    this.beanInfo = beanInfo;
+    return this;
+  }
 
-  MethodInfoBuilder method(Method method);
+  public MethodInfoBuilder method(final Method method) {
+    this.method = method;
+    return this;
+  }
+
+  public MethodInfo build() {
+    assert method != null : "method is null";
+    assert beanInfo != null : "beanInfo is null";
+    return InfoFactory.instance().methodInfo(beanInfo, method);
+  }
 }
