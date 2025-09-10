@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.handlers.batchoperation;
 
+import static io.camunda.zeebe.protocol.record.intent.BatchOperationIntent.*;
+
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
@@ -16,7 +18,6 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity.BatchOp
 import io.camunda.webapps.schema.entities.operation.BatchOperationErrorEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.BatchOperationErrorValue;
@@ -25,6 +26,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Handles the lifecycle management of batch operations by updating the {@link BatchOperationEntity}
@@ -34,14 +37,11 @@ import java.util.Set;
  */
 public class BatchOperationLifecycleManagementHandler
     implements ExportHandler<BatchOperationEntity, BatchOperationLifecycleManagementRecordValue> {
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(BatchOperationLifecycleManagementHandler.class);
 
   private static final Set<Intent> EXPORTABLE_INTENTS =
-      Set.of(
-          BatchOperationIntent.CANCELED,
-          BatchOperationIntent.SUSPENDED,
-          BatchOperationIntent.RESUMED,
-          BatchOperationIntent.COMPLETED,
-          BatchOperationIntent.FAILED);
+      Set.of(CANCELED, SUSPENDED, RESUMED, COMPLETED, FAILED);
   private final String indexName;
 
   public BatchOperationLifecycleManagementHandler(final String indexName) {
@@ -78,31 +78,36 @@ public class BatchOperationLifecycleManagementHandler
   public void updateEntity(
       final Record<BatchOperationLifecycleManagementRecordValue> record,
       final BatchOperationEntity entity) {
-    if (record.getIntent().equals(BatchOperationIntent.CANCELED)) {
-      // set the endDate because the BatchOperationUpdateTask does not need to run here
-      entity
-          .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
-          .setState(BatchOperationState.CANCELED);
-    } else if (record.getIntent().equals(BatchOperationIntent.SUSPENDED)) {
-      entity.setEndDate(null).setState(BatchOperationState.SUSPENDED);
-    } else if (record.getIntent().equals(BatchOperationIntent.RESUMED)) {
-      entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
-    } else if (record.getIntent().equals(BatchOperationIntent.COMPLETED)) {
-      final var value = record.getValue();
-      // set the endDate to null so that the BatchOperationUpdateTask does run again
-      entity.setEndDate(null);
-      if (value.getErrors().isEmpty()) {
-        entity.setState(BatchOperationState.COMPLETED);
-      } else {
-        entity.setErrors(mapErrors(value.getErrors()));
-        entity.setState(BatchOperationState.PARTIALLY_COMPLETED);
+    switch (record.getIntent()) {
+      case CANCELED ->
+          // set the endDate because the BatchOperationUpdateTask does not need to run here
+          entity
+              .setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+              .setState(BatchOperationState.CANCELED);
+      case SUSPENDED -> entity.setEndDate(null).setState(BatchOperationState.SUSPENDED);
+      case RESUMED -> entity.setEndDate(null).setState(BatchOperationState.ACTIVE);
+      case COMPLETED -> {
+        final var value = record.getValue();
+        // set the endDate to null so that the BatchOperationUpdateTask does run again
+        entity.setEndDate(null);
+        if (value.getErrors().isEmpty()) {
+          entity.setState(BatchOperationState.COMPLETED);
+        } else {
+          entity.setErrors(mapErrors(value.getErrors()));
+          entity.setState(BatchOperationState.PARTIALLY_COMPLETED);
+        }
       }
-    } else if (record.getIntent().equals(BatchOperationIntent.FAILED)) {
-      final var value = record.getValue();
-      // set the endDate to null so that the BatchOperationUpdateTask does run again
-      entity.setEndDate(null);
-      entity.setErrors(mapErrors(value.getErrors()));
-      entity.setState(BatchOperationState.FAILED);
+      case FAILED -> {
+        final var value = record.getValue();
+        // set the endDate to null so that the BatchOperationUpdateTask does run again
+        entity.setEndDate(null);
+        entity.setErrors(mapErrors(value.getErrors()));
+        entity.setState(BatchOperationState.FAILED);
+      }
+      default -> // should never happen because of handlesRecord()
+          LOGGER.warn(
+              "Trying to export an un-supported batch operation lifecycle management intent: {}",
+              record.getIntent());
     }
   }
 
