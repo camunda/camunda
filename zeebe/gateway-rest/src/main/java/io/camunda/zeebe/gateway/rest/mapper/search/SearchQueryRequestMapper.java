@@ -8,6 +8,7 @@
 package io.camunda.zeebe.gateway.rest.mapper.search;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RequestMapper.getResult;
+import static io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryFilterMapper.toProcessInstanceFilter;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.*;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateDate;
@@ -142,7 +143,7 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::processInstance,
             SearchQuerySortRequestMapper::applyProcessInstanceSortField);
-    final var filter = SearchQueryFilterMapper.toProcessInstanceFilter(request.getFilter());
+    final var filter = toProcessInstanceFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::processInstanceSearchQuery);
   }
 
@@ -582,6 +583,26 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper::applyCorrelatedMessageSortField);
     final var filter = SearchQueryFilterMapper.toCorrelatedMessageFilter(request.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::correlatedMessageSearchQuery);
+  }
+
+  public static Either<
+          ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery>
+      toProcessDefinitionInstanceStatisticsQuery(
+          final ProcessDefinitionInstanceStatisticsQuery request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.processDefinitionInstanceStatisticsQuery().build());
+    }
+
+    final var page = toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromProcessDefinitionInstanceStatisticsQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::processDefinitionInstanceStatistics,
+            SearchQuerySortRequestMapper::applyProcessDefinitionInstanceStatisticsSortField);
+    final var filter = toProcessInstanceFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::processDefinitionInstanceStatisticsQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
