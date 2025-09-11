@@ -265,7 +265,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-
+##
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
   # - With dryRun=true: Skips creating the actual GitHub release (only prepares artifacts and changelog)
