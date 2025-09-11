@@ -81,7 +81,7 @@ public class TenantSpecificFilterIT {
   }
 
   @Test
-  public void shouldFindTenantWithChildMemberWithChildMemberTypeAndId() {
+  public void shouldFindTenantWithChildMemberWithChildMemberId() {
     createAndSaveRandomTenants(rdbmsWriter, b -> b);
     final var tenant = createAndSaveTenant(rdbmsWriter, b -> b);
     addGroupToTenant(tenant.tenantId(), "group-1");
