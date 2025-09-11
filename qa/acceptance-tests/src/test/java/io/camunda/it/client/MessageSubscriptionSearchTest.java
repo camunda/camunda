@@ -9,7 +9,6 @@ package io.camunda.it.client;
 
 import static io.camunda.it.util.TestHelper.deployResource;
 import static io.camunda.it.util.TestHelper.startProcessInstance;
-import static io.camunda.it.util.TestHelper.waitForCorrelatedMessages;
 import static io.camunda.it.util.TestHelper.waitForMessageSubscriptions;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
@@ -55,7 +54,8 @@ public class MessageSubscriptionSearchTest {
         .send()
         .join();
 
-    waitForCorrelatedMessages(camundaClient, 1);
+    waitForMessageSubscriptions(
+        camundaClient, f -> f.messageSubscriptionType(MessageSubscriptionType.CORRELATED), 1);
 
     orderedMessageSubscriptions =
         camundaClient
@@ -122,7 +122,9 @@ public class MessageSubscriptionSearchTest {
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
-    assertThat(searchResponse.items().getFirst().getMessageName()).isEqualTo("Message1");
+    assertThat(searchResponse.items().getFirst())
+        .extracting("messageName", "messageSubscriptionType")
+        .containsExactly("Message1", MessageSubscriptionType.CORRELATED);
   }
 
   @Test
