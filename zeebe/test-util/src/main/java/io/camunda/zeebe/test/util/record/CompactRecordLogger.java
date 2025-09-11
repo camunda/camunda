@@ -7,6 +7,41 @@
  */
 package io.camunda.zeebe.test.util.record;
 
+import static io.camunda.zeebe.protocol.record.ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
+import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
+import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
+import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
+import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
+import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
+import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_INSTRUCTION;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL;
+import static io.camunda.zeebe.protocol.record.ValueType.SIGNAL_SUBSCRIPTION;
+import static io.camunda.zeebe.protocol.record.ValueType.TIMER;
+import static io.camunda.zeebe.protocol.record.ValueType.USAGE_METRIC;
+import static io.camunda.zeebe.protocol.record.ValueType.USER_TASK;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE;
+import static io.camunda.zeebe.protocol.record.ValueType.VARIABLE_DOCUMENT;
+import static io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent.INPUT_COLLECTION_EVALUATED;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.ASSIGNMENT_DENIED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETE_TASK_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.COMPLETION_DENIED;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.DENY_TASK_LISTENER;
+import static io.camunda.zeebe.protocol.record.intent.UserTaskIntent.UPDATE_DENIED;
+import static io.camunda.zeebe.protocol.record.value.JobKind.EXECUTION_LISTENER;
+import static io.camunda.zeebe.protocol.record.value.JobKind.TASK_LISTENER;
 import static java.util.Comparator.comparing;
 import static java.util.Map.entry;
 import static java.util.Map.ofEntries;
@@ -110,49 +145,50 @@ public class CompactRecordLogger {
   // List rather than Map to preserve order
   private static final List<Entry<String, String>> ABBREVIATIONS =
       List.of(
-          entry("COMPLETE_TASK_LISTENER", "COMP_TL"),
-          entry("DENY_TASK_LISTENER", "DENY_TL"),
-          entry("TASK_LISTENER", "TL"),
-          entry("EXECUTION_LISTENER", "EL"),
-          entry("ASSIGNMENT_DENIED", "ASGN_DENIED"),
-          entry("COMPLETION_DENIED", "COMP_DENIED"),
-          entry("UPDATE_DENIED", "UPDT_DENIED"),
-          entry("SEQUENCE_FLOW_TAKEN", "SQ_FLW_TKN"),
-          entry("AD_HOC_SUB_PROCESS_INSTRUCTION", "AHSP_INST"),
-          entry("PROCESS_INSTANCE_CREATION", "CREA"),
-          entry("PROCESS_INSTANCE_MODIFICATION", "MOD"),
-          entry("PROCESS_INSTANCE", "PI"),
-          entry("RUNTIME_INSTRUCTION", "RI"),
-          entry("PROCESS", "PROC"),
-          entry("TIMER", "TIME"),
-          entry("MESSAGE", "MSG"),
-          entry("SUBSCRIPTION", "SUB"),
-          entry("SEQUENCE", "SEQ"),
-          entry("DEPLOYMENT_DISTRIBUTION", "DPLY_DSTR"),
-          entry("DEPLOYMENT", "DPLY"),
-          entry("VARIABLE", "VAR"),
-          entry("DOCUMENT", "DOC"),
-          entry("ELEMENT_", ""),
-          entry("_ELEMENT", ""),
-          entry("EVENT", "EVNT"),
-          entry("DECISION_REQUIREMENTS", "DRG"),
-          entry("EVALUATION", "EVAL"),
-          entry("SIGNAL_SUBSCRIPTION", "SIG_SUB"),
-          entry("SIGNAL", "SIG"),
-          entry("COMMAND_DISTRIBUTION", "DSTR"),
-          entry("USER_TASK", "UT"),
-          entry("ROLE", "RL"),
-          entry("GROUP", "GR"),
-          entry("MAPPING", "MAP"),
-          entry("ASYNC_REQUEST", "ASYNC"),
-          entry("MULTI_INSTANCE", "MI"),
-          entry("INPUT_COLLECTION_EVALUATED", "IN_COL_EVAL"),
-          entry("BATCH_OPERATION", "BO"),
-          entry("AUTHORIZATION", "AUTH"),
-          entry("ASYNC_REQUEST", "ASYNC"),
-          entry("COMPENSATION_SUB", "COMP_SUB"),
-          entry("USAGE_METRIC", "USG_MTRC"),
-          entry("CREATE_WITH_AWAITING_RESULT", "WITH_RESULT"));
+          entry(COMPLETE_TASK_LISTENER.name(), "COMP_TL"),
+          entry(DENY_TASK_LISTENER.name(), "DENY_TL"),
+          entry(TASK_LISTENER.name(), "TL"),
+          entry(COMPLETE_EXECUTION_LISTENER.name(), "COMP_EL"),
+          entry(EXECUTION_LISTENER.name(), "EL"),
+          entry(ASSIGNMENT_DENIED.name(), "ASGN_DENIED"),
+          entry(COMPLETION_DENIED.name(), "COMP_DENIED"),
+          entry(UPDATE_DENIED.name(), "UPDT_DENIED"),
+          entry(SEQUENCE_FLOW_TAKEN.name(), "SQ_FLW_TKN"),
+          entry(AD_HOC_SUB_PROCESS_INSTRUCTION.name(), "AHSP_INST"),
+          entry(PROCESS_INSTANCE_CREATION.name(), "CREA"),
+          entry(PROCESS_INSTANCE_MODIFICATION.name(), "MOD"),
+          entry(PROCESS_INSTANCE.name(), "PI"),
+          entry("PROCESS_INSTANCE", "PI"), // partial matches in ValueType and ProcessInstanceIntent
+          entry(RUNTIME_INSTRUCTION.name(), "RI"),
+          entry("PROCESS", "PROC"), // partial matches in ValueType
+          entry(TIMER.name(), "TIME"),
+          entry("MESSAGE", "MSG"), // partial matches in ValueType
+          entry("SUBSCRIPTION", "SUB"), // partial matches in ValueType
+          entry("SEQUENCE", "SEQ"), // partial matches in ProcessInstanceIntent
+          entry(DEPLOYMENT_DISTRIBUTION.name(), "DPLY_DSTR"),
+          entry(DEPLOYMENT.name(), "DPLY"),
+          entry(VARIABLE_DOCUMENT.name(), "VAR_DOC"),
+          entry(VARIABLE.name(), "VAR"),
+          entry("ELEMENT_", ""), // partial matches in ProcessInstanceIntent
+          entry("_ELEMENT", ""), // partial matches in ProcessInstanceIntent
+          entry("EVENT", "EVNT"), // partial matches in ValueType
+          entry(DECISION_REQUIREMENTS.name(), "DRG"),
+          entry(DECISION_EVALUATION.name(), "DECISION_EVAL"),
+          entry(SIGNAL_SUBSCRIPTION.name(), "SIG_SUB"),
+          entry(SIGNAL.name(), "SIG"),
+          entry(COMMAND_DISTRIBUTION.name(), "DSTR"),
+          entry(USER_TASK.name(), "UT"),
+          entry(ROLE.name(), "RL"),
+          entry(GROUP.name(), "GR"),
+          entry(MAPPING_RULE.name(), "MAP_RULE"),
+          entry(ASYNC_REQUEST.name(), "ASYNC"),
+          entry(MULTI_INSTANCE.name(), "MI"),
+          entry(INPUT_COLLECTION_EVALUATED.name(), "IN_COL_EVAL"),
+          entry("BATCH_OPERATION", "BO"), // partial matches in ValueType
+          entry(AUTHORIZATION.name(), "AUTH"),
+          entry(COMPENSATION_SUBSCRIPTION.name(), "COMP_SUB"),
+          entry(USAGE_METRIC.name(), "USG_MTRC"),
+          entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
