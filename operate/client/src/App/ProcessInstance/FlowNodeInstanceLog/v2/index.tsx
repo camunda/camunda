@@ -28,7 +28,6 @@ import {
   useInstanceExecutionHistory,
   useIsInstanceExecutionHistoryAvailable,
 } from 'modules/hooks/flowNodeInstance';
-import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const FlowNodeInstanceLog: React.FC = observer(() => {
   const instanceExecutionHistory = useInstanceExecutionHistory();
@@ -39,17 +38,14 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   } = flowNodeInstanceStore;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const {
-    isSuccess,
-    isError,
-    isPending,
-    error: processDefinitionError,
-  } = useProcessInstanceXml({
+  const {isSuccess, isError, isPending} = useProcessInstanceXml({
     processDefinitionKey,
   });
 
-  const isForbiddenError =
-    processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
+  //TODO use for Error message definition when endpoint migrated
+
+  // const isForbiddenError =
+  //   processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
 
   const LOADING_STATES = ['initial', 'first-fetch'];
 
@@ -87,18 +83,8 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
-            <ErrorMessage
-              message={
-                isForbiddenError
-                  ? 'Missing permissions to access Instance History'
-                  : 'Instance History could not be fetched'
-              }
-              additionalInfo={
-                isForbiddenError
-                  ? 'Please contact your organization owner or admin to give you the necessary permissions to access this instance history'
-                  : undefined
-              }
-            />
+            //TODO update the message with 403 related error when endpoint migrated
+            <ErrorMessage message="Instance History could not be fetched" />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
             <Skeleton />
