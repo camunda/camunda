@@ -297,10 +297,10 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.form).toContainText('Total: EUR 544.5');
 
     await taskDetailsPage.completeTaskButton.click();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
+      timeout: 60000,
+    });
 
-    // await expect(taskDetailsPage.taskCompletedBanner).toBeVisible({
-    //   timeout: 60000,
-    // });
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
     await expect(async () => {
