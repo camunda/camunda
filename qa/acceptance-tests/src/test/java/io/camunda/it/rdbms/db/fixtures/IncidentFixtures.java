@@ -21,6 +21,7 @@ public final class IncidentFixtures extends CommonFixtures {
 
   public static IncidentDbModel createRandomized(
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    final var errorMessage = "error-" + generateRandomString(20);
     final var builder =
         new IncidentDbModel.Builder()
             .incidentKey(nextKey())
@@ -32,7 +33,8 @@ public final class IncidentFixtures extends CommonFixtures {
             .flowNodeId("element-" + nextKey())
             .state(randomEnum(IncidentState.class))
             .errorType(randomEnum(ErrorType.class))
-            .errorMessage("error-" + generateRandomString(20))
+            .errorMessage(errorMessage)
+            .errorMessageHash(errorMessage.hashCode())
             .creationDate(NOW.plus(RANDOM.nextInt(), ChronoUnit.MILLIS))
             .tenantId("tenant-" + generateRandomString(20))
             .treePath("tree-" + generateRandomString(20));
