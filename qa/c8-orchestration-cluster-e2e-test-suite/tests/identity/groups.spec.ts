@@ -87,8 +87,16 @@ test.describe.serial('groups CRUD', () => {
 
     await waitForItemInList(page, item, {
       shouldBeVisible: false,
+      timeout: 60000,
       clickNext: true,
-      timeout: 30000,
+      emptyStateLocator: identityGroupsPage.emptyStateLocator,
+      onAfterReload: async () => {
+        await page.goto(relativizePath(Paths.groups()));
+        await Promise.race([
+          identityGroupsPage.groupsList.waitFor({timeout: 15000}),
+          identityGroupsPage.emptyStateLocator.waitFor({timeout: 15000}),
+        ]);
+      },
     });
   });
 });
