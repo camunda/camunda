@@ -236,6 +236,35 @@ public class BrokerBasedPropertiesOverride {
     // Set flush configuration
     final var flushConfig = new FlushConfig(raft.isFlushEnabled(), raft.getFlushDelay());
     override.getCluster().getRaft().setFlush(flushConfig);
+
+    override.getExperimental().setMaxAppendsPerFollower(raft.getMaxAppendsPerFollower());
+    override.getExperimental().setMaxAppendBatchSize(raft.getMaxAppendBatchSize());
+    override.getExperimental().getRaft().setRequestTimeout(raft.getRequestTimeout());
+    override
+        .getExperimental()
+        .getRaft()
+        .setSnapshotRequestTimeout(raft.getSnapshotRequestTimeout());
+    override.getExperimental().getRaft().setSnapshotChunkSize(raft.getSnapshotChunkSize());
+    override
+        .getExperimental()
+        .getRaft()
+        .setConfigurationChangeTimeout(raft.getConfigurationChangeTimeout());
+    override
+        .getExperimental()
+        .getRaft()
+        .setMaxQuorumResponseTimeout(raft.getMaxQuorumResponseTimeout());
+    override
+        .getExperimental()
+        .getRaft()
+        .setMinStepDownFailureCount(raft.getMinStepDownFailureCount());
+    override
+        .getExperimental()
+        .getRaft()
+        .setPreferSnapshotReplicationThreshold(raft.getPreferSnapshotReplicationThreshold());
+    override
+        .getExperimental()
+        .getRaft()
+        .setPreallocateSegmentFiles(raft.isPreallocateSegmentFiles());
   }
 
   private void populateFromClusterMetadata(final BrokerBasedProperties override) {
