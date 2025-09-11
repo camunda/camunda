@@ -43,10 +43,17 @@ public class MessageSubscriptionExportHandler
 
   @Override
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    if (record.getIntent() == ProcessMessageSubscriptionIntent.CREATED) {
-      messageSubscriptionWriter.create(map(record));
-    } else {
-      messageSubscriptionWriter.update(map(record));
+    switch (record.getIntent()) {
+      case ProcessMessageSubscriptionIntent.CREATED:
+        messageSubscriptionWriter.create(map(record));
+        break;
+      case ProcessMessageSubscriptionIntent.CORRELATED,
+      ProcessMessageSubscriptionIntent.DELETED,
+      ProcessMessageSubscriptionIntent.MIGRATED:
+        messageSubscriptionWriter.update(map(record));
+        break;
+      default:
+        // do nothing
     }
   }
 
