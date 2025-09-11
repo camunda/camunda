@@ -34,7 +34,7 @@ public class HttpSessionBasedAuthenticationHolderTest {
   void setup() {
     request = mock(HttpServletRequest.class);
     authenticationConfiguration = mock(AuthenticationConfiguration.class);
-    when(authenticationConfiguration.getAuthenticationRefreshInterval()).thenReturn("PT0.1S");
+    when(authenticationConfiguration.getAuthenticationRefreshInterval()).thenReturn("PT1S");
     holder = new HttpSessionBasedAuthenticationHolder(request, authenticationConfiguration);
   }
 
@@ -100,11 +100,11 @@ public class HttpSessionBasedAuthenticationHolderTest {
     // given
     final var authentication = mock(CamundaAuthentication.class);
     final var session = new MockHttpSession();
-
+    when(authenticationConfiguration.getAuthenticationRefreshInterval()).thenReturn("PT0.1S");
+    holder = new HttpSessionBasedAuthenticationHolder(request, authenticationConfiguration);
     when(request.getSession(eq(false))).thenReturn(session);
     holder.set(authentication);
-
-    Thread.sleep(100L);
+    Thread.sleep(110L);
 
     // when
     final var result = holder.get();
