@@ -10,6 +10,7 @@ package io.camunda.tasklist.modules;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.modules.ModulesTestApplication;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,7 +26,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
       ModulesTestApplication.class,
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class,
-      SearchEngineConnectPropertiesOverride.class
+      SearchEngineConnectPropertiesOverride.class,
+      SearchEngineIndexPropertiesOverride.class,
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
