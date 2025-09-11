@@ -40,7 +40,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "Unit / Back End"
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -107,12 +107,13 @@ jobs:
 
   fe-unit-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End UTs"
+    name: "Unit - Front End"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -140,12 +141,13 @@ jobs:
   # Typescript Checker
   operate-fe-type-check:
     if: inputs.runFeTests
-    name: "Tool / Front End / TypeScript Type Check"
+    name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -174,12 +176,13 @@ jobs:
   # Front End Code linting
   operate-fe-eslint:
     if: inputs.runFeTests
-    name: "Tool / Front End / ESLint"
+    name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -208,12 +211,13 @@ jobs:
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     if: inputs.runFeTests
-    name: "Tool / Front End / a11y"
+    name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -256,12 +260,13 @@ jobs:
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End / Visual Regression"
+    name: "Unit / Front End - Visual Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -304,12 +309,13 @@ jobs:
 
   operate-update-screenshots:
     if: inputs.runFeTests
-    name: "Tool / Front End / Update Screenshots"
+    name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: screenshot-update
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -351,13 +357,18 @@ jobs:
 
   run-importer-tests:
     if: inputs.runBeTests
-    name: "Integration / Importer"
+    name: "Integration / Importer ITs"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TEST_TYPE: Integration
+      TEST_OWNER: Data Layer
     permissions: {} # GITHUB_TOKEN unused in this job
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: operate-importer
@@ -382,7 +393,7 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "Integration / Backup Restore"
+    name: "Integration / Backup Restore ITs"
     timeout-minutes: 10
     runs-on: ubuntu-latest
     permissions: { }  # GITHUB_TOKEN unused in this job
