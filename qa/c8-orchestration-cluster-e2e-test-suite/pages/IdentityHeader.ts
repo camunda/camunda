@@ -27,6 +27,9 @@ export class IdentityHeader {
       .locator('nav a')
       .filter({hasText: /^Authorizations$/});
     this.usersTab = page.locator('nav a').filter({hasText: /^Users$/});
+    this.authorizationsTab = page
+      .locator('nav a')
+      .filter({hasText: /^Authorizations$/});
   }
 
   async logout() {
