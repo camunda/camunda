@@ -90,23 +90,22 @@ public class FailOverReplicationTest {
   @Test
   public void shouldReceiveEntriesAfterNetworkPartition() {
     // given
-    final var segmentCount = 2;
     final var oldLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var oldLeader = clusteringRule.getBroker(oldLeaderId);
     clusteringRule.disconnect(oldLeader);
     clusteringRule.awaitOtherLeader(1, oldLeaderId);
-    final List<Broker> followers = clusteringRule.getOtherBrokerObjects(oldLeaderId);
-    clusteringRule.fillSegments(followers, segmentCount);
+    // generate some events with quorum of remaining brokers
+    clusteringRule.publishMessage();
+    clusteringRule.publishMessage();
 
     // when
     clusteringRule.connect(oldLeader);
+    clusteringRule.forceNewLeaderForPartition(oldLeaderId, 1);
 
     // then
-    Awaitility.await()
-        .pollInterval(Duration.ofMillis(100))
-        .atMost(Duration.ofSeconds(10))
-        .until(() -> getSegmentsCount(oldLeader), count -> count >= segmentCount);
-    assertThat(getSegmentsCount(oldLeader)).isGreaterThanOrEqualTo(segmentCount);
+    assertThat(clusteringRule.getCurrentLeaderForPartition(1).getNodeId())
+        .describedAs("Reconnected broker can become leader again after receiving missing events")
+        .isEqualTo(oldLeaderId);
   }
 
   @Test
