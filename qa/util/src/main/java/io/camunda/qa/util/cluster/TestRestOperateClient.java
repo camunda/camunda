@@ -46,19 +46,7 @@ public class TestRestOperateClient implements AutoCloseable {
 
   public TestRestOperateClient(final URI endpoint, CredentialsProvider credentialsProvider) {
     this(endpoint);
-    this.authenticationApplier =
-        builder -> {
-          try {
-            credentialsProvider.applyCredentials(
-                (key, value) -> {
-                  if (value instanceof String stringValue) {
-                    builder.header(key, stringValue);
-                  }
-                });
-          } catch (IOException e) {
-            throw new RuntimeException("Could not apply credentials", e);
-          }
-        };
+    this.authenticationApplier = applyCredentialsProvider(credentialsProvider);
   }
 
   public TestRestOperateClient(final URI endpoint) {
@@ -232,6 +220,17 @@ public class TestRestOperateClient implements AutoCloseable {
   @Override
   public void close() {
     httpClient.close();
+  }
+
+  protected static Consumer<Builder> applyCredentialsProvider(
+      CredentialsProvider credentialsProvider) {
+    return builder -> {
+      try {
+        credentialsProvider.applyCredentials(builder::header);
+      } catch (IOException e) {
+        throw new RuntimeException("Could not apply credentials", e);
+      }
+    };
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
