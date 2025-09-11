@@ -12,6 +12,7 @@ import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
 import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.MembershipService.PrincipalType;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -52,15 +53,20 @@ public class TokenClaimsConverter {
           "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
               .formatted(usernameClaim, clientIdClaim));
     }
-    if (username != null) {
-      authenticatedClaims.put(AUTHORIZED_USERNAME, username);
-    }
 
+    final String principalName;
+    final PrincipalType principalType;
     if (clientId != null) {
       authenticatedClaims.put(AUTHORIZED_CLIENT_ID, clientId);
+      principalName = clientId;
+      principalType = PrincipalType.CLIENT;
+    } else {
+      authenticatedClaims.put(AUTHORIZED_USERNAME, username);
+      principalName = username;
+      principalType = PrincipalType.USER;
     }
 
     return membershipService.resolveMemberships(
-        tokenClaims, authenticatedClaims, username, clientId);
+        tokenClaims, authenticatedClaims, principalName, principalType);
   }
 }

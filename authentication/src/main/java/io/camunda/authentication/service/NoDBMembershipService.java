@@ -35,9 +35,10 @@ public class NoDBMembershipService implements MembershipService {
   public CamundaAuthentication resolveMemberships(
       final Map<String, Object> tokenClaims,
       final Map<String, Object> authenticatedClaims,
-      final String username,
-      final String clientId)
+      final String principalId,
+      final PrincipalType principalType)
       throws OAuth2AuthenticationException {
+
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
     final Set<String> groups =
         groupsClaimPresent
@@ -45,13 +46,17 @@ public class NoDBMembershipService implements MembershipService {
             : Collections.emptySet();
 
     return CamundaAuthentication.of(
-        a ->
-            a.user(username)
-                .clientId(clientId)
-                .roleIds(Collections.emptyList())
-                .groupIds(groups.stream().toList())
-                .mappingRule(Collections.emptyList())
-                .tenants(Collections.emptyList())
-                .claims(authenticatedClaims));
+        a -> {
+          if (principalType.equals(PrincipalType.CLIENT)) {
+            a.clientId(principalId);
+          } else {
+            a.user(principalId);
+          }
+          return a.roleIds(Collections.emptyList())
+              .groupIds(groups.stream().toList())
+              .mappingRule(Collections.emptyList())
+              .tenants(Collections.emptyList())
+              .claims(authenticatedClaims);
+        });
   }
 }

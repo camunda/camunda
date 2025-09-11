@@ -185,7 +185,7 @@ public class SessionAuthenticationRefreshFilterTest {
   private CamundaAuthentication createMockAuthentication() {
     return new CamundaAuthentication(
         TestUserDetailsService.DEMO_USERNAME,
-        "",
+        null,
         Collections.emptyList(),
         Collections.emptyList(),
         Collections.emptyList(),

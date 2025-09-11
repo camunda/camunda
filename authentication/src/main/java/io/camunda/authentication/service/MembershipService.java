@@ -27,8 +27,8 @@ public interface MembershipService {
    * @param authenticatedClaims mutable map that will be enriched with authentication context (e.g.,
    *     AUTHORIZED_USERNAME, AUTHORIZED_CLIENT_ID, USER_TOKEN_CLAIMS). These claims are passed to
    *     the broker for authorization decisions
-   * @param username the username to resolve memberships for
-   * @param clientId the client ID to resolve memberships for
+   * @param principalId the principal ID to resolve memberships for
+   * @param principalType the type of principal (USER or CLIENT)
    * @return a {@link CamundaAuthentication} containing the resolved groups, roles, tenants, and
    *     mappings
    * @throws org.springframework.security.oauth2.core.OAuth2AuthenticationException if membership
@@ -37,7 +37,12 @@ public interface MembershipService {
   CamundaAuthentication resolveMemberships(
       Map<String, Object> tokenClaims,
       Map<String, Object> authenticatedClaims,
-      String username,
-      String clientId)
+      String principalId,
+      PrincipalType principalType)
       throws OAuth2AuthenticationException;
+
+  enum PrincipalType {
+    USER,
+    CLIENT
+  }
 }
