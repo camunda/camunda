@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
-import {sleep} from 'utils/sleep';
 import {defaultAssertionOptions} from '../utils/constants';
 import {waitForItemInList} from '../utils/waitForItemInList';
 
@@ -36,10 +35,6 @@ export class IdentityGroupsPage {
   readonly deleteGroupModalCancelButton: Locator;
   readonly deleteGroupModalDeleteButton: Locator;
   readonly emptyStateLocator: Locator;
-  readonly assignUserButton: Locator;
-  readonly searchBox: Locator;
-  readonly searchBoxResult: Locator;
-  readonly assignUserButtonModal: Locator;
   readonly selectGroupRow: (name: string) => Locator;
   readonly groupCell: (name: string) => Locator;
   readonly groupsHeading: Locator;
@@ -129,12 +124,6 @@ export class IdentityGroupsPage {
       },
     );
     this.emptyStateLocator = page.getByText('No groups created yet');
-    this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
-    this.searchBox = page.getByRole('searchbox');
-    this.searchBoxResult = page.getByRole('listitem');
-    this.assignUserButtonModal = page
-      .getByLabel('Assign user')
-      .getByRole('button', {name: 'Assign user'});
     this.groupsHeading = this.page.getByRole('heading', {name: 'Groups'});
   }
 
@@ -192,17 +181,5 @@ export class IdentityGroupsPage {
 
   async clickGroupId(groupName: string) {
     await this.selectGroupRow(groupName).click();
-  }
-
-  async assignUserToGroup(userName: string, userEmail: string) {
-    await this.assignUserButton.click();
-    await this.searchBox.fill(userName);
-    await this.searchBoxResult
-      .filter({
-        hasText: userEmail,
-      })
-      .click();
-    await this.assignUserButtonModal.click();
-    await sleep(8000);
   }
 }

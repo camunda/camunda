@@ -164,33 +164,33 @@ export class IdentityAuthorizationsPage {
     resourceId: string;
     accessPermissions: string[];
   }) {
+    await this.createAuthorizationButton.click();
+    await expect(this.createAuthorizationModal).toBeVisible({
+      timeout: 15000,
+    });
+    await this.selectAuthorizationOwnerType({
+      ownerType: authorization.ownerType,
+    });
+    await this.selectAuthorizationOwner({
+      ownerId: authorization.ownerId,
+    });
+    await this.selectResourceType(authorization.resourceType);
+    await this.fillResourceId(authorization.resourceId);
+    await this.selectAccessPermissions(authorization.accessPermissions);
+    await this.createAuthorizationSubmitButton.click();
+    await expect(this.createAuthorizationModal).toBeHidden({
+      timeout: 15000,
+    });
     const maxRetries = 3;
     let lastError: Error | null = null;
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        await this.createAuthorizationButton.click();
-        await expect(this.createAuthorizationModal).toBeVisible({
-          timeout: 15000,
-        });
-        await this.selectAuthorizationOwnerType({
-          ownerType: authorization.ownerType,
-        });
-        await this.selectAuthorizationOwner({
-          ownerId: authorization.ownerId,
-        });
-        await this.selectResourceType(authorization.resourceType);
-        await this.fillResourceId(authorization.resourceId);
-        await this.selectAccessPermissions(authorization.accessPermissions);
-        await this.createAuthorizationSubmitButton.click();
-        await expect(this.createAuthorizationModal).toBeHidden({
-          timeout: 15000,
-        });
-
         await this.selectResourceTypeTab(authorization.resourceType);
         const item = this.getAuthorizationCell(authorization.ownerId);
         await waitForItemInList(this.page, item, {
           timeout: 30000,
+          clickNext: true,
           onAfterReload: () =>
             this.selectResourceTypeTab(authorization.resourceType),
         });
@@ -205,7 +205,7 @@ export class IdentityAuthorizationsPage {
     }
 
     throw new Error(
-      `Failed to create authorization for ${authorization.ownerId} after ${maxRetries} attempts. Last error: ${lastError?.message}`,
+      `Failed to verify authorization for ${authorization.ownerId} after ${maxRetries} attempts. Last error: ${lastError?.message}`,
     );
   }
 

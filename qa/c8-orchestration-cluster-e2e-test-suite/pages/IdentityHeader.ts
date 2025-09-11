@@ -6,17 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Page, Locator} from '@playwright/test';
+import {Page, Locator, expect} from '@playwright/test';
+import {Paths, relativizePath} from 'utils/relativizePath';
 
 export class IdentityHeader {
+  readonly page: Page;
   readonly openSettingsButton: Locator;
   readonly logoutButton: Locator;
   readonly rolesTab: Locator;
   readonly tenantsTab: Locator;
   readonly authorizationsTab: Locator;
   readonly usersTab: Locator;
+  readonly groupsTab: Locator;
 
   constructor(page: Page) {
+    this.page = page;
     this.openSettingsButton = page.getByRole('button', {
       name: 'Open Settings',
     });
@@ -27,9 +31,7 @@ export class IdentityHeader {
       .locator('nav a')
       .filter({hasText: /^Authorizations$/});
     this.usersTab = page.locator('nav a').filter({hasText: /^Users$/});
-    this.authorizationsTab = page
-      .locator('nav a')
-      .filter({hasText: /^Authorizations$/});
+    this.groupsTab = page.locator('nav a').filter({hasText: /^Groups$/});
   }
 
   async logout() {
@@ -47,9 +49,14 @@ export class IdentityHeader {
 
   async navigateToAuthorizations() {
     await this.authorizationsTab.click();
+    await expect(this.page).toHaveURL(relativizePath(Paths.authorizations()));
   }
 
   async navigateToUsers() {
     await this.usersTab.click();
+  }
+
+  async navigateToGroups() {
+    await this.groupsTab.click();
   }
 }

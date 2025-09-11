@@ -23,6 +23,7 @@ import {PublicFormsPage} from '@pages/PublicFormsPage';
 import {IdentityHeader} from '@pages/IdentityHeader';
 import {IdentityAuthorizationsPage} from '@pages/IdentityAuthorizationsPage';
 import {IdentityGroupsPage} from '@pages/IdentityGroupsPage';
+import {IdentityGroupDetailsPage} from '@pages/IdentityGroupDetailsPage';
 import {IdentityUsersPage} from '@pages/IdentityUsersPage';
 import {IdentityMappingRulesPage} from '@pages/IdentityMappingRulesPage';
 import {IdentityRolesPage} from '@pages/IdentityRolesPage';
@@ -54,6 +55,7 @@ type PlaywrightFixtures = {
   identityRolesPage: IdentityRolesPage;
   identityTenantsPage: IdentityTenantsPage;
   identityRolesDetailsPage: IdentityRolesDetailsPage;
+  identityGroupDetailsPage: IdentityGroupDetailsPage;
 };
 
 const test = base.extend<PlaywrightFixtures>({
@@ -160,6 +162,10 @@ const test = base.extend<PlaywrightFixtures>({
 
   identityRolesDetailsPage: async ({page}, use) => {
     await use(new IdentityRolesDetailsPage(page));
+  },
+
+  identityGroupDetailsPage: async ({page}, use) => {
+    await use(new IdentityGroupDetailsPage(page));
   },
 });
 
