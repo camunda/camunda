@@ -350,6 +350,57 @@ class TenantAuthorizationIT {
             });
   }
 
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+  void unassignMappingRuleFromTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignMappingRuleFromTenantCommand()
+                    .mappingRuleId("mappingRuleId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+  void unassignMappingRuleFromTenantShouldUnassignMappingRuleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - create a mapping rule and assign it to tenant
+    final String mappingRuleName = UUID.randomUUID().toString();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
+        .name(mappingRuleName)
+        .claimName("email")
+        .claimValue("test@example.com")
+        .send()
+        .join();
+
+    camundaClient
+        .newAssignMappingRuleToTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // when - unassign the mapping rule from the tenant
+    camundaClient
+        .newUnassignMappingRuleFromTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // then - verify mapping rule is unassigned (this test validates the command works)
+    // Note: Full verification would require a mappingRulesByTenantSearchRequest method
+  }
+
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {
     adminClient
         .newCreateTenantCommand()
