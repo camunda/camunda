@@ -161,7 +161,11 @@ public class CamundaDataSource {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
   }
 
-  public List<MessageSubscription> getMessageSubscriptions(
+  public List<MessageSubscription> findMessageSubscriptions() {
+    return findMessageSubscriptions(filter -> {});
+  }
+
+  public List<MessageSubscription> findMessageSubscriptions(
       final Consumer<MessageSubscriptionFilter> filter) {
     return client
         .newMessageSubscriptionSearchRequest()
