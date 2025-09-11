@@ -247,6 +247,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
+            null,
             null);
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));

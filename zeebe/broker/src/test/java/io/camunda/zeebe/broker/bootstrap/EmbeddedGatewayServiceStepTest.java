@@ -13,6 +13,7 @@ import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -88,7 +89,8 @@ class EmbeddedGatewayServiceStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              mock(SearchClientsProxy.class));
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -161,7 +163,8 @@ class EmbeddedGatewayServiceStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              mock(SearchClientsProxy.class));
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();
