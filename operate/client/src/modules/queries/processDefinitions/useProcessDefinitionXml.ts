@@ -57,12 +57,6 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
         : skipToken,
     select,
     staleTime: Infinity,
-    retry: (failureCount, error) => {
-      if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
-        return false;
-      }
-      return failureCount < 3;
-    },
     refetchOnWindowFocus: false,
     refetchOnMount: (query) => {
       const lastError = query.state.error;
