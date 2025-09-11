@@ -93,7 +93,7 @@
       </if>
       <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchFilter"/>
       <if test="filter.orFilters != null and !filter.orFilters.isEmpty()">
-        OR (
+        AND (
         <foreach collection="filter.orFilters" item="filter" separator=" OR ">
           <trim prefix="(" suffix=")">
             <trim prefixOverrides="AND">
