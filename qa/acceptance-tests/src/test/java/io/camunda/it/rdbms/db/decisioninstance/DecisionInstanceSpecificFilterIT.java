@@ -137,6 +137,6 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.decisionDefinitionKeyOperations(Operation.eq(100L))),
         DecisionInstanceFilter.of(b -> b.flowNodeInstanceKeyOperations(Operation.eq(126L))),
         DecisionInstanceFilter.of(b -> b.evaluationDateOperations(Operation.lte(THEN))),
-        DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42")));
+        DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42", "foo")));
   }
 }
