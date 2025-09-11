@@ -69,44 +69,44 @@ function useCompleteTask() {
 
   return useMutation<Task, CompletionError, Payload>({
     mutationFn: async (params) => {
-      const {error} = await request(api.completeTask(params));
+      const {response, error} = await request(api.completeTask(params));
 
-      if (error !== null) {
-        const {data: parsedError, success} =
-          requestErrorSchema.safeParse(error);
+      if (error === null) {
+        client.invalidateQueries({queryKey: ['task']});
+        const completedTask = await response.json();
 
-        if (success && parsedError.variant === 'failed-response') {
-          const errorData = await parsedError.response.json();
-
-          if (isTaskTimeoutError(errorData)) {
-            const currentTask = client.getQueryData<Task>(
-              getUseTaskQueryKey(params.taskId),
-            );
-
-            if (currentTask) {
-              client.setQueryData(getUseTaskQueryKey(params.taskId), {
-                ...currentTask,
-                state: 'COMPLETING',
-              });
-            }
-
-            notificationsStore.displayNotification({
-              kind: 'info',
-              title: t('taskDetailsCompletionDelayInfoTitle'),
-              subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
-              isDismissable: true,
-            });
-
-            return refetchTask(params.taskId);
-          }
-        }
-
-        throw error;
+        return completedTask as Task;
       }
 
-      client.invalidateQueries({queryKey: ['task']});
+      const {data: parsedError, success} = requestErrorSchema.safeParse(error);
 
-      return refetchTask(params.taskId);
+      if (success && parsedError.variant === 'failed-response') {
+        const errorData = await parsedError.response.json();
+
+        if (isTaskTimeoutError(errorData)) {
+          const currentTask = client.getQueryData<Task>(
+            getUseTaskQueryKey(params.taskId),
+          );
+
+          if (currentTask) {
+            client.setQueryData(getUseTaskQueryKey(params.taskId), {
+              ...currentTask,
+              state: 'COMPLETING',
+            });
+          }
+
+          notificationsStore.displayNotification({
+            kind: 'info',
+            title: t('taskDetailsCompletionDelayInfoTitle'),
+            subtitle: t('taskDetailsCompletionDelayInfoSubtitle'),
+            isDismissable: true,
+          });
+
+          return refetchTask(params.taskId);
+        }
+      }
+
+      throw error;
     },
   });
 }
