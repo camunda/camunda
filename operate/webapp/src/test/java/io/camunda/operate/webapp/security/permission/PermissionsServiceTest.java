@@ -7,16 +7,21 @@
  */
 package io.camunda.operate.webapp.security.permission;
 
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
+import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
+import io.camunda.security.reader.ResourceAccess;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -73,7 +78,9 @@ public class PermissionsServiceTest {
   }
 
   @Test
-  public void testGetProcessDefinitionPermissionWithNullAuthentication() {
+  public void testGetProcessDefinitionPermissionWithAnonymousAuthentication() {
+    when(mockAuthenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.anonymous());
     final Set<String> res = permissionsService.getProcessDefinitionPermissions("bpmnProcessId");
     assertThat(res.isEmpty()).isTrue();
   }
@@ -119,21 +126,45 @@ public class PermissionsServiceTest {
   }
 
   @Test
-  public void testGetProcessesWithPermissionWithNullAuthentication() {
-    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(null);
+  public void testGetProcessesWithPermissionWithAnonymousAuthentication() {
+    // given
+    final CamundaAuthentication authentication = CamundaAuthentication.anonymous();
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    when(mockResourceAccessProvider.resolveResourceAccess(eq(authentication), any()))
+        .thenAnswer(
+            i ->
+                ResourceAccess.wildcard(
+                    Authorization.withAuthorization(i.getArgument(1), WILDCARD.getResourceId())));
+
+    // when
     final ResourcesAllowed res =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION);
+
+    // then
+    assertThat(res.all()).isTrue();
     final Set<String> resourceIds = res.getIds();
-    assertThat(resourceIds.isEmpty()).isTrue();
+    assertThat(resourceIds).isNull();
   }
 
   @Test
-  public void testGetDecisionsWithPermissionWithNullAuthentication() {
-    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(null);
+  public void testGetDecisionsWithPermissionWithAnonymousAuthentication() {
+    // given
+    final CamundaAuthentication authentication = CamundaAuthentication.anonymous();
+    when(mockAuthenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+    when(mockResourceAccessProvider.resolveResourceAccess(eq(authentication), any()))
+        .thenAnswer(
+            i ->
+                ResourceAccess.wildcard(
+                    Authorization.withAuthorization(i.getArgument(1), WILDCARD.getResourceId())));
+
+    // when
     final ResourcesAllowed res =
         permissionsService.getDecisionsWithPermission(PermissionType.READ_DECISION_INSTANCE);
+
+    // then
+    assertThat(res.all()).isTrue();
     final Set<String> resourceIds = res.getIds();
-    assertThat(resourceIds.isEmpty()).isTrue();
+    assertThat(resourceIds).isNull();
   }
 
   private CamundaAuthentication createCamundaAuthentication(
