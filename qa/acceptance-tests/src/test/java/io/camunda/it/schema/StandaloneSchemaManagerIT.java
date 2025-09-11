@@ -76,7 +76,7 @@ final class StandaloneSchemaManagerIT {
           .withProperty("camunda.database.password", ADMIN_PASSWORD)
           .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
           .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.database.retention.enabled", "true");
+          .withProperty("camunda.data.secondary-storage.retention.enabled", "true");
 
   @TestZeebe(autoStart = false)
   final TestCamundaApplication camunda =
