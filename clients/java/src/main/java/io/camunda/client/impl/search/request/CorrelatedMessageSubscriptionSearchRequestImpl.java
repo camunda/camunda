@@ -21,13 +21,13 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
-import io.camunda.client.api.search.request.CorrelatedMessageSearchRequest;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.client.api.search.response.SearchResponse;
-import io.camunda.client.api.search.sort.CorrelatedMessageSort;
+import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
@@ -38,16 +38,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import org.apache.hc.client5.http.config.RequestConfig;
 
-public class CorrelatedMessageSearchRequestImpl
+public class CorrelatedMessageSubscriptionSearchRequestImpl
     extends TypedSearchRequestPropertyProvider<CorrelatedMessageSearchQuery>
-    implements CorrelatedMessageSearchRequest {
+    implements CorrelatedMessageSubscriptionSearchRequest {
 
   private final CorrelatedMessageSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
 
-  public CorrelatedMessageSearchRequestImpl(
+  public CorrelatedMessageSubscriptionSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
     request = new CorrelatedMessageSearchQuery();
     this.jsonMapper = jsonMapper;
@@ -75,29 +75,29 @@ public class CorrelatedMessageSearchRequestImpl
   }
 
   @Override
-  public CorrelatedMessageSearchRequest filter(final CorrelatedMessageFilter value) {
+  public CorrelatedMessageSubscriptionSearchRequest filter(final CorrelatedMessageSubscriptionFilter value) {
     request.setFilter(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public CorrelatedMessageSearchRequest filter(final Consumer<CorrelatedMessageFilter> fn) {
+  public CorrelatedMessageSubscriptionSearchRequest filter(final Consumer<CorrelatedMessageSubscriptionFilter> fn) {
     return filter(correlatedMessageFilter(fn));
   }
 
   @Override
-  public CorrelatedMessageSearchRequest page(final SearchRequestPage value) {
+  public CorrelatedMessageSubscriptionSearchRequest page(final SearchRequestPage value) {
     request.setPage(provideSearchRequestProperty(value));
     return this;
   }
 
   @Override
-  public CorrelatedMessageSearchRequest page(final Consumer<SearchRequestPage> fn) {
+  public CorrelatedMessageSubscriptionSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
   }
 
   @Override
-  public CorrelatedMessageSearchRequest sort(final CorrelatedMessageSort value) {
+  public CorrelatedMessageSubscriptionSearchRequest sort(final CorrelatedMessageSubscriptionSort value) {
     request.setSort(
         SearchRequestSortMapper.toCorrelatedMessageSearchQuerySortRequest(
             provideSearchRequestProperty(value)));
@@ -105,7 +105,7 @@ public class CorrelatedMessageSearchRequestImpl
   }
 
   @Override
-  public CorrelatedMessageSearchRequest sort(final Consumer<CorrelatedMessageSort> fn) {
+  public CorrelatedMessageSubscriptionSearchRequest sort(final Consumer<CorrelatedMessageSubscriptionSort> fn) {
     return sort(correlatedMessageSort(fn));
   }
 

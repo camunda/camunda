@@ -7193,6 +7193,12 @@ components:
         subscriptionKey:
           description: The subscription key that received the message.
           type: string
+        subscriptionType:
+          description: The type of subscription that received the message.
+          type: string
+          enum:
+            - START_EVENT
+            - PROCESS_MESSAGE
         tenantId:
           description: The tenant ID associated with this correlated message.
           type: string

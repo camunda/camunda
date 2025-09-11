@@ -17,29 +17,29 @@ package io.camunda.client.api.search.sort;
 
 import io.camunda.client.api.search.request.TypedSortableRequest.SearchRequestSort;
 
-public interface CorrelatedMessageSort extends SearchRequestSort<CorrelatedMessageSort> {
+public interface CorrelatedMessageSubscriptionSort extends SearchRequestSort<CorrelatedMessageSubscriptionSort> {
 
-  CorrelatedMessageSort correlationKey();
+  CorrelatedMessageSubscriptionSort correlationKey();
 
-  CorrelatedMessageSort correlationTime();
+  CorrelatedMessageSubscriptionSort correlationTime();
 
-  CorrelatedMessageSort elementId();
+  CorrelatedMessageSubscriptionSort elementId();
 
-  CorrelatedMessageSort elementInstanceKey();
+  CorrelatedMessageSubscriptionSort elementInstanceKey();
 
-  CorrelatedMessageSort messageKey();
+  CorrelatedMessageSubscriptionSort messageKey();
 
-  CorrelatedMessageSort messageName();
+  CorrelatedMessageSubscriptionSort messageName();
 
-  CorrelatedMessageSort partitionId();
+  CorrelatedMessageSubscriptionSort partitionId();
 
-  CorrelatedMessageSort processDefinitionId();
+  CorrelatedMessageSubscriptionSort processDefinitionId();
 
-  CorrelatedMessageSort processDefinitionKey();
+  CorrelatedMessageSubscriptionSort processDefinitionKey();
 
-  CorrelatedMessageSort processInstanceKey();
+  CorrelatedMessageSubscriptionSort processInstanceKey();
 
-  CorrelatedMessageSort subscriptionKey();
+  CorrelatedMessageSubscriptionSort subscriptionKey();
 
-  CorrelatedMessageSort tenantId();
+  CorrelatedMessageSubscriptionSort tenantId();
 }

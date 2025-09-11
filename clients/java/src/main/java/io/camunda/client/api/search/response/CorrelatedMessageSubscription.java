@@ -13,13 +13,35 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.request;
+package io.camunda.client.api.search.response;
 
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
-import io.camunda.client.api.search.response.CorrelatedMessage;
-import io.camunda.client.api.search.sort.CorrelatedMessageSort;
+import io.camunda.client.api.search.enums.MessageSubscriptionType;
 
-public interface CorrelatedMessageSearchRequest
-    extends TypedSearchRequest<
-            CorrelatedMessageFilter, CorrelatedMessageSort, CorrelatedMessageSearchRequest>,
-        FinalSearchRequestStep<CorrelatedMessage> {}
+public interface CorrelatedMessageSubscription {
+
+  String getCorrelationKey();
+
+  String getCorrelationTime();
+
+  String getElementId();
+
+  Long getElementInstanceKey();
+
+  Long getMessageKey();
+
+  String getMessageName();
+
+  Integer getPartitionId();
+
+  String getProcessDefinitionId();
+
+  Long getProcessDefinitionKey();
+
+  Long getProcessInstanceKey();
+
+  Long getSubscriptionKey();
+
+  MessageSubscriptionType getSubscriptionType();
+
+  String getTenantId();
+}

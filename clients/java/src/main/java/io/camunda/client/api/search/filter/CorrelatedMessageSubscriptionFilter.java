@@ -23,7 +23,7 @@ import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequest
 import java.time.OffsetDateTime;
 import java.util.function.Consumer;
 
-public interface CorrelatedMessageFilter extends SearchRequestFilter {
+public interface CorrelatedMessageSubscriptionFilter extends SearchRequestFilter {
 
   /**
    * Filter by correlation key.
@@ -31,7 +31,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param correlationKey the correlation key of the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter correlationKey(String correlationKey);
+  CorrelatedMessageSubscriptionFilter correlationKey(String correlationKey);
 
   /**
    * Filter by correlation key using a {@link StringProperty} consumer.
@@ -39,7 +39,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the correlation key {@link StringProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter correlationKey(Consumer<StringProperty> fn);
+  CorrelatedMessageSubscriptionFilter correlationKey(Consumer<StringProperty> fn);
 
   /**
    * Filter by correlation time.
@@ -47,7 +47,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param correlationTime the correlation time of the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter correlationTime(OffsetDateTime correlationTime);
+  CorrelatedMessageSubscriptionFilter correlationTime(OffsetDateTime correlationTime);
 
   /**
    * Filter by correlation time using a {@link DateTimeProperty} consumer.
@@ -55,7 +55,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the correlation time {@link DateTimeProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter correlationTime(Consumer<DateTimeProperty> fn);
+  CorrelatedMessageSubscriptionFilter correlationTime(Consumer<DateTimeProperty> fn);
 
   /**
    * Filter by element ID.
@@ -63,7 +63,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param elementId the ID of the element
    * @return the updated filter
    */
-  CorrelatedMessageFilter elementId(String elementId);
+  CorrelatedMessageSubscriptionFilter elementId(String elementId);
 
   /**
    * Filter by element ID using a {@link StringProperty} consumer.
@@ -71,7 +71,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the element ID {@link StringProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter elementId(Consumer<StringProperty> fn);
+  CorrelatedMessageSubscriptionFilter elementId(Consumer<StringProperty> fn);
 
   /**
    * Filter by element instance key.
@@ -79,7 +79,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param elementInstanceKey the key of the element instance
    * @return the updated filter
    */
-  CorrelatedMessageFilter elementInstanceKey(Long elementInstanceKey);
+  CorrelatedMessageSubscriptionFilter elementInstanceKey(Long elementInstanceKey);
 
   /**
    * Filter by element instance key using a {@link BasicLongProperty} consumer.
@@ -88,7 +88,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    *     message
    * @return the updated filter
    */
-  CorrelatedMessageFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
+  CorrelatedMessageSubscriptionFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by message key.
@@ -96,7 +96,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param messageKey the key of the message
    * @return the updated filter
    */
-  CorrelatedMessageFilter messageKey(Long messageKey);
+  CorrelatedMessageSubscriptionFilter messageKey(Long messageKey);
 
   /**
    * Filter by message key using a {@link BasicLongProperty} consumer.
@@ -104,7 +104,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the message key {@link BasicLongProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter messageKey(Consumer<BasicLongProperty> fn);
+  CorrelatedMessageSubscriptionFilter messageKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by message name.
@@ -112,7 +112,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param messageName the name of the message
    * @return the updated filter
    */
-  CorrelatedMessageFilter messageName(String messageName);
+  CorrelatedMessageSubscriptionFilter messageName(String messageName);
 
   /**
    * Filter by message name using a {@link StringProperty} consumer.
@@ -120,7 +120,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the message name {@link StringProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter messageName(Consumer<StringProperty> fn);
+  CorrelatedMessageSubscriptionFilter messageName(Consumer<StringProperty> fn);
 
   /**
    * Filter by partition ID.
@@ -128,7 +128,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param partitionId the partition ID
    * @return the updated filter
    */
-  CorrelatedMessageFilter partitionId(Integer partitionId);
+  CorrelatedMessageSubscriptionFilter partitionId(Integer partitionId);
 
   /**
    * Filter by partition ID using a {@link IntegerProperty} consumer.
@@ -136,7 +136,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the partition ID {@link IntegerProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter partitionId(Consumer<IntegerProperty> fn);
+  CorrelatedMessageSubscriptionFilter partitionId(Consumer<IntegerProperty> fn);
 
   /**
    * Filter by process definition ID.
@@ -144,7 +144,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param processDefinitionId the process definition ID
    * @return the updated filter
    */
-  CorrelatedMessageFilter processDefinitionId(String processDefinitionId);
+  CorrelatedMessageSubscriptionFilter processDefinitionId(String processDefinitionId);
 
   /**
    * Filter by process definition ID using a {@link StringProperty} consumer.
@@ -152,7 +152,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the process definition ID {@link StringProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter processDefinitionId(Consumer<StringProperty> fn);
+  CorrelatedMessageSubscriptionFilter processDefinitionId(Consumer<StringProperty> fn);
 
   /**
    * Filter by process definition key.
@@ -160,7 +160,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param processDefinitionKey the key of the process definition
    * @return the updated filter
    */
-  CorrelatedMessageFilter processDefinitionKey(Long processDefinitionKey);
+  CorrelatedMessageSubscriptionFilter processDefinitionKey(Long processDefinitionKey);
 
   /**
    * Filter by process definition key using a {@link BasicLongProperty} consumer.
@@ -169,7 +169,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    *     message
    * @return the updated filter
    */
-  CorrelatedMessageFilter processDefinitionKey(Consumer<BasicLongProperty> fn);
+  CorrelatedMessageSubscriptionFilter processDefinitionKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by process instance key.
@@ -177,7 +177,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param processInstanceKey the key of the process instance
    * @return the updated filter
    */
-  CorrelatedMessageFilter processInstanceKey(Long processInstanceKey);
+  CorrelatedMessageSubscriptionFilter processInstanceKey(Long processInstanceKey);
 
   /**
    * Filter by process instance key using a {@link BasicLongProperty} consumer.
@@ -186,7 +186,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    *     message
    * @return the updated filter
    */
-  CorrelatedMessageFilter processInstanceKey(Consumer<BasicLongProperty> fn);
+  CorrelatedMessageSubscriptionFilter processInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by subscription key.
@@ -194,7 +194,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param subscriptionKey the key of the subscription
    * @return the updated filter
    */
-  CorrelatedMessageFilter subscriptionKey(Long subscriptionKey);
+  CorrelatedMessageSubscriptionFilter subscriptionKey(Long subscriptionKey);
 
   /**
    * Filter by subscription key using a {@link BasicLongProperty} consumer.
@@ -202,7 +202,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the subscription key {@link BasicLongProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter subscriptionKey(Consumer<BasicLongProperty> fn);
+  CorrelatedMessageSubscriptionFilter subscriptionKey(Consumer<BasicLongProperty> fn);
 
   /**
    * Filter by tenant ID.
@@ -210,7 +210,7 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param tenantId the tenant ID of the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter tenantId(String tenantId);
+  CorrelatedMessageSubscriptionFilter tenantId(String tenantId);
 
   /**
    * Filter by tenant ID using a {@link StringProperty} consumer.
@@ -218,5 +218,5 @@ public interface CorrelatedMessageFilter extends SearchRequestFilter {
    * @param fn the tenant ID {@link StringProperty} consumer for the correlated message
    * @return the updated filter
    */
-  CorrelatedMessageFilter tenantId(Consumer<StringProperty> fn);
+  CorrelatedMessageSubscriptionFilter tenantId(Consumer<StringProperty> fn);
 }

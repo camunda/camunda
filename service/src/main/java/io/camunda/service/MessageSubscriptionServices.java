@@ -9,8 +9,11 @@ package io.camunda.service;
 
 import static io.camunda.service.authorization.Authorizations.MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION;
 
+import io.camunda.search.clients.CorrelatedMessageSearchClient;
 import io.camunda.search.clients.MessageSubscriptionSearchClient;
+import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
+import io.camunda.search.query.CorrelatedMessageQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -23,15 +26,18 @@ public class MessageSubscriptionServices
         MessageSubscriptionServices, MessageSubscriptionQuery, MessageSubscriptionEntity> {
 
   private final MessageSubscriptionSearchClient searchClient;
+  private final CorrelatedMessageSearchClient correlatedMessageSearchClient;
 
   public MessageSubscriptionServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MessageSubscriptionSearchClient searchClient,
+      final CorrelatedMessageSearchClient correlatedMessageSearchClient,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider) {
     super(brokerClient, securityContextProvider, authentication, executorProvider);
     this.searchClient = searchClient;
+    this.correlatedMessageSearchClient = correlatedMessageSearchClient;
   }
 
   @Override
@@ -45,10 +51,20 @@ public class MessageSubscriptionServices
                 .searchMessageSubscriptions(query));
   }
 
+  public SearchQueryResult<CorrelatedMessageEntity> searchCorrelatedMessageSubscriptions(final CorrelatedMessageQuery query) {
+    return executeSearchRequest(
+        () ->
+            correlatedMessageSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, MESSAGE_SUBSCRIPTION_READ_AUTHORIZATION))
+                .searchCorrelatedMessages(query));
+  }
+
   @Override
   public MessageSubscriptionServices withAuthentication(
       final CamundaAuthentication authentication) {
     return new MessageSubscriptionServices(
-        brokerClient, securityContextProvider, searchClient, authentication, executorProvider);
+        brokerClient, securityContextProvider, searchClient, correlatedMessageSearchClient, authentication, executorProvider);
   }
 }

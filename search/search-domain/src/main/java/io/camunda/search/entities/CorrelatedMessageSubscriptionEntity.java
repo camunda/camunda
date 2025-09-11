@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record CorrelatedMessageEntity(
+public record CorrelatedMessageSubscriptionEntity(
     String correlationKey,
     OffsetDateTime correlationTime,
     String flowNodeId,
@@ -23,6 +23,7 @@ public record CorrelatedMessageEntity(
     Long processDefinitionKey,
     Long processInstanceKey,
     Long subscriptionKey,
+    String subscriptionType,
     String tenantId)
     implements TenantOwnedEntity {
   public static Builder builder() {
@@ -41,6 +42,7 @@ public record CorrelatedMessageEntity(
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long subscriptionKey;
+    private String subscriptionType;
     private String tenantId;
 
     public Builder correlationKey(final String correlationKey) {
@@ -98,13 +100,18 @@ public record CorrelatedMessageEntity(
       return this;
     }
 
+    public Builder subscriptionType(final String subscriptionType) {
+      this.subscriptionType = subscriptionType;
+      return this;
+    }
+
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
     }
 
-    public CorrelatedMessageEntity build() {
-      return new CorrelatedMessageEntity(
+    public CorrelatedMessageSubscriptionEntity build() {
+      return new CorrelatedMessageSubscriptionEntity(
           correlationKey,
           correlationTime,
           flowNodeId,
@@ -116,6 +123,7 @@ public record CorrelatedMessageEntity(
           processDefinitionKey,
           processInstanceKey,
           subscriptionKey,
+          subscriptionType,
           tenantId);
     }
   }

@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.request;
 
-public enum MessageSubscriptionType {
-  CREATED,
-  MIGRATED,
-  START_EVENT,
-  PROCESS_MESSAGE,
-  UNKNOWN_ENUM_VALUE
-}
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
+import io.camunda.client.api.search.response.CorrelatedMessage;
+import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
+
+public interface CorrelatedMessageSubscriptionSearchRequest
+    extends TypedSearchRequest<
+            CorrelatedMessageSubscriptionFilter, CorrelatedMessageSubscriptionSort, CorrelatedMessageSubscriptionSearchRequest>,
+        FinalSearchRequestStep<CorrelatedMessage> {}

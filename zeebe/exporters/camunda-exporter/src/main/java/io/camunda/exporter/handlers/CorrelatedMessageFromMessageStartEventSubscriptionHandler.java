@@ -63,6 +63,7 @@ public class CorrelatedMessageFromMessageStartEventSubscriptionHandler
         .setMessageName(value.getMessageName())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setSubscriptionType("START_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));
   }
 }

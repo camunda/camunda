@@ -9,9 +9,12 @@ package io.camunda.zeebe.gateway.rest.controller;
 
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
+import io.camunda.search.query.CorrelatedMessageQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.MessageSubscriptionServices;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -45,6 +48,14 @@ public class MessageSubscriptionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/correlated-message-subscriptions/search")
+  public ResponseEntity<CorrelatedMessageSearchQueryResult> searchCorrelatedMessageSubscriptions(
+      @RequestBody(required = false) final CorrelatedMessageSearchQuery searchRequest) {
+    return SearchQueryRequestMapper.toCorrelatedMessageQuery(searchRequest)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessageSubscriptions);
+  }
+
   private ResponseEntity<MessageSubscriptionSearchQueryResult> search(
       final MessageSubscriptionQuery query) {
     try {
@@ -54,6 +65,20 @@ public class MessageSubscriptionController {
               .search(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toMessageSubscriptionSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<CorrelatedMessageSearchQueryResult> searchCorrelatedMessageSubscriptions(
+      final CorrelatedMessageQuery query) {
+    try {
+      final var result =
+          messageSubscriptionServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchCorrelatedMessageSubscriptions(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toCorrelatedMessageSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
