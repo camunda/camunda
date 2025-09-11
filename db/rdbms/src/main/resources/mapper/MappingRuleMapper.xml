@@ -102,6 +102,10 @@
         ${prefix}ROLE_MEMBER
         WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
       </if>
+      <if test="filter.tenantId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}TENANT_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND TENANT_ID = #{filter.tenantId})
+      </if>
     </where>
   </sql>
 
