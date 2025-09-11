@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,6 +33,8 @@ public class ProcessInstanceResult {
   private List<Incident> activeIncidents = new ArrayList<>();
 
   private List<ElementInstance> activeElementInstances = new ArrayList<>();
+
+  private List<MessageSubscription> activeMessageSubscriptions = new ArrayList<>();
 
   public ProcessInstance getProcessInstance() {
     return processInstance;
@@ -63,5 +66,14 @@ public class ProcessInstanceResult {
 
   public void setActiveElementInstances(final List<ElementInstance> activeElementInstances) {
     this.activeElementInstances = activeElementInstances;
+  }
+
+  public List<MessageSubscription> getActiveMessageSubscriptions() {
+    return activeMessageSubscriptions;
+  }
+
+  public void setActiveMessageSubscriptions(
+      final List<MessageSubscription> activeMessageSubscriptions) {
+    this.activeMessageSubscriptions = activeMessageSubscriptions;
   }
 }

@@ -829,7 +829,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(new MessageSubscriptionResult())));
@@ -851,7 +851,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(new MessageSubscriptionResult())));
@@ -875,7 +875,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -896,7 +896,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -921,7 +921,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
@@ -949,7 +949,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList());
@@ -973,7 +973,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -995,7 +995,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -1017,7 +1017,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(
@@ -1045,7 +1045,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(
