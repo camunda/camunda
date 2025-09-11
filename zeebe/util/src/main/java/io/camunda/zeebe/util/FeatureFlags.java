@@ -45,7 +45,7 @@ public final class FeatureFlags {
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
-  private static final boolean ENABLE_PARTITION_SCALING = false;
+  private static final boolean ENABLE_PARTITION_SCALING = true;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
 
