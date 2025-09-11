@@ -44,6 +44,8 @@ public class LegacyCamundaProcessTestRuntimeConfiguration {
   private Map<String, String> connectorsEnvVars = Collections.emptyMap();
   private Map<String, String> connectorsSecrets = Collections.emptyMap();
 
+  private boolean multitenancyEnabled = false;
+
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
@@ -134,5 +136,13 @@ public class LegacyCamundaProcessTestRuntimeConfiguration {
 
   public void setRemote(final RemoteConfiguration remote) {
     this.remote = remote;
+  }
+
+  public boolean isMultitenancyEnabled() {
+    return multitenancyEnabled;
+  }
+
+  public void setMultitenancyEnabled(final boolean multitenancyEnabled) {
+    this.multitenancyEnabled = multitenancyEnabled;
   }
 }
