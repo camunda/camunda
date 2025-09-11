@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -372,7 +373,8 @@ final class SystemContextTest {
         new SecurityConfiguration(),
         mock(UserServices.class),
         mock(PasswordEncoder.class),
-        mock(JwtDecoder.class));
+        mock(JwtDecoder.class),
+        mock(SearchClientsProxy.class));
   }
 
   @Test

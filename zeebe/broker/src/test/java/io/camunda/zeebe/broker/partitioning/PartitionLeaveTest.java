@@ -236,6 +236,7 @@ final class PartitionLeaveTest {
             SecurityConfigurations.unauthenticatedAndUnauthorized(),
             null,
             null,
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

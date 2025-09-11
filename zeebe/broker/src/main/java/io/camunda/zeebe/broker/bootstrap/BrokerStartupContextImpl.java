@@ -135,7 +135,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy) {
 
     this(
         brokerInfo,
@@ -154,7 +155,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null);
+        searchClientsProxy);
   }
 
   @Override
