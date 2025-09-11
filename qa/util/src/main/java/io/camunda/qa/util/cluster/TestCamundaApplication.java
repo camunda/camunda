@@ -17,6 +17,7 @@ import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.authentication.config.AuthenticationProperties;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
@@ -338,6 +339,10 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
 
   public TestRestOperateClient newOperateClient(final String username, final String password) {
     return new TestRestOperateClient(restAddress(), username, password);
+  }
+
+  public TestRestOperateClient newOperateClient(CredentialsProvider credentialsProvider) {
+    return new TestRestOperateClient(restAddress(), credentialsProvider);
   }
 
   public TestRestTasklistClient newTasklistClient() {
