@@ -140,13 +140,12 @@
           #{value}
         </foreach>
       </if>
-      <!--    TODO: Check if useful https://github.com/camunda/camunda/issues/22842
       <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
-            AND di.TENANT_ID
-            <foreach collection="filter.tenantIds" item="value" open="(" close=")">
-              #{value}
-            </foreach>
-          </if>-->
+        AND di.TENANT_ID IN
+        <foreach collection="filter.tenantIds" item="value" open="(" close=")">
+          #{value}
+        </foreach>
+      </if>
       <if
         test="filter.evaluationDateOperations != null and !filter.evaluationDateOperations.isEmpty()">
         <foreach collection="filter.evaluationDateOperations" item="operation">
