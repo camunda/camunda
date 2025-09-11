@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.read.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +27,7 @@ public class MessageSubscriptionEntityMapperTest {
             .processInstanceKey(1L)
             .flowNodeId("flowNodeId")
             .flowNodeInstanceKey(1L)
-            .messageSubscriptionType(MessageSubscriptionType.CREATED)
+            .messageSubscriptionState(MessageSubscriptionState.CREATED)
             .dateTime(OffsetDateTime.now().plusDays(1))
             .messageName("testMessageName")
             .correlationKey("testCorrelationKey")

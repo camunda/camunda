@@ -26,7 +26,7 @@ public class MessageSubscriptionFieldSortingTransformer implements FieldSortingT
       case "processInstanceKey" -> PROCESS_INSTANCE_KEY;
       case "flowNodeId" -> FLOW_NODE_ID;
       case "flowNodeInstanceKey" -> FLOW_NODE_INSTANCE_KEY;
-      case "messageSubscriptionType" -> EVENT_TYPE;
+      case "messageSubscriptionState" -> EVENT_TYPE;
       case "dateTime" -> DATE_TIME;
       case "messageName" -> "metadata.messageName";
       case "correlationKey" -> "metadata.correlationKey";

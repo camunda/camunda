@@ -747,9 +747,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getElementInstanceKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::flowNodeInstanceKeyOperations);
-      ofNullable(filter.getMessageSubscriptionType())
+      ofNullable(filter.getMessageSubscriptionState())
           .map(mapToOperations(String.class))
-          .ifPresent(builder::messageSubscriptionTypeOperations);
+          .ifPresent(builder::messageSubscriptionStateOperations);
       ofNullable(filter.getLastUpdatedDate())
           .map(mapToOperations(OffsetDateTime.class))
           .ifPresent(builder::dateTimeOperations);

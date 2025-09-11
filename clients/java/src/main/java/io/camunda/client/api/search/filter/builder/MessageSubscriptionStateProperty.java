@@ -13,12 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.search.enums;
+package io.camunda.client.api.search.filter.builder;
 
-public enum MessageSubscriptionType {
-  CORRELATED,
-  CREATED,
-  DELETED,
-  MIGRATED,
-  UNKNOWN_ENUM_VALUE
-}
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
+
+public interface MessageSubscriptionStateProperty
+    extends LikeProperty<MessageSubscriptionState, String, MessageSubscriptionStateProperty> {}
