@@ -8,6 +8,7 @@
 package io.camunda.operate.qa.util;
 
 import java.io.File;
+import java.net.URI;
 import java.util.*;
 import junit.framework.AssertionFailedError;
 import org.testcontainers.containers.Network;
@@ -34,7 +35,7 @@ public class TestContext<T extends TestContext<T>> {
   private String internalKeycloakHost;
   private Integer internalKeycloakPort;
 
-  private String externalZeebeContactPoint;
+  private URI zeebeGrpcAddress;
   private String internalZeebeContactPoint;
 
   private String zeebeIndexPrefix = "zeebe-record";
@@ -50,12 +51,12 @@ public class TestContext<T extends TestContext<T>> {
 
   private String connectionType;
 
-  public void setDatabaseType(String databaseType) {
-    this.databaseType = databaseType;
-  }
-
   public String getDatabaseType() {
     return databaseType;
+  }
+
+  public void setDatabaseType(final String databaseType) {
+    this.databaseType = databaseType;
   }
 
   public File getZeebeDataFolder() {
@@ -220,12 +221,12 @@ public class TestContext<T extends TestContext<T>> {
     return this;
   }
 
-  public String getExternalZeebeContactPoint() {
-    return externalZeebeContactPoint;
+  public URI getZeebeGrpcAddress() {
+    return zeebeGrpcAddress;
   }
 
-  public T setExternalZeebeContactPoint(final String externalZeebeContactPoint) {
-    this.externalZeebeContactPoint = externalZeebeContactPoint;
+  public T setZeebeGrpcAddress(final URI grpcAddress) {
+    zeebeGrpcAddress = grpcAddress;
     return (T) this;
   }
 

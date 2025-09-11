@@ -32,7 +32,6 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
     assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8080");
     assertThat(appCfg.isPreferRest()).isFalse();
-    assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
 
     // authentication
@@ -86,7 +85,6 @@ public class ConfigTest {
     assertThat(appCfg.getBrokerUrl()).isEqualTo("http://localhost:26500");
     assertThat(appCfg.getBrokerRestUrl()).isEqualTo("http://localhost:8081");
     assertThat(appCfg.isPreferRest()).isTrue();
-    assertThat(appCfg.isTls()).isFalse();
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
 
     // authentication

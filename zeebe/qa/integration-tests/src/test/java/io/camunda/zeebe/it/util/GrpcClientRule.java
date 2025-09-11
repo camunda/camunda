@@ -9,12 +9,12 @@ package io.camunda.zeebe.it.util;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
-import io.netty.util.NetUtil;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -39,10 +39,7 @@ public final class GrpcClientRule extends ExternalResource {
       final EmbeddedBrokerRule brokerRule, final Consumer<CamundaClientBuilder> configurator) {
     this(
         config -> {
-          config
-              .preferRestOverGrpc(false)
-              .gatewayAddress(NetUtil.toSocketAddressString(brokerRule.getGatewayAddress()))
-              .usePlaintext();
+          config.preferRestOverGrpc(false).grpcAddress(brokerRule.getGrpcAddress());
           configurator.accept(config);
         });
   }
@@ -52,8 +49,8 @@ public final class GrpcClientRule extends ExternalResource {
         config ->
             config
                 .preferRestOverGrpc(false)
-                .gatewayAddress(NetUtil.toSocketAddressString(clusteringRule.getGatewayAddress()))
-                .usePlaintext());
+                .grpcAddress(
+                    AddressUtil.composeGrpcAddress(clusteringRule.getGatewayAddress(), true)));
   }
 
   public GrpcClientRule(final Consumer<CamundaClientBuilder> configurator) {

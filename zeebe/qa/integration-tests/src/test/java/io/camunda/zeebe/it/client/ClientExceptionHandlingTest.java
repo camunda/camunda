@@ -11,12 +11,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.grpc.StatusRuntimeException;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.concurrent.ExecutionException;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,8 +31,7 @@ public final class ClientExceptionHandlingTest {
 
   public final GrpcClientRule clientRule =
       new GrpcClientRule(
-          brokerRule,
-          clientBuilder -> clientBuilder.gatewayAddress(getInvalidGatewayHostAndPort()));
+          brokerRule, clientBuilder -> clientBuilder.grpcAddress(getInvalidGrpcAddress()));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -58,7 +59,8 @@ public final class ClientExceptionHandlingTest {
         .hasMessageContaining(":" + invalidGatewayAddress.getPort());
   }
 
-  private String getInvalidGatewayHostAndPort() {
-    return invalidGatewayAddress.getHostName() + ":" + invalidGatewayAddress.getPort();
+  private URI getInvalidGrpcAddress() {
+    return AddressUtil.composeGrpcAddress(
+        invalidGatewayAddress.getHostName() + ":" + invalidGatewayAddress.getPort(), true);
   }
 }

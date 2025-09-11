@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.it.clustering;
 
+import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.zeebe.it.util.GrpcClientRule;
-import io.netty.util.NetUtil;
 import java.time.Duration;
 import org.awaitility.Awaitility;
 import org.junit.Rule;
@@ -36,9 +36,9 @@ public class StateMigrationTest {
           config ->
               config
                   .preferRestOverGrpc(false)
-                  .gatewayAddress(NetUtil.toSocketAddressString(clusteringRule.getGatewayAddress()))
-                  .defaultRequestTimeout(Duration.ofMinutes(1))
-                  .usePlaintext());
+                  .grpcAddress(
+                      AddressUtil.composeGrpcAddress(clusteringRule.getGatewayAddress(), true))
+                  .defaultRequestTimeout(Duration.ofMinutes(1)));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 

@@ -36,6 +36,6 @@ public class DataGeneratorModuleConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CamundaClient camundaClient() {
-    return CamundaClient.newClientBuilder().usePlaintext().build();
+    return CamundaClient.newClientBuilder().build();
   }
 }

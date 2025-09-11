@@ -325,7 +325,6 @@ public class PrefixMigrationIT {
         .preferRestOverGrpc(false)
         .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY.port())))
         .restAddress(URI.create("http://localhost:" + container.getMappedPort(REST.port())))
-        .usePlaintext()
         .build();
   }
 }

@@ -239,7 +239,6 @@ public class SecurityHeadersOidcIT extends SecurityHeadersBaseIT {
     return CamundaClient.newClientBuilder()
         .grpcAddress(broker.grpcAddress())
         .restAddress(broker.restAddress())
-        .usePlaintext()
         .preferRestOverGrpc(true)
         .defaultRequestTimeout(Duration.ofSeconds(15))
         .credentialsProvider(
