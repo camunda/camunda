@@ -78,14 +78,33 @@
       <if test="filter.claimValue">
         AND CLAIM_VALUE = #{filter.claimValue}
       </if>
+      <if test="filter.claimNames != null and !filter.claimNames.isEmpty()">
+        AND CLAIM_NAME IN
+        <foreach collection="filter.claimNames" item="claimName" open="(" separator=","
+          close=")">
+          #{claimName}
+        </foreach>
+      </if>
+      <if test="filter.claims != null and !filter.claims.isEmpty()">
+        AND
+        <foreach collection="filter.claims" item="claim" separator="OR">
+          (CLAIM_NAME = #{claim.name} AND CLAIM_VALUE = #{claim.value})
+        </foreach>
+      </if>
       <if test="filter.name != null">
         AND NAME = #{filter.name}
       </if>
-      <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM ${prefix}GROUP_MEMBER
+      <if test="filter.groupId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}GROUP_MEMBER
         WHERE ENTITY_TYPE = 'MAPPING_RULE' AND GROUP_ID = #{filter.groupId})
       </if>
-      <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM ${prefix}ROLE_MEMBER
+      <if test="filter.roleId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}ROLE_MEMBER
         WHERE ENTITY_TYPE = 'MAPPING_RULE' AND ROLE_ID = #{filter.roleId})
+      </if>
+      <if test="filter.tenantId != null">AND MAPPING_RULE_ID IN (SELECT ENTITY_ID FROM
+        ${prefix}TENANT_MEMBER
+        WHERE ENTITY_TYPE = 'MAPPING_RULE' AND TENANT_ID = #{filter.tenantId})
       </if>
     </where>
   </sql>
