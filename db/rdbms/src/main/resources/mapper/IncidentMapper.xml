@@ -111,30 +111,36 @@
         </foreach>
       </if>
 
-      <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
-        <foreach collection="filter.stateOperations" item="operation">
-          AND STATE
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
-        <foreach collection="filter.jobKeyOperations" item="operation">
-          AND JOB_KEY
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
-        <foreach collection="filter.tenantIdOperations" item="operation">
-          AND TENANT_ID
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
-      <if test="filter.treePathOperations != null and !filter.treePathOperations.isEmpty()">
-        <foreach collection="filter.treePathOperations" item="operation">
-          AND TREE_PATH
-          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
-        </foreach>
-      </if>
+    <if test="filter.stateOperations != null and !filter.stateOperations.isEmpty()">
+      <foreach collection="filter.stateOperations" item="operation">
+        AND STATE
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.jobKeyOperations != null and !filter.jobKeyOperations.isEmpty()">
+      <foreach collection="filter.jobKeyOperations" item="operation">
+        AND JOB_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.treePathOperations != null and !filter.treePathOperations.isEmpty()">
+      <foreach collection="filter.treePathOperations" item="operation">
+        AND TREE_PATH
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.errorMessageHashOperations != null and !filter.errorMessageHashOperations.isEmpty()">
+      <foreach collection="filter.errorMessageHashOperations" item="operation">
+        AND ERROR_MESSAGE_HASH
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
 
       <!-- date filters -->
       <if test="filter.creationTimeOperations != null and !filter.creationTimeOperations.isEmpty()">
