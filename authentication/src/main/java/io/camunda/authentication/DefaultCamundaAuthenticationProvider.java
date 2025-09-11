@@ -34,12 +34,6 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
         .orElseGet(() -> convertAndSetInHolder(springBasedAuthentication));
   }
 
-  @Override
-  public void refresh() {
-    final var springBasedAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    convertAndSetInHolder(springBasedAuthentication);
-  }
-
   private CamundaAuthentication getFromHolderIfPresent(final Authentication authentication) {
     return Optional.ofNullable(authentication).map(principal -> holder.get()).orElse(null);
   }
