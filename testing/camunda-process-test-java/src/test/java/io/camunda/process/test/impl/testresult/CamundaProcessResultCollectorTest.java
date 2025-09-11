@@ -25,10 +25,12 @@ import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.IncidentBuilder;
+import io.camunda.process.test.utils.MessageSubscriptionBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import io.camunda.process.test.utils.VariableBuilder;
 import java.util.Arrays;
@@ -271,5 +273,50 @@ public class CamundaProcessResultCollectorTest {
         .hasSize(2)
         .extracting(ElementInstance::getElementId, ElementInstance::getElementName)
         .contains(tuple("C", "element_C"), tuple("D", "element_D"));
+  }
+
+  @Test
+  void shouldReturnActiveMessageSubscriptions() {
+    // given
+    when(camundaDataSource.findProcessInstances())
+        .thenReturn(Arrays.asList(PROCESS_INSTANCE_1, PROCESS_INSTANCE_2));
+
+    when(camundaDataSource.findMessageSubscriptions(any()))
+        .thenReturn(
+            Arrays.asList(
+                MessageSubscriptionBuilder.newActiveMessageSubscription("message-a", "key-a")
+                    .setElementId("element-a")
+                    .build(),
+                MessageSubscriptionBuilder.newActiveMessageSubscription("message-b", "key-b")
+                    .setElementId("element-b")
+                    .build()))
+        .thenReturn(
+            Collections.singletonList(
+                MessageSubscriptionBuilder.newActiveMessageSubscription("message-c", "key-c")
+                    .setElementId("element-c")
+                    .build()));
+
+    // when
+    final ProcessTestResult result = resultCollector.collect();
+
+    // then
+    assertThat(result.getProcessInstanceTestResults()).hasSize(2);
+
+    assertThat(result.getProcessInstanceTestResults().get(0).getActiveMessageSubscriptions())
+        .hasSize(2)
+        .extracting(
+            MessageSubscription::getMessageName,
+            MessageSubscription::getCorrelationKey,
+            MessageSubscription::getElementId)
+        .contains(
+            tuple("message-a", "key-a", "element-a"), tuple("message-b", "key-b", "element-b"));
+
+    assertThat(result.getProcessInstanceTestResults().get(1).getActiveMessageSubscriptions())
+        .hasSize(1)
+        .extracting(
+            MessageSubscription::getMessageName,
+            MessageSubscription::getCorrelationKey,
+            MessageSubscription::getElementId)
+        .contains(tuple("message-c", "key-c", "element-c"));
   }
 }
