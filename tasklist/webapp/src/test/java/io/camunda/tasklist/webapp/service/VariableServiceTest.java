@@ -276,12 +276,15 @@ class VariableServiceTest {
             new VariableDTO()
                 .setId(String.format("%s-%s", flowNodeInstanceId, "A_numVar"))
                 .setName("A_numVar")
-                .setValue("123")
+                .setValue(null)
+                .setPreviewValue("123")
+                .setIsValueTruncated(false)
                 .setPreviewValue("123"),
             new VariableDTO()
                 .setId(String.format("%s-%s", flowNodeInstanceId, "C_objVar"))
                 .setName("C_objVar")
-                .setValue("{\"propA\":1,\"propB\":\"strVal\"}")
+                .setValue(null)
+                .setPreviewValue("{\"propA\":1,\"propB\":\"strVal\"}")
                 .setIsValueTruncated(false)
                 .setPreviewValue("{\"propA\":1,\"propB\":\"strVal\"}"));
   }
