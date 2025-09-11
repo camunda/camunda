@@ -142,7 +142,7 @@
       </if>
       <if test="filter.tenantIds != null and !filter.tenantIds.isEmpty()">
         AND di.TENANT_ID IN
-        <foreach collection="filter.tenantIds" item="value" open="(" close=")">
+        <foreach collection="filter.tenantIds" item="value" open="(" close=")" separator=", ">
           #{value}
         </foreach>
       </if>
