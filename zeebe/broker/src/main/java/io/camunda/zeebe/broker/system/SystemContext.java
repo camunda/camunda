@@ -115,7 +115,8 @@ public final class SystemContext {
       final SecurityConfiguration securityConfiguration,
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder) {
+      final JwtDecoder jwtDecoder,
+      final SearchClientsProxy searchClientsProxy) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -128,7 +129,7 @@ public final class SystemContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        null);
+        searchClientsProxy);
   }
 
   private void initSystemContext() {
