@@ -7,8 +7,8 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {defaultAssertionOptions} from 'utils/constants';
 import {waitForItemInList} from 'utils/waitForItemInList';
-import {defaultAssertionOptions} from '../utils/constants';
 export class IdentityRolesPage {
   readonly page: Page;
   readonly rolesList: Locator;
@@ -36,6 +36,10 @@ export class IdentityRolesPage {
   readonly assignUserButtonModal: Locator;
   readonly searchBox: Locator;
   readonly searchBoxResult: Locator;
+  readonly removeButton: Locator;
+  readonly removeUserModalButton: Locator;
+  readonly emptyStateLocator: Locator;
+
   constructor(page: Page) {
     this.page = page;
     this.rolesList = page.getByRole('table');
@@ -108,13 +112,20 @@ export class IdentityRolesPage {
     this.assignUserButtonModal = page
       .getByLabel('Assign user')
       .getByRole('button', {name: 'Assign user'});
+    this.removeButton = page.getByRole('button', {name: 'Remove'});
+    this.removeUserModalButton = page.getByRole('button', {
+      name: 'Remove user',
+    });
+    this.emptyStateLocator = page.getByText('No roles created yet');
   }
   async clickCreateRoles() {
     await this.createRoleButton.click();
   }
+
   async fillRoleId(rowName: string) {
     await this.editRoleButton(rowName).click();
   }
+
   async createRole(role: {id: string; name: string}) {
     await this.clickCreateRoles();
     await expect(this.createRoleModal).toBeVisible();
@@ -128,6 +139,7 @@ export class IdentityRolesPage {
       clickNext: true,
     });
   }
+
   async clickRole(roleID: string) {
     const item = this.roleCell(roleID);
     await waitForItemInList(this.page, item, {
@@ -136,6 +148,7 @@ export class IdentityRolesPage {
     });
     await this.roleCell(roleID).click();
   }
+
   async assignUserToRole(userName: string) {
     await this.assignUserButton.click({timeout: 60000});
     await this.searchBox.fill(userName);
@@ -146,6 +159,7 @@ export class IdentityRolesPage {
       .click({timeout: 60000});
     await this.assignUserButtonModal.click();
   }
+
   async deleteRole(roleName: string) {
     await waitForItemInList(this.page, this.roleCell(roleName), {
       clickNext: true,
