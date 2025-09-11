@@ -1,0 +1,107 @@
+openapi: 3.0.3
+info:
+  title: Mini Camunda-like Spec
+  version: 0.0.1
+  description: Testing specification
+  contact:
+    email: chuck@chucknorris.com
+servers:
+  - url: "{schema}://{host}:{port}/v2"
+    variables:
+      host:
+        default: localhost
+        description: The hostname of the Orchestration Cluster REST Gateway.
+      port:
+        default: "8080"
+        description: The port of the Orchestration Cluster REST API server.
+      schema:
+        default: http
+        description: The schema of the Orchestration Cluster REST API server.
+tags:
+  - name: test
+paths:
+  /instances/{id}:
+    get:
+      description: test route
+      operationId: getInstances
+      tags:
+        - test
+      x-eventually-consistent: false
+      parameters:
+        - name: id
+          in: path
+          schema:
+            type: string
+          required: true
+      responses:
+        '200':
+          $ref: '#/components/responses/ProcessInstanceResponse'
+        '404':
+          description: not found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  errorCode:
+                    type: string
+                  details:
+                    type: object
+                    properties:
+                      reason:
+                        type: string
+                        enum: [NOT_FOUND, DELETED]
+                required: [errorCode]
+components:
+  responses:
+    ProcessInstanceResponse:
+      description: process instance
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProcessInstance'
+  schemas:
+    StringId:
+      allOf:
+        - type: string
+        - description: ID wrapper
+    InstanceState:
+      enum: [ACTIVE, COMPLETED, TERMINATED]
+      type: string
+    ProcessInstance:
+      allOf:
+        - properties:
+            id:
+              $ref: '#/components/schemas/StringId'
+            state:
+              $ref: '#/components/schemas/InstanceState'
+            variables:
+              type: object
+              properties:
+                count:
+                  type: integer
+                  format: int32
+                tags:
+                  type: array
+                  items:
+                    type: string
+                nested:
+                  type: object
+                  properties:
+                    key:
+                      type: string
+                    value:
+                      type: integer
+                  required: [key]
+          required: [id, state]
+        - allOf:
+            - properties:
+                meta:
+                  type: object
+                  properties:
+                    version:
+                      type: integer
+                      format: int64
+                    info:
+                      type: string
+                  required: [version]

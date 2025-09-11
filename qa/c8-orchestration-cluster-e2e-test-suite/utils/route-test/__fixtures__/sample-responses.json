@@ -1,0 +1,52 @@
+{
+  "responses": [
+    {
+      "path": "/process-instance/create",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {"name": "processInstanceKey", "type": "number"},
+          {"name": "bpmnProcessId", "type": "string"},
+          {"name": "version", "type": "number"}
+        ],
+        "optional": [
+          {"name": "tenantId", "type": "string"}
+        ]
+      }
+    },
+    {
+      "path": "/process-instance/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {"name": "items", "type": "array<object>", "children": {"required": [
+            {"name": "processInstanceKey", "type": "number"},
+            {"name": "bpmnProcessId", "type": "string"}
+          ], "optional": [
+            {"name": "tenantId", "type": "string"}
+          ]}},
+          {"name": "count", "type": "number"}
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/mixed/optional",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {"name": "id", "type": "string"},
+          {"name": "state", "type": "string", "enumValues": ["ACTIVE", "DONE"], "underlyingPrimitive": "string"}
+        ],
+        "optional": [
+          {"name": "description", "type": "string"},
+          {"name": "priority", "type": "number"},
+          {"name": "extra", "type": "object", "children": {"required": [{"name": "flag", "type": "boolean"}], "optional": []}}
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Discriminator Mixed Object vs Primitive
+  version: 0.0.1
+paths:
+  /job-result:
+    get:
+      operationId: getJobResult
+      description: Get a job result union mixing object and primitive.
+      tags: [jobs]
+      x-eventually-consistent: false
+      responses:
+        '200':
+          description: ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MixedJobResult'
+components:
+  schemas:
+    MixedJobResult:
+      description: Job result polymorphic
+      discriminator:
+        propertyName: type
+        mapping:
+          objectBranch: '#/components/schemas/ObjectBranchResult'
+          primitiveBranch: '#/components/schemas/PrimitiveBranchWrapper'
+      required: [type]
+      properties:
+        type:
+            type: string
+            enum: [objectBranch, primitiveBranch]
+      oneOf:
+        - $ref: '#/components/schemas/ObjectBranchResult'
+        - $ref: '#/components/schemas/PrimitiveBranchWrapper'
+    ObjectBranchResult:
+      type: object
+      properties:
+        value:
+          type: object
+          properties:
+            id:
+              type: string
+            count:
+              type: integer
+              format: int64
+          required: [id]
+    PrimitiveBranchWrapper:
+      description: Wrapper around simple string result
+      allOf:
+        - type: string
+        - description: indicates primitive variant
