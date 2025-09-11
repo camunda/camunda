@@ -136,6 +136,10 @@ schemas:
         $ref: "components.yaml#/schemas/TopologyChange"
       routing:
         $ref: "components.yaml#/schemas/RoutingState"
+      clusterId:
+        type: string
+        description: The unique ID of the cluster
+        example: "cluster-1234"
 
   RoutingState:
     description: The routing state, i.e. where requests are sent to and how messages are correlated

@@ -328,6 +328,7 @@ final class ClusterApiUtils {
     topology
         .routingState()
         .ifPresent(routingState -> response.routing(mapRoutingState(routingState)));
+    topology.clusterId().ifPresent(response::clusterId);
     return response;
   }
 
