@@ -40,6 +40,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit

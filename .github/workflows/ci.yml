@@ -739,7 +739,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration - ${{ matrix.owner }} - ${{ matrix.name }}"
+    name: "${{ matrix.module }} / Integration - ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -834,6 +834,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a Integration test for ${{ matrix.name }} owned by ${{ matrix.owner}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
