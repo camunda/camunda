@@ -34,12 +34,17 @@ import org.opensearch.client.opensearch._types.aggregations.MultiBucketBase;
 import org.opensearch.client.opensearch._types.aggregations.SingleBucketAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.SingleMetricAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.StringTermsBucket;
+import org.opensearch.client.opensearch._types.aggregations.TermsAggregateBase;
 import org.opensearch.client.opensearch._types.aggregations.TopHitsAggregate;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class SearchAggregationResultTransformer<T>
     implements SearchTransfomer<Map<String, Aggregate>, Map<String, AggregationResult>> {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SearchAggregationResultTransformer.class);
   private static final String COMPOSITE_KEY_DELIMITER = "__";
   private final OpensearchTransformers transformers;
   private final List<SearchAggregator> aggregators;
@@ -180,8 +185,8 @@ public class SearchAggregationResultTransformer<T>
             case Parent -> res = transformSingleBucketAggregate(aggregate.parent());
             case Filter -> res = transformSingleBucketAggregate(aggregate.filter());
             case Filters -> res = transformMultiBucketAggregate(aggregate.filters());
-            case Sterms -> res = transformMultiBucketAggregate(aggregate.sterms());
-            case Lterms -> res = transformLTermsBucketAggregate(aggregate.lterms());
+            case Sterms -> res = transformMultiBucketAggregate(warnDocError(aggregate.sterms()));
+            case Lterms -> res = transformLTermsBucketAggregate(warnDocError(aggregate.lterms()));
             case Composite -> res = transformMultiBucketAggregate(aggregate.composite());
             case TopHits -> res = transformTopHitsAggregate(key, aggregate.topHits());
             case Sum -> res = transformSingleMetricAggregate(aggregate.sum());
@@ -192,6 +197,18 @@ public class SearchAggregationResultTransformer<T>
           result.put(key, res);
         });
     return result;
+  }
+
+  private <A extends MultiBucketAggregateBase<?>> A warnDocError(final A multiBucketAggregate) {
+    if (multiBucketAggregate instanceof final TermsAggregateBase<?> termsAggregate) {
+      final long sumOtherDocCount = termsAggregate.sumOtherDocCount();
+      if (sumOtherDocCount > 0) {
+        LOGGER.warn(
+            "Terms aggregation encountered more buckets ({}) than the specified size.",
+            sumOtherDocCount);
+      }
+    }
+    return multiBucketAggregate;
   }
 
   private List<SearchQueryHit> toSearchQueryHits(
