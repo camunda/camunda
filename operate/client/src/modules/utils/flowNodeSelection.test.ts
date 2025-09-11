@@ -149,7 +149,6 @@ describe('selectAdHocSubProcessInnerInstance', () => {
       type: 'SERVICE_TASK',
     });
 
-    // Mock that children are already loaded
     const getVisibleChildNodesSpy = vi
       .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
       .mockReturnValue([mockChild]);
@@ -173,7 +172,6 @@ describe('selectAdHocSubProcessInnerInstance', () => {
       type: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
     });
 
-    // Mock that no children are loaded initially
     const getVisibleChildNodesSpy = vi
       .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
       .mockReturnValue([]);
@@ -196,7 +194,7 @@ describe('selectAdHocSubProcessInnerInstance', () => {
 
     const getVisibleChildNodesSpy = vi
       .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
-      .mockReturnValue([]); // Always return empty for this test
+      .mockReturnValue([]);
 
     selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
 
@@ -226,7 +224,6 @@ describe('selectAdHocSubProcessInnerInstance', () => {
       type: 'USER_TASK',
     });
 
-    // Mock multiple children
     const getVisibleChildNodesSpy = vi
       .spyOn(flowNodeInstanceStore, 'getVisibleChildNodes')
       .mockReturnValue([mockFirstChild, mockSecondChild]);
@@ -234,7 +231,6 @@ describe('selectAdHocSubProcessInnerInstance', () => {
     selectAdHocSubProcessInnerInstance(mockRootNode, mockInnerInstance);
 
     expect(getVisibleChildNodesSpy).toHaveBeenCalledWith(mockInnerInstance);
-    // Should select first child, not second
     expect(flowNodeSelectionStore.state.selection).toEqual({
       flowNodeId: 'task-1',
       flowNodeInstanceId: 'child-1',
