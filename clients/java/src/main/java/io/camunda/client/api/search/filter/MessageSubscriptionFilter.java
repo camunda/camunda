@@ -15,10 +15,10 @@
  */
 package io.camunda.client.api.search.filter;
 
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
-import io.camunda.client.api.search.filter.builder.MessageSubscriptionTypeProperty;
+import io.camunda.client.api.search.filter.builder.MessageSubscriptionStateProperty;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
 import java.time.OffsetDateTime;
@@ -110,21 +110,21 @@ public interface MessageSubscriptionFilter extends SearchRequestFilter {
   MessageSubscriptionFilter elementInstanceKey(Consumer<BasicLongProperty> fn);
 
   /**
-   * Filter by message subscription type.
+   * Filter by message subscription state.
    *
-   * @param messageSubscriptionType the type of the message subscription
+   * @param messageSubscriptionState the type of the message subscription
    * @return the updated filter
    */
-  MessageSubscriptionFilter messageSubscriptionType(
-      MessageSubscriptionType messageSubscriptionType);
+  MessageSubscriptionFilter messageSubscriptionState(
+      MessageSubscriptionState messageSubscriptionState);
 
   /**
-   * Filter by message subscription type using a {@link MessageSubscriptionTypeProperty} consumer.
+   * Filter by message subscription state using a {@link MessageSubscriptionStateProperty} consumer.
    *
-   * @param fn the message subscription type {@link MessageSubscriptionTypeProperty} consumer
+   * @param fn the message subscription state {@link MessageSubscriptionStateProperty} consumer
    * @return the updated filter
    */
-  MessageSubscriptionFilter messageSubscriptionType(Consumer<MessageSubscriptionTypeProperty> fn);
+  MessageSubscriptionFilter messageSubscriptionState(Consumer<MessageSubscriptionStateProperty> fn);
 
   /**
    * Filter by last updated date.

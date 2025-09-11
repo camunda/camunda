@@ -682,7 +682,7 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case ELEMENT_ID -> builder.flowNodeId();
         case ELEMENT_INSTANCE_KEY -> builder.flowNodeInstanceKey();
-        case MESSAGE_SUBSCRIPTION_TYPE -> builder.messageSubscriptionType();
+        case MESSAGE_SUBSCRIPTION_STATE -> builder.messageSubscriptionState();
         case LAST_UPDATED_DATE -> builder.dateTime();
         case MESSAGE_NAME -> builder.messageName();
         case CORRELATION_KEY -> builder.correlationKey();

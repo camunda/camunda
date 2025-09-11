@@ -36,6 +36,7 @@ public enum EventType {
 
   // MESSAGE
   CORRELATED,
+  DELETED,
 
   CANCELED,
 

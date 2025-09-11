@@ -27,6 +27,7 @@ import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -927,12 +928,24 @@ public final class TestHelper {
 
   public static void waitForMessageSubscriptions(
       final CamundaClient camundaClient, final int expectedMessageSubscriptions) {
+    waitForMessageSubscriptions(camundaClient, f -> {}, expectedMessageSubscriptions);
+  }
+
+  public static void waitForMessageSubscriptions(
+      final CamundaClient camundaClient,
+      final Consumer<MessageSubscriptionFilter> filterConsumer,
+      final int expectedMessageSubscriptions) {
     Awaitility.await("should wait until message subscriptions are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newMessageSubscriptionSearchRequest()
+                      .filter(filterConsumer)
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
             });
   }

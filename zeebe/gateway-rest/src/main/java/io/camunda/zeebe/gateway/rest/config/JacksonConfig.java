@@ -20,7 +20,7 @@ import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobStateFilterProperty;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionTypeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.StringFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.UserTaskStateFilterProperty;
@@ -34,7 +34,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeseriali
 import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobListenerEventTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobStateFilterPropertyDeserializer;
-import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionTypePropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.MessageSubscriptionStatePropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ProcessInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.StringFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.UserTaskStateFilterPropertyDeserializer;
@@ -74,8 +74,8 @@ public class JacksonConfig {
         JobListenerEventTypeFilterProperty.class,
         new JobListenerEventTypeFilterPropertyDeserializer());
     module.addDeserializer(
-        MessageSubscriptionTypeFilterProperty.class,
-        new MessageSubscriptionTypePropertyDeserializer());
+        MessageSubscriptionStateFilterProperty.class,
+        new MessageSubscriptionStatePropertyDeserializer());
     module.addDeserializer(
         UserTaskStateFilterProperty.class, new UserTaskStateFilterPropertyDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
