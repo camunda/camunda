@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
 import io.camunda.client.spring.bean.MethodInfo;
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +27,16 @@ class DefaultResultProcessorStrategyTest {
 
   private final DefaultResultProcessorStrategy resultProcessorStrategy =
       new DefaultResultProcessorStrategy(
-          mock(CamundaClient.class), mock(DocumentResultProcessorFailureHandlingStrategy.class));
+          mock(DocumentResultProcessorFailureHandlingStrategy.class));
 
   @Test
   void createProcessorShouldReturnDefaultProcessor() throws NoSuchMethodException {
     // Given
     final MethodInfo methodInfo = mock(MethodInfo.class);
     // When
-    final ResultProcessor resultProcessor = resultProcessorStrategy.createProcessor(methodInfo);
+    final ResultProcessor resultProcessor =
+        resultProcessorStrategy.createProcessor(
+            new ResultProcessorStrategyContext(methodInfo, mock(CamundaClient.class)));
     // Then
     assertThat((resultProcessor instanceof DefaultResultProcessor)).isTrue();
   }

@@ -15,16 +15,12 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.api.worker.JobHandler;
 
-public interface JobExceptionHandlingStrategy {
-  void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
+public interface JobHandlerFactory {
+  JobHandler getJobHandler(final JobHandlerFactoryContext context);
 
-  record ExceptionHandlingContext(JobClient jobClient, ActivatedJob job, int maxRetries) {}
-
-  interface CommandWrapperCreator {
-    CommandWrapper create(FinalCommandStep<?> command);
-  }
+  record JobHandlerFactoryContext(JobWorkerValue jobWorkerValue, CamundaClient camundaClient) {}
 }

@@ -18,6 +18,7 @@ package io.camunda.client.spring.testsupport;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.spring.bean.MethodInfo;
 import io.camunda.client.spring.bean.ParameterInfo;
 import java.beans.Introspector;
 import java.lang.reflect.Method;
@@ -49,5 +50,17 @@ public final class ClassInfoUtil {
         Arrays.stream(bean.getClass().getMethods()).filter(m -> m.getName().equals(name)).toList();
     assertThat(methods).hasSize(1);
     return methods.get(0);
+  }
+
+  public static MethodInfo methodInfo(
+      final Object bean, final String beanName, final String methodName) {
+    try {
+      return MethodInfo.builder()
+          .classInfo(ClassInfo.builder().beanName(beanName).bean(bean).build())
+          .method(method(bean, methodName))
+          .build();
+    } catch (final Exception e) {
+      throw new RuntimeException("Error while constructing methodInfo for method " + methodName, e);
+    }
   }
 }
