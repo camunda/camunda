@@ -16,7 +16,7 @@ public enum MessageSubscriptionColumn implements SearchColumn<MessageSubscriptio
   PROCESS_INSTANCE_KEY("processInstanceKey"),
   FLOW_NODE_ID("flowNodeId"),
   FLOW_NODE_INSTANCE_KEY("flowNodeInstanceKey"),
-  MESSAGE_SUBSCRIPTION_TYPE("messageSubscriptionType"),
+  MESSAGE_SUBSCRIPTION_STATE("messageSubscriptionState"),
   DATE_TIME("dateTime"),
   MESSAGE_NAME("messageName"),
   CORRELATION_KEY("correlationKey"),

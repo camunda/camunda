@@ -19,11 +19,11 @@ import static io.camunda.client.util.assertions.SortAssert.assertSort;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.http.RequestMethod;
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQuery;
-import io.camunda.client.protocol.rest.MessageSubscriptionTypeEnum;
+import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -66,7 +66,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .processInstanceKey(456L)
                     .elementId("element-id")
                     .elementInstanceKey(789L)
-                    .messageSubscriptionType(MessageSubscriptionType.CORRELATED)
+                    .messageSubscriptionState(MessageSubscriptionState.CORRELATED)
                     .lastUpdatedDate(lastUpdatedDate)
                     .messageName("message-name")
                     .correlationKey("correlation-key")
@@ -89,9 +89,9 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertThat(request.getFilter().getElementId().get$Eq()).isEqualTo("element-id");
     assertThat(request.getFilter().getElementInstanceKey()).isNotNull();
     assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("789");
-    assertThat(request.getFilter().getMessageSubscriptionType()).isNotNull();
-    assertThat(request.getFilter().getMessageSubscriptionType().get$Eq())
-        .isEqualTo(MessageSubscriptionTypeEnum.CORRELATED);
+    assertThat(request.getFilter().getMessageSubscriptionState()).isNotNull();
+    assertThat(request.getFilter().getMessageSubscriptionState().get$Eq())
+        .isEqualTo(MessageSubscriptionStateEnum.CORRELATED);
     assertThat(request.getFilter().getLastUpdatedDate()).isNotNull();
     assertThat(request.getFilter().getLastUpdatedDate().get$Eq())
         .isEqualTo(lastUpdatedDate.toString());
@@ -120,7 +120,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .asc()
                     .elementInstanceKey()
                     .desc()
-                    .messageSubscriptionType()
+                    .messageSubscriptionState()
                     .asc()
                     .lastUpdatedDate()
                     .desc()
@@ -145,7 +145,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertSort(sorts.get(2), "processInstanceKey", SortOrderEnum.DESC);
     assertSort(sorts.get(3), "elementId", SortOrderEnum.ASC);
     assertSort(sorts.get(4), "elementInstanceKey", SortOrderEnum.DESC);
-    assertSort(sorts.get(5), "messageSubscriptionType", SortOrderEnum.ASC);
+    assertSort(sorts.get(5), "messageSubscriptionState", SortOrderEnum.ASC);
     assertSort(sorts.get(6), "lastUpdatedDate", SortOrderEnum.DESC);
     assertSort(sorts.get(7), "messageName", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "correlationKey", SortOrderEnum.DESC);
