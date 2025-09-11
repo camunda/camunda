@@ -88,10 +88,10 @@ import org.testcontainers.containers.GenericContainer;
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
 
   @RegisterExtension
-  private static CamundaExporterITTemplateExtension templateExtension =
+  private static final CamundaExporterITTemplateExtension templateExtension =
       new CamundaExporterITTemplateExtension(searchDB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -365,7 +365,7 @@ final class CamundaExporterIT {
             valueType,
             r ->
                 r.withBrokerVersion("8.8.0")
-                    .withIntent(IncidentIntent.RESOLVED)
+                    .withIntent(IncidentIntent.CREATED)
                     .withTimestamp(invalidTimestamp));
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
