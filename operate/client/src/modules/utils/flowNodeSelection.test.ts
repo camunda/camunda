@@ -16,7 +16,6 @@ import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {flowNodeInstanceStore} from 'modules/stores/flowNodeInstance';
 import {createInstance} from 'modules/testUtils';
-import {vi} from 'vitest';
 
 describe('getSelectedRunningInstanceCount', () => {
   beforeEach(() => {
