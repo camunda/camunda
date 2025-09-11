@@ -40,7 +40,7 @@ env:
 jobs:
   # run every time this CI file is called
   operate-backend-unit-tests:
-    name: "Unit / Back End"
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -107,7 +107,7 @@ jobs:
 
   fe-unit-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End UTs"
+    name: "Unit - Front End"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: { } # GITHUB_TOKEN unused in this job
@@ -141,7 +141,7 @@ jobs:
   # Typescript Checker
   operate-fe-type-check:
     if: inputs.runFeTests
-    name: "Tool / Front End / TypeScript Type Check"
+    name: "Tool / Front End - TypeScript Type Check"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -176,7 +176,7 @@ jobs:
   # Front End Code linting
   operate-fe-eslint:
     if: inputs.runFeTests
-    name: "Tool / Front End / ESLint"
+    name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -211,7 +211,7 @@ jobs:
   # description: This workflow runs a11y accessibility tests on Operate
   operate-fe-a11y-tests:
     if: inputs.runFeTests
-    name: "Tool / Front End / a11y"
+    name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -260,7 +260,7 @@ jobs:
 
   operate-fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End / Visual Regression"
+    name: "Unit / Front End - Visual Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -309,7 +309,7 @@ jobs:
 
   operate-update-screenshots:
     if: inputs.runFeTests
-    name: "Tool / Front End / Update Screenshots"
+    name: "Tool / Front End - Update Screenshots"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -357,7 +357,7 @@ jobs:
 
   run-importer-tests:
     if: inputs.runBeTests
-    name: "Integration / Importer"
+    name: "Integration / Importer ITs"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

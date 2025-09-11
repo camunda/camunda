@@ -70,7 +70,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    name: "Lint / Tool / Actionlint"
+    name: "Lint / Actionlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -106,7 +106,7 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
-    name: "Lint / Tool / Commitlint"
+    name: "Lint / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -139,7 +139,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    name: "Lint / Tool / Maven Spotless"
+    name: "Lint / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -256,7 +256,7 @@ jobs:
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "General / Unit Tests"
+    name: "General / Unit - Back End"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -320,7 +320,7 @@ jobs:
 
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Zeebe / Unit / ${{matrix.component}}"
+    name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -412,7 +412,7 @@ jobs:
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / Elasticsearch"
+    name: "General / Integration / Elasticsearch ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -514,7 +514,7 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / OpenSearch"
+    name: "General / Integration / OpenSearch ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -622,7 +622,7 @@ jobs:
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / RDBMS - H2"
+    name: "General / Integration / RDBMS - H2 ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
@@ -689,7 +689,7 @@ jobs:
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
-    name: "General / Integration / RDBMS"
+    name: "General / Integration / RDBMS ITs"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
     permissions: { }  # no GITHUB_TOKEN is needed
@@ -746,7 +746,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration / ${{ matrix.owner }} / ${{ matrix.name }}"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -1155,7 +1155,7 @@ jobs:
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
-    name: "Identity / Unit / Front End"
+    name: "Identity / Unit - Front End"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -1298,7 +1298,7 @@ jobs:
           user_description: "General"
 
   openapi-lint:
-    name: "Lint / Tool / C8 REST OpenAPI"
+    name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -1335,7 +1335,7 @@ jobs:
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
-    name: "Lint / Tool / Renovate Config Validator"
+    name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -40,7 +40,7 @@ env:
 jobs:
   # run this test every time the workflow is triggered
   tasklist-backend-unit-tests:
-    name: "Unit / Back End"
+    name: "Unit"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
@@ -60,7 +60,7 @@ jobs:
 
   fe-type-check:
     if: inputs.runFeTests
-    name: "Tool /  Front End / Type check"
+    name: "Tool /  Front End - Type check"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -94,7 +94,7 @@ jobs:
 
   fe-eslint:
     if: inputs.runFeTests
-    name: "Tool / Front End / ESLint"
+    name: "Tool / Front End - ESLint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -128,7 +128,7 @@ jobs:
 
   fe-stylelint:
     if: inputs.runFeTests
-    name: "Tool / Front End / Stylelint"
+    name: "Tool / Front End - Stylelint"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -162,7 +162,7 @@ jobs:
 
   fe-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End UTs"
+    name: "Unit - Front End"
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -196,7 +196,7 @@ jobs:
 
   fe-visual-regression-tests:
     if: inputs.runFeTests
-    name: "Unit / Front End / Visual Regression"
+    name: "Unit - Front End - Visual Regression"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -245,7 +245,7 @@ jobs:
 
   fe-a11y-tests:
     if: inputs.runFeTests
-    name: "Tool / Front End / a11y"
+    name: "Tool / Front End - a11y"
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
@@ -294,7 +294,7 @@ jobs:
 
   run-backup-restore-tests:
     if: inputs.runBeTests
-    name: "Integration / Backup Restore"
+    name: "Integration / Backup Restore ITs"
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
@@ -368,7 +368,7 @@ jobs:
   integration-tests:
     if: inputs.runBeTests
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
-    name: "Integration / Docker Tests"
+    name: "Integration / Docker ITs"
     runs-on: gcp-core-4-default
     timeout-minutes: 15
     permissions: {}  # GITHUB_TOKEN unused in this job
