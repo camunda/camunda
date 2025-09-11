@@ -55,7 +55,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessMessageSubscriptionIntent.class,
-      names = {"CREATED", "MIGRATED"},
+      names = {"CREATED", "MIGRATED", "CORRELATED", "DELETED"},
       mode = Mode.INCLUDE)
   void shouldHandleRecord(final Intent intent) {
     // given
@@ -68,7 +68,7 @@ final class EventFromProcessMessageSubscriptionHandlerTest {
   @ParameterizedTest
   @EnumSource(
       value = ProcessMessageSubscriptionIntent.class,
-      names = {"CREATED", "MIGRATED"},
+      names = {"CREATED", "MIGRATED", "CORRELATED", "DELETED"},
       mode = Mode.EXCLUDE)
   void shouldNotHandleRecord(final Intent intent) {
     // given
