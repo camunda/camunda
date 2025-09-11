@@ -72,7 +72,7 @@ const MappingRules: FC<MappingRulesProps> = ({ groupId }) => {
           childResourceTypeTranslationKey={"mappingRule"}
           parentResourceTypeTranslationKey={"group"}
           handleClick={openAssignModal}
-          docsLinkPath=""
+          docsLinkPath="/docs/components/identity/mapping-rules/manage-mapping-rules/"
         />
         {assignMappingRulesModal}
       </>

@@ -43,7 +43,7 @@ const List: FC = () => {
     <PageHeader
       title={t("roles")}
       linkText={t("roles").toLowerCase()}
-      docsLinkPath=""
+      docsLinkPath="/docs/components/identity/role/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -54,7 +54,7 @@ const List: FC = () => {
         {pageHeader}
         <PageEmptyState
           resourceTypeTranslationKey={"role"}
-          docsLinkPath=""
+          docsLinkPath="/docs/components/identity/role/"
           handleClick={addRole}
         />
         {addRoleModal}
