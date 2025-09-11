@@ -63,6 +63,7 @@ import org.springframework.test.context.TestPropertySource;
     })
 public class RoleSpecificFilterIT {
   public static final String ROLE_ID = "roleId";
+  public static final String ROLE_DESCRIPTION = "roleDescription";
   public static final long ROLE_KEY = 1337L;
   public static final String ROLE_NAME = "Role 1337";
   public static final String ENTITY_ID = "entityId";
@@ -189,7 +190,9 @@ public class RoleSpecificFilterIT {
     createAndSaveRandomRolesWithMembers(rdbmsWriter);
     createAndSaveRole(
         rdbmsWriter,
-        RoleFixtures.createRandomized(b -> b.roleId(ROLE_ID).roleKey(ROLE_KEY).name(ROLE_NAME)));
+        RoleFixtures.createRandomized(
+            b ->
+                b.roleId(ROLE_ID).description(ROLE_DESCRIPTION).roleKey(ROLE_KEY).name(ROLE_NAME)));
     RoleMemberFixtures.createAndSaveRandomRoleMember(
         rdbmsWriter, b -> b.roleId(ROLE_ID).entityId(ENTITY_ID).entityType(ENTITY_TYPE.name()));
 
@@ -206,7 +209,8 @@ public class RoleSpecificFilterIT {
     return List.of(
         new RoleFilter.Builder().roleId(ROLE_ID).build(),
         new RoleFilter.Builder().name(ROLE_NAME).build(),
-        new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build());
+        new RoleFilter.Builder().memberId(ENTITY_ID).childMemberType(ENTITY_TYPE).build(),
+        new RoleFilter.Builder().description(ROLE_DESCRIPTION).build());
   }
 
   private void addGroupToRole(final String roleId, final String entityId) {
