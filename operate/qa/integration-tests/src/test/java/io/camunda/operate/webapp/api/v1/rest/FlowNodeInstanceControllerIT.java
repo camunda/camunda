@@ -101,8 +101,7 @@ public class FlowNodeInstanceControllerIT {
   @Test
   public void shouldAcceptQueryWithFilter() throws Exception {
     assertPostToWithSucceed(
-        URI + SEARCH,
-        "{\"filter\": { \"" + FlowNodeInstance.PROCESS_INSTANCE_KEY + "\": \"1\" } }");
+        URI + SEARCH, "{\"filter\": { \"" + FlowNodeInstance.PROCESS_INSTANCE_KEY + "\": 1 } }");
     verify(flowNodeInstanceDao)
         .search(
             new Query<FlowNodeInstance>()
@@ -128,9 +127,9 @@ public class FlowNodeInstanceControllerIT {
         URI + SEARCH,
         "{\"filter\": { \""
             + FlowNodeInstance.PROCESS_DEFINITION_KEY
-            + "\": \""
+            + "\": "
             + processDefinitionKey
-            + "\" } }");
+            + " } }");
     verify(flowNodeInstanceDao)
         .search(
             new Query<FlowNodeInstance>()
