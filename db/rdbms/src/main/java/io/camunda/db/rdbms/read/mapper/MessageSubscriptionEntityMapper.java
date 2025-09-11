@@ -21,7 +21,7 @@ public class MessageSubscriptionEntityMapper {
         .processInstanceKey(messageSubscriptionDbModel.processInstanceKey())
         .flowNodeId(messageSubscriptionDbModel.flowNodeId())
         .flowNodeInstanceKey(messageSubscriptionDbModel.flowNodeInstanceKey())
-        .messageSubscriptionType(messageSubscriptionDbModel.messageSubscriptionType())
+        .messageSubscriptionState(messageSubscriptionDbModel.messageSubscriptionState())
         .dateTime(messageSubscriptionDbModel.dateTime())
         .messageName(messageSubscriptionDbModel.messageName())
         .correlationKey(messageSubscriptionDbModel.correlationKey())

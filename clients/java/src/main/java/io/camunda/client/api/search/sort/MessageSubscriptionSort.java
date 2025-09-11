@@ -29,7 +29,7 @@ public interface MessageSubscriptionSort extends SearchRequestSort<MessageSubscr
 
   MessageSubscriptionSort elementInstanceKey();
 
-  MessageSubscriptionSort messageSubscriptionType();
+  MessageSubscriptionSort messageSubscriptionState();
 
   MessageSubscriptionSort lastUpdatedDate();
 

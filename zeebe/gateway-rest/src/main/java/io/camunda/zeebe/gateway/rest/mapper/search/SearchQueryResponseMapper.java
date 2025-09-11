@@ -95,7 +95,7 @@ import io.camunda.zeebe.gateway.protocol.rest.MappingRuleSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MatchedDecisionRuleItem;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionSearchQueryResult;
-import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionTypeEnum;
+import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
@@ -869,9 +869,9 @@ public final class SearchQueryResponseMapper {
         .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
         .elementId(messageSubscription.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
-        .messageSubscriptionType(
-            MessageSubscriptionTypeEnum.fromValue(
-                messageSubscription.messageSubscriptionType().name()))
+        .messageSubscriptionState(
+            MessageSubscriptionStateEnum.fromValue(
+                messageSubscription.messageSubscriptionState().name()))
         .lastUpdatedDate(formatDate(messageSubscription.dateTime()))
         .messageName(messageSubscription.messageName())
         .correlationKey(messageSubscription.correlationKey())

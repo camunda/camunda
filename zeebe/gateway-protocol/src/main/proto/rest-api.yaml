@@ -7327,8 +7327,8 @@ components:
         elementInstanceKey:
           description: The element instance key associated with this message subscription.
           type: string
-        messageSubscriptionType:
-          $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+        messageSubscriptionState:
+          $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         lastUpdatedDate:
           description: The last updated date of the message subscription.
           type: string
@@ -7354,7 +7354,7 @@ components:
             - processInstanceKey
             - elementId
             - elementInstanceKey
-            - messageSubscriptionType
+            - messageSubscriptionState
             - lastUpdatedDate
             - messageName
             - correlationKey
@@ -7401,10 +7401,10 @@ components:
           description: The element instance key associated with this message subscription.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
-        messageSubscriptionType:
-          description: The message subscription type.
+        messageSubscriptionState:
+          description: The message subscription state.
           allOf:
-            - $ref: "#/components/schemas/MessageSubscriptionTypeFilterProperty"
+            - $ref: "#/components/schemas/MessageSubscriptionStateFilterProperty"
         lastUpdatedDate:
           description: The last updated date of the message subscription.
           allOf:
@@ -7421,37 +7421,37 @@ components:
           description: The unique external tenant ID.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
-    MessageSubscriptionTypeFilterProperty:
-      description: MessageSubscriptionTypeEnum with full advanced search capabilities.
+    MessageSubscriptionStateFilterProperty:
+      description: MessageSubscriptionStateEnum with full advanced search capabilities.
       type: object
       oneOf:
         - type: string
           title: Exact match
           description: Matches the value exactly.
           allOf:
-            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
-        - $ref: "#/components/schemas/AdvancedMessageSubscriptionTypeFilter"
-    MessageSubscriptionTypeEnum:
-      description: The type of message subscription.
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
+        - $ref: "#/components/schemas/AdvancedMessageSubscriptionStateFilter"
+    MessageSubscriptionStateEnum:
+      description: The state of message subscription.
       type: string
       enum:
         - CORRELATED
         - CREATED
         - DELETED
         - MIGRATED
-    AdvancedMessageSubscriptionTypeFilter:
+    AdvancedMessageSubscriptionStateFilter:
       title: Advanced filter
-      description: Advanced MessageSubscriptionTypeEnum filter
+      description: Advanced MessageSubscriptionStateEnum filter
       type: object
       properties:
         $eq:
           description: Checks for equality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $neq:
           description: Checks for inequality with the provided value.
           allOf:
-            - $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+            - $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -7459,7 +7459,7 @@ components:
           description: Checks if the property matches any of the provided values.
           type: array
           items:
-            $ref: "#/components/schemas/MessageSubscriptionTypeEnum"
+            $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
           $ref: "#/components/schemas/LikeFilterProperty"
     IncidentResult:
