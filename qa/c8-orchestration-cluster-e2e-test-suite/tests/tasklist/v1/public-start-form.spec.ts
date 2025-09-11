@@ -17,7 +17,10 @@ test.describe('public start process', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('should submit form', async ({makeAxeBuilder, publicFormsPage}) => {
+  test('should submit form @v1-only', async ({
+    makeAxeBuilder,
+    publicFormsPage,
+  }) => {
     await deploy([
       './resources/subscribeFormProcess.bpmn',
       './resources/subscribeForm.form',
