@@ -106,52 +106,50 @@ public class ProcessInstanceSpecificFilterIT {
 
   static Stream<Arguments> shouldFindProcessInstanceWithSpecificFilterParameters() {
     return Stream.of(
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder()
-        //                .processDefinitionIds("test-process-987654321")
-        //                .build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new
-        // ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder()
-        //                .processDefinitionNames("Test Process 987654321")
-        //                .build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
-        //        Arguments.of(
-        //            new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version
-        // 1").build(),
-        //            1,
-        //            1,
-        //            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processInstanceKeys(42L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionIds("test-process-987654321")
+                .build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processDefinitionKeys(987654321L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().states(ProcessInstanceState.ACTIVE.name()).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().parentProcessInstanceKeys(-1L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().parentFlowNodeInstanceKeys(-1L).build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder()
+                .processDefinitionNames("Test Process 987654321")
+                .build(),
+            1,
+            1,
+            List.of(42L)),
+        Arguments.of(
+            new ProcessInstanceFilter.Builder().processDefinitionVersionTags("Version 1").build(),
+            1,
+            1,
+            List.of(42L)),
         Arguments.of(
             new ProcessInstanceFilter.Builder()
                 .processInstanceKeys(42L)
@@ -170,6 +168,6 @@ public class ProcessInstanceSpecificFilterIT {
                 .build(),
             21,
             5,
-            List.of(42L, 54408L, 54412L, 54416L, 54420L)));
+            List.of(42L)));
   }
 }
