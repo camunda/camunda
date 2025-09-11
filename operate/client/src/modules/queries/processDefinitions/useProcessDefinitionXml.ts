@@ -7,13 +7,14 @@
  */
 
 import {fetchProcessDefinitionXml} from 'modules/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {skipToken, useQuery} from '@tanstack/react-query';
+import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {getFlowNodes} from 'modules/utils/flowNodes';
 import type {DiagramModel} from 'bpmn-moddle';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {RequestError} from 'modules/request';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
 
@@ -38,8 +39,8 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   processDefinitionKey?: ProcessDefinition['processDefinitionKey'];
   select?: (data: ParsedXmlData) => T;
   enabled?: boolean;
-}) {
-  return useQuery<ParsedXmlData, RequestError, T>({
+}): UseQueryResult<T, RequestError> {
+  return useQuery({
     queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
     queryFn:
       enabled && !!processDefinitionKey
@@ -56,6 +57,21 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
         : skipToken,
     select,
     staleTime: Infinity,
+    retry: (failureCount, error) => {
+      if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
+        return false;
+      }
+      return failureCount < 3;
+    },
+    refetchOnWindowFocus: false,
+    refetchOnMount: (query) => {
+      const lastError = query.state.error;
+      return lastError?.response?.status !== HTTP_STATUS_FORBIDDEN;
+    },
+    refetchOnReconnect: (query) => {
+      const lastError = query.state.error;
+      return lastError?.response?.status !== HTTP_STATUS_FORBIDDEN;
+    },
   });
 }
 
