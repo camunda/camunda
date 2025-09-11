@@ -40,7 +40,6 @@ env:
 jobs:
   # run this test every time the workflow is triggered
   tasklist-backend-unit-tests:
-    name: "Unit - Back End"
     uses: ./.github/workflows/ci-webapp-run-ut-reuseable.yml
     permissions: { }  # GITHUB_TOKEN unused in this job
     secrets: inherit
