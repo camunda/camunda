@@ -18,8 +18,10 @@
     "* 20-23,0-8 * * 1-5",
     "* * * * 0,6"
   ],
+  "labels": ["dependencies"],
   "vulnerabilityAlerts": {
     "labels": [
+      "dependencies",
       "area/security"
     ],
     "enabled": true
@@ -65,6 +67,33 @@
         "major"
       ],
       "enabled": false
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "dockerfile",
+        "maven-wrapper",
+        "github-actions",
+        "nvm",
+        "helmv3"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "regex"
+      ],
+      "matchFileNames": [
+        ".github/**"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
     },
     {
       "description": "Allow minor updates for Spring and Spring-boot for stable branches where the Spring support window is not matching the Camunda support window yet. Right now these are 8.6+. Since Spring has a 1-year support cycle while C8 is supported for 18 months, we allow minor updates to help mitigate security risks.",
