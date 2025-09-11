@@ -137,8 +137,8 @@ public class MappingRuleSpecificFilterIT {
     final var tenant2 = TenantFixtures.createAndSaveTenant(rdbmsWriter);
 
     assignMappingRuleToTenant(tenant1.tenantId(), mappingRule1.mappingRuleId());
-    assignMappingRuleToGroup(tenant2.tenantId(), mappingRule2.mappingRuleId());
-    assignMappingRuleToGroup(tenant2.tenantId(), mappingRule3.mappingRuleId());
+    assignMappingRuleToTenant(tenant2.tenantId(), mappingRule2.mappingRuleId());
+    assignMappingRuleToTenant(tenant2.tenantId(), mappingRule3.mappingRuleId());
 
     final var mappingRules =
         mappingRuleReader.search(
