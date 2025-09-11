@@ -53,8 +53,8 @@ const createInstances = async (
   const instances = [];
   for (let i = 0; i < numberOfInstances; i++) {
     const instance = await zeebe.createProcessInstance({
-      processDefinitionId,
-      version,
+      processDefinitionId: processDefinitionId,
+      processDefinitionVersion: version,
       variables: variables ?? {},
     });
     instances.push(instance);
@@ -68,8 +68,8 @@ const createSingleInstance = async (
   variables?: JSONDoc,
 ) => {
   return zeebe.createProcessInstance({
-    processDefinitionId,
-    version,
+    processDefinitionId: processDefinitionId,
+    processDefinitionVersion: version,
     variables: {...(variables ?? {})},
   });
 };
