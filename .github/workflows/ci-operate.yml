@@ -113,6 +113,7 @@ jobs:
     permissions: { } # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Unit
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -146,6 +147,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -180,6 +182,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     defaults:
       run:
         working-directory: operate/client
@@ -214,6 +217,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Tool
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -262,6 +266,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: visual-regression
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -310,6 +315,7 @@ jobs:
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: screenshot-update
+      TEST_OWNER: Core Features
     container:
       image: mcr.microsoft.com/playwright:v1.54.0
       options: --user 1001:1000
@@ -354,10 +360,15 @@ jobs:
     name: "Integration / Importer"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    env:
+      TEST_TYPE: Integration
+      TEST_OWNER: Data Layer
     permissions: {} # GITHUB_TOKEN unused in this job
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: operate-importer
