@@ -50,7 +50,7 @@ jobs:
 
         - name: Update Closed At field
           if: ${{ steps.vars.outputs.match == 'true' }}
-          uses: github/update-project-action@f980378bc179626af5b4e20ec05ec39c7f7a6f6d # main
+          uses: github/update-project-action@855b6a7c34beb8568df7291e7c0e84650d66c934 # main
           id: update-closed-at
           with:
             github_token: ${{ steps.generate-github-token.outputs.token }} }}
