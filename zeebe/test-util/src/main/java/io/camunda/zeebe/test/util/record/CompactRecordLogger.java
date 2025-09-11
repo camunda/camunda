@@ -151,7 +151,7 @@ public class CompactRecordLogger {
           entry("AUTHORIZATION", "AUTH"),
           entry("ASYNC_REQUEST", "ASYNC"),
           entry("COMPENSATION_SUB", "COMP_SUB"),
-          entry("USAGE_METRICS", "USG_MTRCS"),
+          entry("USAGE_METRIC", "USG_MTRC"),
           entry("CREATE_WITH_AWAITING_RESULT", "WITH_RESULT"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
