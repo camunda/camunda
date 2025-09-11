@@ -18,6 +18,7 @@ package io.camunda.client.impl.command;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1;
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1.AssignClientToTenantCommandStep2;
+import io.camunda.client.api.command.AssignClientToTenantCommandStep1.AssignClientToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignClientToTenantResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -28,7 +29,9 @@ import java.util.concurrent.TimeUnit;
 import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AssignClientToTenantCommandImpl
-    implements AssignClientToTenantCommandStep1, AssignClientToTenantCommandStep2 {
+    implements AssignClientToTenantCommandStep1,
+        AssignClientToTenantCommandStep2,
+        AssignClientToTenantCommandStep3 {
 
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -47,7 +50,7 @@ public class AssignClientToTenantCommandImpl
   }
 
   @Override
-  public AssignClientToTenantCommandStep2 tenantId(final String tenantId) {
+  public AssignClientToTenantCommandStep3 tenantId(final String tenantId) {
     this.tenantId = tenantId;
     return this;
   }

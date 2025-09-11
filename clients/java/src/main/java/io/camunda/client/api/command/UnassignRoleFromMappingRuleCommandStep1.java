@@ -27,16 +27,19 @@ public interface UnassignRoleFromMappingRuleCommandStep1 {
    */
   UnassignRoleFromMappingRuleCommandStep2 roleId(String roleId);
 
-  interface UnassignRoleFromMappingRuleCommandStep2
-      extends FinalCommandStep<UnassignRoleFromMappingRuleResponse> {
+  interface UnassignRoleFromMappingRuleCommandStep2 {
 
     /**
      * Sets the mapping rule ID.
      *
      * @param mappingRuleId the mappingRuleId of the mapping rule
-     * @return the builder for this command. Call {@link #send()} to complete the command and send
-     *     it to the broker.
+     * @return the builder for this command. Call {@link
+     *     UnassignRoleFromMappingRuleCommandStep3#send()} to complete the command and send it to
+     *     the broker.
      */
-    UnassignRoleFromMappingRuleCommandStep2 mappingRuleId(String mappingRuleId);
+    UnassignRoleFromMappingRuleCommandStep3 mappingRuleId(String mappingRuleId);
   }
+
+  interface UnassignRoleFromMappingRuleCommandStep3
+      extends FinalCommandStep<UnassignRoleFromMappingRuleResponse> {}
 }
