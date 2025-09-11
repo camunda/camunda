@@ -23,7 +23,7 @@ class OidcClientRegistrationTest {
     config.setTokenUri("tokenUri");
     config.setClientAuthenticationMethod("client_secret_basic");
 
-    Assertions.assertThat(OidcClientRegistration.create(config))
+    Assertions.assertThat(ClientRegistrationFactory.createClientRegistration("foo", config))
         .isInstanceOf(ClientRegistration.class);
   }
 
@@ -36,7 +36,8 @@ class OidcClientRegistrationTest {
     config.setTokenUri("tokenUri");
     config.setClientAuthenticationMethod("does_not_exist");
 
-    Assertions.assertThatThrownBy(() -> OidcClientRegistration.create(config))
+    Assertions.assertThatThrownBy(
+            () -> ClientRegistrationFactory.createClientRegistration("foo", config))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("unsupported client authentication method: does_not_exist");
   }
