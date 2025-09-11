@@ -300,7 +300,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-                "processDefinitionKey": 123,
+                "processDefinitionKey": "123",
                 "awaitCompletion": true,
             "tenantId": "tenantId"
         }""";
@@ -471,7 +471,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "processDefinitionId": "bpmnProcessId",
-                "processDefinitionKey": 123,
+                "processDefinitionKey": "123",
                 "processDefinitionVersion": 1
             }""";
 
@@ -659,7 +659,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -744,7 +744,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "operationReference": 123
             }""";
 
@@ -780,7 +780,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [],
               "operationReference": 123
             }""";
@@ -817,7 +817,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -862,7 +862,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "targetProcessDefinitionKey": 123456,
+              "targetProcessDefinitionKey": "123456",
               "mappingInstructions": [
                 {
                   "sourceElementId": "sourceElementId1",
@@ -921,19 +921,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -971,10 +971,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1018,11 +1018,11 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1066,10 +1066,10 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1102,19 +1102,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             {
               "activateInstructions": [
                 {
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1160,19 +1160,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       "scopeId": "scopeId"
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1213,17 +1213,17 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "activateInstructions": [
                 {
                   "elementId": "elementId",
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {},
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": 123
@@ -1271,19 +1271,19 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
                       }
                     }
                   ],
-                  "ancestorElementInstanceKey": 123456
+                  "ancestorElementInstanceKey": "123456"
                 },
                 {
                   "elementId": "elementId2",
-                  "ancestorElementInstanceKey": 654321
+                  "ancestorElementInstanceKey": "654321"
                 }
               ],
               "terminateInstructions": [
                 {
-                  "elementInstanceKey": 123456
+                  "elementInstanceKey": "123456"
                 },
                 {
-                  "elementInstanceKey": 654321
+                  "elementInstanceKey": "654321"
                 }
               ],
               "operationReference": -123

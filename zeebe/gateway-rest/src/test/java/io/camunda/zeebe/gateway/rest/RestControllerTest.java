@@ -176,6 +176,7 @@ public abstract class RestControllerTest {
 
     final var implicitTpl = stringValues ? "\"%s\"" : "%s";
     final var keyValueTpl = "\"%s\": %s";
+    final var booleanTpl = "\"%s\": %s";
     final var explicitTpl = "\"%s\": " + (stringValues ? "\"%s\"" : "%s");
     final var filterValue =
         operations.stream()
@@ -184,8 +185,8 @@ public abstract class RestControllerTest {
                     switch (op.operator()) {
                       case EQUALS -> implicitTpl.formatted(op.value());
                       case NOT_EQUALS -> explicitTpl.formatted("$neq", op.value());
-                      case EXISTS -> explicitTpl.formatted("$exists", true);
-                      case NOT_EXISTS -> explicitTpl.formatted("$exists", false);
+                      case EXISTS -> booleanTpl.formatted("$exists", true);
+                      case NOT_EXISTS -> booleanTpl.formatted("$exists", false);
                       case GREATER_THAN -> explicitTpl.formatted("$gt", op.value());
                       case GREATER_THAN_EQUALS -> explicitTpl.formatted("$gte", op.value());
                       case LOWER_THAN -> explicitTpl.formatted("$lt", op.value());
