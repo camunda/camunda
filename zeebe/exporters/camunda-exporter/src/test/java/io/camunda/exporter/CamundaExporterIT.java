@@ -88,10 +88,10 @@ import org.testcontainers.containers.GenericContainer;
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
 
-  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
 
   @RegisterExtension
-  private static final CamundaExporterITTemplateExtension templateExtension =
+  private static CamundaExporterITTemplateExtension templateExtension =
       new CamundaExporterITTemplateExtension(searchDB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
