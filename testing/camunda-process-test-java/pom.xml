@@ -191,8 +191,40 @@
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
+      <!-- Spring Boot 3.X uses Awaitility 4.2.X, but CPT requires 4.3.0. Therefore, we shade our
+       awaitility dependency to avoid conflicts. -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
+              <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+              <promoteTransitiveDependencies>false</promoteTransitiveDependencies>
+
+              <artifactSet>
+                <excludes>
+                  <exclude>net.bytebuddy:byte-buddy</exclude>
+                </excludes>
+              </artifactSet>
+
+              <relocations>
+                <relocation>
+                  <pattern>org.awaitility.</pattern>
+                  <shadedPattern>io.camunda.shaded.awaitility.</shadedPattern>
+                </relocation>
+              </relocations>
+
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
-
   </build>
-
 </project>
