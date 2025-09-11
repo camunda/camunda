@@ -23,6 +23,7 @@ import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -67,6 +68,7 @@ public class StandaloneCamunda {
                 IdleStrategyPropertiesOverride.class,
                 GatewayRestPropertiesOverride.class,
                 SearchEngineConnectPropertiesOverride.class,
+                SearchEngineIndexPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,

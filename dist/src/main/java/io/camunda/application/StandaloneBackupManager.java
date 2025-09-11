@@ -14,6 +14,7 @@ import io.camunda.application.commons.backup.BackupPriorityConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.webapps.backup.BackupRepository;
@@ -96,6 +97,7 @@ public class StandaloneBackupManager implements CommandLineRunner {
             UnifiedConfigurationHelper.class,
             UnifiedConfiguration.class,
             SearchEngineConnectPropertiesOverride.class,
+            SearchEngineIndexPropertiesOverride.class,
             // ---
             BackupManagerConfiguration.class,
             StandaloneBackupManager.class,

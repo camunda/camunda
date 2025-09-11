@@ -26,8 +26,11 @@ public abstract class SecondaryStorageDatabase {
   /** Password for the database configured as secondary storage. */
   private String password = "";
 
-  /** Prefix to apply to the indexes */
+  /** Prefix to apply to the indexes. */
   private String indexPrefix = "";
+
+  /** How many shards Elasticsearch uses for all Tasklist indices. */
+  private int numberOfShards = 1;
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -85,7 +88,7 @@ public abstract class SecondaryStorageDatabase {
         legacyClusterNameProperties());
   }
 
-  public void setClusterName(String clusterName) {
+  public void setClusterName(final String clusterName) {
     this.clusterName = clusterName;
   }
 
@@ -98,8 +101,21 @@ public abstract class SecondaryStorageDatabase {
         indexPrefixLegacyProperties());
   }
 
-  public void setIndexPrefix(String indexPrefix) {
+  public void setIndexPrefix(final String indexPrefix) {
     this.indexPrefix = indexPrefix;
+  }
+
+  public int getNumberOfShards() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-shards",
+        numberOfShards,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyNumberOfShardsProperties());
+  }
+
+  public void setNumberOfShards(final int numberOfShards) {
+    this.numberOfShards = numberOfShards;
   }
 
   private String prefix() {
@@ -149,6 +165,12 @@ public abstract class SecondaryStorageDatabase {
         "camunda.tasklist." + dbName + ".indexPrefix",
         "camunda.operate." + dbName + ".indexPrefix",
         "zeebe.broker.exporters.camundaexporter.args.index.indexPrefix");
+  }
+
+  private Set<String> legacyNumberOfShardsProperties() {
+    return Set.of(
+        "camunda.database.index.numberOfShards",
+        "zeebe.broker.exporters.camundaexporter.args.index.numberOfShards");
   }
 
   protected abstract String databaseName();

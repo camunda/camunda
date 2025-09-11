@@ -548,6 +548,7 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.password", database.getPassword());
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
+    setArg(args, "index.numberOfShards", database.getNumberOfShards());
   }
 
   @SuppressWarnings("unchecked")

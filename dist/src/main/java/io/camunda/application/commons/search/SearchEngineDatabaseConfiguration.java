@@ -7,15 +7,14 @@
  */
 package io.camunda.application.commons.search;
 
-import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineIndexProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineRetentionProperties;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.configuration.DatabaseType;
-import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
@@ -35,7 +34,6 @@ import org.springframework.context.annotation.Configuration;
   SecondaryStorageType.opensearch
 })
 @EnableConfigurationProperties({
-  SearchEngineIndexProperties.class,
   SearchEngineRetentionProperties.class,
   SearchEngineSchemaManagerProperties.class,
 })
@@ -73,9 +71,6 @@ public class SearchEngineDatabaseConfiguration {
                 .retention(searchEngineRetentionProperties)
                 .schemaManager(searchEngineSchemaManagerProperties));
   }
-
-  @ConfigurationProperties("camunda.database.index")
-  public static final class SearchEngineIndexProperties extends IndexConfiguration {}
 
   @ConfigurationProperties("camunda.database.retention")
   public static final class SearchEngineRetentionProperties extends RetentionConfiguration {}
