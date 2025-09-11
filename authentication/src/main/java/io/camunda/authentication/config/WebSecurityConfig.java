@@ -23,7 +23,6 @@ import io.camunda.authentication.csrf.CsrfProtectionRequestMatcher;
 import io.camunda.authentication.exception.BasicAuthenticationNotSupportedException;
 import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
-import io.camunda.authentication.filters.SessionAuthenticationRefreshFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
 import io.camunda.authentication.service.MembershipService;
@@ -95,7 +94,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.logout.LogoutSuccessHandler;
-import org.springframework.security.web.context.SecurityContextHolderFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.csrf.CsrfToken;
@@ -462,7 +460,8 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository)
+        final CookieCsrfTokenRepository csrfTokenRepository,
+        final CamundaAuthenticationProvider authenticationProvider)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
@@ -553,10 +552,6 @@ public class WebSecurityConfig {
                       exceptionHandling
                           .authenticationEntryPoint(authFailureHandler)
                           .accessDeniedHandler(authFailureHandler))
-              .addFilterAfter(
-                  new SessionAuthenticationRefreshFilter(
-                      authenticationProvider, securityConfiguration.getAuthentication()),
-                  SecurityContextHolderFilter.class)
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
@@ -721,7 +716,8 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager)
+        final OAuth2AuthorizedClientManager authorizedClientManager,
+        final CamundaAuthenticationProvider authenticationProvider)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -819,10 +815,6 @@ public class WebSecurityConfig {
                           .logoutUrl(LOGOUT_URL)
                           .logoutSuccessHandler(new NoContentResponseHandler())
                           .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
-              .addFilterAfter(
-                  new SessionAuthenticationRefreshFilter(
-                      authenticationProvider, securityConfiguration.getAuthentication()),
-                  SecurityContextHolderFilter.class)
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),

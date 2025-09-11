@@ -16,21 +16,26 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.security.configuration.AuthenticationConfiguration;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
+import org.springframework.mock.web.MockHttpSession;
 
 public class HttpSessionBasedAuthenticationHolderTest {
 
   @Mock private HttpServletRequest request;
+  @Mock private AuthenticationConfiguration authenticationConfiguration;
   private HttpSessionBasedAuthenticationHolder holder;
 
   @BeforeEach
   void setup() {
     request = mock(HttpServletRequest.class);
-    holder = new HttpSessionBasedAuthenticationHolder(request);
+    authenticationConfiguration = mock(AuthenticationConfiguration.class);
+    when(authenticationConfiguration.getAuthenticationRefreshInterval()).thenReturn("PT1S");
+    holder = new HttpSessionBasedAuthenticationHolder(request, authenticationConfiguration);
   }
 
   @Test
@@ -62,11 +67,10 @@ public class HttpSessionBasedAuthenticationHolderTest {
   public void shouldReturnAuthentication() {
     // given
     final var authentication = mock(CamundaAuthentication.class);
-    final var session = mock(HttpSession.class);
+    final var session = new MockHttpSession();
 
     when(request.getSession(eq(false))).thenReturn(session);
-    when(session.getAttribute(eq(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY)))
-        .thenReturn(authentication);
+    holder.set(authentication);
 
     // when
     final var result = holder.get();
@@ -89,5 +93,23 @@ public class HttpSessionBasedAuthenticationHolderTest {
     // then
     verify(session, times(1))
         .setAttribute(eq(CAMUNDA_AUTHENTICATION_SESSION_HOLDER_KEY), eq(authentication));
+  }
+
+  @Test
+  public void shouldReturnNullIfAuthenticationNotRefreshed() throws InterruptedException {
+    // given
+    final var authentication = mock(CamundaAuthentication.class);
+    final var session = new MockHttpSession();
+    when(authenticationConfiguration.getAuthenticationRefreshInterval()).thenReturn("PT0.1S");
+    holder = new HttpSessionBasedAuthenticationHolder(request, authenticationConfiguration);
+    when(request.getSession(eq(false))).thenReturn(session);
+    holder.set(authentication);
+    Thread.sleep(110L);
+
+    // when
+    final var result = holder.get();
+
+    // then
+    assertThat(result).isEqualTo(null);
   }
 }
