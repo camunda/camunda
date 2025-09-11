@@ -178,14 +178,7 @@ public class OperateApiOidcClientIT {
           operateClient.sendV1SearchRequest("v1/process-instances", "{}");
 
       // then
-      assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-
-      final Either<Exception, Map> result = operateClient.mapResult(searchResponse, Map.class);
-
-      assertThat(result.isRight()).isTrue();
-      final Map<String, Object> responseBody = result.get();
-
-      assertThat(responseBody).containsEntry("total", 0);
+      assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
     }
   }
 
