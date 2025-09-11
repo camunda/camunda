@@ -12,6 +12,9 @@ import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
@@ -26,6 +29,8 @@ import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -35,11 +40,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -62,6 +71,7 @@ import org.testcontainers.utility.DockerImageName;
 public class PrefixMigrationIT {
   public static final String OLD_OPERATE_PREFIX = "operate-dev";
   public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
+  private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationIT.class);
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
   private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
@@ -254,6 +264,16 @@ public class PrefixMigrationIT {
   @Test
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException {
     // given
+    LOG.info("Starting shouldReindexDocumentsDuringPrefixMigration");
+    final var esClient =
+        new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient();
+
+    final var osConfig = new SearchEngineConnectProperties();
+    osConfig.setType("opensearch");
+    final var osClient = new OpensearchConnector(osConfig).createClient();
+
+    // I care about the documents
+
     final var camunda87 = createCamundaContainer();
     camunda87.start();
 
@@ -294,11 +314,30 @@ public class PrefixMigrationIT {
             });
 
     camunda87.stop();
+    camunda87Client.close();
+    operateClient.close();
 
+    LOG.info("State of documents before migration");
+    LOG.info("---------------------------------------");
+    printDocuments(
+        esClient,
+        osClient,
+        List.of(
+            OLD_OPERATE_PREFIX + "*",
+            "-*migration-steps*",
+            "-*user-1.2.0_*",
+            "-*import-position*"));
+    LOG.info("---------------------------------------");
     // when
     prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
 
-    // then
+    esClient.indices().refresh();
+    LOG.info("After migration docs in migrated indices starting with 'prefixmigrationit'");
+    LOG.info("---------------------------------------");
+    printDocuments(
+        esClient, osClient, List.of("prefixmigrationit*", "-*prefixmigrationit-camunda*"));
+    LOG.info("---------------------------------------");
+
     try {
       STANDALONE_CAMUNDA.start();
       STANDALONE_CAMUNDA.awaitCompleteTopology();
@@ -316,6 +355,36 @@ public class PrefixMigrationIT {
       }
     } finally {
       STANDALONE_CAMUNDA.stop();
+    }
+  }
+
+  private void printDocuments(
+      final ElasticsearchClient esClient,
+      final OpenSearchClient osClient,
+      final List<String> indices)
+      throws IOException {
+
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      esClient.indices().refresh();
+      final SearchResponse<Object> response =
+          esClient.search(
+              SearchRequest.of(s -> s.index(indices).query(q -> q.matchAll(m -> m)).size(10000)),
+              Object.class);
+
+      // Process results
+      response.hits().hits().forEach(hit -> LOG.info("Index: {}, ID: {}", hit.index(), hit.id()));
+      LOG.info("COUNT: {}", response.hits().total().value());
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+      osClient.indices().refresh();
+      final org.opensearch.client.opensearch.core.SearchResponse<Object> response =
+          osClient.search(
+              org.opensearch.client.opensearch.core.SearchRequest.of(
+                  s -> s.index(indices).query(q -> q.matchAll(m -> m)).size(10000)),
+              Object.class);
+
+      // Process results
+      response.hits().hits().forEach(hit -> LOG.info("Index: {}, ID: {}", hit.index(), hit.id()));
+      LOG.info("COUNT: {}", response.hits().total().value());
     }
   }
 
