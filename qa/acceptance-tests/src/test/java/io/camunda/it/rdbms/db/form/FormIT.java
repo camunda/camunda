@@ -80,6 +80,28 @@ public class FormIT {
   }
 
   @TestTemplate
+  public void shouldFindFormByTenantId(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final FormDbModel randomizedForm = FormFixtures.createRandomized();
+    createAndSaveForm(rdbmsService, randomizedForm);
+
+    final var searchResult =
+        rdbmsService
+            .getFormReader()
+            .search(
+                new FormQuery(
+                    new FormFilter.Builder().tenantId(randomizedForm.tenantId()).build(),
+                    FormSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(10))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(1);
+    assertThat(searchResult.items()).hasSize(1);
+    assertFormEntity(searchResult.items().getFirst(), randomizedForm);
+  }
+
+  @TestTemplate
   public void shouldFindAllFormsPaged(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
@@ -116,6 +138,7 @@ public class FormIT {
                 new FormFilter.Builder()
                     .formIds(randomizedForm.formId())
                     .formKeys(randomizedForm.formKey())
+                    .tenantId(randomizedForm.tenantId())
                     .build(),
                 FormSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
