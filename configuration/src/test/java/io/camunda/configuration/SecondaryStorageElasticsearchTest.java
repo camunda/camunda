@@ -48,6 +48,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+  private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
 
   @Nested
   @TestPropertySource(
@@ -58,7 +59,10 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "camunda.data.secondary-storage.elasticsearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards="
+            + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.elasticsearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -128,8 +132,12 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getConnect().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
     }
 
     @Test
@@ -143,6 +151,8 @@ public class SecondaryStorageElasticsearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
     }
   }
 
@@ -196,6 +206,11 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-shards="
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
+
+        // variable size threshold
+        "camunda.data.secondary-storage.elasticsearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.database.index.variableSizeThreshold=" + EXPECTED_VARIABLE_SIZE_THRESHOLD,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -271,6 +286,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
     }
 
     @Test
@@ -287,6 +304,8 @@ public class SecondaryStorageElasticsearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
     }
   }
 

@@ -32,6 +32,9 @@ public abstract class SecondaryStorageDatabase {
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
 
+  /** Variable size threshold for the database configured as secondary storage. */
+  private int variableSizeThreshold = 8191;
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -118,6 +121,19 @@ public abstract class SecondaryStorageDatabase {
     this.numberOfShards = numberOfShards;
   }
 
+  public int getVariableSizeThreshold() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".variable-size-threshold",
+        variableSizeThreshold,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyVariableSizeThresholdProperties());
+  }
+
+  public void setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+  }
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -171,6 +187,12 @@ public abstract class SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.index.numberOfShards",
         "zeebe.broker.exporters.camundaexporter.args.index.numberOfShards");
+  }
+
+  private Set<String> legacyVariableSizeThresholdProperties() {
+    return Set.of(
+        "camunda.database.index.variableSizeThreshold",
+        "zeebe.broker.exporters.camundaexporter.args.index.variableSizeThreshold");
   }
 
   protected abstract String databaseName();
