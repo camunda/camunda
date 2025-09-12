@@ -39,7 +39,7 @@ public interface MutableBatchOperationState extends BatchOperationState {
       final long batchOperationKey, final String searchResultCursor, int searchQueryPageSize);
 
   /**
-   * Marks a batch operation as failed.
+   * Marks a batch operation as failed. This will delete the batch operation from the state.
    *
    * @param batchOperationKey the key of the batch operation to mark as failed
    */

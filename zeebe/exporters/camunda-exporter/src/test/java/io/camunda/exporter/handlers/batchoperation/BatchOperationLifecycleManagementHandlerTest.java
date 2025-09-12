@@ -226,6 +226,49 @@ class BatchOperationLifecycleManagementHandlerTest {
   }
 
   @Test
+  void shouldUpdateEntityForFailedIntent() {
+    // given
+    final var errorRecord = new BatchOperationError();
+    errorRecord.setMessage("error message");
+    errorRecord.setType(BatchOperationErrorType.QUERY_FAILED);
+    errorRecord.setPartitionId(1);
+
+    final Record<BatchOperationLifecycleManagementRecordValue> record =
+        factory.generateRecord(
+            ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
+            r ->
+                r.withIntent(BatchOperationIntent.FAILED)
+                    .withValue(
+                        ImmutableBatchOperationLifecycleManagementRecordValue.builder()
+                            .withErrors(List.of(errorRecord))
+                            .build()));
+
+    final var entity = new BatchOperationEntity();
+
+    // when
+    handler.updateEntity(record, entity);
+
+    // then
+    assertThat(entity.getState()).isEqualTo(BatchOperationState.FAILED);
+    assertThat(entity.getEndDate()).isNull();
+    record
+        .getValue()
+        .getErrors()
+        .forEach(
+            error -> {
+              entity.getErrors().stream()
+                  .filter(e -> e.getPartitionId() == error.getPartitionId())
+                  .findFirst()
+                  .ifPresentOrElse(
+                      be -> {
+                        assertThat(be.getType()).isEqualTo(error.getType().name());
+                        assertThat(be.getMessage()).isEqualTo(error.getMessage());
+                      },
+                      () -> Assertions.fail("Error not found in entity: " + error));
+            });
+  }
+
+  @Test
   void shouldFlushEntity() throws Exception {
     // given
     final BatchRequest batchRequest = mock(BatchRequest.class);

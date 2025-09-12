@@ -550,7 +550,8 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    final var state = BatchOperationState.PARTIALLY_COMPLETED;
+    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors, state);
     writer.flush();
 
     // then
@@ -560,7 +561,7 @@ public class BatchOperationIT {
     final BatchOperationEntity batchOperationEntity = updatedBatchOperation.items().getFirst();
     assertThat(batchOperationEntity.endDate())
         .isCloseTo(endDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
-    assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.PARTIALLY_COMPLETED);
+    assertThat(batchOperationEntity.state()).isEqualTo(state);
     assertThat(batchOperationEntity.errors()).isNotNull();
     assertThat(batchOperationEntity.errors()).hasSize(2);
     final var error1 =
@@ -601,7 +602,10 @@ public class BatchOperationIT {
 
     // when
     final OffsetDateTime endDate = OffsetDateTime.now();
-    writer.getBatchOperationWriter().finishWithErrors(batchOperationKey, endDate, errors);
+    writer
+        .getBatchOperationWriter()
+        .finishWithErrors(
+            batchOperationKey, endDate, errors, BatchOperationState.PARTIALLY_COMPLETED);
     writer.flush();
 
     // then
