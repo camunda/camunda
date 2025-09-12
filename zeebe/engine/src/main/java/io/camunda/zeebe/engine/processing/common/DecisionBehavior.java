@@ -33,9 +33,12 @@ import io.camunda.zeebe.util.collection.Tuple;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DecisionBehavior {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(DecisionBehavior.class);
   private static final DecisionInfo UNKNOWN_DECISION_INFO = new DecisionInfo(-1L, -1);
   private static final String SYNTHESIZED_RULE_ID_PREFIX = "ZB_SYNTH_RULE_ID";
   private static final String SYNTHESIZED_RULE_ID_TEMPLATE = "%s_%s_v%s_r%s";
@@ -197,12 +200,24 @@ public class DecisionBehavior {
       final MatchedRule matchedRule, final EvaluatedDecisionRecord evaluatedDecisionRecord) {
 
     final var matchedRuleRecord = evaluatedDecisionRecord.matchedRules().add();
+    final boolean ruleIdMissing = StringUtils.isBlank(matchedRule.ruleId());
     final var ruleId =
         getOrSynthesizeRuleId(
             evaluatedDecisionRecord.getDecisionId(),
             evaluatedDecisionRecord.getDecisionVersion(),
             matchedRule);
     matchedRuleRecord.setRuleId(ruleId).setRuleIndex(matchedRule.ruleIndex());
+
+    if (ruleIdMissing) {
+      LOGGER.warn(
+          "DMN evaluation: matched rule without id in decision '{}' (version {}, rule index {}). "
+              + "Synthesized surrogate ruleId '{}'. "
+              + "To eliminate this warning, add an 'id' attribute to the <rule> and deploy a new DMN version.",
+          evaluatedDecisionRecord.getDecisionId(),
+          evaluatedDecisionRecord.getDecisionVersion(),
+          matchedRule.ruleIndex(),
+          ruleId);
+    }
 
     matchedRule
         .evaluatedOutputs()
