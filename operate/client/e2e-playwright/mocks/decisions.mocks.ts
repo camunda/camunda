@@ -179,7 +179,7 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsTotalCount: 5,
       operationsFailedCount: 2,
       operationsCompletedCount: 3,
-      state: 'COMPLETED_WITH_ERRORS',
+      state: 'PARTIALLY_COMPLETED',
     },
     {
       batchOperationKey: '5dd91cae-5f0c-4e35-a698-5a7887c4fbbd',
@@ -189,7 +189,7 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsTotalCount: 3,
       operationsFailedCount: 3,
       operationsCompletedCount: 0,
-      state: 'COMPLETED_WITH_ERRORS',
+      state: 'PARTIALLY_COMPLETED',
     },
     {
       batchOperationKey: 'b1454600-5f13-4365-bb45-960e8372136b',
@@ -199,7 +199,7 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsTotalCount: 1,
       operationsFailedCount: 1,
       operationsCompletedCount: 0,
-      state: 'COMPLETED_WITH_ERRORS',
+      state: 'PARTIALLY_COMPLETED',
     },
     {
       batchOperationKey: '513aa565-b7f2-440a-9523-1b2f647ddfdd',
