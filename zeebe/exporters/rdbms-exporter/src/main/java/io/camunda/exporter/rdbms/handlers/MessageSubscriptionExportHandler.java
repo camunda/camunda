@@ -12,7 +12,7 @@ import static io.camunda.exporter.rdbms.utils.DateUtil.toOffsetDateTime;
 import io.camunda.db.rdbms.write.domain.MessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
@@ -24,7 +24,11 @@ public class MessageSubscriptionExportHandler
     implements RdbmsExportHandler<ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> STATES =
-      Set.of(ProcessMessageSubscriptionIntent.CREATED, ProcessMessageSubscriptionIntent.MIGRATED);
+      Set.of(
+          ProcessMessageSubscriptionIntent.CORRELATED,
+          ProcessMessageSubscriptionIntent.CREATED,
+          ProcessMessageSubscriptionIntent.DELETED,
+          ProcessMessageSubscriptionIntent.MIGRATED);
   private final MessageSubscriptionWriter messageSubscriptionWriter;
 
   public MessageSubscriptionExportHandler(
@@ -39,10 +43,17 @@ public class MessageSubscriptionExportHandler
 
   @Override
   public void export(final Record<ProcessMessageSubscriptionRecordValue> record) {
-    if (record.getIntent() == ProcessMessageSubscriptionIntent.CREATED) {
-      messageSubscriptionWriter.create(map(record));
-    } else if (record.getIntent() == ProcessMessageSubscriptionIntent.MIGRATED) {
-      messageSubscriptionWriter.update(map(record));
+    switch (record.getIntent()) {
+      case ProcessMessageSubscriptionIntent.CREATED:
+        messageSubscriptionWriter.create(map(record));
+        break;
+      case ProcessMessageSubscriptionIntent.CORRELATED,
+      ProcessMessageSubscriptionIntent.DELETED,
+      ProcessMessageSubscriptionIntent.MIGRATED:
+        messageSubscriptionWriter.update(map(record));
+        break;
+      default:
+        // do nothing
     }
   }
 
@@ -55,7 +66,7 @@ public class MessageSubscriptionExportHandler
         .processInstanceKey(value.getProcessInstanceKey())
         .flowNodeId(value.getElementId())
         .flowNodeInstanceKey(value.getElementInstanceKey())
-        .messageSubscriptionType(MessageSubscriptionType.valueOf(record.getIntent().name()))
+        .messageSubscriptionState(MessageSubscriptionState.valueOf(record.getIntent().name()))
         .dateTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
         .messageName(value.getMessageName())
         .correlationKey(value.getCorrelationKey())

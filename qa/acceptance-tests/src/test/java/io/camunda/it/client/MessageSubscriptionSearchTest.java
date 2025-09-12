@@ -15,6 +15,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
@@ -45,6 +46,16 @@ public class MessageSubscriptionSearchTest {
     waitForProcessInstancesToStart(camundaClient, 1);
 
     waitForMessageSubscriptions(camundaClient, NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
+
+    camundaClient
+        .newCorrelateMessageCommand()
+        .messageName("Message1")
+        .correlationKey("correlation_key_1")
+        .send()
+        .join();
+
+    waitForMessageSubscriptions(
+        camundaClient, f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED), 1);
 
     orderedMessageSubscriptions =
         camundaClient
@@ -84,8 +95,8 @@ public class MessageSubscriptionSearchTest {
                         .processInstanceKey(expectedMessageSubscription.getProcessInstanceKey())
                         .elementId(expectedMessageSubscription.getElementId())
                         .elementInstanceKey(expectedMessageSubscription.getElementInstanceKey())
-                        .messageSubscriptionType(
-                            expectedMessageSubscription.getMessageSubscriptionType())
+                        .messageSubscriptionState(
+                            expectedMessageSubscription.getMessageSubscriptionState())
                         .lastUpdatedDate(
                             OffsetDateTime.parse(expectedMessageSubscription.getLastUpdatedDate()))
                         .messageName(expectedMessageSubscription.getMessageName())
@@ -97,6 +108,23 @@ public class MessageSubscriptionSearchTest {
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedMessageSubscription);
+  }
+
+  @Test
+  void shouldFilterCorrelatedSubscriptions() {
+    // When
+    final var searchResponse =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .filter(f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED))
+            .send()
+            .join();
+
+    // Then
+    assertThat(searchResponse.items()).size().isEqualTo(1);
+    assertThat(searchResponse.items().getFirst())
+        .extracting("messageName", "messageSubscriptionState")
+        .containsExactly("Message1", MessageSubscriptionState.CORRELATED);
   }
 
   @Test

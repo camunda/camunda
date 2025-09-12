@@ -47,8 +47,8 @@ public class MessageSubscriptionSortImpl extends SearchRequestSortBase<MessageSu
   }
 
   @Override
-  public MessageSubscriptionSort messageSubscriptionType() {
-    return field("messageSubscriptionType");
+  public MessageSubscriptionSort messageSubscriptionState() {
+    return field("messageSubscriptionState");
   }
 
   @Override

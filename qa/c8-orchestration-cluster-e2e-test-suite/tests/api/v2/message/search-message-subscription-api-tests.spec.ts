@@ -195,14 +195,14 @@ test.describe('Search Message Subscription API Tests', () => {
       ]);
     });
 
-    await test.step('Search Message Subscriptions By Message Subscription Type', async () => {
+    await test.step('Search Message Subscriptions By Message Subscription State', async () => {
       const res = await request.post(
         buildUrl('/message-subscriptions/search'),
         {
           headers: jsonHeaders(),
           data: {
             filter: {
-              messageSubscriptionType: 'CREATED',
+              messageSubscriptionState: 'CREATED',
             },
           },
         },

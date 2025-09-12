@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
-import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionType;
+import io.camunda.search.entities.MessageSubscriptionEntity.MessageSubscriptionState;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
@@ -19,7 +19,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
   private Long processInstanceKey;
   private String flowNodeId;
   private Long flowNodeInstanceKey;
-  private MessageSubscriptionType messageSubscriptionType;
+  private MessageSubscriptionState messageSubscriptionState;
   private OffsetDateTime dateTime;
   private String messageName;
   private String correlationKey;
@@ -38,7 +38,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       final Long processInstanceKey,
       final String flowNodeId,
       final Long flowNodeInstanceKey,
-      final MessageSubscriptionType messageSubscriptionType,
+      final MessageSubscriptionState messageSubscriptionState,
       final OffsetDateTime dateTime,
       final String messageName,
       final String correlationKey,
@@ -51,7 +51,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.processInstanceKey = processInstanceKey;
     this.flowNodeId = flowNodeId;
     this.flowNodeInstanceKey = flowNodeInstanceKey;
-    this.messageSubscriptionType = messageSubscriptionType;
+    this.messageSubscriptionState = messageSubscriptionState;
     this.dateTime = dateTime;
     this.messageName = messageName;
     this.correlationKey = correlationKey;
@@ -108,12 +108,12 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     this.flowNodeInstanceKey = flowNodeInstanceKey;
   }
 
-  public MessageSubscriptionType messageSubscriptionType() {
-    return messageSubscriptionType;
+  public MessageSubscriptionState messageSubscriptionState() {
+    return messageSubscriptionState;
   }
 
-  public void messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
-    this.messageSubscriptionType = messageSubscriptionType;
+  public void messageSubscriptionState(final MessageSubscriptionState messageSubscriptionState) {
+    this.messageSubscriptionState = messageSubscriptionState;
   }
 
   public OffsetDateTime dateTime() {
@@ -182,7 +182,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
         .processInstanceKey(processInstanceKey)
         .flowNodeId(flowNodeId)
         .flowNodeInstanceKey(flowNodeInstanceKey)
-        .messageSubscriptionType(messageSubscriptionType)
+        .messageSubscriptionState(messageSubscriptionState)
         .dateTime(dateTime)
         .messageName(messageName)
         .correlationKey(correlationKey)
@@ -198,7 +198,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
     private Long processInstanceKey;
     private String flowNodeId;
     private Long flowNodeInstanceKey;
-    private MessageSubscriptionType messageSubscriptionType;
+    private MessageSubscriptionState messageSubscriptionState;
     private OffsetDateTime dateTime;
     private String messageName;
     private String correlationKey;
@@ -236,8 +236,9 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
       return this;
     }
 
-    public Builder messageSubscriptionType(final MessageSubscriptionType messageSubscriptionType) {
-      this.messageSubscriptionType = messageSubscriptionType;
+    public Builder messageSubscriptionState(
+        final MessageSubscriptionState messageSubscriptionState) {
+      this.messageSubscriptionState = messageSubscriptionState;
       return this;
     }
 
@@ -280,7 +281,7 @@ public class MessageSubscriptionDbModel implements Copyable<MessageSubscriptionD
           processInstanceKey,
           flowNodeId,
           flowNodeInstanceKey,
-          messageSubscriptionType,
+          messageSubscriptionState,
           dateTime,
           messageName,
           correlationKey,

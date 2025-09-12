@@ -365,7 +365,7 @@ final class CamundaExporterIT {
             valueType,
             r ->
                 r.withBrokerVersion("8.8.0")
-                    .withIntent(IncidentIntent.RESOLVED)
+                    .withIntent(IncidentIntent.CREATED)
                     .withTimestamp(invalidTimestamp));
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(

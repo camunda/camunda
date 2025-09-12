@@ -60,7 +60,7 @@ export const messageSubscriptionRequiredFields = [
   'processInstanceKey',
   'elementId',
   'elementInstanceKey',
-  'messageSubscriptionType',
+  'messageSubscriptionState',
   'lastUpdatedDate',
   'messageName',
   'correlationKey',

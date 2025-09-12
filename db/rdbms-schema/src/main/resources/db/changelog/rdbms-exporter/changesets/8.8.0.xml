@@ -659,7 +659,7 @@
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="FLOW_NODE_ID" type="VARCHAR(255)"/>
       <column name="FLOW_NODE_INSTANCE_KEY" type="BIGINT"/>
-      <column name="MESSAGE_SUBSCRIPTION_TYPE" type="VARCHAR(20)"/>
+      <column name="MESSAGE_SUBSCRIPTION_STATE" type="VARCHAR(20)"/>
       <column name="DATE_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="MESSAGE_NAME" type="VARCHAR(255)"/>
       <column name="CORRELATION_KEY" type="VARCHAR(255)"/>
