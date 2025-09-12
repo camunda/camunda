@@ -7,8 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery.Builder;
-import io.camunda.search.entities.RoleEntity;
+import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.util.ObjectBuilder;
@@ -17,63 +16,65 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record RoleDbQuery(
+public record RoleMemberDbQuery(
     RoleFilter filter,
     List<String> authorizedResourceIds,
-    DbQuerySorting<RoleEntity> sort,
+    DbQuerySorting<RoleMemberEntity> sort,
     DbQueryPage page) {
 
-  public static RoleDbQuery of(final Function<Builder, ObjectBuilder<RoleDbQuery>> fn) {
+  public static RoleMemberDbQuery of(final Function<Builder, ObjectBuilder<RoleMemberDbQuery>> fn) {
     return fn.apply(new Builder()).build();
   }
 
-  public static final class Builder implements ObjectBuilder<RoleDbQuery> {
+  public static final class Builder implements ObjectBuilder<RoleMemberDbQuery> {
 
     private static final RoleFilter EMPTY_FILTER = FilterBuilders.role().build();
 
     private RoleFilter filter;
     private List<String> authorizedResourceIds = Collections.emptyList();
-    private DbQuerySorting<RoleEntity> sort;
+    private DbQuerySorting<RoleMemberEntity> sort;
     private DbQueryPage page;
 
-    public RoleDbQuery.Builder filter(final RoleFilter value) {
+    public RoleMemberDbQuery.Builder filter(final RoleFilter value) {
       filter = value;
       return this;
     }
 
-    public RoleDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+    public RoleMemberDbQuery.Builder authorizedResourceIds(
+        final List<String> authorizedResourceIds) {
       this.authorizedResourceIds = authorizedResourceIds;
       return this;
     }
 
-    public RoleDbQuery.Builder sort(final DbQuerySorting<RoleEntity> value) {
+    public RoleMemberDbQuery.Builder sort(final DbQuerySorting<RoleMemberEntity> value) {
       sort = value;
       return this;
     }
 
-    public RoleDbQuery.Builder page(final DbQueryPage value) {
+    public RoleMemberDbQuery.Builder page(final DbQueryPage value) {
       page = value;
       return this;
     }
 
-    public RoleDbQuery.Builder filter(
+    public RoleMemberDbQuery.Builder filter(
         final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
       return filter(FilterBuilders.role(fn));
     }
 
-    public RoleDbQuery.Builder sort(
+    public RoleMemberDbQuery.Builder sort(
         final Function<
-                DbQuerySorting.Builder<RoleEntity>, ObjectBuilder<DbQuerySorting<RoleEntity>>>
+                DbQuerySorting.Builder<RoleMemberEntity>,
+                ObjectBuilder<DbQuerySorting<RoleMemberEntity>>>
             fn) {
       return sort(DbQuerySorting.of(fn));
     }
 
     @Override
-    public RoleDbQuery build() {
+    public RoleMemberDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      return new RoleDbQuery(filter, authorizedResourceIds, sort, page);
+      return new RoleMemberDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

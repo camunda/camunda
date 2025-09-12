@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.RoleDbQuery;
+import io.camunda.db.rdbms.read.domain.RoleMemberDbQuery;
 import io.camunda.db.rdbms.write.domain.RoleDbModel;
 import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import java.util.List;
@@ -29,4 +30,8 @@ public interface RoleMapper {
   Long count(RoleDbQuery filter);
 
   List<RoleDbModel> search(RoleDbQuery filter);
+
+  Long countMembers(RoleMemberDbQuery filter);
+
+  List<RoleMemberDbModel> searchMembers(RoleMemberDbQuery filter);
 }
