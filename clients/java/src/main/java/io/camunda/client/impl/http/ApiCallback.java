@@ -113,9 +113,7 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
     if (body.isResponse()) {
       response.completeExceptionally(
           new MalformedResponseException(
-              String.format(
-                  "Expected to receive a problem body, but got an actual response: %s",
-                  body.response()),
+              "Expected to receive a problem body, but got an actual response: '{}'",
               code,
               reason));
       return;

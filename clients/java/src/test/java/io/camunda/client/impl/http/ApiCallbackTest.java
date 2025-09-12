@@ -16,10 +16,12 @@
 package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import io.camunda.client.protocol.rest.TopologyResponse;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -215,5 +217,43 @@ class ApiCallbackTest {
     // then
     verifyNoInteractions(retryAction);
     assertThat(response.isCompletedExceptionally()).isTrue();
+  }
+
+  @Test
+  void shouldIncludeCodeAndReason() {
+    // given
+    final JsonResponseAndStatusCodeTransformer<TopologyResponse, String> topologyTransformer =
+        mock(JsonResponseAndStatusCodeTransformer.class);
+
+    final ApiCallback<TopologyResponse, String> topologyApiCallback =
+        new ApiCallback<>(
+            response,
+            topologyTransformer,
+            null,
+            retryPredicate,
+            retryAction,
+            DEFAULT_REMAINING_RETRIES);
+
+    @SuppressWarnings("unchecked")
+    final ApiEntity<TopologyResponse> mockEntity = mock(ApiEntity.class);
+    when(mockEntity.isResponse()).thenReturn(true);
+    when(mockEntity.isUnknown()).thenReturn(false);
+    when(mockEntity.isProblem()).thenReturn(false);
+    when(mockEntity.response()).thenReturn(new TopologyResponse());
+
+    final ApiResponse<TopologyResponse> apiResponse = mock(ApiResponse.class);
+    when(apiResponse.entity()).thenReturn(mockEntity);
+    when(apiResponse.getCode()).thenReturn(404);
+    when(apiResponse.getReasonPhrase()).thenReturn("Not Found");
+
+    // when
+    topologyApiCallback.completed(apiResponse);
+
+    // then
+    verifyNoInteractions(retryAction);
+    assertThat(response.isCompletedExceptionally()).isTrue();
+    assertThatThrownBy(response::join)
+        .hasMessageContaining(
+            "Failed with code 404: 'Not Found'. Expected to receive a problem body, but got an actual response: '{}'");
   }
 }

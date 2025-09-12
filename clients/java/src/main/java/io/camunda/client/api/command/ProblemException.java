@@ -21,7 +21,7 @@ public class ProblemException extends ClientHttpException {
   private final ProblemDetail details;
 
   public ProblemException(final int code, final String reason, final ProblemDetail details) {
-    super(code, String.format("%s'. Details: '%s", reason, details));
+    super(details != null ? details.toString() : "", code, reason);
     this.details = details;
   }
 
