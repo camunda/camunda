@@ -605,14 +605,15 @@
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
-      <column name="EVENT_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="EVENT_TYPE" type="INTEGER"/>
       <column name="EVENT_VALUE" type="BIGINT"/>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}USAGE_METRIC" indexName="${prefix}IDX_USAGE_METRIC_EVENT_TIME">
-      <column name="EVENT_TIME"/>
+    <createIndex tableName="${prefix}USAGE_METRIC" indexName="${prefix}IDX_USAGE_METRIC_END_TIME">
+      <column name="END_TIME"/>
     </createIndex>
 
     <createTable tableName="${prefix}USAGE_METRIC_TU">
@@ -622,15 +623,16 @@
       <column name="TENANT_ID" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
-      <column name="EVENT_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="ASSIGNEE_HASH" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
       <column name="PARTITION_ID" type="NUMBER"/>
     </createTable>
 
-    <createIndex tableName="${prefix}USAGE_METRIC_TU" indexName="${prefix}IDX_USAGE_METRIC_TU_EVENT_TIME">
-      <column name="EVENT_TIME"/>
+    <createIndex tableName="${prefix}USAGE_METRIC_TU" indexName="${prefix}IDX_USAGE_METRIC_TU_END_TIME">
+      <column name="END_TIME"/>
     </createIndex>
 
     <modifySql dbms="mariadb">

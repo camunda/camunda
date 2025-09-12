@@ -45,7 +45,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   public Long retrieveProcessInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
     Query query =
-        Query.whereEquals(EVENT_TYPE, RPI.name()).and(range(EVENT_TIME, startTime, endTime));
+        Query.whereEquals(EVENT_TYPE, RPI.name()).and(range(END_TIME, startTime, endTime));
 
     if (tenantId != null) {
       query = query.and(whereEquals(TENANT_ID, tenantId));
@@ -66,7 +66,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
     Query query =
-        Query.whereEquals(EVENT_TYPE, EDI.name()).and(range(EVENT_TIME, startTime, endTime));
+        Query.whereEquals(EVENT_TYPE, EDI.name()).and(range(END_TIME, startTime, endTime));
     if (tenantId != null) {
       query = query.and(whereEquals(TENANT_ID, tenantId));
     }
@@ -117,7 +117,8 @@ public class ElasticsearchMetricsStore implements MetricsStore {
         .setId(String.format(ID_PATTERN, key, tenantId))
         .setEventType(RPI)
         .setEventValue(1L)
-        .setEventTime(timestamp)
+        .setStartTime(timestamp)
+        .setEndTime(timestamp)
         .setTenantId(tenantId)
         .setPartitionId(partitionId);
   }
@@ -131,7 +132,8 @@ public class ElasticsearchMetricsStore implements MetricsStore {
         .setId(String.format(ID_PATTERN, key, tenantId))
         .setEventType(EDI)
         .setEventValue(1L)
-        .setEventTime(timestamp)
+        .setStartTime(timestamp)
+        .setEndTime(timestamp)
         .setTenantId(tenantId)
         .setPartitionId(partitionId);
   }

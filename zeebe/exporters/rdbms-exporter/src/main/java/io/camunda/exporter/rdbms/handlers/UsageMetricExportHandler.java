@@ -57,6 +57,7 @@ public record UsageMetricExportHandler(
       return new Tuple<>(List.of(), List.of());
     }
 
+    final var startTime = DateUtil.toOffsetDateTime(value.getStartTime());
     final var endTime = DateUtil.toOffsetDateTime(value.getEndTime());
     final var recordKey = usageMetricRecordValue.getKey();
     final var partitionId = usageMetricRecordValue.getPartitionId();
@@ -69,15 +70,29 @@ public record UsageMetricExportHandler(
         .forEach(
             (key, val) ->
                 usageMetricList.add(
-                    new UsageMetricDbModel(recordKey, endTime, key, eventType, val, partitionId)));
+                    new UsageMetricDbModel.Builder()
+                        .key(recordKey)
+                        .startTime(startTime)
+                        .endTime(endTime)
+                        .tenantId(key)
+                        .eventType(eventType)
+                        .value(val)
+                        .partitionId(partitionId)
+                        .build()));
     value.getSetValues().entrySet().stream()
         .flatMap(
             entry ->
                 entry.getValue().stream()
                     .map(
                         val ->
-                            new UsageMetricTUDbModel(
-                                recordKey, endTime, entry.getKey(), val, partitionId)))
+                            new UsageMetricTUDbModel.Builder()
+                                .key(recordKey)
+                                .startTime(startTime)
+                                .endTime(endTime)
+                                .tenantId(entry.getKey())
+                                .assigneeHash(val)
+                                .partitionId(partitionId)
+                                .build()))
         .forEach(usageMetricTUList::add);
 
     return new Tuple<>(usageMetricList, usageMetricTUList);
