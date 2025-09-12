@@ -57,6 +57,47 @@ public final class PartitionBootstrapTest {
   }
 
   @Test
+  public void shouldBootstrapNewPartitionFromSnapshotSuccessfully() {
+    // given
+    final var partitionId = 2;
+    final var priority = 1;
+    final var config = DynamicPartitionConfig.init();
+    partitionManager.initiateScaleUp(2);
+
+    // when
+    final var result = partitionManager.bootstrap(partitionId, priority, config, true);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(partitionManager.getRaftPartition(partitionId)).isNotNull();
+    assertThat(partitionManager.getRaftPartitions()).hasSize(2);
+    assertThat(partitionManager.getZeebePartitions()).hasSize(2);
+  }
+
+  @Test
+  public void bootstrapNewPartitionFromSnapshotIsIdempotent() {
+    // given
+    final var partitionId = 2;
+    final var priority = 1;
+    final var config = DynamicPartitionConfig.init();
+    partitionManager.initiateScaleUp(3);
+    partitionManager.bootstrap(partitionId, priority, config, true).join();
+
+    // When the operation retried after broker restart
+    brokerRule.restartBroker();
+    partitionManager =
+        (PartitionManagerImpl) brokerRule.getBroker().getBrokerContext().getPartitionManager();
+
+    final var result = partitionManager.bootstrap(partitionId, priority, config, true);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(partitionManager.getRaftPartition(partitionId)).isNotNull();
+    assertThat(partitionManager.getRaftPartitions()).hasSize(2);
+    assertThat(partitionManager.getZeebePartitions()).hasSize(2);
+  }
+
+  @Test
   public void shouldFailWhenBootstrappingExistingPartition() {
     // given
     final var partitionId = 1; // This partition already exists from startup

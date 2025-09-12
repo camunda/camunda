@@ -13,9 +13,15 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
 
 public final class ZeebePartitionStep implements StartupStep<PartitionStartupContext> {
 
+  private final String name;
+
+  public ZeebePartitionStep(final int partitionId) {
+    name = String.format("Partition %d - Zeebe Partition", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Zeebe Partition";
+    return name;
   }
 
   @Override
