@@ -266,13 +266,16 @@ public class PrefixMigrationIT {
     // given
     LOG.info("Starting shouldReindexDocumentsDuringPrefixMigration");
     final var esClient =
-        new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient();
+        currentMultiDbDatabaseType() == DatabaseType.ES
+            ? new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient()
+            : null;
 
     final var osConfig = new SearchEngineConnectProperties();
     osConfig.setType("opensearch");
-    final var osClient = new OpensearchConnector(osConfig).createClient();
-
-    // I care about the documents
+    final var osClient =
+        currentMultiDbDatabaseType() == DatabaseType.OS
+            ? new OpensearchConnector(osConfig).createClient()
+            : null;
 
     final var camunda87 = createCamundaContainer();
     camunda87.start();
@@ -331,7 +334,6 @@ public class PrefixMigrationIT {
     // when
     prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
 
-    esClient.indices().refresh();
     LOG.info("After migration docs in migrated indices starting with 'prefixmigrationit'");
     LOG.info("---------------------------------------");
     printDocuments(
