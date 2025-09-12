@@ -93,7 +93,7 @@ public final class OpensearchConnector {
   }
 
   private OpenSearchTransport createTransport(final ConnectConfiguration configuration) {
-    if (shouldCreateAWSBasedTransport()) {
+    if (configuration.isAwsEnabled() && shouldCreateAWSBasedTransport()) {
       return createAWSBasedTransport(configuration);
     } else {
       return createDefaultTransport(configuration);
