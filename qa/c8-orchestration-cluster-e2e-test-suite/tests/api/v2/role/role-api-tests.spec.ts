@@ -28,12 +28,24 @@ import {
   assertRoleInResponse,
   createRoleAndStoreResponseFields,
 } from '../../../../utils/requestHelpers';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
 test.describe.parallel('Roles API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdRoleIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createRoleAndStoreResponseFields(request, 3, state);
+
+    createdRoleIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('roleId'))
+        .map(([, value]) => value as string),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
   });
 
   test('Create Role', async ({request}) => {
@@ -48,6 +60,9 @@ test.describe.parallel('Roles API Tests', () => {
       const json = await res.json();
       assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, role, roleRequiredFields);
+      if (json && json.roleId) {
+        createdRoleIds.push(json.roleId);
+      }
     }).toPass(defaultAssertionOptions);
   });
 

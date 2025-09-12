@@ -26,9 +26,13 @@ import {
   groupIdFromState,
 } from '../../../../utils/requestHelpers';
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
+import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Role Groups API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdRoleIds: string[] = [];
+  const createdGroupIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createRole(request, state, '1');
@@ -37,13 +41,32 @@ test.describe.parallel('Role Groups API Tests', () => {
     await assignGroupsToRole(request, 2, 'roleId1', state);
     await assignGroupsToRole(request, 3, 'roleId2', state);
     await assignGroupsToRole(request, 3, 'roleId3', state);
+
+    createdRoleIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('roleId'))
+        .map(([, value]) => value as string),
+    );
+
+    createdGroupIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('groupId'))
+        .map(([, value]) => value as string),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupGroups(request, createdGroupIds);
   });
 
   test('Assign Role To Group', async ({request}) => {
     const groupKey = `${state['roleId1']}6`;
     await createGroupAndStoreResponseFields(request, 1, state, groupKey);
+    const groupId = groupIdFromState(groupKey, state, 6) as string;
+    createdGroupIds.push(groupId);
     const p = {
-      groupId: groupIdFromState(groupKey, state, 6) as string,
+      groupId: groupId,
       roleId: state['roleId1'] as string,
     };
 
