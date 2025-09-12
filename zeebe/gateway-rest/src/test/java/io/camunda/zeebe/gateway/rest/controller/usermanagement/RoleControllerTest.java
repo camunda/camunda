@@ -73,7 +73,7 @@ public class RoleControllerTest extends RestControllerTest {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+  @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
   void createRoleShouldReturnCreated(final String roleId) {
     // given
     final var roleName = "Test Role";
@@ -233,9 +233,9 @@ public class RoleControllerTest extends RestControllerTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
-        "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+        "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+        "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectRoleCreationWithIllegalCharactersInId(final String roleId) {
     // when then
