@@ -28,7 +28,10 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mockito;
+import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 
 class OpensearchConnectorTest {
 
@@ -72,6 +75,29 @@ class OpensearchConnectorTest {
 
     Assertions.assertThat(reqWrapper.getFirstHeader(KEY_CUSTOM_HEADER).getValue())
         .isEqualTo(VALUE_CUSTOM_HEADER);
+  }
+
+  @Test
+  void shouldUseBasicAuthEvenWithConfiguredAwsCredentials() {
+    System.setProperty("aws.region", "us-west-1");
+
+    try {
+      final var credentialsProvider =
+          StaticCredentialsProvider.create(AwsBasicCredentials.create("username", "password"));
+
+      final var connector =
+          new OpensearchConnector(
+              new ConnectConfiguration(),
+              new ObjectMapper(),
+              credentialsProvider,
+              new PluginRepository());
+
+      final var client = connector.createClient();
+
+      Assertions.assertThat(client._transport() instanceof AwsSdk2Transport).isFalse();
+    } finally {
+      System.clearProperty("aws.region");
+    }
   }
 
   @Test

@@ -30,6 +30,7 @@ public class ConnectConfiguration {
   private SecurityConfiguration security = new SecurityConfiguration();
   private String indexPrefix = "";
   private List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
+  private boolean isAwsEnabled = false;
 
   /** Use {@link ConnectConfiguration#getTypeEnum()} */
   @Deprecated
@@ -39,6 +40,14 @@ public class ConnectConfiguration {
 
   public void setType(final String type) {
     this.type = type;
+  }
+
+  public boolean isAwsEnabled() {
+    return isAwsEnabled;
+  }
+
+  public void setAwsEnabled(final boolean awsEnabled) {
+    isAwsEnabled = awsEnabled;
   }
 
   public DatabaseType getTypeEnum() {
