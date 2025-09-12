@@ -19,7 +19,8 @@ public final class UsageMetricsEntity
         TenantOwned {
 
   private String id;
-  private OffsetDateTime eventTime;
+  private OffsetDateTime startTime;
+  private OffsetDateTime endTime;
   private UsageMetricsEventType eventType;
   private Long eventValue;
   private String tenantId;
@@ -36,12 +37,21 @@ public final class UsageMetricsEntity
     return this;
   }
 
-  public OffsetDateTime getEventTime() {
-    return eventTime;
+  public OffsetDateTime getStartTime() {
+    return startTime;
   }
 
-  public UsageMetricsEntity setEventTime(final OffsetDateTime eventTime) {
-    this.eventTime = eventTime;
+  public UsageMetricsEntity setStartTime(final OffsetDateTime startTime) {
+    this.startTime = startTime;
+    return this;
+  }
+
+  public OffsetDateTime getEndTime() {
+    return endTime;
+  }
+
+  public UsageMetricsEntity setEndTime(final OffsetDateTime endTime) {
+    this.endTime = endTime;
     return this;
   }
 
@@ -86,7 +96,7 @@ public final class UsageMetricsEntity
 
   @Override
   public int hashCode() {
-    return Objects.hash(id, eventTime, eventType, eventValue, tenantId, partitionId);
+    return Objects.hash(id, startTime, endTime, eventType, eventValue, tenantId, partitionId);
   }
 
   @Override
@@ -99,7 +109,8 @@ public final class UsageMetricsEntity
     }
     final var that = (UsageMetricsEntity) obj;
     return Objects.equals(id, that.id)
-        && Objects.equals(eventTime, that.eventTime)
+        && Objects.equals(startTime, that.startTime)
+        && Objects.equals(endTime, that.endTime)
         && Objects.equals(eventType, that.eventType)
         && Objects.equals(eventValue, that.eventValue)
         && Objects.equals(tenantId, that.tenantId)
@@ -108,7 +119,7 @@ public final class UsageMetricsEntity
 
   @Override
   public String toString() {
-    return "UsageMetricsEntity[id=%s, eventTime=%s, eventType=%s, eventValue=%d, tenantId=%s, partitionId=%d]"
-        .formatted(id, eventTime, eventType, eventValue, tenantId, partitionId);
+    return "UsageMetricsEntity[id=%s, startTime=%s, endTime=%s, eventType=%s, eventValue=%d, tenantId=%s, partitionId=%d]"
+        .formatted(id, startTime, endTime, eventType, eventValue, tenantId, partitionId);
   }
 }
