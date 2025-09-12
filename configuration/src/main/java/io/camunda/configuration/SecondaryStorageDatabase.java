@@ -32,6 +32,15 @@ public abstract class SecondaryStorageDatabase {
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
 
+  /** How many replicas Elasticsearch uses for all indices. */
+  private int numberOfReplicas = 0;
+
+  /** Variable size threshold for the database configured as secondary storage. */
+  private int variableSizeThreshold = 8191;
+
+  /** Whether to wait for importers before proceeding. */
+  private boolean waitForImporters = true;
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -118,6 +127,45 @@ public abstract class SecondaryStorageDatabase {
     this.numberOfShards = numberOfShards;
   }
 
+  public int getNumberOfReplicas() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-replicas",
+        numberOfReplicas,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyNumberOfReplicasProperties());
+  }
+
+  public void setNumberOfReplicas(final int numberOfReplicas) {
+    this.numberOfReplicas = numberOfReplicas;
+  }
+
+  public int getVariableSizeThreshold() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".variable-size-threshold",
+        variableSizeThreshold,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyVariableSizeThresholdProperties());
+  }
+
+  public void setVariableSizeThreshold(final int variableSizeThreshold) {
+    this.variableSizeThreshold = variableSizeThreshold;
+  }
+
+  public boolean isWaitForImporters() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".wait-for-importers",
+        waitForImporters,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyWaitForImportersProperties());
+  }
+
+  public void setWaitForImporters(final boolean waitForImporters) {
+    this.waitForImporters = waitForImporters;
+  }
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -171,6 +219,24 @@ public abstract class SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.index.numberOfShards",
         "zeebe.broker.exporters.camundaexporter.args.index.numberOfShards");
+  }
+
+  private Set<String> legacyNumberOfReplicasProperties() {
+    return Set.of(
+        "camunda.database.index.numberOfReplicas",
+        "zeebe.broker.exporters.camundaexporter.args.index.numberOfReplicas");
+  }
+
+  private Set<String> legacyVariableSizeThresholdProperties() {
+    return Set.of(
+        "camunda.database.index.variableSizeThreshold",
+        "zeebe.broker.exporters.camundaexporter.args.index.variableSizeThreshold");
+  }
+
+  private Set<String> legacyWaitForImportersProperties() {
+    return Set.of(
+        "camunda.database.index.shouldWaitForImporters",
+        "zeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters");
   }
 
   protected abstract String databaseName();
