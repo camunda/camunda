@@ -22,6 +22,15 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
+  /** The date format for ES and OS */
+  private String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+
+  /** The socket timeout for ES and OS connector */
+  private Integer socketTimeout;
+
+  /** The connection timeout for ES and OS connector */
+  private Integer connectionTimeout;
+
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
 
@@ -217,6 +226,45 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.incidentNotifier = incidentNotifier;
   }
 
+  public String getDateFormat() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".date-format",
+        dateFormat,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyDateFormatProperties());
+  }
+
+  public void setDateFormat(final String dateFormat) {
+    this.dateFormat = dateFormat;
+  }
+
+  public Integer getSocketTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".socket-timeout",
+        socketTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacySocketTimeoutProperties());
+  }
+
+  public void setSocketTimeout(final Integer socketTimeout) {
+    this.socketTimeout = socketTimeout;
+  }
+
+  public Integer getConnectionTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".connection-timeout",
+        connectionTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyConnectionTimeoutProperties());
+  }
+
+  public void setConnectionTimeout(final Integer connectionTimeout) {
+    this.connectionTimeout = connectionTimeout;
+  }
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -270,5 +318,32 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.index.numberOfShards",
         "zeebe.broker.exporters.camundaexporter.args.index.numberOfShards");
+  }
+
+  private Set<String> legacyDateFormatProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.dateFormat",
+        "camunda.operate." + dbName + ".dateFormat",
+        "camunda.tasklist." + dbName + ".dateFormat",
+        "zeebe.broker.exporters.camundaexporter.args.connect.dateFormat");
+  }
+
+  private Set<String> legacySocketTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.socketTimeout",
+        "camunda.operate." + dbName + ".socketTimeout",
+        "camunda.tasklist." + dbName + ".socketTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout");
+  }
+
+  private Set<String> legacyConnectionTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.connectionTimeout",
+        "camunda.operate." + dbName + ".connectionTimeout",
+        "camunda.tasklist." + dbName + ".connectionTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
   }
 }
