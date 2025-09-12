@@ -269,7 +269,9 @@ test.describe('task details page', () => {
   }) => {
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText('processWithDeployedForm'),
+        taskPanelPage.availableTasks
+          .getByText('processWithDeployedForm')
+          .first(),
       ).toBeVisible();
     }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');
@@ -305,7 +307,9 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText('processWithDeployedForm'),
+        taskPanelPage.availableTasks
+          .getByText('processWithDeployedForm')
+          .first(),
       ).toBeVisible();
     }).toPass();
     await taskPanelPage.openTask('processWithDeployedForm');

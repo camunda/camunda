@@ -13,6 +13,9 @@ import {LOGIN_CREDENTIALS, createTestData} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureFailureVideo, captureScreenshot} from '@setup';
 import {waitForItemInList} from '../../utils/waitForItemInList';
+import {cleanupRoles} from 'utils/rolesCleanup';
+
+const createdRoleIds: string[] = [];
 
 test.describe.serial('roles CRUD', () => {
   let NEW_ROLE: NonNullable<ReturnType<typeof createTestData>['authRole']>;
@@ -22,6 +25,11 @@ test.describe.serial('roles CRUD', () => {
       authRole: true,
     });
     NEW_ROLE = testData.authRole!;
+    createdRoleIds.push(NEW_ROLE.id);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
   });
 
   test.beforeEach(async ({page, loginPage, identityHeader}) => {

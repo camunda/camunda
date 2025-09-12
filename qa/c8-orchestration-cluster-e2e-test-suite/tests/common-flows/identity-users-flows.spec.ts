@@ -14,8 +14,11 @@ import {createTestData, createComponentAuthorization} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {cleanupUsers} from '../../utils/usersCleanup';
 
 test.describe('Identity User Flows', () => {
+  const createdUsernames: string[] = [];
+
   test.beforeEach(async ({loginPage, page}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -24,6 +27,10 @@ test.describe('Identity User Flows', () => {
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdUsernames);
   });
 
   test('Admin user can delete user', async ({
@@ -92,6 +99,8 @@ test.describe('Identity User Flows', () => {
         email: testUser.email!,
         name: testUser.name ?? testUser.username,
       });
+
+      createdUsernames.push(testUser.username);
     });
 
     await test.step(`Login with the new user and verify Identity access is denied`, async () => {
@@ -117,9 +126,12 @@ test.describe('Identity User Flows', () => {
     identityAuthorizationsPage,
   }) => {
     test.slow();
-    let testUser:
-      | {username: string; password: string; email?: string; name?: string}
-      | undefined;
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
 
     await test.step(`Create new user`, async () => {
       const testData = createTestData({user: true});
@@ -128,20 +140,25 @@ test.describe('Identity User Flows', () => {
       await identityUsersPage.createUser({
         username: testUser.username,
         password: testUser.password,
-        email: testUser.email!,
-        name: testUser.name ?? testUser.username,
+        email: testUser.email,
+        name: testUser.name,
       });
+
+      createdUsernames.push(testUser.username);
     });
 
     await test.step(`Grant Authorizations to user for all applications`, async () => {
       await identityAuthorizationsPage.navigateToAuthorizations();
       await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
 
-      const COMPONENT_AUTH = createComponentAuthorization(
-        {name: testUser!.name ?? testUser!.username},
-        'User',
-      );
-      await identityAuthorizationsPage.createAuthorization(COMPONENT_AUTH);
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+
       const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
         testUser!.username,
       );
