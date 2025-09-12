@@ -13,18 +13,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.jobhandling.result;
+package io.camunda.client.bean;
 
-import io.camunda.client.bean.MethodInfo;
+import java.lang.reflect.Method;
 
-public interface ResultProcessorStrategy {
+public final class MethodInfoBuilder {
+  private BeanInfo beanInfo;
+  private Method method;
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
+  public MethodInfoBuilder beanInfo(final BeanInfo beanInfo) {
+    this.beanInfo = beanInfo;
+    return this;
   }
 
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
+  public MethodInfoBuilder method(final Method method) {
+    this.method = method;
+    return this;
+  }
+
+  public MethodInfo build() {
+    assert method != null : "method is null";
+    assert beanInfo != null : "beanInfo is null";
+    return InfoFactory.instance().methodInfo(beanInfo, method);
   }
 }

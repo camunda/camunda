@@ -23,8 +23,8 @@ import io.camunda.client.annotation.Variable;
 import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
@@ -43,7 +43,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
       final Object bean, final String beanName, final String methodName) {
     try {
       return MethodInfo.builder()
-          .classInfo(ClassInfo.builder().beanName(beanName).bean(bean).build())
+          .beanInfo(BeanInfo.builder().beanName(beanName).bean(bean).build())
           .method(
               Arrays.stream(PropertyBasedJobWorkerValueCustomizerTest.class.getDeclaredMethods())
                   .filter(m -> m.getName().equals(methodName))

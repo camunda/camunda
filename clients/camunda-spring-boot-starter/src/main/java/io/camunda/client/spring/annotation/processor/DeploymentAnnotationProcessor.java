@@ -23,7 +23,7 @@ import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.event.CamundaPostDeploymentSpringEvent;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,12 +52,12 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   }
 
   @Override
-  public boolean isApplicableFor(final ClassInfo beanInfo) {
+  public boolean isApplicableFor(final BeanInfo beanInfo) {
     return isDeployment(beanInfo);
   }
 
   @Override
-  public void configureFor(final ClassInfo beanInfo) {
+  public void configureFor(final BeanInfo beanInfo) {
     final Optional<DeploymentValue> zeebeDeploymentValue = getDeploymentValue(beanInfo);
     if (zeebeDeploymentValue.isPresent()) {
       LOGGER.info("Configuring deployment: {}", zeebeDeploymentValue.get());

@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.jobhandling.result;
+package io.camunda.client.bean;
 
-import io.camunda.client.bean.MethodInfo;
+import java.lang.reflect.Parameter;
 
-public interface ResultProcessorStrategy {
+public interface ParameterInfo {
+  Parameter getParameter();
 
-  @Deprecated
-  default ResultProcessor createProcessor(final Class<?> resultType) {
-    return new ResultProcessor() {};
-  }
+  String getParameterName();
 
-  default ResultProcessor createProcessor(final MethodInfo methodInfo) {
-    return createProcessor(methodInfo.getReturnType());
+  MethodInfo getMethodInfo();
+
+  static ParameterInfoBuilder builder() {
+    return new ParameterInfoBuilder();
   }
 }

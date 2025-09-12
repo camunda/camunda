@@ -29,7 +29,7 @@ import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
-import io.camunda.client.spring.bean.ParameterInfo;
+import io.camunda.client.bean.ParameterInfo;
 
 public class DefaultParameterResolverStrategy implements ParameterResolverStrategy {
   protected final JsonMapper jsonMapper;
@@ -52,7 +52,7 @@ public class DefaultParameterResolverStrategy implements ParameterResolverStrate
 
   @Override
   public ParameterResolver createResolver(final ParameterInfo parameterInfo) {
-    final Class<?> parameterType = parameterInfo.getParameterInfo().getType();
+    final Class<?> parameterType = parameterInfo.getParameter().getType();
     // legacy
     if (io.camunda.zeebe.client.api.worker.JobClient.class.isAssignableFrom(parameterType)) {
       if (jobClient != null) {

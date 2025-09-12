@@ -16,24 +16,26 @@
 package io.camunda.client.spring.bean;
 
 import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
+import static org.springframework.util.ReflectionUtils.getAllDeclaredMethods;
 
+import io.camunda.client.bean.BeanInfo;
 import java.lang.annotation.Annotation;
-import java.lang.reflect.Method;
 import java.util.Optional;
+import java.util.function.Supplier;
+import java.util.stream.Stream;
+import org.springframework.aop.support.AopUtils;
 
-public final class ClassInfo implements BeanInfo {
-
-  private final Object bean;
+public final class SpringBeanInfo implements BeanInfo {
+  private final Supplier<Object> beanSupplier;
   private final String beanName;
+  private final Class<?> targetClass;
 
-  private ClassInfo(final Object bean, final String beanName) {
-    this.bean = bean;
+  public SpringBeanInfo(
+      final Supplier<Object> beanSupplier, final String beanName, final Class<?> targetClass) {
+    this.beanSupplier = beanSupplier;
     this.beanName = beanName;
-  }
-
-  @Override
-  public Object getBean() {
-    return bean;
+    this.targetClass =
+        targetClass == null ? AopUtils.getTargetClass(beanSupplier.get()) : targetClass;
   }
 
   @Override
@@ -42,41 +44,23 @@ public final class ClassInfo implements BeanInfo {
   }
 
   @Override
-  public String toString() {
-    return "ClassInfo{" + "beanName=" + beanName + '}';
+  public boolean hasMethodAnnotation(final Class<? extends Annotation> type) {
+    return Stream.of(getAllDeclaredMethods(getTargetClass()))
+        .anyMatch(m -> m.isAnnotationPresent(type));
   }
 
-  public MethodInfo toMethodInfo(final Method method) {
-    return MethodInfo.builder().classInfo(this).method(method).build();
-  }
-
+  @Override
   public <T extends Annotation> Optional<T> getAnnotation(final Class<T> type) {
     return Optional.ofNullable(findAnnotation(getTargetClass(), type));
   }
 
-  public static final ClassInfoBuilder builder() {
-    return new ClassInfoBuilder();
+  @Override
+  public Supplier<Object> getBeanSupplier() {
+    return beanSupplier;
   }
 
-  public static final class ClassInfoBuilder {
-
-    private Object bean;
-    private String beanName;
-
-    public ClassInfoBuilder() {}
-
-    public ClassInfoBuilder bean(final Object bean) {
-      this.bean = bean;
-      return this;
-    }
-
-    public ClassInfoBuilder beanName(final String beanName) {
-      this.beanName = beanName;
-      return this;
-    }
-
-    public ClassInfo build() {
-      return new ClassInfo(bean, beanName);
-    }
+  @Override
+  public Class<?> getTargetClass() {
+    return targetClass;
   }
 }

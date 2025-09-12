@@ -17,6 +17,9 @@ package io.camunda.client.spring.bean;
 
 import static org.springframework.core.annotation.AnnotationUtils.findAnnotation;
 
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.bean.ParameterInfo;
 import java.lang.annotation.Annotation;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
@@ -25,52 +28,56 @@ import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.StandardReflectionParameterNameDiscoverer;
 
-public class MethodInfo implements BeanInfo {
+public class SpringMethodInfo implements MethodInfo {
 
   private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final StandardReflectionParameterNameDiscoverer PARAMETER_NAME_DISCOVERER =
       new StandardReflectionParameterNameDiscoverer();
 
-  protected ClassInfo classInfo;
-  protected Method method;
+  private final BeanInfo beanInfo;
+  private final Method method;
 
-  protected MethodInfo(final ClassInfo classInfo, final Method method) {
-    this.classInfo = classInfo;
+  public SpringMethodInfo(final BeanInfo beanInfo, final Method method) {
+    this.beanInfo = beanInfo;
     this.method = method;
   }
 
-  protected MethodInfo(final MethodInfo original) {
-    classInfo = original.classInfo;
-    method = original.method;
+  @Override
+  public BeanInfo getBeanInfo() {
+    return beanInfo;
   }
 
   @Override
-  public Object getBean() {
-    return classInfo.getBean();
+  public Method getMethod() {
+    return method;
   }
 
   @Override
-  public String getBeanName() {
-    return classInfo.getBeanName();
+  public List<ParameterInfo> getParameters() {
+    return getParametersFiltered(parameter -> true);
   }
 
   @Override
-  public String toString() {
-    return "MethodInfo{" + "classInfo=" + classInfo + ", method=" + method + '}';
+  public <T extends Annotation> Optional<T> getAnnotation(final Class<T> type) {
+    return Optional.ofNullable(findAnnotation(method, type));
   }
 
-  public String getMethodName() {
-    return method.getName();
+  @Override
+  public List<ParameterInfo> getParametersFilteredByAnnotation(
+      final Class<? extends Annotation> type) {
+    return getParametersFiltered(parameter -> parameter.isAnnotationPresent(type));
   }
 
+  @Override
   public Object invoke(final Object... args) throws Exception {
     try {
-      return method.invoke(getBean(), args);
+      return method.invoke(beanInfo.getBeanSupplier().get(), args);
     } catch (final InvocationTargetException e) {
       final Throwable targetException = e.getTargetException();
       if (targetException instanceof Exception) {
@@ -83,17 +90,23 @@ public class MethodInfo implements BeanInfo {
     }
   }
 
-  public <T extends Annotation> Optional<T> getAnnotation(final Class<T> type) {
-    return Optional.ofNullable(findAnnotation(method, type));
-  }
-
-  public List<ParameterInfo> getParameters() {
+  private List<ParameterInfo> getParametersFiltered(final Predicate<Parameter> filter) {
     final Parameter[] parameters = method.getParameters();
     final String[] parameterNames = getParameterNames();
 
     final ArrayList<ParameterInfo> result = new ArrayList<>();
     for (int i = 0; i < parameters.length; i++) {
-      result.add(new ParameterInfo(this, parameters[i], parameterNames[i]));
+      final Parameter parameter = parameters[i];
+      if (filter.test(parameter)) {
+        final String parameterName = parameterNames[i];
+        final ParameterInfo parameterInfo =
+            ParameterInfo.builder()
+                .parameterName(parameterName)
+                .parameter(parameter)
+                .methodInfo(this)
+                .build();
+        result.add(parameterInfo);
+      }
     }
     return result;
   }
@@ -113,49 +126,5 @@ public class MethodInfo implements BeanInfo {
       }
     }
     return parameterNames;
-  }
-
-  public List<ParameterInfo> getParametersFilteredByAnnotation(
-      final Class<? extends Annotation> type) {
-    final Parameter[] parameters = method.getParameters();
-    final String[] parameterNames = getParameterNames();
-
-    final ArrayList<ParameterInfo> result = new ArrayList<>();
-    for (int i = 0; i < parameters.length; i++) {
-      if (parameters[i].isAnnotationPresent(type)) {
-        result.add(new ParameterInfo(this, parameters[i], parameterNames[i]));
-      }
-    }
-    return result;
-  }
-
-  public Class<?> getReturnType() {
-    return method.getReturnType();
-  }
-
-  public static MethodInfoBuilder builder() {
-    return new MethodInfoBuilder();
-  }
-
-  public static final class MethodInfoBuilder {
-
-    private ClassInfo classInfo;
-    private Method method;
-
-    private MethodInfoBuilder() {}
-
-    public MethodInfoBuilder classInfo(final ClassInfo classInfo) {
-      this.classInfo = classInfo;
-      return this;
-    }
-
-    public MethodInfoBuilder method(final Method method) {
-      this.method = method;
-      return this;
-    }
-
-    public MethodInfo build() {
-      return new MethodInfo(classInfo, method);
-    }
   }
 }
