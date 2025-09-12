@@ -3,7 +3,7 @@
 # type: CI
 # owner: @camunda/core-features
 ---
-name: "[Legacy] Tasklist CI"
+name: "[Legacy] Tasklist"
 on:
   workflow_dispatch:
   push:
@@ -46,10 +46,11 @@ jobs:
 
   # Does not meet run time requirements for Unified CI
   run-integration-tests:
-    name: run-tests
+    name: "Integration"
     needs: [detect-changes]
     uses: ./.github/workflows/tasklist-ci-test-reusable.yml
     secrets: inherit
+    permissions: { }
     with:
       branch: ${{ github.head_ref || github.ref_name }}
     if: ${{ github.event_name == 'workflow_dispatch' || needs.detect-changes.outputs.tasklist-backend-changes == 'true' }}
