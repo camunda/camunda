@@ -13,6 +13,7 @@ import {defaultAssertionOptions} from '../utils/constants';
 export class IdentityRolesPage {
   readonly page: Page;
   readonly rolesList: Locator;
+  readonly usersList: Locator;
   readonly createRoleButton: Locator;
   readonly editRoleButton: (rowName?: string) => Locator;
   readonly deleteRoleButton: (rowName?: string) => Locator;
@@ -32,11 +33,22 @@ export class IdentityRolesPage {
   readonly deleteRoleModalCancelButton: Locator;
   readonly deleteRoleModalDeleteButton: Locator;
   readonly roleCell: (name: string) => Locator;
+  readonly userCell: (name: string) => Locator;
   readonly rolesHeading: Locator;
+<<<<<<< HEAD
+=======
+  readonly assignUserButton: Locator;
+  readonly assignUserButtonModal: Locator;
+  readonly searchBox: Locator;
+  readonly searchBoxResult: Locator;
+  readonly removeButton: Locator;
+  readonly removeUserModalButton: Locator;
+>>>>>>> f5f87de1 (test: Identity e2e As an Admin user I can unassign role from user)
 
   constructor(page: Page) {
     this.page = page;
     this.rolesList = page.getByRole('table');
+    this.usersList = page.getByRole('table');
     this.createRoleButton = page.getByRole('button', {
       name: 'Create role',
     });
@@ -102,7 +114,22 @@ export class IdentityRolesPage {
     );
     this.roleCell = (roleID: string) =>
       this.rolesList.getByRole('cell', {name: roleID, exact: true});
+    this.userCell = (userID: string) =>
+      this.usersList.getByRole('cell', {name: userID, exact: true});
     this.rolesHeading = this.page.getByRole('heading', {name: 'Roles'});
+<<<<<<< HEAD
+=======
+    this.assignUserButton = page.getByRole('button', {name: 'Assign user'});
+    this.searchBox = page.getByRole('searchbox');
+    this.searchBoxResult = page.getByRole('listitem');
+    this.assignUserButtonModal = page
+      .getByLabel('Assign user')
+      .getByRole('button', {name: 'Assign user'});
+    this.removeButton = page.getByRole('button', {name: 'Remove'});
+    this.removeUserModalButton = page.getByRole('button', {
+      name: 'Remove user',
+    });
+>>>>>>> f5f87de1 (test: Identity e2e As an Admin user I can unassign role from user)
   }
 
   async clickCreateRoles() {
@@ -134,6 +161,28 @@ export class IdentityRolesPage {
     await this.roleCell(roleID).click();
   }
 
+<<<<<<< HEAD
+=======
+  async assignUserToRole(userName: string) {
+    await this.assignUserButton.click({timeout: 60000});
+    await this.searchBox.fill(userName);
+    await this.searchBoxResult
+      .filter({
+        hasText: userName,
+      })
+      .click({timeout: 60000});
+    await this.assignUserButtonModal.click();
+  }
+
+  async unassignUserFromRole(userName: string): Promise<void> {
+    const userRow = this.page.getByRole('row').filter({hasText: userName});
+    await expect(userRow).toBeVisible({timeout: 30000});
+
+    await this.removeButton.click();
+    await this.removeUserModalButton.click({timeout: 30000});
+  }
+
+>>>>>>> f5f87de1 (test: Identity e2e As an Admin user I can unassign role from user)
   async deleteRole(roleName: string) {
     await waitForItemInList(this.page, this.roleCell(roleName), {
       clickNext: true,
