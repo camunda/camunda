@@ -50,6 +50,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
   private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
   private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
+  private static final boolean EXPECTED_WAIT_FOR_IMPORTERS = false;
 
   @Nested
   @TestPropertySource(
@@ -65,7 +66,9 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-replicas="
             + EXPECTED_NUMBER_OF_REPLICAS,
         "camunda.data.secondary-storage.elasticsearch.variable-size-threshold="
-            + EXPECTED_VARIABLE_SIZE_THRESHOLD
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.data.secondary-storage.elasticsearch.wait-for-importers="
+            + EXPECTED_WAIT_FOR_IMPORTERS
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -143,6 +146,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
 
     @Test
@@ -160,6 +165,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
   }
 
@@ -223,6 +230,11 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.variable-size-threshold="
             + EXPECTED_VARIABLE_SIZE_THRESHOLD,
         "camunda.database.index.variableSizeThreshold=" + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+
+        // wait for importers
+        "camunda.data.secondary-storage.elasticsearch.wait-for-importers="
+            + EXPECTED_WAIT_FOR_IMPORTERS,
+        "camunda.database.index.shouldWaitForImporters=" + EXPECTED_WAIT_FOR_IMPORTERS,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -302,6 +314,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
 
     @Test
@@ -322,6 +336,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
   }
 
