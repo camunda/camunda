@@ -446,6 +446,71 @@ public class OpensearchEngineClientIT {
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
   }
 
+  @Test
+  void shouldCreateIndexWithMetaNormally() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor(
+            "index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings_with_meta.json");
+
+    // when
+    final var indexSettings = new IndexConfiguration();
+    opensearchEngineClient.createIndex(descriptor, indexSettings);
+
+    // then
+    final var index =
+        openSearchClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings_with_meta.json");
+
+    assertThat(index.mappings().meta()).isNotEmpty().containsKey("test_key");
+    assertThat(index.mappings().meta().get("test_key").to(String.class)).isEqualTo("test_value");
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
+  }
+
+  @Test
+  void shouldUpdateIndexMeta() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor("index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var indexSettings = new IndexConfiguration();
+    opensearchEngineClient.createIndex(descriptor, indexSettings);
+
+    // when
+    opensearchEngineClient.putIndexMeta(
+        descriptor.getFullQualifiedName(),
+        Map.of("string_key", "string_value", "bool_key", true, "int_key", 42));
+
+    // then
+    final var index =
+        openSearchClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
+
+    assertThat(index.mappings().meta())
+        .isNotEmpty()
+        .containsKeys("string_key", "bool_key", "int_key");
+    assertThat(index.mappings().meta().get("string_key").to(String.class))
+        .isEqualTo("string_value");
+    assertThat(index.mappings().meta().get("bool_key").to(Boolean.class)).isTrue();
+    assertThat(index.mappings().meta().get("int_key").to(Integer.class)).isEqualTo(42);
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
+  }
+
   private String getPolicyMinAge(final String policyName) throws IOException {
     final var request =
         Requests.builder().method("GET").endpoint("_plugins/_ism/policies/" + policyName).build();
