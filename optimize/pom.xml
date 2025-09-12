@@ -63,7 +63,7 @@
 
     <!-- DATABASE -->
     <!-- Elasticsearch-->
-    <version.elasticsearch>8.16.6</version.elasticsearch>
+    <version.elasticsearch>8.16.7</version.elasticsearch>
     <!-- The least supported elasticsearch version we should test against-->
     <elasticsearch.test.version>8.16.6</elasticsearch.test.version>
     <!-- The ElasticSearch version of the previous Optimize version -->
