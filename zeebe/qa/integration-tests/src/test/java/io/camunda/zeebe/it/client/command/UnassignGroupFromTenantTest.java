@@ -64,7 +64,12 @@ class UnassignGroupFromTenantTest {
   void shouldUnassignGroupFromTenant() {
     // when
     final UnassignGroupFromTenantResponse response =
-        client.newUnassignGroupFromTenantCommand(tenantId).groupId(groupId).send().join();
+        client
+            .newUnassignGroupFromTenantCommand()
+            .groupId(groupId)
+            .tenantId(tenantId)
+            .send()
+            .join();
 
     // then
     assertThat(response).isNotNull().isInstanceOf(UnassignGroupFromTenantResponse.class);
@@ -85,8 +90,9 @@ class UnassignGroupFromTenantTest {
     assertThatThrownBy(
             () ->
                 client
-                    .newUnassignGroupFromTenantCommand(nonExistentTenantId)
+                    .newUnassignGroupFromTenantCommand()
                     .groupId(groupId)
+                    .tenantId(nonExistentTenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -108,7 +114,12 @@ class UnassignGroupFromTenantTest {
         .join();
 
     // when
-    client.newUnassignGroupFromTenantCommand(tenantId).groupId(nonExistentGroupId).send().join();
+    client
+        .newUnassignGroupFromTenantCommand()
+        .groupId(nonExistentGroupId)
+        .tenantId(tenantId)
+        .send()
+        .join();
 
     // then
     ZeebeAssertHelper.assertGroupUnassignedFromTenant(
@@ -129,8 +140,9 @@ class UnassignGroupFromTenantTest {
             () ->
                 client
                     // Group key is not assigned
-                    .newUnassignGroupFromTenantCommand(tenantId)
+                    .newUnassignGroupFromTenantCommand()
                     .groupId(nonAssignedGroupId)
+                    .tenantId(tenantId)
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
@@ -144,7 +156,13 @@ class UnassignGroupFromTenantTest {
   void shouldRejectIfMissingTenantId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(null).groupId(groupId).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(groupId)
+                    .tenantId(null)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -153,7 +171,13 @@ class UnassignGroupFromTenantTest {
   void shouldRejectIfEmptyTenantId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand("").groupId(groupId).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(groupId)
+                    .tenantId("")
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -162,7 +186,13 @@ class UnassignGroupFromTenantTest {
   void shouldRejectIfMissingGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(tenantId).groupId(null).send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId(null)
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -171,7 +201,13 @@ class UnassignGroupFromTenantTest {
   void shouldRejectIfEmptyGroupId() {
     // when / then
     assertThatThrownBy(
-            () -> client.newUnassignGroupFromTenantCommand(tenantId).groupId("").send().join())
+            () ->
+                client
+                    .newUnassignGroupFromTenantCommand()
+                    .groupId("")
+                    .tenantId(tenantId)
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
