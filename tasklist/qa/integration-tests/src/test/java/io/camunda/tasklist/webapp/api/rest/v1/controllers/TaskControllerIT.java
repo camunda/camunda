@@ -1384,7 +1384,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           mockMvcHelper.doRequest(
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId),
               completeRequest);
-      final var taskVariables = tester.getTaskVariables();
 
       // then
       assertThat(result)
@@ -1401,13 +1400,20 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getImplementation()).isEqualTo(TaskImplementation.ZEEBE_USER_TASK);
               });
 
-      assertThat(taskVariables)
-          .extracting("name", "value", "previewValue", "isValueTruncated")
-          .containsExactlyInAnyOrder(
-              tuple("var_1", "11111111111", "11111111111", false),
-              tuple("var_2", "222222", "222222", false),
-              tuple("var_a", "225", "225", false),
-              tuple("var_b", "779", "779", false));
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var taskVariables = tester.getTaskVariables();
+
+                assertThat(taskVariables)
+                    .extracting("name", "value", "previewValue", "isValueTruncated")
+                    .containsExactlyInAnyOrder(
+                        tuple("var_1", "11111111111", "11111111111", false),
+                        tuple("var_2", "222222", "222222", false),
+                        tuple("var_a", "225", "225", false),
+                        tuple("var_b", "779", "779", false));
+              });
     }
 
     @Test
