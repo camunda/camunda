@@ -28,9 +28,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -386,6 +388,148 @@ public final class StateControllerImplTest {
     assertThat(snapshot.getExportedPosition()).isEqualTo(0);
   }
 
+<<<<<<< HEAD
+=======
+  @Test
+  public void shouldUseBackupPositionWhenSmallerThanExporter() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 4L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(backupPosition);
+  }
+
+  @Test
+  public void shouldUseExporterPositionWhenSmallerThanBackup() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 7L;
+    final var backupPosition = 11L;
+    this.exporterPosition.set(exporterPosition);
+    this.backupPosition.set(backupPosition);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldIgnoreBackupPositionWhenDisabled() {
+    // given
+    final var processedPosition = 10L;
+    final var exporterPosition = 5L;
+    this.exporterPosition.set(exporterPosition);
+    backupPosition.set(Long.MAX_VALUE); // simulates continuous backups disabled
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
+
+    // then - should use exporter position since backup is disabled
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(exporterPosition);
+  }
+
+  @Test
+  public void shouldFallbackToZeroWhenBackupPositionIsUnknown() {
+    // given
+    final long processedPosition = 5;
+    backupPosition.set(-1L);
+    exporterPosition.set(5);
+    snapshotController.recover().join();
+
+    // when
+    final var transientSnapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, false).join();
+
+    // then
+    final var snapshot = transientSnapshot.snapshotId();
+    assertThat(snapshot.getIndex()).isEqualTo(0);
+    assertThat(snapshot.getTerm()).isEqualTo(0);
+    assertThat(snapshot.getProcessedPosition()).isEqualTo(processedPosition);
+    assertThat(snapshot.getExportedPosition()).isEqualTo(0);
+  }
+
+  @Test
+  public void shouldUseProcessedPositionWhenSmallerThanBackupAndExporter() {
+    // given
+    final var processedPosition = 3L;
+    final var exporterPos = 10L;
+    final var backupPos = 8L;
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, false).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getCompactionBound)
+        .isEqualTo(processedPosition);
+  }
+
+  @Test
+  public void shouldTakeSnapshotAtPositionZeroWhenForced() {
+    // given
+    final var processedPosition = 0L;
+    final var exporterPos = 100000L; // This only happens if no exporter is configured
+    final var backupPos = 10000L; // This only happens if backup is not configured
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, true).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getIndex, PersistedSnapshot::getTerm)
+        .containsExactly(0L, 0L);
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotAtPositionZeroWhenNotForced() {
+    // given
+    final var processedPosition = 0L;
+    final var exporterPos = 100000L; // This only happens if no exporter is configured
+    final var backupPos = 10000L; // This only happens if backup is not configured
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var future = snapshotController.takeTransientSnapshot(processedPosition, false);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(1000))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Snapshot can be taken at processed position 0 only if forced");
+  }
+
+>>>>>>> 51edf35a (fix: allow taking forced snapshot at position zero)
   private File takeSnapshot(final long position) {
     final var snapshot = snapshotController.takeTransientSnapshot(position).join();
     return snapshot.persist().join().getPath().toFile();
