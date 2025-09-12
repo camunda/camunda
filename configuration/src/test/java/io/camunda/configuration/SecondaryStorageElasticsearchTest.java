@@ -42,6 +42,7 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
+  private static final String EXPECTED_DATE_FORMAT = "newFormat";
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   private static final String EXPECTED_USERNAME = "testUsername";
@@ -58,7 +59,9 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "camunda.data.secondary-storage.elasticsearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards="
+            + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.elasticsearch.date-format=" + EXPECTED_DATE_FORMAT,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -86,6 +89,7 @@ public class SecondaryStorageElasticsearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -93,6 +97,9 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(operateProperties.getElasticsearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(operateProperties.getElasticsearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(operateProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
@@ -102,11 +109,15 @@ public class SecondaryStorageElasticsearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(tasklistProperties.getElasticsearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(tasklistProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
@@ -128,6 +139,9 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
@@ -137,6 +151,7 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
       assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
     }
 
     @Test
@@ -171,6 +186,7 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.tasklist.elasticsearch.password=" + EXPECTED_PASSWORD,
+
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.
@@ -181,6 +197,12 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.tasklist.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.elasticsearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.elasticsearch.url=http://matching-url:4321",
+
+        // date format
+        "camunda.data.secondary-storage.elasticsearch.date-format=" + EXPECTED_DATE_FORMAT,
+        "camunda.data.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.tasklist.elasticsearch.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.operate.elasticsearch.dateFormat=" + EXPECTED_DATE_FORMAT,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
@@ -223,6 +245,7 @@ public class SecondaryStorageElasticsearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
@@ -230,6 +253,9 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(operateProperties.getElasticsearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(operateProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
@@ -239,6 +265,7 @@ public class SecondaryStorageElasticsearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getElasticsearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -246,6 +273,9 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(tasklistProperties.getElasticsearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(tasklistProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
@@ -269,6 +299,9 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
@@ -281,6 +314,7 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
     }
 
     @Test
