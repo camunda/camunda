@@ -104,7 +104,7 @@ services:
       - elasticsearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.3.2@sha256:7043f8711998369dec11c515eae1d2040bf75cb012f14f4e51ebe803f69016c4
+    image: bitnami/keycloak:26.3.3@sha256:da3df0976a9f9a664bdbde6cb5308b78f03ac94d0abf33b2df355bbb06cbc5b9
     ports:
       - "18080:8080"
     healthcheck:
