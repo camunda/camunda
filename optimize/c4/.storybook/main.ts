@@ -5,9 +5,7 @@ const config: StorybookConfig = {
 	addons: [
 		"@storybook/addon-webpack5-compiler-swc",
 		"@storybook/addon-links",
-		"@storybook/addon-essentials",
 		"@chromatic-com/storybook",
-		"@storybook/addon-interactions",
 		{
 			name: "@storybook/addon-styling-webpack",
 			options: {
@@ -19,7 +17,9 @@ const config: StorybookConfig = {
 				],
 			},
 		},
+		"@storybook/addon-docs",
 	],
+
 	framework: {
 		name: "@storybook/react-webpack5",
 		options: {},
@@ -33,8 +33,14 @@ const config: StorybookConfig = {
 			},
 		},
 	}),
-	docs: {
-		autodocs: "tag",
+	webpackFinal: async (config) => {
+		if (config.resolve) {
+			config.resolve.alias = {
+				...(config.resolve.alias ?? {}),
+				src: new URL("../src", import.meta.url).pathname,
+			}
+		}
+		return config
 	},
 }
 export default config

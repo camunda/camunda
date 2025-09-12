@@ -1,12 +1,14 @@
-import type { Meta, StoryObj } from "@storybook/react"
-import { within, expect } from "@storybook/test"
+import type { Meta, StoryObj } from "@storybook/react-webpack5"
+import { within, expect } from "storybook/test"
+import * as test from "storybook/test"
 
-import * as test from "@storybook/test"
+import StoryWrapper from "src/StoryWrapper"
 
 import MultiValueInput from "./MultiValueInput"
 
 const meta: Meta<typeof MultiValueInput> = {
 	component: MultiValueInput,
+	decorators: [StoryWrapper({ width: "600px" })],
 }
 
 export default meta

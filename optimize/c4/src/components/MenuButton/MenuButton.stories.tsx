@@ -1,9 +1,11 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-webpack5"
 import { MenuItemSelectable } from "@carbon/react"
-import { within, expect } from "@storybook/test"
+import { within, expect } from "storybook/test"
+import { Calendar } from "@carbon/icons-react"
+
+import StoryWrapper from "src/StoryWrapper"
 
 import MenuButton from "./MenuButton"
-import { Calendar } from "@carbon/icons-react"
 
 const meta: Meta<typeof MenuButton> = {
 	component: MenuButton,
@@ -18,6 +20,7 @@ const meta: Meta<typeof MenuButton> = {
 		},
 		disabled: { control: "boolean" },
 	},
+	decorators: [StoryWrapper()],
 }
 
 export default meta
