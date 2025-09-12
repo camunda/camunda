@@ -12,8 +12,8 @@ import java.util.regex.Pattern;
 
 public class SecurityConfiguration {
 
-  /** 1 or more alphanumeric characters, '_', '@', '.', '+', or '-'. */
-  public static final String DEFAULT_ID_REGEX = "^[a-zA-Z0-9_@.+-]+$";
+  /** 1 or more alphanumeric characters, '_', '@', '.', '+', '-' or '~'. */
+  public static final String DEFAULT_ID_REGEX = "^[a-zA-Z0-9_~@.+-]+$";
 
   private AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private AuthorizationsConfiguration authorizations = new AuthorizationsConfiguration();
