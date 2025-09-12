@@ -659,6 +659,9 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());
+    setArg(args, "connect.dateFormat", database.getDateFormat());
+    setArg(args, "connect.socketTimeout", database.getSocketTimeout());
+    setArg(args, "connect.connectTimeout", database.getConnectionTimeout());
 
     // Add security configuration mapping
     if (database.getSecurity() != null) {
