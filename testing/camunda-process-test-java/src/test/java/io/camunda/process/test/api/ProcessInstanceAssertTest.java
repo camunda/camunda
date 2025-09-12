@@ -29,12 +29,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
+import io.camunda.client.impl.search.response.CorrelatedMessageImpl;
 import io.camunda.client.impl.search.response.MessageSubscriptionImpl;
+import io.camunda.client.protocol.rest.CorrelatedMessageResult;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
@@ -65,8 +68,6 @@ public class ProcessInstanceAssertTest {
 
   private static final long PROCESS_INSTANCE_KEY = 1L;
   private static final String BPMN_PROCESS_ID = "process";
-  private static final String START_DATE = "2024-07-01T09:45:00";
-  private static final String END_DATE = "2024-07-01T10:00:00";
 
   @Mock private CamundaDataSource camundaDataSource;
   @Mock private ProcessInstanceEvent processInstanceEvent;
@@ -1053,6 +1054,132 @@ public class ProcessInstanceAssertTest {
                       .isNotWaitingForMessage("expected", "correlation-key"))
           .hasMessage(
               "Process instance [key: 1] has an active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but such a subscription was not expected.");
+    }
+  }
+
+  @Nested
+  class CorrelatedMessages {
+
+    @Captor private ArgumentCaptor<Consumer<CorrelatedMessageFilter>> filterCaptor;
+
+    @Mock(answer = Answers.RETURNS_SELF)
+    private CorrelatedMessageFilter correlatedMessageFilter;
+
+    @Test
+    void shouldFindCorrelatedMessage() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCorrelatedMessage("expected");
+
+      filterCaptor.getValue().accept(correlatedMessageFilter);
+      verify(correlatedMessageFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(correlatedMessageFilter).messageName("expected");
+    }
+
+    @Test
+    void shouldFindCorrelatedMessageWithCorrelationKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+          .thenReturn(
+              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCorrelatedMessage("expected", "correlation-key");
+
+      filterCaptor.getValue().accept(correlatedMessageFilter);
+      verify(correlatedMessageFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(correlatedMessageFilter).messageName("expected");
+      verify(correlatedMessageFilter).correlationKey("correlation-key");
+    }
+
+    @Test
+    void shouldAwaitCorrelatedMessage() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(Collections.emptyList())
+          .thenReturn(
+              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+
+      // then
+      CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+          .hasCorrelatedMessage("expected");
+
+      filterCaptor.getValue().accept(correlatedMessageFilter);
+      verify(correlatedMessageFilter).processInstanceKey(PROCESS_INSTANCE_KEY);
+      verify(correlatedMessageFilter).messageName("expected");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfNoCorrelatedMessageWasFound() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCorrelatedMessage("expected"))
+          .hasMessage(
+              "Process instance [key: 1] should have at least one correlated message [message-name: 'expected'], but found none.");
+    }
+
+    @Test
+    @CamundaAssertExpectFailure
+    void shouldErrorIfNoCorrelatedMessageWasFoundWithCorrelationKey() {
+      // given
+      when(camundaDataSource.findProcessInstances(any()))
+          .thenReturn(
+              Collections.singletonList(newActiveProcessInstance(PROCESS_INSTANCE_KEY).build()));
+
+      when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
+
+      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+          .thenReturn(Collections.emptyList());
+
+      // then
+      Assertions.assertThatThrownBy(
+              () ->
+                  CamundaAssert.assertThatProcessInstance(processInstanceEvent)
+                      .hasCorrelatedMessage("expected", "correlation-key"))
+          .hasMessage(
+              "Process instance [key: 1] should have at least one correlated message [message-name: 'expected', correlation-key: 'correlation-key'], but found none.");
     }
   }
 }
