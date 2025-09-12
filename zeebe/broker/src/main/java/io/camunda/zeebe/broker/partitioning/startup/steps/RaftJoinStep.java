@@ -13,9 +13,15 @@ import io.camunda.zeebe.scheduler.startup.StartupStep;
 
 public class RaftJoinStep implements StartupStep<PartitionStartupContext> {
 
+  private final String name;
+
+  public RaftJoinStep(final int partitionId) {
+    name = String.format("Partition %d - Joining Raft", partitionId);
+  }
+
   @Override
   public String getName() {
-    return "Joining Raft Partition";
+    return name;
   }
 
   @Override
