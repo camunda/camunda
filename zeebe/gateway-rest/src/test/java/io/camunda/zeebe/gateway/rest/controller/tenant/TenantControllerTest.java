@@ -80,7 +80,7 @@ public class TenantControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+    @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
     void createTenantShouldReturnAccepted(final String id) {
       // given
       final var tenantName = "Test Tenant";
@@ -194,9 +194,9 @@ public class TenantControllerTest {
     @ParameterizedTest
     @ValueSource(
         strings = {
-          "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
-          "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+          "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
