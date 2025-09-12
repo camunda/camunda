@@ -88,6 +88,8 @@ public class Network {
   /** Sets the internal api configuration */
   private InternalApi internalApi = new InternalApi();
 
+  private CommandApi commandApi = new CommandApi();
+
   public String getHost() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".host",
@@ -198,6 +200,14 @@ public class Network {
 
   public void setInternalApi(final InternalApi internalApi) {
     this.internalApi = internalApi;
+  }
+
+  public CommandApi getCommandApi() {
+    return commandApi;
+  }
+
+  public void setCommandApi(final CommandApi commandApi) {
+    this.commandApi = commandApi;
   }
 
   @Override
