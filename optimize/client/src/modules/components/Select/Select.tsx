@@ -6,21 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  Children,
-  cloneElement,
-  ComponentProps,
-  ReactElement,
-  ReactNode,
-  useLayoutEffect,
-  useRef,
-} from 'react';
+import {Children, cloneElement, ComponentProps, ReactElement, ReactNode} from 'react';
 import {MenuItemSelectable} from '@carbon/react';
 import {MenuDropdown} from '@camunda/camunda-optimize-composite-components';
 
 import {ignoreFragments, isReactElement} from 'services';
 import classnames from 'classnames';
 import {t} from 'translation';
+
+import Submenu from './Submenu';
 
 export interface SelectProps<T extends object | string | number = string>
   extends Omit<ComponentProps<typeof MenuDropdown>, 'label' | 'onChange'> {
@@ -112,36 +106,11 @@ type SubmenuProps = Omit<ComponentProps<typeof MenuItemSelectable>, 'label'> & {
   disabled?: boolean;
 };
 
-Select.Submenu = function Submenu(props: SubmenuProps) {
-  const submenuRef = useRef<HTMLLIElement>(null);
-
-  useLayoutEffect(() => {
-    if (submenuRef.current) {
-      const submenu = submenuRef.current.querySelector('.cds--menu') as HTMLLIElement;
-
-      if (submenu) {
-        const rect = submenu.getBoundingClientRect();
-        submenu.style.marginLeft = `-${rect.width}px`;
-      }
-    }
-  }, []);
-
-  return (
-    // To make disabled state work, we can't pass children to it
-    <MenuItemSelectable
-      ref={submenuRef}
-      className="Submenu"
-      {...props}
-      label={props.label?.toString() || ''}
-    >
-      {!props.disabled && props.children}
-    </MenuItemSelectable>
-  );
-};
-
-type OptionProps<T extends object | string | number = string> = SubmenuProps & {
+type OptionProps<T extends object | string | number = string> = ComponentProps<typeof Submenu> & {
   value?: T;
 };
+
+Select.Submenu = Submenu;
 
 Select.Option = function Option<T extends object | string | number = string>(
   props: OptionProps<T>
