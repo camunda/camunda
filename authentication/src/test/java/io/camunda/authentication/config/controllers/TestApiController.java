@@ -24,6 +24,7 @@ public class TestApiController {
   public static final String DUMMY_V2_API_AUTH_ENDPOINT = "/v2/auth";
   public static final String DUMMY_WEBAPP_ENDPOINT = "/operate/decisions";
   public static final String DUMMY_UNPROTECTED_ENDPOINT = "/new/foo";
+  public static final String DUMMY_UNHANDLED_ENDPOINT = "/non-existent-endpoint";
 
   private final CamundaAuthenticationProvider testAuthenticationProvider;
 

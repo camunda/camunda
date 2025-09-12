@@ -233,11 +233,24 @@ public class WebSecurityConfig {
   public SecurityFilterChain protectedUnhandledPathsSecurityFilterChain(
       final HttpSecurity httpSecurity) throws Exception {
     // all resources not yet explicitly handled by any previous chain require an authenticated user
-    // thus by default unhandled paths are always protected
+    // thus by default access to unhandled paths will always be denied
     return httpSecurity
         .securityMatcher("/**")
         .authorizeHttpRequests(
-            (authorizeHttpRequests) -> authorizeHttpRequests.anyRequest().denyAll())
+            authorizeHttpRequests -> authorizeHttpRequests.anyRequest().denyAll())
+        .exceptionHandling(
+            // for unhandled paths return a 404 instead of a 403 - improves UX to detect
+            // misconfiguration of paths
+            ex ->
+                ex.accessDeniedHandler(
+                    (request, response, accessDeniedException) ->
+                        response.sendError(HttpServletResponse.SC_NOT_FOUND)))
+        // disable csrf, anonymous auth to prevent session cookie creation on unhandled paths
+        // avoiding follow-up request failures due to a session created by this chain
+        .csrf(AbstractHttpConfigurer::disable)
+        .cors(AbstractHttpConfigurer::disable)
+        .formLogin(AbstractHttpConfigurer::disable)
+        .anonymous(AbstractHttpConfigurer::disable)
         .build();
   }
 
