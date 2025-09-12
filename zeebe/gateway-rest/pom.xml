@@ -462,6 +462,7 @@
               <generateModels>true</generateModels>
               <generateModelDocumentation>false</generateModelDocumentation>
               <generateModelTests>false</generateModelTests>
+              <generateAliasAsModel>true</generateAliasAsModel>
               <!-- validate the spec on every generation -->
               <skipValidateSpec>false</skipValidateSpec>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
