@@ -45,7 +45,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
   //TODO use for Error message definition when endpoint migrated
 
   // const isForbiddenError =
-  //   processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
+  //   isRequestError(processDefinitionError) && processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
 
   const LOADING_STATES = ['initial', 'first-fetch'];
 

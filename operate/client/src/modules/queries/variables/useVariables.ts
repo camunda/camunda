@@ -7,38 +7,20 @@
  */
 
 import {type QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
-import {
-  useInfiniteQuery,
-  type UseInfiniteQueryResult,
-  type InfiniteData,
-} from '@tanstack/react-query';
+import {useInfiniteQuery} from '@tanstack/react-query';
 import {searchVariables} from 'modules/api/v2/variables/searchVariables';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {getScopeId} from 'modules/utils/variables';
 import {useDisplayStatus} from 'modules/hooks/variables';
 import {queryKeys} from '../queryKeys';
-import type {RequestError} from '../../request';
 
 const MAX_VARIABLES_PER_REQUEST = 50;
 
-function useVariables(options?: {
-  refetchInterval?: number | false;
-}): UseInfiniteQueryResult<
-  InfiniteData<QueryVariablesResponseBody>,
-  RequestError
-> & {
-  displayStatus: string;
-} {
+function useVariables(options?: {refetchInterval?: number | false}) {
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const scopeKey = getScopeId();
   const {refetchInterval = false} = options ?? {};
-  const result = useInfiniteQuery<
-    QueryVariablesResponseBody,
-    RequestError,
-    InfiniteData<QueryVariablesResponseBody>,
-    (string | unknown)[],
-    number
-  >({
+  const result = useInfiniteQuery({
     queryKey: queryKeys.variables.searchWithFilter({
       processInstanceKey: processInstanceId,
       scopeKey,

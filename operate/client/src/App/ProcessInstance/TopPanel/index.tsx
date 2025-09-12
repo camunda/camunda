@@ -69,6 +69,7 @@ import {
 } from 'modules/hooks/flowNodeSelection';
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {isRequestError} from 'modules/request';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -253,7 +254,10 @@ const TopPanel: React.FC = observer(() => {
     if (isXmlFetching) {
       return 'loading';
     }
-    if (xmlError?.response?.status === HTTP_STATUS_FORBIDDEN) {
+    if (
+      isRequestError(xmlError) &&
+      xmlError?.response?.status === HTTP_STATUS_FORBIDDEN
+    ) {
       return 'forbidden';
     }
     if (isXmlError) {
