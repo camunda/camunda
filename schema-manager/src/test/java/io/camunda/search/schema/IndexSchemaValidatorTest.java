@@ -270,6 +270,29 @@ public class IndexSchemaValidatorTest {
     assertThat(difference).isEmpty();
   }
 
+  @Test
+  void shouldIgnoreMetaProperty() throws IOException {
+    // given
+    final var mappings = jsonToIndexMappingProperties("/mappings.json", "qualified_name");
+
+    // when
+    final var index = createTestIndexDescriptor("qualified_name", "/mappings.json");
+
+    final var currentMappings =
+        Map.of(
+            index.getFullQualifiedName(),
+            new IndexMapping.Builder()
+                .indexName(index.getFullQualifiedName())
+                .properties(mappings.properties())
+                .dynamic("strict")
+                .metaProperties(Map.of("meta_key", "meta_value"))
+                .build());
+    // then
+    final var difference = VALIDATOR.validateIndexMappings(currentMappings, Set.of(index));
+
+    assertThat(difference).isEmpty();
+  }
+
   @SuppressWarnings("unchecked")
   private IndexMapping jsonToIndexMappingProperties(
       final String mappingsFileName, final String indexName) throws IOException {
