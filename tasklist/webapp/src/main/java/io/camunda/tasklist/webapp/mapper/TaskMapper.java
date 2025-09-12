@@ -75,7 +75,11 @@ public class TaskMapper {
       String taskDescriptions =
           Arrays.stream(allVariables)
               .filter(variable -> variable.getName().equals(TASK_DESCRIPTION))
-              .map(VariableSearchResponse::getValue)
+              .map(
+                  variable ->
+                      variable.getIsValueTruncated()
+                          ? variable.getValue()
+                          : variable.getPreviewValue())
               .map(value -> value.replaceAll("\"", "")) // Remove quotes for FE
               .collect(Collectors.joining());
 
