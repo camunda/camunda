@@ -14,8 +14,20 @@ import {createTestData, createComponentAuthorization} from 'utils/constants';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {verifyAccess} from 'utils/accessVerification';
 import {waitForItemInList} from 'utils/waitForItemInList';
+import {createInstances, deploy} from 'utils/zeebeClient';
+import {cleanupGroupsSafely} from 'utils/groupsCleanup';
+import {waitForAssertion} from 'utils/waitForAssertion';
+import {sleep} from 'utils/sleep';
 
 test.describe('Identity User Flows', () => {
+  const createdGroupIds: string[] = [];
+
+  test.beforeAll(async () => {
+    await deploy(['./resources/simpleProcessForIdentity.bpmn']);
+    await sleep(500);
+    await createInstances('identityProcess', 1, 1);
+  });
+
   test.beforeEach(async ({loginPage, page}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -24,6 +36,21 @@ test.describe('Identity User Flows', () => {
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
+  });
+
+  test.afterAll(async ({browser}) => {
+    if (createdGroupIds.length > 0) {
+      const context = await browser.newContext();
+      const page = await context.newPage();
+
+      try {
+        await cleanupGroupsSafely(page, createdGroupIds);
+      } catch (error) {
+        console.warn('Cleanup failed:', error);
+      } finally {
+        await context.close();
+      }
+    }
   });
 
   test('Admin user can delete user', async ({
@@ -216,6 +243,314 @@ test.describe('Identity User Flows', () => {
 
     await test.step(`Verify Operate access is denied`, async () => {
       await verifyAccess(page, false, 'operate');
+    });
+  });
+
+  test('New user can inherit permissions when assigned to a group', async ({
+    page,
+    identityGroupsPage,
+    identityAuthorizationsPage,
+    identityUsersPage,
+    identityHeader,
+    loginPage,
+    operateHomePage,
+    tasklistHeader,
+    identityGroupDetailsPage,
+  }) => {
+    test.slow();
+    const testData = createTestData({
+      group: true,
+      user: true,
+    });
+    const TEST_GROUP = testData.group!;
+    const TEST_USER = testData.user!;
+
+    await test.step('Create test user', async () => {
+      await identityUsersPage.createUser({
+        username: TEST_USER.username,
+        password: TEST_USER.password,
+        email: TEST_USER.email!,
+        name: TEST_USER.name ?? TEST_USER.username,
+      });
+
+      const userName = identityUsersPage.userCell(TEST_USER.username);
+      await waitForItemInList(page, userName, {
+        timeout: 60000,
+        clickNext: true,
+      });
+    });
+
+    await test.step('Create test group', async () => {
+      await identityHeader.navigateToGroups();
+      await identityGroupsPage.createGroup(
+        TEST_GROUP.groupId,
+        TEST_GROUP.name,
+        TEST_GROUP.description,
+      );
+      const item = identityGroupsPage.groupCell(TEST_GROUP.groupId);
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 60000,
+        onAfterReload: async () => {
+          await identityHeader.navigateToGroups();
+          await expect(identityGroupsPage.groupsList).toBeVisible({
+            timeout: 60000,
+          });
+        },
+      });
+      createdGroupIds.push(TEST_GROUP.groupId);
+    });
+
+    await test.step('Create authorization for the test group', async () => {
+      await identityHeader.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'Group',
+        ownerId: TEST_GROUP.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+    });
+
+    await test.step('Assign test user to group', async () => {
+      await identityHeader.navigateToGroups();
+      await waitForItemInList(
+        page,
+        identityGroupDetailsPage.userCell(TEST_GROUP.groupId),
+        {
+          clickNext: true,
+        },
+      );
+      await identityGroupsPage.clickGroupId(TEST_GROUP.groupId);
+      await identityGroupDetailsPage.assignUserToGroup(TEST_USER);
+      await page.reload();
+    });
+
+    await test.step('Verify authorization was created', async () => {
+      await identityHeader.navigateToAuthorizations();
+      await identityAuthorizationsPage.clickResourceType('Component');
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        TEST_GROUP.groupId,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step('Verify test user can access Identity', async () => {
+      await identityHeader.logout();
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await expect(page).toHaveURL(new RegExp('identity'), {timeout: 10000});
+      await sleep(2000);
+      await verifyAccess(page, true);
+    });
+
+    await test.step('Verify test user can access Operate but cannot view process instances', async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
+      await operateHomePage.clickProcessesTab();
+      await expect(page.getByText('identityProcess')).not.toBeVisible({
+        timeout: 30000,
+      });
+    });
+
+    await test.step('Verify test user can access Tasklist but cannot view the userTask', async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
+      await expect(page).toHaveURL(new RegExp(`tasklist`));
+      await verifyAccess(page, true);
+      await expect(page.getByText('identityProcess')).not.toBeVisible({
+        timeout: 30000,
+      });
+      await tasklistHeader.logout();
+    });
+
+    await test.step('Login with demo user and create authorization for the group', async () => {
+      await navigateToApp(page, 'identity');
+      await loginPage.login('demo', 'demo');
+      await identityHeader.navigateToAuthorizations();
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'Group',
+        ownerId: TEST_GROUP.name,
+        resourceType: 'Authorization',
+        resourceId: '*',
+        accessPermissions: ['Read'],
+      });
+    });
+
+    await test.step('Verify authorization was created', async () => {
+      await identityAuthorizationsPage.clickResourceType('Authorization');
+      await identityAuthorizationsPage.assertAuthorizationExists(
+        TEST_GROUP.groupId,
+        'Group',
+        ['Read'],
+      );
+    });
+
+    await test.step('Verify test user can view process instances in Operate', async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/operate`);
+      await operateHomePage.clickProcessesTab();
+      await expect(page.getByText('identityProcess').first()).toBeVisible({
+        timeout: 30000,
+      });
+    });
+
+    await test.step('Verify test user can view the userTask in Tasklist', async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
+      await expect(page).toHaveURL(new RegExp(`tasklist`));
+      await expect(page.getByText('identityProcess').first()).toBeVisible({
+        timeout: 30000,
+      });
+    });
+  });
+
+  test('Admin user can remove Test user from TestGroup and revoke inherited process access', async ({
+    page,
+    identityGroupsPage,
+    identityGroupDetailsPage,
+    identityAuthorizationsPage,
+    identityUsersPage,
+    identityHeader,
+    loginPage,
+    operateHomePage,
+  }) => {
+    test.slow();
+    const testData = createTestData({
+      group: true,
+      user: true,
+    });
+    const TEST_GROUP = testData.group!;
+    const TEST_USER = testData.user!;
+
+    await test.step('Create test user', async () => {
+      await identityUsersPage.createUser({
+        username: TEST_USER.username,
+        password: TEST_USER.password,
+        email: TEST_USER.email!,
+        name: TEST_USER.name ?? TEST_USER.username,
+      });
+
+      const userName = identityUsersPage.userCell(TEST_USER.username);
+      await waitForItemInList(page, userName, {
+        timeout: 60000,
+        clickNext: true,
+      });
+    });
+
+    await test.step('Create component authorization for test user', async () => {
+      await identityHeader.navigateToAuthorizations();
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: TEST_USER.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+    });
+
+    await test.step('Create test group', async () => {
+      await identityHeader.navigateToGroups();
+      await identityGroupsPage.createGroup(
+        TEST_GROUP.groupId,
+        TEST_GROUP.name,
+        TEST_GROUP.description,
+      );
+      const item = identityGroupsPage.groupCell(TEST_GROUP.groupId);
+      await waitForItemInList(page, item, {
+        clickNext: true,
+        timeout: 60000,
+      });
+      createdGroupIds.push(TEST_GROUP.groupId);
+    });
+
+    await test.step('Create process definition authorization for test group', async () => {
+      await identityHeader.navigateToAuthorizations();
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'Group',
+        ownerId: TEST_GROUP.name,
+        resourceType: 'PROCESS_DEFINITION',
+        resourceId: '*',
+        accessPermissions: ['READ_PROCESS_DEFINITION', 'READ_USER_TASK'],
+      });
+    });
+
+    await test.step('Assign test user to test group', async () => {
+      await identityHeader.navigateToGroups();
+      await waitForItemInList(
+        page,
+        identityGroupDetailsPage.userCell(TEST_GROUP.groupId),
+        {
+          clickNext: true,
+        },
+      );
+      await identityGroupsPage.clickGroupId(TEST_GROUP.groupId);
+      await identityGroupDetailsPage.assignUserToGroup(TEST_USER);
+    });
+
+    await test.step('Verify test user can see process instances in Operate', async () => {
+      await navigateToApp(page, 'operate');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await operateHomePage.clickProcessesTab();
+      await expect(page.getByText('identityProcess').first()).toBeVisible({
+        timeout: 30000,
+      });
+    });
+
+    await test.step('Verify test user can see user tasks in Tasklist', async () => {
+      await navigateToApp(page, 'tasklist');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await expect(page.getByText('identityProcess').first()).toBeVisible({
+        timeout: 30000,
+      });
+    });
+
+    await test.step('Login in as Demo user and unassign Test user from TestGroup', async () => {
+      await navigateToApp(page, 'identity');
+      await loginPage.login('demo', 'demo');
+      await identityHeader.navigateToGroups();
+      await waitForItemInList(
+        page,
+        identityGroupDetailsPage.userCell(TEST_GROUP.groupId),
+        {
+          clickNext: true,
+        },
+      );
+      await identityGroupsPage.clickGroupId(TEST_GROUP.groupId);
+      await identityGroupDetailsPage.unassignUserFromGroup(TEST_USER.username);
+      await sleep(500);
+    });
+
+    await test.step('Login  as Test user and assert process is not accessible in Operate', async () => {
+      await navigateToApp(page, 'operate');
+      await loginPage.login(TEST_USER.username, TEST_USER.password);
+      await operateHomePage.clickProcessesTab();
+      const processElement = page.getByText('identityProcess');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(processElement).toBeHidden();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await test.step('Assert user tasks are not accessible in Tasklist', async () => {
+        await navigateToApp(page, 'tasklist');
+        await loginPage.login(TEST_USER.username, TEST_USER.password);
+        const processElement = page.getByText('identityProcess');
+        await waitForAssertion({
+          assertion: async () => {
+            await expect(processElement).toBeHidden();
+          },
+          onFailure: async () => {
+            await page.reload();
+          },
+        });
+      });
     });
   });
 });

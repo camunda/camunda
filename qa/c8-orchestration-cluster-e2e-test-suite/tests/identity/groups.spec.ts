@@ -135,6 +135,7 @@ test.describe('Groups functionalities', () => {
     identityGroupsPage,
     identityAuthorizationsPage,
     identityHeader,
+    identityGroupDetailsPage,
   }) => {
     const testData = createTestData({
       group: true,
@@ -161,7 +162,12 @@ test.describe('Groups functionalities', () => {
 
     await test.step('Assign user to group', async () => {
       await identityGroupsPage.clickGroupId(TEST_GROUP.name);
-      await identityGroupsPage.assignUserToGroup('lisa', 'lisa@example.com');
+      await identityGroupDetailsPage.assignUserToGroup({
+        username: 'lisa',
+        name: 'lisa',
+        email: 'lisa@example.com',
+        password: 'password',
+      });
       await page.reload();
     });
 
