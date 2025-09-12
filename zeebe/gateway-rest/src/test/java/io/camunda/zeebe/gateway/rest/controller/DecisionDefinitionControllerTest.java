@@ -79,7 +79,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               },
@@ -113,7 +113,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
     final var request =
         """
             {
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               },
@@ -178,7 +178,7 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
               "decisionDefinitionId": "decisionId",
-              "decisionDefinitionKey": 123456,
+              "decisionDefinitionKey": "123456",
               "variables": {
                 "key": "value"
               }

@@ -144,11 +144,11 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
             """
             {
               "filter": {
-                "messageSubscriptionKey": 123,
+                "messageSubscriptionKey": "123",
                 "processDefinitionId": "gg_msg_receive_id",
-                "processInstanceKey": 2251799813685849,
+                "processInstanceKey": "2251799813685849",
                 "elementId": "Activity_1ludhs2",
-                "elementInstanceKey": 2251799813685853,
+                "elementInstanceKey": "2251799813685853",
                 "messageSubscriptionState": "CREATED",
                 "lastUpdatedDate": "2025-07-05T12:11:00.975Z",
                 "correlationKey": "test",
