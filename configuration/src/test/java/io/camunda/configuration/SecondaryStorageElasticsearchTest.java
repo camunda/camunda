@@ -12,9 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.OperateProperties;
@@ -35,7 +37,8 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   TasklistPropertiesOverride.class,
   OperatePropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class
+  SearchEngineConnectPropertiesOverride.class,
+  SearchEngineIndexPropertiesOverride.class,
 })
 public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
@@ -43,6 +46,8 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final String EXPECTED_USERNAME = "testUsername";
   private static final String EXPECTED_PASSWORD = "testPassword";
+
+  private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
 
   @Nested
   @TestPropertySource(
@@ -52,23 +57,27 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
-        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithOnlyUnifiedConfigSet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
     }
 
     @Test
@@ -119,6 +128,8 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getIndex().getNumberOfShards())
+          .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
 
     @Test
@@ -126,6 +137,12 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo("elasticsearch");
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
       assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
+    }
+
+    @Test
+    void testCamundaSearchEngineIndexProperties() {
+      assertThat(searchEngineIndexProperties.getNumberOfShards())
+          .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
   }
 
@@ -174,22 +191,30 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.database.indexPrefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.tasklist.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.operate.elasticsearch.indexPrefix=" + EXPECTED_INDEX_PREFIX,
+
+        // number of shards
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards="
+            + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
     final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
     final SearchEngineConnectProperties searchEngineConnectProperties;
+    final SearchEngineIndexProperties searchEngineIndexProperties;
 
     WithNewAndLegacySet(
         @Autowired final OperateProperties operateProperties,
         @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties,
+        @Autowired final SearchEngineIndexProperties searchEngineIndexProperties) {
       this.operateProperties = operateProperties;
       this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
       this.searchEngineConnectProperties = searchEngineConnectProperties;
+      this.searchEngineIndexProperties = searchEngineIndexProperties;
     }
 
     @Test
@@ -244,6 +269,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(exporterConfiguration.getIndex().getNumberOfShards())
+          .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
 
     @Test
@@ -254,6 +281,12 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
+    }
+
+    @Test
+    void testCamundaSearchEngineIndexProperties() {
+      assertThat(searchEngineIndexProperties.getNumberOfShards())
+          .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
   }
 

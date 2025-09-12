@@ -16,6 +16,7 @@ import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -37,6 +38,7 @@ public class StandaloneBroker {
                 ActorClockControlledPropertiesOverride.class,
                 IdleStrategyPropertiesOverride.class,
                 SearchEngineConnectPropertiesOverride.class,
+                SearchEngineIndexPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 GatewayRestPropertiesOverride.class,

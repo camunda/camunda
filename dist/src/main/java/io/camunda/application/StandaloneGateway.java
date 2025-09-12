@@ -14,6 +14,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -33,6 +34,7 @@ public class StandaloneGateway {
                 UnifiedConfigurationHelper.class,
                 GatewayBasedPropertiesOverride.class,
                 SearchEngineConnectPropertiesOverride.class,
+                SearchEngineIndexPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 GatewayModuleConfiguration.class,
