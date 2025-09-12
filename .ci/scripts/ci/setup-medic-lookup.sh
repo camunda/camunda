@@ -31,8 +31,8 @@ lookupTeamMedic["DistributedSystems"]=$distributedSystemsMedic
 
 # @camunda-ex-medic
 camundaExMedic="<!subteam^S064J3N99A5|camunda-ex-medic>"
-lookupTeamMedic["Camunda Ex"]=camundaExMedic
-lookupTeamMedic["CamundaEx"]=camundaExMedic
+lookupTeamMedic["Camunda Ex"]=$camundaExMedic
+lookupTeamMedic["CamundaEx"]=$camundaExMedic
 
 # failure in QA test
 lookupTeamMedic["QA"]="QA Acceptance Test, requires investigation"
