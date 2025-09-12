@@ -172,8 +172,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public RoleMemberDbReader roleMemberReader() {
-    return new RoleMemberDbReader();
+  public RoleMemberDbReader roleMemberReader(final RoleMapper roleMapper) {
+    return new RoleMemberDbReader(roleMapper);
   }
 
   @Bean

@@ -16,6 +16,13 @@
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
   </select>
 
+  <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.RoleMemberDbQuery">
+    SELECT COUNT(*)
+    FROM ${prefix}ROLE_MEMBER rm
+    JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+  </select>
+
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"
     resultMap="io.camunda.db.rdbms.sql.RoleMapper.roleResultMap">
 SELECT
@@ -46,6 +53,26 @@ FROM (
     </if>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
+
+  <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.RoleMemberDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.RoleMapper.roleMemberResultMap">
+    SELECT * FROM (
+    SELECT
+    r.ROLE_ID,
+    r.ROLE_KEY,
+    r.NAME,
+    r.DESCRIPTION,
+    rm.ENTITY_ID,
+    rm.ENTITY_TYPE
+    FROM ${prefix}ROLE_MEMBER rm
+    JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
 
   <sql id="searchFilter">
     <where>
@@ -82,6 +109,13 @@ FROM (
         WHERE tm.ENTITY_TYPE = 'ROLE'
         AND tm.TENANT_ID = #{filter.tenantId})
       </if>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND r.ROLE_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
     </where>
   </sql>
 
@@ -98,6 +132,14 @@ FROM (
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
     </collection>
+  </resultMap>
+
+  <resultMap id="roleMemberResultMap" type="io.camunda.db.rdbms.write.domain.RoleMemberDbModel">
+    <constructor>
+      <idArg column="ROLE_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+    </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.RoleDbModel">
