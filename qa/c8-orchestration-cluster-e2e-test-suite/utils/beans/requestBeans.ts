@@ -81,7 +81,6 @@ export const licenseRequiredFields: string[] = [
 export const messageSubscriptionRequiredFields = [
   'messageSubscriptionKey',
   'processDefinitionId',
-  'processDefinitionKey',
   'processInstanceKey',
   'elementId',
   'elementInstanceKey',
