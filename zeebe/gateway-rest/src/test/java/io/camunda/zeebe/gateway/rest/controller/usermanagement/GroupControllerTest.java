@@ -227,7 +227,7 @@ public class GroupControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo.", "foo@"})
+    @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
     void shouldAcceptCreateGroupRequest(final String groupId) {
       // given
       final var groupName = "testGroup";
@@ -379,9 +379,9 @@ public class GroupControllerTest {
     @ParameterizedTest
     @ValueSource(
         strings = {
-          "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
-          "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+          "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectGroupCreationWithIllegalCharactersInId(final String groupId) {
       // when then
@@ -547,9 +547,7 @@ public class GroupControllerTest {
 
     @ParameterizedTest
     @ValueSource(
-        strings = {
-          "foo~", "foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo:", "foo'", "foo,"
-        })
+        strings = {"foo!", "foo$", "foo&", "foo*", "foo(", "foo)", "foo=", "foo:", "foo'", "foo,"})
     void shouldRejectGroupUpdateWithIllegalCharactersInId(final String groupId) {
       // when then
       final var path = "%s/%s".formatted(GROUP_BASE_URL, groupId);
