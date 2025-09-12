@@ -35,7 +35,7 @@
   },
   "dependencies": {
     "@axe-core/playwright": "^4.10.1",
-    "@camunda8/sdk": "^8.6.33",
+    "@camunda8/sdk": "^8.7.29",
     "axios": "^1.8.1",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^15.21.0"
