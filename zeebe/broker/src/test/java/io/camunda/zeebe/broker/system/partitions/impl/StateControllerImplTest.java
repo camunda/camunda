@@ -28,9 +28,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Comparator;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -495,6 +497,46 @@ public final class StateControllerImplTest {
     assertThat(snapshot)
         .extracting(PersistedSnapshot::getCompactionBound)
         .isEqualTo(processedPosition);
+  }
+
+  @Test
+  public void shouldTakeSnapshotAtPositionZeroWhenForced() {
+    // given
+    final var processedPosition = 0L;
+    final var exporterPos = 100000L; // This only happens if no exporter is configured
+    final var backupPos = 10000L; // This only happens if backup is not configured
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var snapshot =
+        snapshotController.takeTransientSnapshot(processedPosition, true).join().persist().join();
+
+    // then
+    assertThat(snapshot)
+        .extracting(PersistedSnapshot::getIndex, PersistedSnapshot::getTerm)
+        .containsExactly(0L, 0L);
+  }
+
+  @Test
+  public void shouldNotTakeSnapshotAtPositionZeroWhenNotForced() {
+    // given
+    final var processedPosition = 0L;
+    final var exporterPos = 100000L; // This only happens if no exporter is configured
+    final var backupPos = 10000L; // This only happens if backup is not configured
+    exporterPosition.set(exporterPos);
+    backupPosition.set(backupPos);
+    snapshotController.recover().join();
+
+    // when
+    final var future = snapshotController.takeTransientSnapshot(processedPosition, false);
+
+    // then
+    assertThat(future)
+        .failsWithin(Duration.ofMillis(1000))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Snapshot can be taken at processed position 0 only if forced");
   }
 
   private File takeSnapshot(final long position) {
