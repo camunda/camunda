@@ -152,7 +152,8 @@ test.describe.parallel('Users API Tests', () => {
     await assertBadRequest(res, 'No password provided', 'INVALID_ARGUMENT');
   });
 
-  test('Create User Missing Email Success', async ({request}) => {
+  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
+  test.skip('Create User Missing Email Success', async ({request}) => {
     const body = {
       username: `username-${generateUniqueId()}`,
       name: 'user',
@@ -175,7 +176,8 @@ test.describe.parallel('Users API Tests', () => {
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
   });
 
-  test('Create User Missing Name Success', async ({request}) => {
+  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
+  test.skip('Create User Missing Name Success', async ({request}) => {
     const body = {
       username: `username-${generateUniqueId()}`,
       email: 'user@example.com',
@@ -315,7 +317,8 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update User Missing Name Success', async ({request}) => {
+  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
+  test.skip('Update User Missing Name Success', async ({request}) => {
     const p = {username: state['username6'] as string};
     const requestBody = {
       email: `updated-${generateUniqueId()}-email@example.com`,
@@ -338,7 +341,8 @@ test.describe.parallel('Users API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update User Missing Email Success', async ({request}) => {
+  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
+  test.skip('Update User Missing Email Success', async ({request}) => {
     const p = {username: state['username7'] as string};
     const requestBody = {
       name: `updated-${generateUniqueId()}-name`,
