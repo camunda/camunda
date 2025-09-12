@@ -16,6 +16,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
+import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
@@ -76,6 +77,7 @@ import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
+import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
@@ -188,7 +190,8 @@ public class CompactRecordLogger {
           entry(AUTHORIZATION.name(), "AUTH"),
           entry(COMPENSATION_SUBSCRIPTION.name(), "COMP_SUB"),
           entry(USAGE_METRIC.name(), "USG_MTRC"),
-          entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"));
+          entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
+          entry(ESCALATION.name(), "ESC"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -270,6 +273,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.BATCH_OPERATION_EXECUTION, this::summarizeBatchOperationExecution);
     valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
+    valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1429,6 +1433,23 @@ public class CompactRecordLogger {
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
         .append(formatVariables(value))
         .toString();
+  }
+
+  private String summarizeEscalation(final Record<?> record) {
+    final var value = (EscalationRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+    summary
+        .append(formatId(value.getEscalationCode()))
+        .append(" (thrown by ")
+        .append(formatId(value.getThrowElementId()));
+    if (StringUtils.isNotBlank(value.getCatchElementId())) {
+      summary.append("; caught by ").append(formatId(value.getCatchElementId()));
+    }
+    summary.append(")");
+    summary.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+
+    return summary.toString();
   }
 
   private String formatPinnedTime(final long time) {
