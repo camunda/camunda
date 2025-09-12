@@ -31,7 +31,7 @@
 		"@storybook/blocks": "^8.4.5",
 		"@storybook/react": "^9.0.0",
 		"@storybook/react-webpack5": "^9.0.0",
-		"@types/react": "^18.0.0",
+		"@types/react": "^19.0.0",
 		"classnames": "^2.3.2",
 		"css-loader": "^7.1.2",
 		"prop-types": "^15.8.1",
