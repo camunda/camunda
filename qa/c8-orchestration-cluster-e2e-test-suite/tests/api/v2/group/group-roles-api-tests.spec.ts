@@ -22,13 +22,20 @@ import {
   assertRoleInResponse,
 } from '../../../../utils/requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {cleanupGroups} from '../../../../utils/groupsCleanup';
 
 test.describe.parallel('Group Roles API Tests', () => {
   const state: Record<string, unknown> = {};
+  state['createdIds'] = [];
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 1, state);
+
     await assignRoleToGroups(request, 2, state['groupId1'] as string, state);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupGroups(request, state['createdIds'] as string[]);
   });
 
   test('Search Group Roles', async ({request}) => {
