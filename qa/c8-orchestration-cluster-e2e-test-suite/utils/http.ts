@@ -187,6 +187,16 @@ export function jsonHeaders(
   };
 }
 
+export function textXMLHeaders(
+  auth: string = credentials.accessToken,
+): Record<string, string> {
+  return {
+    'Content-Type': 'application/json',
+    Accept: 'text/xml',
+    ...authHeaders(auth),
+  };
+}
+
 export function defaultHeaders(): Record<string, string> {
   return {
     Accept: 'application/json',
