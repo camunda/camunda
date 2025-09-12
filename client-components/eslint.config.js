@@ -11,6 +11,10 @@ const files = {
 
 export default defineConfig([
 	{
+		ignores: ['packages/**/dist/**/*'],
+	},
+
+	{
 		files: files.browser,
 		plugins: {js},
 		extends: ['js/recommended'],

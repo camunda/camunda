@@ -22,9 +22,10 @@ const batchOperationStateSchema = z.enum([
 	'ACTIVE',
 	'SUSPENDED',
 	'COMPLETED',
-	'COMPLETED_WITH_ERRORS',
+	'PARTIALLY_COMPLETED',
 	'CANCELED',
 	'INCOMPLETED',
+	'FAILED',
 ]);
 type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
 
@@ -35,7 +36,7 @@ const batchOperationSchema = z.object({
 	batchOperationKey: z.string(),
 	state: batchOperationStateSchema,
 	batchOperationType: batchOperationTypeSchema,
-	startDate: z.string(),
+	startDate: z.string().optional(),
 	endDate: z.string().optional(),
 	operationsTotalCount: z.number().int(),
 	operationsFailedCount: z.number().int(),

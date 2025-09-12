@@ -40,6 +40,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     operationsTotalCount,
     operationsCompletedCount,
     operationsFailedCount,
+    state,
   } = operation;
 
   const {fakeProgressPercentage, isComplete} = useLoadingProgress({
@@ -84,8 +85,8 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
           type={batchOperationType}
           failedCount={operationsFailedCount}
           completedCount={operationsCompletedCount}
+          state={state}
         />
-
         {endDate !== undefined && isComplete && (
           <div>{formatDate(endDate)}</div>
         )}
