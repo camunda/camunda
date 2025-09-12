@@ -10,6 +10,7 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.validateMappings;
+import static io.camunda.search.test.utils.SearchDBExtension.ENGINE_CLIENT_TEST_MARKERS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
@@ -22,6 +23,7 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -389,6 +391,71 @@ public class ElasticsearchEngineClientIT {
 
     // then
     verify(indicesSpy, times(1)).putIndexTemplate(any(PutIndexTemplateRequest.class));
+  }
+
+  @Test
+  void shouldCreateIndexWithMetaNormally() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor(
+            "index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings_with_meta.json");
+
+    // when
+    final var indexSettings = new IndexConfiguration();
+    elsEngineClient.createIndex(descriptor, indexSettings);
+
+    // then
+    final var index =
+        elsClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings_with_meta.json");
+
+    assertThat(index.mappings().meta()).isNotEmpty().containsKey("test_key");
+    assertThat(index.mappings().meta().get("test_key").to(String.class)).isEqualTo("test_value");
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
+  }
+
+  @Test
+  void shouldUpdateIndexMeta() throws IOException {
+    // given
+    final var descriptor =
+        createTestIndexDescriptor("index_name-" + ENGINE_CLIENT_TEST_MARKERS, "/mappings.json");
+    final var indexSettings = new IndexConfiguration();
+    elsEngineClient.createIndex(descriptor, indexSettings);
+
+    // when
+    elsEngineClient.putIndexMeta(
+        descriptor.getFullQualifiedName(),
+        Map.of("string_key", "string_value", "bool_key", true, "int_key", 42));
+
+    // then
+    final var index =
+        elsClient
+            .indices()
+            .get(req -> req.index(descriptor.getFullQualifiedName()))
+            .get(descriptor.getFullQualifiedName());
+
+    SchemaTestUtil.validateMappings(index.mappings(), "/mappings.json");
+
+    assertThat(index.mappings().meta())
+        .isNotEmpty()
+        .containsKeys("string_key", "bool_key", "int_key");
+    assertThat(index.mappings().meta().get("string_key").to(String.class))
+        .isEqualTo("string_value");
+    assertThat(index.mappings().meta().get("bool_key").to(Boolean.class)).isTrue();
+    assertThat(index.mappings().meta().get("int_key").to(Integer.class)).isEqualTo(42);
+    assertThat(index.aliases().keySet()).isEqualTo(Set.of(descriptor.getAlias()));
+    assertThat(index.settings().index().numberOfReplicas())
+        .isEqualTo(indexSettings.getNumberOfReplicas().toString());
+    assertThat(index.settings().index().numberOfShards())
+        .isEqualTo(indexSettings.getNumberOfShards().toString());
   }
 
   @Nested

@@ -38,4 +38,30 @@ public class IndexMappingTest {
                 .typeDefinition(Map.of("type", "keyword"))
                 .build());
   }
+
+  @Test
+  void shouldReadIndexMappingsWithMetaFileCorrectly() {
+    // given
+    final var index = createTestIndexDescriptor("index_name", "/mappings_with_meta.json");
+
+    // when
+    final var indexMapping = IndexMapping.from(index, TestObjectMapper.objectMapper());
+
+    // then
+    assertThat(indexMapping.dynamic()).isEqualTo("strict");
+
+    assertThat(indexMapping.properties())
+        .containsExactlyInAnyOrder(
+            new IndexMappingProperty.Builder()
+                .name("hello")
+                .typeDefinition(Map.of("type", "text"))
+                .build(),
+            new IndexMappingProperty.Builder()
+                .name("world")
+                .typeDefinition(Map.of("type", "keyword"))
+                .build());
+
+    assertThat(indexMapping.metaProperties().entrySet())
+        .containsExactly(Map.entry("test_key", "test_value"));
+  }
 }

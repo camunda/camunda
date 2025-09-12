@@ -40,6 +40,7 @@ public record IndexMapping(
       final Map<String, Object> mappings =
           mapper.readValue(mappingsStream, nestedType).get("mappings");
       final Map<String, Object> properties = (Map<String, Object>) mappings.get("properties");
+      final Map<String, Object> metaProperties = (Map<String, Object>) mappings.get("_meta");
       final var dynamic = mappings.get("dynamic");
 
       return new IndexMapping.Builder()
@@ -48,6 +49,7 @@ public record IndexMapping(
               properties.entrySet().stream()
                   .map(IndexMappingProperty::createIndexMappingProperty)
                   .collect(Collectors.toSet()))
+          .metaProperties(metaProperties)
           .build();
     } catch (final IOException e) {
       throw new IllegalArgumentException(

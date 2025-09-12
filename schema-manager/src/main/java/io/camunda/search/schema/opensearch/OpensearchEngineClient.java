@@ -41,6 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.JsonpSerializable;
 import org.opensearch.client.json.jackson.JacksonJsonpGenerator;
@@ -240,6 +241,19 @@ public class OpensearchEngineClient implements SearchEngineClient {
       final var errMsg =
           String.format("Failed to create index state management policy [%s]", policyName);
       throw new SearchEngineException(errMsg, exception);
+    }
+  }
+
+  @Override
+  public void putIndexMeta(final String indexName, final Map<String, Object> meta) {
+    final var request = putMetaMappingRequest(indexName, meta);
+
+    try {
+      client.indices().putMapping(request);
+    } catch (final IOException | OpenSearchException e) {
+      final var errMsg = String.format("_meta PUT failed for %s", indexName);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
     }
   }
 
@@ -621,6 +635,15 @@ public class OpensearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
+  }
+
+  private PutMappingRequest putMetaMappingRequest(
+      final String indexName, final Map<String, Object> meta) {
+    final var jsonMeta =
+        meta.entrySet().stream()
+            .map(entry -> Map.entry(entry.getKey(), JsonData.of(entry.getValue())))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+    return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
   }
 
   private boolean areTemplateSettingsEqualToConfigured(
