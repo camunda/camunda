@@ -62,9 +62,11 @@ public class DocumentController {
   @CamundaPostMapping(path = "/batch", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> createDocuments(
       @RequestPart(value = "files") final List<Part> files,
+      @RequestPart(value = "metadataList", required = false)
+          final List<DocumentMetadata> metadataList,
       @RequestParam(required = false) final String storeId) {
-
-    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper)
+    // Pass metadataList to let mapper prefer it over legacy headers when provided
+    return RequestMapper.toDocumentCreateRequestBatch(files, storeId, objectMapper, metadataList)
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createDocumentBatch);
   }
 
