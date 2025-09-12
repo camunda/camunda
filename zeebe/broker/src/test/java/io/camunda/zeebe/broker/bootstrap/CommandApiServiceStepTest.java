@@ -15,6 +15,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -78,7 +79,8 @@ class CommandApiServiceStepTest {
             new SecurityConfiguration(),
             mock(UserServices.class),
             mock(PasswordEncoder.class),
-            mock(JwtDecoder.class));
+            mock(JwtDecoder.class),
+            mock(SearchClientsProxy.class));
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
     testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitorActor.class));
     testBrokerStartupContext.setGatewayBrokerTransport(mock(AtomixServerTransport.class));

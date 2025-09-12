@@ -117,6 +117,7 @@ final class PartitionJoinTest {
             new SecurityConfiguration(),
             null,
             null,
+            null,
             null);
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());

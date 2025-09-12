@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
+import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -100,7 +101,8 @@ class PartitionManagerStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              mock(SearchClientsProxy.class));
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -202,7 +204,8 @@ class PartitionManagerStepTest {
               new SecurityConfiguration(),
               mock(UserServices.class),
               mock(PasswordEncoder.class),
-              mock(JwtDecoder.class));
+              mock(JwtDecoder.class),
+              mock(SearchClientsProxy.class));
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =
