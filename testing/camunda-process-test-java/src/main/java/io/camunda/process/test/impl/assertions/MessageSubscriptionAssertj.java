@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.search.enums.MessageSubscriptionType;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.response.CorrelatedMessage;
@@ -48,7 +48,7 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         filter ->
             filter
                 .messageName(messageName)
-                .messageSubscriptionType(MessageSubscriptionType.CREATED),
+                .messageSubscriptionState(MessageSubscriptionState.CREATED),
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
@@ -91,7 +91,7 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         processInstanceKey,
         filter ->
             filter
-                .messageSubscriptionType(MessageSubscriptionType.CREATED)
+                .messageSubscriptionState(MessageSubscriptionState.CREATED)
                 .messageName(messageName)
                 .correlationKey(correlationKey),
         messageSubscriptions ->
