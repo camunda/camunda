@@ -46,15 +46,15 @@ const deploy = async (processFilePaths: string[]) => {
 
 const createInstances = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   numberOfInstances: number,
   variables?: JSONDoc,
 ) => {
   const instances = [];
   for (let i = 0; i < numberOfInstances; i++) {
     const instance = await zeebe.createProcessInstance({
-      processDefinitionId: processDefinitionId,
-      processDefinitionVersion: version,
+      processDefinitionId,
+      processDefinitionVersion,
       variables: variables ?? {},
     });
     instances.push(instance);
@@ -64,12 +64,12 @@ const createInstances = async (
 
 const createSingleInstance = async (
   processDefinitionId: string,
-  version: number,
+  processDefinitionVersion: number,
   variables?: JSONDoc,
 ) => {
   return zeebe.createProcessInstance({
-    processDefinitionId: processDefinitionId,
-    processDefinitionVersion: version,
+    processDefinitionId,
+    processDefinitionVersion,
     variables: {...(variables ?? {})},
   });
 };
