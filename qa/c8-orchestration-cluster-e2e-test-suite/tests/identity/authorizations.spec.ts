@@ -18,6 +18,11 @@ import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {verifyAccess} from 'utils/accessVerification';
+import {cleanupRoles} from 'utils/rolesCleanup';
+import {cleanupUsers} from 'utils/usersCleanup';
+
+const createdRoleIds: string[] = [];
+const createdUserIds: string[] = [];
 
 test.describe.serial('component authorizations CRUD', () => {
   let NEW_USER: {
@@ -44,6 +49,14 @@ test.describe.serial('component authorizations CRUD', () => {
     NEW_AUTH_ROLE = testData.authRole!;
     NEW_USER_AUTHORIZATION = createUserAuthorization(NEW_AUTH_ROLE);
     NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
+
+    createdRoleIds.push(NEW_AUTH_ROLE.id);
+    createdUserIds.push(NEW_USER.username);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
   });
 
   test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
@@ -192,6 +205,11 @@ test.describe('authorization scenarios', () => {
     await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
   });
 
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
+  });
+
   test.afterEach(async ({page}, testInfo) => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
@@ -215,6 +233,8 @@ test.describe('authorization scenarios', () => {
       const testData = createTestData({user: true});
       testUser = testData.user!;
 
+      createdUserIds.push(testUser.username);
+
       await identityUsersPage.navigateToUsers();
       await identityUsersPage.createUser(testUser);
 
@@ -223,11 +243,13 @@ test.describe('authorization scenarios', () => {
     });
 
     await test.step(`Create component authorization for user`, async () => {
-      const USER_COMPONENT_AUTH = createComponentAuthorization(
-        {name: testUser.name ?? testUser.username},
-        'User',
-      );
-      await identityAuthorizationsPage.createAuthorization(USER_COMPONENT_AUTH);
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
 
       const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
         testUser.username,
