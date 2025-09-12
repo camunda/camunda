@@ -96,7 +96,9 @@ public class BpmnCompensationSubscriptionBehaviour {
   private boolean isFlowScopeWithSubscriptions(final BpmnElementContext context) {
     final BpmnElementType bpmnElementType = context.getBpmnElementType();
     if (bpmnElementType != BpmnElementType.SUB_PROCESS
-        && bpmnElementType != BpmnElementType.MULTI_INSTANCE_BODY) {
+        && bpmnElementType != BpmnElementType.MULTI_INSTANCE_BODY
+        && bpmnElementType != BpmnElementType.AD_HOC_SUB_PROCESS
+        && bpmnElementType != BpmnElementType.AD_HOC_SUB_PROCESS_INNER_INSTANCE) {
       return false; // avoid accessing the state for elements that are not a flow scope
     }
 
