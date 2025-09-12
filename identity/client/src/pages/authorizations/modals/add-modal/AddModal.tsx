@@ -192,6 +192,18 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
       confirmLabel={t("createAuthorization")}
       onSubmit={handleSubmit(onSubmit)}
     >
+      <div>
+        <Translate i18nKey="createAuthorizationIntroduction">
+          Grant an owner access to a resource with specific permissions.{" "}
+          <DocumentationLink
+            path="/docs/components/identity/authorization/"
+            withIcon
+          >
+            Learn more
+          </DocumentationLink>{" "}
+          .
+        </Translate>
+      </div>
       <Row>
         <DropdownAutoFocus>
           <Controller
@@ -290,11 +302,15 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             legendText={
               <PermissionsSectionLabel>
                 <Translate i18nKey="selectPermission">
-                  Select at least one permission. Visit{" "}
-                  <DocumentationLink path="" withIcon>
-                    authorizations
+                  Select at least one permission. All available resource
+                  permissions can be found{" "}
+                  <DocumentationLink
+                    path="/docs/components/concepts/access-control/authorizations/#resources-and-permissions"
+                    withIcon
+                  >
+                    here
                   </DocumentationLink>{" "}
-                  for a full overview.
+                  .
                 </Translate>
               </PermissionsSectionLabel>
             }
