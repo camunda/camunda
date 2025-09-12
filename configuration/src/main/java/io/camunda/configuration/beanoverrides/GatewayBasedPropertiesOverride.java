@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Cluster;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Grpc;
@@ -179,12 +180,12 @@ public class GatewayBasedPropertiesOverride {
     // Rest of camunda.cluster.* sections
 
     // override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
-    // override.getCluster().setClusterName(cluster.getName());
+    override.getCluster().setClusterName(cluster.getName());
 
-    //    override
-    //        .getCluster()
-    //        .setMessageCompression(
-    //            CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
+    override
+        .getCluster()
+        .setMessageCompression(
+            CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
   }
 
   private void populateFromClusterNetwork(final GatewayBasedProperties override) {
