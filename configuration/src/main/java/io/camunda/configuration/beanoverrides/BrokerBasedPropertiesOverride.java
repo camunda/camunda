@@ -549,6 +549,7 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+    setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
     setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
   }
 
