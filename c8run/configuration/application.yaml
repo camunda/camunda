@@ -23,3 +23,6 @@ zeebe:
         args:
           createSchema: true
         className: io.camunda.exporter.CamundaExporter
+
+server:
+  port: 8088
