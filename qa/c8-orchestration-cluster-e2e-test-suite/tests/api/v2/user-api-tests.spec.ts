@@ -31,12 +31,24 @@ import {
   UPDATE_USER,
   userRequiredFields,
 } from '../../../utils/beans/requestBeans';
+import {cleanupUsers} from '../../../utils/usersCleanup';
 
 test.describe.parallel('Users API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdUserIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createUsersAndStoreResponseFields(request, 8, state);
+
+    createdUserIds.push(
+      ...(Object.values(state).filter(
+        (value) => typeof value === 'string' && value.startsWith('user'),
+      ) as string[]),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdUserIds);
   });
 
   test('Create User', async ({request}) => {
@@ -51,6 +63,9 @@ test.describe.parallel('Users API Tests', () => {
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, user, userRequiredFields);
+      if (json && json.username) {
+        createdUserIds.push(json.username);
+      }
     }).toPass(defaultAssertionOptions);
   });
 
@@ -83,6 +98,9 @@ test.describe.parallel('Users API Tests', () => {
           expectedBodyForSecondUser,
           userRequiredFields,
         );
+        if (json && json.username) {
+          createdUserIds.push(json.username);
+        }
       }).toPass(defaultAssertionOptions);
     });
 
@@ -173,6 +191,7 @@ test.describe.parallel('Users API Tests', () => {
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
+    createdUserIds.push(json.username);
   });
 
   test('Create User Missing Name Success', async ({request}) => {
@@ -196,6 +215,7 @@ test.describe.parallel('Users API Tests', () => {
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
+    createdUserIds.push(json.username);
   });
 
   test('Create User Empty Name Success', async ({request}) => {
@@ -220,6 +240,7 @@ test.describe.parallel('Users API Tests', () => {
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
+    createdUserIds.push(json.username);
   });
 
   test('Create User Empty Username Invalid Body 400', async ({request}) => {

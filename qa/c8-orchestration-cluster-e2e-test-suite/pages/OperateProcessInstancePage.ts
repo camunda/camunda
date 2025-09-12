@@ -67,7 +67,7 @@ class OperateProcessInstancePage {
     this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
     this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
-    this.variableSpinner = page.getByTestId('variable-operation-spinner');
+    this.variableSpinner = page.getByTestId('full-variable-loader');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
       'show execution count',

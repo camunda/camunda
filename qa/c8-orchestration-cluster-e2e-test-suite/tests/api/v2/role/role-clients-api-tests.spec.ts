@@ -25,19 +25,32 @@ import {
   clientFromState,
   createRole,
 } from '../../../../utils/requestHelpers';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
 test.describe.parallel('Role Clients API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdRoleIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createRole(request, state, '1');
     await createRole(request, state, '2');
     await assignClientsToRole(request, 3, state['roleId1'] as string, state);
     await assignClientsToRole(request, 1, state['roleId2'] as string, state);
+
+    createdRoleIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('roleId'))
+        .map(([, value]) => value as string),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
   });
 
   test('Assign Role To Client', async ({request}) => {
     const role = await createRole(request);
+    createdRoleIds.push(role.roleId as string);
     const clientId = 'test-client' + generateUniqueId();
     const p = {clientId, roleId: role.roleId as string};
 

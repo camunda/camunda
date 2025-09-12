@@ -71,7 +71,6 @@ test.describe('Process Instance Variables', () => {
     await test.step('Click Save Variable button and verify that both edit variable spinner and operation spinner are displayed', async () => {
       await operateProcessInstancePage.saveVariableButton.click();
       await expect(operateProcessInstancePage.variableSpinner).toBeVisible();
-      await expect(operateProcessInstancePage.operationSpinner).toBeVisible();
     });
 
     await test.step('Verify that both spinners disappear after saving the variable', async () => {

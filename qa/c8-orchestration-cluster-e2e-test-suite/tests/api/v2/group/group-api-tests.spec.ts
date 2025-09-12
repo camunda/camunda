@@ -31,6 +31,12 @@ test.describe.parallel('Groups API Tests', () => {
 
   test.beforeAll(async ({request}) => {
     await createGroupAndStoreResponseFields(request, 3, state);
+
+    (state['createdIds'] as string[]).push(
+      ...(Object.values(state).filter(
+        (value) => typeof value === 'string' && value.startsWith('group'),
+      ) as string[]),
+    );
   });
 
   test.afterAll(async ({request}) => {
