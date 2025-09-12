@@ -192,4 +192,44 @@ public class StandaloneDecisionEvaluationTest {
                 + "'");
     assertThat(record.getValue()).hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   }
+
+  @Test
+  public void shouldEvaluateDecisionWithSynthesizedRuleIdWhenMissing() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlClasspathResource("/dmn/decision-table-with-missing-ruleId.dmn")
+        .deploy();
+
+    // when
+    final String decisionId = "shippingDecision";
+    final Record<DecisionEvaluationRecordValue> record =
+        ENGINE
+            .decision()
+            .ofDecisionId(decisionId)
+            .withVariable("amount", 200) // matches the rule WITHOUT id (rule index 2)
+            .evaluate();
+
+    // then
+    assertThat(record.getIntent()).isEqualTo(DecisionEvaluationIntent.EVALUATED);
+    assertThat(record.getValue())
+        .hasDecisionId(decisionId)
+        .hasDecisionVersion(1)
+        .hasDecisionOutput("\"EXPRESS\"");
+
+    final var evaluatedDecision =
+        record.getValue().getEvaluatedDecisions().stream()
+            .filter(d -> decisionId.equals(d.getDecisionId()))
+            .findFirst()
+            .orElseThrow();
+
+    assertThat(evaluatedDecision.getMatchedRules())
+        .singleElement()
+        .satisfies(
+            matchedRule -> {
+              assertThat(matchedRule.getRuleIndex()).isEqualTo(2);
+              assertThat(matchedRule.getRuleId())
+                  .isEqualTo("ZB_SYNTH_RULE_ID_shippingDecision_v1_r2");
+            });
+  }
 }
