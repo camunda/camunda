@@ -80,6 +80,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
   private long configuring;
   private CompletableFuture<Void> commitInitialEntriesFuture;
   private ApplicationEntry lastZbEntry = null;
+  private CompletableFuture<ReconfigureResponse> ongoingReconfigurationRequestFuture;
 
   public LeaderRole(final RaftContext context) {
     super(context);
@@ -106,7 +107,8 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
           .execute(
               () -> {
                 final var currentMembers = raft.getCluster().getConfiguration().newMembers();
-                configure(currentMembers, List.of());
+                ongoingReconfigurationRequestFuture = new CompletableFuture<>();
+                leaveJointConsensus(currentMembers, raft.getCluster().getConfiguration());
               });
     }
 
@@ -148,6 +150,16 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
 
     // If another configuration change is already under way, reject the configuration.
     if (configuring() || jointConsensus()) {
+      /*
+       If the request is a duplicate, return the current future. This is essential for completing
+       the join of a second member into a single-member cluster. During a join retry, if the
+       joining member receives an error, it may shut down the Raft partition and restart. In such
+       cases, the reconfiguration request cannot complete because the joining member might already
+       be part of the quorum and must be active to commit the configuration change.
+      */
+      if (isDuplicateReconfigureRequest(request)) {
+        return ongoingReconfigurationRequestFuture;
+      }
       return CompletableFuture.completedFuture(
           logResponse(
               ReconfigureResponse.builder()
@@ -186,37 +198,14 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                   .build()));
     }
 
-    final CompletableFuture<ReconfigureResponse> future = new CompletableFuture<>();
+    ongoingReconfigurationRequestFuture = new CompletableFuture<>();
     configure(updatedMembers, currentMembers)
         .whenComplete(
             (jointConsensusIndex, jointConsensusError) -> {
               if (jointConsensusError == null) {
-                configure(updatedMembers, List.of())
-                    .whenComplete(
-                        (leftJointConsensusIndex, leftJointConsensusError) -> {
-                          if (leftJointConsensusError == null) {
-                            future.complete(
-                                logResponse(
-                                    ReconfigureResponse.builder()
-                                        .withStatus(RaftResponse.Status.OK)
-                                        .withIndex(leftJointConsensusIndex)
-                                        .withTerm(configuration.term())
-                                        .withTime(configuration.time())
-                                        .withMembers(updatedMembers)
-                                        .build()));
-                          } else {
-                            future.complete(
-                                logResponse(
-                                    ReconfigureResponse.builder()
-                                        .withStatus(RaftResponse.Status.ERROR)
-                                        .withError(
-                                            RaftError.Type.PROTOCOL_ERROR,
-                                            leftJointConsensusError.getMessage())
-                                        .build()));
-                          }
-                        });
+                leaveJointConsensus(updatedMembers, configuration);
               } else {
-                future.complete(
+                ongoingReconfigurationRequestFuture.complete(
                     logResponse(
                         ReconfigureResponse.builder()
                             .withStatus(RaftResponse.Status.ERROR)
@@ -225,7 +214,7 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                             .build()));
               }
             });
-    return future;
+    return ongoingReconfigurationRequestFuture;
   }
 
   @Override
@@ -302,6 +291,38 @@ public final class LeaderRole extends ActiveRole implements ZeebeLogAppender {
                     .build();
               }
             });
+  }
+
+  private void leaveJointConsensus(
+      final Collection<RaftMember> updatedMembers, final Configuration configuration) {
+    configure(updatedMembers, List.of())
+        .whenComplete(
+            (leftJointConsensusIndex, leftJointConsensusError) -> {
+              if (leftJointConsensusError == null) {
+                ongoingReconfigurationRequestFuture.complete(
+                    logResponse(
+                        ReconfigureResponse.builder()
+                            .withStatus(Status.OK)
+                            .withIndex(leftJointConsensusIndex)
+                            .withTerm(configuration.term())
+                            .withTime(configuration.time())
+                            .withMembers(updatedMembers)
+                            .build()));
+              } else {
+                ongoingReconfigurationRequestFuture.complete(
+                    logResponse(
+                        ReconfigureResponse.builder()
+                            .withStatus(Status.ERROR)
+                            .withError(Type.PROTOCOL_ERROR, leftJointConsensusError.getMessage())
+                            .build()));
+              }
+            });
+  }
+
+  private boolean isDuplicateReconfigureRequest(final ReconfigureRequest request) {
+    final var requestedUpdate = request.members();
+    final var ongoingUpdate = raft.getCluster().getConfiguration().newMembers();
+    return equalMembership(requestedUpdate, ongoingUpdate);
   }
 
   /** Checks if the membership is equal in terms of member ids and types. */
