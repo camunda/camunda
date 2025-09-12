@@ -8,14 +8,17 @@
 package io.camunda.tasklist.webapp.es.cache;
 
 import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.mockito.Mockito.any;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -74,9 +77,9 @@ class ProcessStoreElasticSearchTest {
     MockitoAnnotations.initMocks(this);
     when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
     ReflectionTestUtils.setField(
-        permissionServices, "securityConfiguration", securityConfiguration);
-    ReflectionTestUtils.setField(
         permissionServices, "authenticationProvider", authenticationProvider);
+    ReflectionTestUtils.setField(
+        permissionServices, "resourceAccessProvider", resourceAccessProvider);
   }
 
   // ** Test Get Process by BPMN Process Id ** //
@@ -175,6 +178,8 @@ class ProcessStoreElasticSearchTest {
     when(securityConfiguration.getAuthorizations())
         .thenReturn(mock(AuthorizationsConfiguration.class));
     when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
     when(identityProperties.baseUrl()).thenReturn("baseUrl");
     mockAuthenticationOverIdentity(false);
     when(processIndex.getAlias()).thenReturn("index_alias");
@@ -202,6 +207,8 @@ class ProcessStoreElasticSearchTest {
   @Test
   public void shouldReturnProcessesWhenResourceAuthIsEnabledWithAuthorization() throws Exception {
     // when
+    when(securityConfiguration.getAuthorizations())
+        .thenReturn(mock(AuthorizationsConfiguration.class));
     mockAuthenticationOverIdentity(true);
     mockElasticSearchSuccessWithAggregatedResponse();
     final List<String> authorizations =
@@ -223,8 +230,14 @@ class ProcessStoreElasticSearchTest {
     // when
     when(securityConfiguration.getAuthorizations())
         .thenReturn(mock(AuthorizationsConfiguration.class));
-    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(false);
+    final CamundaAuthentication camundaAuthentication = CamundaAuthentication.anonymous();
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(camundaAuthentication);
     mockElasticSearchSuccessWithAggregatedResponse();
+    when(resourceAccessProvider.resolveResourceAccess(eq(camundaAuthentication), any()))
+        .thenAnswer(
+            i ->
+                ResourceAccess.wildcard(
+                    Authorization.withAuthorization(i.getArgument(1), WILDCARD.getResourceId())));
 
     final List<String> authorizations =
         permissionServices.getProcessDefinitionsWithCreateProcessInstancePermission();
@@ -243,9 +256,8 @@ class ProcessStoreElasticSearchTest {
   private void mockAuthenticationOverIdentity(final Boolean isAuthorized) {
     // Mock IdentityProperties
     springContextHolder.setApplicationContext(mock(ConfigurableApplicationContext.class));
-    when(securityConfiguration.getAuthorizations())
-        .thenReturn(mock(AuthorizationsConfiguration.class));
-    when(securityConfiguration.getAuthorizations().isEnabled()).thenReturn(true);
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(CamundaAuthentication.of(b -> b.user("foo")));
 
     if (isAuthorized) {
       when(resourceAccessProvider.resolveResourceAccess(any(), any()))

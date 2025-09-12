@@ -9,10 +9,12 @@ package io.camunda.qa.util.cluster;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.Builder;
 import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Base64;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public class TestRestTasklistClient implements CloseableSilently {
 
@@ -27,17 +30,26 @@ public class TestRestTasklistClient implements CloseableSilently {
 
   private final URI endpoint;
   private final HttpClient httpClient;
-  private final BasicAuthentication authentication;
+  private Consumer<Builder> authenticationApplier;
 
   public TestRestTasklistClient(final URI endpoint) {
-    this(endpoint, HttpClient.newHttpClient(), null);
+    this.endpoint = endpoint;
+    this.httpClient = HttpClient.newHttpClient();
+  }
+
+  public TestRestTasklistClient(final URI endpoint, final CredentialsProvider credentialsProvider) {
+    this(endpoint);
+    this.authenticationApplier =
+        TestRestOperateClient.applyCredentialsProvider(credentialsProvider);
   }
 
   TestRestTasklistClient(
-      final URI endpoint, final HttpClient httpClient, final BasicAuthentication authentication) {
-    this.endpoint = endpoint;
-    this.httpClient = httpClient;
-    this.authentication = authentication;
+      final URI endpoint,
+      final HttpClient httpClient,
+      final String username,
+      final String password) {
+    this(endpoint);
+    this.authenticationApplier = applyBasicAuthenticationHeader(username, password);
   }
 
   public HttpResponse<String> searchRequest(final String path, final String body) {
@@ -137,9 +149,8 @@ public class TestRestTasklistClient implements CloseableSilently {
               .header("content-type", "application/json")
               .method(method, HttpRequest.BodyPublishers.ofString(requestBody));
 
-      if (authentication != null) {
-        final var basicAuth = getBasicAuthenticationHeader(authentication);
-        requestBuilder.header("Authorization", "Basic %s".formatted(basicAuth));
+      if (authenticationApplier != null) {
+        authenticationApplier.accept(requestBuilder);
       }
 
       final var request = requestBuilder.build();
@@ -150,9 +161,11 @@ public class TestRestTasklistClient implements CloseableSilently {
     }
   }
 
-  private String getBasicAuthenticationHeader(final BasicAuthentication authentication) {
-    final var basicAuth = "%s:%s".formatted(authentication.username(), authentication.password());
-    return Base64.getEncoder().encodeToString(basicAuth.getBytes());
+  private Consumer<Builder> applyBasicAuthenticationHeader(
+      final String username, final String password) {
+    final var basicAuth = "%s:%s".formatted(username, password);
+    final var encodedBasicAuth = Base64.getEncoder().encodeToString(basicAuth.getBytes());
+    return builder -> builder.header("Authorization", "Basic %s".formatted(encodedBasicAuth));
   }
 
   public URI getEndpoint() {
@@ -165,14 +178,11 @@ public class TestRestTasklistClient implements CloseableSilently {
   }
 
   public TestRestTasklistClient withAuthentication(final String username, final String password) {
-    return new TestRestTasklistClient(
-        endpoint, httpClient, new BasicAuthentication(username, password));
+    return new TestRestTasklistClient(endpoint, httpClient, username, password);
   }
 
   public record CreateProcessInstanceVariable(String name, Object value) {}
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public record ProcessDefinitionResponse(String bpmnProcessId) {}
-
-  record BasicAuthentication(String username, String password) {}
 }

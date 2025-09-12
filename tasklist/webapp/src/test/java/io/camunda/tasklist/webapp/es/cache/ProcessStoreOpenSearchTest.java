@@ -78,9 +78,9 @@ class ProcessStoreOpenSearchTest {
     MockitoAnnotations.initMocks(this);
     when(securityConfiguration.getMultiTenancy()).thenReturn(new MultiTenancyConfiguration());
     ReflectionTestUtils.setField(
-        permissionServices, "securityConfiguration", securityConfiguration);
-    ReflectionTestUtils.setField(
         permissionServices, "authenticationProvider", authenticationProvider);
+    ReflectionTestUtils.setField(
+        permissionServices, "resourceAccessProvider", resourceAccessProvider);
   }
 
   // ** Test Get Process by BPMN Process Id ** //

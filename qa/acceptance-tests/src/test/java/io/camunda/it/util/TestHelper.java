@@ -30,6 +30,7 @@ import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
@@ -439,6 +440,19 @@ public final class TestHelper {
    */
   public static Map<String, Object> getScopedVariables(final String scopeId) {
     return Map.of(VAR_TEST_SCOPE_ID, "\"" + scopeId + "\"");
+  }
+
+  public static void waitForUserTasks(
+      final CamundaClient client, final Consumer<UserTaskFilter> filter, final int expectedCount) {
+    await("should have items with state")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var userTasks =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
+              assertThat(userTasks).hasSize(expectedCount);
+            });
   }
 
   public static void waitForBatchOperationWithCorrectTotalCount(
