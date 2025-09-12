@@ -551,6 +551,7 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
     setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
     setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
+    setArg(args, "index.shouldWaitForImporters", database.isWaitForImporters());
   }
 
   @SuppressWarnings("unchecked")
