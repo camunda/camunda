@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class MappingRuleAuthorizationIT {
 
@@ -119,17 +118,36 @@ class MappingRuleAuthorizationIT {
   @Test
   void deleteMappingRuleShouldDeleteMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
-    // given - verify that mappingRule2 exists initially
+    // given - create a mapping rule specifically for deletion in this test
+    final String mappingRuleId = "testMappingRuleToDelete";
+    camundaClient
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
+        .claimName("testClaimName")
+        .claimValue("testClaimValue")
+        .name("testMappingRule")
+        .send()
+        .join();
+
+    // wait for the mapping rule to be created and indexed
+    Awaitility.await("Mapping rule is created")
+        .ignoreExceptionsInstanceOf(IOException.class)
+        .untilAsserted(
+            () -> {
+              final var searchResponse =
+                  searchMappingRules(
+                      camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
+              assertThat(searchResponse.items())
+                  .map(MappingRuleResponse::name)
+                  .contains("testMappingRule");
+            });
+
     final var searchResponseBefore =
         searchMappingRules(camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
-    assertThat(searchResponseBefore.items())
-        .map(MappingRuleResponse::name)
-        .contains("mappingRule2");
     final int initialCount = searchResponseBefore.items().size();
 
     // when - delete the mapping rule (this should not throw an exception)
-    final var deleteResponse =
-        camundaClient.newDeleteMappingRuleCommand("mappingRule2").send().join();
+    camundaClient.newDeleteMappingRuleCommand(mappingRuleId).send().join();
 
     // then - wait until the mapping rule is deleted
     Awaitility.await("Mapping rule is deleted")
@@ -141,7 +159,7 @@ class MappingRuleAuthorizationIT {
                       camundaClient.getConfiguration().getRestAddress().toString(), ADMIN);
               assertThat(searchResponseAfter.items())
                   .map(MappingRuleResponse::name)
-                  .doesNotContain("mappingRule2");
+                  .doesNotContain("testMappingRule");
               assertThat(searchResponseAfter.items()).hasSize(initialCount - 1);
             });
   }
