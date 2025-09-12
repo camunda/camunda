@@ -46,7 +46,6 @@ class CompactRecordLoggerTest {
         "IDENTITY_SETUP",
         "SCALE",
         "FORM",
-        "PROCESS_INSTANCE_MIGRATION",
         "CHECKPOINT",
       })
   public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {

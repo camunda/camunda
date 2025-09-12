@@ -22,6 +22,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_CREATION;
+import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MIGRATION;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION;
 import static io.camunda.zeebe.protocol.record.ValueType.ROLE;
 import static io.camunda.zeebe.protocol.record.ValueType.RUNTIME_INSTRUCTION;
@@ -61,6 +62,7 @@ import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -94,6 +96,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessEventRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationActivateInstructionValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceModificationRecordValue.ProcessInstanceModificationTerminateInstructionValue;
@@ -132,6 +135,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -159,6 +163,7 @@ public class CompactRecordLogger {
           entry(AD_HOC_SUB_PROCESS_INSTRUCTION.name(), "AHSP_INST"),
           entry(PROCESS_INSTANCE_CREATION.name(), "CREA"),
           entry(PROCESS_INSTANCE_MODIFICATION.name(), "MOD"),
+          entry(PROCESS_INSTANCE_MIGRATION.name(), "PI_MIGR"),
           entry(PROCESS_INSTANCE.name(), "PI"),
           entry("PROCESS_INSTANCE", "PI"), // partial matches in ValueType and ProcessInstanceIntent
           entry(RUNTIME_INSTRUCTION.name(), "RI"),
@@ -274,6 +279,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.USAGE_METRIC, this::summarizeUsageMetrics);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
+    valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1448,6 +1454,36 @@ public class CompactRecordLogger {
     }
     summary.append(")");
     summary.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+
+    return summary.toString();
+  }
+
+  private String summarizeProcessInstanceMigration(final Record<?> record) {
+    final var value = (ProcessInstanceMigrationRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    summary.append(shortenKey(value.getProcessInstanceKey()));
+    summary.append("->");
+    summary.append(shortenKey(value.getTargetProcessDefinitionKey()));
+
+    // Only include mapping in first record in order to avoid cluttering the logs.
+    // The MIGRATE record is referenced by the MIGRATED one so it's easy to find
+    // it if needed.
+    if (record.getIntent() == ProcessInstanceMigrationIntent.MIGRATE) {
+      if (value.getMappingInstructions().isEmpty()) {
+        summary.append(" (missing mapping)");
+      } else {
+        final StringJoiner mapping = new StringJoiner(", ", " (mapping: ", ")");
+        for (final var instruction : value.getMappingInstructions()) {
+          mapping.add(
+              formatId(instruction.getSourceElementId())
+                  + "->"
+                  + formatId(instruction.getTargetElementId()));
+        }
+        summary.append(mapping);
+      }
+    }
 
     return summary.toString();
   }
