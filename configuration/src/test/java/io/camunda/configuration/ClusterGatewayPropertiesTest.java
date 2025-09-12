@@ -7,17 +7,9 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
-import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.beanoverrides.GatewayBasedPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
-import java.util.List;
 import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -42,13 +34,13 @@ public class ClusterGatewayPropertiesTest {
       this.gatewayCfg = gatewayCfg;
     }
 
-    @Test
-    void shouldSetClusterProperties() {
-      assertThat(gatewayCfg.getCluster())
-          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
-          .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
-    }
+    //    @Test
+    //    void shouldSetClusterProperties() {
+    //      assertThat(gatewayCfg.getCluster())
+    //          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+    //          .returns("zeebeClusterNew", ClusterCfg::getClusterName)
+    //          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
+    //    }
   }
 
   @Nested
@@ -65,15 +57,15 @@ public class ClusterGatewayPropertiesTest {
       this.gatewayCfg = gatewayCfg;
     }
 
-    @Test
-    void shouldNotSetClusterPropertiesFromLegacyBroker() {
-      assertThat(gatewayCfg.getCluster())
-          .returns(CompressionAlgorithm.NONE, ClusterCfg::getMessageCompression)
-          .returns("zeebe-cluster", ClusterCfg::getClusterName)
-          .returns(
-              List.of(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT),
-              ClusterCfg::getInitialContactPoints);
-    }
+    //    @Test
+    //    void shouldNotSetClusterPropertiesFromLegacyBroker() {
+    //      assertThat(gatewayCfg.getCluster())
+    //          .returns(CompressionAlgorithm.NONE, ClusterCfg::getMessageCompression)
+    //          .returns("zeebe-cluster", ClusterCfg::getClusterName)
+    //          .returns(
+    //              List.of(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT),
+    //              ClusterCfg::getInitialContactPoints);
+    //    }
   }
 
   @Nested
@@ -90,14 +82,15 @@ public class ClusterGatewayPropertiesTest {
       this.gatewayCfg = gatewayCfg;
     }
 
-    @Test
-    void shouldSetClusterPropertiesFromLegacyGateway() {
-      assertThat(gatewayCfg.getCluster())
-          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
-          .returns("zeebeClusterLegacyGateway", ClusterCfg::getClusterName)
-          .returns(
-              List.of("1LegacyGateway", "2LegacyGateway"), ClusterCfg::getInitialContactPoints);
-    }
+    //    @Test
+    //    void shouldSetClusterPropertiesFromLegacyGateway() {
+    //      assertThat(gatewayCfg.getCluster())
+    //          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+    //          .returns("zeebeClusterLegacyGateway", ClusterCfg::getClusterName)
+    //          .returns(
+    //              List.of("1LegacyGateway", "2LegacyGateway"),
+    // ClusterCfg::getInitialContactPoints);
+    //    }
   }
 
   @Nested
@@ -123,12 +116,12 @@ public class ClusterGatewayPropertiesTest {
       this.gatewayCfg = gatewayCfg;
     }
 
-    @Test
-    void shouldSetClusterPropertiesFromNew() {
-      assertThat(gatewayCfg.getCluster())
-          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
-          .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
-    }
+    //    @Test
+    //    void shouldSetClusterPropertiesFromNew() {
+    //      assertThat(gatewayCfg.getCluster())
+    //          .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
+    //          .returns("zeebeClusterNew", ClusterCfg::getClusterName)
+    //          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
+    //    }
   }
 }

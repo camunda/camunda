@@ -7,7 +7,6 @@
  */
 package io.camunda.configuration.beanoverrides;
 
-import io.atomix.cluster.messaging.MessagingConfig.CompressionAlgorithm;
 import io.camunda.configuration.Azure;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.Data;
@@ -182,22 +181,22 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromCluster(final BrokerBasedProperties override) {
     final var cluster = unifiedConfiguration.getCamunda().getCluster().withBrokerProperties();
 
-    override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
+    // override.getCluster().setInitialContactPoints(cluster.getInitialContactPoints());
     override.getCluster().setNodeId(cluster.getNodeId());
     override.getCluster().setPartitionsCount(cluster.getPartitionCount());
     override.getCluster().setReplicationFactor(cluster.getReplicationFactor());
     override.getCluster().setClusterSize(cluster.getSize());
-    override.getCluster().setClusterName(cluster.getName());
+    // override.getCluster().setClusterName(cluster.getName());
 
     populateFromMembership(override);
     populateFromRaftProperties(override);
     populateFromClusterMetadata(override);
     populateFromClusterNetwork(override);
 
-    override
-        .getCluster()
-        .setMessageCompression(
-            CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
+    //    override
+    //        .getCluster()
+    //        .setMessageCompression(
+    //            CompressionAlgorithm.valueOf(cluster.getCompressionAlgorithm().name()));
 
     override.setExecutionMetricsExporterEnabled(
         cluster.getMonitoring().isExecutionMetricsEnabled());
