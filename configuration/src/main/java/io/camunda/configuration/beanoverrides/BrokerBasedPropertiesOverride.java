@@ -22,7 +22,6 @@ import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -500,14 +499,17 @@ public class BrokerBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
     final SecondaryStorageDatabase database;
-    if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
-      database =
-          unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
-    } else if (SecondaryStorageType.opensearch == secondaryStorage.getType()) {
-      database = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
-    } else {
-      // RDBMS and NONE are not supported.
-      return;
+    switch (secondaryStorage.getType()) {
+      case elasticsearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
+      case opensearch ->
+          database =
+              unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getOpensearch();
+      default -> {
+        // RDBMS and NONE are not supported.
+        return;
+      }
     }
 
     /* Load exporter config map */
@@ -533,6 +535,10 @@ public class BrokerBasedPropertiesOverride {
     // it is possible to have an exporter with no args defined
     final Map<String, Object> args =
         exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
+
+    setArg(args, "history.retention.enabled", secondaryStorage.getRetention().isEnabled());
+    setArg(args, "history.retention.minimumAge", secondaryStorage.getRetention().getMinimumAge());
+
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());
