@@ -18,6 +18,12 @@ public abstract class SecondaryStorageDatabase {
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
+  // TODO KPO add java doc
+  private String dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
+  private String fieldDateFormat = "date_time";
+  private Integer socketTimeout;
+  private Integer connectionTimeout;
+
   private Security security = new Security(databaseName());
 
   /** Username for the database configured as secondary storage. */
@@ -79,6 +85,58 @@ public abstract class SecondaryStorageDatabase {
     this.security = security;
   }
 
+  public String getDateFormat() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".date-format",
+        dateFormat,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyDateFormatProperties());
+  }
+
+  public void setDateFormat(final String dateFormat) {
+    this.dateFormat = dateFormat;
+  }
+
+  public String getFieldDateFormat() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".field-date-format",
+        fieldDateFormat,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyFieldDateFormatProperties());
+  }
+
+  public void setFieldDateFormat(final String fieldDateFormat) {
+    this.fieldDateFormat = fieldDateFormat;
+  }
+
+  public Integer getSocketTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".socket-timeout",
+        socketTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacySocketTimeoutProperties());
+  }
+
+  public void setSocketTimeout(final Integer socketTimeout) {
+    this.socketTimeout = socketTimeout;
+  }
+
+  public Integer getConnectionTimeout() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".connection-timeout",
+        connectionTimeout,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyConnectionTimeoutProperties());
+  }
+
+  public void setConnectionTimeout(final Integer connectionTimeout) {
+    this.connectionTimeout = connectionTimeout;
+  }
+
   public String getClusterName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".cluster-name",
@@ -138,6 +196,39 @@ public abstract class SecondaryStorageDatabase {
         "camunda.operate." + dbName + ".clusterName",
         "camunda.tasklist." + dbName + ".clusterName",
         "zeebe.broker.exporters.camundaexporter.args.connect.clusterName");
+  }
+
+  private Set<String> legacyDateFormatProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.dateFormat",
+        "camunda.operate." + dbName + ".dateFormat",
+        "camunda.tasklist." + dbName + ".dateFormat",
+        "zeebe.broker.exporters.camundaexporter.args.connect.dateFormat");
+  }
+
+  private Set<String> legacyFieldDateFormatProperties() {
+    return Set.of(
+        "camunda.database.fieldDateFormat",
+        "zeebe.broker.exporters.camundaexporter.args.connect.fieldDateFormat");
+  }
+
+  private Set<String> legacySocketTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.socketTimeout",
+        "camunda.operate." + dbName + ".socketTimeout",
+        "camunda.tasklist." + dbName + ".socketTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.socketTimeout");
+  }
+
+  private Set<String> legacyConnectionTimeoutProperties() {
+    final String dbName = databaseName().toLowerCase();
+    return Set.of(
+        "camunda.database.connectionTimeout",
+        "camunda.operate." + dbName + ".connectionTimeout",
+        "camunda.tasklist." + dbName + ".connectionTimeout",
+        "zeebe.broker.exporters.camundaexporter.args.connect.connectionTimeout");
   }
 
   private Set<String> legacyUsernameProperties() {

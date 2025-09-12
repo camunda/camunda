@@ -81,6 +81,7 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
+    override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
 
     override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
 
@@ -98,6 +99,7 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setPassword(database.getOpensearch().getPassword());
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
+    override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
 
     override.getZeebeOpensearch().setUrl(database.getOpensearch().getUrl());
 
