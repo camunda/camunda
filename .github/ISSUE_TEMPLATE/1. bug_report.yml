@@ -183,7 +183,4 @@ body:
         The automated test cases on E2E level might not provide enough test coverage to verify if the fix works 100%. Ensure the fix is covered by a sufficient regression test. Conduct manual testing if required. Until this bug is fixed, the affected test will be skipped. Once the fix passes, create a PR in the respective test suite to re-enable the test.
     validations:
       required: false
-    conditions:
-      - field: labels
-        value: qa/automation-found
 
