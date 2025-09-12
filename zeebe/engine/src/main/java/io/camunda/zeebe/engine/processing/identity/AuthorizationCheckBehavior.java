@@ -452,18 +452,19 @@ public final class AuthorizationCheckBehavior {
       return AuthorizedTenants.DEFAULT_TENANTS;
     }
 
+    final var authorizedTenants = new HashSet<String>();
     final var username = getUsername(command);
     if (username.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.USER, username.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
+      authorizedTenants.addAll(
+          getAuthorizedTenantIds(command, EntityType.USER, username.get())
+              .collect(Collectors.toSet()));
     }
 
     final var clientId = getClientId(command);
     if (clientId.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
+      authorizedTenants.addAll(
+          getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get())
+              .collect(Collectors.toSet()));
     }
 
     final var tenantsOfMappingRule =
@@ -473,7 +474,9 @@ public final class AuthorizationCheckBehavior {
                     getAuthorizedTenantIds(
                         command, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
             .collect(Collectors.toSet());
-    return new AuthenticatedAuthorizedTenants(tenantsOfMappingRule);
+    authorizedTenants.addAll(tenantsOfMappingRule);
+
+    return new AuthenticatedAuthorizedTenants(authorizedTenants);
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
