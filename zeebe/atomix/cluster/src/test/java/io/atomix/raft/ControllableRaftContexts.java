@@ -51,8 +51,7 @@ import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -85,6 +84,7 @@ public final class ControllableRaftContexts {
       new HashMap<>();
   private final Map<MemberId, DeterministicSingleThreadContext> deterministicExecutors =
       new HashMap<>();
+  private final Map<MemberId, CompletableFuture<?>> futuresToFailOnClose = new HashMap<>();
 
   private Path directory;
   private Random random;
@@ -125,12 +125,22 @@ public final class ControllableRaftContexts {
     if (nodeCount > 0) {
       createRaftContexts(nodeCount, random);
     }
-    joinRaftServers();
-    electionTimeout = getRaftContext(0).getElectionTimeout();
-    heartbeatTimeout = getRaftContext(0).getHeartbeatInterval();
+    bootstrapAllRaftServers();
+  }
 
-    // expecting 0 to be the leader
-    tickHeartbeatTimeout(0);
+  public void setup(
+      final Path directory, final Random random, final Collection<Integer> bootstrapServerIds)
+      throws Exception {
+    this.directory = directory;
+    this.random = random;
+    if (nodeCount > 0) {
+      createRaftContexts(nodeCount, random);
+    }
+    final var bootstrapMembers =
+        bootstrapServerIds.stream()
+            .map(i -> MemberId.from(String.valueOf(i)))
+            .collect(Collectors.toSet());
+    bootstrapRaftServers(bootstrapMembers);
   }
 
   public void shutdown() throws IOException {
@@ -147,15 +157,23 @@ public final class ControllableRaftContexts {
     MicrometerUtil.close(meterRegistry);
   }
 
-  private void joinRaftServers() throws InterruptedException, ExecutionException, TimeoutException {
+  private void bootstrapAllRaftServers()
+      throws ExecutionException, InterruptedException, TimeoutException {
+    bootstrapRaftServers(raftServers.keySet());
+  }
+
+  private void bootstrapRaftServers(final Collection<MemberId> bootstrapServers)
+      throws ExecutionException, InterruptedException, TimeoutException {
     final Set<CompletableFuture<Void>> futures = new HashSet<>();
-    final var servers = getRaftServers();
-    final var serverIds = new ArrayList<>(servers.keySet());
+    final var servers =
+        getRaftServers().entrySet().stream()
+            .filter(e -> bootstrapServers.contains(e.getKey()))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+    servers.forEach(
+        (memberId, raftContext) ->
+            futures.add(raftContext.getCluster().bootstrap(bootstrapServers)));
     final long electionTimeout =
         servers.get(MemberId.from(String.valueOf(0))).getElectionTimeout().toMillis();
-    Collections.sort(serverIds);
-    servers.forEach(
-        (memberId, raftContext) -> futures.add(raftContext.getCluster().bootstrap(serverIds)));
 
     runUntilDone(0);
     // trigger election on 0 so that 0 is initially the leader
@@ -169,6 +187,12 @@ public final class ControllableRaftContexts {
       runUntilDone();
     }
     joinFuture.get(1, TimeUnit.SECONDS);
+
+    this.electionTimeout = getRaftContext(0).getElectionTimeout();
+    heartbeatTimeout = getRaftContext(0).getHeartbeatInterval();
+
+    // expecting 0 to be the leader
+    tickHeartbeatTimeout(0);
   }
 
   private void createRaftContexts(final int nodeCount, final Random random) {
@@ -382,12 +406,40 @@ public final class ControllableRaftContexts {
   }
 
   public void restart(final MemberId memberId) {
+<<<<<<< HEAD
     raftServers.get(memberId).close();
+=======
+    final var raftcontext = raftServers.get(memberId);
+    raftcontext.getThreadContext().execute(raftcontext::close);
+    runUntilDone(memberId);
+>>>>>>> c7dfdcfe (test: add randomized test for raft join to a single replica)
     deterministicExecutors.remove(memberId).close();
     snapshotStores.get(memberId).close();
     MicrometerUtil.close(meterRegistries.get(memberId));
+    futuresToFailOnClose.computeIfPresent(
+        memberId,
+        (ignore, future) -> {
+          future.completeExceptionally(new RuntimeException("Shutting down"));
+          return null;
+        });
+
     final var newContext = createRaftContextForMember(random, Integer.parseInt(memberId.id()));
     newContext.getCluster().bootstrap(raftServers.keySet());
+  }
+
+  public CompletableFuture<Void> join(
+      final MemberId memberId, final Collection<MemberId> otherMembers) {
+    final var raftcontext = raftServers.get(memberId);
+    raftcontext.getThreadContext().execute(raftcontext::close);
+    runUntilDone(memberId);
+
+    deterministicExecutors.remove(memberId).close();
+    snapshotStores.get(memberId).close();
+    MicrometerUtil.close(meterRegistries.get(memberId));
+    createRaftContextForMember(random, Integer.parseInt(memberId.id()));
+    final var future = raftServers.get(memberId).getCluster().join(otherMembers);
+    futuresToFailOnClose.put(memberId, future);
+    return future;
   }
 
   // This is a different from other operations, as it restarts the node and force operations on
