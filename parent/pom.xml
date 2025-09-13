@@ -172,7 +172,7 @@
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
     <version.auth0>1.45.1</version.auth0>
-    <version.auth0.commons>1.11.0</version.auth0.commons>
+    <version.auth0.commons>1.11.1</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.9.1</version.okio-jvm>
     <version.jwks-rsa>0.22.2</version.jwks-rsa>
