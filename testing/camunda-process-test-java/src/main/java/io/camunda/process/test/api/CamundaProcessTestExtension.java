@@ -21,6 +21,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -139,9 +140,7 @@ public class CamundaProcessTestExtension
     runtime = runtimeBuilder.build();
     runtime.start();
 
-    camundaManagementClient =
-        new CamundaManagementClient(
-            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    camundaManagementClient = createManagementClient(runtimeBuilder);
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -161,6 +160,19 @@ public class CamundaProcessTestExtension
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    if (runtimeBuilder.isMultitenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          CamundaContainer.MultitenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
   }
 
   @Override
@@ -544,6 +556,11 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
     processCoverageBuilder.reportDirectory(reportDirectory);
+    return this;
+  }
+
+  public CamundaProcessTestExtension withMultitenancyEnabled() {
+    runtimeBuilder.withMultitenancyEnabled(true);
     return this;
   }
 
