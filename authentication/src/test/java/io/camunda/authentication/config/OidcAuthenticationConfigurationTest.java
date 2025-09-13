@@ -29,7 +29,9 @@ public class OidcAuthenticationConfigurationTest {
       final String description,
       final OidcAuthenticationConfiguration oidcAuthenticationConfiguration,
       final boolean expected) {
-    Assertions.assertThat(oidcAuthenticationConfiguration.isSet()).isEqualTo(expected);
+    Assertions.assertThat(oidcAuthenticationConfiguration.isSet())
+        .withFailMessage(description)
+        .isEqualTo(expected);
   }
 
   static Stream<Arguments> oidcAuthentications() {
@@ -153,6 +155,43 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder()
                 .assertionKeystoreConfiguration(
                     AssertionKeystoreConfiguration.builder().keyPassword("keypass").build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.kidSource is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder()
+                        .kidSource(AssertionKeystoreConfiguration.KidSource.CERTIFICATE)
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.kidDigestAlgorithm is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder()
+                        .kidDigestAlgorithm(
+                            AssertionKeystoreConfiguration.KidDigestAlgorithm.SHA256)
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.kidEncoding is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder()
+                        .kidEncoding(AssertionKeystoreConfiguration.KidEncoding.BASE64URL)
+                        .build())
+                .build(),
+            true),
+        Arguments.of(
+            "AssertionKeystoreConfiguration.kidCase is set",
+            OidcAuthenticationConfiguration.builder()
+                .assertionKeystoreConfiguration(
+                    AssertionKeystoreConfiguration.builder()
+                        .kidCase(AssertionKeystoreConfiguration.KidCase.LOWER)
+                        .build())
                 .build(),
             true),
         Arguments.of("default", new OidcAuthenticationConfiguration(), false),
