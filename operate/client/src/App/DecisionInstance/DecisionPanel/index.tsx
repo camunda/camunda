@@ -13,6 +13,7 @@ import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useQuery} from '@tanstack/react-query';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 
 const DecisionPanel: React.FC = observer(() => {
   const {decisionInstance} = decisionInstanceDetailsStore.state;
@@ -28,6 +29,7 @@ const DecisionPanel: React.FC = observer(() => {
     data: decisionDefinitionXml,
     isFetching,
     isError,
+    error,
   } = useQuery(
     useDecisionDefinitionXmlOptions({
       decisionDefinitionKey: decisionInstance?.decisionDefinitionId ?? '',
@@ -38,6 +40,9 @@ const DecisionPanel: React.FC = observer(() => {
   const getStatus = () => {
     if (isFetching) {
       return 'loading';
+    }
+    if (error?.response?.status === HTTP_STATUS_FORBIDDEN) {
+      return 'forbidden';
     }
     if (isError) {
       return 'error';

@@ -68,6 +68,8 @@ import {
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
 import type {FlowNodeState} from 'modules/types/operate';
+import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {isRequestError} from 'modules/request';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -128,8 +130,9 @@ const TopPanel: React.FC = observer(() => {
 
   const {
     data: processDefinitionData,
-    isFetching: isXmlFetching,
+    isPending: isXmlFetching,
     isError: isXmlError,
+    error: xmlError,
   } = useProcessInstanceXml({
     processDefinitionKey,
   });
@@ -250,6 +253,12 @@ const TopPanel: React.FC = observer(() => {
   const getStatus = () => {
     if (isXmlFetching) {
       return 'loading';
+    }
+    if (
+      isRequestError(xmlError) &&
+      xmlError?.response?.status === HTTP_STATUS_FORBIDDEN
+    ) {
+      return 'forbidden';
     }
     if (isXmlError) {
       return 'error';
