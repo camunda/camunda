@@ -29,12 +29,24 @@ import {
   GET_CURRENT_USER_EXPECTED_BODY,
   TENANT_EXPECTED_BODY,
 } from '../../../utils/beans/requestBeans';
+import {cleanupUsers} from '../../../utils/usersCleanup';
 
 test.describe.parallel('Authentication API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdUserIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createUsersAndStoreResponseFields(request, 2, state);
+
+    createdUserIds.push(
+      ...(Object.values(state).filter(
+        (value) => typeof value === 'string' && value.startsWith('user'),
+      ) as string[]),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdUserIds);
   });
 
   test('Get Current User', async ({request}) => {

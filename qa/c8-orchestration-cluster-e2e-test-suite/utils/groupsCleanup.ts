@@ -29,6 +29,8 @@ export async function cleanupGroups(
 
         if (response.status() === 204) {
           console.log(`Successfully deleted group: ${groupId}`);
+        } else if (response.status() === 404) {
+          console.log(`Group already deleted or doesn't exist: ${groupId}`);
         } else {
           console.warn(
             `Unexpected response status ${response.status()} for group ${groupId}`,

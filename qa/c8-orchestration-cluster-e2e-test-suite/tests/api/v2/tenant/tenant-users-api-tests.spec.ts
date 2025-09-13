@@ -25,15 +25,27 @@ import {
   createTenant,
   userFromState,
 } from '../../../../utils/requestHelpers';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
 
 test.describe.parallel('Tenant Users API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdUserIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createTenant(request, state, '1');
     await createTenant(request, state, '2');
     await assignUsersToTenant(request, 3, state['tenantId1'] as string, state);
     await assignUsersToTenant(request, 1, state['tenantId2'] as string, state);
+
+    createdUserIds.push(
+      ...(Object.values(state).filter(
+        (value) => typeof value === 'string' && value.startsWith('user'),
+      ) as string[]),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdUserIds);
   });
 
   test('Assign User To Tenant', async ({request}) => {
@@ -51,6 +63,7 @@ test.describe.parallel('Tenant Users API Tests', () => {
       );
       expect(res.status()).toBe(204);
     }).toPass(defaultAssertionOptions);
+    createdUserIds.push(user);
   });
 
   test('Assign User To Tenant Non Existent User Success', async ({request}) => {

@@ -30,9 +30,11 @@ import {
   MAPPING_RULE_EXPECTED_BODY_USING_STATE,
   mappingRuleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
 
 test.describe.parallel('Role Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdRoleIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createRoleAndStoreResponseFields(request, 3, state);
@@ -48,6 +50,16 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       state['roleId3'] as string,
       state,
     );
+
+    createdRoleIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('roleId'))
+        .map(([, value]) => value as string),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
   });
 
   test('Assign Role To Mapping Rule', async ({request}) => {
@@ -366,6 +378,7 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
     request,
   }) => {
     const lonelyRole = await createRole(request);
+    createdRoleIds.push(lonelyRole.roleId as string);
     const p = {roleId: lonelyRole.roleId as string};
 
     await expect(async () => {
