@@ -17,7 +17,10 @@ package io.camunda.process.test.impl.assertions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
+import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
+import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.util.List;
@@ -38,63 +41,92 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
     this.awaitBehavior = awaitBehavior;
   }
 
-  public void isWaitingForMessage(final long processInstanceKey, final String expectedMessageName) {
+  public void isWaitingForMessage(final long processInstanceKey, final String messageName) {
 
     awaitMessageSubscription(
         processInstanceKey,
-        f -> f.messageName(expectedMessageName),
+        filter ->
+            filter
+                .messageName(messageName)
+                .messageSubscriptionState(MessageSubscriptionState.CREATED),
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
                     "%s should have an active message subscription [message-name: '%s'], but no such subscription was found.",
-                    actual, expectedMessageName)
+                    actual, messageName)
                 .isNotEmpty());
   }
 
   public void isWaitingForMessage(
-      final long processInstanceKey,
-      final String expectedMessageName,
-      final String correlationKey) {
+      final long processInstanceKey, final String messageName, final String correlationKey) {
 
     awaitMessageSubscription(
         processInstanceKey,
-        f -> f.messageName(expectedMessageName).correlationKey(correlationKey),
+        f -> f.messageName(messageName).correlationKey(correlationKey),
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
                     "%s should have a message subscription [message-name: '%s', correlation-key: '%s'], but no such subscription was found.",
-                    actual, expectedMessageName, correlationKey)
+                    actual, messageName, correlationKey)
                 .isNotEmpty());
   }
 
-  public void isNotWaitingForMessage(
-      final long processInstanceKey, final String expectedMessageName) {
+  public void isNotWaitingForMessage(final long processInstanceKey, final String messageName) {
 
     awaitMessageSubscription(
         processInstanceKey,
-        f -> f.messageName(expectedMessageName),
+        f -> f.messageName(messageName),
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
                     "%s has an active message subscription [message-name: '%s'], but such a subscription was not expected.",
-                    actual, expectedMessageName)
+                    actual, messageName)
                 .isEmpty());
   }
 
   public void isNotWaitingForMessage(
-      final long processInstanceKey,
-      final String expectedMessageName,
-      final String correlationKey) {
+      final long processInstanceKey, final String messageName, final String correlationKey) {
 
     awaitMessageSubscription(
         processInstanceKey,
-        f -> f.messageName(expectedMessageName).correlationKey(correlationKey),
+        filter ->
+            filter
+                .messageSubscriptionState(MessageSubscriptionState.CREATED)
+                .messageName(messageName)
+                .correlationKey(correlationKey),
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
                     "%s has an active message subscription [message-name: '%s', correlation-key: '%s'], but such a subscription was not expected.",
-                    actual, expectedMessageName, correlationKey)
+                    actual, messageName, correlationKey)
                 .isEmpty());
+  }
+
+  public void hasCorrelatedMessage(final long processInstanceKey, final String messageName) {
+
+    awaitCorrelatedMessages(
+        processInstanceKey,
+        filter -> filter.messageName(messageName),
+        correlatedMessages ->
+            assertThat(correlatedMessages)
+                .withFailMessage(
+                    "%s should have at least one correlated message [message-name: '%s'], but found none.",
+                    actual, messageName)
+                .isNotEmpty());
+  }
+
+  public void hasCorrelatedMessage(
+      final long processInstanceKey, final String messageName, final String correlationKey) {
+
+    awaitCorrelatedMessages(
+        processInstanceKey,
+        filter -> filter.messageName(messageName).correlationKey(correlationKey),
+        correlatedMessages ->
+            assertThat(correlatedMessages)
+                .withFailMessage(
+                    "%s should have at least one correlated message [message-name: '%s', correlation-key: '%s'], but found none.",
+                    actual, messageName, correlationKey)
+                .isNotEmpty());
   }
 
   private void awaitMessageSubscription(
@@ -105,6 +137,18 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
     awaitBehavior.untilAsserted(
         () ->
             dataSource.getMessageSubscriptions(
+                f -> filter.accept(f.processInstanceKey(processInstanceKey))),
+        assertionCallback);
+  }
+
+  private void awaitCorrelatedMessages(
+      final long processInstanceKey,
+      final Consumer<CorrelatedMessageFilter> filter,
+      final Consumer<List<CorrelatedMessage>> assertionCallback) {
+
+    awaitBehavior.untilAsserted(
+        () ->
+            dataSource.getCorrelatedMessages(
                 f -> filter.accept(f.processInstanceKey(processInstanceKey))),
         assertionCallback);
   }

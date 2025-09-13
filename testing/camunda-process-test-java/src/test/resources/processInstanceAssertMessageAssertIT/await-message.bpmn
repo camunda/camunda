@@ -4,7 +4,7 @@
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:extensionElements>
         <zeebe:ioMapping>
-          <zeebe:output source="=1" target="eventId" />
+          <zeebe:output source="=&#34;1&#34;" target="eventId" />
         </zeebe:ioMapping>
       </bpmn:extensionElements>
       <bpmn:outgoing>Flow_0yffp2u</bpmn:outgoing>

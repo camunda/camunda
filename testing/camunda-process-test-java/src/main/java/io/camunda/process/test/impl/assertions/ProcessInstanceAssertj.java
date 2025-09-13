@@ -353,30 +353,44 @@ public class ProcessInstanceAssertj
   }
 
   @Override
-  public ProcessInstanceAssert isWaitingForMessage(final String expectedMessageName) {
-    messageSubscriptionAssertj.isWaitingForMessage(getProcessInstanceKey(), expectedMessageName);
+  public ProcessInstanceAssert isWaitingForMessage(final String messageName) {
+    messageSubscriptionAssertj.isWaitingForMessage(getProcessInstanceKey(), messageName);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isWaitingForMessage(
-      final String expectedMessageName, final String correlationKey) {
+      final String messageName, final String correlationKey) {
     messageSubscriptionAssertj.isWaitingForMessage(
-        getProcessInstanceKey(), expectedMessageName, correlationKey);
+        getProcessInstanceKey(), messageName, correlationKey);
     return this;
   }
 
   @Override
-  public ProcessInstanceAssert isNotWaitingForMessage(final String expectedMessageName) {
-    messageSubscriptionAssertj.isNotWaitingForMessage(getProcessInstanceKey(), expectedMessageName);
+  public ProcessInstanceAssert isNotWaitingForMessage(final String messageName) {
+    messageSubscriptionAssertj.isNotWaitingForMessage(getProcessInstanceKey(), messageName);
     return this;
   }
 
   @Override
   public ProcessInstanceAssert isNotWaitingForMessage(
-      final String expectedMessageName, final String correlationKey) {
+      final String messageName, final String correlationKey) {
     messageSubscriptionAssertj.isNotWaitingForMessage(
-        getProcessInstanceKey(), expectedMessageName, correlationKey);
+        getProcessInstanceKey(), messageName, correlationKey);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCorrelatedMessage(final String messageName) {
+    messageSubscriptionAssertj.hasCorrelatedMessage(getProcessInstanceKey(), messageName);
+    return this;
+  }
+
+  @Override
+  public ProcessInstanceAssert hasCorrelatedMessage(
+      final String messageName, final String correlationKey) {
+    messageSubscriptionAssertj.hasCorrelatedMessage(
+        getProcessInstanceKey(), messageName, correlationKey);
     return this;
   }
 
