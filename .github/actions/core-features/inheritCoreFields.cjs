@@ -6,20 +6,37 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-async function copyTeamAndProjectNameFromParent({
-  childIssueNumber,
-  projectId,
-  owner,
-  repo,
-  github,
-}) {
+async function run({ github, context, core }) {
+  try {
+    const owner = 'camunda';
+    const repo = 'camunda';
+    // this is the global ID for project core features (173)
+    const TARGET_PROJECT_ID = 'PVT_kwDOACVKPs4A1Kno';
+    console.log('context:', JSON.stringify(context));
+    let childIssueNumber = context?.payload?.issue?.number;
+    if (!childIssueNumber) {
+      console.error('No child issue number found!, using test issue number 36974');
+      childIssueNumber = 36974;
+    }
+
+    const result = await copyTeamAndProjectNameFromParent({
+      childIssueNumber,
+      projectId: TARGET_PROJECT_ID,
+      owner,
+      repo,
+      github,
+    });
+  } catch (error) {
+    console.error('Failed to run script:', error);
+    return;
+  }
+}
+
+module.exports = run;
+
+async function copyTeamAndProjectNameFromParent({ childIssueNumber, projectId, owner, repo, github }) {
   // Find parent issue number
-  const { parentNumber } = await getIssueQuery(
-    github,
-    owner,
-    repo,
-    childIssueNumber
-  );
+  const { parentNumber } = await getIssueQuery(github, owner, repo, childIssueNumber);
   if (!parentNumber) {
     throw new Error(`No parent found for issue #${childIssueNumber}`);
   }
@@ -31,7 +48,7 @@ async function copyTeamAndProjectNameFromParent({
     owner,
     repo,
     github,
-    allowedFields: ["Team", "PH Project name"],
+    allowedFields: ['Team', 'PH Project name'],
   });
 }
 
@@ -50,10 +67,7 @@ async function copyCustomFieldsBetweenIssues({
     repo,
     github,
   });
-  console.log(
-    "[DEBUG] Source project items:",
-    JSON.stringify(projectItemsA, null, 2)
-  );
+  console.log('[DEBUG] Source project items:', JSON.stringify(projectItemsA, null, 2));
 
   // Inline findProjectItemById for source
   const itemA = projectItemsA.find((item) => item.project?.id === projectId);
@@ -64,7 +78,7 @@ async function copyCustomFieldsBetweenIssues({
   if (allowedFields) {
     fieldsToCopy = fieldsToCopy.filter((f) => allowedFields.includes(f.name));
   }
-  console.log("[DEBUG] Fields to copy:", JSON.stringify(fieldsToCopy, null, 2));
+  console.log('[DEBUG] Fields to copy:', JSON.stringify(fieldsToCopy, null, 2));
 
   const projectItemsB = await fetchProjectItemsWithFields({
     issueNumber: targetIssueNumber,
@@ -72,10 +86,7 @@ async function copyCustomFieldsBetweenIssues({
     repo,
     github,
   });
-  console.log(
-    "[DEBUG] Target project items:",
-    JSON.stringify(projectItemsB, null, 2)
-  );
+  console.log('[DEBUG] Target project items:', JSON.stringify(projectItemsB, null, 2));
   // Inline findProjectItemById for target
   const itemB = projectItemsB.find((item) => item.project?.id === projectId);
   if (!itemB) {
@@ -92,26 +103,13 @@ async function copyCustomFieldsBetweenIssues({
     fieldDefs,
     projectId,
   });
-  console.log("[DEBUG] Update result:", JSON.stringify(updateResult, null, 2));
+  console.log('[DEBUG] Update result:', JSON.stringify(updateResult, null, 2));
   return updateResult;
 }
 
-async function updateCustomFieldsForIssue({
-  projectItems,
-  github,
-  fieldsToUpdate,
-  fieldDefs,
-  projectId,
-}) {
+async function updateCustomFieldsForIssue({ projectItems, github, fieldsToUpdate, fieldDefs, projectId }) {
   const updates = fieldsToUpdate.map(({ name, value }) =>
-    updateFieldOnProjectItems(
-      projectItems,
-      github,
-      name,
-      value,
-      fieldDefs,
-      projectId
-    )
+      updateFieldOnProjectItems(projectItems, github, name, value, fieldDefs, projectId)
   );
   return Promise.all(updates);
 }
@@ -119,24 +117,18 @@ async function updateCustomFieldsForIssue({
 // Helper: extract field name/value pairs from field nodes
 function extractFieldsToCopy(fieldNodes) {
   return fieldNodes
-    .map((field) => {
-      if ("title" in field && !("field" in field)) {
-        return { name: "Iteration", value: field.title };
-      }
-      const name = field.field?.name;
-      const value =
-        field.text ?? field.name ?? field.number ?? field.date ?? null;
-      return { name, value };
-    })
-    .filter((f) => f.name && f.value !== null);
+      .map((field) => {
+        if ('title' in field && !('field' in field)) {
+          return { name: 'Iteration', value: field.title };
+        }
+        const name = field.field?.name;
+        const value = field.text ?? field.name ?? field.number ?? field.date ?? null;
+        return { name, value };
+      })
+      .filter((f) => f.name && f.value !== null);
 }
 
-async function fetchProjectItemsWithFields({
-  issueNumber,
-  owner,
-  repo,
-  github,
-}) {
+async function fetchProjectItemsWithFields({ issueNumber, owner, repo, github }) {
   const getFieldsQuery = `
     query($owner: String!, $repo: String!, $issueNumber: Int!) {
       repository(owner: $owner, name: $repo) {
@@ -147,35 +139,35 @@ async function fetchProjectItemsWithFields({
               project { id }
               fieldValues(first: 50) {
                 nodes {
-                  ... on ProjectV2ItemFieldTextValue { 
+                  ... on ProjectV2ItemFieldTextValue {
                     text
                     field {
                       ... on ProjectV2FieldCommon { id name dataType }
                     }
                   }
-                  ... on ProjectV2ItemFieldSingleSelectValue { 
+                  ... on ProjectV2ItemFieldSingleSelectValue {
                     name
                     field {
                       ... on ProjectV2FieldCommon { id name dataType }
-                      ... on ProjectV2SingleSelectField { 
-                        id name dataType 
+                      ... on ProjectV2SingleSelectField {
+                        id name dataType
                         options { id name }
                       }
                     }
                   }
-                  ... on ProjectV2ItemFieldNumberValue { 
+                  ... on ProjectV2ItemFieldNumberValue {
                     number
                     field {
                       ... on ProjectV2FieldCommon { id name dataType }
                     }
                   }
-                  ... on ProjectV2ItemFieldDateValue { 
+                  ... on ProjectV2ItemFieldDateValue {
                     date
                     field {
                       ... on ProjectV2FieldCommon { id name dataType }
                     }
                   }
-                  ... on ProjectV2ItemFieldIterationValue { 
+                  ... on ProjectV2ItemFieldIterationValue {
                     title
                     field {
                       ... on ProjectV2FieldCommon { id name dataType }
@@ -191,6 +183,7 @@ async function fetchProjectItemsWithFields({
   `;
   const variables = { owner, repo, issueNumber };
   const { repository } = await github.graphql(getFieldsQuery, variables);
+  console.log('[DEBUG] project items:', JSON.stringify(repository, null, 2));
   return repository?.issue?.projectItems?.nodes ?? [];
 }
 
@@ -227,12 +220,7 @@ async function fetchProjectFieldDefinitions({ github, projectId }) {
   return node?.fields?.nodes || [];
 }
 
-function buildTextFieldUpdateMutation(
-  fieldNode,
-  projectId,
-  projectItemId,
-  value
-) {
+function buildTextFieldUpdateMutation(fieldNode, projectId, projectItemId, value) {
   return {
     mutation: `
       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: String!) {
@@ -250,12 +238,7 @@ function buildTextFieldUpdateMutation(
   };
 }
 
-function buildNumberFieldUpdateMutation(
-  fieldNode,
-  projectId,
-  projectItemId,
-  value
-) {
+function buildNumberFieldUpdateMutation(fieldNode, projectId, projectItemId, value) {
   return {
     mutation: `
       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: Float!) {
@@ -273,12 +256,7 @@ function buildNumberFieldUpdateMutation(
   };
 }
 
-function buildDateFieldUpdateMutation(
-  fieldNode,
-  projectId,
-  projectItemId,
-  value
-) {
+function buildDateFieldUpdateMutation(fieldNode, projectId, projectItemId, value) {
   return {
     mutation: `
       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: Date!) {
@@ -296,13 +274,7 @@ function buildDateFieldUpdateMutation(
   };
 }
 
-function buildSingleSelectFieldUpdateMutation(
-  fieldNode,
-  projectId,
-  projectItemId,
-  value,
-  fieldDefs
-) {
+function buildSingleSelectFieldUpdateMutation(fieldNode, projectId, projectItemId, value, fieldDefs) {
   return {
     mutation: `
       mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $optionId: String!) {
@@ -326,9 +298,7 @@ function getSingleSelectOptionId(fieldNode, value, fieldDefs) {
     if (option) return option.id;
   }
   // Fallback to fieldDefs
-  const def = fieldDefs.find(
-    (f) => f.name === fieldNode.field.name && Array.isArray(f.options)
-  );
+  const def = fieldDefs.find((f) => f.name === fieldNode.field.name && Array.isArray(f.options));
   if (def) {
     const option = def.options.find((opt) => opt.name === value);
     if (option) return option.id;
@@ -336,73 +306,29 @@ function getSingleSelectOptionId(fieldNode, value, fieldDefs) {
   return undefined;
 }
 
-function buildFieldUpdateMutation(
-  fieldNode,
-  projectId,
-  projectItemId,
-  value,
-  fieldDefs
-) {
-  if (fieldNode.field.dataType === "TEXT") {
-    return buildTextFieldUpdateMutation(
-      fieldNode,
-      projectId,
-      projectItemId,
-      value
-    );
-  } else if (fieldNode.field.dataType === "NUMBER") {
-    return buildNumberFieldUpdateMutation(
-      fieldNode,
-      projectId,
-      projectItemId,
-      value
-    );
-  } else if (fieldNode.field.dataType === "DATE") {
-    return buildDateFieldUpdateMutation(
-      fieldNode,
-      projectId,
-      projectItemId,
-      value
-    );
-  } else if (fieldNode.field.dataType === "SINGLE_SELECT") {
-    return buildSingleSelectFieldUpdateMutation(
-      fieldNode,
-      projectId,
-      projectItemId,
-      value,
-      fieldDefs
-    );
+function buildFieldUpdateMutation(fieldNode, projectId, projectItemId, value, fieldDefs) {
+  if (fieldNode.field.dataType === 'TEXT') {
+    return buildTextFieldUpdateMutation(fieldNode, projectId, projectItemId, value);
+  } else if (fieldNode.field.dataType === 'NUMBER') {
+    return buildNumberFieldUpdateMutation(fieldNode, projectId, projectItemId, value);
+  } else if (fieldNode.field.dataType === 'DATE') {
+    return buildDateFieldUpdateMutation(fieldNode, projectId, projectItemId, value);
+  } else if (fieldNode.field.dataType === 'SINGLE_SELECT') {
+    return buildSingleSelectFieldUpdateMutation(fieldNode, projectId, projectItemId, value, fieldDefs);
   }
   return null;
 }
 
-async function updateFieldOnProjectItems(
-  projectItems,
-  github,
-  name,
-  value,
-  fieldDefs,
-  projectId
-) {
+async function updateFieldOnProjectItems(projectItems, github, name, value, fieldDefs, projectId) {
   let found = false;
   let results = [];
   for (const item of projectItems) {
     const projectItemId = item.id;
     // Use robust lookup: field node or definition
-    const fieldNode = findFieldNodeOrDefinition(
-      item.fieldValues?.nodes ?? [],
-      fieldDefs,
-      name
-    );
+    const fieldNode = findFieldNodeOrDefinition(item.fieldValues?.nodes ?? [], fieldDefs, name);
     if (fieldNode && fieldNode.field?.id && fieldNode.field?.dataType) {
       found = true;
-      const mutationObj = buildFieldUpdateMutation(
-        fieldNode,
-        projectId,
-        projectItemId,
-        value,
-        fieldDefs
-      );
+      const mutationObj = buildFieldUpdateMutation(fieldNode, projectId, projectItemId, value, fieldDefs);
       if (!mutationObj) {
         results.push({
           name,
@@ -427,15 +353,13 @@ async function updateFieldOnProjectItems(
     name,
     value,
     success: false,
-    error: "Field not found on any project item for this issue.",
+    error: 'Field not found on any project item for this issue.',
   };
 }
 
 function findFieldNodeOrDefinition(fieldNodes, fieldDefs, name) {
   // Try to find in fieldValues first
-  const node = Array.isArray(fieldNodes)
-    ? fieldNodes.find((f) => f.field?.name === name)
-    : undefined;
+  const node = Array.isArray(fieldNodes) ? fieldNodes.find((f) => f.field?.name === name) : undefined;
   if (node && node.field?.id && node.field?.dataType) return node;
   // Fallback to field definition
   const def = fieldDefs.find((f) => f.name === name);
@@ -447,7 +371,7 @@ function findFieldNodeOrDefinition(fieldNodes, fieldDefs, name) {
 
 async function getIssueQuery(github, owner, repo, issueNumber) {
   const data = await github.graphql(
-    `
+      `
 query($owner:String!,$name:String!,$issueNumber:Int!) {
   repository(owner:$owner,name:$name) {
     issue(number:$issueNumber){
@@ -461,17 +385,17 @@ query($owner:String!,$name:String!,$issueNumber:Int!) {
         id
         number
       }
-      
+
     }
-    
+
   }
 }
 `,
-    {
-      owner,
-      name: repo,
-      issueNumber,
-    }
+      {
+        owner,
+        name: repo,
+        issueNumber,
+      }
   );
   const parent = data.repository.issue.parent;
   return {
@@ -480,33 +404,3 @@ query($owner:String!,$name:String!,$issueNumber:Int!) {
     parentNumber: parent ? parent.number : undefined,
   };
 }
-
-async function run({ github, context, core }) {
-  try {
-    const owner = "camunda";
-    const repo = "camunda";
-    // this is the global ID for project core features (173)
-    const TARGET_PROJECT_ID = "PVT_kwDOACVKPs4A1Kno";
-    console.log("context:", JSON.stringify(context));
-    let childIssueNumber = context?.payload?.issue?.number;
-    if (!childIssueNumber) {
-      console.error(
-        "No child issue number found!, using test issue number 36974"
-      );
-      childIssueNumber = 36974;
-    }
-
-    const result = await copyTeamAndProjectNameFromParent({
-      childIssueNumber,
-      projectId: TARGET_PROJECT_ID,
-      owner,
-      repo,
-      github,
-    });
-  } catch (error) {
-    console.error("Failed to run script:", error);
-    return;
-  }
-}
-
-module.exports = run;
