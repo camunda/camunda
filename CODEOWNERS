@@ -48,6 +48,7 @@
 /.github/workflows/statistics-daily.yml                  @camunda/monorepo-devops-team
 /.github/workflows/zeebe-release-stable-dry-run.yml      @camunda/monorepo-devops-team
 /.github/workflows/check-outdated-prs.yml                @camunda/monorepo-devops-team
+/.github/workflows/gh-inherit-core-fields.yml            @shay-matasaro-camnuda
 
 ###################
 ## Core Features ##
