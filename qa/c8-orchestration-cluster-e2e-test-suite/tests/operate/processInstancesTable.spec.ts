@@ -13,6 +13,7 @@ import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {waitForAssertion} from 'utils/waitForAssertion';
 import {sleep} from 'utils/sleep';
+import {defaultAssertionOptions} from '../../utils/constants';
 
 type ProcessInstance = {processInstanceKey: number};
 
@@ -107,13 +108,15 @@ test.describe('Process Instances Table', () => {
         )
         .toContain(instanceIds[2].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(1).innerText(),
+        .poll(
+          () => operateProcessesPage.processInstancesTable.nth(1).innerText(),
+          defaultAssertionOptions,
         )
         .toContain(instanceIds[1].toString());
       await expect
-        .poll(() =>
-          operateProcessesPage.processInstancesTable.nth(2).innerText(),
+        .poll(
+          () => operateProcessesPage.processInstancesTable.nth(2).innerText(),
+          defaultAssertionOptions,
         )
         .toContain(instanceIds[0].toString());
     });
