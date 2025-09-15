@@ -95,60 +95,6 @@ public abstract class UserTaskMigrationHelper {
     waitFor87TaskToBeArchived(migrator, taskKey, waitPeriodSeconds);
   }
 
-  protected static long deployProcess(
-      final CamundaClient client, final UnaryOperator<UserTaskBuilder> builder) {
-    final var process =
-        Bpmn.createExecutableProcess("task-process")
-            .startEvent()
-            .name("start")
-            .userTask("user-task", builder::apply)
-            .endEvent()
-            .done();
-
-    return client
-        .newDeployResourceCommand()
-        .addProcessModel(process, "task-process.bpmn")
-        .send()
-        .join()
-        .getProcesses()
-        .getFirst()
-        .getProcessDefinitionKey();
-  }
-
-  /// Complete a User Task in 8.7 Tasklist
-  protected static void completeUserTask(final CamundaMigrator migrator, final String taskId) {
-    try {
-      migrator.request(
-          b ->
-              b.method("PATCH", HttpRequest.BodyPublishers.noBody())
-                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/complete")),
-          HttpResponse.BodyHandlers.discarding());
-    } catch (final IOException | InterruptedException e) {
-      throw new UncheckedException(e);
-    }
-  }
-
-  /// Assign a User Task in 8.7 Tasklist
-  protected static void assignUserTask(
-      final CamundaMigrator migrator, final String taskId, final String assignee) {
-    final String assignPayload;
-    try {
-      assignPayload = OBJECT_MAPPER.writeValueAsString(Map.of("assignee", assignee));
-    } catch (final JsonProcessingException e) {
-      throw new UncheckedException(e);
-    }
-
-    try {
-      migrator.request(
-          b ->
-              b.method("PATCH", HttpRequest.BodyPublishers.ofString(assignPayload))
-                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/assign")),
-          HttpResponse.BodyHandlers.discarding());
-    } catch (final IOException | InterruptedException e) {
-      throw new UncheckedException(e);
-    }
-  }
-
   protected static long startProcessInstance(
       final CamundaClient client, final long processDefinitionKey) {
     return client
@@ -232,7 +178,7 @@ public abstract class UserTaskMigrationHelper {
     return userTaskKey.get();
   }
 
-  private static void waitFor87TaskToBeArchived(
+  protected static void waitFor87TaskToBeArchived(
       final CamundaMigrator migrator, final long taskKey, final int waitPeriodSeconds) {
 
     final var legacyIndex =
@@ -244,6 +190,33 @@ public abstract class UserTaskMigrationHelper {
                 s.query(SearchQueryBuilders.term(TaskTemplate.KEY, taskKey))
                     .index(legacyIndex.getFullQualifiedName()));
 
+    awaitArchivalOfTask(migrator, waitPeriodSeconds, request);
+  }
+
+  protected static void waitForTasksToBeArchived(
+      final String indexName,
+      final CamundaMigrator migrator,
+      final List<Long> taskKeys,
+      final int timeout) {
+    final var request =
+        SearchQueryRequest.of(
+            s ->
+                s.query(
+                        SearchQueryBuilders.terms(
+                                t -> t.field(TaskTemplate.KEY).longTerms(taskKeys))
+                            .toSearchQuery())
+                    .index(indexName));
+
+    Awaitility.await("Wait for tasks to be archived")
+        .pollInterval(Duration.ofSeconds(1))
+        .atMost(Duration.ofSeconds(timeout))
+        .until(() -> migrator.getSearchClient().search(request, TaskEntity.class).hits().isEmpty());
+  }
+
+  private static void awaitArchivalOfTask(
+      final CamundaMigrator migrator,
+      final int waitPeriodSeconds,
+      final SearchQueryRequest request) {
     Awaitility.await("Wait for task to be archived")
         .pollInterval(Duration.ofSeconds(1))
         .atMost(Duration.ofSeconds(waitPeriodSeconds))
@@ -256,5 +229,59 @@ public abstract class UserTaskMigrationHelper {
                       .map(TaskEntity::getKey);
               return taskId.isEmpty();
             });
+  }
+
+  protected static long deployProcess(
+      final CamundaClient client, final UnaryOperator<UserTaskBuilder> builder) {
+    final var process =
+        Bpmn.createExecutableProcess("task-process")
+            .startEvent()
+            .name("start")
+            .userTask("user-task", builder::apply)
+            .endEvent()
+            .done();
+
+    return client
+        .newDeployResourceCommand()
+        .addProcessModel(process, "task-process.bpmn")
+        .send()
+        .join()
+        .getProcesses()
+        .getFirst()
+        .getProcessDefinitionKey();
+  }
+
+  /// Complete a User Task in 8.7 Tasklist
+  protected static void completeUserTask(final CamundaMigrator migrator, final String taskId) {
+    try {
+      migrator.request(
+          b ->
+              b.method("PATCH", HttpRequest.BodyPublishers.noBody())
+                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/complete")),
+          HttpResponse.BodyHandlers.discarding());
+    } catch (final IOException | InterruptedException e) {
+      throw new UncheckedException(e);
+    }
+  }
+
+  /// Assign a User Task in 8.7 Tasklist
+  protected static void assignUserTask(
+      final CamundaMigrator migrator, final String taskId, final String assignee) {
+    final String assignPayload;
+    try {
+      assignPayload = OBJECT_MAPPER.writeValueAsString(Map.of("assignee", assignee));
+    } catch (final JsonProcessingException e) {
+      throw new UncheckedException(e);
+    }
+
+    try {
+      migrator.request(
+          b ->
+              b.method("PATCH", HttpRequest.BodyPublishers.ofString(assignPayload))
+                  .uri(URI.create(migrator.getWebappsUrl() + "/tasks/" + taskId + "/assign")),
+          HttpResponse.BodyHandlers.discarding());
+    } catch (final IOException | InterruptedException e) {
+      throw new UncheckedException(e);
+    }
   }
 }
