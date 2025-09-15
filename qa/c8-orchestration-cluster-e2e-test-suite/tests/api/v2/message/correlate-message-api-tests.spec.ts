@@ -24,28 +24,11 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
 
-  test.beforeAll(async ({request}) => {
+  test.beforeAll(async () => {
     await deploy(['./resources/messageCatchEvent3.bpmn']);
-    await createInstances('messageCatchEvent3', 1, 1);
-    await expect(async () => {
-      const res = await request.post(
-        buildUrl('/message-subscriptions/search'),
-        {
-          headers: jsonHeaders(),
-          data: {},
-        },
-      );
-
-      expect(res.status()).toBe(200);
-      const json = await res.json();
-      expect(json.page.totalItems).toBeGreaterThan(1);
-      const matchingItem = json.items.find(
-        (it: {processDefinitionId: string}) =>
-          it.processDefinitionId === 'messageCatchEvent3',
-      );
-      expect(matchingItem).toBeDefined();
-      state['processInstanceKey'] = matchingItem['processInstanceKey'];
-    }).toPass(defaultAssertionOptions);
+    const processes = await createInstances('messageCatchEvent3', 1, 1);
+    expect(processes.length).toBe(1);
+    state['processInstanceKey'] = processes[0].processInstanceKey;
   });
 
   test('Correlate Message Unauthorized', async ({request}) => {
