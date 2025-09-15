@@ -11141,12 +11141,7 @@ components:
             \ feature and may be subject to change\nin future releases.\n"
           type: array
           items:
-            oneOf:
-              - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
-            discriminator:
-              propertyName: "type"
-              mapping:
-                TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+            $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
         awaitCompletion:
           description: "Wait for the process instance to complete. If the process\
             \ instance completion does\nnot occur within the requestTimeout, the\
