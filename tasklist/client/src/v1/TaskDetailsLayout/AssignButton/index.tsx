@@ -71,14 +71,12 @@ const AssignButton: React.FC<Props> = ({id, assignee, taskState}) => {
   const handleAssignmentClick = async () => {
     try {
       setAssignmentStatus('assigning');
-      const result = await assignTask(id);
+      await assignTask(id);
 
-      if (result === null) {
-        await pollForAssignmentResult({
-          taskId: id,
-          wasAssigned: false,
-        });
-      }
+      await pollForAssignmentResult({
+        taskId: id,
+        wasAssigned: false,
+      });
 
       setAssignmentStatus('assignmentSuccessful');
       tracking.track({eventName: 'task-assigned'});
