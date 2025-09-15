@@ -815,7 +815,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(new MessageSubscriptionResult())));
@@ -837,7 +837,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
                   new MessageSubscriptionImpl(new MessageSubscriptionResult())));
@@ -861,7 +861,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -881,7 +881,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -906,7 +906,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
@@ -934,7 +934,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList());
@@ -957,7 +957,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -977,7 +977,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -999,10 +999,13 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
-                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+                  new MessageSubscriptionImpl(
+                      new MessageSubscriptionResult()
+                          .messageName("expected")
+                          .correlationKey("correlation-key"))));
 
       // then
       Assertions.assertThatThrownBy(
@@ -1010,7 +1013,7 @@ public class ProcessInstanceAssertTest {
                   assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected"))
           .hasMessage(
-              "Process instance [key: 1] has an active message subscription [message-name: 'expected'], but such a subscription was not expected.");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected'], but found <1> active subscriptions.");
     }
 
     @Test
@@ -1023,10 +1026,13 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getMessageSubscriptions(filterCaptor.capture()))
+      when(camundaDataSource.findMessageSubscriptions(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(
-                  new MessageSubscriptionImpl(new MessageSubscriptionResult())));
+                  new MessageSubscriptionImpl(
+                      new MessageSubscriptionResult()
+                          .messageName("expected")
+                          .correlationKey("correlation-key"))));
 
       // then
       Assertions.assertThatThrownBy(
@@ -1034,7 +1040,7 @@ public class ProcessInstanceAssertTest {
                   assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected", "correlation-key"))
           .hasMessage(
-              "Process instance [key: 1] has an active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but such a subscription was not expected.");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but found <1> active subscriptions.");
     }
   }
 
@@ -1055,7 +1061,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
 
@@ -1077,7 +1083,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
 
@@ -1103,7 +1109,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
@@ -1129,7 +1135,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -1151,7 +1157,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then

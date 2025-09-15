@@ -21,6 +21,7 @@ import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
 import io.camunda.process.test.utils.IncidentBuilder;
+import io.camunda.process.test.utils.MessageSubscriptionBuilder;
 import io.camunda.process.test.utils.ProcessInstanceBuilder;
 import java.util.Arrays;
 import java.util.Collections;
@@ -95,6 +96,9 @@ public class CamundaProcessResultPrinterTest {
                 + "\n"
                 + "Active incidents:\n"
                 + "<None>\n"
+                + "\n"
+                + "Active message subscriptions:\n"
+                + "<None>\n"
                 + "---------------------\n"
                 + "\n"
                 + "Process instance: 2 [process-id: 'process-b', state: completed]\n"
@@ -106,6 +110,9 @@ public class CamundaProcessResultPrinterTest {
                 + "<None>\n"
                 + "\n"
                 + "Active incidents:\n"
+                + "<None>\n"
+                + "\n"
+                + "Active message subscriptions:\n"
                 + "<None>\n"
                 + "=====================\n");
   }
@@ -230,6 +237,50 @@ public class CamundaProcessResultPrinterTest {
             "Active elements:\n",
             "- 'C' [name: 'element_C']\n",
             "- 'D' [name: '']\n");
+  }
+
+  @Test
+  void shouldPrintActiveMessageSubscriptions() {
+    // given
+    final ProcessTestResult processTestResult = new ProcessTestResult();
+
+    final ProcessInstanceResult processInstance1 = newProcessInstance(1L, "process-a");
+    processInstance1.setActiveMessageSubscriptions(
+        Arrays.asList(
+            MessageSubscriptionBuilder.newActiveMessageSubscription("message-a", "key-a")
+                .setElementId("task-a")
+                .build(),
+            MessageSubscriptionBuilder.newActiveMessageSubscription("message-b", "key-b")
+                .setElementId("task-b")
+                .build()));
+
+    final ProcessInstanceResult processInstance2 = newProcessInstance(2L, "process-b");
+    processInstance2.setActiveMessageSubscriptions(
+        Collections.singletonList(
+            MessageSubscriptionBuilder.newActiveMessageSubscription("message-c", "key-c")
+                .setElementId("task-c")
+                .build()));
+
+    processTestResult.setProcessInstanceTestResults(
+        Arrays.asList(processInstance1, processInstance2));
+
+    // when
+    final StringBuilder outputBuilder = new StringBuilder();
+    final CamundaProcessTestResultPrinter resultPrinter =
+        new CamundaProcessTestResultPrinter(outputBuilder::append);
+
+    resultPrinter.print(processTestResult);
+
+    // then
+    assertThat(outputBuilder.toString())
+        .containsSubsequence(
+            "Process instance: 1 [process-id: 'process-a', state: active]\n",
+            "Active message subscriptions:\n",
+            "- 'task-a' [message-name: 'message-a', correlation-key: 'key-a']\n",
+            "- 'task-b' [message-name: 'message-b', correlation-key: 'key-b']\n",
+            "Process instance: 2 [process-id: 'process-b', state: active]\n",
+            "Active incidents:\n",
+            "- 'task-c' [message-name: 'message-c', correlation-key: 'key-c']\n");
   }
 
   @Test
