@@ -11,6 +11,7 @@ import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContainerProcessor;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnProcessingException;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnCompensationSubscriptionBehaviour;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnStateTransitionBehavior;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -22,12 +23,14 @@ public class AdHocSubProcessInnerInstanceProcessor
 
   private final BpmnStateBehavior stateBehavior;
   private final BpmnStateTransitionBehavior stateTransitionBehavior;
+  private final BpmnCompensationSubscriptionBehaviour compensationSubscriptionBehaviour;
 
   public AdHocSubProcessInnerInstanceProcessor(
       final BpmnBehaviors bpmnBehaviors,
       final BpmnStateTransitionBehavior stateTransitionBehavior) {
     stateBehavior = bpmnBehaviors.stateBehavior();
     this.stateTransitionBehavior = stateTransitionBehavior;
+    compensationSubscriptionBehaviour = bpmnBehaviors.compensationSubscriptionBehaviour();
   }
 
   @Override
@@ -52,7 +55,10 @@ public class AdHocSubProcessInnerInstanceProcessor
   @Override
   public Either<Failure, ?> finalizeCompletion(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
-    return stateTransitionBehavior.transitionToCompleted(element, context);
+    compensationSubscriptionBehaviour.createCompensationSubscription(element, context);
+    return stateTransitionBehavior
+        .transitionToCompleted(element, context)
+        .thenDo(compensationSubscriptionBehaviour::completeCompensationHandler);
   }
 
   @Override
@@ -60,6 +66,7 @@ public class AdHocSubProcessInnerInstanceProcessor
       final ExecutableFlowElementContainer element, final BpmnElementContext terminating) {
     final boolean noActiveChildInstances =
         stateTransitionBehavior.terminateChildInstances(terminating);
+    compensationSubscriptionBehaviour.deleteSubscriptionsOfSubprocess(terminating);
     if (noActiveChildInstances) {
       terminate(element, terminating);
     }
