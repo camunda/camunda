@@ -1304,7 +1304,6 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
           mockMvcHelper.doRequest(
               patch(TasklistURIs.TASKS_URL_V1.concat("/{taskId}/complete"), taskId),
               completeRequest);
-      final var taskVariables = tester.getTaskVariables();
 
       // then
       assertThat(result)
@@ -1319,6 +1318,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
                 assertThat(task.getCreationDate()).isNotNull();
                 assertThat(task.getCompletionDate()).isNotNull();
               });
+
+      Awaitility.await("task variables are in secondary storage")
+          .untilAsserted(
+              () -> {
+                final var taskVariables = tester.getTaskVariables();
+                assertThat(taskVariables).hasSize(5);
+              });
+      final var taskVariables = tester.getTaskVariables();
 
       assertThat(taskVariables)
           .extracting("name", "value", "previewValue", "isValueTruncated")
