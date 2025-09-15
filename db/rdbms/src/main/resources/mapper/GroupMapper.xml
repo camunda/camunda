@@ -47,8 +47,42 @@ SELECT
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
   </select>
 
+  <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery">
+    SELECT COUNT(*)
+    FROM ${prefix}GROUP_MEMBER gm
+    JOIN ${prefix}GROUPS g ON g.GROUP_ID = gm.GROUP_ID
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+  </select>
+
+  <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.GroupMapper.groupMemberResultMap">
+    SELECT * FROM (
+    SELECT
+    g.GROUP_KEY,
+    g.GROUP_ID,
+    g.NAME,
+    g.DESCRIPTION,
+    gm.ENTITY_ID,
+    gm.ENTITY_TYPE
+    FROM ${prefix}GROUP_MEMBER gm
+    JOIN ${prefix}GROUPS g ON g.GROUP_ID = gm.GROUP_ID
+    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
   <sql id="searchFilter">
     WHERE 1 = 1
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
     <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
       <foreach collection="filter.groupIdOperations" item="operation">
@@ -104,6 +138,14 @@ SELECT
         <arg column="MEMBER_ENTITY_TYPE" javaType="java.lang.String"/>
       </constructor>
     </collection>
+  </resultMap>
+
+  <resultMap id="groupMemberResultMap" type="io.camunda.db.rdbms.write.domain.GroupMemberDbModel">
+    <constructor>
+      <idArg column="GROUP_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_ID" javaType="java.lang.String"/>
+      <arg column="ENTITY_TYPE" javaType="java.lang.String"/>
+    </constructor>
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">

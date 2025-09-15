@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms.sql;
 
 import io.camunda.db.rdbms.read.domain.GroupDbQuery;
+import io.camunda.db.rdbms.read.domain.GroupMemberDbQuery;
 import io.camunda.db.rdbms.write.domain.GroupDbModel;
 import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import java.util.List;
@@ -29,4 +30,8 @@ public interface GroupMapper {
   Long count(GroupDbQuery filter);
 
   List<GroupDbModel> search(GroupDbQuery filter);
+
+  Long countMembers(GroupMemberDbQuery filter);
+
+  List<GroupMemberDbModel> searchMembers(GroupMemberDbQuery filter);
 }
