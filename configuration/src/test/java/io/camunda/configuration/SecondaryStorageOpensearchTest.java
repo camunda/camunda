@@ -50,6 +50,9 @@ public class SecondaryStorageOpensearchTest {
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
   private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
   private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
+  private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
+  private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
+  private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
   private static final String EXPECTED_HISTORY_ELS_ROLLOVER_DATE_FORMAT = "foo";
@@ -98,6 +101,9 @@ public class SecondaryStorageOpensearchTest {
             + EXPECTED_NUMBER_OF_REPLICAS,
         "camunda.data.secondary-storage.opensearch.variable-size-threshold="
             + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
+        "camunda.data.secondary-storage.opensearch.number-of-shards-per-index.my-index=2",
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
         "camunda.data.secondary-storage.opensearch.history.els-rollover-date-format="
@@ -211,6 +217,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
       assertThat(exporterConfiguration.getHistory().getElsRolloverDateFormat())
@@ -271,6 +283,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
@@ -386,6 +404,20 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.variable-size-threshold="
             + EXPECTED_VARIABLE_SIZE_THRESHOLD,
         "camunda.database.index.variableSizeThreshold=" + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+
+        // template priority
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
+        // template priority
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
+        // per-index overrides
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
+        "camunda.database.index.replicasByIndexName.my-index=3",
+        "camunda.data.secondary-storage.opensearch.number-of-shards-per-index.my-index=2",
+        "camunda.database.index.shardsByIndexName.my-index=2",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -463,6 +495,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
 
     @Test
@@ -485,6 +523,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
       assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
