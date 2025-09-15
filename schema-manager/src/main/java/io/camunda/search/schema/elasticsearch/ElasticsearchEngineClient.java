@@ -32,6 +32,7 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import co.elastic.clients.elasticsearch.indices.put_index_template.IndexTemplateMapping;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.JsonpDeserializer;
 import co.elastic.clients.json.JsonpSerializable;
 import co.elastic.clients.json.jackson.JacksonJsonpGenerator;
@@ -214,6 +215,19 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       client.ilm().putLifecycle(request);
     } catch (final IOException e) {
       final var errMsg = String.format("Index lifecycle policy [%s] failed to PUT", policyName);
+      LOG.error(errMsg, e);
+      throw new SearchEngineException(errMsg, e);
+    }
+  }
+
+  @Override
+  public void putIndexMeta(final String indexName, final Map<String, Object> meta) {
+    final var request = putMetaMappingRequest(indexName, meta);
+
+    try {
+      client.indices().putMapping(request);
+    } catch (final IOException | ElasticsearchException e) {
+      final var errMsg = String.format("_meta PUT failed for %s", indexName);
       LOG.error(errMsg, e);
       throw new SearchEngineException(errMsg, e);
     }
@@ -592,6 +606,14 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               + " from classpath.",
           e);
     }
+  }
+
+  private PutMappingRequest putMetaMappingRequest(
+      final String indexName, final Map<String, Object> meta) {
+    final var jsonMeta =
+        meta.entrySet().stream()
+            .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())));
+    return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
   }
 
   @Override
