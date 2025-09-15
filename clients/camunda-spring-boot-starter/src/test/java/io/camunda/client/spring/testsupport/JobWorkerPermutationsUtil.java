@@ -17,10 +17,11 @@ package io.camunda.client.spring.testsupport;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.bean.BeanInfo;
+import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator;
 import io.camunda.client.spring.test.util.JobWorkerPermutationsGenerator.TestDimension;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.stream.Collectors;
@@ -38,9 +39,19 @@ public class JobWorkerPermutationsUtil {
     final Method method = JobWorkerPermutationsUtil.getMethod(permutationsClass, td);
     try {
       return MethodInfo.builder()
-          .classInfo(
-              ClassInfo.builder()
-                  .bean(permutationsClass.getConstructors()[0].newInstance())
+          .beanInfo(
+              BeanInfo.builder()
+                  .beanSupplier(
+                      () -> {
+                        try {
+                          return permutationsClass.getConstructors()[0].newInstance();
+                        } catch (final InstantiationException
+                            | IllegalAccessException
+                            | InvocationTargetException e) {
+                          throw new RuntimeException(
+                              "Error while supplying bean of type " + permutationsClass, e);
+                        }
+                      })
                   .beanName("testBean")
                   .build())
           .method(method)

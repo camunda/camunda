@@ -15,52 +15,34 @@
  */
 package io.camunda.client.spring.bean;
 
+import io.camunda.client.bean.MethodInfo;
+import io.camunda.client.bean.ParameterInfo;
 import java.lang.reflect.Parameter;
 
-public class ParameterInfo implements BeanInfo {
+public class SpringParameterInfo implements ParameterInfo {
   private final MethodInfo methodInfo;
   private final String parameterName;
-  private final Parameter parameterInfo;
+  private final Parameter parameter;
 
-  public ParameterInfo(final MethodInfo methodInfo, final Parameter param, final String paramName) {
+  public SpringParameterInfo(
+      final MethodInfo methodInfo, final String parameterName, final Parameter parameter) {
     this.methodInfo = methodInfo;
-    if (paramName == null) {
-      parameterName = param.getName();
-    } else {
-      parameterName = paramName;
-    }
-    parameterInfo = param;
+    this.parameterName = parameterName;
+    this.parameter = parameter;
   }
 
-  public Parameter getParameterInfo() {
-    return parameterInfo;
+  @Override
+  public Parameter getParameter() {
+    return parameter;
   }
 
+  @Override
   public String getParameterName() {
     return parameterName;
   }
 
+  @Override
   public MethodInfo getMethodInfo() {
     return methodInfo;
-  }
-
-  @Override
-  public String toString() {
-    return "ParameterInfo{"
-        + "parameterName="
-        + parameterName
-        + ", parameterInfo="
-        + parameterInfo
-        + '}';
-  }
-
-  @Override
-  public Object getBean() {
-    return methodInfo.getBean();
-  }
-
-  @Override
-  public String getBeanName() {
-    return methodInfo.getBeanName();
   }
 }

@@ -15,7 +15,7 @@
  */
 package io.camunda.client.jobhandling.parameter;
 
-import io.camunda.client.spring.bean.ParameterInfo;
+import io.camunda.client.bean.ParameterInfo;
 
 public interface ParameterResolverStrategy {
   ParameterResolver createResolver(ParameterInfo parameterInfo);

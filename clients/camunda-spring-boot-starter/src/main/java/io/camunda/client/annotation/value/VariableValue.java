@@ -15,7 +15,7 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.spring.bean.ParameterInfo;
+import io.camunda.client.bean.ParameterInfo;
 
 public class VariableValue {
   private final String name;

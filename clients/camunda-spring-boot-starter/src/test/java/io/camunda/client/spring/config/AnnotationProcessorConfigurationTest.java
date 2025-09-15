@@ -18,10 +18,10 @@ package io.camunda.client.spring.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.client.lifecycle.CamundaClientLifecycleAware;
 import io.camunda.client.spring.annotation.processor.AbstractCamundaAnnotationProcessor;
-import io.camunda.client.spring.bean.ClassInfo;
 import io.camunda.client.spring.configuration.AnnotationProcessorConfiguration;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.event.CamundaClientEventListener;
@@ -76,13 +76,13 @@ public class AnnotationProcessorConfigurationTest {
     private MockedBean mockedBean;
 
     @Override
-    public boolean isApplicableFor(final ClassInfo beanInfo) {
-      return beanInfo.getBean() instanceof MockedBean;
+    public boolean isApplicableFor(final BeanInfo beanInfo) {
+      return beanInfo.getBeanSupplier().get() instanceof MockedBean;
     }
 
     @Override
-    public void configureFor(final ClassInfo beanInfo) {
-      final MockedBean bean = (MockedBean) beanInfo.getBean();
+    public void configureFor(final BeanInfo beanInfo) {
+      final MockedBean bean = (MockedBean) beanInfo.getBeanSupplier().get();
       bean.setConfigured(true);
       mockedBean = bean;
     }
