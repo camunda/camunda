@@ -24,8 +24,8 @@ import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.ElementSelector;
-import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
-import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper.JsonMappingException;
+import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper.JsonMappingException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -47,14 +47,17 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
   private final CamundaDataSource dataSource;
   private final CamundaAssertAwaitBehavior awaitBehavior;
+  private final UnifiedJsonMapper unifiedJsonMapper;
 
   public VariableAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
+      final UnifiedJsonMapper unifiedJsonMapper,
       final String failureMessagePrefix) {
     super(failureMessagePrefix, VariableAssertj.class);
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
+    this.unifiedJsonMapper = unifiedJsonMapper;
   }
 
   public void hasLocalVariableNames(
@@ -128,7 +131,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
       final String variableName,
       final Object variableValue,
       final Supplier<Map<String, String>> actualVariablesSupplier) {
-    final JsonNode expectedValue = AssertionJsonMapper.toJson(variableValue);
+    final JsonNode expectedValue = unifiedJsonMapper.toJsonNode(variableValue);
 
     awaitBehavior.untilAsserted(
         () -> {
@@ -140,7 +143,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                   actual, variableName, expectedValue)
               .containsKey(variableName);
 
-          final JsonNode actualValue = AssertionJsonMapper.readJson(variables.get(variableName));
+          final JsonNode actualValue = unifiedJsonMapper.readJson(variables.get(variableName));
           assertThat(actualValue)
               .withFailMessage(
                   "%s should have a variable '%s' with value '%s' but was '%s'.",
@@ -200,7 +203,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
 
           final String actualVariable = variables.get(variableName);
           try {
-            final T actualValue = AssertionJsonMapper.readJson(actualVariable, variableValueType);
+            final T actualValue = unifiedJsonMapper.readJson(actualVariable, variableValueType);
 
             requirement.accept(actualValue);
           } catch (final AssertionError e) {
@@ -248,7 +251,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
         expectedVariables.entrySet().stream()
             .collect(
                 Collectors.toMap(
-                    Entry::getKey, entry -> AssertionJsonMapper.toJson(entry.getValue())));
+                    Entry::getKey, entry -> unifiedJsonMapper.toJsonNode(entry.getValue())));
 
     final Set<String> expectedVariableNames = expectedVariables.keySet();
 
@@ -259,7 +262,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                   .filter(entry -> expectedVariableNames.contains(entry.getKey()))
                   .collect(
                       Collectors.toMap(
-                          Entry::getKey, entry -> AssertionJsonMapper.readJson(entry.getValue())));
+                          Entry::getKey, entry -> unifiedJsonMapper.readJson(entry.getValue())));
 
           final List<String> missingVariables =
               expectedVariableNames.stream()
@@ -270,8 +273,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
               .withFailMessage(
                   "%s should have the variables %s but was %s. The variables %s don't exist.",
                   actual,
-                  AssertionJsonMapper.toJson(expectedVariables),
-                  AssertionJsonMapper.toJson(actualValues),
+                  unifiedJsonMapper.toJsonNode(expectedVariables),
+                  unifiedJsonMapper.toJsonNode(actualValues),
                   AssertFormatUtil.formatNames(missingVariables))
               .isEmpty();
 
@@ -279,8 +282,8 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
               .withFailMessage(
                   "%s should have the variables %s but was %s.",
                   actual,
-                  AssertionJsonMapper.toJson(expectedVariables),
-                  AssertionJsonMapper.toJson(actualValues))
+                  unifiedJsonMapper.toJsonNode(expectedVariables),
+                  unifiedJsonMapper.toJsonNode(actualValues))
               .containsAllEntriesOf(expectedValues);
         });
   }

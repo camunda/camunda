@@ -118,6 +118,8 @@ public class ExecutionListenerTest {
     when(testContext.getApplicationContext()).thenReturn(applicationContext);
     when(applicationContext.getBean(CamundaClientProxy.class)).thenReturn(camundaClientProxy);
     when(applicationContext.getBean(ZeebeClientProxy.class)).thenReturn(zeebeClientProxy);
+    when(applicationContext.getBean(JsonMapper.class)).thenReturn(null);
+    when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class)).thenReturn(null);
     when(applicationContext.getBean(CamundaProcessTestContextProxy.class))
         .thenReturn(camundaProcessTestContextProxy);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
@@ -204,9 +206,6 @@ public class ExecutionListenerTest {
         new CamundaProcessTestExecutionListener(
             camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
-    when(applicationContext.getBeanNamesForType(JsonMapper.class))
-        .thenReturn(new String[] {"camundaJsonMapper"});
-
     when(applicationContext.getBean(JsonMapper.class)).thenReturn(jsonMapper);
 
     // when
@@ -229,10 +228,6 @@ public class ExecutionListenerTest {
     final CamundaProcessTestExecutionListener listener =
         new CamundaProcessTestExecutionListener(
             camundaRuntimeBuilder, processCoverageBuilder, NOOP);
-
-    when(applicationContext.getBeanNamesForType(JsonMapper.class)).thenReturn(new String[] {});
-    when(applicationContext.getBeanNamesForType(io.camunda.zeebe.client.api.JsonMapper.class))
-        .thenReturn(new String[] {"zeebeJsonMapper"});
 
     when(applicationContext.getBean(io.camunda.zeebe.client.api.JsonMapper.class))
         .thenReturn(zeebeClientJsonMapper);

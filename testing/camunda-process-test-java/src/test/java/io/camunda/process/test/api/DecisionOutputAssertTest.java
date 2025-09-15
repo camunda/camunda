@@ -15,7 +15,10 @@
  */
 package io.camunda.process.test.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.impl.assertions.DecisionOutputAssertj;
+import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,7 +36,9 @@ public class DecisionOutputAssertTest {
   private static final String FAILURE_MESSAGE_PREFIX = "Expected DecisionInstance [name]";
 
   private final DecisionOutputAssertj decisionOutputAssert =
-      new DecisionOutputAssertj(FAILURE_MESSAGE_PREFIX);
+      new DecisionOutputAssertj(
+          new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper())),
+          FAILURE_MESSAGE_PREFIX);
 
   private static Stream<Arguments> outputScenarios() {
     return Stream.of(

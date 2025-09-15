@@ -15,9 +15,11 @@
  */
 package io.camunda.process.test.api;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
@@ -32,6 +34,7 @@ import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
+import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -77,11 +80,16 @@ public class CamundaAssert {
   /** The default await behavior for the assertions. */
   public static final CamundaAssertAwaitBehavior DEFAULT_AWAIT_BEHAVIOR = new AwaitilityBehavior();
 
+  public static final UnifiedJsonMapper DEFAULT_JSON_MAPPER =
+      new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
+
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
 
   private static Function<String, ElementSelector> elementSelector = DEFAULT_ELEMENT_SELECTOR;
 
   private static CamundaAssertAwaitBehavior awaitBehavior = DEFAULT_AWAIT_BEHAVIOR;
+
+  private static UnifiedJsonMapper unifiedJsonMapper = DEFAULT_JSON_MAPPER;
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -132,6 +140,22 @@ public class CamundaAssert {
    */
   public static void setAwaitBehavior(final CamundaAssertAwaitBehavior awaitBehavior) {
     CamundaAssert.awaitBehavior = awaitBehavior;
+  }
+
+  /**
+   * Configures the json mapper used to (de)serialize variables and other json objects.
+   *
+   * <p>The UnifiedJsonMapper supports both the new JsonMapper and the deprecated zeebe JsonMapper.
+   * In a Spring environment, the CPT test runner will inject a JsonMapper if one is configured. In
+   * other environments, you can use `CamundaProcessTestExension::withJsonMapper` to specify the
+   * jsonMapper to be used both here and in the injected CamundaClient.
+   *
+   * @param jsonMapper the unified json mapper containing either the JsonMapper or zeebe's
+   *     JsonMapper.
+   * @see #DEFAULT_JSON_MAPPER
+   */
+  public static void setJsonMapper(final UnifiedJsonMapper jsonMapper) {
+    unifiedJsonMapper = jsonMapper;
   }
 
   // ======== Assertions ========
@@ -225,7 +249,11 @@ public class CamundaAssert {
   public static ProcessInstanceAssert assertThatProcessInstance(
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(
-        getDataSource(), awaitBehavior, processInstanceSelector, elementSelector);
+        getDataSource(),
+        awaitBehavior,
+        unifiedJsonMapper,
+        processInstanceSelector,
+        elementSelector);
   }
 
   /**
@@ -243,7 +271,7 @@ public class CamundaAssert {
   private static ProcessInstanceAssertj createProcessInstanceAssertj(
       final long processInstanceKey) {
     return new ProcessInstanceAssertj(
-        getDataSource(), awaitBehavior, processInstanceKey, elementSelector);
+        getDataSource(), awaitBehavior, unifiedJsonMapper, processInstanceKey, elementSelector);
   }
 
   /**
@@ -276,7 +304,8 @@ public class CamundaAssert {
    * @see io.camunda.process.test.api.assertions.DecisionSelectors
    */
   public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
-    return new DecisionInstanceAssertj(getDataSource(), awaitBehavior, decisionSelector);
+    return new DecisionInstanceAssertj(
+        getDataSource(), awaitBehavior, unifiedJsonMapper, decisionSelector);
   }
 
   /**
@@ -299,7 +328,7 @@ public class CamundaAssert {
   public static DecisionInstanceAssertj assertThatDecision(
       final EvaluateDecisionResponse response) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, DecisionSelectors.byResponse(response));
+        getDataSource(), awaitBehavior, unifiedJsonMapper, DecisionSelectors.byResponse(response));
   }
 
   /**
