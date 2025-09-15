@@ -383,6 +383,7 @@ public class CamundaMultiDBExtension
     final var roles = findRoles(testClass, null, ModifierSupport::isStatic);
     entityManager
         .withUser(users)
+        .withClients(clients)
         .withMappingRules(mappingRules)
         .withGroups(groups)
         .withRoles(roles)

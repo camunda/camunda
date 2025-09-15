@@ -50,8 +50,6 @@ import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.AfterAll;
@@ -189,7 +187,7 @@ public class OperateInternalApiPermissionsIT {
 
   @Test
   public void shouldReturnOnlyAuthorizedDecisionInstances(final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
+      throws Exception {
     // given
     final String decisionInstanceRequest =
         toJsonString(
@@ -232,7 +230,7 @@ public class OperateInternalApiPermissionsIT {
 
   @Test
   public void shouldReturnOnlyAuthorizedGroupedDecisionDefinitions(final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
+      throws Exception {
     // given
     final String decisionInstanceRequest = toJsonString(new DecisionRequestDto());
     final var restrictedOperateClient =
@@ -255,7 +253,7 @@ public class OperateInternalApiPermissionsIT {
 
   @Test
   public void shouldReturnAllAuthorizedGroupedDecisionDefinitions(final CamundaClient adminClient)
-      throws URISyntaxException, IOException, InterruptedException {
+      throws Exception {
     // given
     final String decisionInstanceRequest = toJsonString(new DecisionRequestDto());
     final var adminOperateClient =
@@ -278,8 +276,7 @@ public class OperateInternalApiPermissionsIT {
    * Tests below check BATCH READ permissions in all endpoints that use them
    */
   @Test
-  public void shouldReturnOperationsForListViewForAuthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldReturnOperationsForListViewForAuthorizedUser() throws Exception {
     final var adminOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
     final var adminResponse =
@@ -294,8 +291,7 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldNotReturnOperationsForListViewForUnauthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldNotReturnOperationsForListViewForUnauthorizedUser() throws Exception {
     final var restrictedOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
     final var restrictedResponse =
@@ -311,8 +307,7 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldReturnOperationsForProcessForAuthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldReturnOperationsForProcessForAuthorizedUser() throws Exception {
     final var adminOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
     final var adminResponse =
@@ -326,8 +321,7 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldNotReturnOperationsForProcessForUnauthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldNotReturnOperationsForProcessForUnauthorizedUser() throws Exception {
     final var restrictedOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
     final var restrictedResponse =
@@ -341,8 +335,7 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldReturnBatchOperationsForAuthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldReturnBatchOperationsForAuthorizedUser() throws Exception {
     final var adminOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(SUPER_USER_USERNAME, SUPER_USER.password());
     final var adminResponse =
@@ -357,8 +350,7 @@ public class OperateInternalApiPermissionsIT {
   }
 
   @Test
-  public void shouldNotReturnBatchOperationsForUnuthorizedUser()
-      throws URISyntaxException, IOException, InterruptedException {
+  public void shouldNotReturnBatchOperationsForUnuthorizedUser() throws Exception {
     final var adminOperateClient =
         STANDALONE_CAMUNDA.newOperateClient(RESTRICTED_USER_USERNAME, RESTRICTED_USER.password());
     final var adminResponse =
