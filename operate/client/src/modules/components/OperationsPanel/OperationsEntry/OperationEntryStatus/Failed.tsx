@@ -17,7 +17,6 @@ const Failed: React.FC = () => {
       <ErrorFilled />
       <Text>Failed</Text>
       <Tooltip
-        //@ts-expect-error Carbon types are wrong
         align="bottom-left"
         description="An error happened during the operation. Please try again."
       >
