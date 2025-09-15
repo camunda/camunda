@@ -340,7 +340,7 @@
             <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
             <documentationProvider>none</documentationProvider>
             <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
-            <library>apache-httpclient</library>
+            <library>google-api-client</library>
             <java8>true</java8>
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
