@@ -49,7 +49,6 @@ test.beforeAll(async () => {
           .processInstanceKey,
       ),
     };
-    await sleep(1000);
   }
   const createdInstances = await createInstances(
     'instancesTableProcessForInfiniteScroll',
@@ -59,7 +58,6 @@ test.beforeAll(async () => {
   scrollingInstances = createdInstances.map((instance) => ({
     processInstanceKey: Number(instance.processInstanceKey),
   }));
-  await sleep(500);
 });
 
 test.describe('Process Instances Table', () => {
