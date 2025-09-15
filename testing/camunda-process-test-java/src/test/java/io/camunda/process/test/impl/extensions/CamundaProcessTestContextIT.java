@@ -452,7 +452,7 @@ public class CamundaProcessTestContextIT {
             () ->
                 processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
         .hasMessage(
-            "Expected to complete user task [elementId: unknown-task] but no job is available.");
+            "Expected to complete user task [elementId: unknown-task] but no user task is available.");
   }
 
   @Test

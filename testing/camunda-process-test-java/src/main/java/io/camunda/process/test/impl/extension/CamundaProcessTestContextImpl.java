@@ -259,7 +259,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
           assertThat(userTask)
               .withFailMessage(
-                  "Expected to complete user task [%s] but no job is available.",
+                  "Expected to complete user task [%s] but no user task is available.",
                   userTaskSelector.describe())
               .isPresent();
         });
