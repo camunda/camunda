@@ -69,6 +69,7 @@ final class OpenSearchArchiverRepositoryTest {
         "testPrefix",
         "instance",
         "batch",
+        "import-position",
         "zeebe-record",
         client,
         Runnable::run,

@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static io.camunda.search.schema.SchemaManager.ARCHIVING_BLOCKED_META_KEY;
+
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
 import co.elastic.clients.elasticsearch._types.FieldValue;
@@ -26,7 +28,9 @@ import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
+import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.json.JsonData;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -39,6 +43,7 @@ import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -65,6 +70,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
+  private final String archiverBlockedMetaIndex;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
@@ -76,6 +82,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
+      final String archiverBlockedMetaIndex,
       final String zeebeIndexPrefix,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
@@ -88,12 +95,17 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
+    this.archiverBlockedMetaIndex = archiverBlockedMetaIndex;
     this.metrics = metrics;
     this.zeebeIndexPrefix = zeebeIndexPrefix;
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+    if (archivingIsBlocked()) {
+      logger.debug("Archiving is currently blocked.");
+      return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+    }
     final var searchRequest = createFinishedInstancesSearchRequest();
 
     final var timer = Timer.start();
@@ -196,6 +208,24 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private boolean archivingIsBlocked() {
+    return client
+        .indices()
+        .get(r -> r.index(archiverBlockedMetaIndex))
+        .join()
+        .result()
+        .getOrDefault(
+            archiverBlockedMetaIndex,
+            IndexState.of(
+                state ->
+                    state.mappings(
+                        m -> m.meta(Map.of(ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))))))
+        .mappings()
+        .meta()
+        .getOrDefault(ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
+        .to(Boolean.class);
   }
 
   private Query finishedProcessInstancesQuery(
