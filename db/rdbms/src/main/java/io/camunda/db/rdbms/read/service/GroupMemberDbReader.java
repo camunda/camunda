@@ -51,14 +51,13 @@ public class GroupMemberDbReader extends AbstractEntityReader<GroupMemberEntity>
                     .sort(dbSort)
                     .page(convertPaging(dbSort, query.page())));
 
-    LOG.trace("[RDBMS DB] Search for tenants with filter {}", dbQuery);
+    LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.countMembers(dbQuery);
     final var hits = groupMapper.searchMembers(dbQuery).stream().map(this::map).toList();
     return buildSearchQueryResult(totalHits, hits, dbSort);
   }
 
   private GroupMemberEntity map(final GroupMemberDbModel model) {
-    // todo use EntityType as enum
     return new GroupMemberEntity(model.entityId(), EntityType.valueOf(model.entityType()));
   }
 

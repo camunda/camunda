@@ -7,7 +7,6 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.db.rdbms.read.domain.TenantDbQuery.Builder;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GroupFilter;
