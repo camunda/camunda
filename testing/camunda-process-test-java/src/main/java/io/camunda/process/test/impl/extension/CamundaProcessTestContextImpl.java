@@ -222,13 +222,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
-  public void completeUserTask(final String taskName) {
-    completeUserTask(UserTaskSelectors.byTaskName(taskName), new HashMap<>());
+  public void completeUserTask(final String elementId) {
+    completeUserTask(UserTaskSelectors.byElementId(elementId), new HashMap<>());
   }
 
   @Override
-  public void completeUserTask(final String taskName, final Map<String, Object> variables) {
-    completeUserTask(UserTaskSelectors.byTaskName(taskName), variables);
+  public void completeUserTask(final String elementId, final Map<String, Object> variables) {
+    completeUserTask(UserTaskSelectors.byElementId(elementId), variables);
   }
 
   @Override
