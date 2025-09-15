@@ -12,7 +12,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant creation should be unsuccessful", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
   });
 %}
 
@@ -31,7 +31,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("TENANT_ID", response.body.tenantId);
   });
 %}
@@ -50,7 +50,7 @@ Accept: application/json
   let expectedTenantId = client.global.get("TENANT_ID");
 
   client.test("Tenant retrieval should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.tenantId === expectedTenantId, "TenantId was not found.");
   });
 %}
@@ -73,7 +73,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant update should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.description === "Updated tenant description.", "Description was not updated correctly.");
   });
 %}
@@ -86,7 +86,7 @@ Accept: application/json
 
 > {%
   client.test("User assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -102,14 +102,21 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "username": "{{USERNAME}}"
+  "sort": [
+    {
+      "field": "username",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
   }
 }
 
 > {%
   client.test("User search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].username === "demo", "Username was not found");
   });
 %}
@@ -126,7 +133,7 @@ Accept: application/json
 
 > {%
   client.test("User removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -144,7 +151,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("GROUP_ID", response.body.groupId);
   });
 %}
@@ -157,7 +164,7 @@ Accept: application/json
 
 > {%
   client.test("Group assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -173,22 +180,23 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "groupId": "{{GROUP_ID}}"
-  },
   "sort": [
     {
-    "field": "groupId",
-    "order": "ASC"
-     }
-  ]
+      "field": "groupId",
+      "order": "ASC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
 }
 
 > {%
   client.test("Group search should be successful", function () {
     let expectedGroupId = client.global.get("GROUP_ID");
 
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].groupId === expectedGroupId, "Group was not found");
   });
 %}
@@ -201,7 +209,7 @@ Accept: application/json
 
 > {%
   client.test("Group removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -213,14 +221,21 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "tenantId": "testTenant1"
+  "sort": [
+    {
+      "field": "tenantId",
+      "order": "DESC"
+    }
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
   }
 }
 
 > {%
   client.test("Tenant search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].tenantId === "testTenant1", "Tenant was not found");
   });
 %}
@@ -233,7 +248,7 @@ Accept: application/json
 
 > {%
   client.test("Client assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -245,7 +260,7 @@ Accept: application/json
 
 > {%
   client.test("Client deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -261,7 +276,7 @@ Accept: application/json
 
 > {%
   client.test("Group deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -277,6 +292,6 @@ Accept: application/json
 
 > {%
   client.test("Tenant deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}

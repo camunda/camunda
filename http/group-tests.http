@@ -11,7 +11,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be unsuccessful", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
   });
 %}
 
@@ -29,7 +29,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("GROUP_ID", response.body.groupId);
   });
 %}
@@ -48,7 +48,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be unsuccessful", function () {
-    client.assert(response.status === 400, "Response status is not 400");
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
     client.assert(response.body.title === "INVALID_ARGUMENT", "Wrong error title");
     client.assert(response.body.detail === "The provided groupId exceeds the limit of 256 characters.", "Wrong error message");
   });
@@ -68,7 +68,7 @@ Accept: application/json
   let expectedGroupId = client.global.get("GROUP_ID");
 
   client.test("Group retrieval should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.groupId === expectedGroupId, "GroupId was not found.");
   });
 %}
@@ -89,7 +89,7 @@ Accept: application/json
 
 > {%
   client.test("User creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("USERNAME_NO_AUTHORIZATIONS", response.body.username);
   });
 %}
@@ -106,7 +106,7 @@ Accept: application/json
 
 > {%
   client.test("Group retrieval should be unsuccessful", function () {
-    client.assert(response.status === 403, "Response status is not 403");
+    client.assert(response.status === 403, "Expected 403, got " + response.status);
     client.assert(response.body.detail === "Unauthorized to perform operation 'READ' on resource 'GROUP'", "Error message is incorrect.");
   });
 %}
@@ -129,7 +129,7 @@ Accept: application/json
 
 > {%
   client.test("Group update should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.name === "TestGroup1 Updated", "Name was not updated correctly.");
     client.assert(response.body.description === "An updated test group description.", "Description was not updated correctly.");
   });
@@ -143,7 +143,7 @@ Accept: application/json
 
 > {%
   client.test("Group assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -159,14 +159,21 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "username": "{{USERNAME}}"
-  }
+  "page": {
+    "from": 0,
+    "limit": 100
+  },
+  "sort": [
+    {
+      "field": "username",
+      "order": "ASC"
+    }
+  ]
 }
 
 > {%
   client.test("User search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].username === "demo", "Username was not found");
   });
 %}
@@ -183,7 +190,7 @@ Accept: application/json
 
 > {%
   client.test("Group removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -195,7 +202,7 @@ Accept: application/json
 
 > {%
   client.test("Client assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -207,7 +214,7 @@ Accept: application/json
 
 > {%
   client.test("Client deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -223,22 +230,23 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "groupId": "{{GROUP_ID}}"
-  },
   "sort": [
     {
     "field": "name",
     "order": "ASC"
      }
-  ]
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
 }
 
 > {%
   let expectedGroupId = client.global.get("GROUP_ID");
 
   client.test("Group search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].groupId === expectedGroupId, "Group was not found");
   });
 %}
@@ -255,6 +263,6 @@ Accept: application/json
 
 > {%
   client.test("Group deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
