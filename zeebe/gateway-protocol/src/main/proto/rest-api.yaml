@@ -11949,9 +11949,9 @@ components:
       maxLength: 256
       pattern: "^(<default>|[A-Za-z0-9_@.+-]+)$"
     Username:
-      type: "string"
       example: "swillis"
       format: "Username"
+      type: "string"
       description: "The unique name of a user."
       x-semantic-type: "Username"
       minLength: 1
