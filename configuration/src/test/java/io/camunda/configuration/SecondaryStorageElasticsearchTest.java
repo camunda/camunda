@@ -48,6 +48,9 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+  private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
+  private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
+  private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
@@ -62,6 +65,10 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
         "camunda.data.secondary-storage.elasticsearch.number-of-shards="
             + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.elasticsearch.template-priority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
       })
@@ -135,6 +142,12 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
 
     @Test
@@ -148,6 +161,12 @@ public class SecondaryStorageElasticsearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
@@ -199,6 +218,17 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-shards="
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
+
+        // template priority
+        "camunda.data.secondary-storage.elasticsearch.template-priority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
+        // per-index overrides
+        "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
+        "camunda.database.index.replicasByIndexName.my-index=3",
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2",
+        "camunda.database.index.shardsByIndexName.my-index=2",
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -272,6 +302,12 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
 
     @Test
@@ -288,6 +324,12 @@ public class SecondaryStorageElasticsearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
+      assertThat(searchEngineIndexProperties.getShardsByIndexName())
+          .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
     }
   }
 
