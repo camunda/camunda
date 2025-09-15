@@ -478,6 +478,28 @@
         </executions>
       </plugin>
       <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cleanupModels</id>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <applySkip>false</applySkip>
+              <java>
+                <includes>
+                  <include>**/io/camunda/zeebe/gateway/protocol/rest/*.java</include>
+                </includes>
+                <removeUnusedImports></removeUnusedImports>
+              </java>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
