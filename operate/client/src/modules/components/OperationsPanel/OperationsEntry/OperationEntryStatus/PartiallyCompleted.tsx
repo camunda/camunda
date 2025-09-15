@@ -16,7 +16,6 @@ const PartiallyCompleted: React.FC = () => {
       <WarningAltFilled />
       <Text>Partially completed</Text>
       <Tooltip
-        //@ts-expect-error Carbon types are wrong
         align="bottom"
         description="The operation is partially completed due to an error. Please try again."
       >
