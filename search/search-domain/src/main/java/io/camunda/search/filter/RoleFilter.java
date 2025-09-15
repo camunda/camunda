@@ -11,6 +11,7 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public record RoleFilter(
     String roleId,
@@ -24,6 +25,12 @@ public record RoleFilter(
     String tenantId,
     Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
+
+  public static RoleFilter of(
+      final Function<RoleFilter.Builder, RoleFilter.Builder> builderFunction) {
+    return builderFunction.apply(new RoleFilter.Builder()).build();
+  }
+
   public Builder toBuilder() {
     return new Builder()
         .roleId(roleId)

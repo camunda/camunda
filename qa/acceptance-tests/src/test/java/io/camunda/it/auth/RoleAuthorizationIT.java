@@ -38,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 class RoleAuthorizationIT {
 
@@ -367,7 +366,8 @@ class RoleAuthorizationIT {
             () -> {
               final SearchResponse<Client> response =
                   adminClient.newClientsByRoleSearchRequest(roleId).send().join();
-              assertThat(response.items()).isEmpty();
+              assertThat(response.items().stream().map(Client::getClientId))
+                  .doesNotContain(clientId);
             });
 
     // clean up

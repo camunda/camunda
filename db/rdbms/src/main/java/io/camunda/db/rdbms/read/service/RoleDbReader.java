@@ -41,14 +41,18 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
   @Override
   public SearchQueryResult<RoleEntity> search(
       final RoleQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    if (shouldReturnEmptyResult(query.filter())) {
+    if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
       return new SearchQueryResult.Builder<RoleEntity>().total(0).items(List.of()).build();
     }
 
     final var dbSort = convertSort(query.sort(), RoleSearchColumn.ROLE_ID);
     final var dbQuery =
         RoleDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for roles with filter {}", dbQuery);
     final var totalHits = roleMapper.count(dbQuery);
@@ -69,8 +73,10 @@ public class RoleDbReader extends AbstractEntityReader<RoleEntity> implements Ro
     return new RoleEntity(model.roleKey(), model.roleId(), model.name(), model.description());
   }
 
-  private boolean shouldReturnEmptyResult(final RoleFilter filter) {
+  private boolean shouldReturnEmptyResult(
+      final RoleFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.roleIds() != null && filter.roleIds().isEmpty())
-        || (filter.memberIds() != null && filter.memberIds().isEmpty());
+        || (filter.memberIds() != null && filter.memberIds().isEmpty()
+            || shouldReturnEmptyResult(resourceAccessChecks));
   }
 }
