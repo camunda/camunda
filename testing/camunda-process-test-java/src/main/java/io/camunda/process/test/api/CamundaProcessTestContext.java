@@ -170,19 +170,19 @@ public interface CamundaProcessTestContext {
       final String jobType, final String errorCode, final Map<String, Object> variables);
 
   /**
-   * Completes a user task with the specified task name.
+   * Completes a user task with the given BPMN element ID.
    *
-   * @param taskName the name of the user task to complete
+   * @param elementId the BPMN element ID of the user task to complete
    */
-  void completeUserTask(final String taskName);
+  void completeUserTask(final String elementId);
 
   /**
-   * Completes a user task with the specified task name and sets the provided variables.
+   * Completes a user task with the given BPMN element ID and sets the provided variables.
    *
-   * @param taskName the name of the user task to complete
+   * @param elementId the BPMN element ID of the user task to complete
    * @param variables a map of variables to set when completing the user task
    */
-  void completeUserTask(final String taskName, final Map<String, Object> variables);
+  void completeUserTask(final String elementId, final Map<String, Object> variables);
 
   /**
    * Completes a user task that matches the specified selector.

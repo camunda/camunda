@@ -316,7 +316,7 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // When
-    processTestContext.completeUserTask("user-task");
+    processTestContext.completeUserTask("user-task-1");
 
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
