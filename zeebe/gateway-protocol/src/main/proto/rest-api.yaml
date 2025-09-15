@@ -5715,6 +5715,7 @@ components:
       properties:
         tenantId:
           type: "string"
+		  description: "The unique identifier of the tenant."
           x-semantic-provider: true
           allOf:
             - $ref: "#/components/schemas/TenantId"
@@ -6661,10 +6662,12 @@ components:
           description: "Checks if the current property exists."
           type: "boolean"
         $in:
+          description: "Checks if the property matches any of the provided values."
           type: "array"
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
         $notIn:
+          description: "Checks if the property matches none of the provided values."
           type: "array"
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
