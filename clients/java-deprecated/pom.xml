@@ -339,9 +339,6 @@
     </plugins>
   </build>
 
-    </plugins>
-  </build>
-
   <profiles>
     <profile>
       <id>disableCheckstyle</id>
