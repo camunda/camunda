@@ -29,6 +29,7 @@ import java.net.http.HttpResponse.BodyHandlers;
 import java.util.Base64;
 import java.util.List;
 import java.util.function.Consumer;
+import org.testcontainers.containers.GenericContainer;
 
 public class TestRestOperateClient implements AutoCloseable {
 
@@ -52,6 +53,19 @@ public class TestRestOperateClient implements AutoCloseable {
   public TestRestOperateClient(final URI endpoint) {
     this.endpoint = endpoint;
     httpClient = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
+  }
+
+  public TestRestOperateClient(final GenericContainer<?> camundaContainer) {
+    this(
+        URI.create("http://localhost:" + camundaContainer.getMappedPort(8080) + "/"),
+        "demo",
+        "demo");
+
+    try {
+      sendRequest(loginRequest("demo", "demo"));
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   public Either<Exception, HttpResponse<String>> deleteDecisionDefinition(
@@ -181,6 +195,16 @@ public class TestRestOperateClient implements AutoCloseable {
       return Either.right(sendRequest(requestBuilder));
     } catch (Exception e) {
       return Either.left(e);
+    }
+  }
+
+  private Builder loginRequest(String username, String password) {
+    try {
+      return createBuilder(
+              String.format("%sapi/login?username=%s&password=%s", endpoint, username, password))
+          .POST(HttpRequest.BodyPublishers.ofString("{}"));
+    } catch (final URISyntaxException e) {
+      throw new RuntimeException(e);
     }
   }
 
