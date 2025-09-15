@@ -51,6 +51,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
   private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
   private static final boolean EXPECTED_WAIT_FOR_IMPORTERS = false;
+  private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
   private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
   private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
 
@@ -71,6 +72,8 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_VARIABLE_SIZE_THRESHOLD,
         "camunda.data.secondary-storage.elasticsearch.wait-for-importers="
             + EXPECTED_WAIT_FOR_IMPORTERS,
+        "camunda.data.secondary-storage.elasticsearch.template-priority="
+            + EXPECTED_TEMPLATE_PRIORITY,
         "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
         "camunda.data.secondary-storage.elasticsearch.number-of-shards-per-index.my-index=2"
       })
@@ -152,6 +155,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
       assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
           .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
       assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
@@ -175,6 +180,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(searchEngineIndexProperties.shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
       assertThat(searchEngineIndexProperties.getReplicasByIndexName())
           .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
       assertThat(searchEngineIndexProperties.getShardsByIndexName())
@@ -247,6 +254,11 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.wait-for-importers="
             + EXPECTED_WAIT_FOR_IMPORTERS,
         "camunda.database.index.shouldWaitForImporters=" + EXPECTED_WAIT_FOR_IMPORTERS,
+
+        // template priority
+        "camunda.data.secondary-storage.elasticsearch.template-priority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
 
         // per-index overrides
         "camunda.data.secondary-storage.elasticsearch.number-of-replicas-per-index.my-index=3",
@@ -334,6 +346,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(exporterConfiguration.getIndex().getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
       assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
           .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
       assertThat(exporterConfiguration.getIndex().getShardsByIndexName())
@@ -360,6 +374,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(searchEngineIndexProperties.shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(searchEngineIndexProperties.getTemplatePriority())
+          .isEqualTo(EXPECTED_TEMPLATE_PRIORITY);
       assertThat(searchEngineIndexProperties.getReplicasByIndexName())
           .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
       assertThat(searchEngineIndexProperties.getShardsByIndexName())

@@ -49,6 +49,9 @@ public abstract class SecondaryStorageDatabase {
   /** Whether to wait for importers before proceeding. */
   private boolean waitForImporters = true;
 
+  /** Template priority for index templates. */
+  private Integer templatePriority;
+
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".url",
@@ -200,6 +203,19 @@ public abstract class SecondaryStorageDatabase {
     this.waitForImporters = waitForImporters;
   }
 
+  public Integer getTemplatePriority() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".template-priority",
+        templatePriority,
+        Integer.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyTemplatePriorityProperties());
+  }
+
+  public void setTemplatePriority(final Integer templatePriority) {
+    this.templatePriority = templatePriority;
+  }
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -283,6 +299,12 @@ public abstract class SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.index.shouldWaitForImporters",
         "zeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters");
+  }
+
+  private Set<String> legacyTemplatePriorityProperties() {
+    return Set.of(
+        "camunda.database.index.templatePriority",
+        "zeebe.broker.exporters.camundaexporter.args.index.templatePriority");
   }
 
   protected abstract String databaseName();

@@ -558,6 +558,9 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
     setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
     setArg(args, "index.shouldWaitForImporters", database.isWaitForImporters());
+    if (database.getTemplatePriority() != null) {
+      setArg(args, "index.templatePriority", database.getTemplatePriority());
+    }
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
       setArg(args, "index.replicasByIndexName", database.getNumberOfReplicasPerIndex());
     }
