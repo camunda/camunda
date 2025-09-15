@@ -11,7 +11,7 @@ Accept: application/json
 
 > {%
   client.test("Role creation should be unsuccessful", function () {
-    client.assert(response.status === 401, "Response status is not 401");
+    client.assert(response.status === 401, "Expected 401, got " + response.status);
   });
 %}
 
@@ -29,7 +29,7 @@ Accept: application/json
 
 > {%
   client.test("Role creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("ROLE_ID", response.body.roleId);
   });
 %}
@@ -48,7 +48,7 @@ Accept: application/json
 
 > {%
   client.test("Role creation should be unsuccessful", function () {
-    client.assert(response.status === 400, "Response status is not 400");
+    client.assert(response.status === 400, "Expected 400, got " + response.status);
     client.assert(response.body.title === "INVALID_ARGUMENT", "Wrong error title");
     client.assert(response.body.detail === "The provided roleId exceeds the limit of 256 characters.", "Wrong error message");
   });
@@ -68,7 +68,7 @@ Accept: application/json
   let expectedRoleId = client.global.get("ROLE_ID");
 
   client.test("Role retrieval should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.roleId === expectedRoleId, "RoleId was not found.");
   });
 %}
@@ -91,7 +91,7 @@ Accept: application/json
 
 > {%
   client.test("Role update should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.name === "TestRole Updated", "Name was not updated correctly.");
     client.assert(response.body.description === "An updated test role description.", "Description was not updated correctly.");
   });
@@ -105,7 +105,7 @@ Accept: application/json
 
 > {%
   client.test("Role assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -121,21 +121,22 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "filter": {
-    "username": "{{USERNAME}}"
-  },
   "sort": [
     {
     "field": "username",
     "order": "ASC"
      }
-  ]
+  ],
+  "page": {
+    "from": 0,
+    "limit": 100
+  }
 }
 
 > {%
   client.test("User search should be successful", function () {
 
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].username === "demo", "User was not found");
   });
 %}
@@ -152,7 +153,7 @@ Accept: application/json
 
 > {%
   client.test("Role removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -183,7 +184,7 @@ Accept: application/json
   let expectedRoleId = client.global.get("ROLE_ID");
 
   client.test("Role search should be successful", function () {
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].roleId === expectedRoleId, "Role was not found");
   });
 %}
@@ -196,7 +197,7 @@ Accept: application/json
 
 > {%
   client.test("Role assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -208,7 +209,7 @@ Accept: application/json
 
 > {%
   client.test("Role deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -227,7 +228,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("TENANT_ID", response.body.tenantId);
   });
 %}
@@ -240,7 +241,7 @@ Accept: application/json
 
 > {%
   client.test("Role assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -264,7 +265,7 @@ Accept: application/json
 > {%
   client.test("Role search should be successful", function () {
     let expectedRoleId = client.global.get("ROLE_ID");
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].roleId === expectedRoleId, "Role was not found");
   });
 %}
@@ -277,7 +278,7 @@ Accept: application/json
 
 > {%
   client.test("Role removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -293,7 +294,7 @@ Accept: application/json
 
 > {%
   client.test("Tenant deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -311,7 +312,7 @@ Accept: application/json
 
 > {%
   client.test("Group creation should be successful", function () {
-    client.assert(response.status === 201, "Response status is not 201");
+    client.assert(response.status === 201, "Expected 201, got " + response.status);
     client.global.set("GROUP_ID", response.body.groupId);
   });
 %}
@@ -324,7 +325,7 @@ Accept: application/json
 
 > {%
   client.test("Role assignment should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -348,7 +349,7 @@ Accept: application/json
 > {%
   client.test("Role search should be successful", function () {
     let expectedRoleId = client.global.get("ROLE_ID");
-    client.assert(response.status === 200, "Response status is not 200");
+    client.assert(response.status === 200, "Expected 200, got " + response.status);
     client.assert(response.body.items[0].roleId === expectedRoleId, "Role was not found");
   });
 %}
@@ -361,7 +362,7 @@ Accept: application/json
 
 > {%
   client.test("Group removal should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -377,7 +378,7 @@ Accept: application/json
 
 > {%
   client.test("Group deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}
 
@@ -393,6 +394,6 @@ Accept: application/json
 
 > {%
   client.test("Role deletion should be successful", function () {
-    client.assert(response.status === 204, "Response status is not 204");
+    client.assert(response.status === 204, "Expected 204, got " + response.status);
   });
 %}

@@ -421,14 +421,10 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "processDefinitionName": "TwoUserTasks",
   "processDefinitionVersion": 1,
-  "startDate": "2025-07-28T13:18:05.666Z",
-  "state": "ACTIVE",
-  "hasIncident": false,
   "tenantId": "<default>",
-  "processInstanceKey": "2251799813692075",
-  "processDefinitionKey": {{PROCESS_DEFINITION_KEY}}
+  "processDefinitionKey": {{PROCESS_DEFINITION_KEY}},
+  "variables": {}
 }
 
 > {%
