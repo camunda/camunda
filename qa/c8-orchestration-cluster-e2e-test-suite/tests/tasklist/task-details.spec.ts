@@ -492,6 +492,7 @@ test.describe('task details page', () => {
   test('task completion with select form', async ({
     taskPanelPage,
     taskDetailsPage,
+    page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Select User Task');
@@ -504,7 +505,11 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Select User Task');
+
+    await page
+      .getByText('Select User Task', {exact: true})
+      .nth(0)
+      .click({timeout: 5000});
 
     await expect(taskDetailsPage.form).toContainText('Value');
   });
@@ -512,6 +517,7 @@ test.describe('task details page', () => {
   test('task completion with radio button form', async ({
     taskPanelPage,
     taskDetailsPage,
+    page,
   }) => {
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('Radio Button Task');
@@ -523,7 +529,11 @@ test.describe('task details page', () => {
 
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.assertCompletedHeadingVisible();
-    await taskPanelPage.openTask('Radio Button Task');
+
+    await page
+      .getByText('Radio Button Task', {exact: true})
+      .nth(0)
+      .click({timeout: 5000});
 
     await taskDetailsPage.assertItemChecked('Value');
   });
