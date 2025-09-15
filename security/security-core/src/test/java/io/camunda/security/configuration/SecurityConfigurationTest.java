@@ -16,7 +16,7 @@ class SecurityConfigurationTest {
   SecurityConfiguration securityConfiguration = new SecurityConfiguration();
 
   @Test
-  void shouldAcceptValidPattern() {
+  void shouldAcceptIdWithTilde() {
     // given
     final String pattern = securityConfiguration.getIdValidationPattern();
 
@@ -28,7 +28,7 @@ class SecurityConfigurationTest {
   }
 
   @Test
-  void shouldDenyInvalidPattern() {
+  void shouldDenyIdWithExclamationMark() {
     // given
     final String pattern = securityConfiguration.getIdValidationPattern();
 
