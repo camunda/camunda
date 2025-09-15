@@ -47,7 +47,7 @@ public class ProcessInstanceSelectors {
    * @param parentProcessInstanceKey the key of the parent instance
    * @return the selector
    */
-  public static ProcessInstanceSelector byParentProcesInstanceKey(
+  public static ProcessInstanceSelector byParentProcessInstanceKey(
       final long parentProcessInstanceKey) {
     return new ParentProcessInstanceKeySelector(parentProcessInstanceKey);
   }

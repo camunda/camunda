@@ -16,7 +16,7 @@
 package io.camunda.process.test.api;
 
 import static io.camunda.process.test.api.CamundaAssert.assertThatProcessInstance;
-import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byParentProcesInstanceKey;
+import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byParentProcessInstanceKey;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveChildProcessInstance;
 import static io.camunda.process.test.utils.ProcessInstanceBuilder.newActiveProcessInstance;
 import static org.mockito.ArgumentMatchers.any;
@@ -750,7 +750,7 @@ public class ProcessInstanceAssertTest {
                   newActiveChildProcessInstance(PROCESS_INSTANCE_KEY, PARENT_PROCESS_KEY).build()));
 
       // then
-      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+      CamundaAssert.assertThatProcessInstance(byParentProcessInstanceKey(PARENT_PROCESS_KEY))
           .isCreated();
     }
 
@@ -766,7 +766,7 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.findProcessInstances(any())).thenReturn(searchResult);
 
       // then
-      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+      CamundaAssert.assertThatProcessInstance(byParentProcessInstanceKey(PARENT_PROCESS_KEY))
           .isCreated();
 
       final ProcessInstance firstChildProcessInstance = searchResult.get(0);
@@ -787,7 +787,7 @@ public class ProcessInstanceAssertTest {
       when(camundaDataSource.findProcessInstances(any())).thenReturn(searchResult);
 
       // then
-      CamundaAssert.assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+      CamundaAssert.assertThatProcessInstance(byParentProcessInstanceKey(PARENT_PROCESS_KEY))
           .isCreated();
 
       final ProcessInstance firstChildProcessInstance = searchResult.get(0);
@@ -805,7 +805,7 @@ public class ProcessInstanceAssertTest {
       Assertions.assertThatThrownBy(
               () ->
                   CamundaAssert.assertThatProcessInstance(
-                          byParentProcesInstanceKey(PARENT_PROCESS_KEY))
+                          byParentProcessInstanceKey(PARENT_PROCESS_KEY))
                       .isCreated())
           .hasMessage(
               "Process instance [parent process instance key: %d] should be created but was not created.",
