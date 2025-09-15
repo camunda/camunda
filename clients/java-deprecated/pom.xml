@@ -285,7 +285,7 @@
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
           <modelPackage>io.camunda.zeebe.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String</typeMappings>
+          <typeMappings>OffsetDateTime=String,BatchOperationKey=String,ElementInstanceFilterElementInstanceScopeKey=String,UUID=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,OneOfstringAdvancedProcessDefinitionKeyFilter=String</typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
           <generateSupportingFiles>false</generateSupportingFiles>
@@ -298,7 +298,7 @@
             <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
             <documentationProvider>none</documentationProvider>
             <enumUnknownDefaultCase>true</enumUnknownDefaultCase>
-            <library>apache-httpclient</library>
+            <library>google-api-client</library>
             <java8>true</java8>
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
@@ -314,6 +314,30 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>cleanupModels</id>
+            <goals>
+              <goal>apply</goal>
+            </goals>
+            <phase>generate-sources</phase>
+            <configuration>
+              <applySkip>false</applySkip>
+              <java>
+                <includes>
+                  <include>**/io/camunda/zeebe/client/protocol/rest/*.java</include>
+                </includes>
+                <removeUnusedImports></removeUnusedImports>
+              </java>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
     </plugins>
   </build>
