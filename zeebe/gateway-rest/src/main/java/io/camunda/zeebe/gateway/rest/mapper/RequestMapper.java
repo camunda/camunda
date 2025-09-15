@@ -419,14 +419,92 @@ public class RequestMapper {
       return Either.left(createInternalErrorProblemDetail(e, "Failed to read document content"));
     }
     final var validationResponse = validateDocumentMetadata(metadata);
-    final var internalMetadata = toInternalDocumentMetadata(metadata, file);
+    // Only build internal metadata AFTER validation succeeds
     return getResult(
         validationResponse,
-        () -> new DocumentCreateRequest(documentId, storeId, inputStream, internalMetadata));
+        () ->
+            new DocumentCreateRequest(
+                documentId, storeId, inputStream, toInternalDocumentMetadata(metadata, file)));
   }
 
   public static Either<ProblemDetail, List<DocumentCreateRequest>> toDocumentCreateRequestBatch(
       final List<Part> parts, final String storeId, final ObjectMapper objectMapper) {
+    // Delegate to new overload without metadataList (null indicates fallback to headers)
+    return toDocumentCreateRequestBatch(parts, storeId, objectMapper, null);
+  }
+
+  /**
+   * Backward compatible batch creation accepting an optional ordered metadata list. If {@code
+   * metadataList} is provided (non-null & non-empty) it takes precedence and all per-part headers
+   * (X-Document-Metadata) are ignored. Otherwise the legacy header-based extraction is used.
+   */
+  public static Either<ProblemDetail, List<DocumentCreateRequest>> toDocumentCreateRequestBatch(
+      final List<Part> parts,
+      final String storeId,
+      final ObjectMapper objectMapper,
+      final List<DocumentMetadata> metadataList) {
+
+    final boolean hasList = metadataList != null && !metadataList.isEmpty();
+    final boolean hasHeaderMetadata =
+        parts.stream().anyMatch(part -> part.getHeader("X-Document-Metadata") != null);
+
+    // Disallow providing both metadata sources simultaneously
+    if (hasList && hasHeaderMetadata) {
+      final ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+      pd.setDetail("Specify either metadataList part or X-Document-Metadata headers, but not both");
+      return Either.left(pd);
+    }
+
+    if (hasList) {
+      // Size must match number of files
+      if (metadataList.size() != parts.size()) {
+        final ProblemDetail pd = ProblemDetail.forStatus(HttpStatus.BAD_REQUEST);
+        pd.setDetail(
+            "metadataList length ("
+                + metadataList.size()
+                + ") does not match files length ("
+                + parts.size()
+                + ")");
+        return Either.left(pd);
+      }
+
+      // Validate each metadata object
+      final ProblemDetail validationErrors =
+          metadataList.stream()
+              .map(DocumentValidator::validateDocumentMetadata)
+              .filter(Optional::isPresent)
+              .map(Optional::get)
+              .reduce(
+                  ProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
+                  (acc, detail) -> {
+                    acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                    return acc;
+                  });
+
+      if (validationErrors.getDetail() != null) {
+        return Either.left(validationErrors);
+      }
+
+      final List<DocumentCreateRequest> requests = new ArrayList<>(parts.size());
+      for (int i = 0; i < parts.size(); i++) {
+        final Part part = parts.get(i);
+        final DocumentMetadata metadata =
+            metadataList.get(i) == null ? new DocumentMetadata() : metadataList.get(i);
+        final InputStream inputStream;
+        try {
+          inputStream = part.getInputStream();
+        } catch (final IOException e) {
+          return Either.left(
+              createInternalErrorProblemDetail(e, "Failed to read document content"));
+        }
+        requests.add(
+            new DocumentCreateRequest(
+                null, storeId, inputStream, toInternalDocumentMetadata(metadata, part)));
+      }
+      return Either.right(List.copyOf(requests));
+    }
+
+    // Legacy header-based path (original implementation)
     final Map<Part, DocumentMetadata> metadataMap =
         parts.stream()
             .collect(
@@ -449,7 +527,7 @@ public class RequestMapper {
             .map(DocumentValidator::validateDocumentMetadata)
             .filter(Optional::isPresent)
             .map(Optional::get)
-            .reduce( // combine violations from each problem detail
+            .reduce(
                 ProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                 (acc, detail) -> {
                   acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
