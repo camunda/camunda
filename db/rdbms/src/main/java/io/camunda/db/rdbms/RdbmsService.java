@@ -24,6 +24,7 @@ import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.read.service.RoleDbReader;
+import io.camunda.db.rdbms.read.service.RoleMemberDbReader;
 import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
 import io.camunda.db.rdbms.read.service.TenantDbReader;
 import io.camunda.db.rdbms.read.service.TenantMemberDbReader;
@@ -53,6 +54,7 @@ public class RdbmsService {
   private final ProcessInstanceDbReader processInstanceReader;
   private final VariableDbReader variableReader;
   private final RoleDbReader roleReader;
+  private final RoleMemberDbReader roleMemberReader;
   private final TenantDbReader tenantReader;
   private final TenantMemberDbReader tenantMemberReader;
   private final UserDbReader userReader;
@@ -81,6 +83,7 @@ public class RdbmsService {
       final ProcessInstanceDbReader processInstanceReader,
       final VariableDbReader variableReader,
       final RoleDbReader roleReader,
+      final RoleMemberDbReader roleMemberReader,
       final TenantDbReader tenantReader,
       final TenantMemberDbReader tenantMemberReader,
       final UserDbReader userReader,
@@ -105,6 +108,7 @@ public class RdbmsService {
     this.incidentReader = incidentReader;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
+    this.roleMemberReader = roleMemberReader;
     this.tenantReader = tenantReader;
     this.variableReader = variableReader;
     this.roleReader = roleReader;
@@ -173,6 +177,10 @@ public class RdbmsService {
 
   public RoleDbReader getRoleReader() {
     return roleReader;
+  }
+
+  public RoleMemberDbReader getRoleMemberReader() {
+    return roleMemberReader;
   }
 
   public UserDbReader getUserReader() {
