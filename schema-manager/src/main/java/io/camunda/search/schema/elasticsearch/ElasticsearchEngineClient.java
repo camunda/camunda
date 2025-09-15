@@ -612,8 +612,7 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
       final String indexName, final Map<String, Object> meta) {
     final var jsonMeta =
         meta.entrySet().stream()
-            .map(entry -> Map.entry(entry.getKey(), JsonData.of(entry.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+            .collect(Collectors.toMap(Entry::getKey, e -> JsonData.of(e.getValue())));
     return new PutMappingRequest.Builder().index(indexName).meta(jsonMeta).build();
   }
 
