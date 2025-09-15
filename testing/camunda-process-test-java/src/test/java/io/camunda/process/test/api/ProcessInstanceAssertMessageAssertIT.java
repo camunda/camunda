@@ -41,22 +41,22 @@ public class ProcessInstanceAssertMessageAssertIT {
             .newCreateInstanceCommand()
             .bpmnProcessId("process_message_subscriptions")
             .latestVersion()
-            .variable("eventId", 1)
+            .variable("eventId", "1")
             .send()
             .join();
 
     // then: waiting for first message
     CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
-        .hasVariable("eventId", 1)
+        .hasVariable("eventId", "1")
         .isWaitingForMessage("message_awaiting")
         .isNotWaitingForMessage("message_await_before_parallel")
         .isNotWaitingForMessage("message_parallel_a")
         .isNotWaitingForMessage("message_parallel_b");
 
-    // when sending a first message
+    // correlate first message
     client
-        .newPublishMessageCommand()
+        .newCorrelateMessageCommand()
         .messageName("message_awaiting")
         .correlationKey("1")
         .send()
@@ -65,8 +65,8 @@ public class ProcessInstanceAssertMessageAssertIT {
     // then has two message subscriptions
     CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
-        .hasVariable("eventId", 1)
-        .isWaitingForMessage("message_awaiting")
+        .hasVariable("eventId", "1")
+        .hasCorrelatedMessage("message_awaiting", "1")
         .isWaitingForMessage("message_await_before_parallel")
         .isNotWaitingForMessage("message_parallel_a")
         .isNotWaitingForMessage("message_parallel_b");
@@ -79,13 +79,43 @@ public class ProcessInstanceAssertMessageAssertIT {
         .send()
         .join();
 
-    // then has all four message subscriptions
+    // then we have two correlated messages
     CamundaAssert.assertThatProcessInstance(processInstance)
         .isActive()
-        .hasVariable("eventId", 1)
-        .isWaitingForMessage("message_awaiting")
-        .isWaitingForMessage("message_await_before_parallel")
+        .hasVariable("eventId", "1")
+        .hasCorrelatedMessage("message_awaiting")
+        .hasCorrelatedMessage("message_await_before_parallel")
+        // Same assertion, but with the correlation key to ensure both methods work
+        .hasCorrelatedMessage("message_awaiting", "1")
+        .hasCorrelatedMessage("message_await_before_parallel", "1")
         .isWaitingForMessage("message_parallel_a")
         .isWaitingForMessage("message_parallel_b");
+
+    // when sending the final two messages
+    client
+        .newPublishMessageCommand()
+        .messageName("message_parallel_a")
+        .correlationKey("1")
+        .send()
+        .join();
+    client
+        .newPublishMessageCommand()
+        .messageName("message_parallel_b")
+        .correlationKey("1")
+        .send()
+        .join();
+
+    // then all messages are correlated
+    CamundaAssert.assertThatProcessInstance(processInstance)
+        .isActive()
+        .hasVariable("eventId", "1")
+        .hasCorrelatedMessage("message_awaiting")
+        .hasCorrelatedMessage("message_await_before_parallel")
+        .hasCorrelatedMessage("message_awaiting", "1")
+        .hasCorrelatedMessage("message_await_before_parallel", "1")
+        .hasCorrelatedMessage("message_parallel_a")
+        .hasCorrelatedMessage("message_parallel_b")
+        .hasCorrelatedMessage("message_parallel_a", "1")
+        .hasCorrelatedMessage("message_parallel_b", "1");
   }
 }
