@@ -21,9 +21,6 @@ public class SecondaryStorage {
           "camunda.tasklist.database",
           "zeebe.broker.exporters.camundaexporter.args.connect.type");
 
-  /** Configuration for retention behavior */
-  private Retention retention = new Retention();
-
   /** Determines the type of the secondary storage database. */
   private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
 
@@ -32,14 +29,6 @@ public class SecondaryStorage {
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   private Opensearch opensearch = new Opensearch();
-
-  public Retention getRetention() {
-    return retention;
-  }
-
-  public void setRetention(final Retention retention) {
-    this.retention = retention;
-  }
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -50,7 +39,7 @@ public class SecondaryStorage {
         LEGACY_TYPE_PROPERTIES);
   }
 
-  public void setType(final SecondaryStorageType type) {
+  public void setType(SecondaryStorageType type) {
     this.type = type;
   }
 
@@ -58,7 +47,7 @@ public class SecondaryStorage {
     return elasticsearch;
   }
 
-  public void setElasticsearch(final Elasticsearch elasticsearch) {
+  public void setElasticsearch(Elasticsearch elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
@@ -66,7 +55,7 @@ public class SecondaryStorage {
     return opensearch;
   }
 
-  public void setOpensearch(final Opensearch opensearch) {
+  public void setOpensearch(Opensearch opensearch) {
     this.opensearch = opensearch;
   }
 

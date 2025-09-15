@@ -20,7 +20,6 @@ import io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.zeebe.gateway.GatewayModuleConfiguration;
@@ -47,7 +46,6 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         IdleStrategyPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
         SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class,
         // ---
         GatewayModuleConfiguration.class,
         CommonsModuleConfiguration.class);

@@ -20,11 +20,9 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
-import io.camunda.configuration.beans.SearchEngineRetentionProperties;
 import io.camunda.security.configuration.ConfiguredMappingRule;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.security.configuration.InitializationConfiguration;
@@ -67,8 +65,7 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         UnifiedConfiguration.class,
         GatewayRestPropertiesOverride.class,
         SearchEngineConnectPropertiesOverride.class,
-        SearchEngineIndexPropertiesOverride.class,
-        SearchEngineRetentionPropertiesOverride.class);
+        SearchEngineIndexPropertiesOverride.class);
 
     config = new BrokerBasedProperties();
 
@@ -342,11 +339,6 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
         "searchEngineIndexProperties",
         searchEngineIndexProperties,
         SearchEngineIndexProperties.class);
-    final var searchEngineRetentionProperties = new SearchEngineRetentionProperties();
-    withBean(
-        "searchEngineRetentionProperties",
-        searchEngineRetentionProperties,
-        SearchEngineRetentionProperties.class);
     // enable schema creation as ES is used in the current tests
     withCreateSchema(true);
     return this;
