@@ -33,7 +33,8 @@ test.describe('Identity User Flows', () => {
     await cleanupUsers(request, createdUsernames);
   });
 
-  test('Admin user can delete user', async ({
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('Admin user can delete user', async ({
     page,
     loginPage,
     identityUsersPage,
@@ -78,8 +79,9 @@ test.describe('Identity User Flows', () => {
     });
   });
 
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
   // eslint-disable-next-line playwright/expect-expect
-  test('Brand new user cannot access any OC cluster apps', async ({
+  test.skip('Brand new user cannot access any OC cluster apps', async ({
     page,
     loginPage,
     identityUsersPage,
@@ -118,7 +120,8 @@ test.describe('Identity User Flows', () => {
     });
   });
 
-  test('Admin user can grant and revoke component authorization for user', async ({
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('Admin user can grant and revoke component authorization for user', async ({
     page,
     loginPage,
     identityUsersPage,
