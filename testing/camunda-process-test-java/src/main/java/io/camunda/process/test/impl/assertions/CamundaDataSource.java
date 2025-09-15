@@ -173,7 +173,7 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<CorrelatedMessage> getCorrelatedMessages(
+  public List<CorrelatedMessage> findCorrelatedMessages(
       final Consumer<CorrelatedMessageFilter> filter) {
     return client
         .newCorrelatedMessageSearchRequest()

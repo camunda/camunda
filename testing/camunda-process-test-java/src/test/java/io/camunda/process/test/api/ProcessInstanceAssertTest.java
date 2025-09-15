@@ -1063,7 +1063,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
 
@@ -1085,7 +1085,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
               Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
 
@@ -1111,7 +1111,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
@@ -1137,7 +1137,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
@@ -1159,7 +1159,7 @@ public class ProcessInstanceAssertTest {
 
       when(processInstanceEvent.getProcessInstanceKey()).thenReturn(PROCESS_INSTANCE_KEY);
 
-      when(camundaDataSource.getCorrelatedMessages(filterCaptor.capture()))
+      when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(Collections.emptyList());
 
       // then
