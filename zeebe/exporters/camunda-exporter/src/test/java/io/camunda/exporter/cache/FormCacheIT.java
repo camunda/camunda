@@ -40,7 +40,7 @@ import org.opensearch.client.opensearch._types.Refresh;
 
 class FormCacheIT {
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
 
   @BeforeEach
   void setup() {
@@ -75,14 +75,14 @@ class FormCacheIT {
   void shouldLoadFormEntityFromBackend(final FormCacheArgument formCacheArgument)
       throws IOException {
     // given
-    final var formEntity = new FormEntity().setId("3").setFormId(IDX_FORM_PREFIX).setVersion(1L);
+    final var formEntity = new FormEntity().setId("3").setFormId(IDX_FORM_PREFIX).setVersion(1);
     formCacheArgument.indexer().accept(formEntity);
 
     // when
     final var form = formCacheArgument.formCache().get("3");
 
     // then
-    final var expectedCachedFormEntity = new CachedFormEntity(IDX_FORM_PREFIX, 1L);
+    final var expectedCachedFormEntity = new CachedFormEntity(IDX_FORM_PREFIX, 1);
     assertThat(form).isPresent().get().isEqualTo(expectedCachedFormEntity);
   }
 

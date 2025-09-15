@@ -169,7 +169,7 @@ public class FormStoreElasticSearch implements FormStore {
             searchResponse.getHits().getHits()[0].getSourceAsMap();
         final FormEntity formEntity = new FormEntity();
         formEntity.setFormId((String) sourceAsMap.get(FormIndex.BPMN_ID));
-        formEntity.setVersion(((Number) sourceAsMap.get(FormIndex.VERSION)).longValue());
+        formEntity.setVersion(((Integer) sourceAsMap.get(FormIndex.VERSION)));
         formEntity.setEmbedded((Boolean) sourceAsMap.get(FormIndex.EMBEDDED));
         formEntity.setSchema((String) sourceAsMap.get(FormIndex.SCHEMA));
         formEntity.setTenantId((String) sourceAsMap.get(FormIndex.TENANT_ID));

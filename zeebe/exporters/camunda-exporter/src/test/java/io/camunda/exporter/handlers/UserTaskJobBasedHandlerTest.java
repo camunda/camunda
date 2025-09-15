@@ -301,7 +301,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
-    formCache.put(formKey, new CachedFormEntity("my-form", 987L));
+    formCache.put(formKey, new CachedFormEntity("my-form", 987));
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));
@@ -374,7 +374,7 @@ public class UserTaskJobBasedHandlerTest {
                     .withValue(jobRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
-    formCache.put("formId", new CachedFormEntity("my-form", 987L));
+    formCache.put("formId", new CachedFormEntity("my-form", 987));
 
     // when
     final TaskEntity taskEntity = new TaskEntity().setId(String.valueOf(jobKey));
