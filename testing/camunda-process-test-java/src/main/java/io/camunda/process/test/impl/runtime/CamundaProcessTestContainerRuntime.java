@@ -216,21 +216,24 @@ public class CamundaProcessTestContainerRuntime
 
   @Override
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    final CamundaClientBuilder client =
-        CamundaClient.newClientBuilder()
-            .restAddress(getCamundaRestApiAddress())
-            .grpcAddress(getCamundaGrpcApiAddress())
-            .defaultRequestTimeout(camundaClientRequestTimeout);
 
-    if (isMultitenancyEnabled) {
-      client.credentialsProvider(
-          CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-              .username(MultitenancyConfiguration.MULTITENANCY_USER_USERNAME)
-              .password(MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD)
-              .build());
-    }
+    return () -> {
+      final CamundaClientBuilder client =
+          CamundaClient.newClientBuilder()
+              .restAddress(getCamundaRestApiAddress())
+              .grpcAddress(getCamundaGrpcApiAddress())
+              .defaultRequestTimeout(camundaClientRequestTimeout);
 
-    return () -> client;
+      if (isMultitenancyEnabled) {
+        client.credentialsProvider(
+            CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                .username(MultitenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                .password(MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                .build());
+      }
+
+      return client;
+    };
   }
 
   public CamundaContainer getCamundaContainer() {
