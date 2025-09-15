@@ -18,7 +18,9 @@
     "* 20-23,0-8 * * 1-5",
     "* * * * 0,6"
   ],
-  "labels": ["dependencies"],
+  "labels": [
+    "dependencies"
+  ],
   "vulnerabilityAlerts": {
     "labels": [
       "dependencies",
@@ -85,7 +87,7 @@
     {
       "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
       "matchManagers": [
-        "regex"
+        "custom.regex"
       ],
       "matchFileNames": [
         ".github/**"
