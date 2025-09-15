@@ -793,7 +793,7 @@ public class ProcessInstanceAssertTest {
                   assertThatProcessInstance(byParentProcesInstanceKey(PARENT_PROCESS_KEY))
                       .isCreated())
           .hasMessage(
-              "Process instance [parent key: %d] should be created but was not created.",
+              "Process instance [parent process instance key: %d] should be created but was not created.",
               PARENT_PROCESS_KEY);
     }
   }

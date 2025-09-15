@@ -91,7 +91,7 @@ public class ProcessInstanceSelectors {
 
     @Override
     public String describe() {
-      return String.format("parent key: %s", parentProcessInstanceKey);
+      return String.format("parent process instance key: %s", parentProcessInstanceKey);
     }
 
     @Override
