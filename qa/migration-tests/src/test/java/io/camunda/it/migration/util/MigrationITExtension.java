@@ -37,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -62,6 +63,7 @@ public class MigrationITExtension
   private Path tempDir;
   private MigrationDatabaseChecks migrationDatabaseChecks;
   private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = null;
+  private Consumer<Map<String, Object>> exporterArgsOverride = null;
   private Profile[] postUpdateProfiles;
 
   public MigrationITExtension() {
@@ -115,6 +117,16 @@ public class MigrationITExtension
   }
 
   /**
+   * Allows to provide an override for the CamundaExporter arguments that will be used during the
+   * upgrade process. Only applies to the 8.8 started application.
+   */
+  public MigrationITExtension withCamundaExporterArgsOverride(
+      final Consumer<Map<String, Object>> override) {
+    exporterArgsOverride = override;
+    return this;
+  }
+
+  /**
    * Allows the provision of system property overrides that will be used by the migration container.
    * This can be used to enable features that are required for the upgrade process. For example
    * "camunda.database.retention.enabled" -> "true".
@@ -153,7 +165,7 @@ public class MigrationITExtension
     if (beforeUpgradeConsumer != null && !areImportersDisabled()) {
       awaitImportersFlushed();
     }
-    migrator.update(envOverrides, postUpdateProfiles);
+    migrator.update(envOverrides, exporterArgsOverride, postUpdateProfiles);
     awaitExporterReadiness();
     awaitDemoUserIsPresent();
 
