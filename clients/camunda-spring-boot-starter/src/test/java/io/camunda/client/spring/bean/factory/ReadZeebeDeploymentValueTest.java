@@ -16,11 +16,12 @@
 package io.camunda.client.spring.bean.factory;
 
 import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.client.spring.testsupport.BeanInfoUtil.beanInfo;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.Deployment;
 import io.camunda.client.annotation.value.DeploymentValue;
-import io.camunda.client.spring.bean.ClassInfo;
+import io.camunda.client.bean.BeanInfo;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -34,7 +35,7 @@ public class ReadZeebeDeploymentValueTest {
   @Test
   public void shouldReadSingleClassPathResourceTest() {
     // given
-    final ClassInfo classInfo = ClassInfo.builder().bean(new WithSingleClassPathResource()).build();
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
         DeploymentValue.builder()
@@ -53,8 +54,7 @@ public class ReadZeebeDeploymentValueTest {
   @Test
   public void shouldReadMultipleClassPathResourcesTest() {
     // given
-    final ClassInfo classInfo =
-        ClassInfo.builder().bean(new WithMultipleClassPathResource()).build();
+    final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResource());
 
     final DeploymentValue expectedDeploymentValue =
         DeploymentValue.builder()
@@ -73,7 +73,7 @@ public class ReadZeebeDeploymentValueTest {
   @Test
   public void shouldReadNoClassPathResourcesTest() {
     // given
-    final ClassInfo classInfo = ClassInfo.builder().bean(new WithoutAnnotation()).build();
+    final BeanInfo classInfo = beanInfo(new WithoutAnnotation());
 
     // when
     final Optional<DeploymentValue> valueForClass = getDeploymentValue(classInfo);
@@ -85,8 +85,7 @@ public class ReadZeebeDeploymentValueTest {
   @Test
   public void shouldReadSingleClassPathResourceTestLegacy() {
     // given
-    final ClassInfo classInfo =
-        ClassInfo.builder().bean(new WithSingleClassPathResourceLegacy()).build();
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResourceLegacy());
 
     final DeploymentValue expectedDeploymentValue =
         DeploymentValue.builder()
@@ -105,8 +104,7 @@ public class ReadZeebeDeploymentValueTest {
   @Test
   public void shouldReadMultipleClassPathResourcesTestLegacy() {
     // given
-    final ClassInfo classInfo =
-        ClassInfo.builder().bean(new WithMultipleClassPathResourceLegacy()).build();
+    final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResourceLegacy());
 
     final DeploymentValue expectedDeploymentValue =
         DeploymentValue.builder()

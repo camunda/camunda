@@ -15,7 +15,7 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.spring.bean.MethodInfo;
+import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
