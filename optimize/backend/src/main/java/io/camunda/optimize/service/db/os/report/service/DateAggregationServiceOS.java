@@ -44,14 +44,12 @@ import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -163,14 +161,14 @@ public class DateAggregationServiceOS extends DateAggregationService {
       String dateTime, final ZoneId timezone, final DateTimeFormatter formatter) {
     try {
       return formatToCorrectTimezone(dateTime, timezone, formatter);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       try {
         dateTime =
             java.time.Instant.ofEpochMilli(Long.parseLong(dateTime))
                 .atZone(ZoneId.of("UTC"))
                 .format(formatter);
         return formatToCorrectTimezone(dateTime, timezone, formatter);
-      } catch (Exception e2) {
+      } catch (final Exception e2) {
         throw new OptimizeRuntimeException("Failed to parse date time: " + dateTime, e2);
       }
     }
@@ -200,14 +198,15 @@ public class DateAggregationServiceOS extends DateAggregationService {
 
   private Pair<String, Aggregation> createDateHistogramAggregation(
       final DateAggregationContextOS context,
-      Consumer<DateHistogramAggregation.Builder> dateHistogramAggregationBuilderModification) {
-    DateHistogramAggregation.Builder dateHistogramAggregationBuilder =
+      final Consumer<DateHistogramAggregation.Builder>
+          dateHistogramAggregationBuilderModification) {
+    final DateHistogramAggregation.Builder dateHistogramAggregationBuilder =
         new DateHistogramAggregation.Builder()
             .order(b -> b.key(SortOrder.Desc))
             .field(context.getDateField())
             .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
             .format(OPTIMIZE_DATE_FORMAT)
-            .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US));
+            .timeZone(context.getTimezone().toString());
 
     if (context.isExtendBoundsToMinMaxStats()
         && context.getMinMaxStats().isMaxValid()
@@ -239,7 +238,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
                         .field(context.getDateField())
                         .calendarInterval(mapToCalendarInterval(context.getAggregateByDateUnit()))
                         .format(OPTIMIZE_DATE_FORMAT)
-                        .timeZone(context.getTimezone().getDisplayName(TextStyle.SHORT, Locale.US)))
+                        .timeZone(context.getTimezone().toString()))
             .aggregations(context.getSubAggregations())
             .build());
   }
@@ -317,13 +316,13 @@ public class DateAggregationServiceOS extends DateAggregationService {
     do {
       // this is a do while loop to ensure there's always at least one bucket, even when min and max
       // are equal
-      ZonedDateTime nextStart = start.plus(intervalDuration);
-      boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
+      final ZonedDateTime nextStart = start.plus(intervalDuration);
+      final boolean isLast = nextStart.isAfter(max) || nextStart.isEqual(max);
       // plus 1 ms because the end of the range is exclusive yet we want to make sure max falls into
       // the last bucket
-      ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
+      final ZonedDateTime end = isLast ? nextStart.plus(1, ChronoUnit.MILLIS) : nextStart;
 
-      DateRangeExpression range =
+      final DateRangeExpression range =
           new DateRangeExpression.Builder()
               .key(dateTimeFormatter.format(start))
               .from(fieldDateMath(dateTimeFormatter.format(start)))
@@ -341,7 +340,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
             .dateRange(
                 b ->
                     b.field(context.getDateField())
-                        .timeZone(min.getZone().getDisplayName(TextStyle.SHORT, Locale.US))
+                        .timeZone(min.getZone().toString())
                         .ranges(ranges))
             .build();
 
@@ -370,7 +369,7 @@ public class DateAggregationServiceOS extends DateAggregationService {
 
   private Consumer<DateHistogramAggregation.Builder> extendBoundsConsumer(
       final DateAggregationContextOS context) {
-    return (DateHistogramAggregation.Builder builder) -> {
+    return (final DateHistogramAggregation.Builder builder) -> {
       final ProcessQueryFilterEnhancerOS queryFilterEnhancer =
           context.getProcessQueryFilterEnhancer();
       final List<DateFilterDataDto<?>> dateFilters =
