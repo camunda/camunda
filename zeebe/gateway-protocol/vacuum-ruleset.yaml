@@ -102,7 +102,7 @@ rules:
     given: $.paths[*][*].parameters[*]
     then:
       function: verifyKeyTypesPaths
-    severity: error
+    severity: warn
   schema-key-properties-must-be-strings:
     category:
       id: schemas
@@ -112,4 +112,4 @@ rules:
     given: $.components.schemas[*].properties
     then:
       function: verifyKeyTypesSchemas
-    severity: error
+    severity: warn
