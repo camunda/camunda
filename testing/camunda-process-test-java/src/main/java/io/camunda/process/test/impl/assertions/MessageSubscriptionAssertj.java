@@ -152,7 +152,7 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
 
     awaitBehavior.untilAsserted(
         () ->
-            dataSource.getCorrelatedMessages(
+            dataSource.findCorrelatedMessages(
                 f -> filter.accept(f.processInstanceKey(processInstanceKey))),
         assertionCallback);
   }
