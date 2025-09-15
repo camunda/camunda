@@ -35,8 +35,10 @@ type PageParam = {
       };
 };
 
+const USE_TASKS_QUERY_KEY = 'tasks';
+
 function getQueryKey(keys: unknown[]) {
-  return ['tasks', ...keys];
+  return [USE_TASKS_QUERY_KEY, ...keys];
 }
 
 function useTasks(
@@ -182,4 +184,4 @@ function useTasks(
   });
 }
 
-export {useTasks};
+export {useTasks, USE_TASKS_QUERY_KEY};

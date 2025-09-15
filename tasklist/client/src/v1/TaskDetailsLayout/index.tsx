@@ -65,7 +65,6 @@ const TaskDetailsLayout: React.FC = () => {
       enabled: task !== undefined && !isTaskCompleted,
     },
   );
-  const onAssignmentError = () => refetch();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const navigate = useNavigate();
@@ -141,7 +140,6 @@ const TaskDetailsLayout: React.FC = () => {
               id={task.id}
               taskState={task.taskState}
               assignee={task.assignee}
-              onAssignmentError={onAssignmentError}
             />
           }
         />
