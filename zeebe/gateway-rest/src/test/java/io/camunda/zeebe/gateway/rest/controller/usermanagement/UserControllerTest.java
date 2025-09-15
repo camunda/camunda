@@ -73,6 +73,7 @@ public class UserControllerTest {
         strings = {
           "foo",
           "Foo",
+          "foo~",
           "foo@bar.baz",
           "f_oo@bar.baz",
           "foo123",
@@ -309,9 +310,9 @@ public class UserControllerTest {
     @ParameterizedTest
     @ValueSource(
         strings = {
-          "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-          "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
-          "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+          "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
         })
     void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
       // given

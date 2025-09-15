@@ -67,7 +67,16 @@ class SetupControllerTest extends RestControllerTest {
 
   @ParameterizedTest
   @ValueSource(
-      strings = {"foo", "Foo", "foo@bar.baz", "f_oo@bar.baz", "foo123", "foo-", "foo+bar@baz.bir"})
+      strings = {
+        "foo",
+        "foo~",
+        "Foo",
+        "foo@bar.baz",
+        "f_oo@bar.baz",
+        "foo123",
+        "foo-",
+        "foo+bar@baz.bir"
+      })
   void createAdminUserShouldReturnCreated(final String username) {
     final var dto = validCreateUserRequest(username);
     final var userRecord =
@@ -317,9 +326,9 @@ class SetupControllerTest extends RestControllerTest {
   @ParameterizedTest
   @ValueSource(
       strings = {
-        "foo~", "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=",
-        "foo{", "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<",
-        "foo>", "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+        "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
+        "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
+        "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
       })
   void shouldRejectUserCreationWithIllegalCharactersInUsername(final String username) {
     // given
