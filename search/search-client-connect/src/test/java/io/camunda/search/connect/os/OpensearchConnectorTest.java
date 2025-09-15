@@ -25,8 +25,11 @@ import org.apache.hc.client5.http.impl.async.CloseableHttpAsyncClient;
 import org.apache.hc.client5.http.protocol.HttpClientContext;
 import org.apache.hc.core5.concurrent.FutureCallback;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.httpclient5.ApacheHttpClient5Transport;
@@ -77,24 +80,32 @@ class OpensearchConnectorTest {
         .isEqualTo(VALUE_CUSTOM_HEADER);
   }
 
-  @Test
-  void shouldUseBasicAuthEvenWithConfiguredAwsCredentials() {
+  @ParameterizedTest
+  @CsvSource({
+    "false, false, 'Basic auth even with AWS credentials present'",
+    "true, true, 'AWS config used when enabled and credentials present'"
+  })
+  @DisplayName("Should handle AWS configuration scenarios correctly")
+  void shouldHandleAwsConfiguration(
+      final boolean credentialsPresent, final boolean isAwsTransport, final String scenarioName) {
     System.setProperty("aws.region", "us-west-1");
 
     try {
       final var credentialsProvider =
           StaticCredentialsProvider.create(AwsBasicCredentials.create("username", "password"));
 
+      final var connectConfig = new ConnectConfiguration();
+      connectConfig.setAwsEnabled(credentialsPresent);
+
       final var connector =
           new OpensearchConnector(
-              new ConnectConfiguration(),
-              new ObjectMapper(),
-              credentialsProvider,
-              new PluginRepository());
+              connectConfig, new ObjectMapper(), credentialsProvider, new PluginRepository());
 
       final var client = connector.createClient();
 
-      Assertions.assertThat(client._transport() instanceof AwsSdk2Transport).isFalse();
+      Assertions.assertThat(client._transport() instanceof AwsSdk2Transport)
+          .as("Expected AWS transport for scenario: %s", scenarioName)
+          .isEqualTo(isAwsTransport);
     } finally {
       System.clearProperty("aws.region");
     }
