@@ -387,6 +387,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-authentication</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-security-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
 
   </dependencies>
 
