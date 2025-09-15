@@ -44,5 +44,9 @@ public interface TaskMigrationAdapter {
 
   Set<ImportPositionEntity> getImportPositions() throws MigrationException;
 
+  void blockArchiving() throws MigrationException;
+
+  void resumeArchiving() throws MigrationException;
+
   void close() throws IOException;
 }
