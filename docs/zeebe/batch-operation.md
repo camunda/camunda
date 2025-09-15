@@ -106,32 +106,56 @@ the serialized filter object, will now be stored in the local rocksDb.
 
 The next step is an asynchronous step. To not block the `StreamProcessor`,
 the `BatchOperationExecutionScheduler` component is an own _Actor_ and is running decoupled from
-the `StreamProcessors`. It is responsible for initialing the batch operation:
+the `StreamProcessors`. It is responsible for initializing the batch operation through the following
+workflow:
 
-1. Deserialize the filter object. This filter object depends on the selected batch operation type.
-2. Enhance the filter object with the local `partitionId`. Each partition should only process its
-   own items. Therefore the local filter needs to be enhanced with the
-   `partitionId` of the partition.
-3. Query the secondary database with the enhanced filter.
-   * Because ElasticSearch always limits a search result to 10000 items, the secondary database is
-     queried in pages. So each response may only contain a subset of the
-     result. Therefore, the scheduler will query the secondary database multiple times until all
-     items are fetched.
-   * In case an error occurs during the query, the scheduler will retry the initialization in the
-     next scheduler run after a configurable backoff period until the configured number of max retry
-     attempts is reached. If no retries attempts are left, a `BatchOperationIntent.FAIL_PARTITION`
-     will be distributed to the lead partition to mark this partition as failed.
-   * For each page of items, the scheduler will split the amount of items into smaller chunks. The
-     reason behind this is that a large record with many items would overload the exporters. After
-     the split, the scheduler checks if these chunk records still fit in the record batch of this
-     scheduler run. If yes, they are appended with a `BatchOperationChunkIntent.CREATE` command and
-     the scheduler will continue with the next page of
-     the searchResult. If not, we need another scheduler run to append the remaining chunks. For
-     this a `BatchOperationIntent.INITIALIZE` will store the last successful cursor of the
-     searchResult and start another scheduler run.
-4. Finally, if there are no more pages to fetch and all chunk records have been appended, the
-   scheduler will append a `BatchOperationExecutionIntent.EXECUTE` record to start the
-   actual execution of the batch operation.
+1. **Initialization Start**: The scheduler triggers a `BatchOperationIntent.INITIALIZE` command to
+   begin the initialization phase.
+2. **Initialization In Progress**: This results in a `BatchOperationIntent.INITIALIZING` event,
+   marking the batch operation as currently being initialized.
+3. **Secondary Database Query**: During the `INITIALIZING` phase, the scheduler:
+   * Deserializes the filter object (which depends on the selected batch operation type)
+   * Enriches the filter object with the local `partitionId` so each partition only processes its own
+     items
+   * Queries the secondary database (ElasticSearch/OpenSearch or RDBMS) with the enhanced filter
+   * For ElasticSearch/OpenSearch: Queries in pages due to the 10,000 item limit, making multiple
+     requests until all items are fetched
+   * For each page of items, splits them into smaller chunks to avoid overloading exporters when exporting the chunked items into single records.
+   * Appends chunks using `BatchOperationChunkIntent.CREATE` commands
+   * **Adaptive Page Size Management**: If chunk appending fails due to buffer size limitations, the
+     scheduler reduces the page size by half and retries. If the page size reaches 1 and still fails,
+     the operation is marked as failed with a `RESULT_BUFFER_SIZE_EXCEEDED` error.
+   * **Continuation Logic**: If more chunks need to be processed in subsequent scheduler runs, stores
+     the search cursor and continues with another `INITIALIZE` command
+4. **Initialization Completion**: When all items have been queried and chunked, the scheduler
+   triggers a `BatchOperationIntent.FINISH_INITIALIZATION` command.
+5. **Ready for Execution**: This results in a `BatchOperationIntent.INITIALIZED` event, marking the
+   batch operation as fully initialized and ready for execution.
+6. **Execution Start**: Finally, the scheduler appends a `BatchOperationExecutionIntent.EXECUTE`
+   record to start the actual execution of the batch operation.
+
+**Error Handling**: The scheduler implements sophisticated retry logic with configurable backoff periods. Error handling behavior depends on the specific error type:
+
+**Non-Retryable Errors (Immediate Failure):**
+- `RESULT_BUFFER_SIZE_EXCEEDED`: When the page size reaches 1 item and chunk appending still fails due to buffer limitations
+- `NOT_FOUND`: When the secondary database query target is not found
+- `NOT_UNIQUE`: When the query results are not unique as expected
+- `SECONDARY_STORAGE_NOT_SET`: When no secondary database is configured
+- `FORBIDDEN`: When the user lacks permissions to query the secondary database
+
+**Retryable Errors (With Exponential Backoff):**
+- `QUERY_FAILED`: General database query failures (network issues, temporary unavailability, etc.)
+- `UNKNOWN`: Unclassified errors that may be transient
+- Any `CamundaSearchException` not in the immediate failure category
+
+**Retry Behavior:**
+- **Initial Delay**: Configurable starting delay (default varies by deployment)
+- **Exponential Backoff**: Delay multiplied by configurable factor with each retry
+- **Maximum Delay**: Configurable upper bound on retry delay
+- **Maximum Retries**: Configurable limit on total retry attempts
+- **Final Failure**: After exhausting all retries, sends `BatchOperationIntent.FAIL_PARTITION` to the leader partition
+
+**Suspension Handling**: If a batch operation is suspended during initialization, the scheduler skips processing until it is resumed
 
 #### Step 2: Execution
 
@@ -225,28 +249,28 @@ the last searchResultCursor, which is used in the next scheduler run.
 
 #### BatchOperationIntent
 
-|          Property          |                  Record                   |                                                                           Description                                                                            |
-|----------------------------|-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `CREATE`                   | `BatchOperationCreationRecord`            | Request to create a new batch operation                                                                                                                          |
-| `CREATED`                  | `BatchOperationCreationRecord`            | Response event when a batch operation was created successfully                                                                                                   |
-| `START`                    | `BatchOperationLifecycleManagementRecord` | Internal command record to append a `STARTED` record from the scheduler                                                                                          |
-| `STARTED`                  | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as started. This starts the init phase, not the execution.                                                                               |
-| `CANCEL`                   | `BatchOperationLifecycleManagementRecord` | User command record to cancel a running batch operation                                                                                                          |
-| `CANCELED`                 | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as canceled. This stops any execution loop indefinitely.                                                                                 |
-| `SUSPEND`                  | `BatchOperationLifecycleManagementRecord` | User command record to suspend a running batch operation                                                                                                         |
-| `SUSPENDED`                | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as suspended. This stops any execution loop until it it is resumed again.                                                                |
-| `RESUME`                   | `BatchOperationLifecycleManagementRecord` | User command record to resume a suspended batch operation                                                                                                        |
-| `RESUMED`                  | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as resumed.                                                                                                                              |
-| `COMPLETE`                 | --                                        | Not used?                                                                                                                                                        |
-| `COMPLETED`                | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as completed. Indicates that the batch operation execution has completed on all partitions and was successful on at least one partition. |
-| `COMPLETE_PARTITION`       | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition completed its processing.                                                                                  |
-| `PARTITION_COMPLETED`      | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as completed for this batch operation.                                                                                                  |
-| `FAIL`                     | `BatchOperationCreationRecord`            | Internal command record to mark a batch operation partition as failed from the scheduler                                                                         |
-| `FAILED`                   | `BatchOperationLifecycleManagementRecord` | Indicates that the batch operation has failed to execute on all partitions.                                                                                      |
-| `FAIL_PARTITION`           | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition failed its init phase.                                                                                     |
-| `PARTITION_FAILED`         | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as failed for this batch operation.                                                                                                     |
-| `CONTINUE_INITIALIZATION`  | `BatchOperationInitializationRecord`      | Continues the initialization of a batch operation in the next scheduler run.                                                                                     |
-| `INITIALIZATION_CONTINUED` | `BatchOperationInitializationRecord`      | Continues the initialization of a batch operation in the next scheduler run.                                                                                     |
+|        Property         |                  Record                   |                                                                           Description                                                                            |
+|-------------------------|-------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `CREATE`                | `BatchOperationCreationRecord`            | Request to create a new batch operation                                                                                                                          |
+| `CREATED`               | `BatchOperationCreationRecord`            | Response event when a batch operation was created successfully                                                                                                   |
+| `INITIALIZE`            | `BatchOperationInitializationRecord`      | Internal command record to start the initialization phase for a batch operation                                                                                  |
+| `INITIALIZING`          | `BatchOperationInitializationRecord`      | Marks a batch operation as currently being initialized. This indicates the secondary database query is in progress.                                              |
+| `FINISH_INITIALIZATION` | `BatchOperationInitializationRecord`      | Internal command record to mark the completion of the initialization phase                                                                                       |
+| `INITIALIZED`           | `BatchOperationInitializationRecord`      | Marks a batch operation as fully initialized. All items have been queried and chunked, ready for execution.                                                      |
+| `CANCEL`                | `BatchOperationLifecycleManagementRecord` | User command record to cancel a running batch operation                                                                                                          |
+| `CANCELED`              | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as canceled. This stops any execution loop indefinitely.                                                                                 |
+| `SUSPEND`               | `BatchOperationLifecycleManagementRecord` | User command record to suspend a running batch operation                                                                                                         |
+| `SUSPENDED`             | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as suspended. This stops any execution loop until it it is resumed again.                                                                |
+| `RESUME`                | `BatchOperationLifecycleManagementRecord` | User command record to resume a suspended batch operation                                                                                                        |
+| `RESUMED`               | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as resumed.                                                                                                                              |
+| `COMPLETE`              | --                                        | Not used?                                                                                                                                                        |
+| `COMPLETED`             | `BatchOperationLifecycleManagementRecord` | Marks a batch operation as completed. Indicates that the batch operation execution has completed on all partitions and was successful on at least one partition. |
+| `COMPLETE_PARTITION`    | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition completed its processing.                                                                                  |
+| `PARTITION_COMPLETED`   | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as completed for this batch operation.                                                                                                  |
+| `FAIL`                  | `BatchOperationCreationRecord`            | Internal command record to mark a batch operation partition as failed from the scheduler                                                                         |
+| `FAILED`                | `BatchOperationLifecycleManagementRecord` | Indicates that the batch operation has failed to execute on all partitions.                                                                                      |
+| `FAIL_PARTITION`        | `BatchOperationPartitionLifecycleRecord`  | Used to notify the leader partition, that a partition failed its init phase.                                                                                     |
+| `PARTITION_FAILED`      | `BatchOperationPartitionLifecycleRecord`  | Marks a single partition as failed for this batch operation.                                                                                                     |
 
 #### BatchOperationChunkIntent
 
@@ -266,7 +290,7 @@ the last searchResultCursor, which is used in the next scheduler run.
 ### RocksDb internal storage
 
 The batchOperation module uses the local RocksDb storage to store the batch operation and its items.
-It introduces tree column families:
+It introduces three column families:
 
 - `BATCH_OPERATION`: This column family stores the major state of the match operation, the filter,
   types and execution plans. It does *not* store the itemKeys as they are stored in the separate
