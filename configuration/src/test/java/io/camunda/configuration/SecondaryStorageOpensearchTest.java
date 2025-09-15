@@ -222,6 +222,10 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
         "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
 
+        // template priority
+        "camunda.data.secondary-storage.opensearch.template-priority=" + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
+
         // per-index overrides
         "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
         "camunda.database.index.replicasByIndexName.my-index=3",

@@ -48,6 +48,7 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+
   private static final int EXPECTED_TEMPLATE_PRIORITY = 100;
   private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
   private static final Map<String, Integer> EXPECTED_SHARDS_BY_INDEX_NAME = Map.of("my-index", 2);
@@ -218,6 +219,11 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.number-of-shards="
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
+
+        // template priority
+        "camunda.data.secondary-storage.elasticsearch.template-priority="
+            + EXPECTED_TEMPLATE_PRIORITY,
+        "camunda.database.index.templatePriority=" + EXPECTED_TEMPLATE_PRIORITY,
 
         // template priority
         "camunda.data.secondary-storage.elasticsearch.template-priority="
