@@ -7368,7 +7368,8 @@ components:
           type: "boolean"
         tenantId:
           description: "The tenant ID of the incident."
-          $ref: "#/components/schemas/TenantId"
+          allOf:
+            - $ref: "#/components/schemas/TenantId"
         elementInstanceKey:
           allOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
@@ -8280,8 +8281,9 @@ components:
       properties:
         username:
           description: "The username of the user."
-          $ref: "#/components/schemas/Username"
           x-semantic-provider: true
+          allOf:
+            - $ref: "#/components/schemas/Username"
         name:
           description: "The name of the user."
           type: "string"
