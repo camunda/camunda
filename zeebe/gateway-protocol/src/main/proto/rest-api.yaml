@@ -11961,6 +11961,7 @@ components:
     OperationMetadata:
       description: "Information about the operation effect characteristics. Suitable for reasoning about the idempotency and safety of operations"
       type: object
+      x-internal: true
       discriminator:
         propertyName: kind
       oneOf:
@@ -11975,6 +11976,7 @@ components:
     CommandOperation:
       description: "A non-idempotent state transition / process action"
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -11991,6 +11993,7 @@ components:
     QueryOperation:
       description: "A pure read operation. May return a different state with each call, but causes no effect with each call."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12007,6 +12010,7 @@ components:
     CreateOperation:
       description: "Creates a new resource. The duplicatePolicy describes what happens when you make the same request more than once."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12048,6 +12052,7 @@ components:
     PatchOperation:
       description: "Updates a resource."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12064,6 +12069,7 @@ components:
     DeleteOperation:
       description: "Deletes a resource."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12080,6 +12086,7 @@ components:
     EventOperation:
       description: "Fire-and-forget notification. May fan out."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12096,6 +12103,7 @@ components:
     UpdateOperation:
       description: "Updates a resource."
       type: "object"
+      x-internal: true
       properties:
         kind:
           type: "string"
@@ -12112,6 +12120,7 @@ components:
     BatchCommandOperation:
       description: "Updates a resource."
       type: object
+      x-internal: true
       properties:
         kind:
           type: "string"
