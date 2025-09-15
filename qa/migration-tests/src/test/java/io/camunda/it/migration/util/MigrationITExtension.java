@@ -23,6 +23,11 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -192,6 +197,7 @@ public class MigrationITExtension
         elasticsearchContainer.start();
         closables.add(elasticsearchContainer);
         databaseUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
+        suppressEsWarnings();
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
       case ES -> {
@@ -212,6 +218,24 @@ public class MigrationITExtension
     Awaitility.await("Await secondary storage connection")
         .timeout(TIMEOUT_DATABASE_READINESS)
         .until(migrationDatabaseChecks::validateConnection);
+  }
+
+  // In these scenarios we increase the intervals of the Importers so more warning logs are reported
+  // by ES. To keep the test output clean we suppress these warnings.
+  private void suppressEsWarnings() {
+    try {
+      HttpClient.newHttpClient()
+          .send(
+              HttpRequest.newBuilder(URI.create(databaseUrl + "/_cluster/settings"))
+                  .PUT(
+                      BodyPublishers.ofString(
+                          "{\"persistent\": {\"logger.org.elasticsearch.deprecation\": \"OFF\"}}"))
+                  .header("Content-Type", "application/json")
+                  .build(),
+              BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException ignore) {
+      // ignore
+    }
   }
 
   private void awaitExporterReadiness() {
