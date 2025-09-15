@@ -18,7 +18,6 @@ import io.camunda.configuration.beanoverrides.GatewayRestPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
-import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
 import io.camunda.operate.OperateModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import java.util.HashMap;
@@ -55,7 +54,6 @@ public class StandaloneOperate {
                 GatewayRestPropertiesOverride.class,
                 SearchEngineConnectPropertiesOverride.class,
                 SearchEngineIndexPropertiesOverride.class,
-                SearchEngineRetentionPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
