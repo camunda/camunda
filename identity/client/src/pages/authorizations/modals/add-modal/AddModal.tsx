@@ -73,6 +73,7 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.DELETE_DRD,
     PermissionType.DELETE_FORM,
     PermissionType.DELETE_PROCESS,
+    PermissionType.DELETE_RESOURCE,
   ],
   GROUP: [
     PermissionType.CREATE,
@@ -88,8 +89,10 @@ const resourcePermissions: ResourcePermissionsType = {
   ],
   MESSAGE: [PermissionType.CREATE, PermissionType.READ],
   PROCESS_DEFINITION: [
+    PermissionType.CANCEL_PROCESS_INSTANCE,
     PermissionType.CREATE_PROCESS_INSTANCE,
     PermissionType.DELETE_PROCESS_INSTANCE,
+    PermissionType.MODIFY_PROCESS_INSTANCE,
     PermissionType.READ_PROCESS_DEFINITION,
     PermissionType.READ_PROCESS_INSTANCE,
     PermissionType.READ_USER_TASK,
@@ -102,7 +105,11 @@ const resourcePermissions: ResourcePermissionsType = {
     PermissionType.READ,
     PermissionType.UPDATE,
   ],
-  SYSTEM: [PermissionType.READ, PermissionType.UPDATE],
+  SYSTEM: [
+    PermissionType.READ,
+    PermissionType.READ_USAGE_METRIC,
+    PermissionType.UPDATE,
+  ],
   TENANT: [
     PermissionType.CREATE,
     PermissionType.DELETE,
