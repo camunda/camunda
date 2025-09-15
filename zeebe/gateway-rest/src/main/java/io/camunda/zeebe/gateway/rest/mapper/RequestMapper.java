@@ -13,7 +13,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClo
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
-import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -68,6 +67,8 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
@@ -952,20 +953,44 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
       final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case final DecisionEvaluationById req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      case final DecisionEvaluationByKey req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      default ->
+          Either.left(
+              RestErrorMapper.createProblemDetail(
+                  HttpStatus.BAD_REQUEST,
+                  "Unsupported decision evaluation instruction type: "
+                      + request.getClass().getSimpleName(),
+                  "Only decision evaluation by id or key is supported."));
+    };
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final DecisionEvaluationById request, final boolean multiTenancyEnabled) {
+
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
-            .flatMap(
-                tenantId ->
-                    validateEvaluateDecisionRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)));
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, DecisionEvaluationInstruction::getDecisionDefinitionId),
-                getKeyOrDefault(
-                    request, DecisionEvaluationInstruction::getDecisionDefinitionKey, -1L),
-                getMapOrEmpty(request, DecisionEvaluationInstruction::getVariables),
+                getStringOrEmpty(request, DecisionEvaluationById::getDecisionDefinitionId),
+                -1L,
+                getMapOrEmpty(request, DecisionEvaluationById::getVariables),
+                tenantId));
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final DecisionEvaluationByKey request, final boolean multiTenancyEnabled) {
+
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
+    return validationResponse.map(
+        tenantId ->
+            new DecisionEvaluationRequest(
+                "",
+                getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
+                getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
   }
 
