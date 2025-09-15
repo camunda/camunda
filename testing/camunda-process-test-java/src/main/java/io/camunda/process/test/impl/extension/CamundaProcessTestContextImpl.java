@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
@@ -63,13 +64,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   private final Consumer<AutoCloseable> clientCreationCallback;
   private final CamundaManagementClient camundaManagementClient;
 
+  private final JsonMapper jsonMapper;
+  private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
   private final CamundaAssertAwaitBehavior awaitBehavior;
 
   public CamundaProcessTestContextImpl(
       final CamundaProcessTestRuntime camundaRuntime,
       final Consumer<AutoCloseable> clientCreationCallback,
       final CamundaManagementClient camundaManagementClient,
-      final CamundaAssertAwaitBehavior awaitBehavior) {
+      final CamundaAssertAwaitBehavior awaitBehavior,
+      final JsonMapper jsonMapper,
+      final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
     camundaClientBuilderFactory = camundaRuntime.getCamundaClientBuilderFactory();
     camundaRestApiAddress = camundaRuntime.getCamundaRestApiAddress();
     camundaGrpcApiAddress = camundaRuntime.getCamundaGrpcApiAddress();
@@ -77,11 +83,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     this.clientCreationCallback = clientCreationCallback;
     this.camundaManagementClient = camundaManagementClient;
     this.awaitBehavior = awaitBehavior;
+    this.jsonMapper = jsonMapper;
+    this.zeebeJsonMapper = zeebeJsonMapper;
   }
 
   @Override
   public CamundaClient createClient() {
-    return createClient(builder -> {});
+    return createClient(
+        builder -> {
+          if (jsonMapper != null) {
+            builder.withJsonMapper(jsonMapper);
+          }
+        });
   }
 
   @Override
@@ -99,7 +112,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public ZeebeClient createZeebeClient() {
-    return createZeebeClient(builder -> {});
+    return createZeebeClient(
+        builder -> {
+          if (zeebeJsonMapper != null) {
+            builder.withJsonMapper(zeebeJsonMapper);
+          }
+        });
   }
 
   @Override
