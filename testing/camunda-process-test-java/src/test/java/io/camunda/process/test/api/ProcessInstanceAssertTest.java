@@ -1013,8 +1013,7 @@ public class ProcessInstanceAssertTest {
                   assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected"))
           .hasMessage(
-              "Process instance [key: 1] should have no active message subscription [message-name: 'expected'], but the following subscriptions were active:\n"
-                  + "\t- name: 'expected', correlation-key: 'correlation-key'");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected'], but found <1> active subscriptions.");
     }
 
     @Test
@@ -1041,8 +1040,7 @@ public class ProcessInstanceAssertTest {
                   assertThatProcessInstance(processInstanceEvent)
                       .isNotWaitingForMessage("expected", "correlation-key"))
           .hasMessage(
-              "Process instance [key: 1] should have no active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but the following subscriptions were active:\n"
-                  + "\t- name: 'expected', correlation-key: 'correlation-key'");
+              "Process instance [key: 1] should have no active message subscription [message-name: 'expected', correlation-key: 'correlation-key'], but found <1> active subscriptions.");
     }
   }
 
