@@ -79,8 +79,8 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
-                    "%s has an active message subscription [message-name: '%s'], but such a subscription was not expected.",
-                    actual, messageName)
+                    "%s should have no active message subscription [message-name: '%s'], but found <%d> active subscriptions.",
+                    actual, messageName, messageSubscriptions.size())
                 .isEmpty());
   }
 
@@ -97,8 +97,8 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
         messageSubscriptions ->
             assertThat(messageSubscriptions)
                 .withFailMessage(
-                    "%s has an active message subscription [message-name: '%s', correlation-key: '%s'], but such a subscription was not expected.",
-                    actual, messageName, correlationKey)
+                    "%s should have no active message subscription [message-name: '%s', correlation-key: '%s'], but found <%d> active subscriptions.",
+                    actual, messageName, correlationKey, messageSubscriptions.size())
                 .isEmpty());
   }
 
@@ -136,7 +136,7 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
 
     awaitBehavior.untilAsserted(
         () ->
-            dataSource.getMessageSubscriptions(
+            dataSource.findMessageSubscriptions(
                 f -> filter.accept(f.processInstanceKey(processInstanceKey))),
         assertionCallback);
   }
@@ -148,7 +148,7 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
 
     awaitBehavior.untilAsserted(
         () ->
-            dataSource.getCorrelatedMessages(
+            dataSource.findCorrelatedMessages(
                 f -> filter.accept(f.processInstanceKey(processInstanceKey))),
         assertionCallback);
   }

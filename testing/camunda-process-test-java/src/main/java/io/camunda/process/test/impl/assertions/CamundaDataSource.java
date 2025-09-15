@@ -161,7 +161,7 @@ public class CamundaDataSource {
     return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
   }
 
-  public List<MessageSubscription> getMessageSubscriptions(
+  public List<MessageSubscription> findMessageSubscriptions(
       final Consumer<MessageSubscriptionFilter> filter) {
     return client
         .newMessageSubscriptionSearchRequest()
@@ -173,7 +173,7 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<CorrelatedMessage> getCorrelatedMessages(
+  public List<CorrelatedMessage> findCorrelatedMessages(
       final Consumer<CorrelatedMessageFilter> filter) {
     return client
         .newCorrelatedMessageSearchRequest()

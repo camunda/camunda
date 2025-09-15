@@ -17,8 +17,10 @@ package io.camunda.process.test.impl.testresult;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import java.util.HashMap;
@@ -56,6 +58,7 @@ public class CamundaProcessTestResultCollector {
     result.setVariables(collectVariables(processInstanceKey));
     result.setActiveIncidents(collectActiveIncidents(processInstanceKey));
     result.setActiveElementInstances(collectActiveElementInstances(processInstanceKey));
+    result.setActiveMessageSubscriptions(collectActiveMessageSubscriptions(processInstanceKey));
 
     return result;
   }
@@ -81,5 +84,14 @@ public class CamundaProcessTestResultCollector {
   private List<ElementInstance> collectActiveElementInstances(final long processInstanceKey) {
     return dataSource.findElementInstances(
         filter -> filter.processInstanceKey(processInstanceKey).state(ElementInstanceState.ACTIVE));
+  }
+
+  private List<MessageSubscription> collectActiveMessageSubscriptions(
+      final long processInstanceKey) {
+    return dataSource.findMessageSubscriptions(
+        filter ->
+            filter
+                .processInstanceKey(processInstanceKey)
+                .messageSubscriptionState(MessageSubscriptionState.CREATED));
   }
 }
