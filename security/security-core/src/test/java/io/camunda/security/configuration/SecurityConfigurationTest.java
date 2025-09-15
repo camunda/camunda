@@ -21,10 +21,10 @@ class SecurityConfigurationTest {
     final String pattern = securityConfiguration.getIdValidationPattern();
 
     // when
-    final String idWithSpecialCharTilda = "id_with_special_char~";
+    final String idWithSpecialCharTilde = "id_with_special_char~";
 
     // then
-    assertThat(idWithSpecialCharTilda.matches(pattern)).isTrue();
+    assertThat(idWithSpecialCharTilde.matches(pattern)).isTrue();
   }
 
   @Test
