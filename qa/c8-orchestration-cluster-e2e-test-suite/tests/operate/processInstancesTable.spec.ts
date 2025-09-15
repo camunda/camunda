@@ -73,7 +73,9 @@ test.describe('Process Instances Table', () => {
     await captureScreenshot(page, testInfo);
     await captureFailureVideo(page, testInfo);
   });
-  test('Sorting of process instances', async ({
+
+  // Skipped due to bug 38103: https://github.com/camunda/camunda/issues/38103
+  test.skip('Sorting of process instances', async ({
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
