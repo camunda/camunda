@@ -8,7 +8,6 @@
 
 import {Tooltip} from '@carbon/react';
 import {StatusContainer, Text, ErrorFilled} from './styled';
-//@ts-expect-error Carbon types are wrong
 import {Information} from '@carbon/react/icons';
 
 const Failed: React.FC = () => {
