@@ -7,7 +7,6 @@
  */
 
 import {StatusContainer, Text, Tooltip, WarningAltFilled} from './styled';
-//@ts-expect-error Carbon types are wrong
 import {Information} from '@carbon/react/icons';
 
 const PartiallyCompleted: React.FC = () => {

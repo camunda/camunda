@@ -18,7 +18,6 @@ import {
   WarningFilled as BaseWarningFilled,
   WarningAltFilled as BaseWarningAltFilled,
   CheckmarkFilled as BaseCheckmark,
-  //@ts-expect-error Carbon types are wrong
   ErrorFilled as BaseErrorFilled,
 } from '@carbon/react/icons';
 
