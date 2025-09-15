@@ -5715,7 +5715,7 @@ components:
       properties:
         tenantId:
           type: "string"
-		  description: "The unique identifier of the tenant."
+          description: "The unique identifier of the tenant."
           x-semantic-provider: true
           allOf:
             - $ref: "#/components/schemas/TenantId"
