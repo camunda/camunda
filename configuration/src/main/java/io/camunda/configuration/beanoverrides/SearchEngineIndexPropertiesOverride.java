@@ -62,6 +62,9 @@ public class SearchEngineIndexPropertiesOverride {
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
       override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
     }
+    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
+      override.setShardsByIndexName(database.getNumberOfShardsPerIndex());
+    }
 
     return override;
   }

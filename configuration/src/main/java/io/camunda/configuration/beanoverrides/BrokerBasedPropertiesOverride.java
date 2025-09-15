@@ -561,6 +561,9 @@ public class BrokerBasedPropertiesOverride {
     if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
       setArg(args, "index.replicasByIndexName", database.getNumberOfReplicasPerIndex());
     }
+    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
+      setArg(args, "index.shardsByIndexName", database.getNumberOfShardsPerIndex());
+    }
   }
 
   @SuppressWarnings("unchecked")

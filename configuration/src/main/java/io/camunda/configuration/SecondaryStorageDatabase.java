@@ -40,6 +40,9 @@ public abstract class SecondaryStorageDatabase {
   /** Per-index replica overrides. */
   private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
+  /** Per-index shard overrides. */
+  private Map<String, Integer> numberOfShardsPerIndex = new HashMap<>();
+
   /** Variable size threshold for the database configured as secondary storage. */
   private int variableSizeThreshold = 8191;
 
@@ -158,6 +161,19 @@ public abstract class SecondaryStorageDatabase {
     this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
   }
 
+  public Map<String, Integer> getNumberOfShardsPerIndex() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-shards-per-index",
+        numberOfShardsPerIndex,
+        Map.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyShardsByIndexNameProperties());
+  }
+
+  public void setNumberOfShardsPerIndex(final Map<String, Integer> numberOfShardsPerIndex) {
+    this.numberOfShardsPerIndex = numberOfShardsPerIndex;
+  }
+
   public int getVariableSizeThreshold() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".variable-size-threshold",
@@ -249,6 +265,12 @@ public abstract class SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.index.replicasByIndexName",
         "zeebe.broker.exporters.camundaexporter.args.index.replicasByIndexName");
+  }
+
+  private Set<String> legacyShardsByIndexNameProperties() {
+    return Set.of(
+        "camunda.database.index.shardsByIndexName",
+        "zeebe.broker.exporters.camundaexporter.args.index.shardsByIndexName");
   }
 
   private Set<String> legacyVariableSizeThresholdProperties() {
