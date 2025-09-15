@@ -51,6 +51,7 @@ public class SecondaryStorageOpensearchTest {
   private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
   private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
   private static final boolean EXPECTED_WAIT_FOR_IMPORTERS = false;
+  private static final Map<String, Integer> EXPECTED_REPLICAS_BY_INDEX_NAME = Map.of("my-index", 3);
 
   @Nested
   @TestPropertySource(
@@ -67,7 +68,8 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.variable-size-threshold="
             + EXPECTED_VARIABLE_SIZE_THRESHOLD,
         "camunda.data.secondary-storage.opensearch.wait-for-importers="
-            + EXPECTED_WAIT_FOR_IMPORTERS
+            + EXPECTED_WAIT_FOR_IMPORTERS,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3"
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -145,6 +147,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
     }
 
     @Test
@@ -166,6 +170,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(searchEngineIndexProperties.shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
     }
   }
 
@@ -233,6 +239,8 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.wait-for-importers="
             + EXPECTED_WAIT_FOR_IMPORTERS,
         "camunda.database.index.shouldWaitForImporters=" + EXPECTED_WAIT_FOR_IMPORTERS,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas-per-index.my-index=3",
+        "camunda.database.index.replicasByIndexName.my-index=3"
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -314,6 +322,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(exporterConfiguration.getIndex().getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
     }
 
     @Test
@@ -338,6 +348,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
       assertThat(searchEngineIndexProperties.shouldWaitForImporters())
           .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
+      assertThat(searchEngineIndexProperties.getReplicasByIndexName())
+          .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
     }
   }
 }

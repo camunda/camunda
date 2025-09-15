@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 public abstract class SecondaryStorageDatabase {
@@ -34,6 +36,9 @@ public abstract class SecondaryStorageDatabase {
 
   /** How many replicas Elasticsearch uses for all indices. */
   private int numberOfReplicas = 0;
+
+  /** Per-index replica overrides. */
+  private Map<String, Integer> numberOfReplicasPerIndex = new HashMap<>();
 
   /** Variable size threshold for the database configured as secondary storage. */
   private int variableSizeThreshold = 8191;
@@ -140,6 +145,19 @@ public abstract class SecondaryStorageDatabase {
     this.numberOfReplicas = numberOfReplicas;
   }
 
+  public Map<String, Integer> getNumberOfReplicasPerIndex() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".number-of-replicas-per-index",
+        numberOfReplicasPerIndex,
+        Map.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyReplicasByIndexNameProperties());
+  }
+
+  public void setNumberOfReplicasPerIndex(final Map<String, Integer> numberOfReplicasPerIndex) {
+    this.numberOfReplicasPerIndex = numberOfReplicasPerIndex;
+  }
+
   public int getVariableSizeThreshold() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         prefix() + ".variable-size-threshold",
@@ -225,6 +243,12 @@ public abstract class SecondaryStorageDatabase {
     return Set.of(
         "camunda.database.index.numberOfReplicas",
         "zeebe.broker.exporters.camundaexporter.args.index.numberOfReplicas");
+  }
+
+  private Set<String> legacyReplicasByIndexNameProperties() {
+    return Set.of(
+        "camunda.database.index.replicasByIndexName",
+        "zeebe.broker.exporters.camundaexporter.args.index.replicasByIndexName");
   }
 
   private Set<String> legacyVariableSizeThresholdProperties() {

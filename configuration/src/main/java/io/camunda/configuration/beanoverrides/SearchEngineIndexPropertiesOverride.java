@@ -59,6 +59,9 @@ public class SearchEngineIndexPropertiesOverride {
     override.setNumberOfReplicas(database.getNumberOfReplicas());
     override.setVariableSizeThreshold(database.getVariableSizeThreshold());
     override.setShouldWaitForImporters(database.isWaitForImporters());
+    if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
+      override.setReplicasByIndexName(database.getNumberOfReplicasPerIndex());
+    }
 
     return override;
   }
