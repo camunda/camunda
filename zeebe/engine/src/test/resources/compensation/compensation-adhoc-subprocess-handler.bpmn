@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="definitions_51c88d32-dc2c-4d83-a720-6aa1410b6644" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" exporter="Camunda Modeler" exporterVersion="5.37.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <process id="compensation-process" name="A" isExecutable="true">
+    <startEvent id="Event_1yfhzbl">
+      <outgoing>Flow_1mwrsen</outgoing>
+    </startEvent>
+    <sequenceFlow id="Flow_1mwrsen" sourceRef="Event_1yfhzbl" targetRef="compensableActivity" />
+    <sequenceFlow id="Flow_08ge0ph" sourceRef="compensableActivity" targetRef="Event_0vtgg13" />
+    <endEvent id="Event_09fawg4">
+      <incoming>Flow_0klrid6</incoming>
+    </endEvent>
+    <serviceTask id="compensableActivity" name="A">
+      <extensionElements>
+        <zeebe:taskDefinition type="compensableActivity" />
+      </extensionElements>
+      <incoming>Flow_1mwrsen</incoming>
+      <outgoing>Flow_08ge0ph</outgoing>
+    </serviceTask>
+    <boundaryEvent id="Event_0xm6yf8" attachedToRef="compensableActivity">
+      <compensateEventDefinition id="CompensateEventDefinition_0mnc4nz" />
+    </boundaryEvent>
+    <adHocSubProcess id="adhoc-subprocess" name="adhoc-subprocess" isForCompensation="true">
+      <extensionElements>
+        <zeebe:adHoc activeElementsCollection="=[&#34;compensationHandler&#34;]" />
+      </extensionElements>
+      <serviceTask id="compensationHandler" name="B">
+        <extensionElements>
+          <zeebe:taskDefinition type="compensationHandler" />
+        </extensionElements>
+      </serviceTask>
+    </adHocSubProcess>
+    <sequenceFlow id="Flow_0klrid6" sourceRef="Event_0vtgg13" targetRef="Event_09fawg4" />
+    <intermediateThrowEvent id="Event_0vtgg13">
+      <incoming>Flow_08ge0ph</incoming>
+      <outgoing>Flow_0klrid6</outgoing>
+      <compensateEventDefinition id="CompensateEventDefinition_12rfhh2" />
+    </intermediateThrowEvent>
+    <association id="Association_0ud2ky6" associationDirection="One" sourceRef="Event_0xm6yf8" targetRef="adhoc-subprocess" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_d458583a-dbd3-44f4-9045-ef478ea1576c">
+    <bpmndi:BPMNPlane id="BPMNPlane_b1706292-8b4e-48dd-9ca2-e5d428c1f478" bpmnElement="compensation-process">
+      <bpmndi:BPMNShape id="Event_1yfhzbl_di" bpmnElement="Event_1yfhzbl">
+        <dc:Bounds x="172" y="107" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_09fawg4_di" bpmnElement="Event_09fawg4">
+        <dc:Bounds x="502" y="107" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1ftdfxh_di" bpmnElement="compensableActivity">
+        <dc:Bounds x="260" y="85" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_1r3u9dr_di" bpmnElement="Event_0vtgg13">
+        <dc:Bounds x="412" y="107" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_00z9vfr_di" bpmnElement="adhoc-subprocess" isExpanded="true">
+        <dc:Bounds x="450" y="200" width="350" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0o7gekd_di" bpmnElement="compensationHandler">
+        <dc:Bounds x="500" y="260" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Association_0ud2ky6_di" bpmnElement="Association_0ud2ky6">
+        <di:waypoint x="340" y="183" />
+        <di:waypoint x="340" y="300" />
+        <di:waypoint x="450" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="Event_1ed56xc_di" bpmnElement="Event_0xm6yf8">
+        <dc:Bounds x="322" y="147" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1mwrsen_di" bpmnElement="Flow_1mwrsen">
+        <di:waypoint x="208" y="125" />
+        <di:waypoint x="260" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_08ge0ph_di" bpmnElement="Flow_08ge0ph">
+        <di:waypoint x="360" y="125" />
+        <di:waypoint x="412" y="125" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0klrid6_di" bpmnElement="Flow_0klrid6">
+        <di:waypoint x="448" y="125" />
+        <di:waypoint x="502" y="125" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
