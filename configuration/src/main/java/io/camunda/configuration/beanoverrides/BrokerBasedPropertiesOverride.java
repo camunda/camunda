@@ -675,6 +675,15 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+    if (database.getTemplatePriority() != null) {
+      setArg(args, "index.templatePriority", database.getTemplatePriority());
+    }
+    if (!database.getNumberOfReplicasPerIndex().isEmpty()) {
+      setArg(args, "index.replicasByIndexName", database.getNumberOfReplicasPerIndex());
+    }
+    if (!database.getNumberOfShardsPerIndex().isEmpty()) {
+      setArg(args, "index.shardsByIndexName", database.getNumberOfShardsPerIndex());
+    }
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
