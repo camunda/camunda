@@ -58,7 +58,6 @@
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="PARENT_ELEMENT_INSTANCE_KEY" type="BIGINT" />
       <column name="NUM_INCIDENTS" type="SMALLINT" />
-      <column name="ELEMENT_ID" type="VARCHAR(255)"/>
       <column name="VERSION" type="SMALLINT" />
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="TREE_PATH" type="VARCHAR(4000)" />
