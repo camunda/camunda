@@ -21,7 +21,7 @@ import io.camunda.client.protocol.rest.FormResult;
 
 public class FormImpl implements Form {
   private String formId;
-  private Long version;
+  private Integer version;
   private Long formKey;
   private Object schema;
   private String tenantId;
