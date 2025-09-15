@@ -666,6 +666,13 @@ describe('<Task />', () => {
         },
         {once: true},
       ),
+      http.get(
+        '/v1/tasks/:taskId',
+        () => {
+          return HttpResponse.json(taskMocks.unassignedTask());
+        },
+        {once: true},
+      ),
     );
     await user.click(
       await screen.findByRole('button', {name: /^assign to me$/i}),
