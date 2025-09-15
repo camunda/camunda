@@ -7,4 +7,4 @@
  */
 package io.camunda.exporter.cache.form;
 
-public record CachedFormEntity(String formId, Long formVersion) {}
+public record CachedFormEntity(String formId, Integer formVersion) {}
