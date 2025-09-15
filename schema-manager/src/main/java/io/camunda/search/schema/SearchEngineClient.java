@@ -43,6 +43,8 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void putIndexLifeCyclePolicy(final String policyName, final String deletionMinAge);
 
+  void putIndexMeta(final String indexName, Map<String, Object> meta);
+
   boolean importersCompleted(
       final int partitionId, final List<IndexDescriptor> importPositionIndices);
 
