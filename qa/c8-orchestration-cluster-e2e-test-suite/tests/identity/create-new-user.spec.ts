@@ -29,7 +29,8 @@ test.describe.parallel('login page', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Create new Test user', async ({page, identityUsersPage}) => {
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('Create new Test user', async ({page, identityUsersPage}) => {
     const testData = createTestData({user: true});
     const testUser = testData.user!;
 
