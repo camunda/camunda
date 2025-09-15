@@ -42,8 +42,7 @@ test.describe.serial('users CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('create a user', async ({identityUsersPage, page}) => {
+  test('create a user', async ({identityUsersPage, page}) => {
     await expect(identityUsersPage.userCell('demo@example.com')).toBeVisible();
     await identityUsersPage.createUser(NEW_USER);
     await waitForItemInList(page, identityUsersPage.userCell(NEW_USER.email), {
@@ -52,8 +51,7 @@ test.describe.serial('users CRUD', () => {
     });
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('edit a user', async ({identityUsersPage, page}) => {
+  test('edit a user', async ({identityUsersPage, page}) => {
     await identityUsersPage.editUser(NEW_USER, EDITED_USER);
     const item = identityUsersPage.userCell(EDITED_USER.email);
     await waitForItemInList(page, item, {
@@ -62,8 +60,7 @@ test.describe.serial('users CRUD', () => {
     });
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('delete a user', async ({identityUsersPage, page}) => {
+  test('delete a user', async ({identityUsersPage, page}) => {
     const item = identityUsersPage.userCell(EDITED_USER.email);
     await identityUsersPage.deleteUser(EDITED_USER);
 
