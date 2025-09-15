@@ -16,6 +16,11 @@ import {
 import {waitForItemInList} from 'utils/waitForItemInList';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {cleanupRoles} from 'utils/rolesCleanup';
+import {cleanupUsers} from 'utils/usersCleanup';
+
+const createdRoleIds: string[] = [];
+const createdUserIds: string[] = [];
 
 test.describe.serial('authorizations CRUD', () => {
   let NEW_USER: NonNullable<ReturnType<typeof createTestData>['user']>;
@@ -38,6 +43,14 @@ test.describe.serial('authorizations CRUD', () => {
     NEW_AUTH_ROLE = testData.authRole!;
     NEW_USER_AUTHORIZATION = testData.userAuth!;
     NEW_COMPONENT_AUTHORIZATION = testData.componentAuth!;
+
+    createdRoleIds.push(NEW_AUTH_ROLE.id);
+    createdUserIds.push(NEW_USER.username);
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
   });
 
   test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
@@ -54,7 +67,8 @@ test.describe.serial('authorizations CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('create user authorization', async ({
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('create user authorization', async ({
     page,
     identityUsersPage,
     identityRolesPage,
@@ -105,7 +119,8 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('create component authorization', async ({
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('create component authorization', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
@@ -124,7 +139,8 @@ test.describe.serial('authorizations CRUD', () => {
     });
   });
 
-  test('delete an authorization', async ({
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('delete an authorization', async ({
     page,
     identityHeader,
     loginPage,
@@ -173,6 +189,83 @@ test.describe.serial('authorizations CRUD', () => {
       await identityUsersPage.deleteUser(NEW_USER);
       const userItem = identityUsersPage.userCell(NEW_USER.username);
       await waitForItemInList(page, userItem, {shouldBeVisible: false});
+    });
+  });
+});
+
+test.describe('authorization scenarios', () => {
+  test.beforeEach(async ({page, loginPage, identityAuthorizationsPage}) => {
+    await identityAuthorizationsPage.navigateToAuthorizations();
+    await loginPage.login(
+      LOGIN_CREDENTIALS.username,
+      LOGIN_CREDENTIALS.password,
+    );
+    await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('create component authorization for a user', async ({
+    page,
+    identityUsersPage,
+    identityAuthorizationsPage,
+    identityHeader,
+    loginPage,
+  }) => {
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+
+    await test.step(`Create new test user for direct authorization`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      createdUserIds.push(testUser.username);
+
+      await identityUsersPage.navigateToUsers();
+      await identityUsersPage.createUser(testUser);
+
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+    });
+
+    await test.step(`Create component authorization for user`, async () => {
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step(`Verify user can access Identity after authorization`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser.username, testUser.password);
+      await expect(identityUsersPage.userCell(testUser.email)).toBeVisible();
     });
   });
 });

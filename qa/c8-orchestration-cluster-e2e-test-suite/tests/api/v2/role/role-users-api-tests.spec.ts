@@ -25,20 +25,43 @@ import {
   createRole,
   userFromState,
 } from '../../../../utils/requestHelpers';
+import {cleanupRoles} from '../../../../utils/rolesCleanup';
+import {cleanupUsers} from '../../../../utils/usersCleanup';
 
 test.describe.parallel('Role Users API Tests', () => {
   const state: Record<string, unknown> = {};
+  const createdRoleIds: string[] = [];
+  const createdUserIds: string[] = [];
 
   test.beforeAll(async ({request}) => {
     await createRole(request, state, '1');
     await createRole(request, state, '2');
     await assignRoleToUsers(request, 3, state['roleId1'] as string, state);
     await assignRoleToUsers(request, 1, state['roleId2'] as string, state);
+
+    createdRoleIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('roleId'))
+        .map(([, value]) => value as string),
+    );
+
+    createdUserIds.push(
+      ...Object.entries(state)
+        .filter(([key]) => key.startsWith('userId'))
+        .map(([, value]) => value as string),
+    );
+  });
+
+  test.afterAll(async ({request}) => {
+    await cleanupRoles(request, createdRoleIds);
+    await cleanupUsers(request, createdUserIds);
   });
 
   test('Assign Role To User', async ({request}) => {
     const role = await createRole(request);
+    createdRoleIds.push(role.roleId as string);
     const user = 'test-user' + generateUniqueId();
+    createdUserIds.push(user);
     const p = {
       userId: user,
       roleId: role.roleId as string,

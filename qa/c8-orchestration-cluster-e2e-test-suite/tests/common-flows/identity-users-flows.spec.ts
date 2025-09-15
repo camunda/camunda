@@ -12,8 +12,13 @@ import {expect} from '@playwright/test';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {createTestData} from 'utils/constants';
+import {verifyAccess} from 'utils/accessVerification';
+import {waitForItemInList} from 'utils/waitForItemInList';
+import {cleanupUsers} from '../../utils/usersCleanup';
 
 test.describe('Identity User Flows', () => {
+  const createdUsernames: string[] = [];
+
   test.beforeEach(async ({loginPage, page}) => {
     await navigateToApp(page, 'identity');
     await loginPage.login('demo', 'demo');
@@ -24,7 +29,12 @@ test.describe('Identity User Flows', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('Admin user can delete user', async ({
+  test.afterAll(async ({request}) => {
+    await cleanupUsers(request, createdUsernames);
+  });
+
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('Admin user can delete user', async ({
     page,
     loginPage,
     identityUsersPage,
@@ -69,8 +79,9 @@ test.describe('Identity User Flows', () => {
     });
   });
 
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
   // eslint-disable-next-line playwright/expect-expect
-  test('Brand new user cannot access any OC cluster apps', async ({
+  test.skip('Brand new user cannot access any OC cluster apps', async ({
     page,
     loginPage,
     identityUsersPage,
@@ -91,6 +102,8 @@ test.describe('Identity User Flows', () => {
         email: testUser.email!,
         name: testUser.name ?? testUser.username,
       });
+
+      createdUsernames.push(testUser.username);
     });
 
     await test.step(`Login with the new user and verify Identity access is denied`, async () => {
@@ -103,6 +116,119 @@ test.describe('Identity User Flows', () => {
     await test.step(`Verify Operate access is denied`, async () => {
       await page.goto(relativizePath(`/operate`));
       await accessDeniedPage.expectAccessDenied();
+      await verifyAccess(page, false, 'operate');
+    });
+  });
+
+  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
+  test.skip('Admin user can grant and revoke component authorization for user', async ({
+    page,
+    loginPage,
+    identityUsersPage,
+    identityHeader,
+    identityAuthorizationsPage,
+    accessDeniedPage,
+  }) => {
+    test.slow();
+    let testUser: {
+      username: string;
+      name: string;
+      email: string;
+      password: string;
+    };
+
+    await test.step(`Create new user`, async () => {
+      const testData = createTestData({user: true});
+      testUser = testData.user!;
+
+      await identityUsersPage.createUser({
+        username: testUser.username,
+        password: testUser.password,
+        email: testUser.email,
+        name: testUser.name,
+      });
+
+      createdUsernames.push(testUser.username);
+    });
+
+    await test.step(`Grant Authorizations to user for all applications`, async () => {
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+
+      await identityAuthorizationsPage.createAuthorization({
+        ownerType: 'User',
+        ownerId: testUser.name,
+        resourceType: 'Component',
+        resourceId: '*',
+        accessPermissions: ['Access'],
+      });
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser!.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: true,
+        timeout: 10000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+        clickNext: true,
+      });
+    });
+
+    await test.step(`Login with the new user and verify Identity access`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+      await expect(page).toHaveURL(new RegExp(`identity`));
+      await verifyAccess(page);
+    });
+
+    await test.step(`Verify Operate access`, async () => {
+      await verifyAccess(page, true, 'operate');
+    });
+
+    await test.step(`Verify Tasklist access`, async () => {
+      await page.goto(`${process.env.CORE_APPLICATION_URL}/tasklist`);
+      await loginPage.login(testUser!.username, testUser!.password);
+      await expect(page).toHaveURL(new RegExp(`tasklist`));
+      await verifyAccess(page, true, 'tasklist');
+    });
+
+    await test.step(`Logout, login with demo and delete the created authorization`, async () => {
+      await identityAuthorizationsPage.navigateToAuthorizations();
+      await loginPage.login('demo', 'demo');
+      await expect(page).toHaveURL(relativizePath(Paths.authorizations()));
+
+      await identityAuthorizationsPage.selectResourceTypeTab('Component');
+      await identityAuthorizationsPage.clickDeleteAuthorizationButton(
+        testUser!.username,
+      );
+
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeVisible();
+      await identityAuthorizationsPage.clickDeleteAuthorizationSubButton();
+      await expect(
+        identityAuthorizationsPage.deleteAuthorizationModal,
+      ).toBeHidden();
+
+      const authorizationItem = identityAuthorizationsPage.getAuthorizationCell(
+        testUser!.username,
+      );
+      await waitForItemInList(page, authorizationItem, {
+        shouldBeVisible: false,
+        timeout: 15000,
+        onAfterReload: () =>
+          identityAuthorizationsPage.selectResourceTypeTab('Component'),
+      });
+    });
+
+    await test.step(`Logout and login with the new user`, async () => {
+      await identityHeader.logout();
+      await loginPage.login(testUser!.username, testUser!.password);
+    });
+
+    await test.step(`Verify Identity access is denied`, async () => {
+      await verifyAccess(page, false);
     });
 
     await test.step(`Verify Tasklist access is denied`, async () => {
