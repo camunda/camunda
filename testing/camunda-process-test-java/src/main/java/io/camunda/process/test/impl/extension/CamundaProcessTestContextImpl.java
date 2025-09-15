@@ -38,7 +38,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -158,7 +158,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void mockChildProcess(final String childProcessId) {
-    mockChildProcess(childProcessId, new HashMap<>());
+    mockChildProcess(childProcessId, Collections.emptyMap());
   }
 
   @Override
@@ -185,7 +185,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeJob(final String jobType) {
-    completeJob(jobType, new HashMap<>());
+    completeJob(jobType, Collections.emptyMap());
   }
 
   @Override
@@ -203,7 +203,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void throwBpmnErrorFromJob(final String jobType, final String errorCode) {
-    throwBpmnErrorFromJob(jobType, errorCode, new HashMap<>());
+    throwBpmnErrorFromJob(jobType, errorCode, Collections.emptyMap());
   }
 
   @Override
@@ -223,7 +223,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeUserTask(final String elementId) {
-    completeUserTask(UserTaskSelectors.byElementId(elementId), new HashMap<>());
+    completeUserTask(UserTaskSelectors.byElementId(elementId), Collections.emptyMap());
   }
 
   @Override
@@ -233,7 +233,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   @Override
   public void completeUserTask(final UserTaskSelector userTaskSelector) {
-    completeUserTask(userTaskSelector, new HashMap<>());
+    completeUserTask(userTaskSelector, Collections.emptyMap());
   }
 
   @Override
