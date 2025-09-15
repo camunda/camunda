@@ -23,7 +23,6 @@ public record ProcessInstanceDbModel(
     Long parentProcessInstanceKey,
     Long parentElementInstanceKey,
     Integer numIncidents,
-    String elementId,
     int version,
     int partitionId,
     String treePath,
@@ -66,7 +65,6 @@ public record ProcessInstanceDbModel(
     private String tenantId;
     private Long parentProcessInstanceKey;
     private Long parentElementInstanceKey;
-    private String elementId = null;
     private int numIncidents = 0;
     private int version;
     private int partitionId;
@@ -133,11 +131,6 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
-    public ProcessInstanceDbModelBuilder elementId(final String elementId) {
-      this.elementId = elementId;
-      return this;
-    }
-
     public ProcessInstanceDbModelBuilder version(final int version) {
       this.version = version;
       return this;
@@ -171,7 +164,6 @@ public record ProcessInstanceDbModel(
           parentProcessInstanceKey,
           parentElementInstanceKey,
           numIncidents,
-          elementId,
           version,
           partitionId,
           treePath,
