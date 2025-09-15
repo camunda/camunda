@@ -118,8 +118,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public GroupMemberDbReader groupMemberReader() {
-    return new GroupMemberDbReader();
+  public GroupMemberDbReader groupMemberReader(final GroupMapper groupMapper) {
+    return new GroupMemberDbReader(groupMapper);
   }
 
   @Bean
