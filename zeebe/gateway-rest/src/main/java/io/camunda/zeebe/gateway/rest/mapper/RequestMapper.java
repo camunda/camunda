@@ -22,7 +22,6 @@ import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
-import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
@@ -88,6 +87,8 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -770,23 +771,73 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstruction request, final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case final ProcessInstanceCreationInstructionById req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+      case final ProcessInstanceCreationInstructionByKey req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+      default ->
+          Either.left(
+              RestErrorMapper.createProblemDetail(
+                  HttpStatus.BAD_REQUEST,
+                  "Unsupported process instance creation instruction type: "
+                      + request.getClass().getSimpleName(),
+                  "Only process instance creation by id or key is supported."));
+    };
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
+    return validationResponse.map(
+        tenantId ->
+            new ProcessInstanceCreateRequest(
+                -1L,
+                getStringOrEmpty(
+                    request, ProcessInstanceCreationInstructionById::getProcessDefinitionId),
+                getIntOrDefault(
+                    request,
+                    ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
+                    -1),
+                getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
+                tenantId,
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                request.getStartInstructions().stream()
+                    .map(
+                        instruction ->
+                            new io.camunda.zeebe.protocol.impl.record.value.processinstance
+                                    .ProcessInstanceCreationStartInstruction()
+                                .setElementId(instruction.getElementId()))
+                    .toList(),
+                request.getRuntimeInstructions().stream()
+                    .map(
+                        instruction -> {
+                          final var instructionCasted =
+                              (ProcessInstanceCreationTerminateInstruction) instruction;
+                          return new ProcessInstanceCreationRuntimeInstruction()
+                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                              .setAfterElementId(instructionCasted.getAfterElementId());
+                        })
+                    .toList(),
+                request.getFetchVariables(),
+                request.getTags()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
                 getKeyOrDefault(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionKey, -1L),
-                getStringOrEmpty(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionId),
-                getIntOrDefault(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionVersion, -1),
-                getMapOrEmpty(request, ProcessInstanceCreationInstruction::getVariables),
+                    request, ProcessInstanceCreationInstructionByKey::getProcessDefinitionKey, -1L),
+                "",
+                -1,
+                getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
                 tenantId,
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),

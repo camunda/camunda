@@ -8,16 +8,13 @@
 package io.camunda.zeebe.gateway.rest.validator;
 
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ALL_REQUIRED_FIELD;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validateOperationReference;
 
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MigrateProcessInstanceMappingInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationPlan;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
@@ -37,29 +34,6 @@ public class ProcessInstanceRequestValidator {
 
   public static final ProcessInstanceMigrationBatchOperationPlan EMPTY_MIGRATION_PLAN =
       new ProcessInstanceMigrationBatchOperationPlan();
-
-  public static Optional<ProblemDetail> validateCreateProcessInstanceRequest(
-      final ProcessInstanceCreationInstruction request) {
-    return validate(
-        violations -> {
-          if (request.getProcessDefinitionId() == null
-              && request.getProcessDefinitionKey() == null) {
-            violations.add(
-                ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
-                    List.of("processDefinitionId", "processDefinitionKey")));
-          }
-          if (request.getProcessDefinitionId() != null
-              && request.getProcessDefinitionKey() != null) {
-            violations.add(
-                ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
-                    List.of("processDefinitionId", "processDefinitionKey")));
-          }
-          // Validate processDefinitionKey format if provided
-          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
-          validateOperationReference(request.getOperationReference(), violations);
-          validateTags(request.getTags(), violations);
-        });
-  }
 
   private static void validateTags(final Set<String> tags, final List<String> violations) {
     violations.addAll(TagsValidator.validate(tags));
