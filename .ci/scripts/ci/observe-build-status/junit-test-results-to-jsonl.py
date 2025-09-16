@@ -22,6 +22,8 @@ def determine_test_status(testcase):
         return 'skipped'
     elif testcase.findall('failure'):
         return 'failure'
+    elif testcase.findall('error'):
+        return 'error'
     else:
         return 'success'
 
