@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
@@ -233,6 +234,17 @@ public interface CamundaClientBuilder {
 
   /** Sets the maximum number of concurrent HTTP connections the client can open. */
   CamundaClientBuilder maxHttpConnections(int maxConnections);
+
+  /**
+   * A custom retryBackoffSupplier allows the client to determine the default retry backoff strategy
+   * that every job worker will apply unless configured otherwise. By default, a static retry
+   * backoff of <code>PT0S</code> is used.
+   *
+   * @param jobExceptionHandler the retry backoff supplier to retrieve the retry backoff for every
+   *     fail job command
+   * @return this builder for chaining
+   */
+  CamundaClientBuilder defaultJobWorkerExceptionHandler(JobExceptionHandler jobExceptionHandler);
 
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.
