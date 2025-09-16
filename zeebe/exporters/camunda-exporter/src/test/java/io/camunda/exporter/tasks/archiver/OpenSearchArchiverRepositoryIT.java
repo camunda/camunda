@@ -20,8 +20,13 @@ import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
@@ -93,6 +98,8 @@ final class OpenSearchArchiverRepositoryIT {
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private TestExporterResourceProvider resourceProvider;
+  private String indexPrefix;
+  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
   void afterEach() throws IOException {
@@ -106,8 +113,8 @@ final class OpenSearchArchiverRepositoryIT {
   @BeforeEach
   void beforeEach() {
     config.setRetention(retention);
-    final var indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, false);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -609,9 +616,17 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
-  void shouldApplyIlmToAllHistoricalIndices() {
+  void shouldApplyIlmToAllHistoricalIndices() throws Exception {
     // given
     retention.setEnabled(true);
+    // ensure all templates are created
+    startupSchema();
+    // create indices for all templates with a date in the index name
+    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final String date = "2026-01-10";
+    for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
+      searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+    }
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
         Mockito.spy(
@@ -652,6 +667,60 @@ final class OpenSearchArchiverRepositoryIT {
               assertThat(split[1]).isEqualTo("-" + matchingTemplate.get().getFullQualifiedName());
               assertThat(split[2]).isEqualTo("-" + matchingTemplate.get().getAlias());
             });
+    for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var response =
+                    genericClientSpy
+                        .executeAsync(
+                            Requests.builder()
+                                .method("GET")
+                                .endpoint("_plugins/_ism/explain/" + template.getIndexPattern())
+                                .build())
+                        .get();
+
+                final var json =
+                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                // Check runtime index (should not have ISM policy)
+                assertThat(
+                        json.get(template.getFullQualifiedName())
+                            .get("index.plugins.index_state_management.policy_id")
+                            .isNull())
+                    .isTrue();
+                // Check dated index (should have ISM policy)
+                assertThat(
+                        json.get(template.getIndexPattern().replace("*", date))
+                            .get("index.plugins.index_state_management.policy_id")
+                            .asText())
+                    .isEqualTo("camunda-retention-policy");
+              });
+    }
+  }
+
+  private void startupSchema() {
+    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var connectConfig = new ConnectConfiguration();
+    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setType(DatabaseType.OPENSEARCH.toString());
+    final var schemaManagerConfig = new SchemaManagerConfiguration();
+    schemaManagerConfig.getRetry().setMaxRetries(1);
+    final var searchEngineConfiguration =
+        SearchEngineConfiguration.of(
+            builder ->
+                builder
+                    .connect(connectConfig)
+                    .retention(retention)
+                    .schemaManager(schemaManagerConfig));
+    new SchemaManager(
+            searchEngineClient,
+            resourceProvider.getIndexDescriptors(),
+            resourceProvider.getIndexTemplateDescriptors(),
+            searchEngineConfiguration,
+            objectMapper)
+        .startup();
   }
 
   private void createBatchOperationIndex() throws IOException {

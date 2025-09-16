@@ -20,11 +20,20 @@ import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -81,6 +90,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private TestExporterResourceProvider resourceProvider;
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
+  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
   void afterEach() throws IOException {
@@ -627,13 +637,21 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
-  void shouldApplyIlmToAllHistoricalIndices() {
+  void shouldApplyIlmToAllHistoricalIndices() throws Exception {
     // given
     retention.setEnabled(true);
-    final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
-    final var indicesClientSpy = spy(clientSpy.indices());
-    doReturn(indicesClientSpy).when(clientSpy).indices();
-    final var repository = createRepository(clientSpy);
+    // ensure all templates are created
+    startupSchema();
+    // create indices for all templates with a date in the index name
+    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final String date = "2026-01-10";
+    for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
+      searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+    }
+    final var asyncClient = spy(new ElasticsearchAsyncClient(transport));
+    final var indicesClientSpy = spy(asyncClient.indices());
+    doReturn(indicesClientSpy).when(asyncClient).indices();
+    final var repository = createRepository(asyncClient);
     final var captor = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
     // when
@@ -668,6 +686,59 @@ final class ElasticsearchArchiverRepositoryIT {
               assertThat(split[1]).isEqualTo("-" + matchingTemplate.get().getFullQualifiedName());
               assertThat(split[2]).isEqualTo("-" + matchingTemplate.get().getAlias());
             });
+    for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var settings =
+                    testClient
+                        .indices()
+                        .getSettings(b -> b.index(template.getIndexPattern()))
+                        .result();
+                // Check runtime index (should not have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getFullQualifiedName())
+                            .settings()
+                            .index()
+                            .lifecycle())
+                    .isNull();
+                // Check historical index (should have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getIndexPattern().replace("*", date))
+                            .settings()
+                            .index()
+                            .lifecycle()
+                            .name())
+                    .isEqualTo("camunda-retention-policy");
+              });
+    }
+  }
+
+  private void startupSchema() {
+    final var searchEngineClient = new ElasticsearchEngineClient(testClient, objectMapper);
+    final var connectConfig = new ConnectConfiguration();
+    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setType(DatabaseType.ELASTICSEARCH.toString());
+    connectConfig.setUrl(searchDB.esUrl());
+    final var schemaManagerConfig = new SchemaManagerConfiguration();
+    schemaManagerConfig.getRetry().setMaxRetries(1);
+    final SearchEngineConfiguration searchEngineConfiguration =
+        SearchEngineConfiguration.of(
+            builder ->
+                builder
+                    .connect(connectConfig)
+                    .retention(retention)
+                    .schemaManager(schemaManagerConfig));
+    new SchemaManager(
+            searchEngineClient,
+            resourceProvider.getIndexDescriptors(),
+            resourceProvider.getIndexTemplateDescriptors(),
+            searchEngineConfiguration,
+            objectMapper)
+        .startup();
   }
 
   private void putLifecyclePolicies() throws IOException {
