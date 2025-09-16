@@ -30,6 +30,7 @@ const Title = styled.h3`
 
 const Details = styled.div`
   display: flex;
+  align-items: flex-end;
   flex-direction: row;
   justify-content: space-between;
   padding-top: var(--cds-spacing-07);

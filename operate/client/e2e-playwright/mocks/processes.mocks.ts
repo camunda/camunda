@@ -863,7 +863,7 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsTotalCount: 1,
       operationsFailedCount: 1,
       operationsCompletedCount: 0,
-      state: 'COMPLETED_WITH_ERRORS',
+      state: 'PARTIALLY_COMPLETED',
     },
     {
       batchOperationKey: 'f9ddd801-ff34-44da-8d7c-366036b6d8d8',
