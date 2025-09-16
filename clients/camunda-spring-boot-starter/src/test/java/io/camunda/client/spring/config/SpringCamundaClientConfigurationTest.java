@@ -77,6 +77,6 @@ public class SpringCamundaClientConfigurationTest {
     final SpringCamundaClientConfiguration camundaClientConfiguration =
         new SpringCamundaClientConfiguration(properties(), null, null, null, null, null);
     final String toStringOutput = camundaClientConfiguration.toString();
-    assertThat(toStringOutput).matches("CamundaClientConfigurationImpl\\{.*}");
+    assertThat(toStringOutput).matches("SpringCamundaClientConfiguration\\{.*}");
   }
 }
