@@ -166,6 +166,12 @@ public class StateControllerImpl implements StateController {
 
     final NextSnapshotId nextSnapshotId;
     try {
+      if (lowerBoundSnapshotPosition == 0 && !forceSnapshot) {
+        future.completeExceptionally(
+            new IllegalArgumentException(
+                "Snapshot can be taken at processed position 0 only if forced."));
+        return;
+      }
       nextSnapshotId = tryFindNextSnapshotId(lowerBoundSnapshotPosition);
     } catch (final NoEntryAtSnapshotPosition e) {
       future.completeExceptionally(e);
@@ -191,7 +197,7 @@ public class StateControllerImpl implements StateController {
       throws NoEntryAtSnapshotPosition {
     final var exportedPosition = exporterPositionSupplier.applyAsLong(db);
     final var backupPosition = backupPositionSupplier.applyAsLong(db);
-    if (exportedPosition == -1 || backupPosition == -1) {
+    if (exportedPosition == -1 || backupPosition == -1 || lastProcessedPosition == 0) {
       final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
       if (latestSnapshot.isPresent()) {
         // re-use index and term from the latest snapshot to ensure that the records from there are
