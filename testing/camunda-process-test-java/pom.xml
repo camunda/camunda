@@ -100,6 +100,11 @@
     </dependency>
 
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-bpmn-model</artifactId>
     </dependency>
@@ -169,9 +174,21 @@
 
     <!-- Required to access the version as a resource-->
     <resources>
+      <!-- Regular resources with filtering enabled -->
       <resource>
         <filtering>true</filtering>
         <directory>src/main/resources</directory>
+        <excludes>
+          <exclude>coverage/static/media/**</exclude>
+        </excludes>
+      </resource>
+      <!-- Binary files with filtering disabled -->
+      <resource>
+        <filtering>false</filtering>
+        <directory>src/main/resources</directory>
+        <includes>
+          <include>coverage/static/media/**</include>
+        </includes>
       </resource>
     </resources>
 
@@ -189,6 +206,52 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
+      </plugin>
+
+      <!-- Coverage frontend build with frontend-maven-plugin -->
+      <plugin>
+        <groupId>com.github.eirslett</groupId>
+        <artifactId>frontend-maven-plugin</artifactId>
+        <configuration>
+          <workingDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</workingDirectory>
+          <installDirectory>${project.basedir}/../camunda-process-test-coverage-frontend</installDirectory>
+        </configuration>
+        <executions>
+          <!-- Install Node and NPM -->
+          <execution>
+            <id>install-node-and-npm</id>
+            <goals>
+              <goal>install-node-and-npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <nodeVersion>v22.9.0</nodeVersion>
+              <npmVersion>10.8.3</npmVersion>
+            </configuration>
+          </execution>
+          <!-- Install dependencies -->
+          <execution>
+            <id>npm-install</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <arguments>install</arguments>
+            </configuration>
+          </execution>
+          <!-- Build frontend (output: src/main/resources/coverage) -->
+          <execution>
+            <id>npm-build</id>
+            <goals>
+              <goal>npm</goal>
+            </goals>
+            <phase>generate-resources</phase>
+            <configuration>
+              <arguments>run build</arguments>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
