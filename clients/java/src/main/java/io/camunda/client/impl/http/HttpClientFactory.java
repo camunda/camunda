@@ -61,6 +61,7 @@ import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
+import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -134,7 +135,10 @@ public class HttpClientFactory {
             .setHostnameVerifier(hostnameVerifier)
             .build();
     final PoolingAsyncClientConnectionManager connectionManager =
-        PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
+        PoolingAsyncClientConnectionManagerBuilder.create()
+            .setPoolConcurrencyPolicy(PoolConcurrencyPolicy.LAX)
+            .setTlsStrategy(tlsStrategy)
+            .build();
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
