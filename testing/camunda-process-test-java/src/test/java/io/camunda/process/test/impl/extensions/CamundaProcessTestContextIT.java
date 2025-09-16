@@ -33,7 +33,7 @@ import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -62,8 +62,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 @CamundaProcessTest
 public class CamundaProcessTestContextIT {
 
-  private final UnifiedJsonMapper unifiedJsonMapper =
-      new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
+  private final CamundaAssertJsonMapper jsonMapper =
+      new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
 
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
@@ -944,7 +944,7 @@ public class CamundaProcessTestContextIT {
     inputVariables.put("experience", 11);
     inputVariables.put("type", "luxury");
 
-    final Object decisionOutput = unifiedJsonMapper.readJson(decisionOutputJson);
+    final Object decisionOutput = jsonMapper.readJson(decisionOutputJson);
 
     // When
     processTestContext.mockDmnDecision(decisionId, decisionOutput);

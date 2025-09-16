@@ -34,7 +34,7 @@ import io.camunda.process.test.impl.assertions.DecisionInstanceAssertj;
 import io.camunda.process.test.impl.assertions.ProcessInstanceAssertj;
 import io.camunda.process.test.impl.assertions.UserTaskAssertj;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.time.Duration;
 import java.util.function.Function;
 
@@ -89,7 +89,7 @@ public class CamundaAssert {
 
   private static CamundaAssertAwaitBehavior awaitBehavior = DEFAULT_AWAIT_BEHAVIOR;
 
-  private static UnifiedJsonMapper unifiedJsonMapper = new UnifiedJsonMapper(DEFAULT_JSON_MAPPER);
+  private static CamundaAssertJsonMapper jsonMapper = new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -149,7 +149,7 @@ public class CamundaAssert {
    * @see #DEFAULT_JSON_MAPPER
    */
   public static void setJsonMapper(final JsonMapper jsonMapper) {
-    unifiedJsonMapper = new UnifiedJsonMapper(jsonMapper);
+    CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
   }
 
   /**
@@ -161,7 +161,7 @@ public class CamundaAssert {
    */
   @Deprecated
   public static void setJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
-    unifiedJsonMapper = new UnifiedJsonMapper(jsonMapper);
+    CamundaAssert.jsonMapper = new CamundaAssertJsonMapper(jsonMapper);
   }
 
   // ======== Assertions ========
@@ -257,7 +257,7 @@ public class CamundaAssert {
     return new ProcessInstanceAssertj(
         getDataSource(),
         awaitBehavior,
-        unifiedJsonMapper,
+        jsonMapper,
         processInstanceSelector,
         elementSelector);
   }
@@ -277,7 +277,7 @@ public class CamundaAssert {
   private static ProcessInstanceAssertj createProcessInstanceAssertj(
       final long processInstanceKey) {
     return new ProcessInstanceAssertj(
-        getDataSource(), awaitBehavior, unifiedJsonMapper, processInstanceKey, elementSelector);
+        getDataSource(), awaitBehavior, jsonMapper, processInstanceKey, elementSelector);
   }
 
   /**
@@ -311,7 +311,7 @@ public class CamundaAssert {
    */
   public static DecisionInstanceAssert assertThatDecision(final DecisionSelector decisionSelector) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, unifiedJsonMapper, decisionSelector);
+        getDataSource(), awaitBehavior, jsonMapper, decisionSelector);
   }
 
   /**
@@ -334,7 +334,7 @@ public class CamundaAssert {
   public static DecisionInstanceAssertj assertThatDecision(
       final EvaluateDecisionResponse response) {
     return new DecisionInstanceAssertj(
-        getDataSource(), awaitBehavior, unifiedJsonMapper, DecisionSelectors.byResponse(response));
+        getDataSource(), awaitBehavior, jsonMapper, DecisionSelectors.byResponse(response));
   }
 
   /**
