@@ -46,8 +46,9 @@ jobs:
                 done \
               | jq -s . \
               | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Zeebe SNAPSHOT"}] + .'
-          )          
+          )
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Matrix output: $matrix"  # Debug output for inspection
 
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
