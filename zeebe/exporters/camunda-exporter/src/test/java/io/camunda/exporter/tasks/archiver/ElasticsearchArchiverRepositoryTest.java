@@ -14,6 +14,7 @@ import co.elastic.clients.json.SimpleJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -62,15 +63,12 @@ final class ElasticsearchArchiverRepositoryTest {
   private ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
-
+    final var config = new HistoryConfiguration();
+    config.setRetention(retention);
     return new ElasticsearchArchiverRepository(
         1,
-        new HistoryConfiguration(),
-        retention,
-        "testPrefix",
-        "instance",
-        "batch",
-        "zeebe-record",
+        config,
+        new TestExporterResourceProvider("testPrefix", true),
         client,
         Runnable::run,
         metrics,

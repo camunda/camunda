@@ -25,62 +25,47 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.GetIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
-import io.camunda.search.schema.config.RetentionConfiguration;
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.ComponentNames;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
 public final class ElasticsearchArchiverRepository extends ElasticsearchRepository
     implements ArchiverRepository {
-  private static final String ALL_INDICES = "*";
-  private static final String ALL_INDICES_PATTERN = ".*";
-  // Matches versioned index names with version suffixes: {name}-{major}.{minor}.{patch}_{suffix}
-  // e.g. "camunda-tenant-8.8.0_2025-02-23"
-  private static final String VERSIONED_INDEX_PATTERN = ".+-\\d+\\.\\d+\\.\\d+_.+$";
-  private static final String USAGE_METRIC_INDEX_PREFIX =
-      "%s-%s".formatted(ComponentNames.CAMUNDA, UsageMetricIndex.INDEX_NAME);
-
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
   private final int partitionId;
   private final HistoryConfiguration config;
-  private final RetentionConfiguration retention;
-  private final String indexPrefix;
-  private final String processInstanceIndex;
-  private final String batchOperationIndex;
+  private final IndexTemplateDescriptor listViewTemplateDescriptor;
+  private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+  private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
-  private final String zeebeIndexPrefix;
   private final Cache<String, String> lifeCyclePolicyApplied =
       Caffeine.newBuilder().maximumSize(200).build();
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
       final HistoryConfiguration config,
-      final RetentionConfiguration retention,
-      final String indexPrefix,
-      final String processInstanceIndex,
-      final String batchOperationIndex,
-      final String zeebeIndexPrefix,
+      final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
       final CamundaExporterMetrics metrics,
@@ -88,12 +73,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
-    this.retention = retention;
-    this.indexPrefix = indexPrefix;
-    this.processInstanceIndex = processInstanceIndex;
-    this.batchOperationIndex = batchOperationIndex;
+    allTemplatesDescriptors = resourceProvider.getIndexTemplateDescriptors();
+    listViewTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    batchOperationTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
     this.metrics = metrics;
-    this.zeebeIndexPrefix = zeebeIndexPrefix;
   }
 
   @Override
@@ -105,7 +90,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
-            (response) -> createArchiveBatch(response, ListViewTemplate.END_DATE), executor);
+            (response) ->
+                createArchiveBatch(response, ListViewTemplate.END_DATE, listViewTemplateDescriptor),
+            executor);
   }
 
   @Override
@@ -117,27 +104,65 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .search(searchRequest, Object.class)
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
-            (response) -> createArchiveBatch(response, BatchOperationTemplate.END_DATE), executor);
+            (response) ->
+                createArchiveBatch(
+                    response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
+            executor);
   }
 
   @Override
-  public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
+  public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
+    final var retention = config.getRetention();
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
 
-    return setIndexLifeCycleToMatchingIndices(List.of(destinationIndexName));
+    final var matchingIndexTemplate =
+        allTemplatesDescriptors.stream()
+            .filter(
+                index -> destinationIndexName.matches(index.getAllVersionsIndexNameRegexPattern()))
+            .findFirst()
+            .orElseThrow(
+                () ->
+                    new IllegalArgumentException(
+                        "No matching index template found for " + destinationIndexName));
+    final var policyName = getRetentionPolicyName(matchingIndexTemplate.getIndexName(), retention);
+    if (policyName.equals(lifeCyclePolicyApplied.getIfPresent(destinationIndexName))) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    return applyPolicyToIndices(policyName, destinationIndexName)
+        .thenApply(
+            ok -> {
+              lifeCyclePolicyApplied.put(destinationIndexName, policyName);
+              return null;
+            });
   }
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    final var retention = config.getRetention();
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(indexPrefix);
-    final var indexWildcard = "^" + formattedPrefix + VERSIONED_INDEX_PATTERN;
-    return fetchMatchingIndexes(indexWildcard)
-        .thenComposeAsync(this::setIndexLifeCycleToMatchingIndices, executor);
+    final var indicesGroupedByPolicyName =
+        allTemplatesDescriptors.stream()
+            .collect(
+                Collectors.groupingBy(
+                    index -> getRetentionPolicyName(index.getIndexName(), retention)));
+
+    final var requests =
+        indicesGroupedByPolicyName.entrySet().stream()
+            .flatMap(
+                entry ->
+                    entry.getValue().stream()
+                        .map(
+                            template ->
+                                applyPolicyToIndices(
+                                    entry.getKey(), buildHistoricalIndicesPattern(template))))
+            .toList();
+
+    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));
   }
 
   @Override
@@ -194,7 +219,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final var countRequest =
         CountRequest.of(
             cr ->
-                cr.index(processInstanceIndex)
+                cr.index(listViewTemplateDescriptor.getFullQualifiedName())
                     .query(
                         finishedProcessInstancesQuery(
                             config.getArchivingTimePoint(), partitionId)));
@@ -218,95 +243,40 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         q -> q.filter(endDateQ).filter(isProcessInstanceQ).filter(partitionQ));
   }
 
-  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexWildcard) {
-    final Pattern indexNamePattern = Pattern.compile(indexWildcard);
+  private CompletableFuture<List<String>> fetchMatchingIndexes(final String indexPattern) {
     return client
         .indices()
-        .get(new GetIndexRequest.Builder().index(ALL_INDICES).build())
-        .thenApplyAsync(
-            response ->
-                response.result().keySet().stream()
-                    .filter(indexName -> indexNamePattern.matcher(indexName).matches())
-                    .toList(),
-            executor);
+        .get(b -> b.index(indexPattern))
+        .thenApplyAsync(response -> new ArrayList<>(response.result().keySet()), executor);
   }
 
   private SearchRequest createFinishedInstancesSearchRequest() {
     return createSearchRequest(
-        processInstanceIndex,
+        listViewTemplateDescriptor.getFullQualifiedName(),
         finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
         ListViewTemplate.END_DATE);
   }
 
-  private CompletableFuture<Void> setIndexLifeCycleToMatchingIndices(
-      final List<String> destinationIndexNames) {
-    if (destinationIndexNames.isEmpty()) {
-      logger.debug("No indices to set lifecycle policies for");
-      return CompletableFuture.completedFuture(null);
-    }
+  private CompletableFuture<PutIndicesSettingsResponse> applyPolicyToIndices(
+      final String policyName, final String indexNamePattern) {
 
-    final var policyToIndicesMap =
-        destinationIndexNames.stream()
-            .collect(
-                Collectors.groupingBy(
-                    indexName ->
-                        isUsageMetricIndex(indexName)
-                            ? retention.getUsageMetricsPolicyName()
-                            : retention.getPolicyName()));
-
-    final var requests =
-        policyToIndicesMap.entrySet().stream()
-            .map(entry -> applyPolicyToIndices(entry.getKey(), entry.getValue()))
-            .toList();
-
-    return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]))
-        .thenApplyAsync(ignored -> null, executor);
-  }
-
-  private boolean isUsageMetricIndex(final String indexName) {
-    return indexName.contains(USAGE_METRIC_INDEX_PREFIX);
-  }
-
-  private CompletableFuture<Void> applyPolicyToIndices(
-      final String policyName, final List<String> indices) {
-
-    final var indicesWithoutPolicy =
-        indices.stream()
-            .filter(index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
-            .toList();
-
-    if (indicesWithoutPolicy.isEmpty()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
-    logger.debug(
-        "Applying policy '{}' to {} indices: {}",
-        policyName,
-        indicesWithoutPolicy.size(),
-        indicesWithoutPolicy);
+    logger.debug("Applying policy '{}' to indices: {}", policyName, indexNamePattern);
 
     final var settingsRequest =
         new PutIndicesSettingsRequest.Builder()
             .settings(settings -> settings.lifecycle(lifecycle -> lifecycle.name(policyName)))
-            .index(indicesWithoutPolicy)
+            .index(indexNamePattern)
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .build();
 
-    return client
-        .indices()
-        .putSettings(settingsRequest)
-        .thenApplyAsync(
-            ok -> {
-              indicesWithoutPolicy.forEach(
-                  indexName -> lifeCyclePolicyApplied.put(indexName, policyName));
-              return null;
-            },
-            executor);
+    return client.indices().putSettings(settingsRequest);
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
-      final SearchResponse<?> response, final String field) {
+      final SearchResponse<?> response,
+      final String field,
+      final IndexTemplateDescriptor templateDescriptor) {
     final var hits = response.hits().hits();
     if (hits.isEmpty()) {
       return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
@@ -317,7 +287,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     final CompletableFuture<String> dateFuture =
         (lastHistoricalArchiverDate == null)
             ? DateOfArchivedDocumentsUtil.getLastHistoricalArchiverDate(
-                fetchMatchingIndexes(ALL_INDICES_PATTERN), zeebeIndexPrefix)
+                fetchMatchingIndexes(buildHistoricalIndicesPattern(templateDescriptor)))
             : CompletableFuture.completedFuture(lastHistoricalArchiverDate);
 
     return dateFuture.thenApply(
@@ -359,7 +329,10 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                         d.field(BatchOperationTemplate.END_DATE)
                             .lte(config.getArchivingTimePoint())));
 
-    return createSearchRequest(batchOperationIndex, endDateQ, BatchOperationTemplate.END_DATE);
+    return createSearchRequest(
+        batchOperationTemplateDescriptor.getFullQualifiedName(),
+        endDateQ,
+        BatchOperationTemplate.END_DATE);
   }
 
   private SearchRequest createSearchRequest(

@@ -7,17 +7,31 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.function.Function;
 
 /** Placeholder interface for future abstracted access to the underlying storage (e.g. ES/OS). */
 public interface ArchiverRepository extends AutoCloseable {
+  // ILM policy name overrides
+  // pending correct rollover implementation for metric indices
+  // https://github.com/camunda/camunda/issues/34709
+  Map<String, Function<RetentionConfiguration, String>> INDEX_TO_RETENTION_POLICY_FIELD =
+      Map.of(
+          UsageMetricIndex.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
+          UsageMetricTUIndex.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
+
   CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch();
 
   CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
 
-  CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName);
+  CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
 
@@ -45,6 +59,21 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();
 
+  default String getRetentionPolicyName(
+      final String indexName, final RetentionConfiguration retentionConfiguration) {
+    return INDEX_TO_RETENTION_POLICY_FIELD
+        .getOrDefault(indexName, RetentionConfiguration::getPolicyName)
+        .apply(retentionConfiguration);
+  }
+
+  default String buildHistoricalIndicesPattern(final IndexTemplateDescriptor indexTemplate) {
+    return "%s,-%s,-%s"
+        .formatted(
+            indexTemplate.getIndexPattern(),
+            indexTemplate.getFullQualifiedName(),
+            indexTemplate.getAlias());
+  }
+
   class NoopArchiverRepository implements ArchiverRepository {
 
     @Override
@@ -58,7 +87,7 @@ public interface ArchiverRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletableFuture<Void> setIndexLifeCycle(final String... destinationIndexName) {
+    public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
       return CompletableFuture.completedFuture(null);
     }
 

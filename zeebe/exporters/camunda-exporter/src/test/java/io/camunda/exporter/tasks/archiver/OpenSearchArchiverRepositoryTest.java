@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -62,15 +63,13 @@ final class OpenSearchArchiverRepositoryTest {
   private OpenSearchArchiverRepository createRepository() {
     final var client = new OpenSearchAsyncClient(transport);
     final var metrics = new CamundaExporterMetrics(new SimpleMeterRegistry());
+    final var config = new HistoryConfiguration();
+    config.setRetention(retention);
 
     return new OpenSearchArchiverRepository(
         1,
-        new HistoryConfiguration(),
-        retention,
-        "testPrefix",
-        "instance",
-        "batch",
-        "zeebe-record",
+        config,
+        new TestExporterResourceProvider("testPrefix", false),
         client,
         new OpenSearchGenericClient(client._transport(), client._transportOptions()),
         Runnable::run,
