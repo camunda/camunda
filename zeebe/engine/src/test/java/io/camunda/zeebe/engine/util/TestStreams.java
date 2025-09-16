@@ -263,7 +263,7 @@ public final class TestStreams {
     final var streamProcessorListeners = new ArrayList<StreamProcessorListener>();
     streamProcessorListenerOpt.ifPresent(streamProcessorListeners::add);
 
-    final var meterRegistry = new SimpleMeterRegistry();
+    final var meterRegistry = zeebeDb.getMeterRegistry();
     meterRegistry
         .config()
         .commonTags(
