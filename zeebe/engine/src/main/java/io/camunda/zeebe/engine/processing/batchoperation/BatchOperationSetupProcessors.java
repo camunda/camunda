@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.batchoperation;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.batchoperation.handlers.CancelProcessInstanceBatchOperationExecutor;
@@ -50,20 +51,28 @@ public final class BatchOperationSetupProcessors {
       final EngineConfiguration engineConfiguration,
       final int partitionId,
       final RoutingInfo routingInfo,
-      final BatchOperationMetrics batchOperationMetrics) {
+      final BatchOperationMetrics batchOperationMetrics,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     final var batchExecutionHandlers =
         Map.of(
             BatchOperationType.CANCEL_PROCESS_INSTANCE,
-            new CancelProcessInstanceBatchOperationExecutor(writers.command()),
+            new CancelProcessInstanceBatchOperationExecutor(
+                writers.command(), brokerRequestAuthorizationConverter),
             BatchOperationType.RESOLVE_INCIDENT,
             new ResolveIncidentBatchOperationExecutor(
-                writers.command(), processingState.getIncidentState()),
+                writers.command(),
+                processingState.getIncidentState(),
+                brokerRequestAuthorizationConverter),
             BatchOperationType.MIGRATE_PROCESS_INSTANCE,
             new MigrateProcessInstanceBatchOperationExecutor(
-                writers.command(), processingState.getBatchOperationState()),
+                writers.command(),
+                processingState.getBatchOperationState(),
+                brokerRequestAuthorizationConverter),
             BatchOperationType.MODIFY_PROCESS_INSTANCE,
             new ModifyProcessInstanceBatchOperationExecutor(
-                writers.command(), processingState.getElementInstanceState()));
+                writers.command(),
+                processingState.getElementInstanceState(),
+                brokerRequestAuthorizationConverter));
 
     final var batchOperationInitializer =
         new BatchOperationInitializer(

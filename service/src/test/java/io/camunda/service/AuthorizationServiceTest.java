@@ -37,7 +37,8 @@ public class AuthorizationServiceTest {
             mock(SecurityContextProvider.class),
             client,
             null,
-            mock(ApiServicesExecutorProvider.class));
+            mock(ApiServicesExecutorProvider.class),
+            null);
   }
 
   @Test

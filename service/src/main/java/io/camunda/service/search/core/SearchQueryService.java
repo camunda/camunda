@@ -10,6 +10,7 @@ package io.camunda.service.search.core;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.SearchQueryBase;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ApiServices;
 import io.camunda.service.ApiServicesExecutorProvider;
@@ -25,8 +26,14 @@ public abstract class SearchQueryService<T extends ApiServices<T>, Q extends Sea
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public abstract SearchQueryResult<D> search(final Q query);

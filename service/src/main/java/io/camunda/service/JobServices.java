@@ -13,6 +13,7 @@ import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -42,8 +43,14 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       final ActivateJobsHandler<T> activateJobsHandler,
       final JobSearchClient jobSearchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.activateJobsHandler = activateJobsHandler;
     this.jobSearchClient = jobSearchClient;
   }
@@ -56,7 +63,8 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         activateJobsHandler,
         jobSearchClient,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public void activateJobs(
@@ -70,7 +78,9 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
-    brokerRequest.setAuthorization(authentication.claims());
+    final var brokerRequestAuthorization =
+        brokerRequestAuthorizationConverter.convert(authentication);
+    brokerRequest.setAuthorization(brokerRequestAuthorization);
     activateJobsHandler.activateJobs(
         brokerRequest, responseObserver, cancelationHandlerConsumer, request.requestTimeout());
   }

@@ -25,6 +25,8 @@ import io.camunda.search.clients.MappingRuleSearchClient;
 import io.camunda.search.clients.RoleSearchClient;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.clients.TenantSearchClient;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.GroupServices;
@@ -74,9 +76,15 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final AuthorizationSearchClient authorizationSearchClient,
-      final ApiServicesExecutorProvider executorProvider) {
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new AuthorizationServices(
-        brokerClient, securityContextProvider, authorizationSearchClient, null, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        authorizationSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -84,9 +92,15 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final GroupSearchClient groupSearchClient,
-      final ApiServicesExecutorProvider executorProvider) {
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new GroupServices(
-        brokerClient, securityContextProvider, groupSearchClient, null, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        groupSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -94,9 +108,15 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
-      final ApiServicesExecutorProvider executorProvider) {
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new MappingRuleServices(
-        brokerClient, securityContextProvider, mappingRuleSearchClient, null, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        mappingRuleSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -104,9 +124,15 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
-      final ApiServicesExecutorProvider executorProvider) {
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new RoleServices(
-        brokerClient, securityContextProvider, roleSearchClient, null, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        roleSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -114,9 +140,15 @@ public class IdentityMigrationModuleConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
-      final ApiServicesExecutorProvider executorProvider) {
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new TenantServices(
-        brokerClient, securityContextProvider, tenantSearchClient, null, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        tenantSearchClient,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Bean
@@ -219,5 +251,12 @@ public class IdentityMigrationModuleConfiguration {
   @Bean
   public ClusterConfigurationGossiperConfig configManager() {
     return properties.getCluster().getConfigManager().gossip();
+  }
+
+  @Bean
+  public BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter() {
+    // broker requests are execute anonymously, so that the security configuration
+    // won't be applied
+    return new BrokerRequestAuthorizationConverter(new SecurityConfiguration());
   }
 }

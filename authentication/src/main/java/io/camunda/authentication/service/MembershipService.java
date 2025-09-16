@@ -24,9 +24,6 @@ public interface MembershipService {
    * @param tokenClaims the raw claims extracted from the authentication token (e.g., JWT/OIDC
    *     token). These are used for matching against mapping rules and extracting groups from the
    *     token itself
-   * @param authenticatedClaims mutable map that will be enriched with authentication context (e.g.,
-   *     AUTHORIZED_USERNAME, AUTHORIZED_CLIENT_ID, USER_TOKEN_CLAIMS). These claims are passed to
-   *     the broker for authorization decisions
    * @param username the username to resolve memberships for
    * @param clientId the client ID to resolve memberships for
    * @return a {@link CamundaAuthentication} containing the resolved groups, roles, tenants, and
@@ -35,9 +32,6 @@ public interface MembershipService {
    *     resolution fails
    */
   CamundaAuthentication resolveMemberships(
-      Map<String, Object> tokenClaims,
-      Map<String, Object> authenticatedClaims,
-      String username,
-      String clientId)
+      Map<String, Object> tokenClaims, String username, String clientId)
       throws OAuth2AuthenticationException;
 }

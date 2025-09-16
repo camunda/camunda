@@ -42,7 +42,8 @@ public final class IncidentServiceTest {
             mock(SecurityContextProvider.class),
             client,
             null,
-            mock(ApiServicesExecutorProvider.class));
+            mock(ApiServicesExecutorProvider.class),
+            null);
   }
 
   @Test

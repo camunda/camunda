@@ -12,8 +12,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.JobServices;
 import io.camunda.service.security.SecurityContextProvider;
@@ -433,7 +435,8 @@ public class JobControllerLongPollingTest extends RestControllerTest {
           activateJobsHandler,
           null,
           null,
-          new ApiServicesExecutorProvider(1, 1, 1, 1));
+          new ApiServicesExecutorProvider(1, 1, 1, 1),
+          new BrokerRequestAuthorizationConverter(new SecurityConfiguration()));
     }
   }
 }

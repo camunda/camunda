@@ -85,7 +85,7 @@ public sealed interface AuthenticationHandler {
       }
 
       var context = Context.current();
-      if (oidcAuthenticationConfiguration.getGroupsClaim() != null) {
+      if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
         try {
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
         } catch (final Exception e) {

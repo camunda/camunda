@@ -254,6 +254,7 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             null,
             null,
             null,
+            null,
             null);
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
