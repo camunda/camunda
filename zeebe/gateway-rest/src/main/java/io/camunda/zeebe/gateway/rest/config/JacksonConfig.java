@@ -97,8 +97,11 @@ public class JacksonConfig {
         .modulesToInstall(new JavaTimeModule(), new Jdk8Module())
         .postConfigurer(
             om -> {
-              // this also prevents coercion for string target types
+              // this also prevents coercion for string target types from non-string types
               om.coercionConfigDefaults()
+                  .setCoercion(CoercionInputShape.Boolean, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.Integer, CoercionAction.Fail)
+                  .setCoercion(CoercionInputShape.Float, CoercionAction.Fail)
                   .setCoercion(CoercionInputShape.String, CoercionAction.Fail);
             });
     gatewayRestObjectMapperCustomizer().accept(builder);
