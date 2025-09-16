@@ -22,6 +22,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,7 +41,9 @@ public class MessageSubscriptionIT {
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
-    final var subscriptionDbModel = MessageSubscriptionFixtures.createRandomized(b -> b);
+    final var subscriptionDbModel =
+        MessageSubscriptionFixtures.createRandomized(
+            b -> b.messageName("message-" + UUID.randomUUID()));
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscriptionDbModel);
 
     final var instance =
@@ -58,7 +61,9 @@ public class MessageSubscriptionIT {
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
-    final var subscription = MessageSubscriptionFixtures.createRandomized(b -> b);
+    final var subscription =
+        MessageSubscriptionFixtures.createRandomized(
+            b -> b.messageName("message-" + UUID.randomUUID()));
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscription);
 
     final var roleUpdate =
@@ -80,12 +85,15 @@ public class MessageSubscriptionIT {
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
-    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(rdbmsWriter, b -> b);
+    final var messageName = "message-" + UUID.randomUUID();
+
+    MessageSubscriptionFixtures.createAndSaveRandomMessageSubscriptions(
+        rdbmsWriter, b -> b.messageName(messageName));
 
     final var searchResult =
         messageSubscriptionReader.search(
             new MessageSubscriptionQuery(
-                new MessageSubscriptionFilter.Builder().build(),
+                new MessageSubscriptionFilter.Builder().messageNames(messageName).build(),
                 MessageSubscriptionSort.of(b -> b),
                 SearchQueryPage.of(b -> b.from(0).size(5))));
 
