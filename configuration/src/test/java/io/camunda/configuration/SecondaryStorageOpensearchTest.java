@@ -48,6 +48,9 @@ public class SecondaryStorageOpensearchTest {
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+  private static final int EXPECTED_NUMBER_OF_REPLICAS = 2;
+  private static final int EXPECTED_VARIABLE_SIZE_THRESHOLD = 5000;
+  private static final boolean EXPECTED_WAIT_FOR_IMPORTERS = false;
 
   @Nested
   @TestPropertySource(
@@ -58,7 +61,13 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.opensearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.opensearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS
+        "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.opensearch.number-of-replicas="
+            + EXPECTED_NUMBER_OF_REPLICAS,
+        "camunda.data.secondary-storage.opensearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.data.secondary-storage.opensearch.wait-for-importers="
+            + EXPECTED_WAIT_FOR_IMPORTERS
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -130,6 +139,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
 
     @Test
@@ -145,6 +160,12 @@ public class SecondaryStorageOpensearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
   }
 
@@ -197,6 +218,21 @@ public class SecondaryStorageOpensearchTest {
         // number of shards
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.database.index.numberOfShards=" + EXPECTED_NUMBER_OF_SHARDS,
+
+        // number of replicas
+        "camunda.data.secondary-storage.opensearch.number-of-replicas="
+            + EXPECTED_NUMBER_OF_REPLICAS,
+        "camunda.database.index.numberOfReplicas=" + EXPECTED_NUMBER_OF_REPLICAS,
+
+        // variable size threshold
+        "camunda.data.secondary-storage.opensearch.variable-size-threshold="
+            + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+        "camunda.database.index.variableSizeThreshold=" + EXPECTED_VARIABLE_SIZE_THRESHOLD,
+
+        // wait for importers
+        "camunda.data.secondary-storage.opensearch.wait-for-importers="
+            + EXPECTED_WAIT_FOR_IMPORTERS,
+        "camunda.database.index.shouldWaitForImporters=" + EXPECTED_WAIT_FOR_IMPORTERS,
       })
   class WithNewAndLegacySet {
     final OperateProperties operateProperties;
@@ -272,6 +308,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getIndex().getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(exporterConfiguration.getIndex().getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(exporterConfiguration.getIndex().shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
 
     @Test
@@ -290,6 +332,12 @@ public class SecondaryStorageOpensearchTest {
     void testCamundaSearchEngineIndexProperties() {
       assertThat(searchEngineIndexProperties.getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(searchEngineIndexProperties.getNumberOfReplicas())
+          .isEqualTo(EXPECTED_NUMBER_OF_REPLICAS);
+      assertThat(searchEngineIndexProperties.getVariableSizeThreshold())
+          .isEqualTo(EXPECTED_VARIABLE_SIZE_THRESHOLD);
+      assertThat(searchEngineIndexProperties.shouldWaitForImporters())
+          .isEqualTo(EXPECTED_WAIT_FOR_IMPORTERS);
     }
   }
 }
