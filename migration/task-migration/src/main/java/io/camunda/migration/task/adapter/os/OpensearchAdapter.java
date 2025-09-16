@@ -10,6 +10,8 @@ package io.camunda.migration.task.adapter.os;
 import static java.util.stream.Collectors.toMap;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.storage.ProcessorStep;
@@ -57,7 +59,9 @@ import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.reindex.Destination;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
+import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
+import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
@@ -67,7 +71,9 @@ import org.slf4j.LoggerFactory;
 public class OpensearchAdapter implements TaskMigrationAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchAdapter.class);
-
+  private static final String LEGACY_RUNTIME_POLICY =
+      "/opensearch-legacy-runtime-index-policy.json";
+  private static final String ISM_POLICIES_ENDPOINT = "_plugins/_ism/policies";
   private final OpenSearchClient client;
   private final OpenSearchGenericClient genericClient;
   private final MigrationConfiguration migrationConfiguration;
@@ -146,6 +152,9 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   @Override
   public void reindexLegacyMainIndex() throws MigrationException {
     reindex(legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
+    if (retentionConfiguration.isEnabled()) {
+      applyLegacyIndexRetentionPolicy();
+    }
   }
 
   @Override
@@ -483,6 +492,99 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
       }
     }
     return Objects.requireNonNull(sorted.getLast().id());
+  }
+
+  /// Forked from io.camunda.search.schema.opensearch.OpensearchEngineClient
+
+  private void applyLegacyIndexRetentionPolicy() {
+    createPolicy();
+    applyPolicy();
+  }
+
+  private void createPolicy() {
+    final var request = createRuntimeIndexPolicyRequest();
+    final String policyName = LEGACY_INDEX_RETENTION_POLICY_NAME;
+    final String deletionMinAge = migrationConfiguration.getLegacyIndexRetentionAge();
+    try (final var response = client.generic().execute(request)) {
+      if (response.getStatus() / 100 != 2) {
+        throw new MigrationException(
+            String.format(
+                "Creating index state management policy [%s] with min_deletion_age [%s] failed. Http response = [%s]",
+                policyName, deletionMinAge, response.getBody().get().bodyAsString()));
+      }
+
+    } catch (final IOException | OpenSearchException exception) {
+      final String exceptionMessage = exception.getMessage();
+      if (exceptionMessage.contains("already exists")) {
+        LOG.warn(
+            "Expected to create ISM policy with name '{}', but failed with: '{}'.",
+            policyName,
+            exceptionMessage);
+        return;
+      }
+      final var errMsg =
+          String.format("Failed to create index state management policy [%s]", policyName);
+      throw new MigrationException(errMsg, exception);
+    }
+  }
+
+  private Request createRuntimeIndexPolicyRequest() {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    try (final var policyJson = getClass().getResourceAsStream(LEGACY_RUNTIME_POLICY)) {
+      final var jsonMap = objectMapper.readTree(policyJson);
+      final var conditions =
+          (ObjectNode)
+              jsonMap
+                  .path("policy")
+                  .path("states")
+                  .path(0)
+                  .path("transitions")
+                  .path(0)
+                  .path("conditions");
+      conditions.put("min_index_age", migrationConfiguration.getLegacyIndexRetentionAge());
+
+      final var policy = objectMapper.writeValueAsBytes(jsonMap);
+
+      final var builder =
+          Requests.builder()
+              .method("PUT")
+              .endpoint(getPolicyEndpoint())
+              .body(Body.from(policy, "application/json"));
+
+      return builder.build();
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to deserialize policy file " + LEGACY_RUNTIME_POLICY, e);
+    }
+  }
+
+  private String getPolicyEndpoint() {
+    return String.format("%s/%s", ISM_POLICIES_ENDPOINT, LEGACY_INDEX_RETENTION_POLICY_NAME);
+  }
+
+  private void applyPolicy() {
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final var requestEntity = new AddPolicyRequestBody(LEGACY_INDEX_RETENTION_POLICY_NAME);
+    try {
+      final var requestBody = objectMapper.writeValueAsBytes(requestEntity);
+      final var request =
+          Requests.builder()
+              .method("POST")
+              .body(Body.from(requestBody, "application/json"))
+              .endpoint("/_plugins/_ism/add/" + legacyIndex.getFullQualifiedName())
+              .build();
+
+      final var response = client.generic().execute(request);
+      if (response.getStatus() / 100 != 2) {
+        throw new MigrationException(
+            String.format(
+                "Applying index state management policy [%s] to index [%s] failed. Http response = [%s]",
+                LEGACY_INDEX_RETENTION_POLICY_NAME,
+                legacyIndex.getFullQualifiedName(),
+                response.getBody().map(Body::bodyAsString)));
+      }
+    } catch (final IOException e) {
+      throw new MigrationException(e);
+    }
   }
 
   private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}

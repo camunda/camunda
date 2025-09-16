@@ -19,6 +19,8 @@ import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
+import io.camunda.migration.task.adapter.TaskMigrationAdapter;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -64,6 +66,8 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
                   ARCHIVING_WAITING_PERIOD_SECONDS + "s"))
           .withUpgradeSystemPropertyOverrides(
               Map.of(
+                  "camunda.migration.tasks.legacyIndexRetentionAge",
+                  "2d",
                   "camunda.database.retention.enabled",
                   "true",
                   "camunda.database.retention.minimumAge",
@@ -145,6 +149,19 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   @Test
   @Order(3)
+  void shouldApplyLifecyclePolicyToRuntimeIndex() throws IOException, InterruptedException {
+    final var indexName = String.format("%s-tasklist-task-8.5.0_", PROVIDER.getIndexPrefix());
+    if (PROVIDER.isElasticSearch()) {
+      assertThatIlmPolicyIsPresent();
+      assertIndexHasIlmPolicy(indexName);
+    } else {
+      assertThatIsmPolicyIsPresent();
+      assertIndexHasIsmPolicy(indexName);
+    }
+  }
+
+  @Test
+  @Order(4)
   void shouldCreateNewTask(final CamundaMigrator migrator) {
     final var zeebeProcessDefinitionKey =
         deployProcess(migrator.getCamundaClient(), t -> t.zeebeUserTask().zeebeAssignee(null));
@@ -197,11 +214,10 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
               .build();
       final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
       final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
-      assertThat(jsonResponse.get(datedIndex)).isNotNull();
-      assertThat(jsonResponse.get(datedIndex).get("settings")).isNotNull();
-      assertThat(jsonResponse.get(datedIndex).get("settings").get("index")).isNotNull();
-      assertThat(jsonResponse.get(datedIndex).get("settings").get("index").get("lifecycle"))
-          .isNotNull();
+      final var policy = jsonResponse.at("/" + datedIndex + "/settings/index/lifecycle");
+      assertThat(policy.isMissingNode()).isFalse();
+      assertThat(policy).isNotNull();
+      assertThat(policy.get("name").asText()).isNotBlank();
     } catch (final Exception e) {
       fail("Failed to get ILM policy for index: " + datedIndex, e);
     }
@@ -235,6 +251,48 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     } catch (final Exception e) {
       fail("Failed to get ISM policy for index: " + datedIndex, e);
     }
+  }
+
+  private void assertThatIlmPolicyIsPresent() throws IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    String.format(
+                        "%s/_ilm/policy/%s",
+                        PROVIDER.getDatabaseUrl(),
+                        TaskMigrationAdapter.LEGACY_INDEX_RETENTION_POLICY_NAME)))
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+    final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    final var minAge =
+        jsonResponse.at(
+            "/"
+                + TaskMigrationAdapter.LEGACY_INDEX_RETENTION_POLICY_NAME
+                + "/policy/phases/delete/min_age");
+    assertThat(minAge.isMissingNode()).isFalse();
+    assertThat(minAge.asText()).isEqualTo("2d");
+  }
+
+  private void assertThatIsmPolicyIsPresent() throws IOException, InterruptedException {
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(
+                URI.create(
+                    String.format(
+                        "%s/_plugins/_ism/policies/%s",
+                        PROVIDER.getDatabaseUrl(),
+                        TaskMigrationAdapter.LEGACY_INDEX_RETENTION_POLICY_NAME)))
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+    final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+    final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
+    final var minAge = jsonResponse.at("/policy/states/0/transitions/0/conditions/min_index_age");
+    assertThat(minAge.isMissingNode()).isFalse();
+    assertThat(minAge.asText()).isEqualTo("2d");
   }
 
   private List<String> getDatedTaskIndexNames() {

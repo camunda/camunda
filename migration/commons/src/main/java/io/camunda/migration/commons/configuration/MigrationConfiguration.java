@@ -15,6 +15,8 @@ public class MigrationConfiguration {
   private Duration importerFinishedTimeout = Duration.ofMinutes(1);
   private Duration timeout = Duration.ofHours(2);
   private MigrationRetryConfiguration retry = new MigrationRetryConfiguration();
+  // Only used by Task migration
+  private String legacyIndexRetentionAge = "30d";
 
   public int getBatchSize() {
     return batchSize;
@@ -46,6 +48,14 @@ public class MigrationConfiguration {
 
   public void setTimeout(final Duration timeout) {
     this.timeout = timeout;
+  }
+
+  public String getLegacyIndexRetentionAge() {
+    return legacyIndexRetentionAge;
+  }
+
+  public void setLegacyIndexRetentionAge(final String legacyIndexRetentionAge) {
+    this.legacyIndexRetentionAge = legacyIndexRetentionAge;
   }
 
   public static class MigrationRetryConfiguration extends RetryConfiguration {
