@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.api;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
@@ -80,8 +80,8 @@ public class CamundaAssert {
   /** The default await behavior for the assertions. */
   public static final CamundaAssertAwaitBehavior DEFAULT_AWAIT_BEHAVIOR = new AwaitilityBehavior();
 
-  public static final UnifiedJsonMapper DEFAULT_JSON_MAPPER =
-      new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
+  /** The default JSON mapper for the assertions. */
+  public static final JsonMapper DEFAULT_JSON_MAPPER = new CamundaObjectMapper();
 
   private static final ThreadLocal<CamundaDataSource> DATA_SOURCE = new ThreadLocal<>();
 
@@ -89,7 +89,7 @@ public class CamundaAssert {
 
   private static CamundaAssertAwaitBehavior awaitBehavior = DEFAULT_AWAIT_BEHAVIOR;
 
-  private static UnifiedJsonMapper unifiedJsonMapper = DEFAULT_JSON_MAPPER;
+  private static UnifiedJsonMapper unifiedJsonMapper = new UnifiedJsonMapper(DEFAULT_JSON_MAPPER);
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -143,19 +143,25 @@ public class CamundaAssert {
   }
 
   /**
-   * Configures the json mapper used to (de)serialize variables and other json objects.
+   * Configures the JSON mapper for the assertions.
    *
-   * <p>The UnifiedJsonMapper supports both the new JsonMapper and the deprecated zeebe JsonMapper.
-   * In a Spring environment, the CPT test runner will inject a JsonMapper if one is configured. In
-   * other environments, you can use `CamundaProcessTestExension::withJsonMapper` to specify the
-   * jsonMapper to be used both here and in the injected CamundaClient.
-   *
-   * @param jsonMapper the unified json mapper containing either the JsonMapper or zeebe's
-   *     JsonMapper.
+   * @param jsonMapper the JSON mapper to use
    * @see #DEFAULT_JSON_MAPPER
    */
-  public static void setJsonMapper(final UnifiedJsonMapper jsonMapper) {
-    unifiedJsonMapper = jsonMapper;
+  public static void setJsonMapper(final JsonMapper jsonMapper) {
+    unifiedJsonMapper = new UnifiedJsonMapper(jsonMapper);
+  }
+
+  /**
+   * Configures the JSON mapper for the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @see #DEFAULT_JSON_MAPPER
+   * @deprecated for removal, use {@link #setJsonMapper(JsonMapper)} instead
+   */
+  @Deprecated
+  public static void setJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
+    unifiedJsonMapper = new UnifiedJsonMapper(jsonMapper);
   }
 
   // ======== Assertions ========
