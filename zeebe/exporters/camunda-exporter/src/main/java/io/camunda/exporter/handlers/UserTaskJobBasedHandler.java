@@ -249,7 +249,12 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
       if (!isEmbeddedForm) {
         formCache
             .get(formKey)
-            .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
+            .ifPresent(
+                c ->
+                    entity
+                        .setFormId(c.formId())
+                        .setFormVersion(
+                            c.formVersion() == null ? null : Long.valueOf(c.formVersion())));
       }
     }
   }

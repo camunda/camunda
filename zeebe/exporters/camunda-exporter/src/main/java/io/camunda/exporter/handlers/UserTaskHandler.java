@@ -246,7 +246,12 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (!ExporterUtil.isEmpty(formKey)) {
       formCache
           .get(formKey)
-          .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
+          .ifPresent(
+              c ->
+                  entity
+                      .setFormId(c.formId())
+                      .setFormVersion(
+                          c.formVersion() == null ? null : Long.valueOf(c.formVersion())));
     }
   }
 
