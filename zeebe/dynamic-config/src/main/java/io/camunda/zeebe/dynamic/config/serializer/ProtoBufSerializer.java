@@ -66,6 +66,7 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import io.camunda.zeebe.util.Either;
 import java.nio.ByteBuffer;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -532,12 +533,15 @@ public class ProtoBufSerializer
       return Optional.of(
           new RoutingState(
               routingState.getVersion(),
-              decodeRequestHandling(routingState.getRequestHandling()),
+              decodeRequestHandling(
+                  routingState.getRequestHandling(), routingState.getActivePartitionsList()),
               decodeMessageCorrelation(routingState.getMessageCorrelation())));
     }
   }
 
-  private RequestHandling decodeRequestHandling(final Topology.RequestHandling requestHandling) {
+  private RequestHandling decodeRequestHandling(
+      final Topology.RequestHandling requestHandling,
+      @Deprecated(forRemoval = true) final List<Integer> activePartitionList) {
     return switch (requestHandling.getStrategyCase()) {
       case ALLPARTITIONS ->
           new RequestHandling.AllPartitions(requestHandling.getAllPartitions().getPartitionCount());
@@ -547,7 +551,15 @@ public class ProtoBufSerializer
               new TreeSet<>(
                   requestHandling.getActivePartitions().getAdditionalActivePartitionsList()),
               new TreeSet<>(requestHandling.getActivePartitions().getInactivePartitionsList()));
-      case STRATEGY_NOT_SET -> throw new IllegalArgumentException("Unknown request handling type");
+      case STRATEGY_NOT_SET -> {
+        // This fallback is used during the transition from 8.7 to 8.8, as RequestHandling was
+        // introduced in 8.8. It can be removed in 8.9
+        if (activePartitionList.isEmpty()) {
+          throw new IllegalArgumentException("Unknown request handling type");
+        } else {
+          yield new RequestHandling.AllPartitions(activePartitionList.size());
+        }
+      }
     };
   }
 
@@ -564,6 +576,7 @@ public class ProtoBufSerializer
   private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
     return Topology.RoutingState.newBuilder()
         .setVersion(routingState.version())
+        .addAllActivePartitions(routingState.requestHandling().activePartitions())
         .setRequestHandling(encodeRequestHandling(routingState.requestHandling()))
         .setMessageCorrelation(encodeMessageCorrelation(routingState.messageCorrelation()))
         .build();
