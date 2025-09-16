@@ -20,19 +20,19 @@ import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.InternalClientException;
 
-public class UnifiedJsonMapper {
+public class CamundaAssertJsonMapper {
 
   private final JsonMapper jsonMapper;
   private final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
 
-  public UnifiedJsonMapper(final JsonMapper jsonMapper) {
+  public CamundaAssertJsonMapper(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
-    this.zeebeJsonMapper = null;
+    zeebeJsonMapper = null;
   }
 
-  public UnifiedJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
+  public CamundaAssertJsonMapper(final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
     this.jsonMapper = null;
-    this.zeebeJsonMapper = jsonMapper;
+    zeebeJsonMapper = jsonMapper;
   }
 
   public JsonNode readJson(final String value) {

@@ -24,7 +24,7 @@ import io.camunda.process.test.api.assertions.ElementSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceAssert;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -55,13 +55,13 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
-      final UnifiedJsonMapper unifiedJsonMapper,
+      final CamundaAssertJsonMapper jsonMapper,
       final long processInstanceKey,
       final Function<String, ElementSelector> elementSelector) {
     this(
         dataSource,
         awaitBehavior,
-        unifiedJsonMapper,
+        jsonMapper,
         ProcessInstanceSelectors.byKey(processInstanceKey),
         elementSelector);
   }
@@ -69,7 +69,7 @@ public class ProcessInstanceAssertj
   public ProcessInstanceAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
-      final UnifiedJsonMapper unifiedJsonMapper,
+      final CamundaAssertJsonMapper jsonMapper,
       final ProcessInstanceSelector processInstanceSelector,
       final Function<String, ElementSelector> elementSelector) {
     super(processInstanceSelector, ProcessInstanceAssertj.class);
@@ -80,7 +80,7 @@ public class ProcessInstanceAssertj
     this.elementSelector = elementSelector;
     elementAssertj = new ElementAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     variableAssertj =
-        new VariableAssertj(dataSource, awaitBehavior, unifiedJsonMapper, failureMessagePrefix);
+        new VariableAssertj(dataSource, awaitBehavior, jsonMapper, failureMessagePrefix);
     incidentAssertj = new IncidentAssertj(dataSource, awaitBehavior, failureMessagePrefix);
     messageSubscriptionAssertj =
         new MessageSubscriptionAssertj(dataSource, awaitBehavior, failureMessagePrefix);

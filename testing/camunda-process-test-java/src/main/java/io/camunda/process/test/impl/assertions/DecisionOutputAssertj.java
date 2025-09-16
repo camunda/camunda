@@ -18,24 +18,24 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import org.assertj.core.api.AbstractAssert;
 
 public class DecisionOutputAssertj extends AbstractAssert<DecisionOutputAssertj, String> {
 
-  private final UnifiedJsonMapper unifiedJsonMapper;
+  private final CamundaAssertJsonMapper jsonMapper;
 
   public DecisionOutputAssertj(
-      final UnifiedJsonMapper unifiedJsonMapper, final String failureMessagePrefix) {
+      final CamundaAssertJsonMapper jsonMapper, final String failureMessagePrefix) {
 
     super(failureMessagePrefix, DecisionOutputAssertj.class);
 
-    this.unifiedJsonMapper = unifiedJsonMapper;
+    this.jsonMapper = jsonMapper;
   }
 
   public void hasOutput(final String decisionOutput, final Object expectedOutput) {
-    final JsonNode decisionOutputJson = unifiedJsonMapper.readJson(decisionOutput);
-    final JsonNode expectedOutputJson = unifiedJsonMapper.toJsonNode(expectedOutput);
+    final JsonNode decisionOutputJson = jsonMapper.readJson(decisionOutput);
+    final JsonNode expectedOutputJson = jsonMapper.toJsonNode(expectedOutput);
 
     assertThat(decisionOutputJson)
         .withFailMessage(

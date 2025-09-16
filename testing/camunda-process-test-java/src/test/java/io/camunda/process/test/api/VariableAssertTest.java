@@ -28,7 +28,7 @@ import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
@@ -65,8 +65,8 @@ public class VariableAssertTest {
     CONTEXT_VARIABLE_VALUE.put("b", 2);
   }
 
-  private final UnifiedJsonMapper unifiedJsonMapper =
-      new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
+  private final CamundaAssertJsonMapper jsonMapper =
+      new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
 
   @Mock private CamundaDataSource camundaDataSource;
   @Mock private ProcessInstanceEvent processInstanceEvent;
@@ -779,7 +779,7 @@ public class VariableAssertTest {
                           result -> Assertions.assertThat(result).hasSize(5)))
           .hasMessage(
               "Process instance [key: 1] should have a variable 'complex' of type 'java.util.List', but was: '"
-                  + unifiedJsonMapper.readJson(COMPLEX_VARIABLE_VALUE)
+                  + jsonMapper.readJson(COMPLEX_VARIABLE_VALUE)
                   + "'");
     }
 

@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.impl.assertions.DecisionOutputAssertj;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -37,7 +37,7 @@ public class DecisionOutputAssertTest {
 
   private final DecisionOutputAssertj decisionOutputAssert =
       new DecisionOutputAssertj(
-          new UnifiedJsonMapper(new CamundaObjectMapper(new ObjectMapper())),
+          new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper())),
           FAILURE_MESSAGE_PREFIX);
 
   private static Stream<Arguments> outputScenarios() {
@@ -72,7 +72,7 @@ public class DecisionOutputAssertTest {
 
   @ParameterizedTest
   @MethodSource("io.camunda.process.test.api.DecisionOutputAssertTest#outputScenarios")
-  void hasOutput(String actual, Object expected) {
+  void hasOutput(final String actual, final Object expected) {
     decisionOutputAssert.hasOutput(actual, expected);
   }
 }
