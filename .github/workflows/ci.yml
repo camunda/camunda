@@ -70,6 +70,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
+    name: "Lint / Actionlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -103,6 +104,7 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
+    name: "Lint / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -135,6 +137,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
+    name: "Lint / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -160,8 +163,8 @@ jobs:
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Java Checks"
     needs: [ detect-changes ]
-    name: Java checks
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
@@ -224,6 +227,7 @@ jobs:
   # Sets up constants in unit tests. Using outputs instead of env vars so that these constants can be used in a matrix
   setup-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Setup Unit Tests"
     needs: [ detect-changes ]
     outputs:
       # Zeebe modules owned by the @camunda/core-features team
@@ -247,7 +251,7 @@ jobs:
   # Runs unit tests for all modules that are not Operate, Optimize, Tasklist, or Zeebe. This test will run any new modules that are added and are not included in setup-unit-tests
   general-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "General / [UT] Run Unit Tests"
+    name: "General / Unit - Back End"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -313,43 +317,42 @@ jobs:
 
   zeebe-unit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Zeebe / [UT] ${{matrix.component}} / ${{matrix.suiteName}}"
+    name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-unit-tests ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    env:
+        TEST_TYPE: "Unit"
+        TEST_PRODUCT: "Zeebe"
     strategy:
       fail-fast: false
       matrix:
         include:
           - component: General
             suite: CoreFeatures
-            suiteName: Core Features
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_CORE_FEATURES_MODULES }}
           - component: Protocol
             suite: CoreFeatures
-            suiteName: Core Features
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_PROTOCOL_MODULES }}
           - component: Gateway
             suite: CoreFeatures
-            suiteName: Core Features
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_GATEWAY_MODULES }}
           - component: Exporter
             suite: DataLayer
-            suiteName: Data Layer
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_EXPORTER_MODULES }}
           - component: Backup
-            suite: DistributedPlatform
-            suiteName: Distributed Platform
+            suite: DistributedSystems
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_BACKUP_MODULES }}
           - component:  Distributed
-            suite: DistributedPlatform
-            suiteName: Distributed Platform
+            suite: DistributedSystems
             maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ matrix.suite}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-zeebe
@@ -385,13 +388,13 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suiteName}}"
+          name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
       - name: Write matrix outputs for test analysis
         uses: cloudposse/github-action-matrix-outputs-write@v1
         id: matrix-write
         with:
           matrix-step-name: ${{ github.job }}
-          matrix-key: ${{ matrix.component }}-${{ matrix.suiteName }}
+          matrix-key: ${{ matrix.component }}-${{ matrix.suite }}
           outputs: |-
             flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
             hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
@@ -403,7 +406,7 @@ jobs:
           job_name: "zeebe-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
-          user_description: "${{matrix.suiteName}}"
+          user_description: "${{matrix.suite}}"
           detailed_junit_flaky_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
@@ -412,7 +415,7 @@ jobs:
   elasticsearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] Elasticsearch"
+    name: "General / Integration / Elasticsearch ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -507,7 +510,7 @@ jobs:
   opensearch-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] OpenSearch"
+    name: "General / Integration / OpenSearch ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
@@ -608,7 +611,7 @@ jobs:
   rdbms-h2-integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
-    name: "[IT] RDBMS - H2"
+    name: "General / Integration / RDBMS - H2 ITs"
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
@@ -677,7 +680,7 @@ jobs:
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
-    name: "[IT] RDBMS"
+    name: "General / Integration / RDBMS ITs"
     timeout-minutes: 7
     runs-on: gcp-perf-core-8-default
     outputs:
@@ -736,7 +739,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / [IT] ${{ matrix.name }} / ${{ matrix.owner }}"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
     needs: [ detect-changes ]
     timeout-minutes: 25
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -821,6 +824,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a Integration test for ${{ matrix.name }} owned by ${{ matrix.owner}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: it-${{ matrix.group }}
@@ -908,7 +913,7 @@ jobs:
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
-    name: Camunda docker tests
+    name: "Docker / Tool / Checks"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     outputs:
@@ -1076,6 +1081,7 @@ jobs:
 
   identity-frontend-tests:
     if: needs.detect-changes.outputs.identity-frontend-tests == 'true'
+    name: "Identity / Unit - Front End"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -1151,7 +1157,7 @@ jobs:
     if: needs.detect-changes.outputs.zeebe-changes == 'true'
     name: "Zeebe"
     needs: [ detect-changes ]
-    uses: ./.github/workflows/zeebe-ci.yml
+    uses: ./.github/workflows/ci-zeebe.yml
     secrets: inherit
     with:
       stable-branch: ${{ needs.detect-changes.outputs.stable-branch-changes == 'true' }}
@@ -1218,7 +1224,7 @@ jobs:
           user_description: "General"
 
   openapi-lint:
-    name: C8 REST OpenAPI linting
+    name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -1255,6 +1261,7 @@ jobs:
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
+    name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
