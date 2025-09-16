@@ -92,7 +92,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     final DecisionInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
+    final DecisionInstanceFilterDecisionDefinitionKey decisionDefinitionKey =
+        filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
     assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
@@ -111,7 +112,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(DecisionInstanceSearchQuery.class);
     final DecisionInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty elementInstanceKey = filter.getElementInstanceKey();
+    final DecisionInstanceFilterElementInstanceKey elementInstanceKey =
+        filter.getElementInstanceKey();
     assertThat(elementInstanceKey).isNotNull();
     assertThat(elementInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
