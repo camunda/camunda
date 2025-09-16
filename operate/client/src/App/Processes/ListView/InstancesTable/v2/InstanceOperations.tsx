@@ -12,11 +12,9 @@ import {processInstancesStore} from 'modules/stores/processInstances';
 import {tracking} from 'modules/tracking';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
-import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import type {OperationEntityType} from 'modules/types/operate';
 import {logger} from 'modules/logger';
-import {IS_INCIDENT_RESOLUTION_V2} from 'modules/feature-flags';
 
 type Props = {
   processInstanceKey: string;
@@ -49,23 +47,6 @@ const InstanceOperations: React.FC<Props> = ({
       });
     },
   });
-
-  const {mutate: resolveIncident, isPending: isResolveIncidentPending} =
-    useCreateIncidentResolutionBatchOperation(processInstanceKey, {
-      shouldSkipResultCheck: true,
-      onError: (error) => {
-        processInstancesStore.unmarkProcessInstancesWithActiveOperations({
-          instanceIds: [processInstanceKey],
-          operationType: 'RESOLVE_INCIDENT',
-        });
-        notificationsStore.displayNotification({
-          kind: 'error',
-          title: 'Failed to retry process instance',
-          subtitle: error.message,
-          isDismissable: true,
-        });
-      },
-    });
 
   const handleOperationError: ErrorHandler = ({statusCode}) => {
     notificationsStore.displayNotification({
@@ -121,29 +102,13 @@ const InstanceOperations: React.FC<Props> = ({
   const operations: OperationConfig[] = [];
 
   if (isInstanceActive && hasIncident) {
-    if (IS_INCIDENT_RESOLUTION_V2) {
-      operations.push({
-        type: 'RESOLVE_INCIDENT',
-        onExecute: () => {
-          processInstancesStore.markProcessInstancesWithActiveOperations({
-            ids: [processInstanceKey],
-            operationType: 'RESOLVE_INCIDENT',
-          });
-          resolveIncident();
-        },
-        disabled:
-          isResolveIncidentPending ||
-          activeOperations.includes('RESOLVE_INCIDENT'),
-      });
-    } else {
-      operations.push({
-        type: 'RESOLVE_INCIDENT',
-        onExecute: () => {
-          applyOperation('RESOLVE_INCIDENT');
-        },
-        disabled: activeOperations.includes('RESOLVE_INCIDENT'),
-      });
-    }
+    operations.push({
+      type: 'RESOLVE_INCIDENT',
+      onExecute: () => {
+        applyOperation('RESOLVE_INCIDENT');
+      },
+      disabled: activeOperations.includes('RESOLVE_INCIDENT'),
+    });
   }
 
   if (isInstanceActive) {
@@ -173,9 +138,7 @@ const InstanceOperations: React.FC<Props> = ({
   const isLoading =
     processInstancesStore.processInstanceIdsWithActiveOperations.includes(
       processInstanceKey,
-    ) ||
-    isCancelProcessInstancePending ||
-    isResolveIncidentPending;
+    ) || isCancelProcessInstancePending;
 
   return (
     <Operations

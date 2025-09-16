@@ -18,7 +18,6 @@ import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
-import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
 import {ModificationHelperModal} from './ModificationHelperModal';
@@ -28,7 +27,6 @@ import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
-import {IS_INCIDENT_RESOLUTION_V2} from 'modules/feature-flags';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -44,13 +42,12 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 
   const {data: hasActiveOperationLegacy} = useHasActiveOperations();
   const [isV1ResolveIncidentPending, setIsV1ResolveIncidentPending] =
-    useState<boolean>(false);
+    useState(false);
 
   const {data: operationsData} = useOperations();
 
   useEffect(() => {
     if (
-      !IS_INCIDENT_RESOLUTION_V2 &&
       !operationsData?.some(
         (operation) =>
           operation.type === 'RESOLVE_INCIDENT' &&
@@ -74,20 +71,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       });
     },
   });
-
-  const {mutate: resolveIncident, isPending: isResolveIncidentPending} =
-    useCreateIncidentResolutionBatchOperation(
-      processInstance.processInstanceKey,
-      {
-        onError: (error) =>
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Failed to retry process instance',
-            subtitle: error.message,
-            isDismissable: true,
-          }),
-      },
-    );
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
@@ -187,22 +170,14 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     processInstance.hasIncident &&
     !isModificationModeEnabled
   ) {
-    if (IS_INCIDENT_RESOLUTION_V2) {
-      operations.push({
-        type: 'RESOLVE_INCIDENT',
-        onExecute: resolveIncident,
-        disabled: isResolveIncidentPending,
-      });
-    } else {
-      operations.push({
-        type: 'RESOLVE_INCIDENT',
-        onExecute: () => {
-          setIsV1ResolveIncidentPending(true);
-          applyOperation('RESOLVE_INCIDENT');
-        },
-        disabled: isV1ResolveIncidentPending,
-      });
-    }
+    operations.push({
+      type: 'RESOLVE_INCIDENT',
+      onExecute: () => {
+        setIsV1ResolveIncidentPending(true);
+        applyOperation('RESOLVE_INCIDENT');
+      },
+      disabled: isV1ResolveIncidentPending,
+    });
   }
 
   if (isInstanceActive && !isModificationModeEnabled) {
@@ -233,7 +208,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       processInstance.processInstanceKey,
     ) ||
     isCancelProcessInstancePending ||
-    isResolveIncidentPending ||
     isV1ResolveIncidentPending;
 
   return (
