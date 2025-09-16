@@ -21,6 +21,7 @@ import io.camunda.process.test.api.coverage.model.Model;
 import io.camunda.process.test.api.coverage.model.Suite;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /** Utility class for creating and aggregating coverage reports. */
@@ -62,6 +63,32 @@ public class CoverageReportCreator {
                             allCoverages(Collections.singletonList(suite)), models)))
             .collect(Collectors.toList());
     return new AggregatedCoverageReport(suiteInfos, models, coverages);
+  }
+
+  /**
+   * Creates an HTML coverage report from multiple test suites and their associated process models.
+   *
+   * <p>This method: 1. Generates individual suite coverage reports for each provided test suite
+   * 2.Aggregates coverage data from all suites 3. Collects process definitions from models for
+   * visualization 4. Creates a unified HTML report containing all coverage data
+   *
+   * @param suites Collection of test suites containing execution data and coverage information
+   * @param models Collection of process models with structure information for coverage calculation
+   * @return A complete HTML coverage report object containing suite reports, aggregated coverage
+   *     data, and process definitions
+   */
+  public static HtmlCoverageReport createHtmlCoverageReport(
+      final Collection<Suite> suites, final Collection<Model> models) {
+    final Collection<SuiteCoverageReport> suiteReports =
+        suites.stream()
+            .map(suite -> createSuiteCoverageReport(suite, models))
+            .collect(Collectors.toList());
+    final Collection<Coverage> coverages =
+        CoverageCreator.aggregateCoverages(allCoverages(suites), models);
+    final Map<String, String> definitions =
+        models.stream()
+            .collect(Collectors.toMap(Model::getProcessDefinitionId, Model::xml, (a, b) -> a));
+    return new HtmlCoverageReport(suiteReports, coverages, definitions);
   }
 
   /**
