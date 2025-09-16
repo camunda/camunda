@@ -109,7 +109,7 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
     } else {
       final String errorMessage =
           String.format(
-              "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors. [topology: %s",
+              "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors. [topology: %s]",
               topology);
       throw new RemoteRuntimeHasNoAvailablePartitionsException(errorMessage);
     }
