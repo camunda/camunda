@@ -25,6 +25,7 @@ import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
 import java.util.UUID;
+import java.util.logging.Logger;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class GroupMemberIT {
+
+  public static final Logger LOG = Logger.getLogger(GroupMemberIT.class.getName());
 
   public static final Long PARTITION_ID = 0L;
   public static final OffsetDateTime NOW = OffsetDateTime.now();
@@ -47,6 +50,12 @@ public class GroupMemberIT {
     final var userid2 = "user-" + UUID.randomUUID();
     addUserToGroup(rdbmsWriter, group.groupId(), userid1);
     addUserToGroup(rdbmsWriter, group.groupId(), userid2);
+
+    final var group2 = GroupFixtures.createAndSaveGroup(rdbmsWriter, b -> b);
+    final var userid3 = "user-" + UUID.randomUUID();
+    final var userid4 = "user-" + UUID.randomUUID();
+    addUserToGroup(rdbmsWriter, group2.groupId(), userid3);
+    addUserToGroup(rdbmsWriter, group2.groupId(), userid4);
 
     final var searchResult =
         reader.search(
@@ -64,6 +73,7 @@ public class GroupMemberIT {
 
   private void addUserToGroup(
       final RdbmsWriter rdbmsWriter, final String groupId, final String entityId) {
+    LOG.info(String.format("Adding user %s to group %s", entityId, groupId));
     rdbmsWriter.getGroupWriter().addMember(new GroupMemberDbModel(groupId, entityId, "USER"));
     rdbmsWriter.flush();
   }

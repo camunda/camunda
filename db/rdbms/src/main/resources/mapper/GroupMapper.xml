@@ -83,6 +83,17 @@ SELECT
         #{resourceId}
       </foreach>
     </if>
+
+    <if test="filter.joinParentId != null">
+      <!-- only used for groupMember search -->
+      AND g.GROUP_ID = #{filter.joinParentId}
+    </if>
+
+    <if test="filter.memberType != null">
+      <!-- only used for groupMember search -->
+      AND gm.ENTITY_TYPE = #{filter.memberType}
+    </if>
+
     <if test="filter.groupKey != null">AND g.GROUP_KEY = #{filter.groupKey}</if>
     <if test="filter.groupIdOperations != null and !filter.groupIdOperations.isEmpty()">
       <foreach collection="filter.groupIdOperations" item="operation">
