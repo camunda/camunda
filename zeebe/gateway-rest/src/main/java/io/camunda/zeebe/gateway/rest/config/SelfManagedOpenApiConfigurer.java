@@ -11,6 +11,9 @@ import io.camunda.security.ConditionalOnSelfManagedConfigured;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,9 +33,18 @@ public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for Self-Managed deployment");
 
-    addBearerAuthentication(openApi);
-    openApi.getComponents().addSecuritySchemes(BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA);
-    openApi.addSecurityItem(new SecurityRequirement().addList(BASIC_SECURITY_SCHEMA_NAME));
+    openApi
+        .getComponents()
+        .setSecuritySchemes(
+            new LinkedHashMap<>(
+                Map.of(
+                    BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA,
+                    BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA)));
+
+    openApi.setSecurity(
+        List.of(
+            new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME),
+            new SecurityRequirement().addList(BASIC_SECURITY_SCHEMA_NAME)));
   }
 
   @Override
