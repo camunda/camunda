@@ -22,7 +22,6 @@ import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultitenancyConfiguration;
@@ -140,30 +139,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
-  private void initializeJsonMapper(
-      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
-
-    if (jsonMapper != null) {
-      CamundaAssert.setJsonMapper(new UnifiedJsonMapper(jsonMapper));
-    } else if (zeebeJsonMapper != null) {
-      CamundaAssert.setJsonMapper(new UnifiedJsonMapper(zeebeJsonMapper));
-    }
-  }
-
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isMultitenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultitenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
-  }
-
   @Override
   public void beforeTestMethod(final TestContext testContext) {
     client = createClient(camundaProcessTestContext);
@@ -248,6 +223,30 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
 
     runtime.close();
+  }
+
+  private void initializeJsonMapper(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    if (runtimeConfiguration.isMultitenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultitenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
   }
 
   private void printTestResults() {

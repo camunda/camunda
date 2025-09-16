@@ -21,7 +21,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.assertions.util.UnifiedJsonMapper;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
@@ -189,9 +188,9 @@ public class CamundaProcessTestExtension
       final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
 
     if (jsonMapper != null) {
-      CamundaAssert.setJsonMapper(new UnifiedJsonMapper(jsonMapper));
+      CamundaAssert.setJsonMapper(jsonMapper);
     } else if (zeebeJsonMapper != null) {
-      CamundaAssert.setJsonMapper(new UnifiedJsonMapper(zeebeJsonMapper));
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
   }
 
@@ -584,15 +583,28 @@ public class CamundaProcessTestExtension
     return this;
   }
 
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   */
   public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
     this.jsonMapper = jsonMapper;
     return this;
   }
 
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   * @deprecated for removal, use {@link #withJsonMapper(JsonMapper)} instead.
+   */
+  @Deprecated
   public CamundaProcessTestExtension withJsonMapper(
       final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
-
-    this.zeebeJsonMapper = jsonMapper;
+    zeebeJsonMapper = jsonMapper;
     return this;
   }
 
