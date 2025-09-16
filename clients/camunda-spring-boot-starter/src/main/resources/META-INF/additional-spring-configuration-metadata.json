@@ -130,6 +130,10 @@
       "defaultValue": "PT0.1S"
     },
     {
+      "name": "camunda.client.worker.defaults.retry-backoff",
+      "defaultValue": "PT0S"
+    },
+    {
       "name": "camunda.client.worker.defaults.name",
       "defaultValue": "default"
     },
