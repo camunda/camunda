@@ -233,7 +233,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public String toString() {
-    return "CamundaClientConfigurationImpl{"
+    return "SpringCamundaClientConfiguration{"
         + "camundaClientProperties="
         + camundaClientProperties
         + ", jsonMapper="
