@@ -23,6 +23,22 @@ import {
 import {APIRequestContext} from 'playwright-core';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
+export const clusterTopologyResponseFields = [
+  'brokers',
+  'clusterSize',
+  'partitionsCount',
+  'replicationFactor',
+  'gatewayVersion',
+  'lastCompletedChangeId',
+];
+export const brokerResponseFields = [
+  'nodeId',
+  'host',
+  'port',
+  'partitions',
+  'version',
+];
+export const partionsResponseFields = ['partitionId', 'role', 'health'];
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',
