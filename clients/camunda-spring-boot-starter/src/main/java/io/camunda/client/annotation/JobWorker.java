@@ -119,5 +119,5 @@ public @interface JobWorker {
   int maxRetries() default -1;
 
   /** Set the retry backoff for a job (in milliseconds) */
-  long retryBackoff() default 0L;
+  long retryBackoff() default -1L;
 }
