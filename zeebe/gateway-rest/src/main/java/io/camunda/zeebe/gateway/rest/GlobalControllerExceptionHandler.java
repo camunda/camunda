@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.fasterxml.jackson.databind.exc.MismatchedInputException;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import io.camunda.service.exception.ServiceException;
+import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
@@ -135,6 +136,15 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   public ResponseEntity<ProblemDetail> handleCompletionException(
       final CompletionException ex, final HttpServletRequest request) {
     return getProblemDetailResponseEntity(ex, request);
+  }
+
+  @ExceptionHandler(DeserializationException.class)
+  public ResponseEntity<ProblemDetail> handleDeserializationException(
+      final DeserializationException ex, final HttpServletRequest request) {
+    final ProblemDetail problemDetail =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
+    return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
 
   private static ResponseEntity<ProblemDetail> getProblemDetailResponseEntity(
