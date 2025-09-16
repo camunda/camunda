@@ -191,8 +191,39 @@
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <createSourcesJar>true</createSourcesJar>
+              <keepDependenciesWithProvidedScope>true</keepDependenciesWithProvidedScope>
+              <promoteTransitiveDependencies>false</promoteTransitiveDependencies>
+
+              <artifactSet>
+                <includes>
+                  <include>org.awaitility:awaitility</include>
+                </includes>
+              </artifactSet>
+
+              <relocations>
+                <!-- We shade the Awaitility dependency to avoid conflicts with Spring or the user's project. -->
+                <relocation>
+                  <pattern>org.awaitility.</pattern>
+                  <shadedPattern>io.camunda.shaded.awaitility.</shadedPattern>
+                </relocation>
+              </relocations>
+
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
-
   </build>
-
 </project>
