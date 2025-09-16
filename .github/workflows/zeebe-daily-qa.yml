@@ -47,7 +47,7 @@ jobs:
               | jq -s '
                   map(
                     if .branch == "stable/8.8" then
-                      .generation_template = "Camunda 8.8.0 SNAPSHOT"
+                      .generation_template = "Camunda 8.8-SNAPSHOT"
                     elif .branch == "stable/8.5" then
                       .generation_template = "Camunda 8.5+gen27"
                     else
