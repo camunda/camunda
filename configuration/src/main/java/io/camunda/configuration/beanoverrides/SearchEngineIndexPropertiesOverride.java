@@ -56,6 +56,8 @@ public class SearchEngineIndexPropertiesOverride {
             : secondaryStorage.getOpensearch();
 
     override.setNumberOfShards(database.getNumberOfShards());
+    override.setNumberOfReplicas(database.getNumberOfReplicas());
+    override.setVariableSizeThreshold(database.getVariableSizeThreshold());
 
     return override;
   }
