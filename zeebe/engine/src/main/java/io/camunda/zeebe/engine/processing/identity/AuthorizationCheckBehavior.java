@@ -452,19 +452,20 @@ public final class AuthorizationCheckBehavior {
       return AuthorizedTenants.DEFAULT_TENANTS;
     }
 
-    final var username = getUsername(command);
-    if (username.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.USER, username.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
-    }
+    final var authorizedTenants = new HashSet<String>();
+    getUsername(command)
+        .ifPresent(
+            username ->
+                authorizedTenants.addAll(
+                    getAuthorizedTenantIds(command, EntityType.USER, username)
+                        .collect(Collectors.toSet())));
 
-    final var clientId = getClientId(command);
-    if (clientId.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
-    }
+    getClientId(command)
+        .ifPresent(
+            clientId ->
+                authorizedTenants.addAll(
+                    getAuthorizedTenantIds(command, EntityType.CLIENT, clientId)
+                        .collect(Collectors.toSet())));
 
     final var tenantsOfMappingRule =
         getPersistedMappingRules(command)
@@ -473,7 +474,9 @@ public final class AuthorizationCheckBehavior {
                     getAuthorizedTenantIds(
                         command, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
             .collect(Collectors.toSet());
-    return new AuthenticatedAuthorizedTenants(tenantsOfMappingRule);
+    authorizedTenants.addAll(tenantsOfMappingRule);
+
+    return new AuthenticatedAuthorizedTenants(authorizedTenants);
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
