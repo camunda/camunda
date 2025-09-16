@@ -27,6 +27,23 @@ type PolymorphicComponentPropWithRef<
 > = PolymorphicComponentProp<C, Props> & {ref?: PolymorphicRef<C>};
 
 declare module '@carbon/react' {
+  import type {TooltipProps as BaseTooltipProps} from '@carbon/react';
+
+  interface TooltipProps extends BaseTooltipProps {
+    align:
+      | 'bottom-left'
+      | 'bottom'
+      | 'bottom-right'
+      | 'top-left'
+      | 'top'
+      | 'top-right';
+    description: string;
+  }
+
+  declare class TooltipComponent extends React.Component<TooltipProps> {}
+
+  export {TooltipComponent as Tooltip};
+
   export const Theme: React.FunctionComponent<{
     children: React.ReactNode;
     theme?: 'white' | 'g10' | 'g90' | 'g100';
@@ -323,4 +340,6 @@ declare module '@carbon/react/icons' {
   export const Copy: Icon;
   export const Launch: Icon;
   export const CheckmarkFilled: Icon;
+  export const Information: Icon;
+  export const ErrorFilled: Icon;
 }
