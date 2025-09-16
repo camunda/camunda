@@ -12,6 +12,7 @@ import static io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirect
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.identity.sdk.IdentityConfiguration;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.backup.azure.AzureBackupStore;
@@ -77,6 +78,7 @@ public final class SystemContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -90,7 +92,8 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -103,6 +106,7 @@ public final class SystemContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
     initSystemContext();
   }
 
@@ -116,7 +120,8 @@ public final class SystemContext {
       final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy) {
+      final SearchClientsProxy searchClientsProxy,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -129,7 +134,8 @@ public final class SystemContext {
         userServices,
         passwordEncoder,
         jwtDecoder,
-        searchClientsProxy);
+        searchClientsProxy,
+        brokerRequestAuthorizationConverter);
   }
 
   private void initSystemContext() {
@@ -482,5 +488,9 @@ public final class SystemContext {
 
   public SearchClientsProxy getSearchClientsProxy() {
     return searchClientsProxy;
+  }
+
+  public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
+    return brokerRequestAuthorizationConverter;
   }
 }

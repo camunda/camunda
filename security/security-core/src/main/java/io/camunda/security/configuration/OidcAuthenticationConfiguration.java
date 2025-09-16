@@ -184,6 +184,10 @@ public class OidcAuthenticationConfiguration {
     this.groupsClaim = groupsClaim;
   }
 
+  public boolean isGroupsClaimConfigured() {
+    return groupsClaim != null && !groupsClaim.isBlank();
+  }
+
   public String getClientAuthenticationMethod() {
     return clientAuthenticationMethod;
   }

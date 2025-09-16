@@ -15,6 +15,7 @@ import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -39,8 +40,14 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
       final SecurityContextProvider securityContextProvider,
       final TenantSearchClient tenantSearchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.tenantSearchClient = tenantSearchClient;
   }
 
@@ -72,7 +79,8 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
         securityContextProvider,
         tenantSearchClient,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<TenantRecord> createTenant(final TenantRequest request) {

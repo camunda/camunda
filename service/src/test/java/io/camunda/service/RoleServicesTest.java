@@ -19,6 +19,7 @@ import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.service.RoleServices.RoleMemberRequest;
@@ -46,6 +47,7 @@ public class RoleServicesTest {
   private CamundaAuthentication authentication;
   private StubbedBrokerClient stubbedBrokerClient;
   private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   public void before() {
@@ -55,13 +57,15 @@ public class RoleServicesTest {
     when(client.withSecurityContext(any())).thenReturn(client);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new RoleServices(
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
             authentication,
-            executorProvider);
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.handlers;
 
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -27,11 +28,15 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
 
   final TypedCommandWriter commandWriter;
   private final ElementInstanceState elementInstanceState;
+  private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   public ModifyProcessInstanceBatchOperationExecutor(
-      final TypedCommandWriter commandWriter, final ElementInstanceState elementInstanceState) {
+      final TypedCommandWriter commandWriter,
+      final ElementInstanceState elementInstanceState,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     this.commandWriter = commandWriter;
     this.elementInstanceState = elementInstanceState;
+    this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
 
   @Override
@@ -44,6 +49,8 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
                     ProcessInstanceModificationMoveInstructionValue::getSourceElementId,
                     ProcessInstanceModificationMoveInstructionValue::getTargetElementId));
 
+    final var authentication = batchOperation.getAuthentication();
+    final var claims = brokerRequestAuthorizationConverter.convert(authentication);
     final var command = new ProcessInstanceModificationRecord();
     command.setProcessInstanceKey(processInstanceKey);
 
@@ -75,8 +82,6 @@ public class ModifyProcessInstanceBatchOperationExecutor implements BatchOperati
         ProcessInstanceModificationIntent.MODIFY,
         command,
         FollowUpCommandMetadata.of(
-            b ->
-                b.batchOperationReference(batchOperation.getKey())
-                    .claims(batchOperation.getAuthentication().claims())));
+            b -> b.batchOperationReference(batchOperation.getKey()).claims(claims)));
   }
 }

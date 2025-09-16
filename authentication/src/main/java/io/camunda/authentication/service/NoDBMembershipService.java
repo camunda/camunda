@@ -7,8 +7,6 @@
  */
 package io.camunda.authentication.service;
 
-import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
-
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -19,36 +17,30 @@ import java.util.Map;
 import java.util.Set;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 @Service
 @ConditionalOnSecondaryStorageDisabled
 public class NoDBMembershipService implements MembershipService {
 
   private final OidcGroupsLoader oidcGroupsLoader;
-  private final String groupsClaim;
+  private final boolean isGroupsClaimConfigured;
 
   public NoDBMembershipService(final SecurityConfiguration securityConfiguration) {
-    groupsClaim = securityConfiguration.getAuthentication().getOidc().getGroupsClaim();
-    oidcGroupsLoader = new OidcGroupsLoader(groupsClaim);
+    oidcGroupsLoader =
+        new OidcGroupsLoader(securityConfiguration.getAuthentication().getOidc().getGroupsClaim());
+    isGroupsClaimConfigured =
+        securityConfiguration.getAuthentication().getOidc().isGroupsClaimConfigured();
   }
 
   @Override
   public CamundaAuthentication resolveMemberships(
-      final Map<String, Object> tokenClaims,
-      final Map<String, Object> authenticatedClaims,
-      final String username,
-      final String clientId)
+      final Map<String, Object> tokenClaims, final String username, final String clientId)
       throws OAuth2AuthenticationException {
-    final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
-    final Set<String> groups;
+    final Set<String> groups =
+        isGroupsClaimConfigured
+            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
+            : Collections.emptySet();
 
-    if (groupsClaimPresent) {
-      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
-      authenticatedClaims.put(USER_GROUPS_CLAIMS, groups.stream().toList());
-    } else {
-      groups = Collections.emptySet();
-    }
     return CamundaAuthentication.of(
         a ->
             a.user(username)
@@ -57,6 +49,6 @@ public class NoDBMembershipService implements MembershipService {
                 .groupIds(groups.stream().toList())
                 .mappingRule(Collections.emptyList())
                 .tenants(Collections.emptyList())
-                .claims(authenticatedClaims));
+                .claims(tokenClaims));
   }
 }
