@@ -1,5 +1,5 @@
 # description: This workflow runs our daily scheduled acceptance tests. It runs each test suite against the
-# development head (e.g. main) and all officially supported branches.
+# development head (e.g. main) and all officially supported branches (e.g. `stable/8.8`).
 #
 # As this is meant to be run via scheduling, the workflow itself only runs on the default branch
 # (e.g. main), so any changes you make will affect any other branches we test via this workflow.
@@ -18,68 +18,66 @@ env:
   BUILD_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
 
 jobs:
-  # This job will figure out the last supported versions based on the latest tags.
-  #
-  # Versions around found by sorting the tags, removing any that doesn't match semantic version,
-  # and ignoring those with suffixes, and sort in natural order reversed. To get the second-highest
-  # minor branch, we do the same, but we also filter out any versions which match the minor version
-  # of the latest stable version.
-  get-versions:
+  # This job will figure out the current stable branches.
+  compute-matrix:
     name: Compute branch matrix
     runs-on: ubuntu-latest
     outputs:
-      latest-version: ${{ env.LATEST_VERSION }}
-      second-last-version: ${{ env.SECOND_LAST_VERSION }}
-      third-last-version: ${{ env.THIRD_LAST_VERSION }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-      - run: git fetch --tags
-      - run: |
-          mapfile -t versions < <(git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | sed -E -e 's/\.[0-9]+$//' | sort -Vr | uniq)
+      - name: Set stable/8.* branches as JSON array of strings
+        id: set-matrix
+        run: |
+          # List all `stable/8.*` branches
+          # Sort them in desc order
+          # Exclude versions that don't require daily QA - for example, 8.4 in extended support
+          # Remove the `origin/` prefix
+          # Transform to json-formatted objects with branch and generation_template fields
+          # Transform them to json-formatted array of those objects
+          # Add the `main` branch to the json array
+          matrix=$( \
+            git ls-remote origin "refs/heads/stable/8.*" | awk '{print $2}' | sed 's|refs/heads/||' \
+              | sort -Vr \
+              | grep -v '^stable/8.4$' \
+              | while read -r branch; do
+                  version="${branch#stable/}"
+                  printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
+                done \
+              | jq -s '
+                  map(
+                    if .branch == "stable/8.8" then
+                      .generation_template = "Camunda 8.8-SNAPSHOT"
+                    elif .branch == "stable/8.5" then
+                      .generation_template = "Camunda 8.5+gen27"
+                    else
+                      .
+                    end
+                  )
+                ' \
+              | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Zeebe SNAPSHOT"}] + .'
+          )
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "Matrix output: $matrix"  # Debug output for inspection
 
-          latest="${versions[0]}"
-          second_last="${versions[1]}"
-          third_last="${versions[2]}"
-          if [ -n "$latest" ] && [ -n "$second_last" ] && [ -n "$third_last" ]; then
-            echo "Successfully computed latest versions: ${latest} and ${second_last} and ${third_last}"
-          else
-            echo "Failed to compute latest versions"
-          fi
-          {
-            echo "LATEST_VERSION=${latest}"
-            echo "SECOND_LAST_VERSION=${second_last}"
-            echo "THIRD_LAST_VERSION=${third_last}"
-          } >> "$GITHUB_ENV"
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
-  #
-  # NOTE: it's not possible to use the env context in a matrix, which is why we use job outputs
-  # here.
   qa:
     needs:
-      - get-versions
+      - compute-matrix
     strategy:
       # do not cancel other jobs if one fails
       fail-fast: false
       matrix:
-        branch:
-          - 'main'
-          - ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
-          - ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
-        include:
-          - branch: 'main'
-            generation_template: 'Zeebe SNAPSHOT'
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.latest-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.latest-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.second-last-version) }}
-            generation_template: ${{ format('Camunda {0}+gen1', needs.get-versions.outputs.second-last-version) }}
-          - branch: ${{ format('stable/{0}', needs.get-versions.outputs.third-last-version) }}
-            generation_template: ${{ format('Camunda {0}.0', needs.get-versions.outputs.third-last-version) }}
+        include: ${{ fromJson(needs.compute-matrix.outputs.matrix) }}
     runs-on: ubuntu-latest
     name: Daily QA
     steps:
       - uses: actions/checkout@v4
+      - name: Print branch and template
+        run: |
+          echo "Branch: ${{ matrix.branch }}"
+          echo "Generation: ${{ matrix.generation_template }}"
       - name: Trigger QA on ${{ matrix.branch }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
