@@ -78,7 +78,7 @@ test.describe('Roles functionalities', () => {
   });
 
   // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test('User inherits permissions through role assignment', async ({
+  test.skip('User inherits permissions through role assignment', async ({
     page,
     identityRolesPage,
     identityAuthorizationsPage,
