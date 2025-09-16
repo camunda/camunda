@@ -11,8 +11,7 @@ import io.camunda.search.entities.GroupMemberEntity;
 
 public enum GroupMemberSearchColumn implements SearchColumn<GroupMemberEntity> {
   ENTITY_ID("id"),
-  ENTITY_TYPE("entityType"),
-  GROUP_ID("groupId");
+  ENTITY_TYPE("entityType");
 
   private final String property;
 
