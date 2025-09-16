@@ -435,4 +435,9 @@ public class QueryHelper {
         joinWithAnd(activitiesQuery, activityIdQuery, activityHasIncident),
         None);
   }
+
+  /** Setter for PermissionsService for testing purposes. */
+  void setPermissionsService(final PermissionsService permissionsService) {
+    this.permissionsService = permissionsService;
+  }
 }
