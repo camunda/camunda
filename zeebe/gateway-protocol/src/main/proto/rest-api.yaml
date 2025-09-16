@@ -4464,10 +4464,10 @@ paths:
         The caller must provide a file name for each document, which will be used in case of a multi-status response
         to identify which documents failed to upload. The file name can be provided in the `Content-Disposition` header
         of the file part or in the `fileName` field of the metadata. You can add a parallel array of metadata objects. These
-        are matched with the files based on index, and must have the same length as the files array. 
-        To pass homogenous metadata for all files, spread the metadata over the metadata array. 
+        are matched with the files based on index, and must have the same length as the files array.
+        To pass homogenous metadata for all files, spread the metadata over the metadata array.
         A filename value provided explicitly via the metadata array in the request overrides the `Content-Disposition` header
-        of the file part. 
+        of the file part.
 
         In case of a multi-status response, the response body will contain a list of `DocumentBatchProblemDetail` objects,
         each of which contains the file name of the document that failed to upload and the reason for the failure.
@@ -8609,7 +8609,7 @@ components:
         clusterId:
           description: The cluster Id.
           type: string
-          nullable: false
+          nullable: true
         clusterSize:
           description: The number of brokers in the cluster.
           type: integer
