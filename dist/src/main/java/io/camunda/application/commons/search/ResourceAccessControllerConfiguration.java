@@ -22,12 +22,10 @@ import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
-import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnRestGatewayEnabled
 @ConditionalOnSecondaryStorageEnabled
 public class ResourceAccessControllerConfiguration {
 
