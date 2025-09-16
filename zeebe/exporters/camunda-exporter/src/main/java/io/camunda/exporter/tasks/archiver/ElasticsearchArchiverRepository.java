@@ -48,7 +48,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
 
@@ -160,21 +159,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     if (!retention.isEnabled()) {
       return CompletableFuture.completedFuture(null);
     }
-    final var indicesGroupedByPolicyName =
-        allTemplatesDescriptors.stream()
-            .collect(
-                Collectors.groupingBy(
-                    index -> getRetentionPolicyName(index.getIndexName(), retention)));
 
     final var requests =
-        indicesGroupedByPolicyName.entrySet().stream()
-            .flatMap(
-                entry ->
-                    entry.getValue().stream()
-                        .map(
-                            template ->
-                                applyPolicyToIndices(
-                                    entry.getKey(), buildHistoricalIndicesPattern(template))))
+        allTemplatesDescriptors.stream()
+            .map(
+                template ->
+                    applyPolicyToIndices(
+                        getRetentionPolicyName(template.getIndexName(), retention),
+                        buildHistoricalIndicesPattern(template)))
             .toList();
 
     return CompletableFuture.allOf(requests.toArray(new CompletableFuture[0]));

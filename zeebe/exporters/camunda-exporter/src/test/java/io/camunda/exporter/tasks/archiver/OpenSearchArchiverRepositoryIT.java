@@ -693,8 +693,8 @@ final class OpenSearchArchiverRepositoryIT {
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
-    assertThat(putIndicesSettingsRequests).hasSize(16);
     assertThat(putIndicesSettingsRequests)
+        .hasSize(16)
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -709,9 +709,11 @@ final class OpenSearchArchiverRepositoryIT {
                               split[0].matches(template.getAllVersionsIndexNameRegexPattern()))
                       .findFirst();
               assertThat(matchingTemplate).isPresent();
-              assertThat(split[0]).isEqualTo(matchingTemplate.get().getIndexPattern());
-              assertThat(split[1]).isEqualTo("-" + matchingTemplate.get().getFullQualifiedName());
-              assertThat(split[2]).isEqualTo("-" + matchingTemplate.get().getAlias());
+              assertThat(split)
+                  .containsExactly(
+                      matchingTemplate.get().getIndexPattern(),
+                      "-" + matchingTemplate.get().getFullQualifiedName(),
+                      "-" + matchingTemplate.get().getAlias());
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
