@@ -301,8 +301,7 @@
     },
     {
       "matchManagers": [
-        "npm",
-        "nvm"
+        "npm"
       ],
       "matchPackageNames": [
         "*"
