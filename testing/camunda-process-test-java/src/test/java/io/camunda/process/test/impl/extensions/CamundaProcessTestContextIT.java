@@ -333,7 +333,7 @@ public class CamundaProcessTestContextIT {
     variables.put("abc", 123);
 
     // When
-    processTestContext.completeUserTask("user-task", variables);
+    processTestContext.completeUserTask("user-task-1", variables);
 
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
