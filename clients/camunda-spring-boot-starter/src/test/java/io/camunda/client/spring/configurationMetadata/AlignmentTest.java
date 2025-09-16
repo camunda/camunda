@@ -113,6 +113,11 @@ public class AlignmentTest {
     GETTERS.put(
         "camunda.client.worker.defaults.stream-enabled",
         p -> p.getWorker().getDefaults().getStreamEnabled());
+    // camunda.client.worker.defaults.retry-backoff
+    GETTERS.put(
+        "camunda.client.worker.defaults.retry-backoff",
+        p -> p.getWorker().getDefaults().getRetryBackoff());
+    MAPPERS.put("camunda.client.worker.defaults.retry-backoff", p -> Duration.parse((String) p));
   }
 
   @Autowired CamundaClientProperties camundaClientProperties;
