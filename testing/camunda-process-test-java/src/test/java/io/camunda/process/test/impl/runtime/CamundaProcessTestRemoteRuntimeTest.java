@@ -33,6 +33,7 @@ import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -179,5 +180,60 @@ public class CamundaProcessTestRemoteRuntimeTest {
     // when/then
     assertThatThrownBy(camundaRuntime::start)
         .hasMessage("Failed to connect to remote Camunda runtime.");
+  }
+
+  @Test
+  void shouldFailOnStartIfTheRuntimeIsUnhealthy() {
+    // given
+    when(camundaClientBuilder.build()).thenReturn(camundaClient);
+
+    when(camundaClient.newTopologyRequest().send().join()).thenReturn(topology);
+
+    final BrokerInfo brokerInfo = mock(BrokerInfo.class);
+
+    final PartitionInfo healthyPartition = mock(PartitionInfo.class);
+    when(healthyPartition.getHealth()).thenReturn(PartitionBrokerHealth.HEALTHY);
+
+    final PartitionInfo unhealthyPartition = mock(PartitionInfo.class);
+    when(unhealthyPartition.getHealth()).thenReturn(PartitionBrokerHealth.UNHEALTHY);
+
+    when(brokerInfo.getPartitions())
+        .thenReturn(Arrays.asList(healthyPartition, unhealthyPartition));
+
+    when(topology.getBrokers()).thenReturn(Collections.singletonList(brokerInfo));
+
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .build();
+
+    // when/then
+    assertThatThrownBy(camundaRuntime::start)
+        .hasMessageContaining("Remote Camunda runtime is unhealthy. [topology:");
+  }
+
+  @Test
+  void shouldFailOnStartIfNoPartitionsAreAvailable() {
+    // given
+    when(camundaClientBuilder.build()).thenReturn(camundaClient);
+
+    when(camundaClient.newTopologyRequest().send().join()).thenReturn(topology);
+
+    final BrokerInfo brokerInfo = mock(BrokerInfo.class);
+    when(brokerInfo.getPartitions()).thenReturn(Collections.emptyList());
+
+    when(topology.getBrokers()).thenReturn(Collections.singletonList(brokerInfo));
+
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaProcessTestContainerRuntime.newBuilder()
+            .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
+            .withRemoteCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .build();
+
+    // when/then
+    assertThatThrownBy(camundaRuntime::start)
+        .hasMessageContaining(
+            "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors.");
   }
 }

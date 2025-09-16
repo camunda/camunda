@@ -32,6 +32,7 @@ import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.core5.http.ClassicHttpRequest;
 import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.HttpStatus;
 import org.apache.hc.core5.http.io.entity.HttpEntities;
 import org.awaitility.Awaitility;
 import org.awaitility.core.ConditionTimeoutException;
@@ -83,7 +84,7 @@ public final class CamundaManagementClient {
 
       return Instant.parse(clockResponseDto.getInstant());
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to resolve the current time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
   }
 
@@ -99,7 +100,7 @@ public final class CamundaManagementClient {
 
       sendRequest(request);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to increase the time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
   }
 
@@ -116,8 +117,15 @@ public final class CamundaManagementClient {
     try {
       sendRequest(request);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to reset the time", e);
+      throw new RuntimeException(timerBasedErrorMessage(e), e);
     }
+  }
+
+  private String timerBasedErrorMessage(final Exception e) {
+    return e.getMessage().contains("code: " + HttpStatus.SC_FORBIDDEN)
+        ? "Failed to increase the time. Please double-check that the Clock endpoint is enabled by "
+            + "setting 'zeebe-clock-controlled' to true."
+        : "Failed to increase the time.";
   }
 
   /**
@@ -201,9 +209,9 @@ public final class CamundaManagementClient {
             throw new RuntimeException(
                 String.format(
                     "Request failed. [code: %d, message: %s]",
-                    response.getCode(), HttpClientUtil.getReponseAsString(response)));
+                    response.getCode(), HttpClientUtil.getResponseAsString(response)));
           }
-          return HttpClientUtil.getReponseAsString(response);
+          return HttpClientUtil.getResponseAsString(response);
         });
   }
 
