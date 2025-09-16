@@ -89,22 +89,36 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   }
 
   private void checkConnectionToRemoteRuntime() {
+    final Topology topology = queryRemoteRuntimeHealth();
+
+    final boolean isHealthy =
+        topology.getBrokers().stream()
+            .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
+            .map(PartitionInfo::getHealth)
+            .allMatch(PartitionBrokerHealth.HEALTHY::equals);
+    final boolean hasAtLeastOnePartition =
+        topology.getBrokers().stream()
+            .anyMatch(brokerInfo -> !brokerInfo.getPartitions().isEmpty());
+
+    if (isHealthy && hasAtLeastOnePartition) {
+      LOGGER.info("Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
+    } else if (!isHealthy) {
+      final String errorMessage =
+          String.format("Remote Camunda runtime is unhealthy. [topology: %s]", topology);
+      throw new RemoteRuntimeUnhealthyException(errorMessage);
+    } else {
+      final String errorMessage =
+          String.format(
+              "Remote Camunda runtime has zero available partitions. Please check the remote runtime logs for errors. [topology: %s",
+              topology);
+      throw new RemoteRuntimeHasNoAvailablePartitionsException(errorMessage);
+    }
+  }
+
+  private Topology queryRemoteRuntimeHealth() {
     try (final CamundaClient camundaClient = getCamundaClientBuilderFactory().get().build()) {
-      final Topology topology = camundaClient.newTopologyRequest().send().join();
 
-      final boolean isHealthy =
-          topology.getBrokers().stream()
-              .flatMap(brokerInfo -> brokerInfo.getPartitions().stream())
-              .map(PartitionInfo::getHealth)
-              .allMatch(PartitionBrokerHealth.HEALTHY::equals);
-
-      if (isHealthy) {
-        LOGGER.info(
-            "Remote Camunda runtime connected. [version: {}]", topology.getGatewayVersion());
-      } else {
-        LOGGER.warn("Remote Camunda runtime is unhealthy. [topology: {}]", topology);
-      }
-
+      return camundaClient.newTopologyRequest().send().join();
     } catch (final Exception e) {
       throw new RuntimeException("Failed to connect to remote Camunda runtime.", e);
     }
@@ -121,5 +135,19 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   @Override
   public void close() throws Exception {
     // nothing to close. the runtime is managed remotely.
+  }
+
+  public static class RemoteRuntimeUnhealthyException extends IllegalStateException {
+
+    public RemoteRuntimeUnhealthyException(final String message) {
+      super(message);
+    }
+  }
+
+  public static class RemoteRuntimeHasNoAvailablePartitionsException extends IllegalStateException {
+
+    public RemoteRuntimeHasNoAvailablePartitionsException(final String message) {
+      super(message);
+    }
   }
 }
