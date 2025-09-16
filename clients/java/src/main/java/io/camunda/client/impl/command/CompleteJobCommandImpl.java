@@ -43,7 +43,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;

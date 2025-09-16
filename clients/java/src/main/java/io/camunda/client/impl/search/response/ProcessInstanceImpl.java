@@ -20,8 +20,8 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
-import java.util.Set;
 import java.time.OffsetDateTime;
+import java.util.Set;
 
 public class ProcessInstanceImpl implements ProcessInstance {
 
