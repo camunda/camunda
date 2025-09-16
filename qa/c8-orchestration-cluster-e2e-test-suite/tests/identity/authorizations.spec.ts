@@ -73,8 +73,7 @@ test.describe.serial('component authorizations CRUD', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('create user authorization', async ({
+  test('create user authorization', async ({
     page,
     identityUsersPage,
     identityRolesPage,
@@ -124,8 +123,7 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('create component authorization for a role', async ({
+  test('create component authorization for a role', async ({
     identityUsersPage,
     identityAuthorizationsPage,
     identityHeader,
@@ -144,8 +142,7 @@ test.describe.serial('component authorizations CRUD', () => {
     });
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('delete component authorization for role', async ({
+  test('delete component authorization for role', async ({
     page,
     identityHeader,
     loginPage,
@@ -218,8 +215,7 @@ test.describe('authorization scenarios', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
-  test.skip('create component authorization for a user', async ({
+  test('create component authorization for a user', async ({
     page,
     identityUsersPage,
     identityAuthorizationsPage,

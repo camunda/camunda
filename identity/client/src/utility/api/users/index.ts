@@ -50,7 +50,7 @@ export const getUserDetails: ApiDefinition<
 type CreateUserParams = { password: string } & User;
 
 export const createUser: ApiDefinition<undefined, CreateUserParams> = (user) =>
-  apiPost(USERS_ENDPOINT, { ...user, enabled: true });
+  apiPost(USERS_ENDPOINT, { ...user });
 
 type UpdateUserParams = { password?: string } & User;
 
