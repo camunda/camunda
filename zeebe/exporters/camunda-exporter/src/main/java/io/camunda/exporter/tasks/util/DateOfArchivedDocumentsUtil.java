@@ -76,7 +76,7 @@ public final class DateOfArchivedDocumentsUtil {
   }
 
   public static CompletableFuture<String> getLastHistoricalArchiverDate(
-      final CompletableFuture<List<String>> listOfIndexes, final String zeebeIndexPrefix) {
+      final CompletableFuture<List<String>> listOfIndexes) {
     final DateTimeFormatter formatterWithHour = DateTimeFormatter.ofPattern(DATE_AND_HOUR_PATTERN);
     final DateTimeFormatter formatterWithoutHour = DateTimeFormatter.ofPattern(DATE_PATTERN);
     final Pattern indexDatePattern = Pattern.compile("_(\\d{4}-\\d{2}-\\d{2}(?:-\\d{2})?)");
@@ -84,7 +84,6 @@ public final class DateOfArchivedDocumentsUtil {
     return listOfIndexes.thenApply(
         indexes ->
             indexes.stream()
-                .filter(index -> !index.contains(zeebeIndexPrefix))
                 .map(
                     index -> {
                       final Matcher matcher = indexDatePattern.matcher(index);
