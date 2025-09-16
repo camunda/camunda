@@ -31,6 +31,7 @@ jobs:
         run: |
           # List all `stable/8.*` branches
           # Sort them in desc order
+          # Exclude versions that don't require daily QA - for example, 8.4 in extended support
           # Remove the `origin/` prefix
           # Transform to json-formatted objects with branch and generation_template fields
           # Transform them to json-formatted array of those objects
@@ -38,11 +39,22 @@ jobs:
           matrix=$( \
             git ls-remote origin "refs/heads/stable/8.*" | awk '{print $2}' | sed 's|refs/heads/||' \
               | sort -Vr \
+              | grep -v '^stable/8.4$' \
               | while read -r branch; do
                   version="${branch#stable/}"
                   printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
                 done \
-              | jq -s . \
+              | jq -s '
+                  map(
+                    if .branch == "stable/8.8" then
+                      .generation_template = "Camunda 8.8.0 SNAPSHOT"
+                    elif .branch == "stable/8.5" then
+                      .generation_template = "Camunda 8.5+gen27"
+                    else
+                      .
+                    end
+                  )
+                ' \
               | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Zeebe SNAPSHOT"}] + .'
           )
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
