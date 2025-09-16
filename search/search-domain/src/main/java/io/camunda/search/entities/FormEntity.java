@@ -10,5 +10,6 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public record FormEntity(Long formKey, String tenantId, String formId, String schema, Integer version)
+public record FormEntity(
+    Long formKey, String tenantId, String formId, String schema, Integer version)
     implements TenantOwnedEntity {}

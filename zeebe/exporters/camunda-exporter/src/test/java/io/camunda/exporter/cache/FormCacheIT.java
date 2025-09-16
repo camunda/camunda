@@ -40,24 +40,24 @@ import org.opensearch.client.opensearch._types.Refresh;
 
 class FormCacheIT {
 
-  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @BeforeEach
   void setup() {
     if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
-      new ElasticsearchEngineClient(searchDB.esClient(), searchDB.objectMapper())
+      new ElasticsearchEngineClient(SEARCH_DB.esClient(), SEARCH_DB.objectMapper())
           .createIndex(FORM_INDEX, new IndexConfiguration());
     }
-    new OpensearchEngineClient(searchDB.osClient(), searchDB.objectMapper())
+    new OpensearchEngineClient(SEARCH_DB.osClient(), SEARCH_DB.objectMapper())
         .createIndex(FORM_INDEX, new IndexConfiguration());
   }
 
   @AfterEach
   void cleanup() throws IOException {
     if (System.getProperty(TEST_INTEGRATION_OPENSEARCH_AWS_URL, "").isBlank()) {
-      searchDB.esClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+      SEARCH_DB.esClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
     }
-    searchDB.osClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
+    SEARCH_DB.osClient().indices().delete(req -> req.index(FORM_INDEX.getFullQualifiedName()));
   }
 
   @ParameterizedTest
@@ -124,7 +124,7 @@ class FormCacheIT {
     return new FormCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new ElasticSearchFormCacheLoader(searchDB.esClient(), indexName),
+            new ElasticSearchFormCacheLoader(SEARCH_DB.esClient(), indexName),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "ES", new SimpleMeterRegistry())),
         FormCacheIT::indexInElasticSearch);
@@ -134,7 +134,7 @@ class FormCacheIT {
     return new FormCacheArgument(
         new ExporterEntityCacheImpl<>(
             10,
-            new OpenSearchFormCacheLoader(searchDB.osClient(), indexName),
+            new OpenSearchFormCacheLoader(SEARCH_DB.osClient(), indexName),
             new CaffeineCacheStatsCounter(
                 DefaultExporterResourceProvider.NAMESPACE, "OS", new SimpleMeterRegistry())),
         FormCacheIT::indexInOpenSearch);
@@ -142,7 +142,7 @@ class FormCacheIT {
 
   private static void indexInElasticSearch(final FormEntity formEntity) {
     try {
-      searchDB
+      SEARCH_DB
           .esClient()
           .index(
               request ->
@@ -158,7 +158,7 @@ class FormCacheIT {
 
   private static void indexInOpenSearch(final FormEntity formEntity) {
     try {
-      searchDB
+      SEARCH_DB
           .osClient()
           .index(
               request ->

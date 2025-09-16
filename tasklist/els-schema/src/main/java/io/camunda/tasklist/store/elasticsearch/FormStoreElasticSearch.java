@@ -69,7 +69,8 @@ public class FormStoreElasticSearch implements FormStore {
   private RestHighLevelClient esClient;
 
   @Override
-  public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
+  public FormEntity getForm(
+      final String id, final String processDefinitionId, final Integer version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
     if (formEmbedded != null) {
@@ -115,7 +116,7 @@ public class FormStoreElasticSearch implements FormStore {
             new FormIdView(
                 (String) sourceAsMap.get(FormIndex.ID),
                 (String) sourceAsMap.get(FormIndex.BPMN_ID),
-                ((Number) sourceAsMap.get(FormIndex.VERSION)).longValue()));
+                (Integer) sourceAsMap.get(FormIndex.VERSION)));
       }
     } catch (final IOException e) {
       throw new TasklistRuntimeException(
@@ -138,7 +139,7 @@ public class FormStoreElasticSearch implements FormStore {
     }
   }
 
-  private FormEntity getLinkedForm(final String formId, final Long formVersion) {
+  private FormEntity getLinkedForm(final String formId, final Integer formVersion) {
     final SearchRequest searchRequest = new SearchRequest(formIndex.getFullQualifiedName());
     final SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
     final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();

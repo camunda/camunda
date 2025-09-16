@@ -13,11 +13,11 @@ import java.util.Optional;
 
 public interface FormStore {
 
-  FormEntity getForm(final String id, final String processDefinitionId, final Long version);
+  FormEntity getForm(final String id, final String processDefinitionId, final Integer version);
 
   List<String> getFormIdsByProcessDefinitionId(String processDefinitionId);
 
   Optional<FormIdView> getFormByKey(String formKey);
 
-  record FormIdView(String id, String bpmnId, Long version) {}
+  record FormIdView(String id, String bpmnId, Integer version) {}
 }

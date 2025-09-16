@@ -61,7 +61,8 @@ public class FormStoreOpenSearch implements FormStore {
   private OpenSearchClient osClient;
 
   @Override
-  public FormEntity getForm(final String id, final String processDefinitionId, final Long version) {
+  public FormEntity getForm(
+      final String id, final String processDefinitionId, final Integer version) {
     final FormEntity formEmbedded =
         version == null ? getFormEmbedded(id, processDefinitionId) : null;
     if (formEmbedded != null) {
@@ -205,7 +206,7 @@ public class FormStoreOpenSearch implements FormStore {
     }
   }
 
-  public FormEntity getLinkedForm(final String formId, final Long formVersion) {
+  public FormEntity getLinkedForm(final String formId, final Integer formVersion) {
     try {
       final Query boolQuery;
       final SearchRequest.Builder searchRequest =

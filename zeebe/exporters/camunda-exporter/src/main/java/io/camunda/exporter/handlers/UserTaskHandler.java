@@ -250,8 +250,7 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
               c ->
                   entity
                       .setFormId(c.formId())
-                      .setFormVersion(
-                          c.formVersion() == null ? null : Long.valueOf(c.formVersion())));
+                      .setFormVersion(c.formVersion() == null ? null : c.formVersion()));
     }
   }
 

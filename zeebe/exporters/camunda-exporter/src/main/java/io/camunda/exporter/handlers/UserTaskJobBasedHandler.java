@@ -253,8 +253,7 @@ public class UserTaskJobBasedHandler implements ExportHandler<TaskEntity, JobRec
                 c ->
                     entity
                         .setFormId(c.formId())
-                        .setFormVersion(
-                            c.formVersion() == null ? null : Long.valueOf(c.formVersion())));
+                        .setFormVersion(c.formVersion() == null ? null : c.formVersion()));
       }
     }
   }

@@ -66,7 +66,7 @@ public class TaskSearchResponse {
   @Schema(
       description =
           "Reference to the version of a deployed form. If the form is not deployed, this property is null.")
-  private Long formVersion;
+  private Integer formVersion;
 
   @Schema(
       description =
@@ -222,11 +222,11 @@ public class TaskSearchResponse {
     return this;
   }
 
-  public Long getFormVersion() {
+  public Integer getFormVersion() {
     return formVersion;
   }
 
-  public TaskSearchResponse setFormVersion(final Long formVersion) {
+  public TaskSearchResponse setFormVersion(final Integer formVersion) {
     this.formVersion = formVersion;
     return this;
   }

@@ -44,7 +44,7 @@ public class MigrationUtilsTest {
     originalEntity.setCandidateUsers(new String[] {"user1", "user2"});
     originalEntity.setFormKey("formKey-123");
     originalEntity.setFormId("formId-123");
-    originalEntity.setFormVersion(4L);
+    originalEntity.setFormVersion(4);
     originalEntity.setIsFormEmbedded(true);
     originalEntity.setFollowUpDate(null);
     originalEntity.setDueDate(null);
@@ -112,7 +112,7 @@ public class MigrationUtilsTest {
     originalEntity.setCandidateUsers(new String[] {"user1", "user2"});
     originalEntity.setFormKey("formKey-123");
     originalEntity.setFormId("formId-123");
-    originalEntity.setFormVersion(4L);
+    originalEntity.setFormVersion(4);
     originalEntity.setIsFormEmbedded(true);
     originalEntity.setFollowUpDate(OffsetDateTime.now());
     originalEntity.setDueDate(OffsetDateTime.now());

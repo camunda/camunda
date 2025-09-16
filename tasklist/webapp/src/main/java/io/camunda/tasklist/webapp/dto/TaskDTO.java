@@ -45,7 +45,7 @@ public final class TaskDTO {
   private boolean isFirst = false;
   private String formKey;
   private String formId;
-  private Long formVersion;
+  private Integer formVersion;
   private Boolean isFormEmbedded;
   private String tenantId;
   private OffsetDateTime dueDate;
@@ -206,11 +206,11 @@ public final class TaskDTO {
     return this;
   }
 
-  public Long getFormVersion() {
+  public Integer getFormVersion() {
     return formVersion;
   }
 
-  public TaskDTO setFormVersion(final Long formVersion) {
+  public TaskDTO setFormVersion(final Integer formVersion) {
     this.formVersion = formVersion;
     return this;
   }
