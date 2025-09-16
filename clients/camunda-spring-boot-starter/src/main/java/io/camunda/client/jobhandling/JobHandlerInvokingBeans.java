@@ -23,7 +23,6 @@ import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.impl.Loggers;
-import io.camunda.client.jobhandling.JobExceptionHandlingStrategy.ExceptionHandlingContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorContext;
@@ -40,21 +39,18 @@ public class JobHandlerInvokingBeans implements JobHandler {
   private final MetricsRecorder metricsRecorder;
   private final List<ParameterResolver> parameterResolvers;
   private final ResultProcessor resultProcessor;
-  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
 
   public JobHandlerInvokingBeans(
       final JobWorkerValue workerValue,
       final CommandExceptionHandlingStrategy commandExceptionHandlingStrategy,
       final MetricsRecorder metricsRecorder,
       final List<ParameterResolver> parameterResolvers,
-      final ResultProcessor resultProcessor,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+      final ResultProcessor resultProcessor) {
     this.workerValue = workerValue;
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolvers = parameterResolvers;
     this.resultProcessor = resultProcessor;
-    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
   }
 
   @Override
@@ -63,24 +59,19 @@ public class JobHandlerInvokingBeans implements JobHandler {
     LOG.trace("Handle {} and invoke worker {}", job, workerValue);
     metricsRecorder.increase(
         MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_ACTIVATED, job.getType());
-    try {
-      final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
-      final Object result =
-          resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
-      if (workerValue.getAutoComplete()) {
-        LOG.trace("Auto completing {}", job);
-        final CommandWrapper command =
-            createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
-        command.executeAsyncWithMetrics(
-            MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
-      } else {
-        if (result != null) {
-          LOG.warn("Result provided but auto complete disabled for job {}", job);
-        }
+    final Object methodInvocationResult = workerValue.getMethodInfo().invoke(args.toArray());
+    final Object result =
+        resultProcessor.process(new ResultProcessorContext(methodInvocationResult, job));
+    if (workerValue.getAutoComplete()) {
+      LOG.trace("Auto completing {}", job);
+      final CommandWrapper command =
+          createCommandWrapper(createCompleteCommand(jobClient, job, result), job);
+      command.executeAsyncWithMetrics(
+          MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_COMPLETED, job.getType());
+    } else {
+      if (result != null) {
+        LOG.warn("Result provided but auto complete disabled for job {}", job);
       }
-    } catch (final Exception e) {
-      jobExceptionHandlingStrategy.handleException(
-          e, new ExceptionHandlingContext(jobClient, job, workerValue));
     }
   }
 

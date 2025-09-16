@@ -171,6 +171,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         source::getForceFetchAllVariables,
         target::setForceFetchAllVariables);
     copyProperty("maxRetries", overrideSource, source::getMaxRetries, target::setMaxRetries);
+    copyProperty("retryBackoff", overrideSource, source::getRetryBackoff, target::setRetryBackoff);
   }
 
   private <T> void copyProperty(
