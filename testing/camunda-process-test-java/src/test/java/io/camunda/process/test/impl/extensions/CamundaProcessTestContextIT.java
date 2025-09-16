@@ -316,7 +316,7 @@ public class CamundaProcessTestContextIT {
         client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // When
-    processTestContext.completeUserTask("user-task");
+    processTestContext.completeUserTask("user-task-1");
 
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
@@ -333,7 +333,7 @@ public class CamundaProcessTestContextIT {
     variables.put("abc", 123);
 
     // When
-    processTestContext.completeUserTask("user-task", variables);
+    processTestContext.completeUserTask("user-task-1", variables);
 
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
@@ -452,7 +452,7 @@ public class CamundaProcessTestContextIT {
             () ->
                 processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
         .hasMessage(
-            "Expected to complete user task [elementId: unknown-task] but no job is available.");
+            "Expected to complete user task [elementId: unknown-task] but no user task is available.");
   }
 
   @Test
