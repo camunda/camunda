@@ -26,8 +26,6 @@ jobs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
-      - name: Fetch all stable/8.* branches
-        run: git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/stable/8.*'
       - name: Set stable/8.* branches as JSON array of strings
         id: set-matrix
         run: |
@@ -38,8 +36,8 @@ jobs:
           # Transform them to json-formatted array of those objects
           # Add the `main` branch to the json array
           matrix=$( \
-            git branch --list --remotes 'origin/stable/8.*' --sort=-refname \
-              | sed -E -e 's/^  origin\///' \
+            git ls-remote origin "refs/heads/stable/8.*" | awk '{print $2}' | sed 's|refs/heads/||' \
+              | sort -Vr \
               | while read -r branch; do
                   version="${branch#stable/}"
                   printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
