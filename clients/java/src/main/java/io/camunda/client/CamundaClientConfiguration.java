@@ -17,6 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
 import java.time.Duration;
@@ -150,6 +151,11 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#useDefaultRetryPolicy(boolean)
    */
   boolean useDefaultRetryPolicy();
+
+  /**
+   * @see CamundaClientBuilder#defaultJobWorkerExceptionHandler(JobExceptionHandler)
+   */
+  JobExceptionHandler getDefaultJobWorkerJobExceptionHandler();
 
   /**
    * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
