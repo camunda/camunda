@@ -150,12 +150,16 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
 
         @Override
         public String getDueDate() {
-          return job.getUserTask().getDueDate();
+          return job.getUserTask().getDueDate() != null 
+            ? job.getUserTask().getDueDate().toString() 
+            : null;
         }
 
         @Override
         public String getFollowUpDate() {
-          return job.getUserTask().getFollowUpDate();
+          return job.getUserTask().getFollowUpDate() != null 
+            ? job.getUserTask().getFollowUpDate().toString() 
+            : null;
         }
 
         @Override
