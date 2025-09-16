@@ -11219,26 +11219,33 @@ components:
       enum:
         - "TERMINATE_PROCESS_INSTANCE"
     ProcessInstanceCreationRuntimeInstruction:
-      description: "Runtime instructions for process instance creation."
-      oneOf:
-        - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+      type: "object"
+      required:
+        - "type"
+      properties:
+        type:
+          $ref: "#/components/schemas/RuntimeInstructionType"
       discriminator:
         propertyName: "type"
         mapping:
           TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+      description: "Base type for all runtime instructions.\n"
     ProcessInstanceCreationTerminateInstruction:
-      description: "Terminates the process instance after a specific BPMN element\
-        \ is completed or terminated.\n"
-      type: "object"
-      required:
-        - "afterElementId"
-      properties:
-        afterElementId:
-          description: "The ID of the element that, once completed or terminated,\
-            \ will cause the process to be terminated.\n"
-          example: "Activity_106kosb"
-          allOf:
-            - $ref: "#/components/schemas/ElementId"
+      description: "Terminate the process"
+      allOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
+        - type: "object"
+          required:
+            - "afterElementId"
+          properties:
+            afterElementId:
+              description: "The ID of the element that, once completed or terminated,\
+                \ will cause the process to be terminated.\n"
+              example: "Activity_106kosb"
+              allOf:
+                - $ref: "#/components/schemas/ElementId"
+          description: "Terminates the process instance after a specific BPMN element\
+            \ is completed or terminated.\n"
     CreateProcessInstanceResult:
       required:
         - "processDefinitionId"
