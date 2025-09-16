@@ -24,6 +24,7 @@ import io.camunda.search.sort.GroupSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -41,10 +42,11 @@ public class GroupMemberIT {
     final RdbmsWriter rdbmsWriter = rdbmsService.createWriter(PARTITION_ID);
     final GroupMemberDbReader reader = rdbmsService.getGroupMemberReader();
 
-    GroupFixtures.createAndSaveRandomGroups(rdbmsWriter, b -> b);
     final var group = GroupFixtures.createAndSaveGroup(rdbmsWriter, b -> b);
-    addUserToGroup(rdbmsWriter, group.groupId(), "user-1");
-    addUserToGroup(rdbmsWriter, group.groupId(), "user-2");
+    final var userid1 = "user-" + UUID.randomUUID();
+    final var userid2 = "user-" + UUID.randomUUID();
+    addUserToGroup(rdbmsWriter, group.groupId(), userid1);
+    addUserToGroup(rdbmsWriter, group.groupId(), userid2);
 
     final var searchResult =
         reader.search(
@@ -57,7 +59,7 @@ public class GroupMemberIT {
     assertThat(searchResult.total()).isEqualTo(2);
     assertThat(searchResult.items()).hasSize(2);
     assertThat(searchResult.items().stream().map(GroupMemberEntity::id))
-        .contains("user-1", "user-2");
+        .containsExactlyInAnyOrder(userid1, userid2);
   }
 
   private void addUserToGroup(
