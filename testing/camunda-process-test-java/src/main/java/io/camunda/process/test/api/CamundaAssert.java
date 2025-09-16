@@ -89,7 +89,8 @@ public class CamundaAssert {
 
   private static CamundaAssertAwaitBehavior awaitBehavior = DEFAULT_AWAIT_BEHAVIOR;
 
-  private static CamundaAssertJsonMapper jsonMapper = new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
+  private static CamundaAssertJsonMapper jsonMapper =
+      new CamundaAssertJsonMapper(DEFAULT_JSON_MAPPER);
 
   static {
     setAssertionTimeout(DEFAULT_ASSERTION_TIMEOUT);
@@ -255,11 +256,7 @@ public class CamundaAssert {
   public static ProcessInstanceAssert assertThatProcessInstance(
       final ProcessInstanceSelector processInstanceSelector) {
     return new ProcessInstanceAssertj(
-        getDataSource(),
-        awaitBehavior,
-        jsonMapper,
-        processInstanceSelector,
-        elementSelector);
+        getDataSource(), awaitBehavior, jsonMapper, processInstanceSelector, elementSelector);
   }
 
   /**

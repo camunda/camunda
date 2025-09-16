@@ -250,8 +250,7 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
     final Map<String, JsonNode> expectedValues =
         expectedVariables.entrySet().stream()
             .collect(
-                Collectors.toMap(
-                    Entry::getKey, entry -> jsonMapper.toJsonNode(entry.getValue())));
+                Collectors.toMap(Entry::getKey, entry -> jsonMapper.toJsonNode(entry.getValue())));
 
     final Set<String> expectedVariableNames = expectedVariables.keySet();
 
