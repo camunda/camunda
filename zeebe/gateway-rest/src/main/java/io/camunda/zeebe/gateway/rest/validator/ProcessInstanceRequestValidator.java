@@ -51,8 +51,7 @@ public class ProcessInstanceRequestValidator {
       final ProcessInstanceCreationInstructionByKey request) {
     return validate(
         violations -> {
-            validateKeyFormat(
-                request.getProcessDefinitionKey(), "processDefinitionKey", violations);
+          validateKeyFormat(request.getProcessDefinitionKey(), "processDefinitionKey", violations);
           validateOperationReference(request.getOperationReference(), violations);
           validateTags(request.getTags(), violations);
         });

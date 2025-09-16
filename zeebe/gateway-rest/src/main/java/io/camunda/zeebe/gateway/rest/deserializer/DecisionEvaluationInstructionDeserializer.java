@@ -10,26 +10,27 @@ package io.camunda.zeebe.gateway.rest.deserializer;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_AT_LEAST_ONE_FIELD;
 import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAGE_ONLY_ONE_FIELD;
 
+import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
-import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class ProcessInstanceCreationInstructionDeserializer
-    extends JsonDeserializer<ProcessInstanceCreationInstruction> {
+public class DecisionEvaluationInstructionDeserializer
+    extends JsonDeserializer<DecisionEvaluationInstruction> {
 
-  private static final String PROCESS_DEFINITION_KEY_FIELD = "processDefinitionKey";
-  private static final String PROCESS_DEFINITION_ID_FIELD = "processDefinitionId";
+  private static final String DECISION_DEFINITION_ID_FIELD = "decisionDefinitionId";
+  private static final String DECISION_DEFINITION_KEY_FIELD = "decisionDefinitionKey";
 
   @Override
-  public ProcessInstanceCreationInstruction deserialize(
+  public DecisionEvaluationInstruction deserialize(
       final JsonParser jsonParser, final DeserializationContext deserializationContext)
-      throws IOException {
+      throws IOException, JacksonException {
     final var codec = jsonParser.getCodec();
     final var treeNode = codec.readTree(jsonParser);
 
@@ -40,23 +41,23 @@ public class ProcessInstanceCreationInstructionDeserializer
       fieldNames.add(it.next());
     }
 
-    if (fieldNames.contains(PROCESS_DEFINITION_ID_FIELD)
-        && fieldNames.contains(PROCESS_DEFINITION_KEY_FIELD)) {
+    if (fieldNames.contains(DECISION_DEFINITION_ID_FIELD)
+        && fieldNames.contains(DECISION_DEFINITION_KEY_FIELD)) {
       throw new DeserializationException(
           ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(getErrorMessageParam()));
-    } else if (!fieldNames.contains(PROCESS_DEFINITION_ID_FIELD)
-        && !fieldNames.contains(PROCESS_DEFINITION_KEY_FIELD)) {
+    } else if (!fieldNames.contains(DECISION_DEFINITION_ID_FIELD)
+        && !fieldNames.contains(DECISION_DEFINITION_KEY_FIELD)) {
       throw new DeserializationException(
           ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(getErrorMessageParam()));
     }
 
-    if (fieldNames.contains(PROCESS_DEFINITION_KEY_FIELD)) {
-      return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionByKey.class);
+    if (fieldNames.contains(DECISION_DEFINITION_KEY_FIELD)) {
+      return codec.treeToValue(treeNode, DecisionEvaluationByKey.class);
     }
-    return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionById.class);
+    return codec.treeToValue(treeNode, DecisionEvaluationById.class);
   }
 
   private static String getErrorMessageParam() {
-    return "[%s, %s]".formatted(PROCESS_DEFINITION_ID_FIELD, PROCESS_DEFINITION_KEY_FIELD);
+    return "[%s, %s]".formatted(DECISION_DEFINITION_ID_FIELD, DECISION_DEFINITION_KEY_FIELD);
   }
 }
