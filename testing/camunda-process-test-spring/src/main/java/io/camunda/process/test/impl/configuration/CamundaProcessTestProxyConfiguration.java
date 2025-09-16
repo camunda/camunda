@@ -32,7 +32,7 @@ public class CamundaProcessTestProxyConfiguration {
     return new CamundaClientProxy();
   }
 
-  @Bean
+  @Bean(destroyMethod = "")
   @Primary
   public CamundaClient proxiedCamundaClient(final CamundaClientProxy camundaClientProxy) {
     return (CamundaClient)
@@ -45,7 +45,7 @@ public class CamundaProcessTestProxyConfiguration {
     return new ZeebeClientProxy();
   }
 
-  @Bean
+  @Bean(destroyMethod = "")
   @Primary
   public ZeebeClient proxiedZeebeClient(final ZeebeClientProxy zeebeClientProxy) {
     return (ZeebeClient)
