@@ -526,7 +526,7 @@ public class ProtoBufSerializer
         pendingOperations);
   }
 
-  private Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
+  Optional<RoutingState> decodeRoutingState(final Topology.RoutingState routingState) {
     if (routingState.equals(Topology.RoutingState.getDefaultInstance())) {
       return Optional.empty();
     } else {
@@ -573,7 +573,7 @@ public class ProtoBufSerializer
     };
   }
 
-  private Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
+  Topology.RoutingState encodeRoutingState(final RoutingState routingState) {
     return Topology.RoutingState.newBuilder()
         .setVersion(routingState.version())
         .addAllActivePartitions(routingState.requestHandling().activePartitions())
