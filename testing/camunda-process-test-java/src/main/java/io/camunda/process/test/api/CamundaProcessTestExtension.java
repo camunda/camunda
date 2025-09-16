@@ -17,6 +17,7 @@ package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
@@ -103,6 +104,9 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestRuntime runtime;
   private CamundaProcessTestResultCollector processTestResultCollector;
 
+  private JsonMapper jsonMapper;
+  private io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper;
+
   private CamundaManagementClient camundaManagementClient;
   private CamundaProcessTestContext camundaProcessTestContext;
 
@@ -147,7 +151,9 @@ public class CamundaProcessTestExtension
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior());
+            CamundaAssert.getAwaitBehavior(),
+            jsonMapper,
+            zeebeJsonMapper);
 
     // create process coverage
     processCoverage =
@@ -160,6 +166,9 @@ public class CamundaProcessTestExtension
     final Store store = context.getStore(NAMESPACE);
     store.put(STORE_KEY_RUNTIME, runtime);
     store.put(STORE_KEY_CONTEXT, camundaProcessTestContext);
+
+    // initialize json mapper
+    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
   private CamundaManagementClient createManagementClient(
@@ -172,6 +181,16 @@ public class CamundaProcessTestExtension
     } else {
       return CamundaManagementClient.createClient(
           runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
+  }
+
+  private void initializeJsonMapper(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
   }
 
@@ -561,6 +580,31 @@ public class CamundaProcessTestExtension
 
   public CamundaProcessTestExtension withMultitenancyEnabled() {
     runtimeBuilder.withMultitenancyEnabled(true);
+    return this;
+  }
+
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withJsonMapper(final JsonMapper jsonMapper) {
+    this.jsonMapper = jsonMapper;
+    return this;
+  }
+
+  /**
+   * Configure the JSON mapper for the client and the assertions.
+   *
+   * @param jsonMapper the JSON mapper to use
+   * @return the extension builder
+   * @deprecated for removal, use {@link #withJsonMapper(JsonMapper)} instead.
+   */
+  @Deprecated
+  public CamundaProcessTestExtension withJsonMapper(
+      final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
+    zeebeJsonMapper = jsonMapper;
     return this;
   }
 
