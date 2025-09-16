@@ -40,14 +40,14 @@ jobs:
           matrix=$( \
             git branch --list --remotes 'origin/stable/8.*' --sort=-refname \
               | sed -E -e 's/^  origin\///' \
-              | while read branch; do
+              | while read -r branch; do
                   version="${branch#stable/}"
                   printf '{"branch":"%s","generation_template":"Camunda %s+gen1"}\n' "$branch" "$version"
                 done \
               | jq -s . \
               | jq -c --arg main "main" '. | [{"branch":$main,"generation_template":"Zeebe SNAPSHOT"}] + .'
           )          
-          echo "matrix=$matrix" >> $GITHUB_OUTPUT
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
   # Runs the qa-testbench workflow against the stable branches. It assumes that branches follow the
   # pattern of `stable/VERSION`, and generations of `Camunda VERSION`.
