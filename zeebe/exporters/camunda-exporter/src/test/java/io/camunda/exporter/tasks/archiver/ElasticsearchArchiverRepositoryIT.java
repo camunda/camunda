@@ -191,7 +191,7 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(getLifeCycle(usageMetricIndex))
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
-        .isEqualTo("camunda-retention-policy");
+        .isEqualTo("camunda-usage-metrics-retention-policy");
   }
 
   @ParameterizedTest
@@ -667,8 +667,8 @@ final class ElasticsearchArchiverRepositoryIT {
                     .putSettings(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
-    assertThat(putIndicesSettingsRequests).hasSize(16);
     assertThat(putIndicesSettingsRequests)
+        .hasSize(16)
         .allSatisfy(
             request -> {
               assertThat(request.index()).hasSize(1);
@@ -682,9 +682,11 @@ final class ElasticsearchArchiverRepositoryIT {
                               split[0].matches(template.getAllVersionsIndexNameRegexPattern()))
                       .findFirst();
               assertThat(matchingTemplate).isPresent();
-              assertThat(split[0]).isEqualTo(matchingTemplate.get().getIndexPattern());
-              assertThat(split[1]).isEqualTo("-" + matchingTemplate.get().getFullQualifiedName());
-              assertThat(split[2]).isEqualTo("-" + matchingTemplate.get().getAlias());
+              assertThat(split)
+                  .containsExactly(
+                      matchingTemplate.get().getIndexPattern(),
+                      "-" + matchingTemplate.get().getFullQualifiedName(),
+                      "-" + matchingTemplate.get().getAlias());
             });
     for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
       Awaitility.await()
