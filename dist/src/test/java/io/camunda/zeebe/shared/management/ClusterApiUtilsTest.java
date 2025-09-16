@@ -71,6 +71,7 @@ final class ClusterApiUtilsTest {
   void shouldMapClusterChangeOperation(final ClusterConfigurationChangeOperation operation) {
     final var encoded = ClusterApiUtils.mapOperation(operation);
     assertThat(encoded).isNotNull();
+    assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
     assertThat(OperationEnum.values())
         .as("Operation " + operation + "is not mapped correctly")
         .contains(encoded.getOperation());
