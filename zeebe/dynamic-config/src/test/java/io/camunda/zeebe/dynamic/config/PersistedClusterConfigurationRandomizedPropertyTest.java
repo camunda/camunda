@@ -43,12 +43,6 @@ final class PersistedClusterConfigurationRandomizedPropertyTest {
     assertThat(updatedTopology).isEqualTo(persistedClusterTopology.getConfiguration());
     assertThat(PersistedClusterConfiguration.ofFile(topologyFile, serializer).getConfiguration())
         .usingRecursiveComparison()
-        // The type of generated `activePartitions` is `LinkedHashSet`, which AssertJ treats as an
-        // ordered collection. We are not interested in the order of the partitions, so we ignore
-        // it here.
-        .ignoringCollectionOrderInFields(
-            "routingState.value.requestHandling.additionalActivePartitions")
-        .ignoringCollectionOrderInFields("routingState.value.requestHandling.inactivePartitions")
         .isEqualTo(updatedTopology);
   }
 }
