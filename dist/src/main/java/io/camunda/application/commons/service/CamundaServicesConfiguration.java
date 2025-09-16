@@ -31,7 +31,6 @@ import io.camunda.search.clients.UsageMetricsSearchClient;
 import io.camunda.search.clients.UserSearchClient;
 import io.camunda.search.clients.UserTaskSearchClient;
 import io.camunda.search.clients.VariableSearchClient;
-import io.camunda.search.clients.reader.AuthorizationReader;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -521,11 +520,6 @@ public class CamundaServicesConfiguration {
   @Bean
   public SecurityContextProvider securityContextProvider() {
     return new SecurityContextProvider();
-  }
-
-  @Bean
-  public AuthorizationChecker authorizationChecker(final AuthorizationReader authorizationReader) {
-    return new AuthorizationChecker(authorizationReader);
   }
 
   @Bean
