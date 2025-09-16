@@ -375,8 +375,6 @@ public class ModifyProcessInstanceTest {
     verifyThatElementIsCompleted(processInstanceKey, "C");
     verifyThatElementIsCompleted(processInstanceKey, "event-subprocess");
     verifyThatProcessInstanceIsCompleted(processInstanceKey);
-
-    assert false;
   }
 
   @Test
