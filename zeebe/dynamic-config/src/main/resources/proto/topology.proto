@@ -17,9 +17,10 @@ message ClusterTopology {
 }
 
 message RoutingState {
-  int64 version = 1;
-  RequestHandling requestHandling = 2;
+  int64  version = 1;
+  repeated sint32 activePartitions = 2 [deprecated=true];
   MessageCorrelation messageCorrelation = 3;
+  RequestHandling requestHandling = 4;
 }
 
 message RequestHandling {
