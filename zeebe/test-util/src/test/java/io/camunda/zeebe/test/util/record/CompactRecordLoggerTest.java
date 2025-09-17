@@ -43,11 +43,9 @@ class CompactRecordLoggerTest {
       // Instead, please add a new value logger to CompactRecordLogger.valueLoggers.
       mode = EnumSource.Mode.EXCLUDE,
       names = {
-        "ESCALATION",
         "IDENTITY_SETUP",
         "SCALE",
         "FORM",
-        "PROCESS_INSTANCE_MIGRATION",
         "CHECKPOINT",
       })
   public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {
