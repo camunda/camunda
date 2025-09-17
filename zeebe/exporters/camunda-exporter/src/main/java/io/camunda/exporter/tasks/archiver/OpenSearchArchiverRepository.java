@@ -10,6 +10,8 @@ package io.camunda.exporter.tasks.archiver;
 import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
@@ -77,6 +79,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
   private final String zeebeIndexPrefix;
+  private final Cache<String, String> lifeCyclePolicyApplied =
+      Caffeine.newBuilder().maximumSize(200).build();
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -88,6 +92,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String archiverBlockedMetaIndex,
       final String zeebeIndexPrefix,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
+      final OpenSearchGenericClient genericClient,
       final Executor executor,
       final CamundaExporterMetrics metrics,
       final Logger logger) {
@@ -101,8 +106,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.archiverBlockedMetaIndex = archiverBlockedMetaIndex;
     this.metrics = metrics;
     this.zeebeIndexPrefix = zeebeIndexPrefix;
-
-    genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
+    this.genericClient = genericClient;
   }
 
   @Override
@@ -312,10 +316,22 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private CompletableFuture<Void> applyPolicyToIndices(
       final String policyName, final List<String> indices) {
 
-    logger.debug("Applying policy '{}' to {} indices: {}", policyName, indices.size(), indices);
+    final var indicesWithoutPolicy =
+        indices.stream()
+            .filter(index -> !policyName.equals(lifeCyclePolicyApplied.getIfPresent(index)))
+            .toList();
+    if (indicesWithoutPolicy.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
+    logger.debug(
+        "Applying policy '{}' to {} indices: {}",
+        policyName,
+        indicesWithoutPolicy.size(),
+        indicesWithoutPolicy);
 
     final var requests =
-        indices.stream()
+        indicesWithoutPolicy.stream()
             .map(index -> applyPolicyToIndex(index, policyName))
             .toArray(CompletableFuture[]::new);
 
@@ -344,6 +360,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                             + ", Reason: "
                             + response.getReason()));
               }
+              lifeCyclePolicyApplied.put(index, policyName);
               return CompletableFuture.completedFuture(null);
             },
             executor);

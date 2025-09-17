@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -16,6 +17,7 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
+import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
@@ -49,6 +51,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -566,6 +569,49 @@ final class ElasticsearchArchiverRepositoryIT {
     }
   }
 
+  @Test
+  void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
+    // given
+    retention.setEnabled(true);
+    final var sourceIndexName = UUID.randomUUID().toString();
+    final var destIndexName = UUID.randomUUID().toString();
+
+    final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
+    final var indicesClientSpy = spy(clientSpy.indices());
+
+    doReturn(indicesClientSpy).when(clientSpy).indices();
+
+    final var repository = createRepository(clientSpy);
+
+    // when - first time setting policy for destIndexName it should make the put settings for
+    // destIndexName
+    repository.setIndexLifeCycle(destIndexName);
+
+    final ArgumentCaptor<PutIndicesSettingsRequest> captor =
+        ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
+
+    Awaitility.await().untilAsserted(() -> verify(indicesClientSpy).putSettings(captor.capture()));
+
+    final List<PutIndicesSettingsRequest> putIndicesSettingsRequests = captor.getAllValues();
+    assertThat(putIndicesSettingsRequests.getFirst().index()).containsExactly(destIndexName);
+
+    // setting policy first time for srcIndexName but second time for destIndexName, it
+    // should have cached the fact that destIndexName already has a policy and not be included in
+    // the request.
+    repository.setIndexLifeCycle(sourceIndexName, destIndexName);
+
+    // then
+    final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
+
+    Awaitility.await()
+        .untilAsserted(() -> verify(indicesClientSpy, times(2)).putSettings(captor2.capture()));
+
+    final List<PutIndicesSettingsRequest> putIndicesSettingsRequests2 = captor2.getAllValues();
+    assertThat(putIndicesSettingsRequests2).hasSize(2);
+
+    assertThat(putIndicesSettingsRequests2.getLast().index()).containsExactly(sourceIndexName);
+  }
+
   private void putLifecyclePolicies() throws IOException {
     putLifecyclePolicy(retention.getPolicyName(), retention.getMinimumAge());
     putLifecyclePolicy(
@@ -582,6 +628,11 @@ final class ElasticsearchArchiverRepositoryIT {
   // no need to close resource returned here, since the transport is closed above anyway
   private ElasticsearchArchiverRepository createRepository() {
     final var client = new ElasticsearchAsyncClient(transport);
+
+    return createRepository(client);
+  }
+
+  private ElasticsearchArchiverRepository createRepository(final ElasticsearchAsyncClient client) {
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new ElasticsearchArchiverRepository(
