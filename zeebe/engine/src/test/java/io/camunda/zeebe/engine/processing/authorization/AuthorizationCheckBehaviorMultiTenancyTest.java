@@ -122,6 +122,28 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
+  void shouldCreateAuthorizationRequestWithoutCommand() {
+    // given
+    final var user = createUser();
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+    final var tenantId = createAndAssignTenant(user.getUsername(), EntityType.USER);
+    final Map<String, Object> authorizationClaims = Map.of(AUTHORIZED_USERNAME, user.getUsername());
+
+    // when
+    final var request =
+        new AuthorizationRequest(authorizationClaims, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
   void shouldBeAuthorizedForUserTenantThroughGroup() {
     // given
     final var user = createUser();
@@ -343,7 +365,8 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType, null, false, false)
+        new AuthorizationRequest(
+                command, null, resourceType, permissionType, null, false, false, true)
             .addResourceId(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 

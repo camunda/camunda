@@ -105,10 +105,11 @@ public final class AuthorizationCheckBehavior {
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
-        || (!request.getCommand().hasRequestMetadata()
+        || (request.isCommandAuthorization()
+            && !request.getCommand().hasRequestMetadata()
             && request.getCommand().getBatchOperationReference()
                 == batchOperationReferenceNullValue())
-        || isAuthorizedAnonymousUser(request.getCommand());
+        || isAuthorizedAnonymousUser(request.getAuthorizationClaims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
@@ -180,7 +181,7 @@ public final class AuthorizationCheckBehavior {
           owners.stream()
               .noneMatch(
                   entity ->
-                      getAuthorizedTenantIds(request.command, entityType, entity)
+                      getAuthorizedTenantIds(request.getAuthorizationClaims(), entityType, entity)
                           .anyMatch(request.tenantId::equals));
       if (notAssignedToTenant) {
         final var rejectionType =
@@ -217,7 +218,7 @@ public final class AuthorizationCheckBehavior {
             .flatMap(
                 entityId ->
                     getAuthorizedScopes(
-                        request.command,
+                        request.getAuthorizationClaims(),
                         entityType,
                         entityId,
                         request.getResourceType(),
@@ -294,37 +295,37 @@ public final class AuthorizationCheckBehavior {
    * requests and commands anonymously. This is helpful especially if the gateway, for example,
    * already checks authorizations and tenancy.
    */
-  private boolean isAuthorizedAnonymousUser(final TypedRecord<?> command) {
-    final var authorizationClaims = command.getAuthorizations();
+  private boolean isAuthorizedAnonymousUser(final Map<String, Object> authorizationClaims) {
     final var authorizedAnonymousUserClaim =
         authorizationClaims.get(Authorization.AUTHORIZED_ANONYMOUS_USER);
     return Optional.ofNullable(authorizedAnonymousUserClaim).map(Boolean.class::cast).orElse(false);
   }
 
   private Optional<String> getUsername(final AuthorizationRequest request) {
-    return getUsername(request.getCommand());
+    return getUsername(request.getAuthorizationClaims());
   }
 
-  private Optional<String> getUsername(final TypedRecord<?> command) {
-    return Optional.ofNullable(
-        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_USERNAME));
+  private Optional<String> getUsername(final Map<String, Object> authorizationClaims) {
+    return Optional.ofNullable((String) authorizationClaims.get(Authorization.AUTHORIZED_USERNAME));
   }
 
   private Optional<String> getClientId(final AuthorizationRequest request) {
-    return getClientId(request.getCommand());
+    return getClientId(request.getAuthorizationClaims());
   }
 
-  private Optional<String> getClientId(final TypedRecord<?> command) {
+  private Optional<String> getClientId(final Map<String, Object> authorizationClaims) {
     return Optional.ofNullable(
-        (String) command.getAuthorizations().get(Authorization.AUTHORIZED_CLIENT_ID));
+        (String) authorizationClaims.get(Authorization.AUTHORIZED_CLIENT_ID));
   }
 
   private Stream<String> getAuthorizedTenantIds(
-      final TypedRecord<?> command, final EntityType entityType, final String entityId) {
+      final Map<String, Object> authorizations,
+      final EntityType entityType,
+      final String entityId) {
     return Stream.concat(
         membershipState.getMemberships(entityType, entityId, RelationType.TENANT).stream(),
         Stream.concat(
-            fetchGroups(command, entityType, entityId).stream()
+            fetchGroups(authorizations, entityType, entityId).stream()
                 .flatMap(
                     groupId ->
                         Stream.concat(
@@ -349,7 +350,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
-    if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getCommand())) {
+    if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getAuthorizationClaims())) {
       return Set.of(AuthorizationScope.WILDCARD);
     }
 
@@ -358,7 +359,7 @@ public final class AuthorizationCheckBehavior {
     final var optionalClientId = getClientId(request);
     if (optionalClientId.isPresent()) {
       getAuthorizedScopes(
-              request.command,
+              request.getAuthorizationClaims(),
               EntityType.CLIENT,
               optionalClientId.get(),
               request.getResourceType(),
@@ -371,7 +372,7 @@ public final class AuthorizationCheckBehavior {
           .map(
               username ->
                   getAuthorizedScopes(
-                      request.command,
+                      request.getAuthorizationClaims(),
                       EntityType.USER,
                       username,
                       request.getResourceType(),
@@ -384,7 +385,7 @@ public final class AuthorizationCheckBehavior {
         .flatMap(
             mappingRule ->
                 getAuthorizedScopes(
-                    request.command,
+                    request.getAuthorizationClaims(),
                     EntityType.MAPPING_RULE,
                     mappingRule.getMappingRuleId(),
                     request.getResourceType(),
@@ -409,7 +410,7 @@ public final class AuthorizationCheckBehavior {
   }
 
   private Stream<AuthorizationScope> getAuthorizedScopes(
-      final TypedRecord<?> command,
+      final Map<String, Object> authorizationClaims,
       final EntityType ownerType,
       final String ownerId,
       final AuthorizationResourceType resourceType,
@@ -436,7 +437,7 @@ public final class AuthorizationCheckBehavior {
                         AuthorizationOwnerType.ROLE, roleId, resourceType, permissionType)
                         .stream());
     final var viaGroups =
-        fetchGroups(command, ownerType, ownerId).stream()
+        fetchGroups(authorizationClaims, ownerType, ownerId).stream()
             .<AuthorizationScope>mapMulti(
                 (groupId, stream) -> {
                   getDirectAuthorizedAuthorizationScopes(
@@ -456,9 +457,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   private List<String> fetchGroups(
-      final TypedRecord<?> command, final EntityType ownerType, final String ownerId) {
+      final Map<String, Object> authorizations, final EntityType ownerType, final String ownerId) {
     final List<String> groupsClaims =
-        (List<String>) command.getAuthorizations().get(Authorization.USER_GROUPS_CLAIMS);
+        (List<String>) authorizations.get(Authorization.USER_GROUPS_CLAIMS);
     if (groupsClaims != null) {
       return groupsClaims;
     }
@@ -489,7 +490,11 @@ public final class AuthorizationCheckBehavior {
   }
 
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
-    if (isAuthorizedAnonymousUser(command)) {
+    return getAuthorizedTenantIds(command.getAuthorizations());
+  }
+
+  public AuthorizedTenants getAuthorizedTenantIds(final Map<String, Object> authorizations) {
+    if (isAuthorizedAnonymousUser(authorizations)) {
       return AuthorizedTenants.ANONYMOUS;
     }
 
@@ -497,59 +502,66 @@ public final class AuthorizationCheckBehavior {
       return AuthorizedTenants.DEFAULT_TENANTS;
     }
 
-    final var username = getUsername(command);
-    if (username.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.USER, username.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
-    }
+    final var authorizedTenants = new HashSet<String>();
+    getUsername(authorizations)
+        .ifPresent(
+            username ->
+                authorizedTenants.addAll(
+                    getAuthorizedTenantIds(authorizations, EntityType.USER, username)
+                        .collect(Collectors.toSet())));
 
-    final var clientId = getClientId(command);
-    if (clientId.isPresent()) {
-      final var tenantIds =
-          getAuthorizedTenantIds(command, EntityType.CLIENT, clientId.get()).toList();
-      return new AuthenticatedAuthorizedTenants(tenantIds);
-    }
+    getClientId(authorizations)
+        .ifPresent(
+            clientId ->
+                authorizedTenants.addAll(
+                    getAuthorizedTenantIds(authorizations, EntityType.CLIENT, clientId)
+                        .collect(Collectors.toSet())));
 
     final var tenantsOfMappingRule =
-        getPersistedMappingRules(command)
+        getPersistedMappingRules(authorizations)
             .flatMap(
                 mappingRule ->
                     getAuthorizedTenantIds(
-                        command, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
+                        authorizations, EntityType.MAPPING_RULE, mappingRule.getMappingRuleId()))
             .collect(Collectors.toSet());
     return new AuthenticatedAuthorizedTenants(tenantsOfMappingRule);
   }
 
   private Stream<PersistedMappingRule> getPersistedMappingRules(
       final AuthorizationRequest request) {
-    return getPersistedMappingRules(request.getCommand());
+    return getPersistedMappingRules(request.getAuthorizationClaims());
   }
 
-  private Stream<PersistedMappingRule> getPersistedMappingRules(final TypedRecord<?> command) {
+  private Stream<PersistedMappingRule> getPersistedMappingRules(
+      final Map<String, Object> authorizations) {
     final var claims =
         (Map<String, Object>)
-            command.getAuthorizations().getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
+            authorizations.getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
   }
 
   public static final class AuthorizationRequest {
     private final TypedRecord<?> command;
+    private final Map<String, Object> authorizationClaims;
     private final AuthorizationResourceType resourceType;
     private final PermissionType permissionType;
     private final Set<AuthorizationScope> authorizationScopes;
     private final String tenantId;
     private final boolean isNewResource;
     private final boolean isTenantOwnedResource;
+    private final boolean isCommandAuthorization;
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
+        final Map<String, Object> authorizationClaims,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource,
-        final boolean isTenantOwnedResource) {
+        final boolean isTenantOwnedResource,
+        final boolean isCommandAuthorization) {
       this.command = command;
+      this.authorizationClaims = authorizationClaims;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
       authorizationScopes = new HashSet<>();
@@ -557,6 +569,7 @@ public final class AuthorizationCheckBehavior {
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
+      this.isCommandAuthorization = isCommandAuthorization;
     }
 
     public AuthorizationRequest(
@@ -565,7 +578,7 @@ public final class AuthorizationCheckBehavior {
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource) {
-      this(command, resourceType, permissionType, tenantId, isNewResource, true);
+      this(command, null, resourceType, permissionType, tenantId, isNewResource, true, true);
     }
 
     public AuthorizationRequest(
@@ -573,14 +586,22 @@ public final class AuthorizationCheckBehavior {
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId) {
-      this(command, resourceType, permissionType, tenantId, false, true);
+      this(command, null, resourceType, permissionType, tenantId, false, true, true);
+    }
+
+    public AuthorizationRequest(
+        final Map<String, Object> authorizationClaims,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final String tenantId) {
+      this(null, authorizationClaims, resourceType, permissionType, tenantId, false, true, false);
     }
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType) {
-      this(command, resourceType, permissionType, null, false, false);
+      this(command, null, resourceType, permissionType, null, false, false, true);
     }
 
     public TypedRecord<?> getCommand() {
@@ -603,6 +624,10 @@ public final class AuthorizationCheckBehavior {
       return isTenantOwnedResource;
     }
 
+    public boolean isCommandAuthorization() {
+      return isCommandAuthorization;
+    }
+
     public AuthorizationRequest addAuthorizationScope(final AuthorizationScope authorizationScope) {
       authorizationScopes.add(authorizationScope);
       return this;
@@ -611,6 +636,10 @@ public final class AuthorizationCheckBehavior {
     public AuthorizationRequest addResourceId(final String resourceId) {
       authorizationScopes.add(AuthorizationScope.of(resourceId));
       return this;
+    }
+
+    public Map<String, Object> getAuthorizationClaims() {
+      return isCommandAuthorization ? command.getAuthorizations() : authorizationClaims;
     }
 
     public Set<AuthorizationScope> getAuthorizationScopes() {
@@ -672,8 +701,6 @@ public final class AuthorizationCheckBehavior {
 
   private record AuthorizationRejection(
       Rejection rejection, AuthorizationRejectionType authorizationRejectionType) {}
-
-  private record UserTokenClaim(String claimName, String claimValue) {}
 
   private enum AuthorizationRejectionType {
     TENANT,
