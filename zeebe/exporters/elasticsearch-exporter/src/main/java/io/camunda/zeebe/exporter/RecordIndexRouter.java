@@ -15,14 +15,14 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 
 /** Computes the name of the index, alias, or search pattern for a record or its value type. */
-final class RecordIndexRouter {
+public final class RecordIndexRouter {
   private static final String INDEX_DELIMITER = "_";
   private static final String ALIAS_DELIMITER = "-";
 
   private final DateTimeFormatter formatter;
   private final IndexConfiguration config;
 
-  RecordIndexRouter(final IndexConfiguration config) {
+  public RecordIndexRouter(final IndexConfiguration config) {
     this(
         config,
         DateTimeFormatter.ofPattern(config.indexSuffixDatePattern).withZone(ZoneOffset.UTC));
@@ -54,7 +54,7 @@ final class RecordIndexRouter {
    * IndexConfiguration#prefix}, e.g. for {@link ValueType#VARIABLE}, you get
    * "my-super-prefix-variable".
    */
-  String aliasNameForValueType(final ValueType valueType) {
+  public String aliasNameForValueType(final ValueType valueType) {
     return config.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
   }
 

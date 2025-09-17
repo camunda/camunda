@@ -35,13 +35,19 @@ import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
+import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.RecordIndexRouter;
+import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -265,17 +271,8 @@ public class PrefixMigrationIT {
   void shouldReindexDocumentsDuringPrefixMigration() throws IOException {
     // given
     LOG.info("Starting shouldReindexDocumentsDuringPrefixMigration");
-    final var esClient =
-        currentMultiDbDatabaseType() == DatabaseType.ES
-            ? new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient()
-            : null;
-
-    final var osConfig = new SearchEngineConnectProperties();
-    osConfig.setType("opensearch");
-    final var osClient =
-        currentMultiDbDatabaseType() == DatabaseType.OS
-            ? new OpensearchConnector(osConfig).createClient()
-            : null;
+    final var esClient = createEsClient();
+    final var osClient = createOsClient();
 
     final var camunda87 = createCamundaContainer();
     camunda87.start();
@@ -358,6 +355,124 @@ public class PrefixMigrationIT {
     } finally {
       STANDALONE_CAMUNDA.stop();
     }
+  }
+
+  @Test
+  void shouldExcludeZeebeIndicesFromPrefixMigration() throws IOException, InterruptedException {
+    final var esClient = createEsClient();
+    final var osClient = createOsClient();
+    final var camunda87 =
+        createCamundaContainer()
+            .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", OLD_OPERATE_PREFIX);
+    camunda87.start();
+
+    final var camunda87Client = createCamundaClient(camunda87);
+
+    final var event =
+        camunda87Client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("process/service_tasks_v1.bpmn")
+            .send()
+            .join();
+
+    final long processDefinitionKey = event.getProcesses().getFirst().getProcessDefinitionKey();
+    final ProcessInstanceEvent processInstanceEvent =
+        camunda87Client
+            .newCreateInstanceCommand()
+            .processDefinitionKey(processDefinitionKey)
+            .send()
+            .join();
+
+    final var zeebeIndices = getZeebeIndices(esClient, osClient, OLD_OPERATE_PREFIX);
+    final var migratedZeebeIndicesWhichShouldNotExist =
+        zeebeIndices.stream()
+            .flatMap(
+                indexName ->
+                    Stream.of(
+                        "prefixmigrationit-operate_"
+                            + indexName.substring(OLD_OPERATE_PREFIX.length() + 1),
+                        "prefixmigrationit-tasklist_"
+                            + indexName.substring(OLD_OPERATE_PREFIX.length() + 1)))
+            .toList();
+    // none of these should exist
+    // index names for migrated zeebe indices
+    // check these index names don't exist
+    prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
+
+    indicesDontExist(esClient, osClient, migratedZeebeIndicesWhichShouldNotExist);
+  }
+
+  private void indicesDontExist(
+      final ElasticsearchClient esClient,
+      final OpenSearchClient osClient,
+      final List<String> indicesWhichShouldNotExist)
+      throws IOException {
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      esClient.indices().refresh();
+
+      final var currentIndices = esClient.indices().get(r -> r.index("*")).result().keySet();
+      Assertions.assertThat(Collections.disjoint(currentIndices, indicesWhichShouldNotExist))
+          .isTrue();
+
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+      osClient.indices().refresh();
+
+      final var currentIndices = osClient.indices().get(r -> r.index("*")).result().keySet();
+      Assertions.assertThat(Collections.disjoint(currentIndices, indicesWhichShouldNotExist))
+          .isTrue();
+    }
+  }
+
+  private Set<String> getZeebeIndices(
+      final ElasticsearchClient esClient, final OpenSearchClient osClient, final String zeebePrefix)
+      throws IOException {
+    final var indexConfig = new IndexConfiguration();
+    indexConfig.prefix = zeebePrefix;
+    final var indexRouter = new RecordIndexRouter(indexConfig);
+    final var allZeebeIndexAliases =
+        Arrays.stream(ValueType.values()).map(indexRouter::aliasNameForValueType).toList();
+
+    while (true) {
+      if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+        final var zeebeIndices =
+            esClient
+                .indices()
+                .get(r -> r.index(allZeebeIndexAliases).ignoreUnavailable(true))
+                .result()
+                .keySet();
+
+        if (!zeebeIndices.isEmpty()) {
+          return zeebeIndices;
+        }
+      } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+        final var zeebeIndices =
+            osClient
+                .indices()
+                .get(r -> r.index(allZeebeIndexAliases).ignoreUnavailable(true))
+                .result()
+                .keySet();
+
+        if (!zeebeIndices.isEmpty()) {
+          return zeebeIndices;
+        }
+      } else {
+        return Set.of();
+      }
+    }
+  }
+
+  private ElasticsearchClient createEsClient() {
+    return currentMultiDbDatabaseType() == DatabaseType.ES
+        ? new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient()
+        : null;
+  }
+
+  private OpenSearchClient createOsClient() {
+    final var osConfig = new SearchEngineConnectProperties();
+    osConfig.setType("opensearch");
+    return currentMultiDbDatabaseType() == DatabaseType.OS
+        ? new OpensearchConnector(osConfig).createClient()
+        : null;
   }
 
   private void printDocuments(
