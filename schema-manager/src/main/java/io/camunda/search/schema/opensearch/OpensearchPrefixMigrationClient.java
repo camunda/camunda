@@ -57,70 +57,92 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
       final String sourceAlias,
       final String destination,
       final String destinationAlias) {
+    return updateWriteBlock(source, true)
+        .thenCompose(ignore -> cloneIndex(source, destination))
+        .thenCompose(
+            ignore -> updateAliasesAtomically(source, destination, sourceAlias, destinationAlias))
+        .thenCompose(ignore -> updateWriteBlock(destination, false))
+        .thenCompose(ignore -> deleteIndex(source))
+        .thenApply(
+            ignore -> {
+              LOG.info("Successfully migrated index [{}] to [{}]", source, destination);
+              return new CloneResult(true, source, destination, null);
+            })
+        .exceptionally(ex -> handleMigrationFailure(ex, source, destination));
+  }
+
+  private CompletableFuture<Void> cloneIndex(final String source, final String destination) {
+    try {
+      return asyncClient
+          .indices()
+          .clone(c -> c.index(source).target(destination))
+          .thenRun(() -> LOG.info("Cloned index [{}] to [{}]", source, destination));
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to clone index [" + source + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> updateAliasesAtomically(
+      final String source,
+      final String destination,
+      final String sourceAlias,
+      final String destinationAlias) {
+    try {
+      return asyncClient
+          .indices()
+          .updateAliases(
+              u ->
+                  u.actions(
+                      Action.of(a -> a.remove(rm -> rm.index(destination).alias(sourceAlias))),
+                      Action.of(
+                          a ->
+                              a.add(
+                                  add ->
+                                      add.index(destination)
+                                          .alias(destinationAlias)
+                                          .isWriteIndex(false)))))
+          .thenRun(
+              () ->
+                  LOG.info(
+                      "Updated aliases: removed [{}] from [{}], added [{}] to [{}]",
+                      sourceAlias,
+                      source,
+                      destinationAlias,
+                      destination));
+    } catch (final IOException e) {
+      throw new IllegalStateException(
+          "Failed to update aliases for indices [" + source + ", " + destination + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> updateWriteBlock(final String index, final boolean block) {
     try {
       return asyncClient
           .indices()
           .putSettings(
-              r -> r.index(source).settings(s -> s.index(i -> i.blocks(b -> b.write(true)))))
-          .thenCompose(
-              ignore -> {
-                LOG.info("Marked index [{}] as read-only", source);
-                try {
-                  return asyncClient.indices().clone(c -> c.index(source).target(destination));
-                } catch (final IOException e) {
-                  throw new IllegalStateException("Failed to clone index [" + source + "]", e);
-                }
-              })
-          .thenCompose(
-              ignore -> {
-                LOG.info("Successfully cloned [{}] to [{}]", source, destination);
-                try {
-                  return asyncClient
-                      .indices()
-                      .updateAliases(
-                          u ->
-                              u.actions(
-                                  Action.of(
-                                      a ->
-                                          a.remove(rm -> rm.index(destination).alias(sourceAlias))),
-                                  Action.of(
-                                      a ->
-                                          a.add(
-                                              add ->
-                                                  add.index(destination)
-                                                      .alias(destinationAlias)
-                                                      .isWriteIndex(false)))));
-                } catch (final IOException e) {
-                  throw new IllegalStateException(
-                      "Failed to update aliases for indices [" + source + ", " + destination + "]",
-                      e);
-                }
-              })
-          .thenCompose(
-              ignore -> {
-                LOG.info("Successfully updated aliases for [{}] index", destination);
-                try {
-                  return asyncClient.indices().delete(d -> d.index(source));
-                } catch (final IOException e) {
-                  throw new IllegalStateException("Failed to delete index [" + source + "]", e);
-                }
-              })
-          .thenApply(
-              ignore -> {
-                LOG.info("Successfully deleted source index [{}]", source);
-                return new CloneResult(true, source, destination, null);
-              })
-          .exceptionally(
-              throwable -> {
-                LOG.error(
-                    "Failed to clone and delete index [{}] to [{}]",
-                    source,
-                    destination,
-                    throwable);
-                return new CloneResult(false, source, destination, throwable);
-              });
+              r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(block)))))
+          .thenRun(
+              () -> LOG.info("Updated setting index.blocks.write: {}, for [{}]", block, index));
     } catch (final IOException e) {
-      throw new RuntimeException(e);
+      throw new IllegalStateException(
+          "Failed to update setting block: " + block + " index [" + index + "]", e);
     }
+  }
+
+  private CompletableFuture<Void> deleteIndex(final String index) {
+    try {
+      return asyncClient
+          .indices()
+          .delete(d -> d.index(index))
+          .thenRun(() -> LOG.info("Deleted index [{}]", index));
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to delete index [" + index + "]", e);
+    }
+  }
+
+  private CloneResult handleMigrationFailure(
+      final Throwable throwable, final String source, final String destination) {
+    LOG.error("Failed to migrate index [{}] to [{}]", source, destination, throwable);
+    return new CloneResult(false, source, destination, throwable);
   }
 }

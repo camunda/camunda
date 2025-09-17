@@ -43,11 +43,9 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -58,37 +56,35 @@ import org.slf4j.LoggerFactory;
 public final class PrefixMigrationHelper {
   @VisibleForTesting
   public static final Set<Class<? extends AbstractIndexDescriptor>> TASKLIST_INDICES_TO_MIGRATE =
-      new HashSet<>(
-          Arrays.asList(
-              FormIndex.class,
-              // Not pointing to the new TaskTemplate as we care about the old version
-              TaskLegacyIndex.class,
-              SnapshotTaskVariableTemplate.class,
-              TasklistMigrationRepositoryIndex.class,
-              TasklistImportPositionIndex.class));
+      Set.of(
+          FormIndex.class,
+          // Not pointing to the new TaskTemplate as we care about the old version
+          TaskLegacyIndex.class,
+          SnapshotTaskVariableTemplate.class,
+          TasklistMigrationRepositoryIndex.class,
+          TasklistImportPositionIndex.class);
 
   @VisibleForTesting
   public static final Set<Class<? extends AbstractIndexDescriptor>> OPERATE_INDICES_TO_MIGRATE =
-      new HashSet<>(
-          Arrays.asList(
-              ListViewTemplate.class,
-              JobTemplate.class,
-              MetricIndex.class,
-              BatchOperationTemplate.class,
-              ProcessIndex.class,
-              DecisionRequirementsIndex.class,
-              DecisionIndex.class,
-              EventTemplate.class,
-              VariableTemplate.class,
-              PostImporterQueueTemplate.class,
-              SequenceFlowTemplate.class,
-              MessageTemplate.class,
-              DecisionInstanceTemplate.class,
-              IncidentTemplate.class,
-              FlowNodeInstanceTemplate.class,
-              OperationTemplate.class,
-              ImportPositionIndex.class,
-              MigrationRepositoryIndex.class));
+      Set.of(
+          ListViewTemplate.class,
+          JobTemplate.class,
+          MetricIndex.class,
+          BatchOperationTemplate.class,
+          ProcessIndex.class,
+          DecisionRequirementsIndex.class,
+          DecisionIndex.class,
+          EventTemplate.class,
+          VariableTemplate.class,
+          PostImporterQueueTemplate.class,
+          SequenceFlowTemplate.class,
+          MessageTemplate.class,
+          DecisionInstanceTemplate.class,
+          IncidentTemplate.class,
+          FlowNodeInstanceTemplate.class,
+          OperationTemplate.class,
+          ImportPositionIndex.class,
+          MigrationRepositoryIndex.class);
 
   private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationHelper.class);
 
@@ -141,33 +137,32 @@ public final class PrefixMigrationHelper {
       final PrefixMigrationClient prefixMigrationClient,
       final ExecutorService executor) {
 
-    final boolean isElasticsearch = connectConfig.getTypeEnum() == DatabaseType.ELASTICSEARCH;
+    final boolean isElasticsearch = connectConfig.getTypeEnum().isElasticSearch();
 
-    /// Map< <SourceAlias, DestinationAlias>, List< <SourceIndex, DestinationIndex> >
-    final Map<Tuple<String, String>, List<Tuple<String, String>>> cloneOperations = new HashMap<>();
     final var descriptors = new IndexDescriptors(connectConfig.getIndexPrefix(), isElasticsearch);
+    final var cloneOperations = new HashMap<Tuple<String, String>, List<Tuple<String, String>>>();
 
     TASKLIST_INDICES_TO_MIGRATE.forEach(
         cls ->
             buildCloneTargets(
-                tasklistPrefix,
-                connectConfig.getIndexPrefix(),
-                isElasticsearch,
-                prefixMigrationClient,
-                cls,
-                descriptors,
-                cloneOperations));
+                    tasklistPrefix,
+                    connectConfig.getIndexPrefix(),
+                    isElasticsearch,
+                    prefixMigrationClient,
+                    cls,
+                    descriptors)
+                .map(op -> cloneOperations.put(op.getLeft(), op.getRight())));
 
     OPERATE_INDICES_TO_MIGRATE.forEach(
         cls ->
             buildCloneTargets(
-                operatePrefix,
-                connectConfig.getIndexPrefix(),
-                isElasticsearch,
-                prefixMigrationClient,
-                cls,
-                descriptors,
-                cloneOperations));
+                    operatePrefix,
+                    connectConfig.getIndexPrefix(),
+                    isElasticsearch,
+                    prefixMigrationClient,
+                    cls,
+                    descriptors)
+                .map(op -> cloneOperations.put(op.getLeft(), op.getRight())));
 
     final var futures =
         cloneOperations.entrySet().stream()
@@ -195,14 +190,14 @@ public final class PrefixMigrationHelper {
     CompletableFuture.allOf(futures).join();
   }
 
-  private static void buildCloneTargets(
-      final String oldPrefix,
-      final String newPrefix,
-      final boolean isElasticsearch,
-      final PrefixMigrationClient prefixMigrationClient,
-      final Class<? extends AbstractIndexDescriptor> cls,
-      final IndexDescriptors descriptors,
-      final Map<Tuple<String, String>, List<Tuple<String, String>>> cloneOperations) {
+  private static Optional<Tuple<Tuple<String, String>, List<Tuple<String, String>>>>
+      buildCloneTargets(
+          final String oldPrefix,
+          final String newPrefix,
+          final boolean isElasticsearch,
+          final PrefixMigrationClient prefixMigrationClient,
+          final Class<? extends AbstractIndexDescriptor> cls,
+          final IndexDescriptors descriptors) {
     final var descriptor = getDescriptor(cls, descriptors, newPrefix, isElasticsearch);
     final var srcAlias = getSourceAliasFromDescriptor(oldPrefix, descriptor);
     final var destAlias = getDestinationAliasFromDescriptor(descriptor);
@@ -213,7 +208,8 @@ public final class PrefixMigrationHelper {
             .map(
                 srcIndex -> {
                   final String destIndex;
-                  if (isHistoricIndex(srcIndex)) {
+                  if (isHistoricIndex(
+                      srcIndex, descriptor.getIndexName(), descriptor.getVersion())) {
                     destIndex =
                         srcIndex.replace(
                             oldPrefix,
@@ -226,12 +222,14 @@ public final class PrefixMigrationHelper {
             .toList();
 
     if (!indicesToMigrate.isEmpty()) {
-      cloneOperations.put(Tuple.of(srcAlias, destAlias), indicesToMigrate);
+      return Optional.of(Tuple.of(Tuple.of(srcAlias, destAlias), indicesToMigrate));
     }
+    return Optional.empty();
   }
 
-  public static boolean isHistoricIndex(final String indexName) {
-    return indexName.matches(".*\\d{4}-\\d{2}-\\d{2}$");
+  public static boolean isHistoricIndex(
+      final String indexName, final String properIndexName, final String version) {
+    return !indexName.endsWith("-%s-%s_".formatted(properIndexName, version));
   }
 
   private static String getSourceAliasFromDescriptor(
@@ -256,12 +254,8 @@ public final class PrefixMigrationHelper {
       return new TaskLegacyIndex(prefix, isElasticsearch);
     } else if (cls.equals(TasklistMigrationRepositoryIndex.class)) {
       return new TasklistMigrationRepositoryIndex(prefix, isElasticsearch);
-    } else if (cls.equals(TasklistImportPositionIndex.class)) {
-      return new TasklistImportPositionIndex(prefix, isElasticsearch);
     } else if (cls.equals(MigrationRepositoryIndex.class)) {
       return new MigrationRepositoryIndex(prefix, isElasticsearch);
-    } else if (cls.equals(ImportPositionIndex.class)) {
-      return new ImportPositionIndex(prefix, isElasticsearch);
     }
     return descriptors.get(cls);
   }
