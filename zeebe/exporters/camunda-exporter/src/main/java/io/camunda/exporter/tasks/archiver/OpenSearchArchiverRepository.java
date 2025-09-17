@@ -113,6 +113,11 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionEvaluationsNextBatch() {
+    return null;
+  }
+
+  @Override
   public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
     final var retention = config.getRetention();
     if (!retention.isEnabled()) {

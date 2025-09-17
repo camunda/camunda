@@ -36,6 +36,7 @@ import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.ArrayList;
@@ -55,6 +56,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+  private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
@@ -77,6 +79,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     batchOperationTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    decisionInstanceTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
   }
 
@@ -106,6 +110,21 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             (response) ->
                 createArchiveBatch(
                     response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionEvaluationsNextBatch() {
+    final var searchRequest = createStandaloneDecisionEvaluationSearchRequest();
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            (response) ->
+                createArchiveBatch(
+                    response, ListViewTemplate.END_DATE, decisionInstanceTemplateDescriptor),
             executor);
   }
 
@@ -217,6 +236,26 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private SearchRequest createStandaloneDecisionEvaluationSearchRequest() {
+    return createSearchRequest(
+        decisionInstanceTemplateDescriptor.getFullQualifiedName(),
+        standaloneDecisionInstancesSearchQuery(config.getArchivingTimePoint(), partitionId),
+        DecisionInstanceTemplate.EVALUATION_DATE);
+  }
+
+  private Query standaloneDecisionInstancesSearchQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range(
+            q -> q.date(d -> d.field(ListViewTemplate.END_DATE).lte(archivingTimePoint)));
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(ListViewTemplate.PARTITION_ID).value(partitionId));
+    final var isStandaloneDecisionInstance =
+        QueryBuilders.term(q -> q.field(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY).value(-1));
+    return QueryBuilders.bool(
+        q -> q.filter(endDateQ).filter(partitionQ).filter(isStandaloneDecisionInstance));
   }
 
   private Query finishedProcessInstancesQuery(

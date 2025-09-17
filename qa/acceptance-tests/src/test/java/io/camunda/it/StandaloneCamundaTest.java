@@ -10,6 +10,8 @@ package io.camunda.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -34,6 +36,26 @@ public class StandaloneCamundaTest {
           .withUnauthenticatedAccess();
 
   private static CamundaClient camundaClient;
+
+  @Test
+  public void test() {
+    final DeploymentEvent deploymentEvent =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("demoDecision.dmn")
+            .send()
+            .join();
+
+    final EvaluateDecisionResponse decisionEvaluation =
+        camundaClient
+            .newEvaluateDecisionCommand()
+            .decisionId("demoDecision_jedi_or_sith")
+            .variables("{\"lightsaberColor\": \"blue\"}")
+            .send()
+            .join();
+
+    System.out.println("Decision evaluation result: " + decisionEvaluation.getDecisionOutput());
+  }
 
   @Test
   public void shouldCreateAndRetrieveInstance() {

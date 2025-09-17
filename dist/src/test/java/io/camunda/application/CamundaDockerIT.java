@@ -226,6 +226,8 @@ public class CamundaDockerIT {
                 .forPath("/actuator/health")
                 .withReadTimeout(Duration.ofSeconds(120)))
         .withStartupTimeout(Duration.ofSeconds(300))
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.ElasticsearchExporter")
@@ -250,7 +252,8 @@ public class CamundaDockerIT {
   }
 
   private static String elasticsearchUrl() {
-    return String.format("http://%s:%d", ELASTICSEARCH_NETWORK_ALIAS, ELASTICSEARCH_PORT);
+    return "http://host.docker.internal:9200";
+    //    return String.format("http://%s:%d", ELASTICSEARCH_NETWORK_ALIAS, ELASTICSEARCH_PORT);
   }
 
   @AfterEach
