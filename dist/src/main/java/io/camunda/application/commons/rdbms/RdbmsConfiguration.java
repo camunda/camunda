@@ -118,8 +118,8 @@ public class RdbmsConfiguration {
   }
 
   @Bean
-  public GroupMemberDbReader groupMemberReader() {
-    return new GroupMemberDbReader();
+  public GroupMemberDbReader groupMemberReader(final GroupMapper groupMapper) {
+    return new GroupMemberDbReader(groupMapper);
   }
 
   @Bean
@@ -293,6 +293,7 @@ public class RdbmsConfiguration {
       final DecisionRequirementsDbReader decisionRequirementsReader,
       final FlowNodeInstanceDbReader flowNodeInstanceReader,
       final GroupDbReader groupReader,
+      final GroupMemberDbReader groupMemberReader,
       final IncidentDbReader incidentReader,
       final ProcessDefinitionDbReader processDefinitionReader,
       final ProcessInstanceDbReader processInstanceReader,
@@ -320,6 +321,7 @@ public class RdbmsConfiguration {
         decisionRequirementsReader,
         flowNodeInstanceReader,
         groupReader,
+        groupMemberReader,
         incidentReader,
         processDefinitionReader,
         processInstanceReader,

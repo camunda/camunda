@@ -10,7 +10,6 @@ package io.camunda.search.filter;
 import static io.camunda.util.CollectionUtil.addValuesToList;
 import static io.camunda.util.CollectionUtil.collectValues;
 
-import io.camunda.search.filter.UserFilter.Builder;
 import io.camunda.util.FilterUtil;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -18,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 public record GroupFilter(
     Long groupKey,
@@ -32,6 +32,11 @@ public record GroupFilter(
     String roleId,
     Map<EntityType, Set<String>> memberIdsByType)
     implements FilterBase {
+
+  public static GroupFilter of(
+      final Function<GroupFilter.Builder, GroupFilter.Builder> builderFunction) {
+    return builderFunction.apply(new GroupFilter.Builder()).build();
+  }
 
   public Builder toBuilder() {
     return new Builder()

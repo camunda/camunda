@@ -41,14 +41,19 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
   @Override
   public SearchQueryResult<GroupEntity> search(
       final GroupQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    if (shouldReturnEmptyResult(query.filter())) {
+
+    if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
       return new SearchQueryResult.Builder<GroupEntity>().total(0).items(List.of()).build();
     }
 
     final var dbSort = convertSort(query.sort(), GroupSearchColumn.GROUP_ID);
     final var dbQuery =
         GroupDbQuery.of(
-            b -> b.filter(query.filter()).sort(dbSort).page(convertPaging(dbSort, query.page())));
+            b ->
+                b.filter(query.filter())
+                    .authorizedResourceIds(resourceAccessChecks.getAuthorizedResourceIds())
+                    .sort(dbSort)
+                    .page(convertPaging(dbSort, query.page())));
 
     LOG.trace("[RDBMS DB] Search for groups with filter {}", dbQuery);
     final var totalHits = groupMapper.count(dbQuery);
@@ -69,7 +74,10 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
     return new GroupEntity(model.groupKey(), model.groupId(), model.name(), model.description());
   }
 
-  private boolean shouldReturnEmptyResult(final GroupFilter filter) {
-    return filter.memberIds() != null && filter.memberIds().isEmpty();
+  private boolean shouldReturnEmptyResult(
+      final GroupFilter filter, final ResourceAccessChecks resourceAccessChecks) {
+    return (filter.memberIds() != null && filter.memberIds().isEmpty())
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

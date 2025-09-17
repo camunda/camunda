@@ -7,7 +7,7 @@
  */
 package io.camunda.db.rdbms.read.domain;
 
-import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.util.ObjectBuilder;
@@ -16,63 +16,63 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record GroupDbQuery(
+public record GroupMemberDbQuery(
     GroupFilter filter,
     List<String> authorizedResourceIds,
-    DbQuerySorting<GroupEntity> sort,
+    DbQuerySorting<GroupMemberEntity> sort,
     DbQueryPage page) {
 
-  public static GroupDbQuery of(final Function<Builder, ObjectBuilder<GroupDbQuery>> fn) {
-    return fn.apply(new Builder()).build();
+  public static GroupMemberDbQuery of(
+      final Function<GroupMemberDbQuery.Builder, ObjectBuilder<GroupMemberDbQuery>> fn) {
+    return fn.apply(new GroupMemberDbQuery.Builder()).build();
   }
 
-  public static final class Builder implements ObjectBuilder<GroupDbQuery> {
+  public static final class Builder implements ObjectBuilder<GroupMemberDbQuery> {
 
     private static final GroupFilter EMPTY_FILTER = FilterBuilders.group().build();
 
     private GroupFilter filter;
-    private List<String> authorizedResourceIds = Collections.emptyList();
-    private DbQuerySorting<GroupEntity> sort;
+    private DbQuerySorting<GroupMemberEntity> sort;
     private DbQueryPage page;
+    private List<String> authorizedResourceIds = Collections.emptyList();
 
-    public GroupDbQuery.Builder filter(final GroupFilter value) {
+    public Builder filter(final GroupFilter value) {
       filter = value;
       return this;
     }
 
-    public GroupDbQuery.Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
-      this.authorizedResourceIds = authorizedResourceIds;
-      return this;
-    }
-
-    public GroupDbQuery.Builder sort(final DbQuerySorting<GroupEntity> value) {
+    public Builder sort(final DbQuerySorting<GroupMemberEntity> value) {
       sort = value;
       return this;
     }
 
-    public GroupDbQuery.Builder page(final DbQueryPage value) {
+    public Builder page(final DbQueryPage value) {
       page = value;
       return this;
     }
 
-    public GroupDbQuery.Builder filter(
-        final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
+    public Builder authorizedResourceIds(final List<String> authorizedResourceIds) {
+      this.authorizedResourceIds = authorizedResourceIds;
+      return this;
+    }
+
+    public Builder filter(final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
       return filter(FilterBuilders.group(fn));
     }
 
-    public GroupDbQuery.Builder sort(
+    public Builder sort(
         final Function<
-                DbQuerySorting.Builder<GroupEntity>, ObjectBuilder<DbQuerySorting<GroupEntity>>>
+                DbQuerySorting.Builder<GroupMemberEntity>,
+                ObjectBuilder<DbQuerySorting<GroupMemberEntity>>>
             fn) {
       return sort(DbQuerySorting.of(fn));
     }
 
     @Override
-    public GroupDbQuery build() {
+    public GroupMemberDbQuery build() {
       filter = Objects.requireNonNullElse(filter, EMPTY_FILTER);
       sort = Objects.requireNonNullElse(sort, new DbQuerySorting<>(List.of()));
-      authorizedResourceIds = Objects.requireNonNullElse(authorizedResourceIds, List.of());
-      return new GroupDbQuery(filter, authorizedResourceIds, sort, page);
+      return new GroupMemberDbQuery(filter, authorizedResourceIds, sort, page);
     }
   }
 }

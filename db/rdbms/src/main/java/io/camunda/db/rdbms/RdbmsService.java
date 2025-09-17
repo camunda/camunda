@@ -17,6 +17,7 @@ import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
+import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
@@ -49,6 +50,7 @@ public class RdbmsService {
   private final DecisionRequirementsDbReader decisionRequirementsReader;
   private final FlowNodeInstanceDbReader flowNodeInstanceReader;
   private final GroupDbReader groupReader;
+  private final GroupMemberDbReader groupMemberReader;
   private final IncidentDbReader incidentReader;
   private final ProcessDefinitionDbReader processDefinitionReader;
   private final ProcessInstanceDbReader processInstanceReader;
@@ -78,6 +80,7 @@ public class RdbmsService {
       final DecisionRequirementsDbReader decisionRequirementsReader,
       final FlowNodeInstanceDbReader flowNodeInstanceReader,
       final GroupDbReader groupReader,
+      final GroupMemberDbReader groupMemberReader,
       final IncidentDbReader incidentReader,
       final ProcessDefinitionDbReader processDefinitionReader,
       final ProcessInstanceDbReader processInstanceReader,
@@ -105,6 +108,7 @@ public class RdbmsService {
     this.decisionInstanceReader = decisionInstanceReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
     this.groupReader = groupReader;
+    this.groupMemberReader = groupMemberReader;
     this.incidentReader = incidentReader;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceReader = processInstanceReader;
@@ -149,6 +153,10 @@ public class RdbmsService {
 
   public GroupDbReader getGroupReader() {
     return groupReader;
+  }
+
+  public GroupMemberDbReader getGroupMemberReader() {
+    return groupMemberReader;
   }
 
   public IncidentDbReader getIncidentReader() {
