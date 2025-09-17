@@ -7,6 +7,7 @@
  */
 package io.camunda.it.auth;
 
+import static io.camunda.client.api.search.enums.PermissionType.CANCEL_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
@@ -33,7 +34,9 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -58,6 +61,8 @@ public class JobStreamAuthorizationIT {
   private static final String PROCESS_ID_2 = "service_tasks_v2";
   private static final String JOB_TYPE = "taskA";
 
+  private static final Set<Long> startedProcessInstances = new HashSet<>();
+
   @UserDefinition
   private static final TestUser ADMIN_USER =
       new TestUser(
@@ -68,6 +73,7 @@ public class JobStreamAuthorizationIT {
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, CANCEL_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
@@ -107,6 +113,14 @@ public class JobStreamAuthorizationIT {
             .endEvent()
             .done();
     deployResource(adminClient, "service_tasks_v2.bpmn", modelInstance, TENANT_B);
+  }
+
+  @AfterEach
+  void cleanUp(@Authenticated("admin") final CamundaClient adminClient) {
+    // cancel all process instances to ensure no jobs are left in the system
+    startedProcessInstances.forEach(
+        processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
+    startedProcessInstances.clear();
   }
 
   @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
@@ -233,13 +247,20 @@ public class JobStreamAuthorizationIT {
 
   private static void startProcessInstance(
       final CamundaClient camundaClient, final String processId, final String tenant) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .tenantId(tenant)
-        .send()
-        .join();
+    final var instanceCreated =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId(processId)
+            .latestVersion()
+            .tenantId(tenant)
+            .send()
+            .join();
+    startedProcessInstances.add(instanceCreated.getProcessInstanceKey());
+  }
+
+  private static void cancelProcessInstance(
+      final CamundaClient camundaClient, final long processInstanceKey) {
+    camundaClient.newCancelInstanceCommand(processInstanceKey).send().join();
   }
 
   private static void waitForJobsBeingExported(
