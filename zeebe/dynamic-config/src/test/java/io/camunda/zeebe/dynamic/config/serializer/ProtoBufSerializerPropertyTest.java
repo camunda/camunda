@@ -34,12 +34,6 @@ final class ProtoBufSerializerPropertyTest {
     assertThat(decodedState.getClusterConfiguration())
         .describedAs("Decoded clusterTopology must be equal to initial one")
         .usingRecursiveComparison()
-        // The type of generated `activePartitions` is `LinkedHashSet`, which AssertJ treats as an
-        // ordered collection. We are not interested in the order of the partitions, so we ignore
-        // it here.
-        .ignoringCollectionOrderInFields(
-            "routingState.value.requestHandling.additionalActivePartitions")
-        .ignoringCollectionOrderInFields("routingState.value.requestHandling.inactivePartitions")
         .isEqualTo(clusterConfiguration);
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.dynamic.config.serializer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.google.protobuf.InvalidProtocolBufferException;
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationChangeResponse;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.AddMembersRequest;
@@ -23,9 +24,14 @@ import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.PurgeRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.ReassignPartitionsRequest;
 import io.camunda.zeebe.dynamic.config.api.ClusterConfigurationManagementRequest.RemoveMembersRequest;
+import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.MessageCorrelation.HashMod;
+import io.camunda.zeebe.dynamic.config.protocol.Topology.RoutingState;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.MemberLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.MemberState;
+import io.camunda.zeebe.dynamic.config.state.RoutingState.RequestHandling;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -233,5 +239,26 @@ final class ProtoBufSerializerTest {
     final var decodedResponse =
         protoBufSerializer.decodeTopologyChangeResponse(encodedResponse).get();
     assertThat(decodedResponse).isEqualTo(topologyChangeResponse);
+  }
+
+  @Test
+  void shouldDecodeRoutingStateFrom87Correctly() throws InvalidProtocolBufferException {
+    final var routingState =
+        RoutingState.newBuilder()
+            .addAllActivePartitions(List.of(1, 2, 3))
+            .setMessageCorrelation(
+                MessageCorrelation.newBuilder()
+                    .setHashMod(HashMod.newBuilder().setPartitionCount(3))
+                    .build())
+            .build();
+    final var bytes = routingState.toByteArray();
+    final var decodedBytes =
+        protoBufSerializer.decodeRoutingState(Topology.RoutingState.parseFrom(bytes));
+    assertThat(decodedBytes)
+        .isPresent()
+        .hasValueSatisfying(
+            state -> {
+              assertThat(state.requestHandling()).isEqualTo(new RequestHandling.AllPartitions(3));
+            });
   }
 }

@@ -70,9 +70,9 @@ public final class ClusterTopologyDomain extends DomainContextBase {
 
   @Provide
   Arbitrary<RequestHandling> requestHandling() {
-    return Arbitraries.of(
-            ReflectUtil.implementationsOfSealedInterface(RequestHandling.class).toList())
-        .flatMap(Arbitraries::forType);
+    return Arbitraries.oneOf(
+        allPartitions().map(RequestHandling.class::cast),
+        activePartitions().map(RequestHandling.class::cast));
   }
 
   @Provide
@@ -83,8 +83,8 @@ public final class ClusterTopologyDomain extends DomainContextBase {
   @Provide
   Arbitrary<ActivePartitions> activePartitions() {
     final var basePartitionCount = Arbitraries.integers().between(1, 3);
-    final var activePartitions = Arbitraries.integers().between(4, 8).set();
-    final var inactivePartitions = Arbitraries.integers().between(9, 12).set();
+    final var activePartitions = Arbitraries.integers().between(4, 8).list().map(TreeSet::new);
+    final var inactivePartitions = Arbitraries.integers().between(9, 12).list().map(TreeSet::new);
 
     return Combinators.combine(basePartitionCount, activePartitions, inactivePartitions)
         .as(ActivePartitions::new);
