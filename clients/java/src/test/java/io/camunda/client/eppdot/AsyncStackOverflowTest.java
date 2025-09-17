@@ -15,5 +15,4 @@
  */
 package io.camunda.client.eppdot;
 
-public class AsyncStackOverflowTest {
-}
+public class AsyncStackOverflowTest {}

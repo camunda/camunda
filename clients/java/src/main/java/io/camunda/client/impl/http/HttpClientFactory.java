@@ -160,6 +160,27 @@ public class HttpClientFactory {
               builder.addExecInterceptorLast("handler-" + i, chainHandlers.get(i));
             });
 
+    //    builder.addExecInterceptorLast(
+    //        "break-the-sync-loop",
+    //        new AsyncExecChainHandler() {
+    //          @Override
+    //          public void execute(
+    //              final HttpRequest request,
+    //              final AsyncEntityProducer entityProducer,
+    //              final Scope scope,
+    //              final AsyncExecChain chain,
+    //              final AsyncExecCallback asyncExecCallback)
+    //              throws HttpException, IOException {
+    //            scope.scheduler.scheduleExecution(
+    //                request,
+    //                entityProducer,
+    //                scope,
+    //                chain,
+    //                asyncExecCallback,
+    //                TimeValue.of(1, TimeUnit.NANOSECONDS));
+    //          }
+    //        });
+
     return builder;
   }
 

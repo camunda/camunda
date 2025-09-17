@@ -535,4 +535,8 @@ public final class HttpClient implements AutoCloseable {
     }
     return target;
   }
+
+  public CloseableHttpAsyncClient rawClient() {
+    return client;
+  }
 }
