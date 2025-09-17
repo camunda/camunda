@@ -75,11 +75,12 @@ class SearchBatchOperationItemsTest extends ClientRestTest {
     // then
     final BatchOperationItemSearchQuery request =
         gatewayService.getLastRequest(BatchOperationItemSearchQuery.class);
-    assertThat(request.getFilter().getBatchOperationKey().get$Eq()).isEqualTo("123");
-    assertThat(request.getFilter().getState().get$Eq())
+    assertThat(request.getFilter().getBatchOperationKey()).extracting("$eq").isEqualTo("123");
+    assertThat(request.getFilter().getState())
+        .extracting("$eq")
         .isEqualTo(BatchOperationItemStateEnum.ACTIVE);
-    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("123");
-    assertThat(request.getFilter().getItemKey().get$Eq()).isEqualTo("456");
+    assertThat(request.getFilter().getProcessInstanceKey()).extracting("$eq").isEqualTo("123");
+    assertThat(request.getFilter().getItemKey()).extracting("$eq").isEqualTo("456");
   }
 
   @Test

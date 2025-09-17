@@ -18,12 +18,13 @@ package io.camunda.client.impl.search.filter.builder;
 import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
+import io.camunda.client.protocol.rest.AdvancedStringFilter;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import java.util.List;
 
 public class StringPropertyImpl extends TypedSearchRequestPropertyProvider<StringFilterProperty>
     implements StringProperty {
-  private final StringFilterProperty filterProperty = new StringFilterProperty();
+  private final AdvancedStringFilter filterProperty = new AdvancedStringFilter();
 
   @Override
   public StringProperty eq(final String value) {

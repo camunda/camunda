@@ -27,6 +27,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceWithResultResponseImpl;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstructionBase;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
@@ -71,7 +72,8 @@ public final class CreateProcessInstanceWithResultCommandImpl
     this.retryPredicate = retryPredicate;
     this.requestTimeout = requestTimeout;
     this.grpcRequestObject = CreateProcessInstanceWithResultRequest.newBuilder();
-    this.httpRequestObject = httpRequestObject.awaitCompletion(true);
+    this.httpRequestObject = httpRequestObject;
+    ((ProcessInstanceCreationInstructionBase) httpRequestObject).awaitCompletion(true);
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
@@ -137,7 +139,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
   public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final List<String> fetchVariables) {
     grpcRequestObject.addAllFetchVariables(fetchVariables);
-    httpRequestObject.setFetchVariables(fetchVariables);
+    ((ProcessInstanceCreationInstructionBase) httpRequestObject).setFetchVariables(fetchVariables);
     return this;
   }
 
@@ -145,14 +147,15 @@ public final class CreateProcessInstanceWithResultCommandImpl
   public CreateProcessInstanceWithResultCommandStep1 fetchVariables(
       final String... fetchVariables) {
     grpcRequestObject.addAllFetchVariables(Arrays.asList(fetchVariables));
-    httpRequestObject.setFetchVariables(Arrays.asList(fetchVariables));
+    ((ProcessInstanceCreationInstructionBase) httpRequestObject)
+        .setFetchVariables(Arrays.asList(fetchVariables));
     return this;
   }
 
   @Override
   public CreateProcessInstanceWithResultCommandStep1 tenantId(final String tenantId) {
     // todo(#13536): replace dummy implementation
-    httpRequestObject.setTenantId(tenantId);
+    ((ProcessInstanceCreationInstructionBase) httpRequestObject).setTenantId(tenantId);
     return this;
   }
 

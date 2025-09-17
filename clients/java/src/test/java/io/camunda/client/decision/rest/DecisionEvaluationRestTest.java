@@ -25,7 +25,8 @@ import io.camunda.client.api.response.EvaluatedDecision;
 import io.camunda.client.api.response.EvaluatedDecisionInput;
 import io.camunda.client.api.response.EvaluatedDecisionOutput;
 import io.camunda.client.api.response.MatchedDecisionRule;
-import io.camunda.client.protocol.rest.DecisionEvaluationInstruction;
+import io.camunda.client.protocol.rest.DecisionEvaluationById;
+import io.camunda.client.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.client.protocol.rest.EvaluatedDecisionInputItem;
 import io.camunda.client.protocol.rest.EvaluatedDecisionOutputItem;
@@ -126,8 +127,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -149,8 +150,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -168,8 +169,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -187,8 +188,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
@@ -208,8 +209,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
         .join();
 
     // when
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
 
     // then
     assertThat(request.getVariables()).containsOnly(entry(key, value));
@@ -253,8 +254,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     client.newEvaluateDecisionCommand().decisionId("dmn").tenantId(tenantId).send().join();
 
     // then
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationById request =
+        gatewayService.getLastRequest(DecisionEvaluationById.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -268,8 +269,8 @@ public class DecisionEvaluationRestTest extends ClientRestTest {
     client.newEvaluateDecisionCommand().decisionKey(1L).tenantId(tenantId).send().join();
 
     // then
-    final DecisionEvaluationInstruction request =
-        gatewayService.getLastRequest(DecisionEvaluationInstruction.class);
+    final DecisionEvaluationByKey request =
+        gatewayService.getLastRequest(DecisionEvaluationByKey.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 

@@ -20,6 +20,7 @@ import io.camunda.client.api.search.filter.builder.ListenerEventTypeProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.AdvancedJobListenerEventTypeFilter;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import java.util.List;
@@ -29,8 +30,8 @@ public class ListenerEventTypePropertyImpl
     extends TypedSearchRequestPropertyProvider<JobListenerEventTypeFilterProperty>
     implements ListenerEventTypeProperty {
 
-  private final JobListenerEventTypeFilterProperty filterProperty =
-      new JobListenerEventTypeFilterProperty();
+  private final AdvancedJobListenerEventTypeFilter filterProperty =
+      new AdvancedJobListenerEventTypeFilter();
 
   @Override
   public ListenerEventTypeProperty eq(final ListenerEventType value) {

@@ -168,10 +168,10 @@ public class SearchIncidentTest extends ClientRestTest {
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
+    assertThat(pageRequest).extracting("from").isEqualTo(23);
+    assertThat(pageRequest).extracting("limit").isEqualTo(5);
+    assertThat(pageRequest).extracting("before").isEqualTo("b");
+    assertThat(pageRequest).extracting("after").isEqualTo("a");
   }
 
   /*

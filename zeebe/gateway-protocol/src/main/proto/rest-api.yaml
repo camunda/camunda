@@ -10356,39 +10356,39 @@ components:
       oneOf:
         - $ref: "#/components/schemas/DecisionEvaluationById"
         - $ref: "#/components/schemas/DecisionEvaluationByKey"
+    DecisionEvaluationBase:
+      type: "object"
+      description: "Base object for decision evaluation"
+      properties:
+        variables:
+          description: "The message variables as JSON document."
+          additionalProperties: true
+          type: "object"
+        tenantId:
+          description: "The tenant ID of the decision."
+          allOf:
+            - $ref: "#/components/schemas/TenantId"
     DecisionEvaluationById:
       type: "object"
       title: "Decision evaluation by ID"
+      allOf:
+        - $ref: "#/components/schemas/DecisionEvaluationBase"
       properties:
         decisionDefinitionId:
           description: "The ID of the decision to be evaluated.\nWhen using the decision ID, the latest\n\
             deployed version of the decision is used.\n"
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionId"
-        variables:
-          description: "The message variables as JSON document."
-          additionalProperties: true
-          type: "object"
-        tenantId:
-          description: "The tenant ID of the decision."
-          allOf:
-            - $ref: "#/components/schemas/TenantId"
       required: ["decisionDefinitionId"]
     DecisionEvaluationByKey:
       type: "object"
       title: "Decision evaluation by key"
+      allOf:
+        - $ref: "#/components/schemas/DecisionEvaluationBase"
       properties:
         decisionDefinitionKey:
           allOf:
             - $ref: "#/components/schemas/DecisionDefinitionKey"
-        variables:
-          description: "The message variables as JSON document."
-          additionalProperties: true
-          type: "object"
-        tenantId:
-          description: "The tenant ID of the decision."
-          allOf:
-            - $ref: "#/components/schemas/TenantId"
       required: ["decisionDefinitionKey"]
     EvaluateDecisionResult:
       type: "object"
@@ -11220,32 +11220,29 @@ components:
         - "TERMINATE_PROCESS_INSTANCE"
     ProcessInstanceCreationRuntimeInstruction:
       type: "object"
-      required:
-        - "type"
-      properties:
-        type:
-          $ref: "#/components/schemas/RuntimeInstructionType"
       discriminator:
         propertyName: "type"
         mapping:
           TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
       description: "Base type for all runtime instructions.\n"
     ProcessInstanceCreationTerminateInstruction:
-      description: "Terminate the process"
-      allOf:
-        - $ref: "#/components/schemas/ProcessInstanceCreationRuntimeInstruction"
-        - type: "object"
-          required:
-            - "afterElementId"
-          properties:
-            afterElementId:
-              description: "The ID of the element that, once completed or terminated,\
-                \ will cause the process to be terminated.\n"
-              example: "Activity_106kosb"
-              allOf:
-                - $ref: "#/components/schemas/ElementId"
-          description: "Terminates the process instance after a specific BPMN element\
+      description: "Terminates the process instance after a specific BPMN element\
             \ is completed or terminated.\n"
+      type: "object"
+      required:
+        - "afterElementId"
+        - "type"
+      properties:
+        type:
+          type: string
+        afterElementId:
+          description: "The ID of the element that, once completed or terminated,\
+            \ will cause the process to be terminated.\n"
+          example: "Activity_106kosb"
+          allOf:
+            - $ref: "#/components/schemas/ElementId"
     CreateProcessInstanceResult:
       required:
         - "processDefinitionId"

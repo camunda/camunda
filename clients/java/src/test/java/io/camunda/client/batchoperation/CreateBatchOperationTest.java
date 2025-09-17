@@ -79,7 +79,9 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceCancellationBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceCancellationBatchOperationRequest.class);
-    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    assertThat(lastRequest.getFilter().getProcessDefinitionId())
+        .extracting("$eq")
+        .isEqualTo("test-01");
   }
 
   @Test
@@ -106,7 +108,9 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceMigrationBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceMigrationBatchOperationRequest.class);
-    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    assertThat(lastRequest.getFilter().getProcessDefinitionId())
+        .extracting("$eq")
+        .isEqualTo("test-01");
     final ProcessInstanceMigrationBatchOperationPlan migrationPlan = lastRequest.getMigrationPlan();
     assertThat(migrationPlan).isNotNull();
     assertThat(migrationPlan.getTargetProcessDefinitionKey()).isEqualTo("1");
@@ -143,7 +147,9 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceModificationBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceModificationBatchOperationRequest.class);
-    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    assertThat(lastRequest.getFilter().getProcessDefinitionId())
+        .extracting("$eq")
+        .isEqualTo("test-01");
     assertThat(lastRequest.getMoveInstructions()).hasSize(2);
     assertThat(lastRequest.getMoveInstructions().get(0).getSourceElementId()).isEqualTo("source");
     assertThat(lastRequest.getMoveInstructions().get(0).getTargetElementId()).isEqualTo("target");
@@ -172,6 +178,8 @@ public final class CreateBatchOperationTest extends ClientRestTest {
 
     final ProcessInstanceIncidentResolutionBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceIncidentResolutionBatchOperationRequest.class);
-    assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+    assertThat(lastRequest.getFilter().getProcessDefinitionId())
+        .extracting("$eq")
+        .isEqualTo("test-01");
   }
 }

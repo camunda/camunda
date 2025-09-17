@@ -21,6 +21,9 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.protocol.rest.AdvancedProcessInstanceKeyFilter;
+import io.camunda.client.protocol.rest.AdvancedProcessInstanceStateFilter;
+import io.camunda.client.protocol.rest.AdvancedStringFilter;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFields;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFieldsProcessInstanceKey;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
@@ -28,7 +31,6 @@ import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
-import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
@@ -69,10 +71,10 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         Arrays.asList(
             new VariableValueFilterProperty()
                 .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
+                .value(new AdvancedStringFilter().$eq("v1")),
             new VariableValueFilterProperty()
                 .name("n2")
-                .value(new StringFilterProperty().$eq("v2")));
+                .value(new AdvancedStringFilter().$eq("v2")));
     client
         .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(
@@ -101,24 +103,26 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final ProcessDefinitionStatisticsFilter filter = query.getFilter();
     assertThat(filter).isNotNull();
-    assertThat(filter.getProcessInstanceKey().get$Eq())
+    assertThat(filter.getProcessInstanceKey())
+        .extracting("$eq")
         .isEqualTo(String.valueOf(PROCESS_DEFINITION_KEY));
-    assertThat(filter.getParentProcessInstanceKey().get$Eq()).isEqualTo("25");
-    assertThat(filter.getParentElementInstanceKey().get$Eq()).isEqualTo("30");
-    assertThat(filter.getStartDate().get$Eq()).isEqualTo(startDate.toString());
-    assertThat(filter.getEndDate().get$Eq()).isEqualTo(endDate.toString());
-    assertThat(filter.getState().get$Eq()).isEqualTo(ProcessInstanceStateEnum.ACTIVE);
+    assertThat(filter.getParentProcessInstanceKey()).extracting("$eq").isEqualTo("25");
+    assertThat(filter.getParentElementInstanceKey()).extracting("$eq").isEqualTo("30");
+    assertThat(filter.getStartDate()).extracting("$eq").isEqualTo(startDate.toString());
+    assertThat(filter.getEndDate()).extracting("$eq").isEqualTo(endDate.toString());
+    assertThat(filter.getState()).extracting("$eq").isEqualTo(ProcessInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasIncident()).isEqualTo(true);
-    assertThat(filter.getTenantId().get$Eq()).isEqualTo("tenant");
+    assertThat(filter.getTenantId()).extracting("$eq").isEqualTo("tenant");
     assertThat(filter.getVariables()).isEqualTo(variables);
-    assertThat(filter.getBatchOperationId().get$Eq()).isEqualTo("batchOperationId");
-    assertThat(filter.getErrorMessage().get$Eq()).isEqualTo("Error message");
+    assertThat(filter.getBatchOperationId()).extracting("$eq").isEqualTo("batchOperationId");
+    assertThat(filter.getErrorMessage()).extracting("$eq").isEqualTo("Error message");
     assertThat(filter.getHasRetriesLeft()).isEqualTo(true);
-    assertThat(filter.getElementId().get$Eq()).isEqualTo("elementId");
-    assertThat(filter.getElementInstanceState().get$Eq())
+    assertThat(filter.getElementId()).extracting("$eq").isEqualTo("elementId");
+    assertThat(filter.getElementInstanceState())
+        .extracting("$eq")
         .isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getHasElementInstanceIncident()).isEqualTo(true);
-    assertThat(filter.getIncidentErrorHashCode().get$Eq()).isEqualTo(123456789);
+    assertThat(filter.getIncidentErrorHashCode()).extracting("$eq").isEqualTo(123456789);
   }
 
   @Test
@@ -138,7 +142,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final BaseProcessInstanceFilterFieldsProcessInstanceKey processInstanceKey =
         filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
+    assertThat(processInstanceKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -157,7 +161,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final StringFilterProperty tenantId = filter.getTenantId();
     assertThat(tenantId).isNotNull();
-    assertThat(tenantId.get$Like()).isEqualTo("string");
+    assertThat(tenantId).extracting("$like").isEqualTo("string");
   }
 
   @Test
@@ -177,7 +181,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty startDate = filter.getStartDate();
     assertThat(startDate).isNotNull();
-    assertThat(startDate.get$Gt()).isEqualTo(now.toString());
+    assertThat(startDate).extracting("$gt").isEqualTo(now.toString());
   }
 
   @Test
@@ -190,10 +194,10 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         Arrays.asList(
             new VariableValueFilterProperty()
                 .name("n1")
-                .value(new StringFilterProperty().$eq("v1")),
+                .value(new AdvancedStringFilter().$eq("v1")),
             new VariableValueFilterProperty()
                 .name("n2")
-                .value(new StringFilterProperty().$eq("v2")));
+                .value(new AdvancedStringFilter().$eq("v2")));
 
     // when
     client
@@ -231,14 +235,13 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getState())
-        .isEqualTo(new ProcessInstanceStateFilterProperty().$eq(ProcessInstanceStateEnum.ACTIVE));
+        .isEqualTo(new AdvancedProcessInstanceStateFilter().$eq(ProcessInstanceStateEnum.ACTIVE));
     assertThat(filter.get$Or()).hasSize(2);
     assertThat(filter.get$Or())
         .containsExactlyInAnyOrder(
             new BaseProcessInstanceFilterFields()
-                .processInstanceKey(
-                    new BaseProcessInstanceFilterFieldsProcessInstanceKey().$eq("123"))
-                .elementId(new StringFilterProperty().$eq("elementId")),
+                .processInstanceKey(new AdvancedProcessInstanceKeyFilter().$eq("123"))
+                .elementId(new AdvancedStringFilter().$eq("elementId")),
             new BaseProcessInstanceFilterFields().hasElementInstanceIncident(true));
   }
 }

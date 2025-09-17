@@ -20,6 +20,7 @@ import io.camunda.client.api.search.filter.builder.ElementInstanceStateProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.protocol.rest.AdvancedElementInstanceStateFilter;
 import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ElementInstanceStateFilterProperty;
 import java.util.List;
@@ -28,8 +29,8 @@ import java.util.stream.Collectors;
 public class ElementInstanceStatePropertyImpl
     extends TypedSearchRequestPropertyProvider<ElementInstanceStateFilterProperty>
     implements ElementInstanceStateProperty {
-  private final ElementInstanceStateFilterProperty filterProperty =
-      new ElementInstanceStateFilterProperty();
+  private final AdvancedElementInstanceStateFilter filterProperty =
+      new AdvancedElementInstanceStateFilter();
 
   @Override
   public ElementInstanceStateProperty eq(final ElementInstanceState value) {

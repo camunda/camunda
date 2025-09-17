@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.protocol.rest.VariableSearchQuery;
 import io.camunda.client.util.ClientRestTest;
+import java.util.Collections;
 import org.junit.jupiter.api.Test;
 
 public final class SearchUserTaskVariableTest extends ClientRestTest {
@@ -49,7 +50,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getName().get$Eq()).isEqualTo(variableName);
+    assertThat(request.getFilter().getName()).extracting("$eq").isEqualTo(variableName);
   }
 
   @Test
@@ -66,7 +67,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getName().get$Like()).isEqualTo(variableName);
+    assertThat(request.getFilter().getName()).extracting("$like").isEqualTo(variableName);
   }
 
   @Test
@@ -84,6 +85,8 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
 
     // Then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getName().get$In()).containsExactly(variableName);
+    assertThat(request.getFilter().getName())
+        .extracting("$in")
+        .isEqualTo(Collections.singletonList(variableName));
   }
 }

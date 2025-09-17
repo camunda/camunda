@@ -81,31 +81,35 @@ public class SearchCorrelatedMessageTest extends ClientRestTest {
         gatewayService.getLastRequest(CorrelatedMessageSearchQuery.class);
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter().getCorrelationKey()).isNotNull();
-    assertThat(request.getFilter().getCorrelationKey().get$Eq()).isEqualTo("correlation-key");
+    assertThat(request.getFilter().getCorrelationKey())
+        .extracting("$eq")
+        .isEqualTo("correlation-key");
     assertThat(request.getFilter().getCorrelationTime()).isNotNull();
-    assertThat(request.getFilter().getCorrelationTime().get$Eq())
+    assertThat(request.getFilter().getCorrelationTime())
+        .extracting("$eq")
         .isEqualTo(correlationTime.toString());
     assertThat(request.getFilter().getElementId()).isNotNull();
-    assertThat(request.getFilter().getElementId().get$Eq()).isEqualTo("flow-node-id");
+    assertThat(request.getFilter().getElementId()).extracting("$eq").isEqualTo("flow-node-id");
     assertThat(request.getFilter().getElementInstanceKey()).isNotNull();
-    assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("789");
+    assertThat(request.getFilter().getElementInstanceKey()).extracting("$eq").isEqualTo("789");
     assertThat(request.getFilter().getMessageKey()).isNotNull();
-    assertThat(request.getFilter().getMessageKey().get$Eq()).isEqualTo("123");
+    assertThat(request.getFilter().getMessageKey()).extracting("$eq").isEqualTo("123");
     assertThat(request.getFilter().getMessageName()).isNotNull();
-    assertThat(request.getFilter().getMessageName().get$Eq()).isEqualTo("message-name");
+    assertThat(request.getFilter().getMessageName()).extracting("$eq").isEqualTo("message-name");
     assertThat(request.getFilter().getPartitionId()).isNotNull();
-    assertThat(request.getFilter().getPartitionId().get$Eq()).isEqualTo(3);
+    assertThat(request.getFilter().getPartitionId()).extracting("$eq").isEqualTo(3);
     assertThat(request.getFilter().getProcessDefinitionId()).isNotNull();
-    assertThat(request.getFilter().getProcessDefinitionId().get$Eq())
+    assertThat(request.getFilter().getProcessDefinitionId())
+        .extracting("$eq")
         .isEqualTo("process-definition-id");
     assertThat(request.getFilter().getProcessDefinitionKey()).isNotNull();
-    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("654");
+    assertThat(request.getFilter().getProcessDefinitionKey()).extracting("$eq").isEqualTo("654");
     assertThat(request.getFilter().getProcessInstanceKey()).isNotNull();
-    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("456");
+    assertThat(request.getFilter().getProcessInstanceKey()).extracting("$eq").isEqualTo("456");
     assertThat(request.getFilter().getSubscriptionKey()).isNotNull();
-    assertThat(request.getFilter().getSubscriptionKey().get$Eq()).isEqualTo("987");
+    assertThat(request.getFilter().getSubscriptionKey()).extracting("$eq").isEqualTo("987");
     assertThat(request.getFilter().getTenantId()).isNotNull();
-    assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant-id");
+    assertThat(request.getFilter().getTenantId()).extracting("$eq").isEqualTo("tenant-id");
   }
 
   @Test
@@ -177,9 +181,9 @@ public class SearchCorrelatedMessageTest extends ClientRestTest {
         gatewayService.getLastRequest(CorrelatedMessageSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(2);
-    assertThat(pageRequest.getLimit()).isEqualTo(3);
-    assertThat(pageRequest.getBefore()).isEqualTo("beforeCursor");
-    assertThat(pageRequest.getAfter()).isEqualTo("afterCursor");
+    assertThat(pageRequest).extracting("from").isEqualTo(2);
+    assertThat(pageRequest).extracting("limit").isEqualTo(3);
+    assertThat(pageRequest).extracting("before").isEqualTo("beforeCursor");
+    assertThat(pageRequest).extracting("after").isEqualTo("afterCursor");
   }
 }

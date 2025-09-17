@@ -33,6 +33,8 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.impl.util.TagUtil;
 import io.camunda.client.protocol.rest.CreateProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstructionById;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstructionByKey;
 import io.camunda.client.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -47,6 +49,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -64,8 +67,7 @@ public final class CreateProcessInstanceCommandImpl
   private boolean useRest;
   private HttpClient httpClient;
   private RequestConfig.Builder httpRequestConfig;
-  private final ProcessInstanceCreationInstruction httpRequestObject =
-      new ProcessInstanceCreationInstruction();
+  private ProcessInstanceCreationInstruction httpRequestObject;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -123,7 +125,10 @@ public final class CreateProcessInstanceCommandImpl
     // - For REST commands, users have to provide a valid JSON Object String.
     //    Otherwise, the client throws an exception already.
     if (useRest) {
-      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+      setOnRequest(
+          httpRequestObject,
+          byId -> byId.setVariables(jsonMapper.fromJsonAsMap(variables)),
+          byKey -> byKey.setVariables(jsonMapper.fromJsonAsMap(variables)));
     }
     return this;
   }
@@ -132,9 +137,14 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandStep3 startBeforeElement(final String elementId) {
     grpcRequestObjectBuilder.addStartInstructions(
         ProcessInstanceCreationStartInstruction.newBuilder().setElementId(elementId).build());
-    httpRequestObject.addStartInstructionsItem(
+
+    final io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction startInstruction =
         new io.camunda.client.protocol.rest.ProcessInstanceCreationStartInstruction()
-            .elementId(elementId));
+            .elementId(elementId);
+    setOnRequest(
+        httpRequestObject,
+        byId -> byId.addStartInstructionsItem(startInstruction),
+        byKey -> byKey.addStartInstructionsItem(startInstruction));
     return this;
   }
 
@@ -144,8 +154,12 @@ public final class CreateProcessInstanceCommandImpl
         GatewayOuterClass.ProcessInstanceCreationRuntimeInstruction.newBuilder()
             .setTerminate(
                 TerminateProcessInstanceInstruction.newBuilder().setAfterElementId(elementId)));
-    httpRequestObject.addRuntimeInstructionsItem(
-        new ProcessInstanceCreationTerminateInstruction().afterElementId(elementId));
+    final ProcessInstanceCreationTerminateInstruction terminateInstruction =
+        new ProcessInstanceCreationTerminateInstruction().afterElementId(elementId);
+    setOnRequest(
+        httpRequestObject,
+        byId -> byId.addRuntimeInstructionsItem(terminateInstruction),
+        byKey -> byKey.addRuntimeInstructionsItem(terminateInstruction));
     return this;
   }
 
@@ -183,28 +197,31 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandStep3 tags(final Set<String> tags) {
     TagUtil.ensureValidTags("tags", tags);
     grpcRequestObjectBuilder.addAllTags(tags);
-    httpRequestObject.setTags(tags);
+    setOnRequest(httpRequestObject, byId -> byId.setTags(tags), byKey -> byKey.setTags(tags));
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     grpcRequestObjectBuilder.setBpmnProcessId(id);
-    httpRequestObject.setProcessDefinitionId(id);
+    httpRequestObject = new ProcessInstanceCreationInstructionById().processDefinitionId(id);
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 processDefinitionKey(final long processDefinitionKey) {
     grpcRequestObjectBuilder.setProcessDefinitionKey(processDefinitionKey);
-    httpRequestObject.setProcessDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
+    httpRequestObject =
+        new ProcessInstanceCreationInstructionByKey()
+            .processDefinitionKey(ParseUtil.keyToString(processDefinitionKey));
     return this;
   }
 
   @Override
   public CreateProcessInstanceCommandStep3 version(final int version) {
     grpcRequestObjectBuilder.setVersion(version);
-    httpRequestObject.setProcessDefinitionVersion(version);
+    ((ProcessInstanceCreationInstructionById) httpRequestObject)
+        .setProcessDefinitionVersion(version);
     return this;
   }
 
@@ -257,7 +274,10 @@ public final class CreateProcessInstanceCommandImpl
   @Override
   public CreateProcessInstanceCommandStep3 tenantId(final String tenantId) {
     grpcRequestObjectBuilder.setTenantId(tenantId);
-    httpRequestObject.setTenantId(tenantId);
+    setOnRequest(
+        httpRequestObject,
+        byId -> byId.setTenantId(tenantId),
+        byKey -> byKey.setTenantId(tenantId));
     return this;
   }
 
@@ -279,5 +299,16 @@ public final class CreateProcessInstanceCommandImpl
   public CreateProcessInstanceCommandStep1 useGrpc() {
     useRest = false;
     return this;
+  }
+
+  private static void setOnRequest(
+      final ProcessInstanceCreationInstruction baseRequest,
+      final Consumer<ProcessInstanceCreationInstructionById> byIdConsumer,
+      final Consumer<ProcessInstanceCreationInstructionByKey> byKeyConsumer) {
+    if (baseRequest instanceof ProcessInstanceCreationInstructionById) {
+      byIdConsumer.accept((ProcessInstanceCreationInstructionById) baseRequest);
+    } else if (baseRequest instanceof ProcessInstanceCreationInstructionByKey) {
+      byKeyConsumer.accept((ProcessInstanceCreationInstructionByKey) baseRequest);
+    }
   }
 }

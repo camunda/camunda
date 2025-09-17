@@ -29,6 +29,8 @@ import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.DecisionEvaluationById;
+import io.camunda.client.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.client.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.client.protocol.rest.EvaluateDecisionResult;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -38,6 +40,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.EvaluateDecisionReque
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import org.apache.hc.client5.http.config.RequestConfig;
 
@@ -51,7 +54,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
-  private final DecisionEvaluationInstruction httpRequestObject;
+  private DecisionEvaluationInstruction httpRequestObject;
   private boolean useRest;
 
   public EvaluateDecisionCommandImpl(
@@ -68,7 +71,6 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new DecisionEvaluationInstruction();
     useRest = config.preferRestOverGrpc();
     tenantId(config.getDefaultTenantId());
     requestTimeout(requestTimeout);
@@ -99,7 +101,6 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new DecisionEvaluationInstruction();
     tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     requestTimeout(requestTimeout);
   }
@@ -115,7 +116,10 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     // - For REST commands, users have to provide a valid JSON Object String.
     //    Otherwise, the client throws an exception already.
     if (useRest) {
-      httpRequestObject.setVariables(jsonMapper.fromJsonAsMap(variables));
+      setOnRequest(
+          httpRequestObject,
+          byId -> byId.setVariables(jsonMapper.fromJsonAsMap(variables)),
+          byKey -> byKey.setVariables(jsonMapper.fromJsonAsMap(variables)));
     }
     return this;
   }
@@ -123,14 +127,15 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 decisionId(final String decisionId) {
     grpcRequestObjectBuilder.setDecisionId(decisionId);
-    httpRequestObject.setDecisionDefinitionId(decisionId);
+    httpRequestObject = new DecisionEvaluationById().decisionDefinitionId(decisionId);
     return this;
   }
 
   @Override
   public EvaluateDecisionCommandStep2 decisionKey(final long decisionKey) {
     grpcRequestObjectBuilder.setDecisionKey(decisionKey);
-    httpRequestObject.setDecisionDefinitionKey(ParseUtil.keyToString(decisionKey));
+    httpRequestObject =
+        new DecisionEvaluationByKey().decisionDefinitionKey(ParseUtil.keyToString(decisionKey));
     return this;
   }
 
@@ -181,7 +186,10 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   @Override
   public EvaluateDecisionCommandStep2 tenantId(final String tenantId) {
     grpcRequestObjectBuilder.setTenantId(tenantId);
-    httpRequestObject.setTenantId(tenantId);
+    setOnRequest(
+        httpRequestObject,
+        byId -> byId.setTenantId(tenantId),
+        byKey -> byKey.setTenantId(tenantId));
     return this;
   }
 
@@ -203,5 +211,16 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   public EvaluateDecisionCommandStep1 useGrpc() {
     useRest = false;
     return this;
+  }
+
+  private static void setOnRequest(
+      final DecisionEvaluationInstruction baseRequest,
+      final Consumer<DecisionEvaluationById> byIdConsumer,
+      final Consumer<DecisionEvaluationByKey> byKeyConsumer) {
+    if (baseRequest instanceof DecisionEvaluationById) {
+      byIdConsumer.accept((DecisionEvaluationById) baseRequest);
+    } else if (baseRequest instanceof DecisionEvaluationByKey) {
+      byKeyConsumer.accept((DecisionEvaluationByKey) baseRequest);
+    }
   }
 }

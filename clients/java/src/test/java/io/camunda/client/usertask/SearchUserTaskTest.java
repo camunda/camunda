@@ -21,9 +21,9 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
+import io.camunda.client.protocol.rest.AdvancedStringFilter;
 import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
-import io.camunda.client.protocol.rest.StringFilterProperty;
 import io.camunda.client.protocol.rest.UserTaskFilter;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
@@ -32,6 +32,7 @@ import io.camunda.client.protocol.rest.VariableValueFilterProperty;
 import io.camunda.client.util.ClientRestTest;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
@@ -62,7 +63,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getAssignee().get$Eq()).isEqualTo("demo");
+    assertThat(request.getFilter().getAssignee()).extracting("$eq").isEqualTo("demo");
   }
 
   @Test
@@ -72,7 +73,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getAssignee().get$Neq()).isEqualTo("that");
+    assertThat(request.getFilter().getAssignee()).extracting("$neq").isEqualTo("that");
   }
 
   @Test
@@ -82,7 +83,9 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getState().get$Eq()).isEqualTo(UserTaskStateEnum.COMPLETED);
+    assertThat(request.getFilter().getState())
+        .extracting("$eq")
+        .isEqualTo(UserTaskStateEnum.COMPLETED);
   }
 
   static Stream<Arguments> provideStateFilters() {
@@ -90,25 +93,31 @@ public final class SearchUserTaskTest extends ClientRestTest {
         stateFilterCase(
             "eq:CANCELING",
             f -> f.eq(UserTaskState.CANCELING),
-            f -> assertThat(f.get$Eq()).isEqualTo(UserTaskStateEnum.CANCELING)),
+            f -> assertThat(f).extracting("$eq").isEqualTo(UserTaskStateEnum.CANCELING)),
         stateFilterCase(
             "neq:COMPLETED",
             f -> f.neq(UserTaskState.COMPLETED),
-            f -> assertThat(f.get$Neq()).isEqualTo(UserTaskStateEnum.COMPLETED)),
+            f -> assertThat(f).extracting("$neq").isEqualTo(UserTaskStateEnum.COMPLETED)),
         stateFilterCase(
-            "exists:true", f -> f.exists(true), f -> assertThat(f.get$Exists()).isTrue()),
+            "exists:true",
+            f -> f.exists(true),
+            f -> assertThat(f).extracting("$exists").isEqualTo(Boolean.TRUE)),
         stateFilterCase(
-            "exists:false", f -> f.exists(false), f -> assertThat(f.get$Exists()).isFalse()),
+            "exists:false",
+            f -> f.exists(false),
+            f -> assertThat(f).extracting("$exists").isEqualTo(Boolean.FALSE)),
         stateFilterCase(
             "in:[ASSIGNING,UPDATING]",
             f -> f.in(UserTaskState.ASSIGNING, UserTaskState.UPDATING),
             f ->
-                assertThat(f.get$In())
-                    .containsExactly(UserTaskStateEnum.ASSIGNING, UserTaskStateEnum.UPDATING)),
+                assertThat(f)
+                    .extracting("$in")
+                    .isEqualTo(
+                        Arrays.asList(UserTaskStateEnum.ASSIGNING, UserTaskStateEnum.UPDATING))),
         stateFilterCase(
             "like:CREAT*",
             f -> f.like("CREAT*"),
-            f -> assertThat(f.get$Like()).isEqualTo("CREAT*")));
+            f -> assertThat(f).extracting("$like").isEqualTo("CREAT*")));
   }
 
   private static Arguments stateFilterCase(
@@ -162,7 +171,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCandidateGroup().get$Eq()).isEqualTo("group1");
+    assertThat(request.getFilter().getCandidateGroup()).extracting("$eq").isEqualTo("group1");
   }
 
   @Test
@@ -172,7 +181,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCandidateUser().get$Eq()).isEqualTo("user1");
+    assertThat(request.getFilter().getCandidateUser()).extracting("$eq").isEqualTo("user1");
   }
 
   @Test
@@ -202,7 +211,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getTenantId().get$Eq()).isEqualTo("tenant1");
+    assertThat(request.getFilter().getTenantId()).extracting("$eq").isEqualTo("tenant1");
   }
 
   @Test
@@ -212,7 +221,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getPriority().get$Eq()).isEqualTo(10);
+    assertThat(request.getFilter().getPriority()).extracting("$eq").isEqualTo(10);
   }
 
   @Test
@@ -226,8 +235,8 @@ public final class SearchUserTaskTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final IntegerFilterProperty priority = filter.getPriority();
     assertThat(priority).isNotNull();
-    assertThat(priority.get$Gt()).isEqualTo(1);
-    assertThat(priority.get$Lt()).isEqualTo(10);
+    assertThat(priority).extracting("$gt").isEqualTo(1);
+    assertThat(priority).extracting("$lt").isEqualTo(10);
   }
 
   @Test
@@ -236,7 +245,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final VariableValueFilterProperty userTaskVariableFilterProperty =
         new VariableValueFilterProperty()
             .name("test")
-            .value(new StringFilterProperty().$eq("test"));
+            .value(new AdvancedStringFilter().$eq("test"));
     final ArrayList<VariableValueFilterProperty> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterProperty);
@@ -258,7 +267,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     final VariableValueFilterProperty userTaskVariableFilterProperty =
         new VariableValueFilterProperty()
             .name("test")
-            .value(new StringFilterProperty().$eq("test"));
+            .value(new AdvancedStringFilter().$eq("test"));
     final ArrayList<VariableValueFilterProperty> listFilter = new ArrayList<>();
 
     listFilter.add(userTaskVariableFilterProperty);
@@ -301,7 +310,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Exists()).isTrue();
+    assertThat(request.getFilter().getCreationDate()).extracting("$exists").isEqualTo(Boolean.TRUE);
   }
 
   @Test
@@ -315,7 +324,9 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Exists()).isFalse();
+    assertThat(request.getFilter().getCreationDate())
+        .extracting("$exists")
+        .isEqualTo(Boolean.FALSE);
   }
 
   @Test
@@ -329,7 +340,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Gt()).isNotNull();
+    assertThat(request.getFilter().getCreationDate()).extracting("$gt").isNotNull();
   }
 
   @Test
@@ -343,7 +354,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Lt()).isNotNull();
+    assertThat(request.getFilter().getCreationDate()).extracting("$lt").isNotNull();
   }
 
   @Test
@@ -357,7 +368,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getCreationDate()).extracting("$gte").isNotNull();
   }
 
   @Test
@@ -371,7 +382,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Lte()).isNotNull();
+    assertThat(request.getFilter().getCreationDate()).extracting("$lte").isNotNull();
   }
 
   @Test
@@ -385,7 +396,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCreationDate().get$Eq()).isNotNull();
+    assertThat(request.getFilter().getCreationDate()).extracting("$eq").isNotNull();
   }
 
   @Test
@@ -399,7 +410,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCompletionDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$gte").isNotNull();
   }
 
   @Test
@@ -413,7 +424,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCompletionDate().get$Lte()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$lte").isNotNull();
   }
 
   @Test
@@ -430,8 +441,8 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCompletionDate().get$Lte()).isNotNull();
-    assertThat(request.getFilter().getCompletionDate().get$Gte()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$lte").isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$gte").isNotNull();
   }
 
   @Test
@@ -448,8 +459,8 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getCompletionDate().get$Lt()).isNotNull();
-    assertThat(request.getFilter().getCompletionDate().get$Gt()).isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$lt").isNotNull();
+    assertThat(request.getFilter().getCompletionDate()).extracting("$gt").isNotNull();
   }
 
   @Test
@@ -459,7 +470,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getDueDate().get$Exists()).isTrue();
+    assertThat(request.getFilter().getDueDate()).extracting("$exists").isEqualTo(Boolean.TRUE);
   }
 
   @Test
@@ -473,7 +484,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getDueDate().get$Gt()).isNotNull();
+    assertThat(request.getFilter().getDueDate()).extracting("$gt").isNotNull();
   }
 
   @Test
@@ -487,7 +498,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getDueDate().get$Lt()).isNotNull();
+    assertThat(request.getFilter().getDueDate()).extracting("$lt").isNotNull();
   }
 
   @Test
@@ -502,8 +513,8 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getDueDate().get$Gte()).isNotNull();
-    assertThat(request.getFilter().getDueDate().get$Lte()).isNotNull();
+    assertThat(request.getFilter().getDueDate()).extracting("$gte").isNotNull();
+    assertThat(request.getFilter().getDueDate()).extracting("$lte").isNotNull();
   }
 
   @Test
@@ -517,7 +528,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getFollowUpDate().get$Exists()).isTrue();
+    assertThat(request.getFilter().getFollowUpDate()).extracting("$exists").isEqualTo(Boolean.TRUE);
   }
 
   @Test
@@ -531,7 +542,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getFollowUpDate().get$Gt()).isNotNull();
+    assertThat(request.getFilter().getFollowUpDate()).extracting("$gt").isNotNull();
   }
 
   @Test
@@ -545,7 +556,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getFollowUpDate().get$Lt()).isNotNull();
+    assertThat(request.getFilter().getFollowUpDate()).extracting("$lt").isNotNull();
   }
 
   @Test
@@ -562,7 +573,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
-    assertThat(request.getFilter().getFollowUpDate().get$Gte()).isNotNull();
-    assertThat(request.getFilter().getFollowUpDate().get$Lte()).isNotNull();
+    assertThat(request.getFilter().getFollowUpDate()).extracting("$gte").isNotNull();
+    assertThat(request.getFilter().getFollowUpDate()).extracting("$lte").isNotNull();
   }
 }
