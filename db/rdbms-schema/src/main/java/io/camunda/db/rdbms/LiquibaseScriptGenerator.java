@@ -54,7 +54,7 @@ public class LiquibaseScriptGenerator {
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
-    final var sqlScript = generateSqlScript(databaseType, changesetFile, prefix);
+    final var sqlScript = generateSqlScript(databaseType, changesetFile, prefix, 4000);
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -66,7 +66,10 @@ public class LiquibaseScriptGenerator {
   }
 
   public static String generateSqlScript(
-      final String databaseType, final String changesetFile, final String prefix)
+      final String databaseType,
+      final String changesetFile,
+      final String prefix,
+      final int userCharColumnSize)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
@@ -74,6 +77,7 @@ public class LiquibaseScriptGenerator {
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
+    liquibase.setChangeLogParameter("userCharColumnSize", userCharColumnSize);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 
