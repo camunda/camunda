@@ -80,7 +80,7 @@ public class CamundaProcessTestRuntimeBuilder {
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
 
-  private boolean isMultiTenancyEnabled = false;
+  private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
 
   // ============ For testing =================
 
