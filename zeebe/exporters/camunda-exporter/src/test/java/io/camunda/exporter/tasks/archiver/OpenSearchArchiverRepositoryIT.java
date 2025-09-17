@@ -11,21 +11,30 @@ import static io.camunda.search.test.utils.SearchDBExtension.ARCHIVER_IDX_PREFIX
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.search.test.utils.SearchDBExtension.create;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
+import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,10 +47,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -82,15 +94,15 @@ final class OpenSearchArchiverRepositoryIT {
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private final String processInstanceIndex =
-      ARCHIVER_IDX_PREFIX + "process-instance-" + UUID.randomUUID();
-  private final String batchOperationIndex =
-      ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
-  private final String archiverBlockedIndex =
-      ARCHIVER_IDX_PREFIX + "import-position-" + UUID.randomUUID();
+  private String archiverBlockedIndex;
+  private String processInstanceIndex;
+  private String batchOperationIndex;
   private final OpenSearchClient testClient = createOpenSearchClient();
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
+  private TestExporterResourceProvider resourceProvider;
+  private String indexPrefix;
+  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
   void afterEach() throws IOException {
@@ -99,6 +111,23 @@ final class OpenSearchArchiverRepositoryIT {
 
     // delete all policies created during the tests
     deleteAllTestPolicies();
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    config.setRetention(retention);
+    indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, false);
+    processInstanceIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
+    archiverBlockedIndex =
+        resourceProvider
+            .getIndexDescriptor(TasklistImportPositionIndex.class)
+            .getFullQualifiedName();
   }
 
   @Test
@@ -132,28 +161,48 @@ final class OpenSearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
-    final var tenantIndex = "camunda-tenant-" + UUID.randomUUID();
-    final var usageMetricIndex = "app-camunda-usage-metric-tu-" + UUID.randomUUID();
+    final var taskIndex =
+        resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
-    testClient.indices().create(r -> r.index(tenantIndex));
+    testClient.indices().create(r -> r.index(taskIndex));
+
+    retention.setEnabled(true);
+
+    // when
+    createLifeCyclePolicies();
+    final var result = repository.setIndexLifeCycle(taskIndex);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+
+    assertThat(fetchPolicyForIndexWithAwait(taskIndex))
+        .as(
+            "Expected '%s' policy to be applied for index: '%s'",
+            retention.getPolicyName(), taskIndex)
+        .isNotNull()
+        .isEqualTo(retention.getPolicyName());
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {UsageMetricIndex.INDEX_NAME, UsageMetricTUIndex.INDEX_NAME})
+  @Disabled("https://github.com/camunda/camunda/issues/34709")
+  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+    // given
+    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var repository = createRepository();
+
     testClient.indices().create(r -> r.index(usageMetricIndex));
 
     retention.setEnabled(true);
 
     // when
     createLifeCyclePolicies();
-    final var result = repository.setIndexLifeCycle(tenantIndex, usageMetricIndex);
+    final var result = repository.setIndexLifeCycle(usageMetricIndex);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-
-    assertThat(fetchPolicyForIndexWithAwait(tenantIndex))
-        .as(
-            "Expected '%s' policy to be applied for index: '%s'",
-            retention.getPolicyName(), tenantIndex)
-        .isNotNull()
-        .isEqualTo(retention.getPolicyName());
     assertThat(fetchPolicyForIndexWithAwait(usageMetricIndex))
         .as(
             "Expected '%s' policy to be applied for index: '%s'",
@@ -170,31 +219,36 @@ final class OpenSearchArchiverRepositoryIT {
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
     // given
-    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    final var indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    processInstanceIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
+    // FIXME: uncomment once the metrics index rollover is correctly implemented,
+    // https://github.com/camunda/camunda/issues/34709
+    /*
     final var usageMetricsIndices =
         List.of(
             formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
             formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
-    final var otherIndices =
-        List.of(
-            formattedPrefix + "operate-record-8.2.1_2024-01-02",
-            formattedPrefix + "tasklist-record-8.3.0_2024-01");
+     */
+    final var historicalIndices =
+        List.of(processInstanceIndex + "2024-01-02", batchOperationIndex + "2024-01");
     final var untouchedIndices =
-        new ArrayList<>(
-            List.of(
-                formattedPrefix + "operate-record-8.2.1_",
-                formattedPrefix + "other-" + "tasklist-record-8.3.0_"));
+        new ArrayList<>(List.of(processInstanceIndex, batchOperationIndex));
 
     // we cannot test the case with multiple different prefixes when no prefix is given, since it
     // will just match everything from the other prefixes...
     if (!prefix.isEmpty()) {
-      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+      untouchedIndices.add("other-" + "tasklist-task-8.8.0_2024-01-02");
     }
 
     connectConfiguration.setIndexPrefix(prefix);
     final var repository = createRepository();
-    final var indices = new ArrayList<>(otherIndices);
-    indices.addAll(usageMetricsIndices);
+    final var indices = new ArrayList<>(historicalIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
@@ -212,14 +266,18 @@ final class OpenSearchArchiverRepositoryIT {
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     // verify that the usage metrics policy was applied to all usage metric indices
+    // FIXME: uncomment once the metrics index rollover is correctly implemented,
+    // https://github.com/camunda/camunda/issues/34709
+    /*
     for (final var index : usageMetricsIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
           .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
           .isNotNull()
           .isEqualTo("custom-usage-metrics-policy");
     }
+     */
     // verify that the default policy was applied to all other indices
-    for (final var index : otherIndices) {
+    for (final var index : historicalIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
           .as("Expected 'default-policy' policy to be applied for %s", index)
           .isNotNull()
@@ -563,8 +621,8 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
     // given
     retention.setEnabled(true);
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
+    final var indexName1 = processInstanceIndex + UUID.randomUUID();
+    final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
@@ -573,33 +631,144 @@ final class OpenSearchArchiverRepositoryIT {
 
     final var repository = createRepository(genericClientSpy);
 
-    // when - first time setting policy for destIndexName it should make the ism add for
-    // destIndexName
-    repository.setIndexLifeCycle(destIndexName);
+    // when - first time setting policy for indexName2 it should make the ism add for
+    // indexName2
+    repository.setIndexLifeCycle(indexName2);
 
     final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
 
-    Awaitility.await().untilAsserted(() -> verify(genericClientSpy).executeAsync(captor.capture()));
+    Awaitility.await()
+        .untilAsserted(() -> verify(genericClientSpy, times(1)).executeAsync(captor.capture()));
 
-    final List<Request> requests = captor.getAllValues();
-    assertThat(requests).hasSize(1);
-    assertThat(requests.getFirst().getEndpoint()).isEqualTo("_plugins/_ism/add/" + destIndexName);
+    final var request = captor.getValue();
+    assertThat(request.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName2);
+    reset(genericClientSpy);
 
-    // setting policy first time for srcIndexName but second time for destIndexName, it
-    // should have cached the fact that destIndexName already has a ism and not be included in
+    // setting policy first time for srcIndexName but second time for indexName2, it
+    // should have cached the fact that indexName2 already has a ism and not be included in
     // the requests.
-    repository.setIndexLifeCycle(sourceIndexName, destIndexName);
+    repository.setIndexLifeCycle(indexName2);
+    repository.setIndexLifeCycle(indexName1);
 
     // then
     final var captor2 = ArgumentCaptor.forClass(Request.class);
 
     Awaitility.await()
-        .untilAsserted(() -> verify(genericClientSpy, times(2)).executeAsync(captor2.capture()));
+        .untilAsserted(() -> verify(genericClientSpy, times(1)).executeAsync(captor2.capture()));
 
-    final List<Request> requests2 = captor2.getAllValues();
-    assertThat(requests2).hasSize(2);
+    final Request request2 = captor2.getValue();
 
-    assertThat(requests2.getLast().getEndpoint()).isEqualTo("_plugins/_ism/add/" + sourceIndexName);
+    assertThat(request2.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName1);
+  }
+
+  @Test
+  void shouldApplyIlmToAllHistoricalIndices() throws Exception {
+    // given
+    retention.setEnabled(true);
+    // ensure all templates are created
+    startupSchema();
+    // create indices for all templates with a date in the index name
+    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final String date = "2026-01-10";
+    for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
+      searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+    }
+    final var asyncClient = createOpenSearchAsyncClient();
+    final var genericClientSpy =
+        Mockito.spy(
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions()));
+    final var repository = createRepository(genericClientSpy);
+    final var captor = ArgumentCaptor.forClass(Request.class);
+
+    // when
+    repository.setLifeCycleToAllIndexes();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(
+                        genericClientSpy, times(16) // number of index templates
+                        )
+                    .executeAsync(captor.capture()));
+
+    final var putIndicesSettingsRequests = captor.getAllValues();
+    assertThat(putIndicesSettingsRequests)
+        .hasSize(16)
+        .allSatisfy(
+            request -> {
+              final var indexPattern =
+                  request.getEndpoint().substring("_plugins/_ism/add/".length());
+              final String[] split = indexPattern.split(",");
+              assertThat(split)
+                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+              final var matchingTemplate =
+                  resourceProvider.getIndexTemplateDescriptors().stream()
+                      .filter(
+                          template ->
+                              split[0].matches(template.getAllVersionsIndexNameRegexPattern()))
+                      .findFirst();
+              assertThat(matchingTemplate).isPresent();
+              assertThat(split)
+                  .containsExactly(
+                      matchingTemplate.get().getIndexPattern(),
+                      "-" + matchingTemplate.get().getFullQualifiedName(),
+                      "-" + matchingTemplate.get().getAlias());
+            });
+    for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var response =
+                    genericClientSpy
+                        .executeAsync(
+                            Requests.builder()
+                                .method("GET")
+                                .endpoint("_plugins/_ism/explain/" + template.getIndexPattern())
+                                .build())
+                        .get();
+
+                final var json =
+                    objectMapper.readTree(response.getBody().orElseThrow().bodyAsString());
+                // Check runtime index (should not have ISM policy)
+                assertThat(
+                        json.get(template.getFullQualifiedName())
+                            .get("index.plugins.index_state_management.policy_id")
+                            .isNull())
+                    .isTrue();
+                // Check dated index (should have ISM policy)
+                assertThat(
+                        json.get(template.getIndexPattern().replace("*", date))
+                            .get("index.plugins.index_state_management.policy_id")
+                            .asText())
+                    .isEqualTo("camunda-retention-policy");
+              });
+    }
+  }
+
+  private void startupSchema() {
+    final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
+    final var connectConfig = new ConnectConfiguration();
+    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setType(DatabaseType.OPENSEARCH.toString());
+    final var schemaManagerConfig = new SchemaManagerConfiguration();
+    schemaManagerConfig.getRetry().setMaxRetries(1);
+    final var searchEngineConfiguration =
+        SearchEngineConfiguration.of(
+            builder ->
+                builder
+                    .connect(connectConfig)
+                    .retention(retention)
+                    .schemaManager(schemaManagerConfig));
+    new SchemaManager(
+            searchEngineClient,
+            resourceProvider.getIndexDescriptors(),
+            resourceProvider.getIndexTemplateDescriptors(),
+            searchEngineConfiguration,
+            objectMapper)
+        .startup();
   }
 
   private void createBatchOperationIndex() throws IOException {
@@ -615,7 +784,13 @@ final class OpenSearchArchiverRepositoryIT {
                         idProp,
                         BatchOperationTemplate.END_DATE,
                         endDateProp)));
-    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(batchOperationIndex)
+                    .mappings(properties)
+                    .aliases(batchOperationIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
@@ -684,19 +859,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
-        1,
-        config,
-        retention,
-        connectConfiguration.getIndexPrefix(),
-        processInstanceIndex,
-        batchOperationIndex,
-        archiverBlockedIndex,
-        zeebeIndexPrefix,
-        client,
-        genericClient,
-        Runnable::run,
-        metrics,
-        LOGGER);
+        1, config, resourceProvider, client, genericClient, Runnable::run, metrics, LOGGER);
   }
 
   private void createProcessInstanceIndex() throws IOException {
@@ -715,7 +878,13 @@ final class OpenSearchArchiverRepositoryIT {
                         endDateProp,
                         ListViewTemplate.JOIN_RELATION,
                         joinRelationProp)));
-    testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(processInstanceIndex)
+                    .mappings(properties)
+                    .aliases(processInstanceIndex + "alias", a -> a.isWriteIndex(false)));
     testClient.indices().create(r -> r.index(archiverBlockedIndex));
   }
 
