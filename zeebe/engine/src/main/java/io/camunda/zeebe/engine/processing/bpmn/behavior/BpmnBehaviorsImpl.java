@@ -150,7 +150,8 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
             writers,
             processingState.getKeyGenerator(),
             jobMetrics,
-            clock);
+            clock,
+            authCheckBehavior);
 
     multiInstanceInputCollectionBehavior =
         new MultiInstanceInputCollectionBehavior(
