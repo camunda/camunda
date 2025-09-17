@@ -32,6 +32,8 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRelated;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.protocol.record.value.deployment.ExtendedMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.MetadataValue;
 import java.lang.reflect.Method;
 import org.immutables.value.Value;
 
@@ -92,7 +94,9 @@ final class ImmutableProtocolTest {
   private DescribedPredicate<JavaClass> getExcludedClasses() {
     return Predicates.equivalentTo(ProcessInstanceRelated.class)
         .or(Predicates.equivalentTo(BatchOperationRelated.class))
-        .or(Predicates.equivalentTo(TenantOwned.class));
+        .or(Predicates.equivalentTo(TenantOwned.class))
+        .or(Predicates.equivalentTo(MetadataValue.class))
+        .or(Predicates.equivalentTo(ExtendedMetadataValue.class));
   }
 
   private static final class BuilderCondition extends ArchCondition<JavaClass> {
