@@ -10177,8 +10177,6 @@ components:
           description: "The index of items to start searching from."
           type: "integer"
           format: "int32"
-          default: 0
-          minimum: 0
         limit:
           description: "The maximum number of items to return in one request. <=10,000 for ElasticSearch."
           type: "integer"
@@ -10188,8 +10186,6 @@ components:
     CursorForwardPagination:
       type: "object"
       title: "Cursor-based forward pagination"
-      required:
-        - "after"
       properties:
         after:
           description: "Use the `endCursor` value from the previous response to fetch the next page of results."
@@ -10203,8 +10199,6 @@ components:
     CursorBackwardPagination:
       type: "object"
       title: "Cursor-based backward pagination"
-      required:
-        - "before"
       properties:
         before:
           description: "Use the `startCursor` value from the previous response to fetch the previous page of results."
@@ -11794,7 +11788,6 @@ components:
             - "COMPLETED"
             - "PARTIALLY_COMPLETED"
             - "CANCELED"
-            - "INCOMPLETED"
         batchOperationType:
           $ref: "#/components/schemas/BatchOperationTypeEnum"
         startDate:
