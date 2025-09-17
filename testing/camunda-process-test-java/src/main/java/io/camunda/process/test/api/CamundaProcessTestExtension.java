@@ -529,17 +529,6 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Configure the request timeout for the Camunda Client
-   *
-   * @param requestTimeout time to wait before the request times out
-   * @return the extension builder
-   */
-  public CamundaProcessTestExtension withClientRequestTimeout(final Duration requestTimeout) {
-    runtimeBuilder.withCamundaClientRequestTimeout(requestTimeout);
-    return this;
-  }
-
-  /**
    * Specifies process definition keys that should be excluded from coverage analysis. These
    * processes will not be considered when calculating coverage metrics.
    *

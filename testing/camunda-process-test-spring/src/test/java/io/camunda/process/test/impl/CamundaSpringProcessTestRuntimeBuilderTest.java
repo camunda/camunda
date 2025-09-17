@@ -67,7 +67,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEmpty();
 
     assertThat(runtimeBuilder.isConnectorsEnabled()).isFalse();
-    assertThat(runtimeBuilder.getCamundaClientRequestTimeout()).hasSeconds(10);
   }
 
   @Test
@@ -89,8 +88,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
     runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
 
-    runtimeConfiguration.getRemote().getClient().setRequestTimeout(Duration.ofHours(1));
-
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
 
@@ -101,7 +98,6 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEqualTo(camundaExposedPorts);
     assertThat(runtimeBuilder.getCamundaLoggerName()).isEqualTo("io.camunda.custom.logger.name");
     assertThat(runtimeBuilder.getConnectorsLoggerName()).isEqualTo("io.camunda.custom.logger.name");
-    assertThat(runtimeBuilder.getCamundaClientRequestTimeout()).isEqualTo(Duration.ofHours(1));
   }
 
   @Test
