@@ -51,7 +51,7 @@ public class CamundaProcessTestRuntimeConfiguration {
   private String connectorsLoggerName =
       CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME;
 
-  private boolean multitenancyEnabled = false;
+  private boolean multiTenancyEnabled = false;
 
   private CamundaProcessTestRuntimeMode runtimeMode = CamundaProcessTestRuntimeMode.MANAGED;
 
@@ -215,11 +215,11 @@ public class CamundaProcessTestRuntimeConfiguration {
     this.remote = remote;
   }
 
-  public boolean isMultitenancyEnabled() {
-    return multitenancyEnabled;
+  public boolean isMultiTenancyEnabled() {
+    return multiTenancyEnabled;
   }
 
-  public void setMultitenancyEnabled(final boolean multitenancyEnabled) {
-    this.multitenancyEnabled = multitenancyEnabled;
+  public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
+    this.multiTenancyEnabled = multiTenancyEnabled;
   }
 }

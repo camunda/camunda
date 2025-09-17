@@ -24,7 +24,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultitenancyConfiguration;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -139,20 +139,6 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
-    if (runtimeConfiguration.isMultitenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          MultitenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
-    }
-  }
-
   @Override
   public void beforeTestMethod(final TestContext testContext) {
     client = createClient(camundaProcessTestContext);
@@ -246,6 +232,20 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
       CamundaAssert.setJsonMapper(jsonMapper);
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    if (runtimeConfiguration.isMultiTenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultiTenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
     }
   }
 
