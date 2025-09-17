@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 public class SchemaManager {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
-  public static final String ARCHIVING_BLOCKED_META_KEY = "archivingBlocked";
+  public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -303,11 +304,11 @@ public class SchemaManager {
       }
       final var indexName = tasklistImportPositionIndex.get().getFullQualifiedName();
       if (blockedArchiverMetaIsMissing(indexName)) {
-        LOG.debug("Brownfield installation detected. Disabling flagging archiver as blocked.");
+        LOG.debug("Brownfield installation detected. Flagging archiver as blocked.");
         return CompletableFuture.runAsync(
             () ->
                 searchEngineClient.putIndexMeta(
-                    indexName, Map.of(ARCHIVING_BLOCKED_META_KEY, true)),
+                    indexName, Map.of(PI_ARCHIVING_BLOCKED_META_KEY, true)),
             virtualThreadExecutor);
       }
       return CompletableFuture.completedFuture(null);
@@ -317,11 +318,9 @@ public class SchemaManager {
   private boolean blockedArchiverMetaIsMissing(final String operateImportPositionIndex) {
     final var mappings =
         searchEngineClient.getMappings(operateImportPositionIndex, MappingSource.INDEX);
-    return mappings.get(operateImportPositionIndex).metaProperties() == null
-        || !mappings
-            .get(operateImportPositionIndex)
-            .metaProperties()
-            .containsKey(ARCHIVING_BLOCKED_META_KEY);
+    return Optional.ofNullable(mappings.get(operateImportPositionIndex).metaProperties())
+        .map(map -> map.get(PI_ARCHIVING_BLOCKED_META_KEY))
+        .isEmpty();
   }
 
   /**

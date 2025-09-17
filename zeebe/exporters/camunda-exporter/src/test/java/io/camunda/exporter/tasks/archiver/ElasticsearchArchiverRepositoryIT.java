@@ -374,7 +374,7 @@ final class ElasticsearchArchiverRepositoryIT {
             mapping ->
                 mapping
                     .index(archiverBlockedIndex)
-                    .meta(SchemaManager.ARCHIVING_BLOCKED_META_KEY, JsonData.of(true)));
+                    .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true)));
     // when
     final var result = repository.getProcessInstancesNextBatch();
 

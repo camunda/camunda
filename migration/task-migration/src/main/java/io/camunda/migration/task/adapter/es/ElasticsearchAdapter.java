@@ -310,7 +310,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     final var blockArchivingRequest =
         new PutMappingRequest.Builder()
             .index(importPositionIndex.getFullQualifiedName())
-            .meta(SchemaManager.ARCHIVING_BLOCKED_META_KEY, JsonData.of(true))
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true))
             .build();
 
     try {
@@ -328,7 +328,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     final var resumeArchivingRequest =
         new PutMappingRequest.Builder()
             .index(importPositionIndex.getFullQualifiedName())
-            .meta(SchemaManager.ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
             .build();
 
     try {

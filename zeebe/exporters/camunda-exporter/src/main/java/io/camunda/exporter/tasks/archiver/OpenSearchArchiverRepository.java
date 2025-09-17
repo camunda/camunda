@@ -7,12 +7,13 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
-import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
@@ -23,8 +24,8 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -226,25 +227,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   private boolean archivingIsBlocked() throws IOException {
-    return client
-        .indices()
-        .get(r -> r.index(archiverBlockedMetaIndex))
-        .join()
-        .result()
-        .getOrDefault(
-            archiverBlockedMetaIndex,
-            IndexState.of(
-                state ->
-                    state.mappings(
-                        m ->
-                            m.meta(
-                                Map.of(
-                                    SchemaManager.ARCHIVING_BLOCKED_META_KEY,
-                                    JsonData.of(false))))))
-        .mappings()
-        .meta()
-        .getOrDefault(SchemaManager.ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
-        .to(Boolean.class);
+    return Optional.ofNullable(
+            client
+                .indices()
+                .get(r -> r.index(archiverBlockedMetaIndex))
+                .join()
+                .result()
+                .get(archiverBlockedMetaIndex))
+        .map(IndexState::mappings)
+        .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
+        .map(jd -> jd.to(Boolean.class))
+        .orElse(false);
   }
 
   private Query finishedProcessInstancesQuery(

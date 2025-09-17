@@ -369,8 +369,8 @@ public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
             "/"
                 + tasklistImportPositionIndex.getFullQualifiedName()
                 + "/mappings/_meta/"
-                + SchemaManager.ARCHIVING_BLOCKED_META_KEY);
-    return blockedPropertyNode.isMissingNode() ? false : blockedPropertyNode.asBoolean();
+                + SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY);
+    return !blockedPropertyNode.isMissingNode() && blockedPropertyNode.asBoolean();
   }
 
   private void assertTasksAreInCorrectIndices(final CamundaMigrator migrator) {

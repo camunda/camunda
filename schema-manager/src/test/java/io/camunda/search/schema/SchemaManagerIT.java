@@ -1565,13 +1565,14 @@ public class SchemaManagerIT {
 
     // verify _meta property is not added
     assertThat(indexNode.get("mappings").get("_meta")).isNotNull();
-    assertThat(indexNode.get("mappings").get("_meta").get(SchemaManager.ARCHIVING_BLOCKED_META_KEY))
+    assertThat(
+            indexNode.get("mappings").get("_meta").get(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY))
         .isNotNull();
     assertThat(
             indexNode
                 .get("mappings")
                 .get("_meta")
-                .get(SchemaManager.ARCHIVING_BLOCKED_META_KEY)
+                .get(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY)
                 .asBoolean())
         .isTrue();
   }

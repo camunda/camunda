@@ -7,7 +7,7 @@
  */
 package io.camunda.search.schema;
 
-import static io.camunda.search.schema.SchemaManager.ARCHIVING_BLOCKED_META_KEY;
+import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.ELASTICSEARCH_NETWORK_ALIAS;
 import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.OPENSEARCH_NETWORK_ALIAS;
 import static io.camunda.search.schema.utils.SchemaTestUtil.assertMappingsMatch;
@@ -193,8 +193,8 @@ class SchemaUpdateIT {
             // We only include the meta property on the runtime index on update
             if (indexName.equals(matchingIndexDescriptor.getFullQualifiedName())) {
               assertThat(meta).isNotNull();
-              assertThat(meta.get(ARCHIVING_BLOCKED_META_KEY)).isNotNull();
-              assertThat(meta.get(ARCHIVING_BLOCKED_META_KEY).asBoolean()).isTrue();
+              assertThat(meta.get(PI_ARCHIVING_BLOCKED_META_KEY)).isNotNull();
+              assertThat(meta.get(PI_ARCHIVING_BLOCKED_META_KEY).asBoolean()).isTrue();
             } else {
               assertThat(meta).isNull();
             }
