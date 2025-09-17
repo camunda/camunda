@@ -39,6 +39,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
@@ -52,6 +53,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   public static final String ERROR_REJECTION_MESSAGE =
       "Cannot throw BPMN error from %s job with key '%d', type '%s' and processInstanceKey '%d'";
+
+  public static final Set<JobKind> SUPPORTED_JOB_KINDS =
+      Set.of(JobKind.BPMN_ELEMENT, JobKind.AD_HOC_SUB_PROCESS);
 
   private final IncidentRecord incidentEvent = new IncidentRecord();
   private Either<Failure, CatchEventTuple> foundCatchEvent;
@@ -117,9 +121,9 @@ public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
     final long jobKey = command.getKey();
 
     final var jobKind = job.getJobKind();
-    if (jobKind != JobKind.BPMN_ELEMENT) {
+    if (!SUPPORTED_JOB_KINDS.contains(jobKind)) {
       /*
-       Throwing bpmn error is only supported for BPMN element jobs:
+       Throwing bpmn error is only supported for BPMN element and ad-hoc sub-process jobs:
        - Execution Listener jobs should not throw BPMN errors because the element is not in an
          ACTIVATED state.
        - Task Listener jobs simply don't support throwing BPMN errors yet.
