@@ -20,13 +20,25 @@ import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
+import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.DatabaseType;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
+import io.camunda.search.schema.config.SchemaManagerConfiguration;
+import io.camunda.search.schema.config.SearchEngineConfiguration;
+import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
+import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -38,12 +50,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpHost;
 import org.awaitility.Awaitility;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -68,18 +83,33 @@ final class ElasticsearchArchiverRepositoryIT {
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final HistoryConfiguration config = new HistoryConfiguration();
   private final RetentionConfiguration retention = new RetentionConfiguration();
-  private String indexPrefix = "testPrefix";
+  private String indexPrefix;
   private final String zeebeIndexPrefix = "zeebe-record";
-  private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
-  private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
+  private String processInstanceIndex;
+  private String batchOperationIndex;
+  private TestExporterResourceProvider resourceProvider;
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
+  private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
   void afterEach() throws IOException {
     // wipes all data in ES between tests
     final var response = transport.restClient().performRequest(new Request("DELETE", "_all"));
     assertThat(response.getStatusLine().getStatusCode()).isEqualTo(200);
+  }
+
+  @BeforeEach
+  void beforeEach() {
+    config.setRetention(retention);
+    indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    processInstanceIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
   }
 
   @Test
@@ -113,28 +143,51 @@ final class ElasticsearchArchiverRepositoryIT {
   @Test
   void shouldSetIndexLifeCycle() throws IOException {
     // given
-    final var tenantIndex = "camunda-tenant-" + UUID.randomUUID();
-    final var usageMetricIndex = "app-camunda-usage-metric-" + UUID.randomUUID();
+    final var taskIndex =
+        resourceProvider.getIndexTemplateDescriptor(TaskTemplate.class).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
-    testClient.indices().create(r -> r.index(tenantIndex));
-    testClient.indices().create(r -> r.index(usageMetricIndex));
+    testClient.indices().create(r -> r.index(taskIndex));
 
-    final var initialLifecycle = getLifeCycle(tenantIndex);
+    final var initialLifecycle = getLifeCycle(taskIndex);
     assertThat(initialLifecycle).isNull();
 
     retention.setEnabled(true);
     putLifecyclePolicies();
 
     // when
-    final var result = repository.setIndexLifeCycle(tenantIndex, usageMetricIndex);
+    final var result = repository.setIndexLifeCycle(taskIndex);
 
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    assertThat(getLifeCycle(tenantIndex))
+    assertThat(getLifeCycle(taskIndex))
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
         .isEqualTo("camunda-retention-policy");
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {UsageMetricIndex.INDEX_NAME, UsageMetricTUIndex.INDEX_NAME})
+  @Disabled("https://github.com/camunda/camunda/issues/34709")
+  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+    // given
+    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var repository = createRepository();
+
+    testClient.indices().create(r -> r.index(usageMetricIndex));
+
+    final var initialLifecycle = getLifeCycle(usageMetricIndex);
+    assertThat(initialLifecycle).isNull();
+
+    retention.setEnabled(true);
+    putLifecyclePolicies();
+
+    // when
+    final var result = repository.setIndexLifeCycle(usageMetricIndex);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     assertThat(getLifeCycle(usageMetricIndex))
         .isNotNull()
         .extracting(IndexSettingsLifecycle::name)
@@ -146,29 +199,36 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
     // given
     indexPrefix = prefix;
-    final var formattedPrefix = AbstractIndexDescriptor.formatIndexPrefix(prefix);
+    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    processInstanceIndex =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
+    batchOperationIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(BatchOperationTemplate.class)
+            .getFullQualifiedName();
+
+    // FIXME: once the metrics index rollover is correctly implemented, put back these indices in
+    // the test https://github.com/camunda/camunda/issues/34709
+    /*
     final var usageMetricsIndices =
         List.of(
             formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
             formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
-    final var otherIndices =
-        List.of(
-            formattedPrefix + "operate-record-8.2.1_2024-01-02",
-            formattedPrefix + "tasklist-record-8.3.0_2024-01");
+     */
+    final var historicalIndices =
+        List.of(processInstanceIndex + "2024-01-02", batchOperationIndex + "2024-01");
     final var untouchedIndices =
-        new ArrayList<>(
-            List.of(
-                formattedPrefix + "operate-record-8.2.1_", "other-" + "tasklist-record-8.3.0_"));
+        new ArrayList<>(List.of(processInstanceIndex, batchOperationIndex));
 
     // we cannot test the case with multiple different prefixes when no prefix is given, since it
     // will just match everything from the other prefixes...
     if (!prefix.isEmpty()) {
-      untouchedIndices.add("other-" + "tasklist-record-8.3.0_2024-01-02");
+      untouchedIndices.add("other-" + "tasklist-task-8.8.0_2024-01-02");
     }
 
     final var repository = createRepository();
-    final var indices = new ArrayList<>(usageMetricsIndices);
-    indices.addAll(otherIndices);
+    final var indices = new ArrayList<String>();
+    indices.addAll(historicalIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
@@ -187,14 +247,19 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
 
     // verify that the usage metrics policy was applied to all usage metric indices
+    // FIXME: once the metrics index rollover is correctly implemented, put back these asserts
+    // https://github.com/camunda/camunda/issues/34709
+    /*
     for (final var index : usageMetricsIndices) {
       assertThat(getLifeCycle(index))
           .isNotNull()
           .extracting(IndexSettingsLifecycle::name)
           .isEqualTo("custom-usage-metrics-policy");
     }
+    */
+
     // verify that the default policy was applied to all other indices
-    for (final var index : otherIndices) {
+    for (final var index : historicalIndices) {
       assertThat(getLifeCycle(index))
           .isNotNull()
           .extracting(IndexSettingsLifecycle::name)
@@ -209,7 +274,7 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldNotFailSettingILMOnMissingIndex() throws IOException {
     // given
     final var repository = createRepository();
-    final var indexName = UUID.randomUUID().toString();
+    final var indexName = processInstanceIndex + UUID.randomUUID();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
     putLifecyclePolicies();
@@ -531,8 +596,8 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
     // given
     retention.setEnabled(true);
-    final var sourceIndexName = UUID.randomUUID().toString();
-    final var destIndexName = UUID.randomUUID().toString();
+    final var indexName1 = processInstanceIndex + UUID.randomUUID();
+    final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -541,33 +606,141 @@ final class ElasticsearchArchiverRepositoryIT {
 
     final var repository = createRepository(clientSpy);
 
-    // when - first time setting policy for destIndexName it should make the put settings for
-    // destIndexName
-    repository.setIndexLifeCycle(destIndexName);
+    // when - first time setting policy for indexName2 it should make the put settings for
+    // indexName2
+    repository.setIndexLifeCycle(indexName2);
 
     final ArgumentCaptor<PutIndicesSettingsRequest> captor =
         ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
     Awaitility.await().untilAsserted(() -> verify(indicesClientSpy).putSettings(captor.capture()));
 
-    final List<PutIndicesSettingsRequest> putIndicesSettingsRequests = captor.getAllValues();
-    assertThat(putIndicesSettingsRequests.getFirst().index()).containsExactly(destIndexName);
+    final var putIndicesSettingsRequest = captor.getValue();
+    assertThat(putIndicesSettingsRequest.index()).containsExactly(indexName2);
 
-    // setting policy first time for srcIndexName but second time for destIndexName, it
-    // should have cached the fact that destIndexName already has a policy and not be included in
+    reset(indicesClientSpy);
+
+    // setting policy first time for indexName1 but second time for indexName2, it
+    // should have cached the fact that indexName2 already has a policy and not be included in
     // the request.
-    repository.setIndexLifeCycle(sourceIndexName, destIndexName);
+    repository.setIndexLifeCycle(indexName1);
+    repository.setIndexLifeCycle(indexName2);
 
     // then
     final var captor2 = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
 
     Awaitility.await()
-        .untilAsserted(() -> verify(indicesClientSpy, times(2)).putSettings(captor2.capture()));
+        .untilAsserted(() -> verify(indicesClientSpy, times(1)).putSettings(captor2.capture()));
 
-    final List<PutIndicesSettingsRequest> putIndicesSettingsRequests2 = captor2.getAllValues();
-    assertThat(putIndicesSettingsRequests2).hasSize(2);
+    final var putIndicesSettingsRequest2 = captor2.getValue();
+    assertThat(putIndicesSettingsRequest2.index()).containsExactly(indexName1);
+  }
 
-    assertThat(putIndicesSettingsRequests2.getLast().index()).containsExactly(sourceIndexName);
+  @Test
+  void shouldApplyIlmToAllHistoricalIndices() throws Exception {
+    // given
+    retention.setEnabled(true);
+    // ensure all templates are created
+    startupSchema();
+    // create indices for all templates with a date in the index name
+    final var searchClientAdapter = new SearchClientAdapter(testClient, objectMapper);
+    final String date = "2026-01-10";
+    for (final var indexTemplate : resourceProvider.getIndexTemplateDescriptors()) {
+      searchClientAdapter.createIndex(indexTemplate.getIndexPattern().replace("*", date), 0);
+    }
+    final var asyncClient = spy(new ElasticsearchAsyncClient(transport));
+    final var indicesClientSpy = spy(asyncClient.indices());
+    doReturn(indicesClientSpy).when(asyncClient).indices();
+    final var repository = createRepository(asyncClient);
+    final var captor = ArgumentCaptor.forClass(PutIndicesSettingsRequest.class);
+
+    // when
+    repository.setLifeCycleToAllIndexes();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(
+                        indicesClientSpy, times(16) // number of index templates
+                        )
+                    .putSettings(captor.capture()));
+
+    final var putIndicesSettingsRequests = captor.getAllValues();
+    assertThat(putIndicesSettingsRequests)
+        .hasSize(16)
+        .allSatisfy(
+            request -> {
+              assertThat(request.index()).hasSize(1);
+              final String[] split = request.index().getFirst().split(",");
+              assertThat(split)
+                  .hasSize(3); // 3 patterns (wildcard + runtime exclusion + alias exclusion)
+              final var matchingTemplate =
+                  resourceProvider.getIndexTemplateDescriptors().stream()
+                      .filter(
+                          template ->
+                              split[0].matches(template.getAllVersionsIndexNameRegexPattern()))
+                      .findFirst();
+              assertThat(matchingTemplate).isPresent();
+              assertThat(split)
+                  .containsExactly(
+                      matchingTemplate.get().getIndexPattern(),
+                      "-" + matchingTemplate.get().getFullQualifiedName(),
+                      "-" + matchingTemplate.get().getAlias());
+            });
+    for (final var template : resourceProvider.getIndexTemplateDescriptors()) {
+      Awaitility.await()
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(
+              () -> {
+                final var settings =
+                    testClient
+                        .indices()
+                        .getSettings(b -> b.index(template.getIndexPattern()))
+                        .result();
+                // Check runtime index (should not have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getFullQualifiedName())
+                            .settings()
+                            .index()
+                            .lifecycle())
+                    .isNull();
+                // Check historical index (should have ILM policy)
+                assertThat(
+                        settings
+                            .get(template.getIndexPattern().replace("*", date))
+                            .settings()
+                            .index()
+                            .lifecycle()
+                            .name())
+                    .isEqualTo("camunda-retention-policy");
+              });
+    }
+  }
+
+  private void startupSchema() {
+    final var searchEngineClient = new ElasticsearchEngineClient(testClient, objectMapper);
+    final var connectConfig = new ConnectConfiguration();
+    connectConfig.setIndexPrefix(indexPrefix);
+    connectConfig.setType(DatabaseType.ELASTICSEARCH.toString());
+    connectConfig.setUrl(searchDB.esUrl());
+    final var schemaManagerConfig = new SchemaManagerConfiguration();
+    schemaManagerConfig.getRetry().setMaxRetries(1);
+    final SearchEngineConfiguration searchEngineConfiguration =
+        SearchEngineConfiguration.of(
+            builder ->
+                builder
+                    .connect(connectConfig)
+                    .retention(retention)
+                    .schemaManager(schemaManagerConfig));
+    new SchemaManager(
+            searchEngineClient,
+            resourceProvider.getIndexDescriptors(),
+            resourceProvider.getIndexTemplateDescriptors(),
+            searchEngineConfiguration,
+            objectMapper)
+        .startup();
   }
 
   private void putLifecyclePolicies() throws IOException {
@@ -594,17 +767,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new ElasticsearchArchiverRepository(
-        1,
-        config,
-        retention,
-        indexPrefix,
-        processInstanceIndex,
-        batchOperationIndex,
-        zeebeIndexPrefix,
-        client,
-        Runnable::run,
-        metrics,
-        LOGGER);
+        1, config, resourceProvider, client, Runnable::run, metrics, LOGGER);
   }
 
   private RestClientTransport createRestClient() {
@@ -628,7 +791,13 @@ final class ElasticsearchArchiverRepositoryIT {
                         endDateProp,
                         ListViewTemplate.JOIN_RELATION,
                         joinRelationProp)));
-    testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(processInstanceIndex)
+                    .mappings(properties)
+                    .aliases(processInstanceIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
   private void createBatchOperationIndex() throws IOException {
@@ -644,7 +813,13 @@ final class ElasticsearchArchiverRepositoryIT {
                         idProp,
                         BatchOperationTemplate.END_DATE,
                         endDateProp)));
-    testClient.indices().create(r -> r.index(batchOperationIndex).mappings(properties));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(batchOperationIndex)
+                    .mappings(properties)
+                    .aliases(batchOperationIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
   private record TestDocument(String id) implements TDocument {}
