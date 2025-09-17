@@ -42,7 +42,7 @@ import org.springframework.test.context.TestPropertySource;
     properties = {
       "spring.liquibase.enabled=false",
       "camunda.data.secondary-storage.type=rdbms",
-      "logging.level.io.camunda.db.rdbms=TRACE"
+      "logging.level.io.camunda.db.rdbms=DEBUG"
     })
 public class MessageSubscriptionSpecificFilterIT {
   private static final Long MESSAGE_SUBSCRIPTION_KEY = CommonFixtures.nextKey();

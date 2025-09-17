@@ -41,9 +41,7 @@ public class MessageSubscriptionIT {
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
-    final var subscriptionDbModel =
-        MessageSubscriptionFixtures.createRandomized(
-            b -> b.messageName("message-" + UUID.randomUUID()));
+    final var subscriptionDbModel = MessageSubscriptionFixtures.createRandomized(b -> b);
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscriptionDbModel);
 
     final var instance =
@@ -61,9 +59,7 @@ public class MessageSubscriptionIT {
     final MessageSubscriptionDbReader messageSubscriptionReader =
         rdbmsService.getMessageSubscriptionReader();
 
-    final var subscription =
-        MessageSubscriptionFixtures.createRandomized(
-            b -> b.messageName("message-" + UUID.randomUUID()));
+    final var subscription = MessageSubscriptionFixtures.createRandomized(b -> b);
     MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriter, subscription);
 
     final var roleUpdate =
