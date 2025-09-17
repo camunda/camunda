@@ -9,9 +9,13 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import static io.camunda.zeebe.protocol.record.RecordMetadataDecoder.batchOperationReferenceNullValue;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
 import io.camunda.zeebe.engine.state.authorization.PersistedMappingRule;
@@ -29,11 +33,13 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,13 +62,43 @@ public final class AuthorizationCheckBehavior {
   private final boolean authorizationsEnabled;
   private final boolean multiTenancyEnabled;
 
+  private final LoadingCache<Map<String, Object>, AuthorizedTenants> tenantIdCache;
+  private final LoadingCache<AuthorizationRequest, Set<AuthorizationScope>> authorizationScopeCache;
+
   public AuthorizationCheckBehavior(
-      final ProcessingState processingState, final SecurityConfiguration securityConfig) {
+      final ProcessingState processingState,
+      final SecurityConfiguration securityConfig,
+      final EngineConfiguration config) {
     authorizationState = processingState.getAuthorizationState();
     mappingRuleState = processingState.getMappingRuleState();
     membershipState = processingState.getMembershipState();
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
+
+    tenantIdCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getAuthorizationsCacheCapacity())
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public AuthorizedTenants load(final Map<String, Object> authorizations)
+                      throws AuthorizationsNotFoundException {
+                    return findAuthorizedTenants(authorizations);
+                  }
+                });
+
+    authorizationScopeCache =
+        CacheBuilder.newBuilder()
+            .maximumSize(config.getAuthorizationsCacheCapacity())
+            .build(
+                new CacheLoader<>() {
+                  @Override
+                  public Set<AuthorizationScope> load(
+                      final AuthorizationRequest authorizationRequest)
+                      throws AuthorizationsNotFoundException {
+                    return findAllAuthorizedScopes(authorizationRequest);
+                  }
+                });
   }
 
   /**
@@ -350,6 +386,15 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
+    try {
+      return authorizationScopeCache.get(request);
+    } catch (final ExecutionException e) {
+      return Collections.emptySet();
+    }
+  }
+
+  public Set<AuthorizationScope> findAllAuthorizedScopes(final AuthorizationRequest request)
+      throws AuthorizationsNotFoundException {
     if (!authorizationsEnabled || isAuthorizedAnonymousUser(request.getAuthorizationClaims())) {
       return Set.of(AuthorizationScope.WILDCARD);
     }
@@ -391,6 +436,10 @@ public final class AuthorizationCheckBehavior {
                     request.getResourceType(),
                     request.getPermissionType()))
         .forEach(authorizedScopes::add);
+
+    if (authorizedScopes.isEmpty()) {
+      throw new AuthorizationsNotFoundException();
+    }
 
     return authorizedScopes;
   }
@@ -494,6 +543,15 @@ public final class AuthorizationCheckBehavior {
   }
 
   public AuthorizedTenants getAuthorizedTenantIds(final Map<String, Object> authorizations) {
+    try {
+      return tenantIdCache.get(authorizations);
+    } catch (final ExecutionException e) {
+      return new AuthenticatedAuthorizedTenants(Collections.EMPTY_SET);
+    }
+  }
+
+  private AuthorizedTenants findAuthorizedTenants(final Map<String, Object> authorizations)
+      throws AuthorizationsNotFoundException {
     if (isAuthorizedAnonymousUser(authorizations)) {
       return AuthorizedTenants.ANONYMOUS;
     }
@@ -526,6 +584,10 @@ public final class AuthorizationCheckBehavior {
             .collect(Collectors.toSet());
     authorizedTenants.addAll(tenantsOfMappingRule);
 
+    if (authorizedTenants.isEmpty()) {
+      throw new AuthorizationsNotFoundException();
+    }
+
     return new AuthenticatedAuthorizedTenants(authorizedTenants);
   }
 
@@ -540,6 +602,14 @@ public final class AuthorizationCheckBehavior {
         (Map<String, Object>)
             authorizations.getOrDefault(Authorization.USER_TOKEN_CLAIMS, Map.of());
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
+  }
+
+  public void clearTenantIdCache() {
+    tenantIdCache.invalidateAll();
+  }
+
+  public void clearAuthorizationScopeCache() {
+    authorizationScopeCache.invalidateAll();
   }
 
   public static final class AuthorizationRequest {
@@ -703,6 +773,13 @@ public final class AuthorizationCheckBehavior {
 
   private record AuthorizationRejection(
       Rejection rejection, AuthorizationRejectionType authorizationRejectionType) {}
+
+  /**
+   * This exception is thrown when the authorization and tenant caches can't find data in the state
+   * for a given key. This must be a checked exception, because of the way the {@link LoadingCache}
+   * works.
+   */
+  private static final class AuthorizationsNotFoundException extends Exception {}
 
   private enum AuthorizationRejectionType {
     TENANT,

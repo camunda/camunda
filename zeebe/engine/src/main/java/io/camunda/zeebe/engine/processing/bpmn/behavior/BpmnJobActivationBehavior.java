@@ -170,12 +170,8 @@ public class BpmnJobActivationBehavior {
     }
 
     final var authorizations = jobActivationProperties.authorizations();
-    // get authorized tenant IDs
-    // TODO: add cache to avoid repeated calls for same command
     final var authorizedTenantIds =
         authorizationCheckBehavior.getAuthorizedTenantIds(authorizations);
-    // get authorized process IDs
-    // TODO: add cache to avoid repeated calls for same command
     final var authorizedProcessIds =
         authorizationCheckBehavior.getAllAuthorizedScopes(
             new AuthorizationRequest(
