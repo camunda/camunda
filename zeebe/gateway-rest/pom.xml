@@ -456,7 +456,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.gateway.protocol.rest</modelPackage>
-              <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum,BatchOperationKey=String,ElementInstanceFilterElementInstanceScopeKey=String,UUID=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String</typeMappings>
+              <typeMappings>OffsetDateTime=String,Permission=io.camunda.identity.automation.permissions.PermissionEnum,BatchOperationKey=String,ElementInstanceFilterElementInstanceScopeKey=String,UUID=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,AdvancedElementInstanceKeyFilter=StringFilterProperty,AdvancedProcessInstanceKeyFilter=StringFilterProperty,AdvancedDecisionDefinitionKeyFilter=StringFilterProperty,AdvancedElementInstanceKeyFilter=StringFilterProperty,AdvancedJobKeyFilter=StringFilterProperty,AdvancedProcessDefinitionKeyFilter=StringFilterProperty,AdvancedScopeKeyFilter=StringFilterProperty,AdvancedVariableKeyFilter=StringFilterProperty</typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>
               <generateModels>true</generateModels>
