@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AU
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -33,6 +34,8 @@ public class AuthorizationDeleteProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
 
   public AuthorizationDeleteProcessor(
@@ -46,6 +49,8 @@ public class AuthorizationDeleteProcessor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
+    authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
   }
 
@@ -72,11 +77,17 @@ public class AuthorizationDeleteProcessor
         .authorizationExists(
             command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_DELETION)
         .ifRightOrLeft(
-            ignored ->
-                stateWriter.appendFollowUpEvent(
-                    command.getValue().getAuthorizationKey(),
-                    AuthorizationIntent.DELETED,
-                    command.getValue()),
+            ignored -> {
+              stateWriter.appendFollowUpEvent(
+                  command.getValue().getAuthorizationKey(),
+                  AuthorizationIntent.DELETED,
+                  command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authorizationCheckBehavior.clearAuthorizationScopeCache();
+                    return true;
+                  });
+            },
             rejection ->
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
@@ -98,5 +109,10 @@ public class AuthorizationDeleteProcessor
         .distribute(command);
     responseWriter.writeEventOnCommand(
         authorizationKey, AuthorizationIntent.DELETED, command.getValue(), command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authorizationCheckBehavior.clearAuthorizationScopeCache();
+          return true;
+        });
   }
 }

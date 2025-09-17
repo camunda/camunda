@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -49,6 +50,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
   private final MembershipState membershipState;
 
@@ -68,6 +70,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
@@ -108,6 +111,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_ADDED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearTenantIdCache();
+          return true;
+        });
 
     distributeCommand(command);
   }
@@ -120,6 +128,11 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
           command, record.getEntityId(), record.getEntityType(), record.getTenantId());
     } else {
       stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            authCheckBehavior.clearTenantIdCache();
+            return true;
+          });
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
