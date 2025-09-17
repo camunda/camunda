@@ -40,8 +40,8 @@ public class UsageMetricsController {
 
   @CamundaGetMapping
   public ResponseEntity<UsageMetricsResponse> getUsageMetrics(
-      @RequestParam(required = false) final String startTime,
-      @RequestParam(required = false) final String endTime,
+      @RequestParam final String startTime,
+      @RequestParam final String endTime,
       @RequestParam(required = false) final String tenantId,
       @RequestParam(required = false, defaultValue = "false") final boolean withTenants) {
 

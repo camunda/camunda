@@ -184,22 +184,22 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldYieldBadRequestIfNoStartAndEndTimeAreGiven() {
+  void shouldYieldBadRequestIfNoStartTimeIsGiven() {
     // given
     final var expectedResponse =
         """
         {
           "type":"about:blank",
-          "title":"INVALID_ARGUMENT",
+          "title":"Bad Request",
           "status":400,
-          "detail":"The startTime and endTime must both be specified.",
+          "detail":"Required parameter 'startTime' is not present.",
           "instance":"/v2/system/usage-metrics"
         }
         """;
     // when/then
     webClient
         .get()
-        .uri(USAGE_METRICS_URL)
+        .uri(USAGE_METRICS_URL + "?endTime=2024-12-31T10:50:26.000Z")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
@@ -238,42 +238,15 @@ public class UsageMetricsControllerTest extends RestControllerTest {
   }
 
   @Test
-  void shouldYieldBadRequestIfNoStartTimeIsGiven() {
-    // given
-    final var expectedResponse =
-        """
-        {
-          "type":"about:blank",
-          "title":"INVALID_ARGUMENT",
-          "status":400,
-          "detail":"The startTime and endTime must both be specified.",
-          "instance":"/v2/system/usage-metrics"
-        }
-        """;
-    // when/then
-    webClient
-        .get()
-        .uri(USAGE_METRICS_URL + "?endTime=2024-12-31T10:50:26.000Z")
-        .accept(MediaType.APPLICATION_JSON)
-        .exchange()
-        .expectStatus()
-        .isBadRequest()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
-        .expectBody()
-        .json(expectedResponse, JsonCompareMode.STRICT);
-  }
-
-  @Test
   void shouldYieldBadRequestIfNoEndTimeIsGiven() {
     // given
     final var expectedResponse =
         """
         {
           "type":"about:blank",
-          "title":"INVALID_ARGUMENT",
+          "title":"Bad Request",
           "status":400,
-          "detail":"The startTime and endTime must both be specified.",
+          "detail":"Required parameter 'endTime' is not present.",
           "instance":"/v2/system/usage-metrics"
         }
         """;
@@ -310,6 +283,35 @@ public class UsageMetricsControllerTest extends RestControllerTest {
         .uri(
             USAGE_METRICS_URL
                 + "?startTime=2024-12-31T10:50:26.000Z&endTime=2024-12-30T10:50:26.000Z")
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldYieldBadRequestIfStartTimeIsEqualEndTime() {
+    // given
+    final var expectedResponse =
+        """
+        {
+          "type":"about:blank",
+          "title":"INVALID_ARGUMENT",
+          "status":400,
+          "detail":"The endTime must be after startTime.",
+          "instance":"/v2/system/usage-metrics"
+        }
+        """;
+    // when/then
+    webClient
+        .get()
+        .uri(
+            USAGE_METRICS_URL
+                + "?startTime=2024-12-31T10:50:26.000Z&endTime=2024-12-31T10:50:26.000Z")
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
