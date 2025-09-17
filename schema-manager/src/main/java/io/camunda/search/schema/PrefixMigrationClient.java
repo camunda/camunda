@@ -8,13 +8,16 @@
 package io.camunda.search.schema;
 
 import io.camunda.search.schema.utils.CloneResult;
-import io.camunda.search.schema.utils.ReindexResult;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 public interface PrefixMigrationClient {
-  ReindexResult reindex(String source, String destination);
 
-  CloneResult clone(String source, String destination);
+  List<String> getIndicesInAlias(String alias);
 
-  List<String> getAllHistoricIndices(String prefix);
+  CompletableFuture<CloneResult> cloneAndDeleteIndex(
+      final String source,
+      final String sourceAlias,
+      final String destination,
+      final String destinationAlias);
 }

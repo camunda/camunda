@@ -16,7 +16,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.dockerjava.api.command.CreateContainerCmd;
+import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
@@ -54,9 +54,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.utility.DockerImageName;
 
-@MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 /**
  * How to run this test locally:
  *
@@ -68,6 +65,9 @@ import org.testcontainers.utility.DockerImageName;
  *   <li>Make sure to not commit the changes when you're done
  * </ul>
  */
+@MultiDbTest
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class PrefixMigrationIT {
   public static final String OLD_OPERATE_PREFIX = "operate-dev";
   public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
@@ -87,115 +87,10 @@ public class PrefixMigrationIT {
     Testcontainers.exposeHostPorts(9200); // elasticsearch
   }
 
-  private GenericContainer<?> createCamundaContainer() {
-    final var container =
-        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7-SNAPSHOT"))
-            .waitingFor(
-                new HttpWaitStrategy()
-                    .forPort(MONITORING.port())
-                    .forPath("/actuator/health")
-                    .withReadTimeout(Duration.ofSeconds(30)))
-            .withAccessToHost(true)
-            .withExposedPorts(REST.port(), MONITORING.port(), GATEWAY.port())
-            .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
-            .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
-            .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
-            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC");
-
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
-      addElasticsearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
-      addOpensearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
-    }
-
-    return container;
-  }
-
-  private void addOpensearchProperties(
-      final GenericContainer<?> container,
-      final String operatePrefix,
-      final String tasklistPrefix) {
-    container
-        // Unified Config for db type + compatibility vars
-        .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
-        .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
-        .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
-        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "opensearch")
-        // Unified Config for db url + compatibility vars
-        .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        // ---
-        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", operatePrefix)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", tasklistPrefix)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", tasklistPrefix)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
-        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
-  }
-
-  private void addElasticsearchProperties(
-      final GenericContainer<?> container,
-      final String operatePrefix,
-      final String tasklistPrefix) {
-    container
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", operatePrefix)
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", tasklistPrefix)
-        .withEnv(
-            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
-            "io.camunda.zeebe.exporter.ElasticsearchExporter")
-        .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
-        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
-  }
-
-  private void prefixMigration(
-      final String oldOperatePrefix, final String oldTasklistPrefix, final String newPrefix) {
-    final var operate = new OperateProperties();
-    final var tasklist = new TasklistProperties();
-    final var connect = new SearchEngineConnectProperties();
-
-    operate.getElasticsearch().setIndexPrefix(oldOperatePrefix);
-    operate.getOpensearch().setIndexPrefix(oldOperatePrefix);
-
-    tasklist.getElasticsearch().setIndexPrefix(oldTasklistPrefix);
-    tasklist.getOpenSearch().setIndexPrefix(oldTasklistPrefix);
-
-    connect.setIndexPrefix(newPrefix);
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
-      connect.setType("elasticsearch");
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
-      connect.setType("opensearch");
-    }
-
-    try (final var app = new TestPrefixMigrationApp(connect, tasklist, operate)) {
-      app.start();
-    }
-  }
-
   @Test
-  void shouldMigrateCorrectIndicesDuringPrefixMigration() {
+  void shouldMigrateCorrectIndicesDuringPrefixMigration() throws IOException {
     // given
-    final var tasklistContainer =
-        new GenericContainer<>("camunda/zeebe:8.7-SNAPSHOT")
-            .withCreateContainerCmdModifier(
-                (final CreateContainerCmd cmd) ->
-                    cmd.withEntrypoint("/usr/local/zeebe/bin/tasklist"))
-            .withAccessToHost(true);
-
-    final var operateContainer =
-        new GenericContainer<>("camunda/zeebe:8.7-SNAPSHOT")
-            .withCreateContainerCmdModifier(
-                (final CreateContainerCmd cmd) ->
-                    cmd.withEntrypoint("/usr/local/zeebe/bin/operate"))
-            .withAccessToHost(true);
-
+    final var camundaContainer = createCamundaContainer();
     // to avoid collisions with other tests
     final var shortUUID = UUID.randomUUID().toString().substring(0, 8).toLowerCase();
     final var oldOperatePrefix = shortUUID + "-old-operate-prefix";
@@ -203,17 +98,14 @@ public class PrefixMigrationIT {
     final var newPrefix = shortUUID + "-new-prefix";
 
     if (currentMultiDbDatabaseType() == DatabaseType.ES) {
-      addElasticsearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
-      addElasticsearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
+      addElasticsearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
     } else if (currentMultiDbDatabaseType() == DatabaseType.OS
         || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
-      addOpensearchProperties(tasklistContainer, oldOperatePrefix, oldTasklistPrefix);
-      addOpensearchProperties(operateContainer, oldOperatePrefix, oldTasklistPrefix);
+      addOpensearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
     }
 
     // creates the 8.7 operate/tasklist indices
-    tasklistContainer.start();
-    operateContainer.start();
+    camundaContainer.start();
 
     final var setupHelper =
         new ElasticOpenSearchSetupHelper(
@@ -226,8 +118,7 @@ public class PrefixMigrationIT {
         .pollInterval(Duration.ofMillis(500))
         .until(() -> setupHelper.validateSchemaCreation(shortUUID));
 
-    operateContainer.stop();
-    tasklistContainer.stop();
+    camundaContainer.stop();
 
     // when
     prefixMigration(oldOperatePrefix, oldTasklistPrefix, newPrefix);
@@ -243,6 +134,8 @@ public class PrefixMigrationIT {
     final var expectedDescriptors =
         new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ES);
 
+    assertIndices(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+
     final var schemaManager =
         new SchemaManager(
             searchEngineClient,
@@ -251,14 +144,130 @@ public class PrefixMigrationIT {
             SearchEngineConfiguration.of(b -> b),
             new ObjectMapper());
 
-    await("All indices migrated")
-        .untilAsserted(
-            () -> {
-              Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue();
-            });
+    schemaManager.startup();
+
+    await("Schema can be upgraded")
+        .atMost(Duration.ofMinutes(1))
+        .untilAsserted(() -> Assertions.assertThat(schemaManager.isSchemaReadyForUse()).isTrue());
 
     setupHelper.cleanup(shortUUID);
     setupHelper.close();
+  }
+
+  private static void assertIndices(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    if (connectConfig.getTypeEnum().isElasticSearch()) {
+      verifyAliasesElasticsearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+    } else {
+      verifyAliasesOpensearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+    }
+  }
+
+  private static void verifyAliasesElasticsearch(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    final var client = new ElasticsearchConnector(connectConfig).createClient();
+    final var descriptors = new IndexDescriptors(newPrefix, true);
+
+    // Assert that all expected Tasklist aliases are matched to the new indices
+    final var tasklistAliases =
+        client.indices().getAlias(a -> a.name(newPrefix + "-tasklist*")).result();
+    assertThat(tasklistAliases).hasSameSizeAs(PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE);
+    PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.forEach(
+        descriptorCls -> {
+          final var descriptor =
+              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
+          assertThat(tasklistAliases).containsKey(descriptor.getFullQualifiedName());
+          assertThat(tasklistAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
+        });
+
+    // Assert that all expected Operate aliases are matched to the new indices
+    final var operateAliases =
+        client.indices().getAlias(a -> a.name(newPrefix + "-operate*")).result();
+    assertThat(operateAliases).hasSameSizeAs(PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE);
+    PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.forEach(
+        descriptorCls -> {
+          final var descriptor =
+              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
+          assertThat(operateAliases).containsKey(descriptor.getFullQualifiedName());
+          assertThat(operateAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
+        });
+
+    // Assert that no leftover alias matches a new index
+    final var oldTasklistAliases =
+        client.indices().getAlias(a -> a.name(oldTasklistPrefix + "-*")).result();
+    descriptors
+        .all()
+        .forEach(
+            desc -> assertThat(oldTasklistAliases).doesNotContainKey(desc.getFullQualifiedName()));
+
+    // Assert that no leftover alias matches a new index
+    final var oldOperateAliases =
+        client.indices().getAlias(a -> a.name(oldOperatePrefix + "-*")).result();
+    descriptors
+        .all()
+        .forEach(
+            desc -> assertThat(oldOperateAliases).doesNotContainKey(desc.getFullQualifiedName()));
+  }
+
+  private static void verifyAliasesOpensearch(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    final var client = new OpensearchConnector(connectConfig).createClient();
+    final var descriptors = new IndexDescriptors(newPrefix, true);
+
+    // Assert that all expected Tasklist aliases are matched to the new indices
+    final var tasklistAliases =
+        client.indices().getAlias(a -> a.name(newPrefix + "-tasklist*")).result();
+    assertThat(tasklistAliases).hasSameSizeAs(PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE);
+    PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.forEach(
+        descriptorCls -> {
+          final var descriptor =
+              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
+          assertThat(tasklistAliases).containsKey(descriptor.getFullQualifiedName());
+          assertThat(tasklistAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
+        });
+
+    // Assert that all expected Operate aliases are matched to the new indices
+    final var operateAliases =
+        client.indices().getAlias(a -> a.name(newPrefix + "-operate*")).result();
+    assertThat(operateAliases).hasSameSizeAs(PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE);
+    PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.forEach(
+        descriptorCls -> {
+          final var descriptor =
+              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
+          assertThat(operateAliases).containsKey(descriptor.getFullQualifiedName());
+          assertThat(operateAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
+        });
+
+    // Assert that no leftover alias matches a new index
+    final var oldTasklistAliases =
+        client.indices().getAlias(a -> a.name(oldTasklistPrefix + "-*")).result();
+    descriptors
+        .all()
+        .forEach(
+            desc -> assertThat(oldTasklistAliases).doesNotContainKey(desc.getFullQualifiedName()));
+
+    // Assert that no leftover alias matches a new index
+    final var oldOperateAliases =
+        client.indices().getAlias(a -> a.name(oldOperatePrefix + "-*")).result();
+    descriptors
+        .all()
+        .forEach(
+            desc -> assertThat(oldOperateAliases).doesNotContainKey(desc.getFullQualifiedName()));
   }
 
   @Test
@@ -397,5 +406,98 @@ public class PrefixMigrationIT {
         .grpcAddress(URI.create("http://localhost:" + container.getMappedPort(GATEWAY.port())))
         .restAddress(URI.create("http://localhost:" + container.getMappedPort(REST.port())))
         .build();
+  }
+
+  private GenericContainer<?> createCamundaContainer() {
+    final var container =
+        new GenericContainer<>(DockerImageName.parse("camunda/camunda:8.7-SNAPSHOT"))
+            .waitingFor(
+                new HttpWaitStrategy()
+                    .forPort(MONITORING.port())
+                    .forPath("/actuator/health")
+                    .withReadTimeout(Duration.ofSeconds(30)))
+            .withAccessToHost(true)
+            .withExposedPorts(REST.port(), MONITORING.port(), GATEWAY.port())
+            .withEnv("CAMUNDA_OPERATE_CSRFPREVENTIONENABLED", "false")
+            .withEnv("CAMUNDA_TASKLIST_CSRFPREVENTIONENABLED", "false")
+            .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,identity,consolidated-auth")
+            .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
+            .withAccessToHost(true);
+
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      addElasticsearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+      addOpensearchProperties(container, OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX);
+    }
+
+    return container;
+  }
+
+  private void addOpensearchProperties(
+      final GenericContainer<?> container,
+      final String operatePrefix,
+      final String tasklistPrefix) {
+    container
+        // Unified Config for db type + compatibility vars
+        .withEnv("CAMUNDA_DATABASE_TYPE", "opensearch")
+        .withEnv("CAMUNDA_OPERATE_DATABASE", "opensearch")
+        .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "opensearch")
+        // Unified Config for db url + compatibility vars
+        .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        // ---
+        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", operatePrefix)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", tasklistPrefix)
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", tasklistPrefix)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
+        .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
+  }
+
+  private void addElasticsearchProperties(
+      final GenericContainer<?> container,
+      final String operatePrefix,
+      final String tasklistPrefix) {
+    container
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", operatePrefix)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", tasklistPrefix)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
+            "io.camunda.zeebe.exporter.ElasticsearchExporter")
+        .withEnv("CAMUNDA_DATABASE_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
+        .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
+  }
+
+  private void prefixMigration(
+      final String oldOperatePrefix, final String oldTasklistPrefix, final String newPrefix) {
+    final var operate = new OperateProperties();
+    final var tasklist = new TasklistProperties();
+    final var connect = new SearchEngineConnectProperties();
+
+    operate.getElasticsearch().setIndexPrefix(oldOperatePrefix);
+    operate.getOpensearch().setIndexPrefix(oldOperatePrefix);
+
+    tasklist.getElasticsearch().setIndexPrefix(oldTasklistPrefix);
+    tasklist.getOpenSearch().setIndexPrefix(oldTasklistPrefix);
+
+    connect.setIndexPrefix(newPrefix);
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      connect.setType("elasticsearch");
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
+      connect.setType("opensearch");
+    }
+
+    try (final var app = new TestPrefixMigrationApp(connect, tasklist, operate)) {
+      app.start();
+    }
   }
 }

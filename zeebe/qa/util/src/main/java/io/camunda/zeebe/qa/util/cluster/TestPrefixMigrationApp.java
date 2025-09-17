@@ -10,6 +10,7 @@ package io.camunda.zeebe.qa.util.cluster;
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandalonePrefixMigration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
+import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
@@ -27,7 +28,14 @@ public final class TestPrefixMigrationApp extends TestSpringApplication<TestPref
       final OperateProperties operateProperties) {
     super(StandalonePrefixMigration.class, SearchEngineDatabaseConfiguration.class);
 
+    final var disableSchemaCreation = new SearchEngineSchemaManagerProperties();
+    disableSchemaCreation.setCreateSchema(false);
+
     withBean("connectConfiguration", connectConfiguration, SearchEngineConnectProperties.class)
+        .withBean(
+            "searchEngineSchemaManagerProperties",
+            disableSchemaCreation,
+            SearchEngineSchemaManagerProperties.class)
         .withBean("tasklistProperties", tasklistProperties, TasklistProperties.class)
         .withBean("operateProperties", operateProperties, OperateProperties.class);
   }

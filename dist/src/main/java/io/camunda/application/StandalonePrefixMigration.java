@@ -7,6 +7,8 @@
  */
 package io.camunda.application;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
+
 import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -46,6 +48,9 @@ public class StandalonePrefixMigration implements CommandLineRunner {
     // To ensure that debug logging performed using java.util.logging is routed into Log4j 2
     MainSupport.putSystemPropertyIfAbsent(
         "java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
+
+    // Disable 8.8 Schema Manager during the prefix migration
+    MainSupport.putSystemPropertyIfAbsent(CREATE_SCHEMA_PROPERTY, "false");
 
     final SpringApplication application =
         new SpringApplicationBuilder()
