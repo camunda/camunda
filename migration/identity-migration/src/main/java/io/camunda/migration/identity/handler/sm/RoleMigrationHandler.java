@@ -9,6 +9,7 @@ package io.camunda.migration.identity.handler.sm;
 
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
+import static io.camunda.migration.identity.config.ResourceBasedAuthorizationConstants.RBA_IRRELEVANT_RESOURCE_TYPES;
 import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
@@ -19,6 +20,7 @@ import io.camunda.migration.identity.dto.Role;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
@@ -27,7 +29,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoleMigrationHandler extends MigrationHandler<Role> {
-
   private final ManagementIdentityClient managementIdentityClient;
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
@@ -108,8 +109,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
         permissions.stream()
             .map(
                 permission ->
-                    getAuthorizationsByAudience(
-                        audiences, permission, roleId, AuthorizationOwnerType.ROLE))
+                    createAuthorizationsForRoleAndPermission(audiences, roleId, permission))
             .flatMap(Set::stream)
             .toList();
 
@@ -142,6 +142,16 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
             request.permissionTypes());
       }
     }
+  }
+
+  private Set<CreateAuthorizationRequest> createAuthorizationsForRoleAndPermission(
+      final Audiences audiences, final String roleId, final String permission) {
+    final Set<CreateAuthorizationRequest> authorizations =
+        getAuthorizationsByAudience(audiences, permission, roleId, AuthorizationOwnerType.ROLE);
+    if (migrationProperties.isResourceAuthorizationsEnabled()) {
+      authorizations.removeIf(auth -> !RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()));
+    }
+    return authorizations;
   }
 
   private List<String> getFormattedPermissions(final String roleName) {

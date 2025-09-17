@@ -54,7 +54,7 @@ public class KeycloakRoleMigrationHandlerTest {
   private final RoleServices roleServices;
   private final AuthorizationServices authorizationServices;
 
-  private final RoleMigrationHandler roleMigrationHandler;
+  private RoleMigrationHandler roleMigrationHandler;
 
   public KeycloakRoleMigrationHandlerTest(
       @Mock final ManagementIdentityClient managementIdentityClient,
@@ -269,6 +269,120 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.UPDATE_USER_TASK,
                     PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.DELETE_PROCESS_INSTANCE)));
+  }
+
+  @Test
+  public void shouldMigrateRolesAndAuthorizationsExceptRBARelevantResourceTypes() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setResourceAuthorizationsEnabled(true);
+    roleMigrationHandler =
+        new RoleMigrationHandler(
+            CamundaAuthentication.none(),
+            managementIdentityClient,
+            roleServices,
+            authorizationServices,
+            migrationProperties);
+
+    when(managementIdentityClient.fetchRoles())
+        .thenReturn(
+            List.of(
+                new Role("Role 1", "Description for Role 1"),
+                new Role(
+                    "Role@Name#With$Special%Chars", "Description for Role with special chars")));
+    when(roleServices.createRole(any()))
+        .thenReturn(CompletableFuture.completedFuture(new RoleRecord()));
+    when(managementIdentityClient.fetchPermissions(any()))
+        .thenReturn(
+            List.of(
+                new Permission("read", "camunda-identity-resource-server"),
+                new Permission("read:users", "camunda-identity-resource-server"),
+                new Permission("write", "camunda-identity-resource-server"),
+                new Permission("read:*", "operate-api"),
+                new Permission("write:*", "operate-api")))
+        .thenReturn(
+            List.of(
+                new Permission("read:*", "tasklist-api"),
+                new Permission("write:*", "tasklist-api"),
+                new Permission("write:*", "zeebe-api")));
+    when(authorizationServices.createAuthorization(any()))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+
+    // when
+    roleMigrationHandler.migrate();
+
+    // then
+    final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(9)).createAuthorization(results.capture());
+    final var authorizationRequests = results.getAllValues();
+    assertThat(authorizationRequests)
+        .extracting(
+            CreateAuthorizationRequest::ownerId,
+            CreateAuthorizationRequest::ownerType,
+            CreateAuthorizationRequest::resourceType,
+            CreateAuthorizationRequest::permissionTypes)
+        .containsExactlyInAnyOrder(
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.USER,
+                Set.of(PermissionType.READ)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.ROLE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.GROUP,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.SYSTEM,
+                Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)));
   }
 
   @Test

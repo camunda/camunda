@@ -7,6 +7,7 @@
  */
 package io.camunda.migration.identity.handler.saas;
 
+import static io.camunda.migration.identity.config.ResourceBasedAuthorizationConstants.RBA_IRRELEVANT_RESOURCE_TYPES;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
 
 import io.camunda.migration.api.MigrationException;
@@ -15,8 +16,10 @@ import io.camunda.migration.identity.dto.NoopDTO;
 import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
+import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHandler<NoopDTO> {
 
@@ -25,6 +28,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
   private final AtomicInteger totalRolePermissions = new AtomicInteger();
   private final AtomicInteger createdAuthorizations = new AtomicInteger();
   private final AtomicInteger skippedAuthorizations = new AtomicInteger();
+  private boolean resourceBasedAuthorizationsEnabled = false;
 
   public StaticConsoleRoleAuthorizationMigrationHandler(
       final AuthorizationServices authorizationServices,
@@ -32,6 +36,7 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
       final IdentityMigrationProperties migrationProperties) {
     super(migrationProperties.getBackpressureDelay());
     this.authorizationServices = authorizationServices.withAuthentication(servicesAuthentication);
+    resourceBasedAuthorizationsEnabled = migrationProperties.isResourceAuthorizationsEnabled();
   }
 
   @Override
@@ -42,9 +47,18 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
 
   @Override
   protected void process(final List<NoopDTO> batch) {
-    totalRolePermissions.set(ROLE_PERMISSIONS.size());
+    List<CreateAuthorizationRequest> rolePermissionsToCreate = ROLE_PERMISSIONS;
 
-    ROLE_PERMISSIONS.forEach(
+    if (resourceBasedAuthorizationsEnabled) {
+      rolePermissionsToCreate =
+          ROLE_PERMISSIONS.stream()
+              .filter(auth -> RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()))
+              .collect(Collectors.toList());
+    }
+
+    totalRolePermissions.set(rolePermissionsToCreate.size());
+
+    rolePermissionsToCreate.forEach(
         request -> {
           try {
             retryOnBackpressure(

@@ -36,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
 
   private final AuthorizationServices authorizationServices;
-  private final StaticConsoleRoleAuthorizationMigrationHandler migrationHandler;
+  private StaticConsoleRoleAuthorizationMigrationHandler migrationHandler;
 
   public StaticConsoleRoleAuthorizationMigrationHandlerTest(
       @Mock(answer = Answers.RETURNS_SELF) final AuthorizationServices authorizationServices) {
@@ -58,6 +58,29 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
     verify(authorizationServices, times(25)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
     assertThat(requests).containsExactlyElementsOf(ROLE_PERMISSIONS);
+  }
+
+  @Test
+  public void shouldMigrateRoleAuthorizationsExceptRBARelevantResourceTypes() {
+    // given
+    final var migrationProperties = new IdentityMigrationProperties();
+    migrationProperties.setResourceAuthorizationsEnabled(true);
+    migrationHandler =
+        new StaticConsoleRoleAuthorizationMigrationHandler(
+            authorizationServices, CamundaAuthentication.none(), migrationProperties);
+
+    // when
+    when(authorizationServices.createAuthorization(Mockito.any()))
+        .thenReturn(CompletableFuture.completedFuture(new AuthorizationRecord()));
+    migrationHandler.migrate();
+
+    // then
+    final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
+    verify(authorizationServices, times(6)).createAuthorization(results.capture());
+    final var requests = results.getAllValues();
+    assertThat(requests)
+        .containsExactlyElementsOf(
+            ROLE_PERMISSIONS.stream().filter(entry -> !"*".equals(entry.resourceId())).toList());
   }
 
   @Test
