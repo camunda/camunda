@@ -191,5 +191,14 @@ async function requestAndParse<T>(
   }
 }
 
-export {request, requestAndParse, requestWithThrow};
+function isRequestError(error: unknown): error is RequestError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    'variant' in error &&
+    (error.variant === 'network-error' || error.variant === 'failed-response')
+  );
+}
+
+export {request, requestAndParse, requestWithThrow, isRequestError};
 export type {RequestError, RequestResult};
