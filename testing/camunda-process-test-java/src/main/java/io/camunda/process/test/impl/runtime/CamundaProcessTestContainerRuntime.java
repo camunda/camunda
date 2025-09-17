@@ -129,13 +129,13 @@ public class CamundaProcessTestContainerRuntime
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withEnv(builder.getCamundaEnvVars())
             .withAccessToHost(true);
 
     if (isMultiTenancyEnabled) {
       container.withMultiTenancy();
     }
 
+    container.withEnv(builder.getCamundaEnvVars());
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
@@ -155,13 +155,13 @@ public class CamundaProcessTestContainerRuntime
             .withZeebeGrpcApi(CAMUNDA_GRPC_API)
             .withOperateApi(CAMUNDA_REST_API)
             .withEnv(builder.getConnectorsSecrets())
-            .withEnv(builder.getConnectorsEnvVars())
             .withAccessToHost(true);
 
     if (isMultiTenancyEnabled) {
       container.withMultiTenancy();
     }
 
+    container.withEnv(builder.getConnectorsEnvVars());
     builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
 
     return container;
