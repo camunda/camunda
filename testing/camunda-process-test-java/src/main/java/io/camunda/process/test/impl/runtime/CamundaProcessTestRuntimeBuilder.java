@@ -15,7 +15,6 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
@@ -239,15 +238,8 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withCredentialsProvider(
-      final CredentialsProvider credentialsProvider) {
-    this.remoteCamundaClientBuilderFactory =
-        () -> remoteCamundaClientBuilderFactory.get().credentialsProvider(credentialsProvider);
-    return this;
-  }
-
   public CamundaProcessTestRuntimeBuilder withMultitenancyEnabled(final boolean enabled) {
-    this.isMultitenancyEnabled = enabled;
+    isMultitenancyEnabled = enabled;
     return this;
   }
 
