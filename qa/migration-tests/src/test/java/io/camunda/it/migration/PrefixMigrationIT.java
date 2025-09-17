@@ -12,15 +12,12 @@ import static io.camunda.zeebe.qa.util.cluster.TestZeebePort.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
-import co.elastic.clients.elasticsearch.core.SearchResponse;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.application.commons.migration.PrefixMigrationHelper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.adapters.ClientAdapter;
+import io.camunda.it.migration.util.PrefixMigrationUtils;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
@@ -39,16 +36,13 @@ import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
 import java.net.URI;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.Collections;
-import java.util.List;
 import java.util.UUID;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -71,7 +65,6 @@ import org.testcontainers.utility.DockerImageName;
 public class PrefixMigrationIT {
   public static final String OLD_OPERATE_PREFIX = "operate-dev";
   public static final String OLD_TASKLIST_PREFIX = "tasklist-dev";
-  private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationIT.class);
   private static final String DEFAULT_ES_OS_URL_FOR_MULTI_DB =
       "http://host.testcontainers.internal:9200";
   private static final int TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION = 34;
@@ -120,19 +113,23 @@ public class PrefixMigrationIT {
 
     camundaContainer.stop();
 
-    // when
-    prefixMigration(oldOperatePrefix, oldTasklistPrefix, newPrefix);
-
-    // then
     final var connectConfig = new ConnectConfiguration();
     if (currentMultiDbDatabaseType() == DatabaseType.OS
         || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
       connectConfig.setType("opensearch");
     }
 
-    final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
     final var expectedDescriptors =
         new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ES);
+
+    // generate 2 dated indices for each index template of interest
+    generateDatedIndices(connectConfig, expectedDescriptors, oldTasklistPrefix, oldOperatePrefix);
+
+    // when
+    prefixMigration(oldOperatePrefix, oldTasklistPrefix, newPrefix);
+
+    // then
+    final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
 
     assertIndices(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
 
@@ -154,138 +151,9 @@ public class PrefixMigrationIT {
     setupHelper.close();
   }
 
-  private static void assertIndices(
-      final ConnectConfiguration connectConfig,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix,
-      final String newPrefix)
-      throws IOException {
-
-    if (connectConfig.getTypeEnum().isElasticSearch()) {
-      verifyAliasesElasticsearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
-    } else {
-      verifyAliasesOpensearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
-    }
-  }
-
-  private static void verifyAliasesElasticsearch(
-      final ConnectConfiguration connectConfig,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix,
-      final String newPrefix)
-      throws IOException {
-
-    final var client = new ElasticsearchConnector(connectConfig).createClient();
-    final var descriptors = new IndexDescriptors(newPrefix, true);
-
-    // Assert that all expected Tasklist aliases are matched to the new indices
-    final var tasklistAliases =
-        client.indices().getAlias(a -> a.name(newPrefix + "-tasklist*")).result();
-    assertThat(tasklistAliases).hasSameSizeAs(PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE);
-    PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.forEach(
-        descriptorCls -> {
-          final var descriptor =
-              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
-          assertThat(tasklistAliases).containsKey(descriptor.getFullQualifiedName());
-          assertThat(tasklistAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
-        });
-
-    // Assert that all expected Operate aliases are matched to the new indices
-    final var operateAliases =
-        client.indices().getAlias(a -> a.name(newPrefix + "-operate*")).result();
-    assertThat(operateAliases).hasSameSizeAs(PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE);
-    PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.forEach(
-        descriptorCls -> {
-          final var descriptor =
-              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
-          assertThat(operateAliases).containsKey(descriptor.getFullQualifiedName());
-          assertThat(operateAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
-        });
-
-    // Assert that no leftover alias matches a new index
-    final var oldTasklistAliases =
-        client.indices().getAlias(a -> a.name(oldTasklistPrefix + "-*")).result();
-    descriptors
-        .all()
-        .forEach(
-            desc -> assertThat(oldTasklistAliases).doesNotContainKey(desc.getFullQualifiedName()));
-
-    // Assert that no leftover alias matches a new index
-    final var oldOperateAliases =
-        client.indices().getAlias(a -> a.name(oldOperatePrefix + "-*")).result();
-    descriptors
-        .all()
-        .forEach(
-            desc -> assertThat(oldOperateAliases).doesNotContainKey(desc.getFullQualifiedName()));
-  }
-
-  private static void verifyAliasesOpensearch(
-      final ConnectConfiguration connectConfig,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix,
-      final String newPrefix)
-      throws IOException {
-
-    final var client = new OpensearchConnector(connectConfig).createClient();
-    final var descriptors = new IndexDescriptors(newPrefix, true);
-
-    // Assert that all expected Tasklist aliases are matched to the new indices
-    final var tasklistAliases =
-        client.indices().getAlias(a -> a.name(newPrefix + "-tasklist*")).result();
-    assertThat(tasklistAliases).hasSameSizeAs(PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE);
-    PrefixMigrationHelper.TASKLIST_INDICES_TO_MIGRATE.forEach(
-        descriptorCls -> {
-          final var descriptor =
-              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
-          assertThat(tasklistAliases).containsKey(descriptor.getFullQualifiedName());
-          assertThat(tasklistAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
-        });
-
-    // Assert that all expected Operate aliases are matched to the new indices
-    final var operateAliases =
-        client.indices().getAlias(a -> a.name(newPrefix + "-operate*")).result();
-    assertThat(operateAliases).hasSameSizeAs(PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE);
-    PrefixMigrationHelper.OPERATE_INDICES_TO_MIGRATE.forEach(
-        descriptorCls -> {
-          final var descriptor =
-              PrefixMigrationHelper.getDescriptor(descriptorCls, descriptors, newPrefix, true);
-          assertThat(operateAliases).containsKey(descriptor.getFullQualifiedName());
-          assertThat(operateAliases.get(descriptor.getFullQualifiedName()).aliases()).hasSize(1);
-        });
-
-    // Assert that no leftover alias matches a new index
-    final var oldTasklistAliases =
-        client.indices().getAlias(a -> a.name(oldTasklistPrefix + "-*")).result();
-    descriptors
-        .all()
-        .forEach(
-            desc -> assertThat(oldTasklistAliases).doesNotContainKey(desc.getFullQualifiedName()));
-
-    // Assert that no leftover alias matches a new index
-    final var oldOperateAliases =
-        client.indices().getAlias(a -> a.name(oldOperatePrefix + "-*")).result();
-    descriptors
-        .all()
-        .forEach(
-            desc -> assertThat(oldOperateAliases).doesNotContainKey(desc.getFullQualifiedName()));
-  }
-
   @Test
-  void shouldReindexDocumentsDuringPrefixMigration() throws IOException {
+  void shouldReindexDocumentsDuringPrefixMigration() {
     // given
-    LOG.info("Starting shouldReindexDocumentsDuringPrefixMigration");
-    final var esClient =
-        currentMultiDbDatabaseType() == DatabaseType.ES
-            ? new ElasticsearchConnector(new SearchEngineConnectProperties()).createClient()
-            : null;
-
-    final var osConfig = new SearchEngineConnectProperties();
-    osConfig.setType("opensearch");
-    final var osClient =
-        currentMultiDbDatabaseType() == DatabaseType.OS
-            ? new OpensearchConnector(osConfig).createClient()
-            : null;
-
     final var camunda87 = createCamundaContainer();
     camunda87.start();
 
@@ -329,25 +197,8 @@ public class PrefixMigrationIT {
     camunda87Client.close();
     operateClient.close();
 
-    LOG.info("State of documents before migration");
-    LOG.info("---------------------------------------");
-    printDocuments(
-        esClient,
-        osClient,
-        List.of(
-            OLD_OPERATE_PREFIX + "*",
-            "-*migration-steps*",
-            "-*user-1.2.0_*",
-            "-*import-position*"));
-    LOG.info("---------------------------------------");
     // when
     prefixMigration(OLD_OPERATE_PREFIX, OLD_TASKLIST_PREFIX, "prefixmigrationit");
-
-    LOG.info("After migration docs in migrated indices starting with 'prefixmigrationit'");
-    LOG.info("---------------------------------------");
-    printDocuments(
-        esClient, osClient, List.of("prefixmigrationit*", "-*prefixmigrationit-camunda*"));
-    LOG.info("---------------------------------------");
 
     try {
       STANDALONE_CAMUNDA.start();
@@ -366,36 +217,6 @@ public class PrefixMigrationIT {
       }
     } finally {
       STANDALONE_CAMUNDA.stop();
-    }
-  }
-
-  private void printDocuments(
-      final ElasticsearchClient esClient,
-      final OpenSearchClient osClient,
-      final List<String> indices)
-      throws IOException {
-
-    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
-      esClient.indices().refresh();
-      final SearchResponse<Object> response =
-          esClient.search(
-              SearchRequest.of(s -> s.index(indices).query(q -> q.matchAll(m -> m)).size(10000)),
-              Object.class);
-
-      // Process results
-      response.hits().hits().forEach(hit -> LOG.info("Index: {}, ID: {}", hit.index(), hit.id()));
-      LOG.info("COUNT: {}", response.hits().total().value());
-    } else if (currentMultiDbDatabaseType() == DatabaseType.OS) {
-      osClient.indices().refresh();
-      final org.opensearch.client.opensearch.core.SearchResponse<Object> response =
-          osClient.search(
-              org.opensearch.client.opensearch.core.SearchRequest.of(
-                  s -> s.index(indices).query(q -> q.matchAll(m -> m)).size(10000)),
-              Object.class);
-
-      // Process results
-      response.hits().hits().forEach(hit -> LOG.info("Index: {}, ID: {}", hit.index(), hit.id()));
-      LOG.info("COUNT: {}", response.hits().total().value());
     }
   }
 
@@ -499,5 +320,116 @@ public class PrefixMigrationIT {
     try (final var app = new TestPrefixMigrationApp(connect, tasklist, operate)) {
       app.start();
     }
+  }
+
+  private void generateDatedIndices(
+      final ConnectConfiguration configuration,
+      final IndexDescriptors descriptors,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix) {
+    final var dateNow = LocalDate.now();
+    final var dateYesterday = LocalDate.now().minusDays(1);
+    final var suffixNow =
+        "%d-%02d-%02d"
+            .formatted(dateNow.getYear(), dateNow.getMonthValue(), dateNow.getDayOfMonth());
+    final var suffixYesterday =
+        "%d-%02d-%02d"
+            .formatted(
+                dateYesterday.getYear(),
+                dateYesterday.getMonthValue(),
+                dateYesterday.getDayOfMonth());
+    if (configuration.getTypeEnum().isElasticSearch()) {
+      PrefixMigrationUtils.generateDatedIndicesElasticsearch(
+          configuration,
+          descriptors,
+          oldTasklistPrefix,
+          oldOperatePrefix,
+          suffixNow,
+          suffixYesterday);
+    } else {
+      PrefixMigrationUtils.generateDatedIndicesOpensearch(
+          configuration,
+          descriptors,
+          oldTasklistPrefix,
+          oldOperatePrefix,
+          suffixNow,
+          suffixYesterday);
+    }
+  }
+
+  private static void assertIndices(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    if (connectConfig.getTypeEnum().isElasticSearch()) {
+      verifyAliasesElasticsearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+    } else {
+      verifyAliasesOpensearch(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+    }
+  }
+
+  private static void verifyAliasesElasticsearch(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    final var client = new ElasticsearchConnector(connectConfig).createClient();
+    final var descriptors = new IndexDescriptors(newPrefix, true);
+
+    final var tasklistAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, newPrefix + "-tasklist*");
+
+    final var operateAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, newPrefix + "-operate*");
+
+    final var oldTasklistAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, oldTasklistPrefix + "-*");
+
+    final var oldOperateAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, oldOperatePrefix + "-*");
+
+    PrefixMigrationUtils.verifyIndexAliasMappings(
+        newPrefix,
+        tasklistAliases,
+        descriptors,
+        operateAliases,
+        oldTasklistAliases,
+        oldOperateAliases);
+  }
+
+  private static void verifyAliasesOpensearch(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix,
+      final String newPrefix)
+      throws IOException {
+
+    final var client = new OpensearchConnector(connectConfig).createClient();
+    final var descriptors = new IndexDescriptors(newPrefix, false);
+
+    final var tasklistAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, newPrefix + "-tasklist*");
+
+    final var operateAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, newPrefix + "-operate*");
+
+    final var oldTasklistAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, oldTasklistPrefix + "-*");
+
+    final var oldOperateAliases =
+        PrefixMigrationUtils.getAliasIndexMap(client, oldOperatePrefix + "-*");
+
+    PrefixMigrationUtils.verifyIndexAliasMappings(
+        newPrefix,
+        tasklistAliases,
+        descriptors,
+        operateAliases,
+        oldTasklistAliases,
+        oldOperateAliases);
   }
 }
