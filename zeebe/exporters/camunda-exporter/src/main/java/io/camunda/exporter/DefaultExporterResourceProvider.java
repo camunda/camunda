@@ -54,7 +54,7 @@ import io.camunda.exporter.handlers.TenantCreateUpdateHandler;
 import io.camunda.exporter.handlers.TenantDeletedHandler;
 import io.camunda.exporter.handlers.TenantEntityAddedHandler;
 import io.camunda.exporter.handlers.TenantEntityRemovedHandler;
-import io.camunda.exporter.handlers.UsageMetricHandler;
+import io.camunda.exporter.handlers.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
@@ -308,7 +308,7 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ListViewFromIncidentResolutionOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
-            new UsageMetricHandler(
+            new UsageMetricExportedHandler(
                 indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
                 indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
             new CorrelatedMessageFromMessageStartEventSubscriptionHandler(

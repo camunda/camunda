@@ -78,7 +78,7 @@ public final class SearchQueryRequestMapper {
               final var endDateTime = validateDate(endTime, "endTime", violations);
               if (startDateTime != null
                   && endDateTime != null
-                  && endDateTime.isBefore(startDateTime)) {
+                  && !endDateTime.isAfter(startDateTime)) {
                 violations.add("The endTime must be after startTime");
               }
             }),

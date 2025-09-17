@@ -13,7 +13,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import io.camunda.exporter.exceptions.PersistenceException;
-import io.camunda.exporter.handlers.UsageMetricHandler.UsageMetricsBatch;
+import io.camunda.exporter.handlers.UsageMetricExportedHandler.UsageMetricsBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
@@ -42,7 +42,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-class UsageMetricHandlerTest {
+class UsageMetricExportedHandlerTest {
 
   private static final String TENANT_1 = "tenant1";
   private static final String TENANT_2 = "tenant2";
@@ -56,7 +56,8 @@ class UsageMetricHandlerTest {
   private final ProtocolFactory factory = new ProtocolFactory();
   private final String indexName = "test-usage-metrics";
   private final String tuIndexName = "test-usage-metrics-tu";
-  private final UsageMetricHandler underTest = new UsageMetricHandler(indexName, tuIndexName);
+  private final UsageMetricExportedHandler underTest =
+      new UsageMetricExportedHandler(indexName, tuIndexName);
 
   @Test
   void testGetHandledValueType() {
