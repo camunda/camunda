@@ -220,4 +220,136 @@ public interface TypedApiEntityConsumer<T> {
       return bufferedBytes;
     }
   }
+
+  class TextStreamJsonApiEntityConsumer<T> implements TypedApiEntityConsumer<T> {
+    private static final Logger LOG =
+        LoggerFactory.getLogger(TextStreamJsonApiEntityConsumer.class);
+    private final ObjectMapper mapper;
+    private final Class<T> type;
+    private final boolean isResponse;
+    private final ByteArrayOutputStream lineBuf = new ByteArrayOutputStream(1024);
+    private int bufferedBytes;
+    private T lastItem; // last parsed payload (for responses)
+    private ProblemDetail lastProblem; // last parsed problem (for errors)
+    private final StringBuilder sseData =
+        new StringBuilder(); // accumulates current SSE event's data
+
+    TextStreamJsonApiEntityConsumer(
+        final ObjectMapper mapper, final Class<T> type, final boolean isResponse) {
+      this.mapper = mapper;
+      this.type = type;
+      this.isResponse = isResponse;
+    }
+
+    private void processLine(final String line) {
+      if (line.isEmpty()) {
+        // blank line => end of event
+        finishSseEvent();
+        return;
+      }
+      if (line.startsWith(":")) {
+        return; // sse comment, ignore
+      }
+      if (line.startsWith("data:")) {
+        // per spec: everything after the first colon, strip one leading space if present
+        String v = line.substring(5);
+        if (!v.isEmpty() && v.charAt(0) == ' ') {
+          v = v.substring(1);
+        }
+        if (sseData.length() > 0) {
+          sseData.append('\n');
+        }
+        sseData.append(v);
+      }
+      // we ignore 'event:'/'id:' for this one-shot use-case
+    }
+
+    private void finishSseEvent() {
+      if (sseData.length() == 0) {
+        return;
+      }
+      parseJson(sseData.toString());
+      sseData.setLength(0);
+    }
+
+    private void parseJson(final String json) {
+      try {
+        if (isResponse) {
+          lastItem = mapper.readValue(json, type);
+        } else {
+          lastProblem = mapper.readValue(json, ProblemDetail.class);
+        }
+      } catch (final IOException e) {
+        LOG.warn("Failed to parse streaming JSON chunk: {}", json, e);
+        // Keep best-effort behavior: wrap as ProblemDetail if response mode
+        if (isResponse) {
+          lastProblem =
+              new ProblemDetail()
+                  .title("Cannot parse streaming JSON payload")
+                  .status(500)
+                  .detail(e.getMessage());
+        }
+      }
+    }
+
+    @Override
+    public ApiEntity<T> generateContent() {
+      if (isResponse) {
+        if (lastItem != null) {
+          return ApiEntity.of(lastItem);
+        }
+        if (lastProblem != null) {
+          return ApiEntity.of(lastProblem);
+        }
+        return null;
+      } else {
+        if (lastProblem != null) {
+          return ApiEntity.of(lastProblem);
+        }
+        // if server streamed a successful payload to an error-typed consumer, treat as problem
+        return ApiEntity.of(
+            new ProblemDetail().title("Empty streaming response").status(204).detail("No content"));
+      }
+    }
+
+    @Override
+    public void consumeData(final ByteBuffer src, final boolean endOfStream) throws IOException {
+      final int rem = src.remaining();
+      bufferedBytes += rem;
+
+      // Feed bytes line-by-line
+      while (src.hasRemaining()) {
+        final byte b = src.get();
+        if (b == '\n') {
+          processLine(lineBuf.toString(StandardCharsets.UTF_8.name()));
+          lineBuf.reset();
+        } else if (b == '\r') {
+          // ignore, handle \r\n
+        } else {
+          lineBuf.write(b);
+        }
+      }
+
+      if (endOfStream) {
+        // flush last partial line
+        if (lineBuf.size() > 0) {
+          processLine(lineBuf.toString(StandardCharsets.UTF_8.name()));
+          lineBuf.reset();
+        }
+        // finalize any pending SSE event
+        finishSseEvent();
+      }
+    }
+
+    @Override
+    public void releaseResources() {
+      bufferedBytes = 0;
+      sseData.setLength(0);
+    }
+
+    @Override
+    public int getBufferedBytes() {
+      return bufferedBytes;
+    }
+  }
 }

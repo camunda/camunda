@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
+import io.camunda.client.impl.http.TypedApiEntityConsumer.TextStreamJsonApiEntityConsumer;
 import io.camunda.client.protocol.rest.ProblemDetail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -70,6 +71,8 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
       entityConsumer = new RawApiEntityConsumer<>(true, chunkSize);
     } else if (ContentType.APPLICATION_JSON.isSameMimeType(contentType)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, true);
+    } else if (ContentType.TEXT_EVENT_STREAM.isSameMimeType(contentType)) {
+      entityConsumer = new TextStreamJsonApiEntityConsumer<>(json, type, true);
     } else {
       final boolean isResponse =
           String.class.equals(type)
