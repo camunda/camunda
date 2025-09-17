@@ -89,10 +89,11 @@ public class CamundaProcessTestContainerRuntime
     connectorsContainer = createConnectorsContainer(network, builder);
 
     if (isMultiTenancyEnabled) {
-      LOGGER.info(
-          "Multitenancy has been enabled. The API is now secured and requires basic "
-              + "authentication. Please see the CamundaContainer.MultitenancyConfiguration and "
-              + "ContainerRuntimeEnvs for more information.");
+      LOGGER.debug(
+          "Multi-tenancy has been enabled. The API is now secured and requires basic "
+              + "authentication. An admin user is created. [username: '{}', password: '{}']",
+          MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+          MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
     }
   }
 
