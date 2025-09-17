@@ -31,9 +31,16 @@ const buildMutationRequestBody = ({
     | CreateCancellationBatchOperationRequestBody = {
     filter: {
       elementId: baseFilter.activityId,
-      hasIncident: baseFilter.incidents,
     },
   };
+
+  if (baseFilter.incidents && baseFilter.active) {
+    requestBody.filter.$or = [{hasIncident: true}, {state: {$eq: 'ACTIVE'}}];
+  } else if (baseFilter.incidents) {
+    requestBody.filter.hasIncident = true;
+  } else if (baseFilter.active) {
+    requestBody.filter.state = {$eq: 'ACTIVE'};
+  }
 
   const keyCriterion = buildProcessInstanceKeyCriterion(includeIds, excludeIds);
   if (keyCriterion) {
