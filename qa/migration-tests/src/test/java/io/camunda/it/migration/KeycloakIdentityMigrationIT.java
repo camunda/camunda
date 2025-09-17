@@ -364,6 +364,88 @@ public class KeycloakIdentityMigrationIT {
   }
 
   @Test
+  public void canMigrateRolesWithRBAEnabled() {
+    // given
+    migration.withAppConfig(properties -> properties.setResourceAuthorizationsEnabled(true));
+
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var roles = client.newRolesSearchRequest().send().join();
+              assertThat(roles.items())
+                  .extracting(Role::getRoleId)
+                  .contains("operate", "tasklist", "zeebe", "identity");
+
+              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              assertThat(authorizations.items())
+                  .extracting(Authorization::getOwnerId)
+                  .contains("operate", "tasklist", "zeebe", "identity");
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final var roles = client.newRolesSearchRequest().send().join();
+    assertThat(roles.items())
+        .extracting(Role::getRoleId, Role::getName)
+        .contains(
+            tuple("operate", "Operate"),
+            tuple("tasklist", "Tasklist"),
+            tuple("zeebe", "Zeebe"),
+            tuple("identity", "Identity"));
+
+    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    assertThat(authorizations.items())
+        .extracting(
+            Authorization::getOwnerId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
+        .contains(
+            tuple("operate", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
+            tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
+            tuple(
+                "identity",
+                ResourceType.GROUP,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.ROLE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
+            tuple("identity", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)));
+  }
+
+  @Test
   public void canMigrateGroups() {
     // when
     migration.start();

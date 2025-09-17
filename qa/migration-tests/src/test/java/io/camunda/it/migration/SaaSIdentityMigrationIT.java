@@ -505,6 +505,81 @@ public class SaaSIdentityMigrationIT {
   }
 
   @Test
+  public void canMigratePermissionsWithRBAEnabled() {
+    // given
+    migration.withAppConfig(properties -> properties.setResourceAuthorizationsEnabled(true));
+
+    // when
+    migration.start();
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(5))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authorizations =
+                  client.newAuthorizationSearchRequest().send().join().items();
+              final var migratedAuthorizations =
+                  authorizations.stream()
+                      .map(Authorization::getOwnerId)
+                      .filter(ROLE_IDS::contains)
+                      .toList();
+              assertThat(migratedAuthorizations.size()).isEqualTo(6);
+            });
+
+    // then
+    assertThat(migration.getExitCode()).isEqualTo(0);
+
+    final SearchResponse<Authorization> newResponse =
+        client.newAuthorizationSearchRequest().send().join();
+    assertThat(newResponse.items())
+        .extracting(
+            Authorization::getOwnerId,
+            Authorization::getOwnerType,
+            Authorization::getResourceId,
+            Authorization::getResourceType,
+            a -> new HashSet<>(a.getPermissionTypes()))
+        .contains(
+            // Role permissions
+            tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                DEVELOPER_ROLE_ID,
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                OPERATIONS_ENGINEER_ROLE_ID,
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                TASK_USER_ROLE_ID,
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "operate",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                VISITOR_ROLE_ID,
+                OwnerType.ROLE,
+                "tasklist",
+                ResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)));
+  }
+
+  @Test
   public void canMigrateAuthorizations()
       throws URISyntaxException, IOException, InterruptedException {
     // when
