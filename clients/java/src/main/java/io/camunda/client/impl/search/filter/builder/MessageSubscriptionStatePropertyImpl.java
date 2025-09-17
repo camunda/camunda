@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.MessageSubscriptionStatePrope
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedMessageSubscriptionStateFilter;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateFilterProperty;
 import java.util.List;
@@ -30,8 +29,8 @@ public class MessageSubscriptionStatePropertyImpl
     extends TypedSearchRequestPropertyProvider<MessageSubscriptionStateFilterProperty>
     implements MessageSubscriptionStateProperty {
 
-  private final AdvancedMessageSubscriptionStateFilter filterProperty =
-      new AdvancedMessageSubscriptionStateFilter();
+  private final MessageSubscriptionStateFilterProperty filterProperty =
+      new MessageSubscriptionStateFilterProperty();
 
   @Override
   public MessageSubscriptionStateProperty eq(final MessageSubscriptionState value) {

@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.JobStateProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedJobStateFilter;
 import io.camunda.client.protocol.rest.JobStateEnum;
 import io.camunda.client.protocol.rest.JobStateFilterProperty;
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 public class JobStatePropertyImpl extends TypedSearchRequestPropertyProvider<JobStateFilterProperty>
     implements JobStateProperty {
 
-  private final AdvancedJobStateFilter filterProperty = new AdvancedJobStateFilter();
+  private final JobStateFilterProperty filterProperty = new JobStateFilterProperty();
 
   @Override
   public JobStateProperty eq(final JobState value) {

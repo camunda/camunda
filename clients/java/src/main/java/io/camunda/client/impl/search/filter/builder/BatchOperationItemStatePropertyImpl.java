@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.BatchOperationItemStateProper
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedBatchOperationItemStateFilter;
 import io.camunda.client.protocol.rest.BatchOperationItemStateEnum;
 import io.camunda.client.protocol.rest.BatchOperationItemStateFilterProperty;
 import java.util.List;
@@ -30,8 +29,8 @@ public class BatchOperationItemStatePropertyImpl
     extends TypedSearchRequestPropertyProvider<BatchOperationItemStateFilterProperty>
     implements BatchOperationItemStateProperty {
 
-  private final AdvancedBatchOperationItemStateFilter filterProperty =
-      new AdvancedBatchOperationItemStateFilter();
+  private final BatchOperationItemStateFilterProperty filterProperty =
+      new BatchOperationItemStateFilterProperty();
 
   @Override
   public BatchOperationItemStateProperty eq(final BatchOperationItemState value) {

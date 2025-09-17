@@ -344,7 +344,6 @@
             <java8>true</java8>
             <openApiNullable>false</openApiNullable>
             <serializationLibrary>jackson</serializationLibrary>
-            <useOneOfInterfaces>true</useOneOfInterfaces>
             <useReflectionEqualsHashCode>false</useReflectionEqualsHashCode>
           </configOptions>
         </configuration>

@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.BatchOperationTypeProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedBatchOperationTypeFilter;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
 import io.camunda.client.protocol.rest.BatchOperationTypeFilterProperty;
 import java.util.List;
@@ -30,8 +29,8 @@ public class BatchOperationTypePropertyImpl
     extends TypedSearchRequestPropertyProvider<BatchOperationTypeFilterProperty>
     implements BatchOperationTypeProperty {
 
-  private final AdvancedBatchOperationTypeFilter filterProperty =
-      new AdvancedBatchOperationTypeFilter();
+  private final BatchOperationTypeFilterProperty filterProperty =
+      new BatchOperationTypeFilterProperty();
 
   @Override
   public BatchOperationTypeProperty eq(final BatchOperationType value) {

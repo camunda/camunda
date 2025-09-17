@@ -26,9 +26,12 @@ import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.JobFilter;
 import io.camunda.client.protocol.rest.JobKindEnum;
+import io.camunda.client.protocol.rest.JobKindFilterProperty;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
+import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
 import io.camunda.client.protocol.rest.JobStateEnum;
+import io.camunda.client.protocol.rest.JobStateFilterProperty;
 import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
@@ -95,55 +98,48 @@ public class SearchJobTest extends ClientRestTest {
     final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter().getJobKey()).isNotNull();
-    assertThat(request.getFilter().getJobKey()).extracting("$eq").isEqualTo("123");
+    assertThat(request.getFilter().getJobKey().get$Eq()).isEqualTo("123");
     assertThat(request.getFilter().getType()).isNotNull();
-    assertThat(request.getFilter().getType()).extracting("$eq").isEqualTo("type1");
+    assertThat(request.getFilter().getType().get$Eq()).isEqualTo("type1");
     assertThat(request.getFilter().getWorker()).isNotNull();
-    assertThat(request.getFilter().getWorker()).extracting("$neq").isEqualTo("worker1");
+    assertThat(request.getFilter().getWorker().get$Neq()).isEqualTo("worker1");
     assertThat(request.getFilter().getState()).isNotNull();
-    assertThat(request.getFilter().getState())
-        .extracting("$in")
+    assertThat(request.getFilter().getState().get$In())
         .isEqualTo(Arrays.asList(JobStateEnum.COMPLETED, JobStateEnum.FAILED));
     assertThat(request.getFilter().getKind()).isNotNull();
-    assertThat(request.getFilter().getKind()).extracting("$eq").isEqualTo(JobKindEnum.BPMN_ELEMENT);
+    assertThat(request.getFilter().getKind().get$Eq()).isEqualTo(JobKindEnum.BPMN_ELEMENT);
     assertThat(request.getFilter().getListenerEventType()).isNotNull();
-    assertThat(request.getFilter().getListenerEventType())
-        .extracting("$eq")
+    assertThat(request.getFilter().getListenerEventType().get$Eq())
         .isEqualTo(JobListenerEventTypeEnum.ASSIGNING);
     assertThat(request.getFilter().getProcessDefinitionId()).isNotNull();
-    assertThat(request.getFilter().getProcessDefinitionId())
-        .extracting("$eq")
+    assertThat(request.getFilter().getProcessDefinitionId().get$Eq())
         .isEqualTo("processDefinitionId");
     assertThat(request.getFilter().getProcessDefinitionKey()).isNotNull();
-    assertThat(request.getFilter().getProcessDefinitionKey()).extracting("$eq").isEqualTo("200");
+    assertThat(request.getFilter().getProcessDefinitionKey().get$Eq()).isEqualTo("200");
     assertThat(request.getFilter().getProcessInstanceKey()).isNotNull();
-    assertThat(request.getFilter().getProcessInstanceKey()).extracting("$eq").isEqualTo("300");
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("300");
     assertThat(request.getFilter().getElementId()).isNotNull();
-    assertThat(request.getFilter().getElementId()).extracting("$exists").isEqualTo(true);
+    assertThat(request.getFilter().getElementId().get$Exists()).isEqualTo(true);
     assertThat(request.getFilter().getElementInstanceKey()).isNotNull();
-    assertThat(request.getFilter().getElementInstanceKey()).extracting("$eq").isEqualTo("400");
+    assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("400");
     assertThat(request.getFilter().getTenantId()).isNotNull();
-    assertThat(request.getFilter().getTenantId()).extracting("$like").isEqualTo("tenantId");
+    assertThat(request.getFilter().getTenantId().get$Like()).isEqualTo("tenantId");
     assertThat(request.getFilter().getDeadline()).isNotNull();
-    assertThat(request.getFilter().getDeadline())
-        .extracting("$eq")
-        .isEqualTo(deadlineDate.toString());
+    assertThat(request.getFilter().getDeadline().get$Eq()).isEqualTo(deadlineDate.toString());
     assertThat(request.getFilter().getDeniedReason()).isNotNull();
-    assertThat(request.getFilter().getDeniedReason()).extracting("$eq").isEqualTo("deniedReason");
+    assertThat(request.getFilter().getDeniedReason().get$Eq()).isEqualTo("deniedReason");
     assertThat(request.getFilter().getEndTime()).isNotNull();
-    assertThat(request.getFilter().getEndTime())
-        .extracting("$eq")
-        .isEqualTo(endTimeDate.toString());
+    assertThat(request.getFilter().getEndTime().get$Eq()).isEqualTo(endTimeDate.toString());
     assertThat(request.getFilter().getErrorCode()).isNotNull();
-    assertThat(request.getFilter().getErrorCode()).extracting("$eq").isEqualTo("errorCode");
+    assertThat(request.getFilter().getErrorCode().get$Eq()).isEqualTo("errorCode");
     assertThat(request.getFilter().getErrorMessage()).isNotNull();
-    assertThat(request.getFilter().getErrorMessage()).extracting("$eq").isEqualTo("errorMessage");
+    assertThat(request.getFilter().getErrorMessage().get$Eq()).isEqualTo("errorMessage");
     assertThat(request.getFilter().getHasFailedWithRetriesLeft()).isNotNull();
     assertThat(request.getFilter().getHasFailedWithRetriesLeft()).isEqualTo(true);
     assertThat(request.getFilter().getIsDenied()).isNotNull();
     assertThat(request.getFilter().getIsDenied()).isEqualTo(false);
     assertThat(request.getFilter().getRetries()).isNotNull();
-    assertThat(request.getFilter().getRetries()).extracting("$eq").isEqualTo(3);
+    assertThat(request.getFilter().getRetries().get$Eq()).isEqualTo(3);
   }
 
   @ParameterizedTest
@@ -160,7 +156,7 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter())
         .extracting(JobFilter::getState)
-        .extracting("$eq")
+        .extracting(JobStateFilterProperty::get$Eq)
         .isEqualTo(JobStateEnum.valueOf(state.name()));
   }
 
@@ -178,7 +174,7 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter())
         .extracting(JobFilter::getKind)
-        .extracting("$eq")
+        .extracting(JobKindFilterProperty::get$Eq)
         .isEqualTo(JobKindEnum.valueOf(jobKind.name()));
   }
 
@@ -200,7 +196,7 @@ public class SearchJobTest extends ClientRestTest {
     assertThat(request.getFilter()).isNotNull();
     assertThat(request.getFilter())
         .extracting(JobFilter::getListenerEventType)
-        .extracting("$eq")
+        .extracting(JobListenerEventTypeFilterProperty::get$Eq)
         .isEqualTo(JobListenerEventTypeEnum.valueOf(listenerEventType.name()));
   }
 
@@ -291,9 +287,9 @@ public class SearchJobTest extends ClientRestTest {
     final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest).extracting("from").isEqualTo(3);
-    assertThat(pageRequest).extracting("limit").isEqualTo(5);
-    assertThat(pageRequest).extracting("before").isEqualTo("b");
-    assertThat(pageRequest).extracting("after").isEqualTo("a");
+    assertThat(pageRequest.getFrom()).isEqualTo(3);
+    assertThat(pageRequest.getLimit()).isEqualTo(5);
+    assertThat(pageRequest.getBefore()).isEqualTo("b");
+    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 }

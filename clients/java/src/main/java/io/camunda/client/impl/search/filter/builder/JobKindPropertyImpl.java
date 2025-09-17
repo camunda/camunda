@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.JobKindProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedJobKindFilter;
 import io.camunda.client.protocol.rest.JobKindEnum;
 import io.camunda.client.protocol.rest.JobKindFilterProperty;
 import java.util.List;
@@ -29,7 +28,7 @@ import java.util.stream.Collectors;
 public class JobKindPropertyImpl extends TypedSearchRequestPropertyProvider<JobKindFilterProperty>
     implements JobKindProperty {
 
-  private final AdvancedJobKindFilter filterProperty = new AdvancedJobKindFilter();
+  private final JobKindFilterProperty filterProperty = new JobKindFilterProperty();
 
   @Override
   public JobKindProperty eq(final JobKind value) {

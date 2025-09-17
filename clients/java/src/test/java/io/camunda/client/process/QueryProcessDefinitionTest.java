@@ -117,11 +117,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     final ProcessDefinitionFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("5");
-    assertThat(filter.getName()).extracting("$eq").isEqualTo("Order process");
+    assertThat(filter.getName().get$Eq()).isEqualTo("Order process");
     assertThat(filter.getResourceName()).isEqualTo("usertest/complex-process.bpmn");
     assertThat(filter.getVersion()).isEqualTo(2);
     assertThat(filter.getVersionTag()).isEqualTo("alpha");
-    assertThat(filter.getProcessDefinitionId()).extracting("$eq").isEqualTo("orderProcess");
+    assertThat(filter.getProcessDefinitionId().get$Eq()).isEqualTo("orderProcess");
     assertThat(filter.getTenantId()).isEqualTo("<default>");
   }
 
@@ -179,9 +179,9 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessDefinitionSearchQuery.class);
     final SearchQueryPageRequest pageRequest = request.getPage();
     assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest).extracting("from").isEqualTo(23);
-    assertThat(pageRequest).extracting("limit").isEqualTo(5);
-    assertThat(pageRequest).extracting("before").isEqualTo("b");
-    assertThat(pageRequest).extracting("after").isEqualTo("a");
+    assertThat(pageRequest.getFrom()).isEqualTo(23);
+    assertThat(pageRequest.getLimit()).isEqualTo(5);
+    assertThat(pageRequest.getBefore()).isEqualTo("b");
+    assertThat(pageRequest.getAfter()).isEqualTo("a");
   }
 }

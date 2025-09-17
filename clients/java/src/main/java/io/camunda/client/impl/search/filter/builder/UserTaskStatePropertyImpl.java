@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.UserTaskStateProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedUserTaskStateFilter;
 import io.camunda.client.protocol.rest.UserTaskStateEnum;
 import io.camunda.client.protocol.rest.UserTaskStateFilterProperty;
 import java.util.List;
@@ -30,7 +29,7 @@ public class UserTaskStatePropertyImpl
     extends TypedSearchRequestPropertyProvider<UserTaskStateFilterProperty>
     implements UserTaskStateProperty {
 
-  private final AdvancedUserTaskStateFilter filterProperty = new AdvancedUserTaskStateFilter();
+  private final UserTaskStateFilterProperty filterProperty = new UserTaskStateFilterProperty();
 
   @Override
   public UserTaskStateProperty eq(final UserTaskState value) {
@@ -51,17 +50,17 @@ public class UserTaskStatePropertyImpl
   }
 
   @Override
+  public UserTaskStateProperty in(final UserTaskState... values) {
+    return in(CollectionUtil.toList(values));
+  }
+
+  @Override
   public UserTaskStateProperty in(final List<UserTaskState> values) {
     filterProperty.set$In(
         values.stream()
             .map(source -> (EnumUtil.convert(source, UserTaskStateEnum.class)))
             .collect(Collectors.toList()));
     return this;
-  }
-
-  @Override
-  public UserTaskStateProperty in(final UserTaskState... values) {
-    return in(CollectionUtil.toList(values));
   }
 
   @Override

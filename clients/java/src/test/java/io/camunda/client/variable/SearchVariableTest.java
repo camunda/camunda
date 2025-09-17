@@ -43,7 +43,7 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getValue()).extracting("$eq").isEqualTo("demo");
+    assertThat(request.getFilter().getValue().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -53,7 +53,7 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getName()).extracting("$eq").isEqualTo("demo");
+    assertThat(request.getFilter().getName().get$Eq()).isEqualTo("demo");
   }
 
   @Test
@@ -63,9 +63,7 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getName())
-        .extracting("$in")
-        .isEqualTo(Arrays.asList("this", "that"));
+    assertThat(request.getFilter().getName().get$In()).isEqualTo(Arrays.asList("this", "that"));
   }
 
   @Test
@@ -75,7 +73,7 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getScopeKey()).extracting("$eq").isEqualTo("1");
+    assertThat(request.getFilter().getScopeKey().get$Eq()).isEqualTo("1");
   }
 
   @Test
@@ -85,7 +83,7 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getProcessInstanceKey()).extracting("$eq").isEqualTo("1");
+    assertThat(request.getFilter().getProcessInstanceKey().get$Eq()).isEqualTo("1");
   }
 
   @Test
@@ -104,7 +102,7 @@ public class SearchVariableTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
-    assertThat(processInstanceKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
+    assertThat(processInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -134,6 +132,6 @@ public class SearchVariableTest extends ClientRestTest {
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
-    assertThat(request.getFilter().getVariableKey()).extracting("$eq").isEqualTo("1");
+    assertThat(request.getFilter().getVariableKey().get$Eq()).isEqualTo("1");
   }
 }

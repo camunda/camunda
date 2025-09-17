@@ -18,13 +18,12 @@ package io.camunda.client.impl.search.filter.builder;
 import io.camunda.client.api.search.filter.builder.IntegerProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.AdvancedIntegerFilter;
 import io.camunda.client.protocol.rest.IntegerFilterProperty;
 import java.util.List;
 
 public class IntegerPropertyImpl extends TypedSearchRequestPropertyProvider<IntegerFilterProperty>
     implements IntegerProperty {
-  private final AdvancedIntegerFilter filterProperty = new AdvancedIntegerFilter();
+  private final IntegerFilterProperty filterProperty = new IntegerFilterProperty();
 
   @Override
   public IntegerProperty eq(final Integer value) {

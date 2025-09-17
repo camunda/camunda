@@ -48,8 +48,8 @@ public class VariableFilterMapper {
                         .name(entry.getKey())
                         .value(
                             entry.getValue() == null
-                                ? new AdvancedStringFilter()
-                                : new AdvancedStringFilter().$eq(entry.getValue().toString()))));
+                                ? new StringFilterProperty()
+                                : new StringFilterProperty().$eq(entry.getValue().toString()))));
   }
 
   static List<VariableValueFilterProperty> toVariableValueFilterProperty(
@@ -68,7 +68,7 @@ public class VariableFilterMapper {
 
   static VariableValueFilterProperty checkVariableValueNotNull(
       final VariableValueFilterProperty filter, final List<String> violations) {
-    if (filter.getValue() == null || filter.getValue().equals(new AdvancedStringFilter())) {
+    if (filter.getValue() == null || filter.getValue().equals(new StringFilterProperty())) {
       violations.add("Variable value cannot be null for variable '" + filter.getName() + "'");
     }
     return filter;

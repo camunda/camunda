@@ -20,7 +20,6 @@ import io.camunda.client.api.search.filter.builder.ProcessInstanceStateProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
 import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.AdvancedProcessInstanceStateFilter;
 import io.camunda.client.protocol.rest.ProcessInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessInstanceStateFilterProperty;
 import java.util.List;
@@ -29,8 +28,8 @@ import java.util.stream.Collectors;
 public class ProcessInstanceStatePropertyImpl
     extends TypedSearchRequestPropertyProvider<ProcessInstanceStateFilterProperty>
     implements ProcessInstanceStateProperty {
-  private final AdvancedProcessInstanceStateFilter filterProperty =
-      new AdvancedProcessInstanceStateFilter();
+  private final ProcessInstanceStateFilterProperty filterProperty =
+      new ProcessInstanceStateFilterProperty();
 
   @Override
   public ProcessInstanceStateProperty eq(final ProcessInstanceState value) {

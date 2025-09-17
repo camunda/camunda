@@ -19,8 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationInstructionById;
-import io.camunda.client.protocol.rest.ProcessInstanceCreationInstructionByKey;
+import io.camunda.client.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.util.ClientRestTest;
 import java.time.Duration;
@@ -54,8 +53,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionByKey request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionByKey.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariables()).isEmpty();
     assertThat(request.getProcessDefinitionKey()).isEqualTo("123");
   }
@@ -75,8 +74,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionById request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionById.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getProcessDefinitionId()).isEqualTo("testProcess");
     assertThat(request.getProcessDefinitionVersion()).isEqualTo(123);
   }
@@ -96,8 +95,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionByKey request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionByKey.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariables()).containsOnly(entry("foo", "bar"));
   }
 
@@ -118,8 +117,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionByKey request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionByKey.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariables()).containsOnly(entry(key, value));
   }
 
@@ -138,8 +137,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionById request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionById.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
@@ -161,8 +160,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionById request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionById.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -185,8 +184,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionById request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionById.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -207,8 +206,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionByKey request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionByKey.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTenantId()).isEqualTo(tenantId);
   }
 
@@ -229,8 +228,8 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         .join();
 
     // then
-    final ProcessInstanceCreationInstructionByKey request =
-        gatewayService.getLastRequest(ProcessInstanceCreationInstructionByKey.class);
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getTags()).isEqualTo(tags);
   }
 

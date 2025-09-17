@@ -70,8 +70,8 @@ class SearchDecisionInstanceTest extends ClientRestTest {
         .isEqualTo(DecisionDefinitionTypeEnum.DECISION_TABLE);
     assertThat(request.getFilter().getProcessDefinitionKey()).isEqualTo("2");
     assertThat(request.getFilter().getProcessInstanceKey()).isEqualTo("3");
-    assertThat(request.getFilter().getDecisionDefinitionKey()).extracting("$eq").isEqualTo("4");
-    assertThat(request.getFilter().getElementInstanceKey()).extracting("$eq").isEqualTo("5");
+    assertThat(request.getFilter().getDecisionDefinitionKey().get$Eq()).isEqualTo("4");
+    assertThat(request.getFilter().getElementInstanceKey().get$Eq()).isEqualTo("5");
     assertThat(request.getFilter().getDecisionDefinitionId()).isEqualTo("ddi");
     assertThat(request.getFilter().getDecisionDefinitionName()).isEqualTo("ddm");
     assertThat(request.getFilter().getDecisionDefinitionVersion()).isEqualTo(5);
@@ -94,7 +94,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty decisionDefinitionKey = filter.getDecisionDefinitionKey();
     assertThat(decisionDefinitionKey).isNotNull();
-    assertThat(decisionDefinitionKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
+    assertThat(decisionDefinitionKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -113,7 +113,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final BasicStringFilterProperty elementInstanceKey = filter.getElementInstanceKey();
     assertThat(elementInstanceKey).isNotNull();
-    assertThat(elementInstanceKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
+    assertThat(elementInstanceKey.get$In()).isEqualTo(Arrays.asList("1", "10"));
   }
 
   @Test
@@ -133,7 +133,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     assertThat(filter).isNotNull();
     final DateTimeFilterProperty evaluationDate = filter.getEvaluationDate();
     assertThat(evaluationDate).isNotNull();
-    assertThat(evaluationDate).extracting("$neq").isEqualTo(now.toString());
+    assertThat(evaluationDate.get$Neq()).isEqualTo(now.toString());
   }
 
   @Test

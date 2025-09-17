@@ -72,7 +72,7 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getElementInstanceKey()).isEqualTo("1");
     assertThat(filter.getType()).isEqualTo(ElementInstanceFilter.TypeEnum.SERVICE_TASK);
-    assertThat(filter.getState()).extracting("$eq").isEqualTo(ElementInstanceStateEnum.ACTIVE);
+    assertThat(filter.getState().get$Eq()).isEqualTo(ElementInstanceStateEnum.ACTIVE);
     assertThat(filter.getProcessDefinitionKey()).isEqualTo("2");
     assertThat(filter.getProcessDefinitionId()).isEqualTo("complexProcess");
     assertThat(filter.getProcessInstanceKey()).isEqualTo("3");
@@ -82,8 +82,8 @@ public class ElementInstanceTest extends ClientRestTest {
     assertThat(filter.getTenantId()).isEqualTo("<default>");
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$exists").isEqualTo(Boolean.TRUE);
-    assertThat(filter.getEndDate()).extracting("$exists").isEqualTo(Boolean.TRUE);
+    assertThat(filter.getStartDate().get$Exists()).isTrue();
+    assertThat(filter.getEndDate().get$Exists()).isTrue();
     assertThat(filter.getElementInstanceScopeKey()).isEqualTo("4");
   }
 
@@ -102,8 +102,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$exists").isEqualTo(Boolean.FALSE);
-    assertThat(filter.getEndDate()).extracting("$exists").isEqualTo(Boolean.FALSE);
+    assertThat(filter.getStartDate().get$Exists()).isFalse();
+    assertThat(filter.getEndDate().get$Exists()).isFalse();
   }
 
   @Test
@@ -121,8 +121,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$gt").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$gt").isNotNull();
+    assertThat(filter.getStartDate().get$Gt()).isNotNull();
+    assertThat(filter.getEndDate().get$Gt()).isNotNull();
   }
 
   @Test
@@ -141,8 +141,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$lt").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$lt").isNotNull();
+    assertThat(filter.getStartDate().get$Lt()).isNotNull();
+    assertThat(filter.getEndDate().get$Lt()).isNotNull();
   }
 
   @Test
@@ -160,8 +160,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$gte").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$gte").isNotNull();
+    assertThat(filter.getStartDate().get$Gte()).isNotNull();
+    assertThat(filter.getEndDate().get$Gte()).isNotNull();
   }
 
   @Test
@@ -180,8 +180,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$lte").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$lte").isNotNull();
+    assertThat(filter.getStartDate().get$Lte()).isNotNull();
+    assertThat(filter.getEndDate().get$Lte()).isNotNull();
   }
 
   @Test
@@ -201,8 +201,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$gte").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$lte").isNotNull();
+    assertThat(filter.getStartDate().get$Gte()).isNotNull();
+    assertThat(filter.getEndDate().get$Lte()).isNotNull();
   }
 
   @Test
@@ -222,8 +222,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$gt").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$lt").isNotNull();
+    assertThat(filter.getStartDate().get$Gt()).isNotNull();
+    assertThat(filter.getEndDate().get$Lt()).isNotNull();
   }
 
   @Test
@@ -243,8 +243,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$eq").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$eq").isNotNull();
+    assertThat(filter.getStartDate().get$Eq()).isNotNull();
+    assertThat(filter.getEndDate().get$Eq()).isNotNull();
   }
 
   @Test
@@ -264,8 +264,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$neq").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$neq").isNotNull();
+    assertThat(filter.getStartDate().get$Neq()).isNotNull();
+    assertThat(filter.getEndDate().get$Neq()).isNotNull();
   }
 
   @Test
@@ -286,8 +286,8 @@ public class ElementInstanceTest extends ClientRestTest {
     final ElementInstanceFilter filter = Objects.requireNonNull(request.getFilter());
     assertThat(filter.getStartDate()).isNotNull();
     assertThat(filter.getEndDate()).isNotNull();
-    assertThat(filter.getStartDate()).extracting("$in").isNotNull();
-    assertThat(filter.getEndDate()).extracting("$in").isNotNull();
+    assertThat(filter.getStartDate().get$In()).isNotNull();
+    assertThat(filter.getEndDate().get$In()).isNotNull();
   }
 
   @Test

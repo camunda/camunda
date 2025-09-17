@@ -18,7 +18,6 @@ package io.camunda.client.impl.search.filter.builder;
 import io.camunda.client.api.search.filter.builder.BasicLongProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.BasicStringFilter;
 import io.camunda.client.protocol.rest.BasicStringFilterProperty;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 public class BasicLongPropertyImpl
     extends TypedSearchRequestPropertyProvider<BasicStringFilterProperty>
     implements BasicLongProperty {
-  private final BasicStringFilter filterProperty = new BasicStringFilter();
+  private final BasicStringFilterProperty filterProperty = new BasicStringFilterProperty();
 
   @Override
   public BasicLongProperty eq(final Long value) {

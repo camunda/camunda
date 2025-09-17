@@ -18,7 +18,6 @@ package io.camunda.client.impl.search.filter.builder;
 import io.camunda.client.api.search.filter.builder.DateTimeProperty;
 import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.util.CollectionUtil;
-import io.camunda.client.protocol.rest.AdvancedDateTimeFilter;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -26,7 +25,7 @@ import java.util.stream.Collectors;
 
 public class DateTimePropertyImpl extends TypedSearchRequestPropertyProvider<DateTimeFilterProperty>
     implements DateTimeProperty {
-  private final AdvancedDateTimeFilter filterProperty = new AdvancedDateTimeFilter();
+  private final DateTimeFilterProperty filterProperty = new DateTimeFilterProperty();
 
   @Override
   public DateTimeProperty gt(final OffsetDateTime value) {
