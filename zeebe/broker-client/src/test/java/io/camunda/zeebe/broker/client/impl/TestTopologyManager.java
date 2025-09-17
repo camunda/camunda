@@ -148,7 +148,7 @@ final class TestTopologyManager implements BrokerTopologyManager {
 
     @Override
     public String getClusterId() {
-      return null;
+      return "";
     }
 
     public void addBrokerIfAbsent(final int leaderId) {

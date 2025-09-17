@@ -29,7 +29,7 @@ public final class TestBrokerClusterState implements BrokerClusterState {
       new HashMap<>();
   private final Map<Integer, Set<Integer>> inactivePartitionsToNodeIds = new HashMap<>();
   private final Map<Integer, Set<Integer>> followerPartitionToNodeIds = new HashMap<>();
-  private String clusterId = null;
+  private String clusterId = "";
 
   public TestBrokerClusterState() {
     this(0);

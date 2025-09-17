@@ -42,6 +42,7 @@ public class TopologyControllerTest extends RestControllerTest {
   public void shouldGetTopology(final String baseUrl) {
     // given
     final var version = VersionUtil.getVersion();
+    final var clusterId = "cluster-id";
     final var expectedResponse =
         """
         {
@@ -95,9 +96,8 @@ public class TopologyControllerTest extends RestControllerTest {
         }
         """
             .formatted(version, version, version, version);
-    final var brokerClusterState = new TestBrokerClusterState(version);
+    final var brokerClusterState = new TestBrokerClusterState(version, clusterId);
     final ClusterConfiguration clusterConfiguration = Mockito.mock(ClusterConfiguration.class);
-    Mockito.when(clusterConfiguration.clusterId()).thenReturn(java.util.Optional.of("cluster-id"));
     Mockito.when(topologyManager.getClusterConfiguration()).thenReturn(clusterConfiguration);
     Mockito.when(topologyManager.getTopology()).thenReturn(brokerClusterState);
 
@@ -147,7 +147,8 @@ public class TopologyControllerTest extends RestControllerTest {
    * Topology stub which returns a static topology with 3 brokers, 1 partition, replication factor
    * 3, where 0 is the leader (healthy), 1 is the follower (healthy), and 2 is inactive (unhealthy).
    */
-  private record TestBrokerClusterState(String version) implements BrokerClusterState {
+  private record TestBrokerClusterState(String version, String clusterId)
+      implements BrokerClusterState {
 
     @Override
     public boolean isInitialized() {
@@ -229,7 +230,7 @@ public class TopologyControllerTest extends RestControllerTest {
 
     @Override
     public String getClusterId() {
-      return null;
+      return clusterId;
     }
   }
 }

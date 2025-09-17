@@ -45,7 +45,7 @@ public final class TopologyController {
 
     if (topology != null) {
       response
-          .clusterId(client.getTopologyManager().getClusterConfiguration().clusterId().get())
+          .clusterId(topology.getClusterId())
           .clusterSize(topology.getClusterSize())
           .partitionsCount(topology.getPartitionsCount())
           .replicationFactor(topology.getReplicationFactor())
