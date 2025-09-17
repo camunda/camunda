@@ -15,7 +15,10 @@
  */
 package io.camunda.process.test.impl.client.purge;
 
+import java.util.List;
+
 public class MinimalTopologyResponseDto {
+  private List<MinimalBrokerInfoDto> brokers;
   private String lastCompletedChangeId;
 
   public boolean isTopologyChangeCompleted(final long changeId) {
@@ -23,7 +26,19 @@ public class MinimalTopologyResponseDto {
       return false;
     }
 
-    return changeId <= Long.parseLong(lastCompletedChangeId);
+    final boolean isLatestChangeId = changeId <= Long.parseLong(lastCompletedChangeId);
+    final boolean isClusterHealthy =
+        brokers.stream().allMatch(MinimalBrokerInfoDto::areAllPartitionsHealthy);
+
+    return isLatestChangeId && isClusterHealthy;
+  }
+
+  public List<MinimalBrokerInfoDto> getBrokers() {
+    return brokers;
+  }
+
+  public void setBrokers(final List<MinimalBrokerInfoDto> brokers) {
+    this.brokers = brokers;
   }
 
   public String getLastCompletedChangeId() {

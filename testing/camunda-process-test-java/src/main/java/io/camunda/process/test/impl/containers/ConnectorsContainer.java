@@ -62,11 +62,28 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
   }
 
   public ConnectorsContainer withMultitenancy() {
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_METHOD, "basic")
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_USERNAME, "demo")
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_AUTH_PASSWORD, "demo")
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_TENANTID, "<default>")
-        .withEnv(ContainerRuntimeEnvs.CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS, "<default>")
+    withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_AUTH_METHOD,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_AUTH_METHOD)
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_AUTH_USERNAME,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_AUTH_USERNAME)
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_AUTH_PASSWORD,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_AUTH_PASSWORD)
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_TENANTID,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_TENANTID)
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS,
+            MultitenancyConfiguration.CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS)
+        /*
+         * Basic Auth has a very limited request throughput, requiring tests with multitenancy to have an increased
+         * polling interval so as to not cause timeout exceptions.
+         */
+        .withEnv(
+            ContainerRuntimeEnvs.CONNECTORS_ENV_POLLING_INTERVAL,
+            MultitenancyConfiguration.POLLING_INTERVAL)
         .waitingFor(newBasicAuthWaitStrategy());
 
     return this;
@@ -121,5 +138,6 @@ public class ConnectorsContainer extends GenericContainer<ConnectorsContainer> {
         CamundaContainer.MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD;
     private static final String CAMUNDA_CLIENT_TENANTID = "<default>";
     private static final String CAMUNDA_CLIENT_WORKER_DEFAULTS_TENANTIDS = "<default>";
+    private static final String POLLING_INTERVAL = "1000";
   }
 }
