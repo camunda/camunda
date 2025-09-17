@@ -215,8 +215,8 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
       final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
       final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
       final var policy = jsonResponse.at("/" + datedIndex + "/settings/index/lifecycle");
-      assertThat(policy.isMissingNode()).isFalse();
       assertThat(policy).isNotNull();
+      assertThat(policy.isMissingNode()).isFalse();
       assertThat(policy.get("name").asText()).isNotBlank();
     } catch (final Exception e) {
       fail("Failed to get ILM policy for index: " + datedIndex, e);
