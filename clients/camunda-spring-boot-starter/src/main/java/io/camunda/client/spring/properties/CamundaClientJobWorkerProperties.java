@@ -26,7 +26,9 @@ import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMI
 
 import java.time.Duration;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties("lib.camunda.client.worker.override")
 public class CamundaClientJobWorkerProperties {
   public static final boolean DEFAULT_AUTO_COMPLETE = true;
   public static final boolean DEFAULT_ENABLED = true;

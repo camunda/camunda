@@ -22,10 +22,12 @@ import io.camunda.client.api.command.CommandWithTenantStep;
 import java.net.URI;
 import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 @ConfigurationProperties("camunda.client")
+@EnableConfigurationProperties(CamundaClientJobWorkerProperties.class)
 public class CamundaClientProperties {
 
   /** Enable or disable the Camunda client. If disabled, the client bean is not created. */
