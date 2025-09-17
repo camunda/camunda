@@ -15,7 +15,7 @@ import {
 import {
   brokerResponseFields,
   clusterTopologyResponseFields,
-  partionsResponseFields,
+  partitionsResponseFields,
 } from '../../../utils/beans/requestBeans';
 
 test.describe('Cluster API Tests', () => {
@@ -31,7 +31,7 @@ test.describe('Cluster API Tests', () => {
     expect(result.brokers[0].partitions).toHaveLength(1);
     assertRequiredFields(
       result.brokers[0].partitions[0],
-      partionsResponseFields,
+      partitionsResponseFields,
     );
   });
 
