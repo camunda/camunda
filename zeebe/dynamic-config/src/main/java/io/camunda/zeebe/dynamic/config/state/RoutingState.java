@@ -69,8 +69,7 @@ public record RoutingState(
 
   private static void validatePartitionCount(final int partitionCount) {
     if (partitionCount < 1) {
-      throw new IllegalArgumentException(
-          "Partition count must be greater than %d".formatted(Protocol.START_PARTITION_ID));
+      throw new IllegalArgumentException("Partition count must be greater than or equal to 1");
     }
   }
 
