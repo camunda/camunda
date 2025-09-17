@@ -29,6 +29,8 @@ import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.reindex.Destination;
 import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.ilm.DeleteAction;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
@@ -144,6 +146,9 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   @Override
   public void reindexLegacyMainIndex() throws MigrationException {
     reindex(legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
+    if (retentionConfiguration.isEnabled()) {
+      applyLegacyIndexRetentionPolicy();
+    }
   }
 
   @Override
@@ -524,5 +529,65 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       }
     }
     return Objects.requireNonNull(sorted.getLast().id());
+  }
+
+  ///  Forked from io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient()
+
+  private void applyLegacyIndexRetentionPolicy() {
+    createPolicy();
+    applyPolicy();
+  }
+
+  private void applyPolicy() {
+    try {
+      client
+          .indices()
+          .putSettings(
+              r ->
+                  r.index(legacyIndex.getFullQualifiedName())
+                      .settings(
+                          s ->
+                              s.index(
+                                  i ->
+                                      i.lifecycle(
+                                          l -> l.name(LEGACY_INDEX_RETENTION_POLICY_NAME)))));
+    } catch (final IOException e) {
+      final var message =
+          "Failed to apply index lifecycle policy '%s' to '%s' index"
+              .formatted(LEGACY_INDEX_RETENTION_POLICY_NAME, legacyIndex.getFullQualifiedName());
+      LOG.error(message, e);
+      throw new MigrationException(message, e);
+    }
+  }
+
+  private void createPolicy() {
+    final PutLifecycleRequest request = putLifecycleRequest();
+    try {
+      client.ilm().putLifecycle(request);
+    } catch (final IOException e) {
+      final var errMsg =
+          String.format(
+              "Index lifecycle policy [%s] failed to PUT", LEGACY_INDEX_RETENTION_POLICY_NAME);
+      LOG.error(errMsg, e);
+      throw new MigrationException(errMsg, e);
+    }
+  }
+
+  private PutLifecycleRequest putLifecycleRequest() {
+    return new PutLifecycleRequest.Builder()
+        .name(LEGACY_INDEX_RETENTION_POLICY_NAME)
+        .policy(
+            policy ->
+                policy.phases(
+                    phase ->
+                        phase.delete(
+                            del ->
+                                del.minAge(
+                                        m ->
+                                            m.time(
+                                                migrationConfiguration
+                                                    .getLegacyIndexRetentionAge()))
+                                    .actions(a -> a.delete(DeleteAction.of(d -> d))))))
+        .build();
   }
 }

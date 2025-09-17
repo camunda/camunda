@@ -17,6 +17,7 @@ import java.util.Set;
 public interface TaskMigrationAdapter {
   String TASK_MIGRATION_STEP_ID = VersionUtil.getVersion() + "-1";
   String TASK_MIGRATION_STEP_TYPE = "processorStep";
+  String LEGACY_INDEX_RETENTION_POLICY_NAME = "task-migration-retention-policy";
 
   boolean migrationIndexExists() throws MigrationException;
 
