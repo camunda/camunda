@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDb
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
+import io.camunda.db.rdbms.write.queue.UpdateHistoryCleanupDateMerger;
 import io.camunda.db.rdbms.write.queue.UpsertMerger;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
@@ -107,8 +108,10 @@ public class ProcessInstanceWriter {
 
   public void scheduleForHistoryCleanup(
       final Long processInstanceKey, final OffsetDateTime historyCleanupDate) {
-    final boolean wasMerged =
-        mergeToQueue(processInstanceKey, b -> b.historyCleanupDate(historyCleanupDate));
+    final var wasMerged =
+        executionQueue.tryMergeWithExistingQueueItem(
+            new UpdateHistoryCleanupDateMerger(
+                ContextType.PROCESS_INSTANCE, processInstanceKey, historyCleanupDate));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
