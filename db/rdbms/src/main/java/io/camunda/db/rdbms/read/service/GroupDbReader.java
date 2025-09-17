@@ -77,6 +77,7 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
   private boolean shouldReturnEmptyResult(
       final GroupFilter filter, final ResourceAccessChecks resourceAccessChecks) {
     return (filter.memberIds() != null && filter.memberIds().isEmpty())
-        || shouldReturnEmptyResult(resourceAccessChecks);
+        || (resourceAccessChecks.authorizationCheck().enabled()
+            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }
