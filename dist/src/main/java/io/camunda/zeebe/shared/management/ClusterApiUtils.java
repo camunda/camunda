@@ -33,6 +33,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.dynamic.config.state.CompletedChange;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
@@ -218,6 +219,10 @@ final class ClusterApiUtils {
               .brokerId(Integer.parseInt(deleteExporterOperation.memberId().id()))
               .partitionId(deleteExporterOperation.partitionId())
               .exporterId(deleteExporterOperation.exporterId());
+      case final StartPartitionScaleUp startScaleUp ->
+          new Operation()
+              .operation(OperationEnum.START_PARTITION_SCALE_UP)
+              .brokerId(Integer.parseInt(startScaleUp.memberId().id()));
       case final PartitionBootstrapOperation bootstrapOperation ->
           new Operation()
               .operation(OperationEnum.PARTITION_BOOTSTRAP)
