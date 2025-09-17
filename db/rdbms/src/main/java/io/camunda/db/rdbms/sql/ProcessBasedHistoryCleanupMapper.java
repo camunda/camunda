@@ -7,22 +7,48 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.write.domain.AuthorizationDbModel.Builder;
+import io.camunda.db.rdbms.write.domain.Copyable;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Function;
 
 public interface ProcessBasedHistoryCleanupMapper extends HistoryCleanupMapper {
 
   int updateHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
 
-  record UpdateHistoryCleanupDateDto(long processInstanceKey, OffsetDateTime historyCleanupDate) {
+  record UpdateHistoryCleanupDateDto(
+      List<Long> processInstanceKeys, OffsetDateTime historyCleanupDate)
+      implements Copyable<UpdateHistoryCleanupDateDto> {
+
+    @Override
+    public UpdateHistoryCleanupDateDto copy(
+        final Function<
+                ObjectBuilder<UpdateHistoryCleanupDateDto>,
+                ObjectBuilder<UpdateHistoryCleanupDateDto>>
+            copyFunction) {
+      return copyFunction
+          .apply(
+              new Builder()
+                  .processInstanceKeys(new ArrayList<>(processInstanceKeys))
+                  .historyCleanupDate(historyCleanupDate))
+          .build();
+    }
 
     public static class Builder implements ObjectBuilder<UpdateHistoryCleanupDateDto> {
 
-      private long processInstanceKey;
+      private List<Long> processInstanceKeys = new ArrayList<>();
       private OffsetDateTime historyCleanupDate;
 
       public Builder processInstanceKey(final long processInstanceKey) {
-        this.processInstanceKey = processInstanceKey;
+        processInstanceKeys.add(processInstanceKey);
+        return this;
+      }
+
+      public Builder processInstanceKeys(final List<Long> processInstanceKeys) {
+        this.processInstanceKeys = processInstanceKeys;
         return this;
       }
 
@@ -33,7 +59,7 @@ public interface ProcessBasedHistoryCleanupMapper extends HistoryCleanupMapper {
 
       @Override
       public UpdateHistoryCleanupDateDto build() {
-        return new UpdateHistoryCleanupDateDto(processInstanceKey, historyCleanupDate);
+        return new UpdateHistoryCleanupDateDto(processInstanceKeys, historyCleanupDate);
       }
     }
   }

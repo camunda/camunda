@@ -346,7 +346,10 @@
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}USER_TASK SET
     HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
   </update>
 
   <update id="migrateToProcess" parameterType="java.util.Map">
