@@ -15,7 +15,7 @@ public class IndexConfiguration {
   private String zeebeIndexPrefix = "zeebe-record";
 
   private Integer numberOfShards = 1;
-  private Integer numberOfReplicas = 0;
+  private Integer numberOfReplicas = 1;
   private Integer templatePriority;
 
   private Map<String, Integer> replicasByIndexName = new HashMap<>();

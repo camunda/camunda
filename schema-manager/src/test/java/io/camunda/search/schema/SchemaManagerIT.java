@@ -511,7 +511,7 @@ public class SchemaManagerIT {
     final var initialTemplate =
         searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
     assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
 
     // when
@@ -544,7 +544,7 @@ public class SchemaManagerIT {
 
     final var initialIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
 
-    assertThat(initialIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
     assertThat(initialIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
     // when
@@ -680,7 +680,7 @@ public class SchemaManagerIT {
     final var initialTemplate =
         searchClientAdapter.getIndexTemplateAsNode(indexTemplate.getTemplateName());
 
-    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialTemplate.at(replicaSettingPath).asInt()).isEqualTo(1);
     assertThat(initialTemplate.at(shardsSettingPath).asInt()).isEqualTo(1);
 
     indexTemplate.setMappingsClasspathFilename("/mappings-settings-replica-and-shards.json");
@@ -914,14 +914,14 @@ public class SchemaManagerIT {
     final String runtimeIndexName = indexTemplate.getFullQualifiedName();
     final var initialRuntimeIndex = searchClientAdapter.getIndexAsNode(runtimeIndexName);
 
-    assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialRuntimeIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
     assertThat(initialRuntimeIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
     final String archiveIndexName = indexTemplate.getIndexPattern().replace("*", "-archived");
     searchClientAdapter.index("123", archiveIndexName, Map.of("hello", "foo", "world", "bar"));
 
     final var initialArchiveIndex = searchClientAdapter.getIndexAsNode(archiveIndexName);
-    assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(0);
+    assertThat(initialArchiveIndex.at(replicaSettingPath).asInt()).isEqualTo(1);
     assertThat(initialArchiveIndex.at(shardsSettingPath).asInt()).isEqualTo(1);
 
     // when
