@@ -554,8 +554,14 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  public CamundaProcessTestExtension withMultiTenancyEnabled() {
-    runtimeBuilder.withMultiTenancyEnabled(true);
+  /**
+   * Enable or disable multi-tenancy in the runtime. By default, multi-tenancy is disabled.
+   *
+   * @param enabled set {@code true} to enable multi-tenancy
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
+    runtimeBuilder.withMultiTenancyEnabled(enabled);
     return this;
   }
 
