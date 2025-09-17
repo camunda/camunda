@@ -575,8 +575,8 @@ final class OpenSearchArchiverRepositoryIT {
   void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
     // given
     retention.setEnabled(true);
-    final var indexName1 = UUID.randomUUID().toString();
-    final var indexName2 = UUID.randomUUID().toString();
+    final var indexName1 = processInstanceIndex + UUID.randomUUID();
+    final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
     final var asyncClient = createOpenSearchAsyncClient();
     final var genericClientSpy =
