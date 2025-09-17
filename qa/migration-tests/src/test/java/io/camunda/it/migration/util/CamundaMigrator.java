@@ -10,6 +10,7 @@ package io.camunda.it.migration.util;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.migration.MigrationFinishedEvent;
 import io.camunda.client.CamundaClient;
+import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -33,6 +34,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
@@ -128,8 +130,10 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     return this;
   }
 
-  public CamundaMigrator update(final Map<String, String> envOverrides, final Profile... profiles) {
-
+  public CamundaMigrator update(
+      final Map<String, String> envOverrides,
+      final Consumer<Map<String, Object>> exporterArgsOverride,
+      final Profile... profiles) {
     camundaContainer.close();
     extractVolume();
     migrationCompletedEventListener = new MigrationCompletedEventListener();
@@ -151,12 +155,16 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     }
 
     final var multiDbConfigurator = new MultiDbConfigurator(camunda);
-    if (isElasticsearch() || databaseType.equals(DatabaseType.LOCAL)) {
+    if (isElasticsearch()) {
       multiDbConfigurator.configureElasticsearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix);
     } else {
       multiDbConfigurator.configureOpenSearchSupportIncludingOldExporter(
           databaseUrl, indexPrefix, OS_USER, OS_PASSWORD);
+    }
+    if (exporterArgsOverride != null) {
+      camunda.updateExporterArgs(
+          CamundaExporter.class.getSimpleName().toLowerCase(), exporterArgsOverride);
     }
     final Map<String, String> env = new HashMap<>();
     env.put("camunda.migration.process.importerFinishedTimeout", "PT2S");
@@ -290,6 +298,12 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     volume.extract(zeebeDataPath);
   }
 
+  public String getActuatorUrl() {
+    return camundaContainer.isRunning()
+        ? "http://" + camundaContainer.getExternalMonitoringAddress() + "/actuator"
+        : "http://" + camunda.address(TestZeebePort.MONITORING) + "/actuator";
+  }
+
   private ConnectConfiguration getConnectConfiguration(final DatabaseType databaseType) {
     final ConnectConfiguration connectConfiguration = new ConnectConfiguration();
     connectConfiguration.setType(databaseType.name());
@@ -308,7 +322,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   }
 
   public boolean isElasticsearch() {
-    return databaseType.equals(DatabaseType.ES);
+    return databaseType.equals(DatabaseType.ES) || databaseType.equals(DatabaseType.LOCAL);
   }
 
   public boolean isMigrationCompleted() {

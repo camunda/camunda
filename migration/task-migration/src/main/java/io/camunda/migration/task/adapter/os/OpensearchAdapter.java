@@ -21,6 +21,7 @@ import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
@@ -60,6 +61,7 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.PutMappingRequest;
 import org.opensearch.client.opensearch.indices.UpdateAliasesRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -90,12 +92,12 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
             .withRetryOnException(
                 e -> e instanceof IOException || e instanceof OpenSearchException);
 
-    legacyIndex = new TaskLegacyIndex(connectConfiguration.getIndexPrefix(), true);
-    destinationIndex = new TaskTemplate(connectConfiguration.getIndexPrefix(), true);
+    legacyIndex = new TaskLegacyIndex(connectConfiguration.getIndexPrefix(), false);
+    destinationIndex = new TaskTemplate(connectConfiguration.getIndexPrefix(), false);
     migrationIndex =
-        new TasklistMigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), true);
+        new TasklistMigrationRepositoryIndex(connectConfiguration.getIndexPrefix(), false);
     importPositionIndex =
-        new TasklistImportPositionIndex(connectConfiguration.getIndexPrefix(), true);
+        new TasklistImportPositionIndex(connectConfiguration.getIndexPrefix(), false);
     this.retentionConfiguration = retentionConfiguration;
   }
 
@@ -303,6 +305,42 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
         .map(Hit::source)
         .filter(Objects::nonNull)
         .collect(Collectors.toSet());
+  }
+
+  @Override
+  public void blockArchiving() throws MigrationException {
+    final var blockArchivingRequest =
+        new PutMappingRequest.Builder()
+            .index(importPositionIndex.getFullQualifiedName())
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true))
+            .build();
+
+    try {
+      retryDecorator.decorate(
+          "Blocking archiving",
+          () -> client.indices().putMapping(blockArchivingRequest),
+          res -> !res.acknowledged());
+    } catch (final Exception e) {
+      throw new MigrationException("Unable to block archiver", e);
+    }
+  }
+
+  @Override
+  public void resumeArchiving() throws MigrationException {
+    final var resumeArchivingRequest =
+        new PutMappingRequest.Builder()
+            .index(importPositionIndex.getFullQualifiedName())
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
+            .build();
+
+    try {
+      retryDecorator.decorate(
+          "Resuming archiving",
+          () -> client.indices().putMapping(resumeArchivingRequest),
+          res -> !res.acknowledged());
+    } catch (final Exception e) {
+      throw new MigrationException("Unable to resume archiver", e);
+    }
   }
 
   @Override

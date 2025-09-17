@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
@@ -23,6 +25,7 @@ import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import java.util.regex.Pattern;
@@ -48,6 +51,7 @@ import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Requests;
+import org.opensearch.client.opensearch.indices.IndexState;
 import org.slf4j.Logger;
 
 public final class OpenSearchArchiverRepository extends OpensearchRepository
@@ -68,6 +72,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String indexPrefix;
   private final String processInstanceIndex;
   private final String batchOperationIndex;
+  private final String archiverBlockedMetaIndex;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
@@ -80,6 +85,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String indexPrefix,
       final String processInstanceIndex,
       final String batchOperationIndex,
+      final String archiverBlockedMetaIndex,
       final String zeebeIndexPrefix,
       @WillCloseWhenClosed final OpenSearchAsyncClient client,
       final Executor executor,
@@ -92,6 +98,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     this.indexPrefix = indexPrefix;
     this.processInstanceIndex = processInstanceIndex;
     this.batchOperationIndex = batchOperationIndex;
+    this.archiverBlockedMetaIndex = archiverBlockedMetaIndex;
     this.metrics = metrics;
     this.zeebeIndexPrefix = zeebeIndexPrefix;
 
@@ -100,6 +107,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
+    try {
+      if (archivingIsBlocked()) {
+        logger.debug("Archiving is currently blocked.");
+        return CompletableFuture.completedFuture(new ArchiveBatch(null, List.of()));
+      }
+    } catch (final IOException e) {
+      return CompletableFuture.failedFuture(
+          new ExporterException("Failed to determine if archiving is blocked:", e));
+    }
     final var request = createFinishedInstancesSearchRequest();
 
     final var timer = Timer.start();
@@ -208,6 +224,20 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private boolean archivingIsBlocked() throws IOException {
+    return Optional.ofNullable(
+            client
+                .indices()
+                .get(r -> r.index(archiverBlockedMetaIndex))
+                .join()
+                .result()
+                .get(archiverBlockedMetaIndex))
+        .map(IndexState::mappings)
+        .map(m -> m.meta().get(PI_ARCHIVING_BLOCKED_META_KEY))
+        .map(jd -> jd.to(Boolean.class))
+        .orElse(false);
   }
 
   private Query finishedProcessInstancesQuery(

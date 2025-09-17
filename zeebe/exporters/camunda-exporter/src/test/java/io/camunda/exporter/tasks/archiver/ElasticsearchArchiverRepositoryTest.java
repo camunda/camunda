@@ -71,6 +71,7 @@ final class ElasticsearchArchiverRepositoryTest {
         "instance",
         "batch",
         "zeebe-record",
+        "import-position",
         client,
         Runnable::run,
         metrics,

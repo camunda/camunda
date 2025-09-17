@@ -66,13 +66,19 @@ public class TaskMigrator implements Migrator {
       if (migrationIsNeeded()) {
         LOG.info("Task Migration started");
         waitUntilReadyForReindexing();
+        // Archiver should already be blocked by the time we reach this point
+        // we block it again for sanity
+        adapter.blockArchiving();
         performReindexForMainIndex();
         performReindexForDatedIndices();
         performBatchUpdatesForExportedDocuments();
         adapter.markMigrationAsCompleted();
         LOG.info("Task Migration completed successfully");
+        LOG.info("Resuming archiver");
+        adapter.resumeArchiving();
       } else {
         LOG.info("Task Migration is not needed.");
+        adapter.resumeArchiving();
       }
     } catch (final Exception e) {
       LOG.error("Error while migrating tasks. Migration will be stopped", e);

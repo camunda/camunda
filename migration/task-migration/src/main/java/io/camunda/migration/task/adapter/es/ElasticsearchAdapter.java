@@ -31,7 +31,9 @@ import co.elastic.clients.elasticsearch.core.reindex.Source;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest;
+import co.elastic.clients.json.JsonData;
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.commons.configuration.MigrationConfiguration;
 import io.camunda.migration.commons.storage.ProcessorStep;
@@ -43,6 +45,7 @@ import io.camunda.migration.task.adapter.TaskWithIndex;
 import io.camunda.migration.task.util.MigrationUtils;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
@@ -300,6 +303,42 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
         .map(Hit::source)
         .filter(Objects::nonNull)
         .collect(Collectors.toSet());
+  }
+
+  @Override
+  public void blockArchiving() throws MigrationException {
+    final var blockArchivingRequest =
+        new PutMappingRequest.Builder()
+            .index(importPositionIndex.getFullQualifiedName())
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true))
+            .build();
+
+    try {
+      retryDecorator.decorate(
+          "Blocking archiving",
+          () -> client.indices().putMapping(blockArchivingRequest),
+          res -> !res.acknowledged());
+    } catch (final Exception e) {
+      throw new MigrationException("Unable to block archiver", e);
+    }
+  }
+
+  @Override
+  public void resumeArchiving() throws MigrationException {
+    final var resumeArchivingRequest =
+        new PutMappingRequest.Builder()
+            .index(importPositionIndex.getFullQualifiedName())
+            .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(false))
+            .build();
+
+    try {
+      retryDecorator.decorate(
+          "Resuming archiving",
+          () -> client.indices().putMapping(resumeArchivingRequest),
+          res -> !res.acknowledged());
+    } catch (final Exception e) {
+      throw new MigrationException("Unable to resume archiver", e);
+    }
   }
 
   @Override

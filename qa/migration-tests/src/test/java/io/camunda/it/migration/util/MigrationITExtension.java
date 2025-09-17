@@ -23,6 +23,11 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
@@ -32,6 +37,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -57,6 +63,7 @@ public class MigrationITExtension
   private Path tempDir;
   private MigrationDatabaseChecks migrationDatabaseChecks;
   private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = null;
+  private Consumer<Map<String, Object>> exporterArgsOverride = null;
   private Profile[] postUpdateProfiles;
 
   public MigrationITExtension() {
@@ -110,6 +117,16 @@ public class MigrationITExtension
   }
 
   /**
+   * Allows to provide an override for the CamundaExporter arguments that will be used during the
+   * upgrade process. Only applies to the 8.8 started application.
+   */
+  public MigrationITExtension withCamundaExporterArgsOverride(
+      final Consumer<Map<String, Object>> override) {
+    exporterArgsOverride = override;
+    return this;
+  }
+
+  /**
    * Allows the provision of system property overrides that will be used by the migration container.
    * This can be used to enable features that are required for the upgrade process. For example
    * "camunda.database.retention.enabled" -> "true".
@@ -148,7 +165,7 @@ public class MigrationITExtension
     if (beforeUpgradeConsumer != null && !areImportersDisabled()) {
       awaitImportersFlushed();
     }
-    migrator.update(envOverrides, postUpdateProfiles);
+    migrator.update(envOverrides, exporterArgsOverride, postUpdateProfiles);
     awaitExporterReadiness();
     awaitDemoUserIsPresent();
 
@@ -192,6 +209,7 @@ public class MigrationITExtension
         elasticsearchContainer.start();
         closables.add(elasticsearchContainer);
         databaseUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
+        suppressEsWarnings();
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
       case ES -> {
@@ -212,6 +230,24 @@ public class MigrationITExtension
     Awaitility.await("Await secondary storage connection")
         .timeout(TIMEOUT_DATABASE_READINESS)
         .until(migrationDatabaseChecks::validateConnection);
+  }
+
+  // In these scenarios we increase the intervals of the Importers so more warning logs are reported
+  // by ES. To keep the test output clean we suppress these warnings.
+  private void suppressEsWarnings() {
+    try {
+      HttpClient.newHttpClient()
+          .send(
+              HttpRequest.newBuilder(URI.create(databaseUrl + "/_cluster/settings"))
+                  .PUT(
+                      BodyPublishers.ofString(
+                          "{\"persistent\": {\"logger.org.elasticsearch.deprecation\": \"OFF\"}}"))
+                  .header("Content-Type", "application/json")
+                  .build(),
+              BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException ignore) {
+      // ignore
+    }
   }
 
   private void awaitExporterReadiness() {

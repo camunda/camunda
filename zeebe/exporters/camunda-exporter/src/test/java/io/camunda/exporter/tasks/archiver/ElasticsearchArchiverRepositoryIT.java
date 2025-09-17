@@ -16,10 +16,12 @@ import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.Phase;
 import co.elastic.clients.elasticsearch.indices.IndexSettingsLifecycle;
+import co.elastic.clients.json.JsonData;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
@@ -69,6 +71,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String processInstanceIndex = "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex = "batch-operation-" + UUID.randomUUID();
+  private final String archiverBlockedIndex = "import-position-" + UUID.randomUUID();
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
 
@@ -344,6 +347,45 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetEmptyProcessInstancesNextBatchWhenBlocked() throws IOException {
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2),
+            new TestProcessInstance("3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+    testClient
+        .indices()
+        .putMapping(
+            mapping ->
+                mapping
+                    .index(archiverBlockedIndex)
+                    .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true)));
+    // when
+    final var result = repository.getProcessInstancesNextBatch();
+
+    // then - we expect only the first document created two hours ago to be returned
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).isEmpty();
+    assertThat(batch.finishDate()).isNull();
+  }
+
+  @Test
   void shouldGetBatchOperationsNextBatch() throws IOException {
     // given - 3 documents, two of which were created over an hour ago, one of which was created
     final var now = Instant.now();
@@ -549,6 +591,7 @@ final class ElasticsearchArchiverRepositoryIT {
         indexPrefix,
         processInstanceIndex,
         batchOperationIndex,
+        archiverBlockedIndex,
         zeebeIndexPrefix,
         client,
         Runnable::run,
@@ -578,6 +621,7 @@ final class ElasticsearchArchiverRepositoryIT {
                         ListViewTemplate.JOIN_RELATION,
                         joinRelationProp)));
     testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+    testClient.indices().create(r -> r.index(archiverBlockedIndex));
   }
 
   private void createBatchOperationIndex() throws IOException {

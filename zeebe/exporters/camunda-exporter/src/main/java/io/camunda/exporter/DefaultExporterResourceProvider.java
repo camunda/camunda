@@ -80,6 +80,7 @@ import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessI
 import io.camunda.exporter.handlers.operation.OperationFromIncidentHandler;
 import io.camunda.exporter.handlers.operation.OperationFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandler;
+import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
@@ -350,6 +351,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   @Override
   public <T extends IndexTemplateDescriptor> T getIndexTemplateDescriptor(
       final Class<T> descriptorClass) {
+    return indexDescriptors.get(descriptorClass);
+  }
+
+  @Override
+  public <T extends AbstractIndexDescriptor> T getIndexDescriptor(final Class<T> descriptorClass) {
     return indexDescriptors.get(descriptorClass);
   }
 

@@ -17,16 +17,19 @@ import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.LangUtil;
@@ -34,8 +37,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SchemaManager {
-
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+  public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -46,6 +49,7 @@ public class SchemaManager {
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
+  private boolean isGreenfield = true;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -203,9 +207,14 @@ public class SchemaManager {
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
-    // We need to wait for the completion, to make sure all indices has been created successfully
-    // Doing this in parallel is still speeding up the bootstrap time
-    joinOnFutures(futures);
+    if (isGreenfield) {
+      joinOnFutures(futures);
+    } else {
+      // If it's not a greenfield installation (i.e. not all indices are missing),
+      // we need to make sure that the archiverBlocked meta is set on the ListView index
+      // if it's missing
+      joinOnFutures(futures, applyArchiverBlockedMetaIfMissing());
+    }
   }
 
   private List<IndexDescriptor> getMissingIndices(
@@ -226,6 +235,7 @@ public class SchemaManager {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
+    isGreenfield = missingIndexTemplates.size() == indexTemplateDescriptors.size();
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
@@ -277,6 +287,42 @@ public class SchemaManager {
     }
   }
 
+  private Supplier<CompletableFuture<?>> applyArchiverBlockedMetaIfMissing() {
+    return () -> {
+      // only apply if ListViewTemplate is part of the descriptors
+      if (allIndexDescriptors.stream().noneMatch(TasklistImportPositionIndex.class::isInstance)) {
+        return CompletableFuture.completedFuture(null);
+      }
+      final var tasklistImportPositionIndex =
+          indexOnlyDescriptors.stream()
+              .filter(TasklistImportPositionIndex.class::isInstance)
+              .findFirst();
+
+      if (tasklistImportPositionIndex.isEmpty()) {
+        return CompletableFuture.failedFuture(
+            new IllegalStateException("No ImportPositionIndex found."));
+      }
+      final var indexName = tasklistImportPositionIndex.get().getFullQualifiedName();
+      if (blockedArchiverMetaIsMissing(indexName)) {
+        LOG.debug("Brownfield installation detected. Flagging archiver as blocked.");
+        return CompletableFuture.runAsync(
+            () ->
+                searchEngineClient.putIndexMeta(
+                    indexName, Map.of(PI_ARCHIVING_BLOCKED_META_KEY, true)),
+            virtualThreadExecutor);
+      }
+      return CompletableFuture.completedFuture(null);
+    };
+  }
+
+  private boolean blockedArchiverMetaIsMissing(final String operateImportPositionIndex) {
+    final var mappings =
+        searchEngineClient.getMappings(operateImportPositionIndex, MappingSource.INDEX);
+    return Optional.ofNullable(mappings.get(operateImportPositionIndex).metaProperties())
+        .map(map -> map.get(PI_ARCHIVING_BLOCKED_META_KEY))
+        .isEmpty();
+  }
+
   /**
    * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
    *
@@ -288,6 +334,25 @@ public class SchemaManager {
   private void joinOnFutures(final CompletableFuture<?>[] futures) {
     try {
       CompletableFuture.allOf(futures).get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  /**
+   * Join on given futures with {@link SchemaManager#INDEX_CREATION_TIMEOUT_SECONDS} as timeout.
+   * After all futures are completed, the {@code andThen} supplier is called and joined on with the
+   * same timeout.
+   *
+   * @param futures futures that be joined on
+   * @param andThen supplier that is called after all futures are completed
+   */
+  private void joinOnFutures(
+      final CompletableFuture<?>[] futures, final Supplier<CompletableFuture<?>> andThen) {
+    try {
+      CompletableFuture.allOf(futures)
+          .thenCompose(ignored -> andThen.get())
+          .get(INDEX_CREATION_TIMEOUT_SECONDS, TimeUnit.SECONDS);
     } catch (final Exception e) {
       LangUtil.rethrowUnchecked(e);
     }

@@ -7,6 +7,7 @@
  */
 package io.camunda.search.schema;
 
+import static io.camunda.search.schema.utils.SchemaManagerITInvocationProvider.CONFIG_PREFIX;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createSchemaManager;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestIndexDescriptor;
 import static io.camunda.search.schema.utils.SchemaTestUtil.createTestTemplateDescriptor;
@@ -43,6 +44,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -1496,6 +1498,83 @@ public class SchemaManagerIT {
     // verify template pattern matches the created index
     assertThat(retrievedTemplate.at("/index_template/index_patterns").toString())
         .contains(indexTemplate.getIndexPattern());
+  }
+
+  @TestTemplate
+  void shouldNotAppendMetaPropertyOnGreenfield(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - no template or index exist
+    final var tasklistImportPositionIndex =
+        new TasklistImportPositionIndex(
+            CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+
+    // when - start schema manager with spy to track index creation
+    final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
+    final var schemaManager =
+        new SchemaManager(
+            spySearchEngineClient,
+            Set.of(tasklistImportPositionIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // then - verify the index was created
+    final var indexNode =
+        searchClientAdapter.getIndexAsNode(tasklistImportPositionIndex.getFullQualifiedName());
+
+    // verify that schema manager did create the template
+    verify(spySearchEngineClient).createIndexTemplate(any(), any(), eq(true));
+
+    // verify that schema manager did create the index
+    verify(spySearchEngineClient, times(2)).createIndex(any(), any());
+
+    // verify _meta property is not added
+    assertThat(indexNode.get("mappings").get("_meta")).isNull();
+  }
+
+  @TestTemplate
+  void shouldAppendMetaPropertyOnBrownfieldDeployment(
+      final SearchEngineConfiguration config, final SearchClientAdapter searchClientAdapter)
+      throws IOException {
+    // given - create only the template first (without the index)
+    final SearchEngineClient searchEngineClient = searchEngineClientFromConfig(config);
+    final var tasklistImportPositionIndex =
+        new TasklistImportPositionIndex(
+            CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+    searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
+    searchEngineClient.createIndex(tasklistImportPositionIndex, new IndexConfiguration());
+
+    // when - start schema manager with spy to track index creation
+    final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
+    final var schemaManager =
+        new SchemaManager(
+            spySearchEngineClient,
+            Set.of(tasklistImportPositionIndex),
+            Set.of(indexTemplate),
+            config,
+            objectMapper);
+
+    schemaManager.startup();
+
+    // then - verify the index was created
+    final var indexNode =
+        searchClientAdapter.getIndexAsNode(tasklistImportPositionIndex.getFullQualifiedName());
+
+    // verify _meta property is not added
+    assertThat(indexNode.get("mappings").get("_meta")).isNotNull();
+    assertThat(
+            indexNode.get("mappings").get("_meta").get(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY))
+        .isNotNull();
+    assertThat(
+            indexNode
+                .get("mappings")
+                .get("_meta")
+                .get(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY)
+                .asBoolean())
+        .isTrue();
   }
 
   private String retentionMinAge(final JsonNode policyNode) {

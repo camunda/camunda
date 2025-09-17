@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchDBExtension;
@@ -45,6 +46,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -79,6 +81,8 @@ final class OpenSearchArchiverRepositoryIT {
       ARCHIVER_IDX_PREFIX + "process-instance-" + UUID.randomUUID();
   private final String batchOperationIndex =
       ARCHIVER_IDX_PREFIX + "batch-operation-" + UUID.randomUUID();
+  private final String archiverBlockedIndex =
+      ARCHIVER_IDX_PREFIX + "import-position-" + UUID.randomUUID();
   private final OpenSearchClient testClient = createOpenSearchClient();
   private final String zeebeIndexPrefix = "zeebe-record";
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
@@ -338,6 +342,45 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetEmptyProcessInstancesNextBatchWhenBlocked() throws IOException {
+    // given - 4 documents, where 2 is on a different partition, 3 is the wrong join relation type,
+    // and 4 was finished too recently: we then expect only 1 to be returned
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestProcessInstance(
+                "1", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "2", twoHoursAgo, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 2),
+            new TestProcessInstance("3", twoHoursAgo, ListViewTemplate.ACTIVITIES_JOIN_RELATION, 1),
+            new TestProcessInstance(
+                "4", now.toString(), ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION, 1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    createProcessInstanceIndex();
+    documents.forEach(doc -> index(processInstanceIndex, doc));
+    testClient.indices().refresh(r -> r.index(processInstanceIndex));
+    testClient
+        .indices()
+        .putMapping(
+            mapping ->
+                mapping
+                    .index(archiverBlockedIndex)
+                    .meta(SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY, JsonData.of(true)));
+    // when
+    final var result = repository.getProcessInstancesNextBatch();
+
+    // then - we expect only the first document created two hours ago to be returned
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).isEmpty();
+    assertThat(batch.finishDate()).isNull();
+  }
+
+  @Test
   void shouldGetBatchOperationsNextBatch() throws IOException {
     // given - 3 documents, two of which were created over an hour ago, one of which was created
     final var now = Instant.now();
@@ -591,6 +634,7 @@ final class OpenSearchArchiverRepositoryIT {
         connectConfiguration.getIndexPrefix(),
         processInstanceIndex,
         batchOperationIndex,
+        archiverBlockedIndex,
         zeebeIndexPrefix,
         client,
         Runnable::run,
@@ -615,6 +659,7 @@ final class OpenSearchArchiverRepositoryIT {
                         ListViewTemplate.JOIN_RELATION,
                         joinRelationProp)));
     testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
+    testClient.indices().create(r -> r.index(archiverBlockedIndex));
   }
 
   private RestClientTransport createRestClient() {
