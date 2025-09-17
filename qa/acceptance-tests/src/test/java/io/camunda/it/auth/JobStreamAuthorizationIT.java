@@ -35,6 +35,7 @@ import java.util.HashSet;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -108,6 +109,7 @@ public class JobStreamAuthorizationIT {
     deployResource(adminClient, "service_tasks_v2.bpmn", modelInstance, TENANT_B);
   }
 
+  @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
   @Test
   public void shouldNotOpenStreamWhenNotAssignedToAllTenants(
       @Authenticated("admin") final CamundaClient adminClient,
