@@ -205,165 +205,164 @@ outputs:
 runs:
   using: composite
   steps:
+    - uses: dorny/paths-filter@v3
+      id: filter-common
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          github-actions-change:
+            - '.github/actions/**'
+            - '.github/workflows/**'
+            - '.github/actionlint*'
+            - '.github/conftest-*.rego'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-common
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        github-actions-change:
-          - '.github/actions/**'
-          - '.github/workflows/**'
-          - '.github/actionlint*'
-          - '.github/conftest-*.rego'
+          renovate-config-change:
+            - '**/renovate.json'
 
-        renovate-config-change:
-          - '**/renovate.json'
+          # We use specific src/main and src/test path to:
+          #  * react on java code (production + test) changes
+          #  * react on resource changes like bpmn, XML, etc.
+          #  * but _not_ react on frontend src folder changes
+          java-code-change:
+            - '**/src/main/**'
+            - '**/src/test/**'
 
-        # We use specific src/main and src/test path to:
-        #  * react on java code (production + test) changes
-        #  * react on resource changes like bpmn, XML, etc.
-        #  * but _not_ react on frontend src folder changes
-        java-code-change:
-          - '**/src/main/**'
-          - '**/src/test/**'
+          maven-change:
+            - 'bom/**'
+            - 'build-tools/**'
+            - 'dist/**'
+            - 'parent/**'
+            - '**/pom.xml'
+            - '.mvn/**'
 
-        maven-change:
-          - 'bom/**'
-          - 'build-tools/**'
-          - 'dist/**'
-          - 'parent/**'
-          - '**/pom.xml'
-          - '.mvn/**'
+          dockerfile-change:
+            - 'Dockerfile'
+            - '*.Dockerfile'
 
-        dockerfile-change:
-          - 'Dockerfile'
-          - '*.Dockerfile'
+          markdown-change:
+            - '**/*.md'
 
-        markdown-change:
-          - '**/*.md'
+          webapps-change:
+            - 'webapps-backup/**'
+            - 'webapps-common/**'
+            - 'webapps-schema/**'
 
-        webapps-change:
-          - 'webapps-backup/**'
-          - 'webapps-common/**'
-          - 'webapps-schema/**'
+          frontend-change:
+            - 'operate/client/**'
+            - 'tasklist/client/**'
+            - 'identity/client/**'
+            - 'optimize/client/**'
 
-        frontend-change:
-          - 'operate/client/**'
-          - 'tasklist/client/**'
-          - 'identity/client/**'
-          - 'optimize/client/**'
+          protobuf-change:
+            - '**/*.proto'
+            - 'buf.yaml'
 
-        protobuf-change:
-          - '**/*.proto'
-          - 'buf.yaml'
+          openapi-change:
+            - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+            - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
+            - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
 
-        openapi-change:
-          - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
-          - 'zeebe/gateway-protocol/vacuum-ruleset.yaml'
-          - 'zeebe/gateway-protocol/vacuum-ignores.yaml'
+          rdbms-change:
+          - 'db/rdbms/**'
+          - 'db/rdbms-schema/**'
+          - 'qa/acceptance-tests/**'
+          - 'search/search-domain/**'
+          - 'zeebe/exporters/rdbms-exporter/**'
 
-        rdbms-change:
-        - 'db/rdbms/**'
-        - 'db/rdbms-schema/**'
-        - 'qa/acceptance-tests/**'
-        - 'search/search-domain/**'
-        - 'zeebe/exporters/rdbms-exporter/**'
+    - uses: dorny/paths-filter@v3
+      id: filter-identity
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          identity-frontend-change:
+            - 'identity/client/**'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-identity
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        identity-frontend-change:
-          - 'identity/client/**'
+    - uses: dorny/paths-filter@v3
+      id: filter-zeebe
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          zeebe-change:
+            - 'zeebe/**'
+            - 'clients/**'
+            - 'Dockerfile'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-zeebe
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        zeebe-change:
-          - 'zeebe/**'
-          - 'clients/**'
-          - 'Dockerfile'
+    - uses: dorny/paths-filter@v3
+      id: filter-operate
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          operate-backend-change:
+            - 'operate/!(client/**)/**'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-operate
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        operate-backend-change:
-          - 'operate/!(client/**)/**'
+          operate-frontend-change:
+            - operate/client/**
 
-        operate-frontend-change:
-          - operate/client/**
+    - uses: dorny/paths-filter@v3
+      id: filter-tasklist
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          tasklist-backend-change:
+            - 'tasklist/!(client/**)/**'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-tasklist
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        tasklist-backend-change:
-          - 'tasklist/!(client/**)/**'
+          tasklist-frontend-change:
+            - tasklist/client/**
 
-        tasklist-frontend-change:
-          - tasklist/client/**
+    - uses: dorny/paths-filter@v3
+      id: filter-optimize
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          optimize-backend-change:
+            - optimize/backend/**
+            - optimize/upgrade/**
+            - optimize/util/**
+            - optimize/plugins/**
 
-  - uses: dorny/paths-filter@v3
-    id: filter-optimize
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        optimize-backend-change:
-          - optimize/backend/**
-          - optimize/upgrade/**
-          - optimize/util/**
-          - optimize/plugins/**
+          optimize-frontend-change:
+            - optimize/client/**
+            - optimize/c4/**
+            - optimize/backend/src/main/resources/localization/**
 
-        optimize-frontend-change:
-          - optimize/client/**
-          - optimize/c4/**
-          - optimize/backend/src/main/resources/localization/**
+    - uses: dorny/paths-filter@v3
+      id: filter-client-components
+      with:
+        base: ${{ github.event.merge_group.base_ref || '' }}
+        ref: ${{ github.event.merge_group.head_ref || github.ref }}
+        filters: |
+          client-components-change:
+            - 'client-components/**'
 
-  - uses: dorny/paths-filter@v3
-    id: filter-client-components
-    with:
-      base: ${{ github.event.merge_group.base_ref || '' }}
-      ref: ${{ github.event.merge_group.head_ref || github.ref }}
-      filters: |
-        client-components-change:
-          - 'client-components/**'
+    # only works `on: push` and `on: pull_request` GitHub trigger events
+    - id: filter-special-branch
+      shell: bash
+      run: |
+        if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
+          test_branch_name="$GITHUB_REF_NAME"
+        elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
+          test_branch_name="$GITHUB_HEAD_REF"
+        fi
+        echo "Branch name: $test_branch_name"
 
-  # only works `on: push` and `on: pull_request` GitHub trigger events
-  - id: filter-special-branch
-    shell: bash
-    run: |
-      if [[ $GITHUB_EVENT_NAME == 'push' ]]; then
-        test_branch_name="$GITHUB_REF_NAME"
-      elif [[ $GITHUB_EVENT_NAME == 'pull_request' ]]; then
-        test_branch_name="$GITHUB_HEAD_REF"
-      fi
-      echo "Branch name: $test_branch_name"
+        if [[ $test_branch_name =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
+          echo "Stable branch: true"
+          echo "stable-branch=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Stable branch: false"
+          echo "stable-branch=false" >> "$GITHUB_OUTPUT"
+        fi
 
-      if [[ $test_branch_name =~ ^stable\/[0-9]+\.[0-9]+$ ]]; then
-        echo "Stable branch: true"
-        echo "stable-branch=true" >> "$GITHUB_OUTPUT"
-      else
-        echo "Stable branch: false"
-        echo "stable-branch=false" >> "$GITHUB_OUTPUT"
-      fi
-
-      if [[ $test_branch_name =~ ^release.*$ ]]; then
-        echo "Release branch: true"
-        echo "release-branch=true" >> "$GITHUB_OUTPUT"
-      else
-        echo "Release branch: false"
-        echo "release-branch=false" >> "$GITHUB_OUTPUT"
-      fi
+        if [[ $test_branch_name =~ ^release.*$ ]]; then
+          echo "Release branch: true"
+          echo "release-branch=true" >> "$GITHUB_OUTPUT"
+        else
+          echo "Release branch: false"
+          echo "release-branch=false" >> "$GITHUB_OUTPUT"
+        fi
