@@ -78,59 +78,120 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
-    if (!authorizationsEnabled && !multiTenancyEnabled) {
+
+    if (shouldSkipAuthorization(request)) {
       return Either.right(null);
     }
-
-    if (!request.getCommand().hasRequestMetadata()
-        // Internal commands for batchOperations still need authChecks
-        && request.getCommand().getBatchOperationReference()
-            == batchOperationReferenceNullValue()) {
-      // The command is written by Zeebe internally and not part of a batch operation.
-      // These commands are always authorized
-      return Either.right(null);
-    }
-
-    if (isAuthorizedAnonymousUser(request.getCommand())) {
-      return Either.right(null);
-    }
-
-    final var username = getUsername(request);
-    final var clientId = getClientId(request);
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
-    if (username.isPresent()) {
-      final var userAuthorized =
-          isEntityAuthorized(request, EntityType.USER, Set.of(username.get()));
-      if (userAuthorized.isRight()) {
-        return Either.right(null);
-      } else {
-        aggregatedRejections.add(userAuthorized.getLeft());
-      }
-    } else if (clientId.isPresent()) {
-      final var clientAuthorized =
-          isEntityAuthorized(request, EntityType.CLIENT, Set.of(clientId.get()));
-      if (clientAuthorized.isRight()) {
-        return Either.right(null);
-      } else {
-        aggregatedRejections.add(clientAuthorized.getLeft());
-      }
+
+    final AuthorizationResult primaryResult =
+        checkPrimaryAuthorization(request, aggregatedRejections);
+
+    if (primaryResult.hasBothAccess()) {
+      return Either.right(null);
     }
 
-    final var mappingRuleAuthorized =
-        isEntityAuthorized(
-            request,
-            EntityType.MAPPING_RULE,
-            getPersistedMappingRules(request)
-                .map(PersistedMappingRule::getMappingRuleId)
-                .collect(Collectors.toSet()));
-    if (mappingRuleAuthorized.isRight()) {
+    final AuthorizationResult mappingRuleResult =
+        checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
+
+    if (mappingRuleResult.hasBothAccess()) {
       return Either.right(null);
-    } else {
-      aggregatedRejections.add(mappingRuleAuthorized.getLeft());
     }
 
     return getRejection(aggregatedRejections);
+  }
+
+  // Helper methods
+  private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
+    return (!authorizationsEnabled && !multiTenancyEnabled)
+        || (!request.getCommand().hasRequestMetadata()
+            && request.getCommand().getBatchOperationReference()
+                == batchOperationReferenceNullValue())
+        || isAuthorizedAnonymousUser(request.getCommand());
+  }
+
+  private AuthorizationResult checkPrimaryAuthorization(
+      final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
+    final var username = getUsername(request);
+    final var clientId = getClientId(request);
+    if (username.isPresent()) {
+      return checkAccessForEntity(request, EntityType.USER, username.get(), aggregatedRejections);
+    } else if (clientId.isPresent()) {
+      return checkAccessForEntity(request, EntityType.CLIENT, clientId.get(), aggregatedRejections);
+    }
+    return new AuthorizationResult(false, false);
+  }
+
+  private AuthorizationResult checkAccessForEntity(
+      final AuthorizationRequest request,
+      final EntityType entityType,
+      final String entityId,
+      final List<AuthorizationRejection> aggregatedRejections) {
+    final boolean resourceAccess =
+        hasAccess(isEntityAuthorized(request, entityType, Set.of(entityId)), aggregatedRejections);
+    final boolean tenantAccess =
+        hasAccess(isTenantAssigned(request, entityType, Set.of(entityId)), aggregatedRejections);
+    return new AuthorizationResult(tenantAccess, resourceAccess);
+  }
+
+  private AuthorizationResult checkMappingRuleAuthorization(
+      final AuthorizationRequest request,
+      final AuthorizationResult primaryResult,
+      final List<AuthorizationRejection> aggregatedRejections) {
+
+    final Set<String> mappingRules =
+        getPersistedMappingRules(request)
+            .map(PersistedMappingRule::getMappingRuleId)
+            .collect(Collectors.toSet());
+
+    boolean tenantAccess = primaryResult.hasTenantAccess();
+    boolean resourceAccess = primaryResult.hasResourceAccess();
+
+    if (!tenantAccess) {
+      tenantAccess =
+          hasAccess(
+              isTenantAssigned(request, EntityType.MAPPING_RULE, mappingRules),
+              aggregatedRejections);
+    }
+
+    if (!resourceAccess && tenantAccess) {
+      resourceAccess =
+          hasAccess(
+              isEntityAuthorized(request, EntityType.MAPPING_RULE, mappingRules),
+              aggregatedRejections);
+    }
+    return new AuthorizationResult(tenantAccess, resourceAccess);
+  }
+
+  private boolean hasAccess(
+      final Either<AuthorizationRejection, Void> request,
+      final List<AuthorizationRejection> aggregatedRejections) {
+    if (request.isLeft()) {
+      aggregatedRejections.add(request.getLeft());
+    }
+    return request.isRight();
+  }
+
+  public Either<AuthorizationRejection, Void> isTenantAssigned(
+      final AuthorizationRequest request, final EntityType entityType, final Set<String> owners) {
+    if (multiTenancyEnabled && request.isTenantOwnedResource()) {
+      final var notAssignedToTenant =
+          owners.stream()
+              .noneMatch(
+                  entity ->
+                      getAuthorizedTenantIds(request.command, entityType, entity)
+                          .anyMatch(request.tenantId::equals));
+      if (notAssignedToTenant) {
+        final var rejectionType =
+            request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
+        return Either.left(
+            new AuthorizationRejection(
+                new Rejection(rejectionType, request.getTenantErrorMessage()),
+                AuthorizationRejectionType.TENANT));
+      }
+    }
+    return Either.right(null);
   }
 
   /**
@@ -146,22 +207,6 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest request,
       final EntityType entityType,
       final Collection<String> entityIds) {
-    if (multiTenancyEnabled && request.isTenantOwnedResource()) {
-      final var isAssignedToTenant =
-          entityIds.stream()
-              .noneMatch(
-                  entityId ->
-                      getAuthorizedTenantIds(request.command, entityType, entityId)
-                          .anyMatch(request.tenantId::equals));
-      if (isAssignedToTenant) {
-        final var rejectionType =
-            request.isNewResource() ? RejectionType.FORBIDDEN : RejectionType.NOT_FOUND;
-        return Either.left(
-            new AuthorizationRejection(
-                new Rejection(rejectionType, request.getTenantErrorMessage()),
-                AuthorizationRejectionType.TENANT));
-      }
-    }
 
     if (!authorizationsEnabled) {
       return Either.right(null);
@@ -618,6 +663,13 @@ public final class AuthorizationCheckBehavior {
 
     public NotFoundException(final String message) {
       super(message);
+    }
+  }
+
+  // Helper record for authorization results
+  private record AuthorizationResult(boolean hasTenantAccess, boolean hasResourceAccess) {
+    public boolean hasBothAccess() {
+      return hasTenantAccess && hasResourceAccess;
     }
   }
 

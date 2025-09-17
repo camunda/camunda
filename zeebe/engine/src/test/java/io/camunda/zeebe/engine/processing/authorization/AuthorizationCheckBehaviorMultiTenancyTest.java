@@ -638,6 +638,42 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
   }
 
   @Test
+  void
+      shouldBeAuthorizedWhenUserHasPermissionAndMappingIsAssignedToRequestedTenantThroughGroupWithRole() {
+    // given
+    final var user = createUser();
+    final var mappingRule =
+        createMappingRule(Strings.newRandomValidIdentityId(), Strings.newRandomValidIdentityId());
+    final var resourceType = AuthorizationResourceType.RESOURCE;
+    final var permissionType = PermissionType.CREATE;
+    final var resourceId = UUID.randomUUID().toString();
+    addPermission(
+        user.getUsername(), AuthorizationOwnerType.USER, resourceType, permissionType, resourceId);
+    final var group =
+        createGroupAndAssignEntity(mappingRule.getMappingRuleId(), EntityType.MAPPING_RULE);
+    final var role = createRoleAndAssignEntity(group.getGroupId(), EntityType.GROUP);
+    final var tenantId = createAndAssignTenant(role.getRoleId(), EntityType.ROLE);
+    final var command = mock(TypedRecord.class);
+    when(command.getAuthorizations())
+        .thenReturn(
+            Map.of(
+                USER_TOKEN_CLAIMS,
+                Map.of(mappingRule.getClaimName(), mappingRule.getClaimValue()),
+                AUTHORIZED_USERNAME,
+                user.getUsername()));
+    when(command.hasRequestMetadata()).thenReturn(true);
+
+    // when
+    final var request =
+        new AuthorizationRequest(command, resourceType, permissionType, tenantId)
+            .addResourceId(resourceId);
+    final var authorized = authorizationCheckBehavior.isAuthorized(request);
+
+    // then
+    assertThat(authorized.isRight()).isTrue();
+  }
+
+  @Test
   void shouldGetTenantsWhenUserIsAssignedToRequestedTenantThroughRole() {
     // given
     final var user = createUser();
