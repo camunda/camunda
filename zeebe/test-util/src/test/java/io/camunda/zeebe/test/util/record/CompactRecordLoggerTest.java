@@ -45,7 +45,6 @@ class CompactRecordLoggerTest {
       names = {
         "IDENTITY_SETUP",
         "SCALE",
-        "FORM",
         "CHECKPOINT",
       })
   public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {

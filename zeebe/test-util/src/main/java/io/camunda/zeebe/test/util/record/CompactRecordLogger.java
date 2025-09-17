@@ -121,6 +121,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.ExtendedMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.MetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
@@ -282,6 +283,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
+    valueLoggers.put(ValueType.FORM, this::summarizeForm);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1465,6 +1467,11 @@ public class CompactRecordLogger {
     }
 
     return summary.toString();
+  }
+
+  private String summarizeForm(final Record<?> record) {
+    final var value = (Form) record.getValue();
+    return summarizeDeploymentMetadata(value).toString();
   }
 
   private StringBuilder summarizeDeploymentMetadata(final MetadataValue value) {
