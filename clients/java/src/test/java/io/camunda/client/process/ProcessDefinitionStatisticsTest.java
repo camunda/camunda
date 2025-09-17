@@ -21,11 +21,11 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.client.protocol.rest.AdvancedProcessInstanceKeyFilter;
 import io.camunda.client.protocol.rest.AdvancedProcessInstanceStateFilter;
 import io.camunda.client.protocol.rest.AdvancedStringFilter;
 import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFields;
-import io.camunda.client.protocol.rest.BasicStringFilter;
-import io.camunda.client.protocol.rest.BasicStringFilterProperty;
+import io.camunda.client.protocol.rest.BaseProcessInstanceFilterFieldsProcessInstanceKey;
 import io.camunda.client.protocol.rest.DateTimeFilterProperty;
 import io.camunda.client.protocol.rest.ElementInstanceStateEnum;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
@@ -139,7 +139,8 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessDefinitionElementStatisticsQuery.class);
     final ProcessDefinitionStatisticsFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BaseProcessInstanceFilterFieldsProcessInstanceKey processInstanceKey =
+        filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
   }
@@ -239,7 +240,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     assertThat(filter.get$Or())
         .containsExactlyInAnyOrder(
             new BaseProcessInstanceFilterFields()
-                .processInstanceKey(new BasicStringFilter().$eq("123"))
+                .processInstanceKey(new AdvancedProcessInstanceKeyFilter().$eq("123"))
                 .elementId(new AdvancedStringFilter().$eq("elementId")),
             new BaseProcessInstanceFilterFields().hasElementInstanceIncident(true));
   }

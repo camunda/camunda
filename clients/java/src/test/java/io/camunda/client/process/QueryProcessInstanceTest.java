@@ -154,7 +154,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BaseProcessInstanceFilterFieldsProcessInstanceKey processInstanceKey =
+        filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey).extracting("$in").isEqualTo(Arrays.asList("1", "10"));
   }
@@ -173,7 +174,8 @@ public class QueryProcessInstanceTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceSearchQuery.class);
     final ProcessInstanceFilter filter = request.getFilter();
     assertThat(filter).isNotNull();
-    final BasicStringFilterProperty processInstanceKey = filter.getProcessInstanceKey();
+    final BaseProcessInstanceFilterFieldsProcessInstanceKey processInstanceKey =
+        filter.getProcessInstanceKey();
     assertThat(processInstanceKey).isNotNull();
     assertThat(processInstanceKey).extracting("$notIn").isEqualTo(Arrays.asList("1", "10"));
   }
