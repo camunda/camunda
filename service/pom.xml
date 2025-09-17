@@ -82,6 +82,11 @@
       <groupId>io.camunda</groupId>
       <artifactId>camunda-security-protocol</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-auth</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>

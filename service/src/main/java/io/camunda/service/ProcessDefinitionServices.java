@@ -17,6 +17,7 @@ import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -37,8 +38,14 @@ public class ProcessDefinitionServices
       final ProcessDefinitionSearchClient processDefinitionSearchClient,
       final FormServices formServices,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.processDefinitionSearchClient = processDefinitionSearchClient;
     this.formServices = formServices;
   }
@@ -73,7 +80,8 @@ public class ProcessDefinitionServices
         processDefinitionSearchClient,
         formServices,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public ProcessDefinitionEntity getByKey(final Long processDefinitionKey) {

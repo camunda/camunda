@@ -14,6 +14,7 @@ import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
 import io.camunda.service.cache.ProcessCache;
@@ -40,8 +41,14 @@ public final class ElementInstanceServices
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.flowNodeInstanceSearchClient = flowNodeInstanceSearchClient;
     this.processCache = processCache;
   }
@@ -54,7 +61,8 @@ public final class ElementInstanceServices
         flowNodeInstanceSearchClient,
         processCache,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override

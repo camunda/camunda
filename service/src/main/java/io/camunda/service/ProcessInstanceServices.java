@@ -24,6 +24,7 @@ import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -74,8 +75,14 @@ public final class ProcessInstanceServices
       final SequenceFlowSearchClient sequenceFlowSearchClient,
       final IncidentServices incidentServices,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
@@ -90,7 +97,8 @@ public final class ProcessInstanceServices
         sequenceFlowSearchClient,
         incidentServices,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   @Override

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.mock;
 
 import io.atomix.cluster.AtomixCluster;
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -75,7 +76,8 @@ public final class SimpleBrokerStartTest {
                       mock(UserServices.class),
                       mock(PasswordEncoder.class),
                       mock(JwtDecoder.class),
-                      mock(SearchClientsProxy.class));
+                      mock(SearchClientsProxy.class),
+                      mock(BrokerRequestAuthorizationConverter.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -105,7 +107,8 @@ public final class SimpleBrokerStartTest {
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
-            mock(SearchClientsProxy.class));
+            mock(SearchClientsProxy.class),
+            mock(BrokerRequestAuthorizationConverter.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

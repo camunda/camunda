@@ -18,6 +18,7 @@ import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
@@ -62,6 +63,8 @@ abstract class AbstractBatchOperationTest {
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
   protected final SearchClientsProxy searchClientsProxy = Mockito.mock(SearchClientsProxy.class);
+  protected final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter =
+      Mockito.mock(BrokerRequestAuthorizationConverter.class);
 
   @Rule
   public final EngineRule engine =
@@ -79,7 +82,8 @@ abstract class AbstractBatchOperationTest {
                   cfg.setBatchOperationQueryPageSize(DEFAULT_QUERY_PAGE_SIZE)
                       .setBatchOperationQueryRetryMax(2)
                       .setBatchOperationQueryRetryInitialDelay(Duration.ofMillis(100)))
-          .withSearchClientsProxy(searchClientsProxy);
+          .withSearchClientsProxy(searchClientsProxy)
+          .withBrokerRequestAuthorizationConverter(brokerRequestAuthorizationConverter);
 
   @Before
   public void setUp() {
@@ -109,6 +113,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -148,6 +153,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -211,6 +217,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
@@ -254,6 +261,7 @@ abstract class AbstractBatchOperationTest {
     DirectBuffer authenticationBuffer = null;
     if (claims != null) {
       authenticationBuffer = convertToBuffer(CamundaAuthentication.of(b -> b.claims(claims)));
+      when(brokerRequestAuthorizationConverter.convert(any())).thenReturn(claims);
     }
 
     return engine
