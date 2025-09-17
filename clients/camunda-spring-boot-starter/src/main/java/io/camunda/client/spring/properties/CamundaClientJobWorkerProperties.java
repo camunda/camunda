@@ -24,7 +24,9 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENA
 
 import java.time.Duration;
 import java.util.List;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+@ConfigurationProperties("lib.camunda.client.worker.override")
 public class CamundaClientJobWorkerProperties {
 
   /** The type of jobs to work on. */
