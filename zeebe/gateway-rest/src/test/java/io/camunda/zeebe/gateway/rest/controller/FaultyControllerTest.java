@@ -48,6 +48,7 @@ public class FaultyControllerTest extends RestControllerTest {
     final var request =
         """
         {
+            "processDefinitionKey": "2251799813685249",
             "test": "123"
         }""";
 
