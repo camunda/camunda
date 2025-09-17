@@ -105,8 +105,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
   @Override
   public void beforeTestClass(final TestContext testContext) {
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+
+    final JsonMapper jsonMapper = testContext.getApplicationContext().getBean(JsonMapper.class);
+    final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper =
+        testContext.getApplicationContext().getBean(io.camunda.zeebe.client.api.JsonMapper.class);
+
     // create runtime
-    runtime = buildRuntime(testContext);
+    runtime = buildRuntime(runtimeConfiguration);
     runtime.start();
 
     camundaManagementClient =
@@ -118,7 +125,9 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             runtime,
             createdClients::add,
             camundaManagementClient,
-            CamundaAssert.getAwaitBehavior());
+            CamundaAssert.getAwaitBehavior(),
+            jsonMapper,
+            zeebeJsonMapper);
 
     // create process coverage
     processCoverage =
@@ -126,12 +135,15 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             .testClass(testContext.getTestClass())
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
             .build();
+
+    // initialize json mapper
+    initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
   @Override
   public void beforeTestMethod(final TestContext testContext) {
-    client = createClient(testContext, camundaProcessTestContext);
-    zeebeClient = createZeebeClient(testContext, camundaProcessTestContext);
+    client = createClient(camundaProcessTestContext);
+    zeebeClient = createZeebeClient(camundaProcessTestContext);
 
     // fill proxies
     testContext.getApplicationContext().getBean(CamundaClientProxy.class).setClient(client);
@@ -214,6 +226,16 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime.close();
   }
 
+  private void initializeJsonMapper(
+      final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
+
+    if (jsonMapper != null) {
+      CamundaAssert.setJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      CamundaAssert.setJsonMapper(zeebeJsonMapper);
+    }
+  }
+
   private void printTestResults() {
     try {
       // collect test results
@@ -266,41 +288,21 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     }
   }
 
-  private CamundaProcessTestRuntime buildRuntime(final TestContext testContext) {
-    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
-        testContext.getApplicationContext().getBean(CamundaProcessTestRuntimeConfiguration.class);
+  private CamundaProcessTestRuntime buildRuntime(
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
         containerRuntimeBuilder, runtimeConfiguration);
   }
 
   private static CamundaClient createClient(
-      final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createClient(
-        builder -> {
-          if (hasBeanForType(testContext, JsonMapper.class)) {
-            final JsonMapper jsonMapper =
-                testContext.getApplicationContext().getBean(JsonMapper.class);
-            builder.withJsonMapper(jsonMapper);
-          }
-        });
+      final CamundaProcessTestContext camundaProcessTestContext) {
+    return camundaProcessTestContext.createClient();
   }
 
   private static ZeebeClient createZeebeClient(
-      final TestContext testContext, final CamundaProcessTestContext camundaProcessTestContext) {
-    return camundaProcessTestContext.createZeebeClient(
-        builder -> {
-          if (hasBeanForType(testContext, io.camunda.zeebe.client.api.JsonMapper.class)) {
-            builder.withJsonMapper(
-                testContext
-                    .getApplicationContext()
-                    .getBean(io.camunda.zeebe.client.api.JsonMapper.class));
-          }
-        });
-  }
-
-  private static boolean hasBeanForType(final TestContext testContext, final Class<?> type) {
-    return testContext.getApplicationContext().getBeanNamesForType(type).length > 0;
+      final CamundaProcessTestContext camundaProcessTestContext) {
+    return camundaProcessTestContext.createZeebeClient();
   }
 
   private static boolean isTestFailed(final TestContext testContext) {

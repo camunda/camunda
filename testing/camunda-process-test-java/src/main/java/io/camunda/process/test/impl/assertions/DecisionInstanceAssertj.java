@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.DecisionInstanceAssert;
 import io.camunda.process.test.api.assertions.DecisionSelector;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.assertj.core.api.AbstractAssert;
@@ -38,6 +39,7 @@ public class DecisionInstanceAssertj
   public DecisionInstanceAssertj(
       final CamundaDataSource dataSource,
       final CamundaAssertAwaitBehavior awaitBehavior,
+      final CamundaAssertJsonMapper jsonMapper,
       final DecisionSelector decisionSelector) {
 
     super(decisionSelector, DecisionInstanceAssert.class);
@@ -48,7 +50,7 @@ public class DecisionInstanceAssertj
     this.dataSource = dataSource;
     this.awaitBehavior = awaitBehavior;
     decisionMatchedRulesAssertj = new DecisionMatchedRulesAssertj(failureMessagePrefix);
-    decisionOutputAssertj = new DecisionOutputAssertj(failureMessagePrefix);
+    decisionOutputAssertj = new DecisionOutputAssertj(jsonMapper, failureMessagePrefix);
   }
 
   @Override

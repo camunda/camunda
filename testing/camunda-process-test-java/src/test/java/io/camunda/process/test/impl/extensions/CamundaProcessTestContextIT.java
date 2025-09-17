@@ -22,16 +22,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Fail.fail;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.DecisionSelectors;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder.JobWorkerMock;
-import io.camunda.process.test.impl.assertions.util.AssertionJsonMapper;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
@@ -59,6 +61,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 @CamundaProcessTest
 public class CamundaProcessTestContextIT {
+
+  private final CamundaAssertJsonMapper jsonMapper =
+      new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
 
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
@@ -939,7 +944,7 @@ public class CamundaProcessTestContextIT {
     inputVariables.put("experience", 11);
     inputVariables.put("type", "luxury");
 
-    final Object decisionOutput = AssertionJsonMapper.readJson(decisionOutputJson);
+    final Object decisionOutput = jsonMapper.readJson(decisionOutputJson);
 
     // When
     processTestContext.mockDmnDecision(decisionId, decisionOutput);
