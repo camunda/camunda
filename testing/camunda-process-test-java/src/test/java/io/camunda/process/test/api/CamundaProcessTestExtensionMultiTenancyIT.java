@@ -57,7 +57,7 @@ public class CamundaProcessTestExtensionMultiTenancyIT {
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
-          .withMultiTenancyEnabled();
+          .withMultiTenancyEnabled(true);
 
   // to be injected
   private CamundaClient client;
