@@ -281,7 +281,7 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldNotFailSettingILMOnMissingIndex() throws IOException {
     // given
     final var repository = createRepository();
-    final var indexName = UUID.randomUUID().toString();
+    final var indexName = processInstanceIndex + UUID.randomUUID();
     retention.setEnabled(true);
     retention.setPolicyName("operate_delete_archived_indices");
     putLifecyclePolicies();
@@ -642,8 +642,8 @@ final class ElasticsearchArchiverRepositoryIT {
   void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
     // given
     retention.setEnabled(true);
-    final var indexName1 = UUID.randomUUID().toString();
-    final var indexName2 = UUID.randomUUID().toString();
+    final var indexName1 = processInstanceIndex + UUID.randomUUID();
+    final var indexName2 = processInstanceIndex + UUID.randomUUID();
 
     final var clientSpy = spy(new ElasticsearchAsyncClient(transport));
     final var indicesClientSpy = spy(clientSpy.indices());
@@ -845,7 +845,6 @@ final class ElasticsearchArchiverRepositoryIT {
                 r.index(processInstanceIndex)
                     .mappings(properties)
                     .aliases(processInstanceIndex + "alias", a -> a.isWriteIndex(false)));
-    testClient.indices().create(r -> r.index(processInstanceIndex).mappings(properties));
   }
 
   private void createBatchOperationIndex() throws IOException {

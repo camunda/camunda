@@ -78,7 +78,6 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     super(client, executor, logger);
     this.partitionId = partitionId;
     this.config = config;
-    ;
     archiverBlockedMetaIndex =
         resourceProvider
             .getIndexDescriptor(TasklistImportPositionIndex.class)
