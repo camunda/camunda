@@ -115,7 +115,9 @@
   "properties": [
     {
       "name": "camunda.client.worker.defaults.tenant-ids",
-      "defaultValue": ["<default>"]
+      "defaultValue": [
+        "<default>"
+      ]
     },
     {
       "name": "camunda.client.worker.defaults.timeout",
@@ -850,5 +852,51 @@
         "replacement": "camunda.client.cloud.domain"
       }
     }
-  ]
+  ],
+  "ignored": {
+    "properties": [
+      {
+        "name": "lib.camunda.client.worker.override.auto-complete"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.enabled"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.fetch-variables"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.force-fetch-all-variables"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.max-jobs-active"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.max-retries"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.name"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.poll-interval"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.request-timeout"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.stream-enabled"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.stream-timeout"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.tenant-ids"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.timeout"
+      },
+      {
+        "name": "lib.camunda.client.worker.override.type"
+      }
+    ]
+  }
 }
