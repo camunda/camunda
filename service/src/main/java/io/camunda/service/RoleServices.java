@@ -15,6 +15,7 @@ import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -40,8 +41,14 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
       final SecurityContextProvider securityContextProvider,
       final RoleSearchClient roleSearchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.roleSearchClient = roleSearchClient;
   }
 
@@ -93,7 +100,12 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
   @Override
   public RoleServices withAuthentication(final CamundaAuthentication authentication) {
     return new RoleServices(
-        brokerClient, securityContextProvider, roleSearchClient, authentication, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        roleSearchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<RoleRecord> createRole(final CreateRoleRequest request) {

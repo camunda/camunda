@@ -18,6 +18,7 @@ import io.camunda.document.api.DocumentStore;
 import io.camunda.document.api.DocumentStoreRecord;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.impl.AuthorizationChecker;
@@ -51,8 +52,14 @@ public class DocumentServices extends ApiServices<DocumentServices> {
       final SimpleDocumentStoreRegistry registry,
       final AuthorizationChecker authorizationChecker,
       final SecurityConfiguration securityConfig,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.registry = registry;
     this.authorizationChecker = authorizationChecker;
     this.securityConfig = securityConfig;
@@ -67,7 +74,8 @@ public class DocumentServices extends ApiServices<DocumentServices> {
         registry,
         authorizationChecker,
         securityConfig,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   /** Will return a failed future for any error returned by the store */

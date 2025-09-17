@@ -13,6 +13,7 @@ import io.camunda.search.clients.CorrelatedMessageSearchClient;
 import io.camunda.search.entities.CorrelatedMessageEntity;
 import io.camunda.search.query.CorrelatedMessageQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -35,15 +36,26 @@ public final class MessageServices
       final SecurityContextProvider securityContextProvider,
       final CorrelatedMessageSearchClient searchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.searchClient = searchClient;
   }
 
   @Override
   public MessageServices withAuthentication(final CamundaAuthentication authentication) {
     return new MessageServices(
-        brokerClient, securityContextProvider, searchClient, authentication, executorProvider);
+        brokerClient,
+        securityContextProvider,
+        searchClient,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<MessageCorrelationRecord> correlateMessage(

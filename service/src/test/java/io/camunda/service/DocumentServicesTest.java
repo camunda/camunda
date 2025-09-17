@@ -62,7 +62,8 @@ public class DocumentServicesTest {
             registry,
             authorizationChecker,
             securityConfiguration,
-            mock(ApiServicesExecutorProvider.class));
+            mock(ApiServicesExecutorProvider.class),
+            null);
 
     final var authorizationConfiguration = new AuthorizationsConfiguration();
     authorizationConfiguration.setEnabled(false);

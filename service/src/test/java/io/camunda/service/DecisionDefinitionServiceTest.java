@@ -53,7 +53,8 @@ public final class DecisionDefinitionServiceTest {
             client,
             decisionRequirementServices,
             null,
-            mock(ApiServicesExecutorProvider.class));
+            mock(ApiServicesExecutorProvider.class),
+            null);
   }
 
   @Test

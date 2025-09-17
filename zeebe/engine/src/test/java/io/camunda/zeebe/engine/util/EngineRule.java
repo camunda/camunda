@@ -11,6 +11,7 @@ import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.DbValue;
@@ -129,6 +130,7 @@ public final class EngineRule extends ExternalResource {
       cfg -> cfg.getAuthorizations().setEnabled(false);
   private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
   private SearchClientsProxy searchClientsProxy;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
 
   private EngineRule(final int partitionCount) {
@@ -265,6 +267,12 @@ public final class EngineRule extends ExternalResource {
     return this;
   }
 
+  public EngineRule withBrokerRequestAuthorizationConverter(
+      final BrokerRequestAuthorizationConverter authorizationConverter) {
+    brokerRequestAuthorizationConverter = authorizationConverter;
+    return this;
+  }
+
   public EngineRule withInitializeRoutingState(final boolean initializeRoutingState) {
     this.initializeRoutingState = initializeRoutingState;
     return this;
@@ -334,7 +342,8 @@ public final class EngineRule extends ExternalResource {
                         interPartitionCommandSender,
                         featureFlags,
                         jobStreamer,
-                        searchClientsProxy)
+                        searchClientsProxy,
+                        brokerRequestAuthorizationConverter)
                     .withListener(
                         new ProcessingExporterTransistor(
                             environmentRule.getLogStream(partitionId)));

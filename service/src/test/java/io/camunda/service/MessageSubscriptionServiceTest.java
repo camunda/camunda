@@ -36,7 +36,8 @@ public class MessageSubscriptionServiceTest {
             mock(SecurityContextProvider.class),
             client,
             null,
-            mock(ApiServicesExecutorProvider.class));
+            mock(ApiServicesExecutorProvider.class),
+            null);
   }
 
   @Test

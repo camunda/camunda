@@ -24,7 +24,7 @@ public class WebSecurityOidcTestContext {
   @Bean
   public MappingRuleServices createMappingRuleServices(
       final ApiServicesExecutorProvider executorProvider) {
-    return new MappingRuleServices(null, null, null, null, executorProvider);
+    return new MappingRuleServices(null, null, null, null, executorProvider, null);
   }
 
   @Bean

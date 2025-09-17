@@ -20,6 +20,7 @@ import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.MappingRuleServices.MappingRuleDTO;
 import io.camunda.service.security.SecurityContextProvider;
@@ -50,6 +51,7 @@ public class MappingRuleServicesTest {
   private StubbedBrokerClient stubbedBrokerClient;
   private SearchQueryResult<MappingRuleEntity> result;
   private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   public void before() {
@@ -65,13 +67,15 @@ public class MappingRuleServicesTest {
         ArgumentCaptor.forClass(BrokerMappingRuleUpdateRequest.class);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new MappingRuleServices(
             stubbedBrokerClient,
             mock(SecurityContextProvider.class),
             client,
             authentication,
-            executorProvider);
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test
@@ -142,7 +146,8 @@ public class MappingRuleServicesTest {
             mock(SecurityContextProvider.class),
             client,
             testAuthentication,
-            executorProvider);
+            executorProvider,
+            brokerRequestAuthorizationConverter);
 
     final var mappingRuleRecord = new MappingRuleRecord();
     mappingRuleRecord.setMappingRuleId("id");
@@ -170,7 +175,8 @@ public class MappingRuleServicesTest {
             mock(SecurityContextProvider.class),
             client,
             testAuthentication,
-            executorProvider);
+            executorProvider,
+            brokerRequestAuthorizationConverter);
 
     final var mappingRuleRecord = new MappingRuleRecord();
     mappingRuleRecord.setMappingRuleId("id");

@@ -15,6 +15,7 @@ import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
@@ -35,8 +36,14 @@ public class IncidentServices
       final SecurityContextProvider securityContextProvider,
       final IncidentSearchClient incidentSearchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.incidentSearchClient = incidentSearchClient;
   }
 
@@ -63,7 +70,8 @@ public class IncidentServices
         securityContextProvider,
         incidentSearchClient,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public IncidentEntity getByKey(final Long key) {

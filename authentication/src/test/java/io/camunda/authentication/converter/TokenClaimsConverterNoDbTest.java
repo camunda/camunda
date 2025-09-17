@@ -7,7 +7,6 @@
  */
 package io.camunda.authentication.converter;
 
-import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -92,8 +91,7 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).containsExactlyInAnyOrder("group1", "group2");
-    assertThat((List<String>) result.claims().get(USER_GROUPS_CLAIMS))
-        .containsExactlyInAnyOrder("group1", "group2");
+    assertThat(result.claims()).isEqualTo(claims);
     // In no-db mode, no secondary storage access, so these should be empty
     assertThat(result.authenticatedRoleIds()).isEmpty();
     assertThat(result.authenticatedTenantIds()).isEmpty();
@@ -113,7 +111,7 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).isEmpty();
-    assertThat((List<String>) result.claims().get(USER_GROUPS_CLAIMS)).isEmpty();
+    assertThat(result.claims()).isEqualTo(claims);
   }
 
   @Test
@@ -150,6 +148,6 @@ public class TokenClaimsConverterNoDbTest {
     assertThat(result).isNotNull();
     assertThat(result.authenticatedUsername()).isEqualTo("testuser");
     assertThat(result.authenticatedGroupIds()).isEmpty();
-    assertThat((List<String>) result.claims().get(USER_GROUPS_CLAIMS)).isEmpty();
+    assertThat(result.claims()).isEqualTo(claims);
   }
 }

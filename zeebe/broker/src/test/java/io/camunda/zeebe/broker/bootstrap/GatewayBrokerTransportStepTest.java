@@ -16,6 +16,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.SpringBrokerBridge;
@@ -72,7 +73,8 @@ class GatewayBrokerTransportStepTest {
             mock(UserServices.class),
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
-            mock(SearchClientsProxy.class));
+            mock(SearchClientsProxy.class),
+            mock(BrokerRequestAuthorizationConverter.class));
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
   }
 

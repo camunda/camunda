@@ -15,6 +15,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.SearchQueryBase.AbstractQueryBuilder;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.MappingRuleMatcher;
 import io.camunda.service.search.core.SearchQueryService;
@@ -38,8 +39,14 @@ public class MappingRuleServices
       final SecurityContextProvider securityContextProvider,
       final MappingRuleSearchClient mappingRuleSearchClient,
       final CamundaAuthentication authentication,
-      final ApiServicesExecutorProvider executorProvider) {
-    super(brokerClient, securityContextProvider, authentication, executorProvider);
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    super(
+        brokerClient,
+        securityContextProvider,
+        authentication,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
     this.mappingRuleSearchClient = mappingRuleSearchClient;
   }
 
@@ -61,7 +68,8 @@ public class MappingRuleServices
         securityContextProvider,
         mappingRuleSearchClient,
         authentication,
-        executorProvider);
+        executorProvider,
+        brokerRequestAuthorizationConverter);
   }
 
   public CompletableFuture<MappingRuleRecord> createMappingRule(final MappingRuleDTO request) {

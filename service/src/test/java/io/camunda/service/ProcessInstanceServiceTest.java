@@ -32,6 +32,7 @@ import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceMigrateBatchOperationRequest;
 import io.camunda.service.ProcessInstanceServices.ProcessInstanceModifyBatchOperationRequest;
@@ -65,6 +66,7 @@ public final class ProcessInstanceServiceTest {
   private CamundaAuthentication authentication;
   private BrokerClient brokerClient;
   private ApiServicesExecutorProvider executorProvider;
+  private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   @BeforeEach
   public void before() {
@@ -81,6 +83,7 @@ public final class ProcessInstanceServiceTest {
     brokerClient = mock(BrokerClient.class);
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
+    brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
     services =
         new ProcessInstanceServices(
             brokerClient,
@@ -89,7 +92,8 @@ public final class ProcessInstanceServiceTest {
             sequenceFlowSearchClient,
             incidentServices,
             authentication,
-            executorProvider);
+            executorProvider,
+            brokerRequestAuthorizationConverter);
   }
 
   @Test
