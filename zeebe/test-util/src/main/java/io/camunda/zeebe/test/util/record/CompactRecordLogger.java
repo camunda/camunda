@@ -503,9 +503,15 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInformation(final Process value) {
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(), formatId(value.getBpmnProcessId()), value.getVersion());
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getBpmnProcessId(),
+            value.getProcessDefinitionKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
   }
 
   private String summarizeElementInformation(
@@ -997,11 +1003,15 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionRequirements(final Record<?> record) {
     final var value = (DecisionRequirementsRecordValue) record.getValue();
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(),
-        formatId(value.getDecisionRequirementsId()),
-        value.getDecisionRequirementsVersion());
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getDecisionRequirementsId(),
+            value.getDecisionRequirementsKey(),
+            value.getDecisionRequirementsVersion(),
+            null,
+            value.isDuplicate())
+        .toString();
   }
 
   private String summarizeDecision(final Record<?> record) {
@@ -1346,24 +1356,15 @@ public class CompactRecordLogger {
 
   private String summarizeResource(final Record<?> record) {
     final var value = (Resource) record.getValue();
-    final var result = new StringBuilder();
-
-    result
-        .append(value.getResourceName())
-        .append(" -> ")
-        .append(formatId(value.getResourceId()))
-        .append(" v")
-        .append(value.getVersion());
-
-    if (StringUtils.isNotEmpty(value.getVersionTag())) {
-      result.append("(tag-").append(value.getVersionTag()).append(")");
-    }
-
-    if (value.isDuplicate()) {
-      result.append(" (dup)");
-    }
-
-    return result.append(formatTenant(value)).toString();
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getResourceId(),
+            value.getResourceKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
   }
 
   private String summarizeResourceDeletion(final Record<?> record) {
@@ -1694,6 +1695,39 @@ public class CompactRecordLogger {
     final var value = (CheckpointRecordValue) record.getValue();
     return "checkpoint %s @ #%s"
         .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
+  }
+
+  private StringBuilder summarizeDeploymentMetadata(
+      final TenantOwned value,
+      final String resourceName,
+      final String id,
+      final long key,
+      final int version,
+      final String versionTag,
+      final boolean duplicate) {
+    final StringBuilder result = new StringBuilder();
+
+    result
+        .append(resourceName)
+        .append(" -> ")
+        .append(formatId(id))
+        .append("[")
+        .append(shortenKey(key))
+        .append("]")
+        .append(" (version:")
+        .append(version);
+
+    if (StringUtils.isNotEmpty(versionTag)) {
+      result.append(" tag:").append(versionTag);
+    }
+
+    result.append(")");
+
+    if (duplicate) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value));
   }
 
   private String formatPinnedTime(final long time) {
