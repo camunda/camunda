@@ -38,6 +38,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLException;
@@ -149,6 +150,7 @@ public class HttpClientFactory {
             .setCharCodingConfig(
                 CharCodingConfig.custom().setCharset(StandardCharsets.UTF_8).build())
             .evictIdleConnections(TimeValue.ofSeconds(30))
+            .disableAutomaticRetries()
             .useSystemProperties(); // allow users to customize via system properties
 
     final List<AsyncExecChainHandler> chainHandlers = config.getChainHandlers();
@@ -168,7 +170,9 @@ public class HttpClientFactory {
         .setConnectionKeepAlive(TimeValue.of(config.getKeepAlive()))
         // hard cancellation may cause other requests to fail as it will kill the connection; can be
         // enabled when using HTTP/2
-        .setHardCancellationEnabled(false);
+        .setHardCancellationEnabled(false)
+        .setRedirectsEnabled(false)
+        .setConnectionRequestTimeout(Timeout.of(500, TimeUnit.MILLISECONDS));
   }
 
   private SSLContext createSslContext() {
