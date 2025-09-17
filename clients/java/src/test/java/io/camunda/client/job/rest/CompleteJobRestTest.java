@@ -30,6 +30,8 @@ import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.JsonUtil;
 import io.camunda.client.util.StringUtil;
 import java.io.ByteArrayInputStream;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,6 +48,10 @@ class CompleteJobRestTest extends ClientRestTest {
   public static final JobResult.TypeEnum USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK;
   public static final JobResult.TypeEnum AD_HOC_SUB_PROCESS_DISCRIMINATOR =
       TypeEnum.AD_HOC_SUB_PROCESS;
+  private static final OffsetDateTime TEST_DUE_DATE =
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+  private static final OffsetDateTime TEST_FOLLOW_UP_DATE =
+      OffsetDateTime.of(2023, 11, 12, 11, 11, 11, 11, ZoneOffset.of("Z"));
 
   @Test
   void shouldCompleteJobByKey() {
@@ -288,8 +294,8 @@ class CompleteJobRestTest extends ClientRestTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("follow up date")
+                    .correctDueDate(TEST_DUE_DATE)
+                    .correctFollowUpDate(TEST_FOLLOW_UP_DATE)
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
                     .correctPriority(80))
@@ -308,8 +314,8 @@ class CompleteJobRestTest extends ClientRestTest {
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
-                            .dueDate("due date")
-                            .followUpDate("follow up date")
+                            .dueDate(TEST_DUE_DATE.toString())
+                            .followUpDate(TEST_FOLLOW_UP_DATE.toString())
                             .candidateUsers(Arrays.asList("User A", "User B"))
                             .candidateGroups(Arrays.asList("Group A", "Group B"))
                             .priority(80)));
@@ -329,8 +335,8 @@ class CompleteJobRestTest extends ClientRestTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("")
+                    .correctDueDate(TEST_DUE_DATE)
+                    .clearFollowUpDate()
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
@@ -348,7 +354,7 @@ class CompleteJobRestTest extends ClientRestTest {
                     .corrections(
                         new io.camunda.client.protocol.rest.JobResultCorrections()
                             .assignee("Test")
-                            .dueDate("due date")
+                            .dueDate(TEST_DUE_DATE.toString())
                             .followUpDate("")
                             .candidateUsers(Arrays.asList("User A", "User B"))
                             .candidateGroups(null)
@@ -412,7 +418,7 @@ class CompleteJobRestTest extends ClientRestTest {
                     .deny(false)
                     .correctAssignee("Test")
                     .correctDueDate(null)
-                    .correctFollowUpDate("")
+                    .clearFollowUpDate()
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
@@ -454,7 +460,7 @@ class CompleteJobRestTest extends ClientRestTest {
                         c ->
                             c.assignee("Test")
                                 .dueDate(null)
-                                .followUpDate("")
+                                .clearFollowUpDate()
                                 .candidateUsers(Arrays.asList("User A", "User B"))
                                 .priority(80)))
         .send()

@@ -34,8 +34,9 @@ import org.junit.jupiter.api.Test;
 
 public final class UpdateUserTaskTest extends ClientRestTest {
 
-  private static final String TEST_TIME =
-      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z")).toString();
+  private static final OffsetDateTime TEST_TIME =
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+  private static final String TEST_TIME_STRING = TEST_TIME.toString();
 
   @Test
   void shouldUpdateUserTask() {
@@ -70,7 +71,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("dueDate", TEST_TIME));
+    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("dueDate", TEST_TIME_STRING));
   }
 
   @Test
@@ -82,7 +83,9 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     final UserTaskUpdateRequest request =
         gatewayService.getLastRequest(UserTaskUpdateRequest.class);
     assertThat(request.getAction()).isNull();
-    assertThat(request.getChangeset()).isNotNull().containsOnly(entry("followUpDate", TEST_TIME));
+    assertThat(request.getChangeset())
+        .isNotNull()
+        .containsOnly(entry("followUpDate", TEST_TIME_STRING));
   }
 
   @Test
@@ -96,7 +99,7 @@ public final class UpdateUserTaskTest extends ClientRestTest {
     assertThat(request.getAction()).isNull();
     assertThat(request.getChangeset())
         .isNotNull()
-        .containsOnly(entry("followUpDate", TEST_TIME), entry("dueDate", TEST_TIME));
+        .containsOnly(entry("followUpDate", TEST_TIME_STRING), entry("dueDate", TEST_TIME_STRING));
   }
 
   @Test
