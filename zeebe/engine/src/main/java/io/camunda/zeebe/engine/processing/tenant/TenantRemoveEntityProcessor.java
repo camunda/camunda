@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -46,6 +47,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantRemoveEntityProcessor(
@@ -63,6 +65,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
@@ -98,6 +101,12 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     final var tenantKey = persistedTenant.get().getTenantKey();
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.ENTITY_REMOVED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearTenantIdCache();
+          return true;
+        });
+
     distributeCommand(command);
   }
 
@@ -106,6 +115,11 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     if (validateEntityAssignment(command, command.getValue().getTenantId())) {
       stateWriter.appendFollowUpEvent(
           command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
+      sideEffectWriter.appendSideEffect(
+          () -> {
+            authCheckBehavior.clearTenantIdCache();
+            return true;
+          });
     }
 
     commandDistributionBehavior.acknowledgeCommand(command);
