@@ -22,6 +22,22 @@ import {
 } from '../requestHelpers';
 import {APIRequestContext} from 'playwright-core';
 
+export const clusterTopologyResponseFields = [
+  'brokers',
+  'clusterSize',
+  'partitionsCount',
+  'replicationFactor',
+  'gatewayVersion',
+  'lastCompletedChangeId',
+];
+export const brokerResponseFields = [
+  'nodeId',
+  'host',
+  'port',
+  'partitions',
+  'version',
+];
+export const partitionsResponseFields = ['partitionId', 'role', 'health'];
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',
