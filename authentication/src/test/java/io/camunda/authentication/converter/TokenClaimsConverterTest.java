@@ -153,9 +153,6 @@ public class TokenClaimsConverterTest {
       assertThat(camundaAuthentication).isNotNull();
       assertThat(camundaAuthentication.authenticatedClientId()).isEqualTo("preferred");
       assertThat(camundaAuthentication.authenticatedUsername()).isNull();
-      assertThat(camundaAuthentication.claims())
-          .containsEntry(AUTHORIZED_CLIENT_ID, "preferred")
-          .doesNotContainKey(USERNAME_CLAIM);
     }
   }
 

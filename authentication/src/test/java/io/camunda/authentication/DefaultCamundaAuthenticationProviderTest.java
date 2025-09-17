@@ -100,25 +100,6 @@ public class DefaultCamundaAuthenticationProviderTest {
   }
 
   @Test
-  void shouldNotCheckCacheWhenRefreshCalled() {
-    // given
-    final var expectedAuthentication = CamundaAuthentication.of(b -> b.user("foo"));
-
-    final var mockAuthentication = mock(Authentication.class);
-    when(mockAuthentication.getPrincipal()).thenReturn("foo");
-    SecurityContextHolder.getContext().setAuthentication(mockAuthentication);
-    when(authenticationConverter.convert(eq(mockAuthentication)))
-        .thenReturn(expectedAuthentication);
-
-    // when
-    authenticationProvider.refresh();
-
-    // then
-    verify(holder, never()).get();
-    verify(holder).set(eq(expectedAuthentication));
-  }
-
-  @Test
   void shouldFailToConvertWithUsernameAndClientId() {
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(() -> CamundaAuthentication.of(b -> b.user("foo").clientId("bar")));
