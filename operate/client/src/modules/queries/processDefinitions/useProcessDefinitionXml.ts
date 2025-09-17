@@ -58,6 +58,7 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
     select,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    retryOnMount: false,
     refetchOnMount: (query) => {
       const lastError = query.state.error;
       return (

@@ -42,11 +42,6 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
     processDefinitionKey,
   });
 
-  //TODO use for Error message definition when endpoint migrated
-
-  // const isForbiddenError =
-  //   isRequestError(processDefinitionError) && processDefinitionError?.response?.status === HTTP_STATUS_FORBIDDEN;
-
   const LOADING_STATES = ['initial', 'first-fetch'];
 
   const flowNodeInstanceRowRef = useRef<HTMLDivElement>(null);
@@ -83,7 +78,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
-            //TODO update the message with 403 related error when endpoint migrated
+            //TODO update the message with 403 related error during v2 endpoint integration #33542
             <ErrorMessage message="Instance History could not be fetched" />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
