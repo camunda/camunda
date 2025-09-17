@@ -70,5 +70,9 @@ public class MessagingException extends IOException {
     public ConnectionClosed(final String message) {
       super(message);
     }
+
+    public ConnectionClosed(final String message, final Throwable exception) {
+      super(message, exception);
+    }
   }
 }
