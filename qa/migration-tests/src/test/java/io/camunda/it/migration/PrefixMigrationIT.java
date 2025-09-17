@@ -13,12 +13,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
+import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.it.migration.util.PrefixMigrationUtils;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
@@ -30,7 +31,6 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.SchemaManager;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
@@ -300,15 +300,11 @@ public class PrefixMigrationIT {
 
   private void prefixMigration(
       final String oldOperatePrefix, final String oldTasklistPrefix, final String newPrefix) {
-    final var operate = new OperateProperties();
-    final var tasklist = new TasklistProperties();
+    final var operate =
+        new OperateIndexPrefixPropertiesOverride(oldOperatePrefix, oldOperatePrefix);
+    final var tasklist =
+        new TasklistIndexPrefixPropertiesOverride(oldTasklistPrefix, oldTasklistPrefix);
     final var connect = new SearchEngineConnectProperties();
-
-    operate.getElasticsearch().setIndexPrefix(oldOperatePrefix);
-    operate.getOpensearch().setIndexPrefix(oldOperatePrefix);
-
-    tasklist.getElasticsearch().setIndexPrefix(oldTasklistPrefix);
-    tasklist.getOpenSearch().setIndexPrefix(oldTasklistPrefix);
 
     connect.setIndexPrefix(newPrefix);
     if (currentMultiDbDatabaseType() == DatabaseType.ES) {

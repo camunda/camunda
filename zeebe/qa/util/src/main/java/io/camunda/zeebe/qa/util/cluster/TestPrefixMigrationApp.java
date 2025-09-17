@@ -9,11 +9,11 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandalonePrefixMigration;
+import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
+import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration;
 import io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
-import io.camunda.operate.property.OperateProperties;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
 import org.springframework.boot.WebApplicationType;
@@ -24,8 +24,8 @@ public final class TestPrefixMigrationApp extends TestSpringApplication<TestPref
 
   public TestPrefixMigrationApp(
       final SearchEngineConnectProperties connectConfiguration,
-      final TasklistProperties tasklistProperties,
-      final OperateProperties operateProperties) {
+      final TasklistIndexPrefixPropertiesOverride tasklistProperties,
+      final OperateIndexPrefixPropertiesOverride operateProperties) {
     super(StandalonePrefixMigration.class, SearchEngineDatabaseConfiguration.class);
 
     final var disableSchemaCreation = new SearchEngineSchemaManagerProperties();
@@ -36,8 +36,14 @@ public final class TestPrefixMigrationApp extends TestSpringApplication<TestPref
             "searchEngineSchemaManagerProperties",
             disableSchemaCreation,
             SearchEngineSchemaManagerProperties.class)
-        .withBean("tasklistProperties", tasklistProperties, TasklistProperties.class)
-        .withBean("operateProperties", operateProperties, OperateProperties.class);
+        .withBean(
+            "tasklistIndexPrefixPropertiesOverride",
+            tasklistProperties,
+            TasklistIndexPrefixPropertiesOverride.class)
+        .withBean(
+            "operateIndexPrefixPropertiesOverride",
+            operateProperties,
+            OperateIndexPrefixPropertiesOverride.class);
   }
 
   @Override

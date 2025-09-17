@@ -7,10 +7,11 @@
  */
 package io.camunda.application.commons.migration;
 
+import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
+import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
 import io.camunda.migration.commons.storage.TasklistMigrationRepositoryIndex;
 import io.camunda.migration.task.adapter.TaskLegacyIndex;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -18,7 +19,6 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.search.schema.opensearch.OpensearchPrefixMigrationClient;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -91,19 +91,19 @@ public final class PrefixMigrationHelper {
   private PrefixMigrationHelper() {}
 
   public static void runPrefixMigration(
-      final OperateProperties operateProperties,
-      final TasklistProperties tasklistProperties,
+      final OperateIndexPrefixPropertiesOverride operateProperties,
+      final TasklistIndexPrefixPropertiesOverride tasklistProperties,
       final ConnectConfiguration connectConfiguration) {
     final var isElasticsearch = connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH;
 
     final var operatePrefix =
         isElasticsearch
-            ? operateProperties.getElasticsearch().getIndexPrefix()
-            : operateProperties.getOpensearch().getIndexPrefix();
+            ? operateProperties.elasticsearchIndexPrefix()
+            : operateProperties.opensearchIndexPrefix();
     final var tasklistPrefix =
         isElasticsearch
-            ? tasklistProperties.getElasticsearch().getIndexPrefix()
-            : tasklistProperties.getOpenSearch().getIndexPrefix();
+            ? tasklistProperties.elasticsearchIndexPrefix()
+            : tasklistProperties.opensearchIndexPrefix();
 
     final var executor = Executors.newVirtualThreadPerTaskExecutor();
 
@@ -120,8 +120,7 @@ public final class PrefixMigrationHelper {
 
   private static PrefixMigrationClient getPrefixMigrationClient(
       final ConnectConfiguration connectConfiguration) {
-    if (connectConfiguration.getTypeEnum() == DatabaseType.ELASTICSEARCH) {
-
+    if (connectConfiguration.getTypeEnum().isElasticSearch()) {
       return new ElasticsearchPrefixMigrationClient(
           new ElasticsearchConnector(connectConfiguration).createClient());
     } else {
