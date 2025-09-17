@@ -22,10 +22,12 @@ import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.ResourceAccessProvider;
 import io.camunda.security.reader.TenantAccessProvider;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
+@ConditionalOnWebApplication
 @ConditionalOnSecondaryStorageEnabled
 public class ResourceAccessControllerConfiguration {
 
