@@ -7,6 +7,8 @@
  */
 package io.camunda.authentication.service;
 
+import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
+
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcGroupsLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -39,11 +41,14 @@ public class NoDBMembershipService implements MembershipService {
       final String clientId)
       throws OAuth2AuthenticationException {
     final boolean groupsClaimPresent = StringUtils.hasText(groupsClaim);
-    final Set<String> groups =
-        groupsClaimPresent
-            ? new HashSet<>(oidcGroupsLoader.load(tokenClaims))
-            : Collections.emptySet();
+    final Set<String> groups;
 
+    if (groupsClaimPresent) {
+      groups = new HashSet<>(oidcGroupsLoader.load(tokenClaims));
+      authenticatedClaims.put(USER_GROUPS_CLAIMS, groups.stream().toList());
+    } else {
+      groups = Collections.emptySet();
+    }
     return CamundaAuthentication.of(
         a ->
             a.user(username)
