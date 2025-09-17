@@ -127,6 +127,7 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
@@ -296,6 +297,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
     valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
+    valueLoggers.put(ValueType.FORM, this::summarizeForm);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1697,6 +1699,19 @@ public class CompactRecordLogger {
         .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
   }
 
+  private String summarizeForm(final Record<?> record) {
+    final var value = (Form) record.getValue();
+    return summarizeDeploymentMetadata(
+            value,
+            value.getResourceName(),
+            value.getFormId(),
+            value.getFormKey(),
+            value.getVersion(),
+            value.getVersionTag(),
+            value.isDuplicate())
+        .toString();
+  }
+
   private StringBuilder summarizeDeploymentMetadata(
       final TenantOwned value,
       final String resourceName,
@@ -1705,6 +1720,7 @@ public class CompactRecordLogger {
       final int version,
       final String versionTag,
       final boolean duplicate) {
+
     final StringBuilder result = new StringBuilder();
 
     result
