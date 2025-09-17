@@ -160,7 +160,7 @@ public class SessionAuthenticationRefreshTest {
     private CamundaAuthentication createMockAuthentication() {
       return new CamundaAuthentication(
           TestUserDetailsService.DEMO_USERNAME,
-          "",
+          null,
           Collections.emptyList(),
           Collections.emptyList(),
           Collections.emptyList(),
