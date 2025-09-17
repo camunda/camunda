@@ -67,6 +67,7 @@ public class MyBatisConfiguration {
       matchIfMissing = true)
   public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
+      final VendorDatabaseProperties vendorDatabaseProperties,
       @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
     final String prefix = StringUtils.trimToEmpty(indexPrefix);
     LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
@@ -75,7 +76,12 @@ public class MyBatisConfiguration {
     moduleConfig.setDataSource(dataSource);
     moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(Map.of("prefix", prefix));
+    moduleConfig.setParameters(
+        Map.of(
+            "prefix",
+            prefix,
+            "userCharColumnSize",
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
