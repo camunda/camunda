@@ -301,7 +301,7 @@ public final class CreateProcessInstanceCommandImpl
     return this;
   }
 
-  private static void setOnRequest(
+  static void setOnRequest(
       final ProcessInstanceCreationInstruction baseRequest,
       final Consumer<ProcessInstanceCreationInstructionById> byIdConsumer,
       final Consumer<ProcessInstanceCreationInstructionByKey> byKeyConsumer) {
