@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-public class CamundaExporterMetrics {
+public class CamundaExporterMetrics implements AutoCloseable {
   private static final String NAMESPACE = "zeebe.camunda.exporter";
 
   private final MeterRegistry meterRegistry;
@@ -244,5 +244,34 @@ public class CamundaExporterMetrics {
 
   public void measureArchivingDuration(final Sample timer) {
     timer.stop(archivingDuration);
+  }
+
+  @Override
+  public void close() {
+    // clean up all registered meters
+    meterRegistry.remove(flushLatency);
+    meterRegistry.remove(processInstancesArchived);
+    meterRegistry.remove(processInstancesArchiving);
+    meterRegistry.remove(batchOperationsArchived);
+    meterRegistry.remove(batchOperationsArchiving);
+    meterRegistry.remove(archiverSearchTimer);
+    meterRegistry.remove(archiverDeleteTimer);
+    meterRegistry.remove(archiverReindexTimer);
+    meterRegistry.remove(archivingDuration);
+    meterRegistry.remove(bulkSize);
+    meterRegistry.remove(flushDuration);
+    meterRegistry.remove(failedFlush);
+    meterRegistry.remove(recordExportDuration);
+
+    // Remove custom gauges by their names if needed
+    Gauge gauge = meterRegistry.find(meterName("since.last.flush.seconds")).gauge();
+    if (gauge != null) {
+      meterRegistry.remove(gauge);
+    }
+
+    gauge = meterRegistry.find(meterName("process.instances.awaiting.archival")).gauge();
+    if (gauge != null) {
+      meterRegistry.remove(gauge);
+    }
   }
 }
