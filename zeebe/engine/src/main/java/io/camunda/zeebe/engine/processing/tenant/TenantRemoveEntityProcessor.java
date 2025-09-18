@@ -103,7 +103,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_REMOVED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authCheckBehavior.clearTenantIdCache();
+          authCheckBehavior.clearAuthorizationsCache();
           return true;
         });
 
@@ -117,7 +117,7 @@ public class TenantRemoveEntityProcessor implements DistributedTypedRecordProces
           command.getKey(), TenantIntent.ENTITY_REMOVED, command.getValue());
       sideEffectWriter.appendSideEffect(
           () -> {
-            authCheckBehavior.clearTenantIdCache();
+            authCheckBehavior.clearAuthorizationsCache();
             return true;
           });
     }

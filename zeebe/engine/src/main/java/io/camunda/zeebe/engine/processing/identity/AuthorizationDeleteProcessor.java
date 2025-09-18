@@ -84,7 +84,7 @@ public class AuthorizationDeleteProcessor
                   command.getValue());
               sideEffectWriter.appendSideEffect(
                   () -> {
-                    authorizationCheckBehavior.clearAuthorizationScopeCache();
+                    authorizationCheckBehavior.clearAuthorizationsCache();
                     return true;
                   });
             },
@@ -111,7 +111,7 @@ public class AuthorizationDeleteProcessor
         authorizationKey, AuthorizationIntent.DELETED, command.getValue(), command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authorizationCheckBehavior.clearAuthorizationScopeCache();
+          authorizationCheckBehavior.clearAuthorizationsCache();
           return true;
         });
   }
