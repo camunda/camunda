@@ -254,17 +254,18 @@ public class CamundaExporter implements Exporter {
 
   private void verifySetupOfResources() {
     // given the context and configuration
-
-    // we need setup all resources
-    // to ensure that we can create the clients,
-    // connect and make use of the configuration given
-    setupExporterResources();
-
-    // afterward we need to clean up all the resources
-    // as we only wanted to verify the setup and the exporter
-    // might simply just run in passive mode - so there is no
-    // need to keep the clients opens
-    close();
+    try {
+      // we need setup all resources
+      // to ensure that we can create the clients,
+      // connect and make use of the configuration given
+      setupExporterResources();
+    } finally {
+      // afterward we need to clean up all the resources
+      // as we only wanted to verify the setup and the exporter
+      // might simply just run in passive mode - so there is no
+      // need to keep the clients opens
+      close();
+    }
   }
 
   private void setupExporterResources() {
