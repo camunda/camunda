@@ -26,7 +26,7 @@
         <artifactId>flatten-maven-plugin</artifactId>
         <configuration>
           <pomElements>
-            <distributionManagement></distributionManagement>
+            <distributionManagement/>
           </pomElements>
         </configuration>
       </plugin>
