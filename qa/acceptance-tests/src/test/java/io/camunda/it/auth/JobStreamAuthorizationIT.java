@@ -61,7 +61,7 @@ public class JobStreamAuthorizationIT {
   private static final String PROCESS_ID_2 = "service_tasks_v2";
   private static final String JOB_TYPE = "taskA";
 
-  private static final Set<Long> startedProcessInstances = new HashSet<>();
+  private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
 
   @UserDefinition
   private static final TestUser ADMIN_USER =
@@ -118,9 +118,9 @@ public class JobStreamAuthorizationIT {
   @AfterEach
   void cleanUp(@Authenticated("admin") final CamundaClient adminClient) {
     // cancel all process instances to ensure no jobs are left in the system
-    startedProcessInstances.forEach(
+    STARTED_PROCESS_INSTANCES.forEach(
         processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
-    startedProcessInstances.clear();
+    STARTED_PROCESS_INSTANCES.clear();
   }
 
   @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
@@ -255,7 +255,7 @@ public class JobStreamAuthorizationIT {
             .tenantId(tenant)
             .send()
             .join();
-    startedProcessInstances.add(instanceCreated.getProcessInstanceKey());
+    STARTED_PROCESS_INSTANCES.add(instanceCreated.getProcessInstanceKey());
   }
 
   private static void cancelProcessInstance(
