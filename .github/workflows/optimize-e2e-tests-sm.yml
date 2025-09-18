@@ -44,7 +44,6 @@ jobs:
     name: E2E Self-Managed
     runs-on: ubuntu-latest
     timeout-minutes: 120
-    if: false # this test is disabled
 
     steps:
       - name: Checkout code
