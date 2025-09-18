@@ -7,20 +7,15 @@
  */
 package io.camunda.search.schema.elasticsearch;
 
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch._types.OpType;
-import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
-import co.elastic.clients.elasticsearch.core.ReindexRequest;
-import co.elastic.clients.elasticsearch.indices.Alias;
-import co.elastic.clients.elasticsearch.indices.ExistsRequest;
-import co.elastic.clients.json.JsonData;
+import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.indices.update_aliases.Action;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
-import io.camunda.search.schema.utils.ReindexResult;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
+import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,82 +23,108 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
   private static final Logger LOG =
       LoggerFactory.getLogger(ElasticsearchPrefixMigrationClient.class);
 
-  private static final String DATE_REGEX_FOR_INDICES = "\\d{4}-\\d{2}-\\d{2}";
   private final ElasticsearchClient client;
+  private final ElasticsearchAsyncClient asyncClient;
 
   public ElasticsearchPrefixMigrationClient(final ElasticsearchClient client) {
     this.client = client;
+    asyncClient = new ElasticsearchAsyncClient(client._transport(), client._transportOptions());
   }
 
   @Override
-  public ReindexResult reindex(final String src, final String dest) {
-    final var reindexRequest =
-        new ReindexRequest.Builder()
-            .source(s -> s.index(src))
-            .dest(d -> d.index(dest).opType(OpType.Create))
-            .build();
-
+  public List<String> getIndicesInAlias(final String alias) {
     try {
-      final ExistsRequest existRequest = new ExistsRequest.Builder().index(src).build();
-      if (client.indices().exists(existRequest).value()) {
-        LOG.info("Reindexing [{}] into [{}]", src, dest);
-        client.reindex(reindexRequest);
+      final var aliasMatches =
+          client.indices().getAlias(g -> g.name(alias)).result().keySet().stream().toList();
+      LOG.info("Found {} indices for alias '{}'", aliasMatches, alias);
+      return aliasMatches;
+    } catch (final ElasticsearchException esx) {
+      if (esx.status() == 404) {
+        LOG.warn("No indices for alias '{}' exist", alias);
+        return List.of();
       }
-      return new ReindexResult(true, src, dest, null);
-
-    } catch (final IOException e) {
-      LOG.error("Failed to reindex [{}] into [{}]", src, dest, e);
-      return new ReindexResult(false, src, dest, e);
-    }
-  }
-
-  @Override
-  public CloneResult clone(final String source, final String destination) {
-    try {
-      LOG.info("Cloning [{}] to [{}]", source, destination);
-      markIndexReadOnly(source);
-      cloneIndex(source, destination);
-      return new CloneResult(true, source, destination, null);
-    } catch (final IOException e) {
-      LOG.error("Error migrating index [{}] to [{}]", source, destination, e);
-      return new CloneResult(false, source, destination, e);
-    }
-  }
-
-  @Override
-  public List<String> getAllHistoricIndices(final String prefix) {
-    try {
-      return client.cat().indices(i -> i.index(prefix + "*")).valueBody().stream()
-          .map(IndicesRecord::index)
-          .filter(index -> Pattern.matches(".*" + DATE_REGEX_FOR_INDICES + "$", index))
-          .toList();
-    } catch (final IOException e) {
-      LOG.error("Failed to get all historic indices for prefix [{}]", prefix, e);
+      LOG.error("Failed to get all aliased indices for alias [{}]", alias, esx);
       throw new IllegalStateException(
-          "Failed to retrieve historic indices for prefix [" + prefix + "]", e);
+          "Failed to retrieve aliased indices for alias [" + alias + "]", esx);
+    } catch (final IOException e) {
+      LOG.error("Failed to get all aliased indices for alias [{}]", alias, e);
+      throw new IllegalStateException(
+          "Failed to retrieve aliased indices for alias [" + alias + "]", e);
     }
   }
 
-  private void markIndexReadOnly(final String index) throws IOException {
-    client
-        .indices()
-        .putSettings(r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(true)))));
+  @Override
+  public CompletableFuture<CloneResult> cloneAndDeleteIndex(
+      final String source,
+      final String sourceAlias,
+      final String destination,
+      final String destinationAlias) {
+    return updateWriteBlock(source, true)
+        .thenCompose(ignore -> cloneIndex(source, destination))
+        .thenCompose(
+            ignore -> updateAliasesAtomically(source, destination, sourceAlias, destinationAlias))
+        .thenCompose(ignore -> updateWriteBlock(destination, false))
+        .thenCompose(ignore -> deleteIndex(source))
+        .thenApply(
+            ignore -> {
+              LOG.info("Successfully migrated index [{}] to [{}]", source, destination);
+              return new CloneResult(true, source, destination, null);
+            })
+        .exceptionally(ex -> handleMigrationFailure(ex, source, destination));
   }
 
-  private void cloneIndex(final String src, final String target) throws IOException {
-    final var targetAlias = target.replaceAll(DATE_REGEX_FOR_INDICES, "alias");
-    client
+  private CompletableFuture<Void> cloneIndex(final String source, final String destination) {
+    return asyncClient
         .indices()
-        .clone(
-            c ->
-                c.index(src)
-                    .target(target)
-                    .settings(
-                        Map.of(
-                            "index.blocks.write",
-                            JsonData.of(false),
-                            "number_of_replicas",
-                            JsonData.of(0)))
-                    .aliases(targetAlias, new Alias.Builder().build()));
+        .clone(c -> c.index(source).target(destination))
+        .thenRun(() -> LOG.info("Cloned index [{}] to [{}]", source, destination));
+  }
+
+  private CompletableFuture<Void> updateAliasesAtomically(
+      final String source,
+      final String destination,
+      final String sourceAlias,
+      final String destinationAlias) {
+    return asyncClient
+        .indices()
+        .updateAliases(
+            u ->
+                u.actions(
+                    Action.of(a -> a.remove(rm -> rm.index(destination).alias(sourceAlias))),
+                    Action.of(
+                        a ->
+                            a.add(
+                                add ->
+                                    add.index(destination)
+                                        .alias(destinationAlias)
+                                        .isWriteIndex(false)))))
+        .thenRun(
+            () ->
+                LOG.info(
+                    "Updated aliases: removed [{}] from [{}], added [{}] to [{}]",
+                    sourceAlias,
+                    source,
+                    destinationAlias,
+                    destination));
+  }
+
+  private CompletableFuture<Void> updateWriteBlock(final String index, final boolean block) {
+    return asyncClient
+        .indices()
+        .putSettings(r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(block)))))
+        .thenRun(() -> LOG.info("Updated setting index.blocks.write: {}, for [{}]", block, index));
+  }
+
+  private CompletableFuture<Void> deleteIndex(final String index) {
+    return asyncClient
+        .indices()
+        .delete(d -> d.index(index))
+        .thenRun(() -> LOG.info("Deleted index [{}]", index));
+  }
+
+  private CloneResult handleMigrationFailure(
+      final Throwable throwable, final String source, final String destination) {
+    LOG.error("Failed to migrate index [{}] to [{}]", source, destination, throwable);
+    return new CloneResult(false, source, destination, throwable);
   }
 }

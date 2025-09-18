@@ -9,98 +9,140 @@ package io.camunda.search.schema.opensearch;
 
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
-import io.camunda.search.schema.utils.ReindexResult;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
-import java.util.regex.Pattern;
-import org.opensearch.client.json.JsonData;
+import java.util.concurrent.CompletableFuture;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.OpType;
-import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
-import org.opensearch.client.opensearch.core.ReindexRequest;
-import org.opensearch.client.opensearch.indices.Alias;
-import org.opensearch.client.opensearch.indices.ExistsRequest;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.indices.update_aliases.Action;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchPrefixMigrationClient.class);
-  private static final String DATE_REGEX_FOR_INDICES = "\\d{4}-\\d{2}-\\d{2}";
   private final OpenSearchClient client;
+  private final OpenSearchAsyncClient asyncClient;
 
   public OpensearchPrefixMigrationClient(final OpenSearchClient client) {
     this.client = client;
+    asyncClient = new OpenSearchAsyncClient(client._transport(), client._transportOptions());
   }
 
   @Override
-  public ReindexResult reindex(final String src, final String dest) {
-    final var reindexRequest =
-        new ReindexRequest.Builder()
-            .source(s -> s.index(src))
-            .dest(d -> d.index(dest).opType(OpType.Create))
-            .build();
-
+  public List<String> getIndicesInAlias(final String alias) {
     try {
-      final var existRequest = new ExistsRequest.Builder().index(src).build();
-      if (client.indices().exists(existRequest).value()) {
-        LOG.info("Reindexing [{}] into [{}]", src, dest);
-        client.reindex(reindexRequest);
+      final var aliasMatches =
+          client.indices().getAlias(g -> g.name(alias)).result().keySet().stream().toList();
+      LOG.info("Found {} indices for alias '{}'", aliasMatches, alias);
+      return aliasMatches;
+    } catch (final OpenSearchException esx) {
+      if (esx.status() == 404) {
+        LOG.warn("No indices for alias '{}' exist", alias);
+        return List.of();
       }
-      return new ReindexResult(true, src, dest, null);
-    } catch (final IOException e) {
-      LOG.error("Failed to reindex [{}] into [{}]", src, dest, e);
-      return new ReindexResult(false, src, dest, e);
-    }
-  }
-
-  @Override
-  public CloneResult clone(final String source, final String destination) {
-    try {
-      LOG.info("Cloning [{}] to [{}]", source, destination);
-      markIndexReadOnly(source);
-      cloneIndex(source, destination);
-      return new CloneResult(true, source, destination, null);
-    } catch (final IOException e) {
-      LOG.error("Error migrating index [{}] to [{}]", source, destination, e);
-      return new CloneResult(false, source, destination, e);
-    }
-  }
-
-  @Override
-  public List<String> getAllHistoricIndices(final String prefix) {
-    try {
-      return client.cat().indices(i -> i.index(prefix + "*")).valueBody().stream()
-          .map(IndicesRecord::index)
-          .filter(index -> Pattern.matches(".*" + DATE_REGEX_FOR_INDICES + "$", index))
-          .toList();
-    } catch (final IOException e) {
-      LOG.error("Failed to get all historic indices for prefix [{}]", prefix, e);
+      LOG.error("Failed to get all aliased indices for alias [{}]", alias, esx);
       throw new IllegalStateException(
-          "Failed to retrieve historic indices for prefix [" + prefix + "]", e);
+          "Failed to retrieve aliased indices for alias [" + alias + "]", esx);
+    } catch (final IOException e) {
+      LOG.error("Failed to get all aliased indices for alias [{}]", alias, e);
+      throw new IllegalStateException(
+          "Failed to retrieve aliased indices for alias [" + alias + "]", e);
     }
   }
 
-  private void markIndexReadOnly(final String index) throws IOException {
-    client
-        .indices()
-        .putSettings(r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(true)))));
+  @Override
+  public CompletableFuture<CloneResult> cloneAndDeleteIndex(
+      final String source,
+      final String sourceAlias,
+      final String destination,
+      final String destinationAlias) {
+    return updateWriteBlock(source, true)
+        .thenCompose(ignore -> cloneIndex(source, destination))
+        .thenCompose(
+            ignore -> updateAliasesAtomically(source, destination, sourceAlias, destinationAlias))
+        .thenCompose(ignore -> updateWriteBlock(destination, false))
+        .thenCompose(ignore -> deleteIndex(source))
+        .thenApply(
+            ignore -> {
+              LOG.info("Successfully migrated index [{}] to [{}]", source, destination);
+              return new CloneResult(true, source, destination, null);
+            })
+        .exceptionally(ex -> handleMigrationFailure(ex, source, destination));
   }
 
-  private void cloneIndex(final String src, final String target) throws IOException {
-    final var targetAlias = target.replaceAll(DATE_REGEX_FOR_INDICES, "alias");
-    client
-        .indices()
-        .clone(
-            c ->
-                c.index(src)
-                    .target(target)
-                    .settings(
-                        Map.of(
-                            "index.blocks.write",
-                            JsonData.of(false),
-                            "number_of_replicas",
-                            JsonData.of(0)))
-                    .aliases(targetAlias, new Alias.Builder().build()));
+  private CompletableFuture<Void> cloneIndex(final String source, final String destination) {
+    try {
+      return asyncClient
+          .indices()
+          .clone(c -> c.index(source).target(destination))
+          .thenRun(() -> LOG.info("Cloned index [{}] to [{}]", source, destination));
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to clone index [" + source + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> updateAliasesAtomically(
+      final String source,
+      final String destination,
+      final String sourceAlias,
+      final String destinationAlias) {
+    try {
+      return asyncClient
+          .indices()
+          .updateAliases(
+              u ->
+                  u.actions(
+                      Action.of(a -> a.remove(rm -> rm.index(destination).alias(sourceAlias))),
+                      Action.of(
+                          a ->
+                              a.add(
+                                  add ->
+                                      add.index(destination)
+                                          .alias(destinationAlias)
+                                          .isWriteIndex(false)))))
+          .thenRun(
+              () ->
+                  LOG.info(
+                      "Updated aliases: removed [{}] from [{}], added [{}] to [{}]",
+                      sourceAlias,
+                      source,
+                      destinationAlias,
+                      destination));
+    } catch (final IOException e) {
+      throw new IllegalStateException(
+          "Failed to update aliases for indices [" + source + ", " + destination + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> updateWriteBlock(final String index, final boolean block) {
+    try {
+      return asyncClient
+          .indices()
+          .putSettings(
+              r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(block)))))
+          .thenRun(
+              () -> LOG.info("Updated setting index.blocks.write: {}, for [{}]", block, index));
+    } catch (final IOException e) {
+      throw new IllegalStateException(
+          "Failed to update setting block: " + block + " index [" + index + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> deleteIndex(final String index) {
+    try {
+      return asyncClient
+          .indices()
+          .delete(d -> d.index(index))
+          .thenRun(() -> LOG.info("Deleted index [{}]", index));
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to delete index [" + index + "]", e);
+    }
+  }
+
+  private CloneResult handleMigrationFailure(
+      final Throwable throwable, final String source, final String destination) {
+    LOG.error("Failed to migrate index [{}] to [{}]", source, destination, throwable);
+    return new CloneResult(false, source, destination, throwable);
   }
 }
