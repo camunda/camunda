@@ -111,6 +111,12 @@ public record ProcessInstanceFilter(
       return this;
     }
 
+    public Builder replaceIncidentErrorHashCodeOperations(
+        final List<Operation<Integer>> operations) {
+      incidentErrorHashCodeOperations = new ArrayList<>(operations);
+      return this;
+    }
+
     @SafeVarargs
     public final Builder processInstanceKeyOperations(
         final Operation<Long> operation, final Operation<Long>... operations) {
