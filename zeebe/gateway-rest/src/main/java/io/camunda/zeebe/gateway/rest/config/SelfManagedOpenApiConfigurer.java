@@ -10,10 +10,7 @@ package io.camunda.zeebe.gateway.rest.config;
 import io.camunda.security.ConditionalOnSelfManagedConfigured;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
-import io.swagger.v3.oas.models.security.SecurityScheme;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -25,21 +22,11 @@ import org.springframework.context.annotation.Configuration;
 public class SelfManagedOpenApiConfigurer extends OpenApiConfigurer {
 
   public static final String BASIC_SECURITY_SCHEMA_NAME = "basicAuth";
-  public static final SecurityScheme BASIC_SECURITY_SCHEMA =
-      new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("basic");
   private static final Logger LOGGER = LoggerFactory.getLogger(SelfManagedOpenApiConfigurer.class);
 
   @Override
   public void configureSecurity(final OpenAPI openApi) {
     LOGGER.debug("Configuring OpenAPI security for Self-Managed deployment");
-
-    openApi
-        .getComponents()
-        .setSecuritySchemes(
-            new LinkedHashMap<>(
-                Map.of(
-                    BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA,
-                    BASIC_SECURITY_SCHEMA_NAME, BASIC_SECURITY_SCHEMA)));
 
     openApi.setSecurity(
         List.of(
