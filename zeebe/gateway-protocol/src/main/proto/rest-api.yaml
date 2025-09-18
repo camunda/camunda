@@ -4946,19 +4946,19 @@ paths:
         - name: startTime
           in: query
           required: true
-          description: The start date for usage metrics, including this date.
+          description: The start date for usage metrics, including this date. Value in ISO 8601 format.
+          example: "2025-06-07T13:14:15Z"
           schema:
             type: string
             format: date-time
-            example: "2025-06-07T13:14:15Z"
         - name: endTime
           in: query
           required: true
-          description: The end date for usage metrics, excluding this date.
+          description: The end date for usage metrics, excluding this date. Value in ISO 8601 format.
+          example: "2026-07-08T13:14:15Z"
           schema:
             type: string
             format: date-time
-            example: "2026-07-08T13:14:15Z"
         - name: tenantId
           in: query
           required: false
