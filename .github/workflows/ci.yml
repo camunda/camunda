@@ -909,7 +909,7 @@ jobs:
 
   archunit-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "General - ArchUnit Tests"
+    name: "General / Unit - ArchUnit"
     needs: [ detect-changes ]
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -954,7 +954,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "General - ArchUnit Tests"
+          name: "General / Unit - ArchUnit"
       - name: Observe build status
         if: always()
         continue-on-error: true
