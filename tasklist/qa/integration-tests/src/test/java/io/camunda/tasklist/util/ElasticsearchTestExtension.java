@@ -69,10 +69,6 @@ public class ElasticsearchTestExtension
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeEsClient")
-  private RestHighLevelClient zeebeEsClient;
-
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   private boolean failed = false;
@@ -159,7 +155,7 @@ public class ElasticsearchTestExtension
     try {
       final RefreshRequest refreshRequest =
           new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }

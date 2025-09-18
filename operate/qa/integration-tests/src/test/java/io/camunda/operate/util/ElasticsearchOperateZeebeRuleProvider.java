@@ -53,8 +53,8 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   @Autowired public OperateProperties operateProperties;
 
   @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
+  @Qualifier("esClient")
+  protected RestHighLevelClient esClient;
 
   protected ZeebeContainer zeebeContainer;
   @Autowired private SecurityConfiguration securityConfiguration;
@@ -80,7 +80,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
     try {
       final GetComponentTemplatesRequest getRequest = new GetComponentTemplatesRequest(prefix);
       final GetComponentTemplatesResponse response =
-          zeebeEsClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
+          esClient.cluster().getComponentTemplate(getRequest, RequestOptions.DEFAULT);
       final ComponentTemplate componentTemplate = response.getComponentTemplates().get(prefix);
       final Settings settings = componentTemplate.template().settings();
 
@@ -92,7 +92,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       final ComponentTemplate newComponentTemplate = new ComponentTemplate(newTemplate, null, null);
       request.componentTemplate(newComponentTemplate);
       assertThat(
-              zeebeEsClient
+              esClient
                   .cluster()
                   .putComponentTemplate(request, RequestOptions.DEFAULT)
                   .isAcknowledged())
@@ -108,7 +108,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       final String date =
           DateTimeFormatter.ofPattern(YYYY_MM_DD).withZone(ZoneId.systemDefault()).format(instant);
       final RefreshRequest refreshRequest = new RefreshRequest(prefix + "*" + date);
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final IOException ex) {
       throw new RuntimeException(ex);
     }
@@ -122,7 +122,7 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
       client = null;
     }
     if (!failed) {
-      TestUtil.removeAllIndices(zeebeEsClient, prefix);
+      TestUtil.removeAllIndices(esClient, prefix);
     }
   }
 

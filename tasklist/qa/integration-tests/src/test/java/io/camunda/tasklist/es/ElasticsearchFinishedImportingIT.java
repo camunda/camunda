@@ -51,6 +51,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTest {
 
@@ -69,6 +71,11 @@ public class ElasticsearchFinishedImportingIT extends TasklistZeebeIntegrationTe
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
+  }
+
+  @DynamicPropertySource
+  static void setProperties(final DynamicPropertyRegistry registry) {
+    registry.add("camunda.tasklist.importer-enabled", () -> true);
   }
 
   @BeforeEach

@@ -11,9 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
+import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(properties = {TasklistProperties.PREFIX + ".importer-enabled = true"})
 public class FullAppIT extends ModuleIntegrationTest {
 
   @Test

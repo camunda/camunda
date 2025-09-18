@@ -25,10 +25,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
           pattern = "io\\.camunda\\.tasklist\\.zeebeimport\\.security\\..*")
     },
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(
-    name = "camunda.tasklist.importer-enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnProperty(name = "camunda.tasklist.importer-enabled", havingValue = "true")
 public class ImportModuleConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ImportModuleConfiguration.class);

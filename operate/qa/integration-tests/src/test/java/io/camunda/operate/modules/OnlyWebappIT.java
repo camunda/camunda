@@ -11,13 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
 import org.junit.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = {OperateProperties.PREFIX + ".importerEnabled = false"})
 public class OnlyWebappIT extends ModuleAbstractIT {
 
   @Test
