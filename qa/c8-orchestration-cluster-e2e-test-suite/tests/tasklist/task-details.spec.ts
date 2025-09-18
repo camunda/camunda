@@ -489,44 +489,44 @@ test.describe('task details page', () => {
     await expect(taskDetailsPage.checkbox).toBeChecked();
   });
 
-  test.fixme(
-    'task completion with select form',
-    async ({taskPanelPage, taskDetailsPage}) => {
-      await taskPanelPage.filterBy('Unassigned');
-      await taskPanelPage.openTask('Select User Task');
-      await taskDetailsPage.clickAssignToMeButton();
+  test('task completion with select form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Select User Task');
+    await taskDetailsPage.clickAssignToMeButton();
 
-      await expect(taskDetailsPage.unassignButton).toBeVisible();
-      await taskDetailsPage.selectDropdownValue('Value');
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await taskDetailsPage.selectDropdownValue('Value');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
-      await taskPanelPage.filterBy('Completed');
-      await taskPanelPage.assertCompletedHeadingVisible();
-      await taskPanelPage.openTask('Select User Task');
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.assertCompletedHeadingVisible();
+    await taskPanelPage.openTask('Select User Task');
 
-      await expect(taskDetailsPage.form).toContainText('Value');
-    },
-  );
+    await expect(taskDetailsPage.form).toContainText('Value');
+  });
 
-  test.fixme(
-    'task completion with radio button form',
-    async ({taskPanelPage, taskDetailsPage}) => {
-      await taskPanelPage.filterBy('Unassigned');
-      await taskPanelPage.openTask('Radio Button Task');
-      await taskDetailsPage.clickAssignToMeButton();
+  test('task completion with radio button form', async ({
+    taskPanelPage,
+    taskDetailsPage,
+  }) => {
+    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPage.openTask('Radio Button Task');
+    await taskDetailsPage.clickAssignToMeButton();
 
-      await taskDetailsPage.clickRadioButton('Value');
-      await taskDetailsPage.clickCompleteTaskButton();
-      await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
+    await taskDetailsPage.clickRadioButton('Value');
+    await taskDetailsPage.clickCompleteTaskButton();
+    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
 
-      await taskPanelPage.filterBy('Completed');
-      await taskPanelPage.assertCompletedHeadingVisible();
-      await taskPanelPage.openTask('Radio Button Task');
+    await taskPanelPage.filterBy('Completed');
+    await taskPanelPage.assertCompletedHeadingVisible();
+    await taskPanelPage.openTask('Radio Button Task');
 
-      await taskDetailsPage.assertItemChecked('Value');
-    },
-  );
+    await taskDetailsPage.assertItemChecked('Value');
+  });
 
   test('task completion with checklist form', async ({
     taskPanelPage,
