@@ -74,7 +74,8 @@ public class IndexSchemaValidator {
       if (!indexMappingsGroup.isEmpty()) {
         final IndexMappingDifference difference =
             getIndexMappingDifference(indexDescriptor, indexMappingsGroup);
-        validateDifferenceAndCollectNewFields(indexDescriptor, difference, newFields);
+        validateDifferenceAndCollectNewFields(
+            indexDescriptor, indexMappingsGroup.keySet(), difference, newFields);
       }
     }
     return newFields;
@@ -82,12 +83,13 @@ public class IndexSchemaValidator {
 
   private void validateDifferenceAndCollectNewFields(
       final IndexDescriptor indexDescriptor,
+      final Set<String> indexNames,
       final IndexMappingDifference difference,
       final Map<IndexDescriptor, Collection<IndexMappingProperty>> newFields) {
     if (difference != null && !difference.equal()) {
       LOGGER.debug(
-          "Index fields differ from expected. Index name: {}. Difference: {}.",
-          indexDescriptor.getFullQualifiedName(),
+          "Index fields differ from expected. Index names: {}. Difference: {}.",
+          indexNames,
           difference);
 
       if (!difference.entriesDiffering().isEmpty()) {
@@ -100,20 +102,18 @@ public class IndexSchemaValidator {
 
       if (!difference.entriesOnlyOnRight().isEmpty()) {
         LOGGER.info(
-            "Index '{}': Field deletion is requested, will be ignored. Fields: {}",
-            indexDescriptor.getFullQualifiedName(),
+            "Index names '{}': Field deletion is requested, will be ignored. Fields: {}",
+            indexNames,
             difference.entriesOnlyOnRight());
 
       } else if (!difference.entriesOnlyOnLeft().isEmpty()) {
         // Collect the new fields
         newFields.put(indexDescriptor, difference.entriesOnlyOnLeft());
       } else {
-        LOGGER.debug(
-            "Index fields are up to date for Index '{}'.", indexDescriptor.getFullQualifiedName());
+        LOGGER.debug("Index fields are up to date for Index '{}'.", indexDescriptor.getIndexName());
       }
     } else {
-      LOGGER.debug(
-          "Index fields are up to date for Index '{}'.", indexDescriptor.getFullQualifiedName());
+      LOGGER.debug("Index fields are up to date for Index '{}'.", indexDescriptor.getIndexName());
     }
   }
 
@@ -134,10 +134,14 @@ public class IndexSchemaValidator {
     }
 
     if (differences.size() > 1) {
+      LOGGER.debug(
+          "Ambiguous schema update. Index names: {}. Difference: {}.",
+          indexMappingsGroup.keySet(),
+          differences);
       throw new IndexSchemaValidationException(
           String.format(
               "Ambiguous schema update. Multiple indices for mapping '%s' has different fields. Differences: '%s'",
-              indexDescriptor.getFullQualifiedName(), differences));
+              indexDescriptor.getIndexName(), differences));
     }
 
     return differences.getFirst();
