@@ -12,7 +12,7 @@ function ProcessTreeNode({ node, onSelect }) {
             >
                 <i className={`bi bi-diagram-3-fill me-2`}></i>
                 <span>{node.processDefinitionId}</span>
-                <span className="badge bg-secondary ms-2">
+                <span className="badge bg-primary ms-2">
                     {toPercentStr(node.coverage)}
                 </span>
             </div>

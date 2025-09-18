@@ -1,3 +1,4 @@
+
 import React, {useEffect, useRef} from 'react';
 import BpmnJS from 'bpmn-js';
 import {toPercentStr} from '../../utils/helpers';
@@ -20,6 +21,8 @@ const ProcessView = ({ node, definitions }) => {
             try {
                 await bpmnViewer.importXML(definitions[node.processDefinitionId]);
                 const canvas = bpmnViewer.get('canvas');
+                const elementRegistry = bpmnViewer.get("elementRegistry");
+                const graphicsFactory = bpmnViewer.get("graphicsFactory");
 
                 canvas.zoom('fit-viewport');
 
@@ -31,7 +34,17 @@ const ProcessView = ({ node, definitions }) => {
 
                 if (node.takenSequenceFlows) {
                     node.takenSequenceFlows.forEach(flowId => {
-                        canvas.addMarker(flowId, 'highlight');
+                        // canvas.addMarker(flowId, 'highlight');
+
+                        let sequenceFlow = elementRegistry.get(flowId);
+                        let gfx = elementRegistry.getGraphics(sequenceFlow);
+
+                        let color = '#0072CE'; // Bernd’s Hoodie
+                        let di = sequenceFlow.businessObject.di;
+                        di.set("stroke", color);
+                        di.set("fill", color);
+
+                        graphicsFactory.update("connection", sequenceFlow, gfx);
                     });
                 }
             } catch (err) {
@@ -60,36 +73,6 @@ const ProcessView = ({ node, definitions }) => {
                 }}
             />
             <p>Coverage: {toPercentStr(node.coverage)}</p>
-
-            <h5 className="mt-4">
-                Completed Elements: {node.completedElements?.length || 0}
-            </h5>
-            {node.completedElements && node.completedElements.length > 0 ? (
-                <ul className="list-group mb-3">
-                    {node.completedElements.map((elementId, idx) => (
-                        <li key={idx} className="list-group-item">
-                            {elementId}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No completed elements</p>
-            )}
-
-            <h5 className="mt-4">
-                Taken Sequence Flows: {node.takenSequenceFlows?.length || 0}
-            </h5>
-            {node.takenSequenceFlows && node.takenSequenceFlows.length > 0 ? (
-                <ul className="list-group">
-                    {node.takenSequenceFlows.map((flowId, idx) => (
-                        <li key={idx} className="list-group-item">
-                            {flowId}
-                        </li>
-                    ))}
-                </ul>
-            ) : (
-                <p>No taken sequence flows</p>
-            )}
         </div>
     );
 };

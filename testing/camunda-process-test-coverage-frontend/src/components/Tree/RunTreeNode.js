@@ -13,8 +13,8 @@ function RunTreeNode({ node, onSelect }) {
                     onSelect("run", node);
                 }}
             >
-                {expanded ? "▼ " : "▶ "}
-                <i className={`bi bi-flask me-2`}></i>
+                <i className={expanded ? `bi me-2 bi-caret-down-fill` : `bi me-2 bi-caret-right-fill`}></i>
+                <i className={`bi bi-file-earmark-fill me-2`}></i>
                 <span>{node.name}</span>
             </div>
             {expanded && (
