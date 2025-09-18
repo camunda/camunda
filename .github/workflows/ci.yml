@@ -686,6 +686,7 @@ jobs:
       checks: read
     needs:  # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - archunit-tests
       - build-operate-backend
       - build-platform-frontend
       - commitlint
