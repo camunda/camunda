@@ -27,10 +27,13 @@ import java.util.function.BiConsumer;
 
 public class TestExporterResourceProvider implements ExporterResourceProvider {
 
-  private final IndexDescriptors indexDescriptors;
+  private IndexDescriptors indexDescriptors;
+  private final String indexPrefix;
+  private final boolean isElasticsearch;
 
   public TestExporterResourceProvider(final String indexPrefix, final boolean isElasticsearch) {
-    indexDescriptors = new IndexDescriptors(indexPrefix, isElasticsearch);
+    this.indexPrefix = indexPrefix;
+    this.isElasticsearch = isElasticsearch;
   }
 
   @Override
@@ -39,7 +42,14 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
       final ExporterEntityCacheProvider entityCacheProvider,
       final MeterRegistry meterRegistry,
       final ExporterMetadata exporterMetadata,
-      final ObjectMapper objectMapper) {}
+      final ObjectMapper objectMapper) {
+    indexDescriptors = new IndexDescriptors(indexPrefix, isElasticsearch);
+  }
+
+  @Override
+  public void reset() {
+    indexDescriptors = null;
+  }
 
   @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
