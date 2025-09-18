@@ -74,38 +74,6 @@ public class CreateUserTest extends ClientRestTest {
   }
 
   @Test
-  void shouldRaiseExceptionOnNullEmail() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateUserCommand()
-                    .username(USERNAME)
-                    .name(NAME)
-                    .password(PASSWORD)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("email must not be null");
-  }
-
-  @Test
-  void shouldRaiseExceptionOnNullName() {
-    // when / then
-    assertThatThrownBy(
-            () ->
-                client
-                    .newCreateUserCommand()
-                    .username(USERNAME)
-                    .email(EMAIL)
-                    .password(PASSWORD)
-                    .send()
-                    .join())
-        .isInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining("name must not be null");
-  }
-
-  @Test
   void shouldRaiseExceptionOnNullPassword() {
     // when / then
     assertThatThrownBy(

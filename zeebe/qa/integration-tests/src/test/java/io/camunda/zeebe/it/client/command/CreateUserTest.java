@@ -59,6 +59,22 @@ class CreateUserTest {
   }
 
   @Test
+  void shouldCreateUserWithMandatoryFields() {
+    // when
+    final var response =
+        client.newCreateUserCommand().username("aUsername").password("aPassword").send().join();
+
+    // then
+    ZeebeAssertHelper.assertUserCreated(
+        "aUsername",
+        (user) -> {
+          assertThat(user.getEmail()).isEmpty();
+          assertThat(user.getName()).isEmpty();
+          assertThat(user.getPassword()).isNotNull();
+        });
+  }
+
+  @Test
   void shouldRejectIfUsernameAlreadyExists() {
     // given
     client
