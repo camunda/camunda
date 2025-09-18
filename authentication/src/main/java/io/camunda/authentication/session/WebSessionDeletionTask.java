@@ -12,7 +12,8 @@ import org.slf4j.LoggerFactory;
 
 public class WebSessionDeletionTask implements Runnable {
 
-  public static final int DELETE_EXPIRED_SESSIONS_DELAY = 1_000 * 60 * 30;
+  public static final int DELETE_EXPIRED_SESSIONS_INITIAL_DELAY = 1_000 * 60 * 5;
+  public static final int DELETE_EXPIRED_SESSIONS_RUN_DELAY = 1_000 * 60 * 10;
   private static final Logger LOGGER = LoggerFactory.getLogger(WebSessionDeletionTask.class);
   private final WebSessionRepository webSessionRepository;
 
