@@ -17,6 +17,8 @@ const apiBaseUrl = "/v2";
 
 const loginApiUrl = "/login";
 
+const logoutApiUrl = "/logout";
+
 export const isOIDC = getClientConfigBoolean("isOidc", false);
 export const isCamundaGroupsEnabled = getClientConfigBoolean(
   "isCamundaGroupsEnabled",
@@ -37,6 +39,10 @@ export function getApiBaseUrl() {
 
 export function getLoginApiUrl() {
   return getBasePathBeforeIdentity() + loginApiUrl;
+}
+
+export function getLogoutApiUrl() {
+  return getBasePathBeforeIdentity() + logoutApiUrl;
 }
 
 export function getBaseUrl() {
