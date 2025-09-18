@@ -16,22 +16,20 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   textXMLHeaders,
-} from '../../../utils/http';
-import {defaultAssertionOptions} from '../../../utils/constants';
-import {decisionDefinitionRequiredFields} from '../../../utils/beans/requestBeans';
+} from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
+import {decisionDefinitionRequiredFields} from '../../../../utils/beans/requestBeans';
 import {
   DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT,
   deployDecisionAndStoreResponse,
-} from '../../../utils/requestHelpers';
+} from '../../../../utils/requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import fs from 'fs';
 
-test.describe.parallel('Decision Definitions Search API Tests', () => {
+test.describe.parallel('Get Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};
   let decisionDefinition1: DecisionDeployment;
-  let decisionDefinition2: DecisionDeployment;
   let expectedBody1: Record<string, unknown>;
-  let expectedBody2: Record<string, unknown>;
 
   test.beforeAll(async () => {
     await deployDecisionAndStoreResponse(
@@ -45,11 +43,8 @@ test.describe.parallel('Decision Definitions Search API Tests', () => {
       './resources/simpleDecisionTable2.dmn',
     );
     decisionDefinition1 = state['decisionDefinition1'] as DecisionDeployment;
-    decisionDefinition2 = state['decisionDefinition2'] as DecisionDeployment;
     expectedBody1 =
       DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(decisionDefinition1);
-    expectedBody2 =
-      DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(decisionDefinition2);
   });
 
   test('Get Decision Definition', async ({request}) => {
