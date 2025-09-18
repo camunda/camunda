@@ -23,7 +23,6 @@ import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1;
 import io.camunda.client.api.command.UpdateTimeoutJobCommandStep1.UpdateTimeoutJobCommandStep2;
 import io.camunda.client.api.response.UpdateTimeoutJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateTimeoutJobResponseImpl;
 import io.camunda.client.protocol.rest.JobChangeset;
@@ -102,14 +101,11 @@ public class JobUpdateTimeoutCommandImpl
   }
 
   private CamundaFuture<UpdateTimeoutJobResponse> sendRestRequest() {
-    final HttpCamundaFuture<UpdateTimeoutJobResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
+    return httpClient.patch(
         "/jobs/" + jobKey,
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        UpdateTimeoutJobResponseImpl::new,
-        result);
-    return result;
+        UpdateTimeoutJobResponseImpl::new);
   }
 
   private CamundaFuture<UpdateTimeoutJobResponse> sendGrpcRequest() {

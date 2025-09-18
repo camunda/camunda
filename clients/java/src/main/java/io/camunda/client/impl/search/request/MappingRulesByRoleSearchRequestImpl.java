@@ -22,60 +22,47 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.MappingRulesByRoleSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.MappingRuleSort;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.MappingRuleSearchQueryRequest;
 import io.camunda.client.protocol.rest.MappingRuleSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MappingRulesByRoleSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<MappingRuleSearchQueryRequest>
+    extends AbstractSearchRequestImpl<MappingRuleSearchQueryRequest, MappingRule>
     implements MappingRulesByRoleSearchRequest {
 
   private final MappingRuleSearchQueryRequest request;
   private final String roleId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public MappingRulesByRoleSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final String roleId) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.roleId = roleId;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new MappingRuleSearchQueryRequest();
-  }
-
-  @Override
-  public FinalSearchRequestStep<MappingRule> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<SearchResponse<MappingRule>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    final HttpCamundaFuture<SearchResponse<MappingRule>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         String.format("/roles/%s/mapping-rules/search", roleId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         MappingRuleSearchQueryResult.class,
         SearchResponseMapper::toMappingRulesResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

@@ -15,7 +15,7 @@
  */
 package io.camunda.client.api.statistics.request;
 
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.fetch.FinalFetchRequestStep;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import java.util.List;
@@ -23,4 +23,4 @@ import java.util.List;
 public interface ProcessDefinitionElementStatisticsRequest
     extends StatisticsRequest<
             ProcessDefinitionStatisticsFilter, ProcessDefinitionElementStatisticsRequest>,
-        FinalCommandStep<List<ProcessElementStatistics>> {}
+        FinalFetchRequestStep<List<ProcessElementStatistics>> {}

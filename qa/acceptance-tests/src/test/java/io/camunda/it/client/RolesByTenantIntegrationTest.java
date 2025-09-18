@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -61,7 +62,12 @@ public class RolesByTenantIntegrationTest {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              final var roles =
+                  camundaClient
+                      .newRolesByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .singleElement()
                   .satisfies(
@@ -165,7 +171,12 @@ public class RolesByTenantIntegrationTest {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              final var roles =
+                  camundaClient
+                      .newRolesByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .extracting("roleId")
                   .containsExactlyInAnyOrder(firstRoleId, secondRoleId);
@@ -179,21 +190,38 @@ public class RolesByTenantIntegrationTest {
     createTenant(emptyTenant);
     waitForTenantsToBeCreated(emptyTenant);
     // when
-    final var roles = camundaClient.newRolesByTenantSearchRequest(emptyTenant).send().join();
+    final var roles =
+        camundaClient
+            .newRolesByTenantSearchRequest(emptyTenant)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(roles.items()).isEmpty();
   }
 
   @Test
   void shouldRejectSearchIfTenantIdIsNull() {
-    assertThatThrownBy(() -> camundaClient.newRolesByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRolesByTenantSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
   void shouldRejectSearchIfTenantIdIsEmpty() {
-    assertThatThrownBy(() -> camundaClient.newRolesByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRolesByTenantSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -218,7 +246,12 @@ public class RolesByTenantIntegrationTest {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              final var roles =
+                  camundaClient
+                      .newRolesByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
             });
   }
@@ -234,7 +267,12 @@ public class RolesByTenantIntegrationTest {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var roles = camundaClient.newRolesByTenantSearchRequest(tenantId).send().join();
+              final var roles =
+                  camundaClient
+                      .newRolesByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items()).noneMatch(role -> role.getRoleId().equals(roleId));
             });
     // when and then

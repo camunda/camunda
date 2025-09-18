@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Decision;
 import io.camunda.qa.util.auth.Authenticated;
@@ -72,7 +73,12 @@ public class DecisionDefinitionTenancyIT {
   public void shouldReturnAllDecisionDefinitionsWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
@@ -83,7 +89,12 @@ public class DecisionDefinitionTenancyIT {
   public void shouldReturnOnlyTenantADecisionDefinition(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().stream().map(Decision::getTenantId).collect(Collectors.toSet()))
@@ -94,7 +105,12 @@ public class DecisionDefinitionTenancyIT {
   public void shouldNotReturnAnyDecisionDefinition(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -109,6 +125,7 @@ public class DecisionDefinitionTenancyIT {
             .newDecisionDefinitionSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -118,6 +135,7 @@ public class DecisionDefinitionTenancyIT {
     final var result =
         camundaClient
             .newDecisionDefinitionGetRequest(decisionDefinition.getDecisionKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -137,6 +155,7 @@ public class DecisionDefinitionTenancyIT {
             .newDecisionDefinitionSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -149,6 +168,7 @@ public class DecisionDefinitionTenancyIT {
                 () ->
                     camundaClient
                         .newDecisionDefinitionGetRequest(decisionDefinition.getDecisionKey())
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -190,7 +210,12 @@ public class DecisionDefinitionTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionDefinitionSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

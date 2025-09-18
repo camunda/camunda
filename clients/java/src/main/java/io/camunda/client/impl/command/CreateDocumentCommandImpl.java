@@ -23,7 +23,6 @@ import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentReferenceResponseImpl;
 import io.camunda.client.impl.util.DocumentBuilder;
@@ -82,8 +81,6 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
       entityBuilder.addPart(
           "metadata", new StringBody(metadataString, ContentType.APPLICATION_JSON));
 
-      final HttpCamundaFuture<DocumentReferenceResponse> result = new HttpCamundaFuture<>();
-
       final Map<String, String> queryParams = new HashMap<>();
       if (documentId != null) {
         queryParams.put("documentId", documentId);
@@ -91,15 +88,13 @@ public class CreateDocumentCommandImpl extends DocumentBuilder
       if (storeId != null) {
         queryParams.put("storeId", storeId);
       }
-      httpClient.postMultipart(
+      return httpClient.postMultipart(
           "/documents",
           queryParams,
           entityBuilder,
           httpRequestConfig.build(),
           DocumentReference.class,
-          DocumentReferenceResponseImpl::new,
-          result);
-      return result;
+          DocumentReferenceResponseImpl::new);
     } finally {
       try {
         getContent().close();

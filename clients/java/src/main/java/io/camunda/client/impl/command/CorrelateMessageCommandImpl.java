@@ -22,7 +22,6 @@ import io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessa
 import io.camunda.client.api.command.CorrelateMessageCommandStep1.CorrelateMessageCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CorrelateMessageResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CorrelateMessageResponseImpl;
 import io.camunda.client.protocol.rest.MessageCorrelationRequest;
@@ -79,16 +78,13 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
 
   @Override
   public CamundaFuture<CorrelateMessageResponse> send() {
-    final HttpCamundaFuture<CorrelateMessageResponse> result = new HttpCamundaFuture<>();
     final CorrelateMessageResponseImpl response = new CorrelateMessageResponseImpl(jsonMapper);
-    httpClient.post(
+    return httpClient.post(
         "/messages/correlation",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         MessageCorrelationResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 
   @Override

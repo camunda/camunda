@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -40,7 +41,12 @@ public class TenantsSearchIntegrationTest {
   @Test
   void searchShouldReturnTenantFilteredByTenantName() {
     final var tenantSearchResponse =
-        camundaClient.newTenantsSearchRequest().filter(fn -> fn.name(TENANT_NAME_1)).send().join();
+        camundaClient
+            .newTenantsSearchRequest()
+            .filter(fn -> fn.name(TENANT_NAME_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(tenantSearchResponse.items())
         .hasSize(1)
@@ -54,6 +60,7 @@ public class TenantsSearchIntegrationTest {
         camundaClient
             .newTenantsSearchRequest()
             .filter(fn -> fn.tenantId(TENANT_ID_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -69,6 +76,7 @@ public class TenantsSearchIntegrationTest {
         camundaClient
             .newTenantsSearchRequest()
             .filter(fn -> fn.tenantId("someTenantId"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(tenantSearchResponse.items()).isEmpty();
@@ -80,6 +88,7 @@ public class TenantsSearchIntegrationTest {
         camundaClient
             .newTenantsSearchRequest()
             .filter(fn -> fn.name("someTenantName"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(tenantSearchResponse.items()).isEmpty();
@@ -88,7 +97,12 @@ public class TenantsSearchIntegrationTest {
   @Test
   void searchShouldReturnTenantsSortedByName() {
     final var tenantSearchResponse =
-        camundaClient.newTenantsSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newTenantsSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(tenantSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
@@ -104,7 +118,12 @@ public class TenantsSearchIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var tenant = camundaClient.newTenantGetRequest(tenantId).send().join();
+              final var tenant =
+                  camundaClient
+                      .newTenantGetRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(tenant).isNotNull();
               assertThat(tenant.getTenantId()).isEqualTo(tenantId);
               assertThat(tenant.getName()).isEqualTo(tenantName);

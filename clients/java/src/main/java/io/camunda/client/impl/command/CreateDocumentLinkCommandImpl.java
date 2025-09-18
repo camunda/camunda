@@ -23,7 +23,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentLinkResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentLinkResponseImpl;
 import io.camunda.client.protocol.rest.DocumentLink;
@@ -91,15 +90,12 @@ public class CreateDocumentLinkCommandImpl implements CreateDocumentLinkCommandS
 
   @Override
   public CamundaFuture<DocumentLinkResponse> send() {
-    final HttpCamundaFuture<DocumentLinkResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         String.format("/documents/%s/links", documentId),
         queryParams,
         jsonMapper.toJson(documentLinkRequest),
         httpRequestConfig.build(),
         DocumentLink.class,
-        DocumentLinkResponseImpl::new,
-        result);
-    return result;
+        DocumentLinkResponseImpl::new);
   }
 }

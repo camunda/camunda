@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -36,7 +37,12 @@ public class RolesByClientIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(EXISTING_ROLE_ID).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(EXISTING_ROLE_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(EXISTING_ROLE_ID);
               assertThat(role.getName()).isEqualTo("ARoleName");
@@ -63,7 +69,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(EXISTING_ROLE_ID).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(EXISTING_ROLE_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
                   .contains(clientId);
             });
@@ -83,7 +93,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
                   .containsExactly(clientId);
             });
@@ -102,7 +116,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items()).isEmpty();
             });
   }
@@ -119,7 +137,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items()).isEmpty();
             });
   }
@@ -142,7 +164,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
                   .containsExactly(clientId1, clientId2);
             });
@@ -167,7 +193,11 @@ public class RolesByClientIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items()).isEmpty();
             });
   }

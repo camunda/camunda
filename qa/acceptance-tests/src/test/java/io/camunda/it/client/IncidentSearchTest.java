@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentErrorType;
@@ -69,7 +70,14 @@ class IncidentSearchTest {
     waitUntilProcessInstanceHasIncidents(camundaClient, AMOUNT_OF_INCIDENTS);
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
-    incident = camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
+    incident =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .getFirst();
   }
 
   @AfterAll
@@ -83,7 +91,13 @@ class IncidentSearchTest {
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     // when
-    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
+    final List<Incident> incidents =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
 
     // then incidents are updated by background task, PENDING state is changed on ACTIVE
     assertThat(incidents).extracting(Incident::getState).containsOnly(ACTIVE);
@@ -94,7 +108,12 @@ class IncidentSearchTest {
     // given
     final var incidentKey = incident.getIncidentKey();
     // when
-    final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
+    final var result =
+        camundaClient
+            .newIncidentGetRequest(incidentKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isNotNull();
@@ -110,7 +129,12 @@ class IncidentSearchTest {
     final var exception =
         (ProblemException)
             assertThatThrownBy(
-                    () -> camundaClient.newIncidentGetRequest(invalidIncidentKey).send().join())
+                    () ->
+                        camundaClient
+                            .newIncidentGetRequest(invalidIncidentKey)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join())
                 .isInstanceOf(ProblemException.class)
                 .actual();
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
@@ -131,6 +155,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.incidentKey(incidentKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -149,6 +174,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -167,6 +193,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.state(IncidentState.valueOf(state.name())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -185,6 +212,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.elementInstanceKey(elementInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -203,6 +231,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -221,6 +250,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.processDefinitionId(processDefinitionId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -239,6 +269,7 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -255,6 +286,7 @@ class IncidentSearchTest {
                 camundaClient
                     .newIncidentSearchRequest()
                     .filter(f -> f.errorType(IncidentErrorType.valueOf(errorType.name())))
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join())
         .describedAs(
@@ -275,7 +307,12 @@ class IncidentSearchTest {
 
     // when
     final var result =
-        camundaClient.newIncidentSearchRequest().filter(f -> f.elementId(elementId)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.elementId(elementId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -289,7 +326,12 @@ class IncidentSearchTest {
 
     // when
     final var result =
-        camundaClient.newIncidentSearchRequest().filter(f -> f.jobKey(jobKey)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.jobKey(jobKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -303,7 +345,12 @@ class IncidentSearchTest {
 
     // when
     final var result =
-        camundaClient.newIncidentSearchRequest().filter(f -> f.tenantId(tenantId)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .filter(f -> f.tenantId(tenantId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -316,12 +363,14 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -339,9 +388,19 @@ class IncidentSearchTest {
   @Test
   void shouldSortByErrorType() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.errorType().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.errorType().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.errorType().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.errorType().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getErrorType).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -359,12 +418,14 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -384,12 +445,14 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.processInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -406,9 +469,19 @@ class IncidentSearchTest {
   @Test
   void shouldSortByTenantId() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.tenantId().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.tenantId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.tenantId().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.tenantId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getTenantId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -426,12 +499,14 @@ class IncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.elementInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.elementInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -448,9 +523,19 @@ class IncidentSearchTest {
   @Test
   void shouldSortByElementId() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.elementId().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.elementId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.elementId().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.elementId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getElementId).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -465,9 +550,19 @@ class IncidentSearchTest {
   @Test
   void shouldSortByState() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.state().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.state().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.state().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.state().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getState).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -485,9 +580,19 @@ class IncidentSearchTest {
   void shouldSortByJobKey() {
     // when
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.jobKey().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.jobKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.jobKey().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.jobKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var ascJobKeys =
         resultAsc.items().stream().map(Incident::getJobKey).filter(Objects::nonNull).toList();
@@ -509,9 +614,19 @@ class IncidentSearchTest {
   @Test
   void shouldSortByCreationTime() {
     final var resultAsc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.creationTime().asc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.creationTime().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newIncidentSearchRequest().sort(s -> s.creationTime().desc()).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .sort(s -> s.creationTime().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(Incident::getCreationTime).toList();
     final var sortedAsc = all.stream().sorted().toList();
@@ -526,15 +641,27 @@ class IncidentSearchTest {
   @Test
   void shouldSearchAfterSecondItem() {
     // when
-    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var thirdIncidentKey = resultAll.items().get(2).getIncidentKey();
 
-    final var result = camundaClient.newIncidentSearchRequest().page(p -> p.limit(2)).send().join();
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var resultSearchAfter =
         camundaClient
             .newIncidentSearchRequest()
             .page(p -> p.limit(1).after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -546,15 +673,26 @@ class IncidentSearchTest {
   @Test
   void shouldSearchBeforeSecondItem() {
     // when
-    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var firstIncidentKey = resultAll.items().get(0).getIncidentKey();
 
     final var result =
-        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2).from(1)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .page(p -> p.limit(2).from(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultSearchBefore =
         camundaClient
             .newIncidentSearchRequest()
             .page(p -> p.limit(1).before(result.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -566,16 +704,31 @@ class IncidentSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newIncidentSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var resultWithLimit =
-        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getIncidentKey();
 
     final var resultSearchFrom =
-        camundaClient.newIncidentSearchRequest().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newIncidentSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().stream().findFirst().get().getIncidentKey())

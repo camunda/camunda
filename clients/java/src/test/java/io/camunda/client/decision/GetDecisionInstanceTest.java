@@ -40,7 +40,11 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
             .processInstanceKey("5"));
 
     // when
-    client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+    client
+        .newDecisionInstanceGetRequest(decisionInstanceId)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

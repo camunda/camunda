@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateUserCommandStep1;
 import io.camunda.client.api.response.UpdateUserResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateUserResponseImpl;
 import io.camunda.client.protocol.rest.UserUpdateRequest;
@@ -74,16 +73,13 @@ public class UpdateUserCommandImpl implements UpdateUserCommandStep1 {
   public CamundaFuture<UpdateUserResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
     ArgumentUtil.ensureNotNullNorEmpty("email", request.getEmail());
-    final HttpCamundaFuture<UpdateUserResponse> result = new HttpCamundaFuture<>();
     final UpdateUserResponseImpl response = new UpdateUserResponseImpl();
 
-    httpClient.put(
+    return httpClient.put(
         "/users/" + username,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         UserUpdateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

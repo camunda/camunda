@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateMappingRuleResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateMappingRuleResponseImpl;
 import io.camunda.client.protocol.rest.MappingRuleCreateRequest;
@@ -79,15 +78,12 @@ public class CreateMappingRuleCommandImpl implements CreateMappingRuleCommandSte
     ArgumentUtil.ensureNotNull("claimValue", mappingRuleRequest.getClaimValue());
     ArgumentUtil.ensureNotNull("name", mappingRuleRequest.getName());
     ArgumentUtil.ensureNotNull("mappingRuleId", mappingRuleRequest.getMappingRuleId());
-    final HttpCamundaFuture<CreateMappingRuleResponse> result = new HttpCamundaFuture<>();
     final CreateMappingRuleResponseImpl response = new CreateMappingRuleResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         "/mapping-rules",
         jsonMapper.toJson(mappingRuleRequest),
         httpRequestConfig.build(),
         MappingRuleCreateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignRoleToUserCommandStep1.AssignRoleToUs
 import io.camunda.client.api.command.AssignRoleToUserCommandStep1.AssignRoleToUserCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToUserResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignRoleToUserResponseImpl;
 import java.time.Duration;
@@ -65,10 +64,8 @@ public final class AssignRoleToUserCommandImpl
   public CamundaFuture<AssignRoleToUserResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
-    final HttpCamundaFuture<AssignRoleToUserResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/roles/%s/users/%s", roleId, username);
-    httpClient.put(
-        endpoint, null, httpRequestConfig.build(), AssignRoleToUserResponseImpl::new, result);
-    return result;
+    return httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignRoleToUserResponseImpl::new);
   }
 }

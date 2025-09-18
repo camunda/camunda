@@ -31,7 +31,7 @@ public class SearchRolesByTenantTest extends ClientRestTest {
   @Test
   void shouldSendSearchRequestForRolesByTenant() {
     // when
-    client.newRolesByTenantSearchRequest(TENANT_ID).send().join();
+    client.newRolesByTenantSearchRequest(TENANT_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -44,6 +44,7 @@ public class SearchRolesByTenantTest extends ClientRestTest {
     client
         .newRolesByTenantSearchRequest(TENANT_ID)
         .filter(f -> f.roleId("roleId").name("roleName"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -57,14 +58,26 @@ public class SearchRolesByTenantTest extends ClientRestTest {
 
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
-    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newRolesByTenantSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
   void shouldRaiseExceptionOnEmptyTenantId() {
-    assertThatThrownBy(() -> client.newRolesByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newRolesByTenantSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }

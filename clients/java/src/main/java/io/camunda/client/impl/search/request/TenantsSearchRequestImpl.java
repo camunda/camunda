@@ -22,55 +22,42 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.tenantS
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.TenantFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.TenantsSearchRequest;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.sort.TenantSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.TenantSearchQueryRequest;
 import io.camunda.client.protocol.rest.TenantSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class TenantsSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<TenantSearchQueryRequest>
+    extends AbstractSearchRequestImpl<TenantSearchQueryRequest, Tenant>
     implements TenantsSearchRequest {
 
   private final TenantSearchQueryRequest request;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
+
   private final JsonMapper jsonMapper;
 
   public TenantsSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new TenantSearchQueryRequest();
   }
 
   @Override
-  public FinalSearchRequestStep<Tenant> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<Tenant>> send() {
-    final HttpCamundaFuture<SearchResponse<Tenant>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/tenants/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantSearchQueryResult.class,
         SearchResponseMapper::toTenantsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

@@ -16,42 +16,29 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessDefinitionGetXmlRequestImpl implements ProcessDefinitionGetXmlRequest {
+public class ProcessDefinitionGetXmlRequestImpl extends AbstractFetchRequestImpl<String>
+    implements ProcessDefinitionGetXmlRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long processDefinitionKey;
 
   public ProcessDefinitionGetXmlRequestImpl(
       final HttpClient httpClient, final long processDefinitionKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.processDefinitionKey = processDefinitionKey;
   }
 
   @Override
-  public FinalCommandStep<String> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<String> send() {
-    final HttpCamundaFuture<String> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/process-definitions/%d/xml", processDefinitionKey),
         httpRequestConfig.build(),
         String.class,
         s -> s,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

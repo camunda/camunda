@@ -37,6 +37,7 @@ public class SearchUsersTest extends ClientRestTest {
         .filter(fn -> fn.username("userName"))
         .sort(UserSort::username)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -53,7 +54,7 @@ public class SearchUsersTest extends ClientRestTest {
     gatewayService.onUserRequest(username, Instancio.create(UserResult.class));
 
     // when
-    client.newUserGetRequest(username).send().join();
+    client.newUserGetRequest(username).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -64,7 +65,8 @@ public class SearchUsersTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullUsername() {
     // when / then
-    assertThatThrownBy(() -> client.newUserGetRequest(null).send().join())
+    assertThatThrownBy(
+            () -> client.newUserGetRequest(null).withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be null");
   }
@@ -72,7 +74,8 @@ public class SearchUsersTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyUsername() {
     // when / then
-    assertThatThrownBy(() -> client.newUserGetRequest("").send().join())
+    assertThatThrownBy(
+            () -> client.newUserGetRequest("").withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("username must not be empty");
   }

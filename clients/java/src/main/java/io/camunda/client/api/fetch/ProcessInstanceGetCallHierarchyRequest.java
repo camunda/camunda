@@ -15,9 +15,8 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
 import java.util.List;
 
 public interface ProcessInstanceGetCallHierarchyRequest
-    extends FinalCommandStep<List<ProcessInstanceCallHierarchyEntryResponse>> {}
+    extends FinalFetchRequestStep<List<ProcessInstanceCallHierarchyEntryResponse>> {}

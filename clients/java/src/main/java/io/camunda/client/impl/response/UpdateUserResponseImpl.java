@@ -39,7 +39,7 @@ public class UpdateUserResponseImpl implements UpdateUserResponse {
     return email;
   }
 
-  public UpdateUserResponseImpl setResponse(final UserUpdateResult userUpdateResult) {
+  public UpdateUserResponse setResponse(final UserUpdateResult userUpdateResult) {
     name = userUpdateResult.getName();
     username = userUpdateResult.getUsername();
     email = userUpdateResult.getEmail();

@@ -28,7 +28,11 @@ public final class GetDecisionDefinitionXmlTest extends ClientRestTest {
   void shouldGetDecisionDefinitionXml() {
     // when
     final long decisionDefinitionKey = 1L;
-    client.newDecisionDefinitionGetXmlRequest(decisionDefinitionKey).send().join();
+    client
+        .newDecisionDefinitionGetXmlRequest(decisionDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

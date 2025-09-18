@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -47,7 +48,11 @@ public class MappingRulesByGroupSearchTest {
   @Test
   void shouldReturnMappingRulesByGroup() {
     final var mappingRules =
-        camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
+        camundaClient
+            .newMappingRulesByGroupSearchRequest(GROUP_ID)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(mappingRules.items().size()).isEqualTo(2);
     assertThat(mappingRules.items())
@@ -75,6 +80,7 @@ public class MappingRulesByGroupSearchTest {
         camundaClient
             .newMappingRulesByGroupSearchRequest(GROUP_ID)
             .filter(fn -> fn.mappingRuleId(MAPPING_RULE_ID_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -90,6 +96,7 @@ public class MappingRulesByGroupSearchTest {
         camundaClient
             .newMappingRulesByGroupSearchRequest(GROUP_ID)
             .sort(fn -> fn.mappingRuleId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -102,7 +109,13 @@ public class MappingRulesByGroupSearchTest {
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newMappingRulesByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newMappingRulesByGroupSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -110,7 +123,13 @@ public class MappingRulesByGroupSearchTest {
   @Test
   void shouldRejectIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newMappingRulesByGroupSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newMappingRulesByGroupSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -146,7 +165,11 @@ public class MappingRulesByGroupSearchTest {
         .untilAsserted(
             () -> {
               final var mappingRules =
-                  camundaClient.newMappingRulesByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newMappingRulesByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(mappingRules.items().size()).isEqualTo(2);
             });
   }

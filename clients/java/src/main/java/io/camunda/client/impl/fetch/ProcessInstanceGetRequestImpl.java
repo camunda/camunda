@@ -18,41 +18,29 @@ package io.camunda.client.impl.fetch;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
 import io.camunda.client.api.search.response.ProcessInstance;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessInstanceGetRequestImpl implements ProcessInstanceGetRequest {
+public class ProcessInstanceGetRequestImpl extends AbstractFetchRequestImpl<ProcessInstance>
+    implements ProcessInstanceGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long processInstanceKey;
 
   public ProcessInstanceGetRequestImpl(final HttpClient httpClient, final long processInstanceKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.processInstanceKey = processInstanceKey;
   }
 
   @Override
-  public ProcessInstanceGetRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<ProcessInstance> send() {
-    final HttpCamundaFuture<ProcessInstance> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/process-instances/%d", processInstanceKey),
         httpRequestConfig.build(),
         ProcessInstanceResult.class,
         SearchResponseMapper::toProcessInstanceGetResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

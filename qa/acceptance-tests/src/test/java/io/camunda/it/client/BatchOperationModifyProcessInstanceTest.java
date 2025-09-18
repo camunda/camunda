@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.CreateBatchOperationCommandStep3;
 import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessInstanceModificationStep;
 import io.camunda.client.api.response.Process;
@@ -265,6 +266,7 @@ public class BatchOperationModifyProcessInstanceTest {
                   camundaClient
                       .newBatchOperationItemsSearchRequest()
                       .filter(f -> f.batchOperationKey(batchOperationKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -304,7 +306,13 @@ public class BatchOperationModifyProcessInstanceTest {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newElementInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newElementInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }

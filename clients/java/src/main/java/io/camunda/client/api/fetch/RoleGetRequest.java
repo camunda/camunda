@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.Role;
 
-public interface RoleGetRequest extends FinalCommandStep<Role> {}
+public interface RoleGetRequest extends FinalFetchRequestStep<Role> {}

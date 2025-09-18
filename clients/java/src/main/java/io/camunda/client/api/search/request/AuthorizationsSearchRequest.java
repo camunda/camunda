@@ -13,11 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.api.fetch;
+package io.camunda.client.api.search.request;
 
 import io.camunda.client.api.search.filter.AuthorizationFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.sort.AuthorizationSort;
 

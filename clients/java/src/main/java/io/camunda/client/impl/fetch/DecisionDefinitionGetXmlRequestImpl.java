@@ -17,39 +17,27 @@ package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.DecisionDefinitionGetXmlRequest;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DecisionDefinitionGetXmlRequestImpl implements DecisionDefinitionGetXmlRequest {
+public class DecisionDefinitionGetXmlRequestImpl extends AbstractFetchRequestImpl<String>
+    implements DecisionDefinitionGetXmlRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long decisionKey;
 
   public DecisionDefinitionGetXmlRequestImpl(final HttpClient httpClient, final long decisionKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.decisionKey = decisionKey;
   }
 
   @Override
-  public DecisionDefinitionGetXmlRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<String> send() {
-    final HttpCamundaFuture<String> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/decision-definitions/%d/xml", decisionKey),
         httpRequestConfig.build(),
         String.class,
         s -> s,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

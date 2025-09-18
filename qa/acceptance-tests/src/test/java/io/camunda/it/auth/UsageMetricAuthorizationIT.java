@@ -19,6 +19,7 @@ import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
@@ -106,6 +107,7 @@ public class UsageMetricAuthorizationIT {
                 assertThat(
                         camundaClient
                             .newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join())
                     .satisfies(fnRequirements));
@@ -136,7 +138,12 @@ public class UsageMetricAuthorizationIT {
     try (final CamundaClient client = createClient(testUser)) {
       // when
       final var actual =
-          client.newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D).withTenants(true).send().join();
+          client
+              .newUsageMetricsRequest(NOW_MINUS_1D, NOW_PLUS_1D)
+              .withTenants(true)
+              .consistencyPolicy(ConsistencyPolicy.noWait())
+              .send()
+              .join();
 
       // then
       assertThat(actual.getProcessInstances()).isEqualTo(expected.getProcessInstances());

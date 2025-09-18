@@ -31,7 +31,7 @@ public class SearchUsersByTenantTest extends ClientRestTest {
   @Test
   void shouldSearchForUsersByTenant() {
     // when
-    client.newUsersByTenantSearchRequest(TENANT_ID).send().join();
+    client.newUsersByTenantSearchRequest(TENANT_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -41,7 +41,12 @@ public class SearchUsersByTenantTest extends ClientRestTest {
   @Test
   void shouldIncludeSortInSearchRequestBody() {
     // when
-    client.newUsersByTenantSearchRequest(TENANT_ID).sort(f -> f.username().desc()).send().join();
+    client
+        .newUsersByTenantSearchRequest(TENANT_ID)
+        .sort(f -> f.username().desc())
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest lastRequest = RestGatewayService.getLastRequest();
@@ -52,14 +57,26 @@ public class SearchUsersByTenantTest extends ClientRestTest {
 
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
-    assertThatThrownBy(() -> client.newUsersByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUsersByTenantSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
   void shouldRaiseExceptionOnEmptyTenantId() {
-    assertThatThrownBy(() -> client.newUsersByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUsersByTenantSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -67,7 +84,13 @@ public class SearchUsersByTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByTenant() {
     assertThatThrownBy(
-            () -> client.newUsersByTenantSearchRequest(TENANT_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newUsersByTenantSearchRequest(TENANT_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -79,6 +102,7 @@ public class SearchUsersByTenantTest extends ClientRestTest {
                 client
                     .newUsersByTenantSearchRequest(TENANT_ID)
                     .filter(new TenantUserFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)

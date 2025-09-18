@@ -44,7 +44,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     gatewayService.onProcessInstanceRequest(processInstanceKey, new ProcessInstanceResult());
 
     // when
-    client.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    client
+        .newProcessInstanceGetRequest(processInstanceKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -57,7 +61,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessInstanceWithEmptyQuery() {
     // when
-    client.newProcessInstanceSearchRequest().send().join();
+    client.newProcessInstanceSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -106,6 +110,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .elementInstanceState(ElementInstanceState.ACTIVE)
                     .hasElementInstanceIncident(true)
                     .incidentErrorHashCode(123456789))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
     // then
@@ -144,6 +149,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -163,6 +169,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(b -> b.notIn(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -182,6 +189,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(b -> b.like("string")))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -199,7 +207,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
   void shouldSearchProcessInstanceByStartDateDateTimeFilter() {
     // when
     final OffsetDateTime now = OffsetDateTime.now();
-    client.newProcessInstanceSearchRequest().filter(f -> f.startDate(b -> b.gt(now))).send().join();
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.startDate(b -> b.gt(now)))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -227,7 +240,12 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                 .value(new StringFilterProperty().$eq("v2")));
 
     // when
-    client.newProcessInstanceSearchRequest().filter(f -> f.variables(variablesMap)).send().join();
+    client
+        .newProcessInstanceSearchRequest()
+        .filter(f -> f.variables(variablesMap))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final ProcessInstanceSearchQuery request =
@@ -270,6 +288,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
                     .desc()
                     .tenantId()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -301,6 +320,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     client
         .newProcessInstanceSearchRequest()
         .page(p -> p.from(23).limit(5).before("b").after("a"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -326,6 +346,7 @@ public class QueryProcessInstanceTest extends ClientRestTest {
             f ->
                 f.tenantId("tenant-1")
                     .orFilters(Arrays.asList(f1 -> f1.state(ACTIVE), f3 -> f3.hasIncident(true))))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -371,7 +392,11 @@ public class QueryProcessInstanceTest extends ClientRestTest {
     gatewayService.onProcessInstanceCallHierarchyRequest(processInstanceKey, new Object[0]);
 
     // when
-    client.newProcessInstanceGetCallHierarchyRequest(processInstanceKey).send().join();
+    client
+        .newProcessInstanceGetCallHierarchyRequest(processInstanceKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

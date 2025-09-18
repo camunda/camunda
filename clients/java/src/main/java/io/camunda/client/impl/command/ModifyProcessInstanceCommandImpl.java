@@ -24,7 +24,6 @@ import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep3;
 import io.camunda.client.api.response.ModifyProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ModifyProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
@@ -300,14 +299,11 @@ public final class ModifyProcessInstanceCommandImpl
   }
 
   private CamundaFuture<ModifyProcessInstanceResponse> sendRestRequest() {
-    final HttpCamundaFuture<ModifyProcessInstanceResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/process-instances/" + processInstanceKey + "/modification",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        ModifyProcessInstanceResponseImpl::new,
-        result);
-    return result;
+        ModifyProcessInstanceResponseImpl::new);
   }
 
   private CamundaFuture<ModifyProcessInstanceResponse> sendGrpcRequest() {

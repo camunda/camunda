@@ -23,7 +23,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DocumentReferenceBatchResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DocumentReferenceBatchResponseImpl;
 import io.camunda.client.impl.util.DocumentBuilder;
@@ -105,16 +104,13 @@ public class CreateDocumentBatchCommandImpl implements CreateDocumentBatchComman
         entityBuilder.addPart(part);
       }
 
-      final HttpCamundaFuture<DocumentReferenceBatchResponse> result = new HttpCamundaFuture<>();
-      httpClient.postMultipart(
+      return httpClient.postMultipart(
           "/documents/batch",
           queryParams,
           entityBuilder,
           httpRequestConfig.build(),
           DocumentCreationBatchResponse.class,
-          DocumentReferenceBatchResponseImpl::new,
-          result);
-      return result;
+          DocumentReferenceBatchResponseImpl::new);
     } finally {
       documents.stream()
           .map(DocumentBuilder::getContent)

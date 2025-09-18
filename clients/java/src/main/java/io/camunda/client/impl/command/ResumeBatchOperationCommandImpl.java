@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ResumeBatchOperationStep1;
 import io.camunda.client.api.response.ResumeBatchOperationResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ResumeBatchOperationResponseImpl;
 import java.time.Duration;
@@ -49,13 +48,10 @@ public final class ResumeBatchOperationCommandImpl implements ResumeBatchOperati
 
   @Override
   public CamundaFuture<ResumeBatchOperationResponse> send() {
-    final HttpCamundaFuture<ResumeBatchOperationResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/batch-operations/" + batchOperationKey + "/resumption",
         null,
         httpRequestConfig.build(),
-        ResumeBatchOperationResponseImpl::new,
-        result);
-    return result;
+        ResumeBatchOperationResponseImpl::new);
   }
 }

@@ -15,6 +15,7 @@ import static io.camunda.it.util.TestHelper.waitForStartFormsBeingExported;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
 import io.camunda.qa.util.auth.Authenticated;
@@ -122,6 +123,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
                     f.processDefinitionId(PROCESS_DEFINITION_WITH_START_FORM_ID)
                         .tenantId("<default>"))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -132,6 +134,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
         camundaClient
             .newProcessDefinitionGetFormRequest(
                 processDefinitionAssignedToDefaultTenant.getProcessDefinitionKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -152,6 +155,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.isLatestVersion(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -202,6 +206,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
                       p.after(finalEndCursor);
                     }
                   })
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
       if (!result.items().isEmpty()) {
@@ -277,6 +282,7 @@ public class ProcessDefinitionSearchMultiTenantsTest {
                       p.after(finalEndCursor);
                     }
                   })
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
       if (!result.items().isEmpty()) {

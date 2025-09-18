@@ -13,6 +13,7 @@ import static org.springframework.http.HttpStatus.NOT_FOUND;
 import static org.springframework.http.HttpStatus.OK;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -155,7 +156,13 @@ public class TasklistV1MultiTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newProcessDefinitionSearchRequest().send().join().items())
+                assertThat(
+                        camundaClient
+                            .newProcessDefinitionSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .hasSize(expectedProcessDefinitions));
   }
 }

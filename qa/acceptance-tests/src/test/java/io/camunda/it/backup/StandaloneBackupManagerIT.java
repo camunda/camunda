@@ -14,6 +14,7 @@ import static org.assertj.core.api.Fail.fail;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.Profile;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -297,7 +298,10 @@ final class StandaloneBackupManagerIT {
           .untilAsserted(
               () -> {
                 final var processInstance =
-                    camundaClient.newProcessInstanceGetRequest(processInstanceKey).execute();
+                    camundaClient
+                        .newProcessInstanceGetRequest(processInstanceKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .execute();
                 assertThat(processInstance).matches(processInstanceCheck);
               });
       Awaitility.await("should find a user task")
@@ -305,7 +309,12 @@ final class StandaloneBackupManagerIT {
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final var hits = camundaClient.newUserTaskSearchRequest().execute().items();
+                final var hits =
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .execute()
+                        .items();
                 assertThat(hits).hasSize(1);
                 userTaskKey.set(hits.get(0).getUserTaskKey());
               });

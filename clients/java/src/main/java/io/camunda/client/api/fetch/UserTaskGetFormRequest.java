@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.Form;
 
-public interface UserTaskGetFormRequest extends FinalCommandStep<Form> {}
+public interface UserTaskGetFormRequest extends FinalFetchRequestStep<Form> {}

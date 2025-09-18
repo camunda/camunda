@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateUserResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateUserResponseImpl;
 import io.camunda.client.protocol.rest.UserCreateResult;
@@ -55,16 +54,13 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
     ArgumentUtil.ensureNotNull("email", request.getEmail());
     ArgumentUtil.ensureNotNull("name", request.getName());
     ArgumentUtil.ensureNotNull("password", request.getPassword());
-    final HttpCamundaFuture<CreateUserResponse> result = new HttpCamundaFuture<>();
     final CreateUserResponseImpl response = new CreateUserResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         "/users",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         UserCreateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 
   @Override

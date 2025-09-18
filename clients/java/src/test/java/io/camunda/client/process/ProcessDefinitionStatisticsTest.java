@@ -46,7 +46,11 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
   @Test
   void shouldGetProcessDefinitionElementStatistics() {
     // when
-    client.newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY).send().join();
+    client
+        .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -93,6 +97,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                     .elementInstanceState(ElementInstanceState.ACTIVE)
                     .hasElementInstanceIncident(true)
                     .incidentErrorHashCode(123456789))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -127,6 +132,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     client
         .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -146,6 +152,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     client
         .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.tenantId(b -> b.like("string")))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -166,6 +173,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     client
         .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.startDate(b -> b.gt(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -198,6 +206,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
     client
         .newProcessDefinitionElementStatisticsRequest(PROCESS_DEFINITION_KEY)
         .filter(f -> f.variables(variablesMap))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -221,6 +230,7 @@ public class ProcessDefinitionStatisticsTest extends ClientRestTest {
                         Arrays.asList(
                             f1 -> f1.processInstanceKey(123L).elementId("elementId"),
                             f3 -> f3.hasElementInstanceIncident(true))))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

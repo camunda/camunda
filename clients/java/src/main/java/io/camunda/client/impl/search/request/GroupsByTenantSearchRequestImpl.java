@@ -21,60 +21,47 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.tenantG
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.TenantGroupFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.client.api.search.sort.TenantGroupSort;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.TenantGroupSearchQueryRequest;
 import io.camunda.client.protocol.rest.TenantGroupSearchResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class GroupsByTenantSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<TenantGroupSearchQueryRequest>
+    extends AbstractSearchRequestImpl<TenantGroupSearchQueryRequest, TenantGroup>
     implements GroupsByTenantSearchRequest {
 
   private final TenantGroupSearchQueryRequest request;
   private final String tenantId;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public GroupsByTenantSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final String tenantId) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.tenantId = tenantId;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new TenantGroupSearchQueryRequest();
-  }
-
-  @Override
-  public FinalSearchRequestStep<TenantGroup> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<SearchResponse<TenantGroup>> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
-    final HttpCamundaFuture<SearchResponse<TenantGroup>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         String.format("/tenants/%s/groups/search", tenantId),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantGroupSearchResult.class,
         SearchResponseMapper::toTenantGroupsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

@@ -39,7 +39,7 @@ public class GetVariableTest extends ClientRestTest {
             .processInstanceKey("4"));
 
     // when
-    client.newVariableGetRequest(variableKey).send().join();
+    client.newVariableGetRequest(variableKey).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

@@ -25,7 +25,6 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisi
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.EvaluateDecisionResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
@@ -151,15 +150,12 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
   }
 
   private CamundaFuture<EvaluateDecisionResponse> sendRestRequest() {
-    final HttpCamundaFuture<EvaluateDecisionResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/decision-definitions/evaluation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         EvaluateDecisionResult.class,
-        response -> new EvaluateDecisionResponseImpl(response, jsonMapper),
-        result);
-    return result;
+        response -> new EvaluateDecisionResponseImpl(response, jsonMapper));
   }
 
   private CamundaFuture<EvaluateDecisionResponse> sendGrpcRequest() {

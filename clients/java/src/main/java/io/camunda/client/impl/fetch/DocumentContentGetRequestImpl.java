@@ -21,7 +21,6 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import java.io.InputStream;
 import java.time.Duration;
@@ -61,20 +60,17 @@ public class DocumentContentGetRequestImpl implements DocumentContentGetRequest 
 
   @Override
   public CamundaFuture<InputStream> send() {
-    final HttpCamundaFuture<InputStream> result = new HttpCamundaFuture<>();
     final Map<String, String> queryParams = new HashMap<>();
     if (storeId != null) {
       queryParams.put("storeId", storeId);
     }
     queryParams.put("contentHash", contentHash);
-    httpClient.get(
+    return httpClient.get(
         String.format("/documents/%s", documentId),
         queryParams,
         httpRequestConfig.build(),
         InputStream.class,
-        is -> is,
-        result);
-    return result;
+        is -> is);
   }
 
   @Override

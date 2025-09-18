@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1.AssignR
 import io.camunda.client.api.command.AssignRoleToMappingRuleCommandStep1.AssignRoleToMappingRuleCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToMappingRuleResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignRoleToMappingRuleResponseImpl;
 import java.time.Duration;
@@ -65,13 +64,10 @@ public class AssignRoleToMappingRuleCommandImpl
   public CamundaFuture<AssignRoleToMappingRuleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
-    final HttpCamundaFuture<AssignRoleToMappingRuleResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/roles/" + roleId + "/mapping-rules/" + mappingRuleId,
         null, // No request body needed
         httpRequestConfig.build(),
-        AssignRoleToMappingRuleResponseImpl::new,
-        result);
-    return result;
+        AssignRoleToMappingRuleResponseImpl::new);
   }
 }

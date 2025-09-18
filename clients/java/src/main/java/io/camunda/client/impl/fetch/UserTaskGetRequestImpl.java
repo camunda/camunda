@@ -18,41 +18,29 @@ package io.camunda.client.impl.fetch;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.UserTaskGetRequest;
 import io.camunda.client.api.search.response.UserTask;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserTaskGetRequestImpl implements UserTaskGetRequest {
+public class UserTaskGetRequestImpl extends AbstractFetchRequestImpl<UserTask>
+    implements UserTaskGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long userTaskKey;
 
   public UserTaskGetRequestImpl(final HttpClient httpClient, final long userTaskKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.userTaskKey = userTaskKey;
   }
 
   @Override
-  public UserTaskGetRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<UserTask> send() {
-    final HttpCamundaFuture<UserTask> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/user-tasks/%d", userTaskKey),
         httpRequestConfig.build(),
         UserTaskResult.class,
         UserTaskImpl::new,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

@@ -28,7 +28,11 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     final long userTaskKey = 1L;
 
     // when
-    client.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+    client
+        .newUserTaskVariableSearchRequest(userTaskKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -44,6 +48,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     client
         .newUserTaskVariableSearchRequest(userTaskKey)
         .filter(f -> f.name(variableName))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -61,6 +66,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     client
         .newUserTaskVariableSearchRequest(userTaskKey)
         .filter(f -> f.name(b -> b.like(variableName)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -79,6 +85,7 @@ public final class SearchUserTaskVariableTest extends ClientRestTest {
     client
         .newUserTaskVariableSearchRequest(userTaskKey)
         .filter(f -> f.name(b -> b.in(variableName)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

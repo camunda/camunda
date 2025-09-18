@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
@@ -134,6 +135,7 @@ public class AssignUserTaskMigrationIT extends UserTaskMigrationHelper {
                   client
                       .newUserTaskSearchRequest()
                       .filter(f -> f.userTaskKey(userTaskKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();

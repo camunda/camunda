@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CorrelateMessageResponse;
@@ -221,7 +222,12 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newProcessInstanceSearchRequest().filter(filter).send().join();
+                  camundaClient
+                      .newProcessInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
             });
   }
@@ -309,6 +315,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.variables(getScopedVariables(scopeId)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
@@ -336,6 +343,7 @@ public final class TestHelper {
                           f ->
                               f.state(ProcessInstanceState.ACTIVE)
                                   .variables(getScopedVariables(scopeId)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
@@ -360,6 +368,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.variables(getScopedVariables(scopeId)).hasIncident(true))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
@@ -395,6 +404,7 @@ public final class TestHelper {
                           f ->
                               f.processInstanceKey(processInstanceKey)
                                   .variables(Map.of(variableName, variableValue)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(1);
@@ -423,6 +433,7 @@ public final class TestHelper {
                           f ->
                               f.state(UserTaskState.CREATED)
                                   .processInstanceVariables(getScopedVariables(testScopeId)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -450,7 +461,13 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var userTasks =
-                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(userTasks).hasSize(expectedCount);
             });
   }
@@ -466,7 +483,11 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(expectedItems);
             });
@@ -484,7 +505,11 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
               assertThat(batch.getOperationsCompletedCount()).isEqualTo(expectedCompletedItems);
@@ -503,7 +528,11 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(expectedStatus);
             });
@@ -520,7 +549,11 @@ public final class TestHelper {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(
@@ -538,7 +571,11 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+                  camundaClient
+                      .newProcessInstanceGetRequest(processInstanceKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.getState()).isEqualTo(ProcessInstanceState.TERMINATED);
             });
   }
@@ -553,7 +590,13 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -565,7 +608,12 @@ public final class TestHelper {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newElementInstanceSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
@@ -580,7 +628,12 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newElementInstanceSearchRequest().filter(filter).send().join();
+                  camundaClient
+                      .newElementInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
             });
   }
@@ -598,6 +651,7 @@ public final class TestHelper {
                         camundaClient
                             .newProcessInstanceSearchRequest()
                             .filter(fn)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -611,7 +665,12 @@ public final class TestHelper {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }
@@ -630,6 +689,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessDefinitionSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items()
@@ -638,6 +698,7 @@ public final class TestHelper {
               final var form =
                   camundaClient
                       .newProcessDefinitionGetFormRequest(processDefinitionKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(form.getFormId()).isEqualTo(expectedFormId);
@@ -655,7 +716,12 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newProcessDefinitionSearchRequest().filter(filter).send().join();
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessDefinitions);
             });
   }
@@ -723,6 +789,7 @@ public final class TestHelper {
                       camundaClient
                           .newDecisionDefinitionSearchRequest()
                           .filter(decisionDefinitionFilter)
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items()
@@ -732,6 +799,7 @@ public final class TestHelper {
                       camundaClient
                           .newDecisionRequirementsSearchRequest()
                           .filter(decisionRequirementsFilter)
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items()
@@ -761,6 +829,7 @@ public final class TestHelper {
                   camundaClient
                       .newDecisionInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(expectedDecisionInstances);
@@ -778,6 +847,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
@@ -795,6 +865,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasIncident(false))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedProcessInstances);
@@ -812,6 +883,7 @@ public final class TestHelper {
                   camundaClient
                       .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(false))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedElementInstances);
@@ -838,7 +910,12 @@ public final class TestHelper {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newIncidentSearchRequest().filter(filter).send().join();
+                  camundaClient
+                      .newIncidentSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
             });
   }
@@ -854,6 +931,7 @@ public final class TestHelper {
                   camundaClient
                       .newIncidentSearchRequest()
                       .filter(f -> f.state(IncidentState.RESOLVED))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
@@ -871,6 +949,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items().getFirst().getEndDate()).isNotNull();
@@ -888,6 +967,7 @@ public final class TestHelper {
                   camundaClient
                       .newElementInstanceSearchRequest()
                       .filter(f -> f.hasIncident(true))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedIncidents);
@@ -904,6 +984,7 @@ public final class TestHelper {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.hasRetriesLeft(true))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items().size()).isEqualTo(expectedProcesses);
@@ -920,6 +1001,7 @@ public final class TestHelper {
                   camundaClient
                       .newJobSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
@@ -932,7 +1014,12 @@ public final class TestHelper {
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUsersSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newUsersSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               final var users = result.items();
               assertThat(users)
                   .extracting(u -> u.getUsername())
@@ -958,6 +1045,7 @@ public final class TestHelper {
                   camundaClient
                       .newMessageSubscriptionSearchRequest()
                       .filter(filterConsumer)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedMessageSubscriptions);
@@ -971,7 +1059,12 @@ public final class TestHelper {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newCorrelatedMessageSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newCorrelatedMessageSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedCorrelatedMessages);
             });
   }
@@ -987,6 +1080,7 @@ public final class TestHelper {
                   camundaClient
                       .newAuthorizationSearchRequest()
                       .filter(f -> f.ownerId(owner).resourceIds(resource))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items().size()).isOne();

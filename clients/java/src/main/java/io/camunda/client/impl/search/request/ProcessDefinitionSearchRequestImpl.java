@@ -22,56 +22,43 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.ProcessDefinitionSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessDefinitionSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessDefinitionSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionSearchQuery>
+    extends AbstractSearchRequestImpl<ProcessDefinitionSearchQuery, ProcessDefinition>
     implements ProcessDefinitionSearchRequest {
 
   private final ProcessDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessDefinitionSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new ProcessDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<ProcessDefinition> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<SearchResponse<ProcessDefinition>> send() {
-    final HttpCamundaFuture<SearchResponse<ProcessDefinition>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         "/process-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessDefinitionSearchQueryResult.class,
         SearchResponseMapper::toProcessDefinitionSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

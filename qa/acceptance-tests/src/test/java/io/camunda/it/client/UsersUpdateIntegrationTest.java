@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.UpdateUserResponse;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -66,6 +67,7 @@ public class UsersUpdateIntegrationTest {
                   camundaClient
                       .newUsersSearchRequest()
                       .filter(fn -> fn.username(username))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(response.items().getFirst().getUsername()).isEqualTo(username);
@@ -102,6 +104,7 @@ public class UsersUpdateIntegrationTest {
                   camundaClient
                       .newUsersSearchRequest()
                       .filter(fn -> fn.username(userName))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(usersSearchResponse.items()).hasSize(1);

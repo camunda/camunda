@@ -10,6 +10,7 @@ package io.camunda.it.orchestration;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
@@ -51,6 +52,7 @@ public class VariableIT {
         client
             .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey).name("smallVariable"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -98,6 +100,7 @@ public class VariableIT {
                     f.processInstanceKey(processInstanceKey)
                         .name("largeVariable")
                         .isTruncated(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -145,6 +148,7 @@ public class VariableIT {
                     f.processInstanceKey(processInstanceKey)
                         .name("largeVariable")
                         .isTruncated(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(variables.items()).isNotEmpty();
@@ -157,7 +161,12 @@ public class VariableIT {
             .get();
 
     // when
-    largeVariable = client.newVariableGetRequest(largeVariable.getVariableKey()).send().join();
+    largeVariable =
+        client
+            .newVariableGetRequest(largeVariable.getVariableKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(largeVariable.isTruncated()).isFalse();
@@ -198,6 +207,7 @@ public class VariableIT {
                     f.processInstanceKey(processInstanceKey)
                         .name("largeVariable")
                         .isTruncated(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -224,6 +234,7 @@ public class VariableIT {
         client
             .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey).name("largeVariable"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -252,6 +263,7 @@ public class VariableIT {
                 !client
                     .newVariableSearchRequest()
                     .filter(filterFn)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items()

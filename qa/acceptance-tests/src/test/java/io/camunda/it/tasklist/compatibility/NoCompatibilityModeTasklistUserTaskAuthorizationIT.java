@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -576,6 +577,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
@@ -618,6 +620,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.userTaskKey(userTaskKey).state(COMPLETED))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);
@@ -672,6 +675,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
     return adminClient
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processDefinitionId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -700,6 +704,7 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
                   adminClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.userTaskKey(userTaskKey).assignee(c -> c.exists(false)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

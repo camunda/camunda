@@ -40,7 +40,7 @@ public class GetUserTaskTest extends ClientRestTest {
             .userTaskKey("5"));
 
     // when
-    client.newUserTaskGetRequest(userTaskKey).send().join();
+    client.newUserTaskGetRequest(userTaskKey).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

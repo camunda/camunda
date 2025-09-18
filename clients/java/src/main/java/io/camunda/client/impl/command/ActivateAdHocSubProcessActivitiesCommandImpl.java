@@ -90,13 +90,11 @@ public final class ActivateAdHocSubProcessActivitiesCommandImpl
   public CamundaFuture<ActivateAdHocSubProcessActivitiesResponse> send() {
     final HttpCamundaFuture<ActivateAdHocSubProcessActivitiesResponse> result =
         new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/element-instances/ad-hoc-activities/" + adHocSubProcessInstanceKey + "/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        ActivateAdHocSubProcessActivitiesResponseImpl::new,
-        result);
-    return result;
+        ActivateAdHocSubProcessActivitiesResponseImpl::new);
   }
 
   @Override

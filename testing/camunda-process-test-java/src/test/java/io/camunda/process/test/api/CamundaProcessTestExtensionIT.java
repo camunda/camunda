@@ -19,6 +19,7 @@ import static io.camunda.process.test.api.assertions.ElementSelectors.byName;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -133,7 +134,13 @@ public class CamundaProcessTestExtensionIT {
         .atMost(Duration.ofSeconds(10))
         .untilAsserted(
             () ->
-                assertThat(client.newProcessInstanceSearchRequest().send().join().items())
+                assertThat(
+                        client
+                            .newProcessInstanceSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .hasSize(1)
                     .extracting(ProcessInstance::getProcessInstanceKey)
                     .contains(processInstance.getProcessInstanceKey()));
@@ -176,6 +183,7 @@ public class CamundaProcessTestExtensionIT {
                             filter
                                 .processInstanceKey(processInstance.getProcessInstanceKey())
                                 .state(UserTaskState.CREATED))
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items(),

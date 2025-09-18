@@ -42,7 +42,7 @@ public class GroupSearchTest extends ClientRestTest {
     gatewayService.onGroupRequest(GROUP_ID, Instancio.create(GroupResult.class));
 
     // when
-    client.newGroupGetRequest(GROUP_ID).send().join();
+    client.newGroupGetRequest(GROUP_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -58,6 +58,7 @@ public class GroupSearchTest extends ClientRestTest {
         .filter(fn -> fn.name("groupName"))
         .sort(GroupSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -75,6 +76,7 @@ public class GroupSearchTest extends ClientRestTest {
         .filter(fn -> fn.groupId(b -> b.in("group1", "group2")))
         .sort(GroupSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -91,6 +93,7 @@ public class GroupSearchTest extends ClientRestTest {
         .newUsersByGroupSearchRequest(GROUP_ID)
         .sort(GroupUserSort::username)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -103,7 +106,13 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByGroup() {
     assertThatThrownBy(
-            () -> client.newUsersByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newUsersByGroupSearchRequest(GROUP_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -115,6 +124,7 @@ public class GroupSearchTest extends ClientRestTest {
                 client
                     .newUsersByGroupSearchRequest(GROUP_ID)
                     .filter(new GroupUserFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)
@@ -129,6 +139,7 @@ public class GroupSearchTest extends ClientRestTest {
         .filter(fn -> fn.mappingRuleId("mappingRuleId"))
         .sort(MappingRuleSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -146,6 +157,7 @@ public class GroupSearchTest extends ClientRestTest {
         .filter(fn -> fn.name("roleName"))
         .sort(RoleSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -162,6 +174,7 @@ public class GroupSearchTest extends ClientRestTest {
         .newClientsByGroupSearchRequest(GROUP_ID)
         .sort(ClientSort::clientId)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -174,7 +187,13 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullGroupIdWhenSearchingClientsByGroupId() {
     // when / then
-    assertThatThrownBy(() -> client.newClientsByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByGroupSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -182,7 +201,13 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyGroupIdWhenSearchingClientsByGroupId() {
     // when / then
-    assertThatThrownBy(() -> client.newClientsByGroupSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByGroupSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -194,6 +219,7 @@ public class GroupSearchTest extends ClientRestTest {
         .newClientsByGroupSearchRequest(GROUP_ID)
         .sort(s -> s.clientId().desc())
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -207,7 +233,13 @@ public class GroupSearchTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingClientsByGroup() {
     assertThatThrownBy(
-            () -> client.newClientsByGroupSearchRequest(GROUP_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newClientsByGroupSearchRequest(GROUP_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -219,6 +251,7 @@ public class GroupSearchTest extends ClientRestTest {
                 client
                     .newClientsByGroupSearchRequest(GROUP_ID)
                     .filter(new ClientFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)

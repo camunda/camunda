@@ -26,7 +26,6 @@ import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreatePro
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
@@ -230,15 +229,12 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   private CamundaFuture<ProcessInstanceEvent> sendRestRequest() {
-    final HttpCamundaFuture<ProcessInstanceEvent> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/process-instances",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         CreateProcessInstanceResult.class,
-        CreateProcessInstanceResponseImpl::new,
-        result);
-    return result;
+        CreateProcessInstanceResponseImpl::new);
   }
 
   private CamundaFuture<ProcessInstanceEvent> sendGrpcRequest() {

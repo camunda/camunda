@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.MappingRule;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -35,7 +36,12 @@ public class RolesByMappingRuleIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(EXISTING_ROLE_ID).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(EXISTING_ROLE_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(EXISTING_ROLE_ID);
               assertThat(role.getName()).isEqualTo("ARoleName");
@@ -281,7 +287,11 @@ public class RolesByMappingRuleIntegrationTest {
         .untilAsserted(
             () -> {
               final var result =
-                  camundaClient.newMappingRulesByRoleSearchRequest(roleId).send().join();
+                  camundaClient
+                      .newMappingRulesByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items())
                   .singleElement()
                   .satisfies(
@@ -298,7 +308,12 @@ public class RolesByMappingRuleIntegrationTest {
   void shouldReturnEmptyListForRoleWithoutMappingRules() {
     final var roleId = Strings.newRandomValidIdentityId();
     createRole(roleId, "EmptyRole", "desc");
-    final var result = camundaClient.newMappingRulesByRoleSearchRequest(roleId).send().join();
+    final var result =
+        camundaClient
+            .newMappingRulesByRoleSearchRequest(roleId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items()).isEmpty();
   }
 
@@ -357,6 +372,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .sort(s -> s.name().desc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -408,6 +424,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .sort(s -> s.claimName().asc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -459,6 +476,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .sort(s -> s.claimValue().desc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -508,6 +526,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .filter(f -> f.name(name))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items())
@@ -557,6 +576,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .filter(f -> f.claimName(claimName))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items())
@@ -605,6 +625,7 @@ public class RolesByMappingRuleIntegrationTest {
                   camundaClient
                       .newMappingRulesByRoleSearchRequest(roleId)
                       .filter(f -> f.claimValue(claimValue))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items())
@@ -641,7 +662,11 @@ public class RolesByMappingRuleIntegrationTest {
   }
 
   private static SearchResponse<MappingRule> searchMappingRuleByRole(final String roleId) {
-    return camundaClient.newMappingRulesByRoleSearchRequest(roleId).send().join();
+    return camundaClient
+        .newMappingRulesByRoleSearchRequest(roleId)
+        .consistencyPolicy(ConsistencyPolicy.noWait())
+        .send()
+        .join();
   }
 
   private static void createRole(

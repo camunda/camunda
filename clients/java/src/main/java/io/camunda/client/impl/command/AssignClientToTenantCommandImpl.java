@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignClientToTenantCommandStep1.AssignClie
 import io.camunda.client.api.command.AssignClientToTenantCommandStep1.AssignClientToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignClientToTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignClientToTenantResponseImpl;
 import java.time.Duration;
@@ -66,13 +65,10 @@ public class AssignClientToTenantCommandImpl
   public CamundaFuture<AssignClientToTenantResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("clientId", clientId);
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
-    final HttpCamundaFuture<AssignClientToTenantResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/tenants/" + tenantId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
-        AssignClientToTenantResponseImpl::new,
-        result);
-    return result;
+        AssignClientToTenantResponseImpl::new);
   }
 }

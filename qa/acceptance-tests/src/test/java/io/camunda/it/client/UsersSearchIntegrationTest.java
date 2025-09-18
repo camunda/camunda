@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.User;
@@ -56,7 +57,12 @@ public class UsersSearchIntegrationTest {
 
   @Test
   void shouldGetUserByUsername() {
-    final User user = camundaClient.newUserGetRequest(USERNAME_1).send().join();
+    final User user =
+        camundaClient
+            .newUserGetRequest(USERNAME_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(user.getUsername()).isEqualTo(USERNAME_1);
     assertThat(user.getEmail()).isEqualTo(EMAIL_1);
@@ -66,7 +72,13 @@ public class UsersSearchIntegrationTest {
   @Test
   void shouldReturnNotFoundWhenGettingUserThatDoesNotExist() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUserGetRequest("testUsername").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUserGetRequest("testUsername")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining("User with id 'testUsername' not found");
@@ -75,7 +87,12 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnUsersFilteredByUsername() {
     final SearchResponse<User> usersSearchResponse =
-        camundaClient.newUsersSearchRequest().filter(fn -> fn.username(USERNAME_1)).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .filter(fn -> fn.username(USERNAME_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(usersSearchResponse.items())
         .hasSize(1)
@@ -86,7 +103,12 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnUsersFilteredByEmail() {
     final SearchResponse<User> usersSearchResponse =
-        camundaClient.newUsersSearchRequest().filter(fn -> fn.email(EMAIL_1)).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .filter(fn -> fn.email(EMAIL_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(usersSearchResponse.items()).map(User::getEmail).containsOnly(EMAIL_1);
   }
@@ -94,7 +116,12 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnUsersFilteredByName() {
     final SearchResponse<User> usersSearchResponse =
-        camundaClient.newUsersSearchRequest().filter(fn -> fn.name(NAME_1)).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .filter(fn -> fn.name(NAME_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(usersSearchResponse.items()).map(User::getName).containsOnly(NAME_1);
   }
@@ -105,6 +132,7 @@ public class UsersSearchIntegrationTest {
         camundaClient
             .newUsersSearchRequest()
             .filter(fn -> fn.username("someUserName"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(userSearchResponse.items()).isEmpty();
@@ -116,6 +144,7 @@ public class UsersSearchIntegrationTest {
         camundaClient
             .newUsersSearchRequest()
             .filter(fn -> fn.email("some.email@email.com"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(userSearchResponse.items()).isEmpty();
@@ -124,14 +153,24 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnEmptyListWhenSearchingForNonExistingName() {
     final var userSearchResponse =
-        camundaClient.newUsersSearchRequest().filter(fn -> fn.name("some name")).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .filter(fn -> fn.name("some name"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(userSearchResponse.items()).isEmpty();
   }
 
   @Test
   void searchShouldReturnUsersSortedByUsername() {
     final var roleSearchResponse =
-        camundaClient.newUsersSearchRequest().sort(s -> s.username().desc()).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .sort(s -> s.username().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(3)
@@ -142,7 +181,12 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnUsersSortedByEmail() {
     final var roleSearchResponse =
-        camundaClient.newUsersSearchRequest().sort(s -> s.email().desc()).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .sort(s -> s.email().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(3)
@@ -153,7 +197,12 @@ public class UsersSearchIntegrationTest {
   @Test
   void searchShouldReturnUsersSortedByName() {
     final var roleSearchResponse =
-        camundaClient.newUsersSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newUsersSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(3)
@@ -170,6 +219,7 @@ public class UsersSearchIntegrationTest {
                   camundaClient
                       .newUsersSearchRequest()
                       .filter(fn -> fn.username(userName))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(usersSearchResponse.items()).hasSize(1);

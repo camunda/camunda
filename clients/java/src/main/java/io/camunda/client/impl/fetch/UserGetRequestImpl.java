@@ -16,46 +16,32 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.UserGetRequest;
 import io.camunda.client.api.search.response.User;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.UserResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UserGetRequestImpl implements UserGetRequest {
+public class UserGetRequestImpl extends AbstractFetchRequestImpl<User> implements UserGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final String username;
 
   public UserGetRequestImpl(final HttpClient httpClient, final String username) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.username = username;
-  }
-
-  @Override
-  public FinalCommandStep<User> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<User> send() {
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
-    final HttpCamundaFuture<User> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/users/%s", username),
         httpRequestConfig.build(),
         UserResult.class,
         SearchResponseMapper::toUserResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

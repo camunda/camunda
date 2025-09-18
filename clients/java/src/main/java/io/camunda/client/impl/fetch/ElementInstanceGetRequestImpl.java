@@ -16,44 +16,31 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
 import io.camunda.client.api.search.response.ElementInstance;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ElementInstanceResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ElementInstanceGetRequestImpl implements ElementInstanceGetRequest {
+public class ElementInstanceGetRequestImpl extends AbstractFetchRequestImpl<ElementInstance>
+    implements ElementInstanceGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long elementInstanceKey;
 
   public ElementInstanceGetRequestImpl(final HttpClient httpClient, final long elementInstanceKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
-  public FinalCommandStep<ElementInstance> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<ElementInstance> send() {
-    final HttpCamundaFuture<ElementInstance> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/element-instances/%d", elementInstanceKey),
         httpRequestConfig.build(),
         ElementInstanceResult.class,
         SearchResponseMapper::toElementInstanceGetResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

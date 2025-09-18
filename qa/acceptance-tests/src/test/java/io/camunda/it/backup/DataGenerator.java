@@ -10,6 +10,7 @@ package io.camunda.it.backup;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
@@ -85,6 +86,7 @@ public class DataGenerator implements AutoCloseable {
                               b.processInstanceKey(p -> p.in(instanceKeys.stream().toList()))
                                   .state(state))
                       .page(b -> b.limit(instanceKeys.size()).from(0))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send();
               assertThat(response)
                   .succeedsWithin(timeout)
@@ -137,6 +139,7 @@ public class DataGenerator implements AutoCloseable {
                         camundaClient
                             .newUserTaskSearchRequest()
                             .filter(f -> f.assignee(assignee).state(UserTaskState.CREATED))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items();

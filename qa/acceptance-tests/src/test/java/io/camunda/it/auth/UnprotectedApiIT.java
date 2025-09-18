@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -45,7 +46,12 @@ public class UnprotectedApiIT {
   @Test
   void anonymousRestUserTaskApiAccess() {
     // when
-    final var tasks = camundaClient.newUserTaskSearchRequest().send().join();
+    final var tasks =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(tasks.items()).hasSize(0);

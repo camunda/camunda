@@ -49,7 +49,7 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
     // when
     final OffsetDateTime startTime = OffsetDateTime.now().minusDays(1);
     final OffsetDateTime endTime = OffsetDateTime.now();
-    client.newUsageMetricsRequest(startTime, endTime).send().join();
+    client.newUsageMetricsRequest(startTime, endTime).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
@@ -73,6 +73,7 @@ public class UsageMetricsStatisticsTest extends ClientRestTest {
         .newUsageMetricsRequest(startTime, endTime)
         .withTenants(true)
         .tenantId("tenant1")
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

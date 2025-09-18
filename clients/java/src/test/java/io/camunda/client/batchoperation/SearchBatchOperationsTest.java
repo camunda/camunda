@@ -36,6 +36,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
         .newBatchOperationSearchRequest()
         .filter(f -> f.batchOperationKey("123"))
         .sort(s -> s.state().asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -51,7 +52,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
   @Test
   void shouldSearchBatchOperationWithoutFilter() {
     // when
-    client.newBatchOperationSearchRequest().send().join();
+    client.newBatchOperationSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final BatchOperationSearchQuery request =
@@ -69,6 +70,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
                 f.batchOperationKey("123")
                     .state(BatchOperationState.ACTIVE)
                     .operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -98,6 +100,7 @@ class SearchBatchOperationsTest extends ClientRestTest {
                     .asc()
                     .operationType()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

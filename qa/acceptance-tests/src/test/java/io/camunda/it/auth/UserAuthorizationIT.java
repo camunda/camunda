@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.api.response.UpdateUserResponse;
@@ -98,7 +99,12 @@ class UserAuthorizationIT {
   void searchShouldReturnAuthorizedUsers(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient userClient) {
     // when
-    final var result = userClient.newUsersSearchRequest().send().join();
+    final var result =
+        userClient
+            .newUsersSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items())
@@ -110,7 +116,12 @@ class UserAuthorizationIT {
   void searchShouldReturnOnlyRestrictedUserWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final var result = userClient.newUsersSearchRequest().send().join();
+    final var result =
+        userClient
+            .newUsersSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items())
@@ -184,7 +195,13 @@ class UserAuthorizationIT {
   @Test
   void getUserByUsernameShouldReturnNotFoundIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newUserGetRequest(USER_1.username()).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUserGetRequest(USER_1.username())
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -193,7 +210,12 @@ class UserAuthorizationIT {
   void getUserByUsernameShouldReturnNotFoundForNonExistentUsername(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newUserGetRequest(Strings.newRandomValidIdentityId()).send().join())
+            () ->
+                camundaClient
+                    .newUserGetRequest(Strings.newRandomValidIdentityId())
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
   }
@@ -201,7 +223,12 @@ class UserAuthorizationIT {
   @Test
   void getUserByUsernameShouldReturnUserIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var user = camundaClient.newUserGetRequest(USER_1.username()).send().join();
+    final var user =
+        camundaClient
+            .newUserGetRequest(USER_1.username())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(user.getUsername()).isEqualTo(USER_1.username());
   }

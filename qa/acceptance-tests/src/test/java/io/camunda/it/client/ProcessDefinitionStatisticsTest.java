@@ -17,6 +17,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -60,7 +61,12 @@ public class ProcessDefinitionStatisticsTest {
   @Test
   void shouldGetEmptyStatisticsWithoutMatch() {
     // when
-    final var actual = camundaClient.newProcessDefinitionElementStatisticsRequest(1L).send().join();
+    final var actual =
+        camundaClient
+            .newProcessDefinitionElementStatisticsRequest(1L)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(0);
@@ -90,6 +96,7 @@ public class ProcessDefinitionStatisticsTest {
                             f1 -> f1.processInstanceKey(pi1.getProcessInstanceKey()),
                             f2 -> f2.processInstanceKey(pi2.getProcessInstanceKey()),
                             f3 -> f3.processInstanceKey(pi3.getProcessInstanceKey()))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -122,6 +129,7 @@ public class ProcessDefinitionStatisticsTest {
                             f2 ->
                                 f2.processInstanceKey(pi1.getProcessInstanceKey())
                                     .hasElementInstanceIncident(true))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -152,6 +160,7 @@ public class ProcessDefinitionStatisticsTest {
                         List.of(
                             f1 -> f1.elementId(b -> b.like("*Event")),
                             f2 -> f2.hasElementInstanceIncident(false))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -184,6 +193,7 @@ public class ProcessDefinitionStatisticsTest {
                         List.of(
                             f1 -> f1.elementId(b -> b.neq("start")),
                             f2 -> f2.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -219,6 +229,7 @@ public class ProcessDefinitionStatisticsTest {
                                 f1 -> f1.elementId(b -> b.eq("start")),
                                 f2 -> f2.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V1)))
                         .variables(getScopedVariables(testScopeId)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -246,6 +257,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.processInstanceKey(pi1.getProcessInstanceKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -277,6 +289,7 @@ public class ProcessDefinitionStatisticsTest {
                 f ->
                     f.processInstanceKey(
                         b -> b.in(pi1.getProcessInstanceKey(), pi2.getProcessInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -308,6 +321,7 @@ public class ProcessDefinitionStatisticsTest {
                 f ->
                     f.processInstanceKey(
                         b -> b.notIn(pi1.getProcessInstanceKey(), pi2.getProcessInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -335,6 +349,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.tenantId(b -> b.like("*def*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -369,6 +384,7 @@ public class ProcessDefinitionStatisticsTest {
                         b ->
                             b.gt(startDate.minus(1, ChronoUnit.MILLIS))
                                 .lt(startDate.plus(1, ChronoUnit.MILLIS))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -398,6 +414,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.startDate(b -> b.gte(startDate).lte(startDate)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -432,6 +449,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.endDate(b -> b.exists(true)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -467,6 +485,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.endDate(b -> b.exists(false)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -503,6 +522,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -546,6 +566,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -580,6 +601,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.state(b -> b.neq(ACTIVE)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -608,6 +630,7 @@ public class ProcessDefinitionStatisticsTest {
     final var actual =
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -632,6 +655,7 @@ public class ProcessDefinitionStatisticsTest {
     final var actual =
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -658,6 +682,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.hasIncident(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -692,6 +717,7 @@ public class ProcessDefinitionStatisticsTest {
     final var actual =
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -727,6 +753,7 @@ public class ProcessDefinitionStatisticsTest {
           camundaClient
               .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
               .filter(f -> f.hasRetriesLeft(true))
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
 
@@ -764,6 +791,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.elementId("UserTask"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -796,6 +824,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.elementInstanceState(ElementInstanceState.COMPLETED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -821,6 +850,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.hasElementInstanceIncident(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -848,6 +878,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -870,6 +901,7 @@ public class ProcessDefinitionStatisticsTest {
         camundaClient
             .newProcessDefinitionElementStatisticsRequest(processDefinitionKey)
             .filter(f -> f.incidentErrorHashCode(123456))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -889,6 +921,7 @@ public class ProcessDefinitionStatisticsTest {
                                 f ->
                                     f.processDefinitionKey(processDefinitionKey)
                                         .state(IncidentState.ACTIVE))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -956,6 +989,7 @@ public class ProcessDefinitionStatisticsTest {
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(piKey))
         .page(p -> p.limit(1))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -966,6 +1000,7 @@ public class ProcessDefinitionStatisticsTest {
     return camundaClient
         .newUserTaskSearchRequest()
         .filter(f -> f.processDefinitionKey(processDefinitionKey))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

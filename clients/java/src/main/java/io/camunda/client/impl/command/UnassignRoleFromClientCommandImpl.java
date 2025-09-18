@@ -21,7 +21,6 @@ import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1.UnassignRoleFromClientCommandStep2;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1.UnassignRoleFromClientCommandStep3;
 import io.camunda.client.api.response.UnassignRoleFromClientResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UnassignRoleFromClientResponseImpl;
 import java.time.Duration;
@@ -66,13 +65,10 @@ public class UnassignRoleFromClientCommandImpl
   public CamundaFuture<UnassignRoleFromClientResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("clientId", clientId);
-    final HttpCamundaFuture<UnassignRoleFromClientResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete(
+    return httpClient.delete(
         "/roles/" + roleId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
-        UnassignRoleFromClientResponseImpl::new,
-        result);
-    return result;
+        UnassignRoleFromClientResponseImpl::new);
   }
 }

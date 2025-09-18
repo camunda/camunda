@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -40,13 +41,25 @@ class VariableSearchTest {
 
     waitForTasksBeingExported();
 
-    variable = camundaClient.newVariableSearchRequest().send().join().items().get(0);
+    variable =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .get(0);
   }
 
   @Test
   void shouldQueryVariables() {
     // when
-    final var result = camundaClient.newVariableSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -59,6 +72,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.variableKey(variable.getVariableKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -74,6 +88,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.scopeKey(variable.getScopeKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -90,6 +105,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.name(variable.getName()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -106,6 +122,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.name(b -> b.in("not-found", variable.getName())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -121,6 +138,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.name(b -> b.like(variable.getName().replace("proc", "*"))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -136,6 +154,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.name(variable.getName()).value(variable.getValue()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -152,6 +171,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.value(b -> b.in("not-found", variable.getValue())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -169,6 +189,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.value(b -> b.like(variable.getValue().replace("p", "?"))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -186,6 +207,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(variable.getProcessInstanceKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -204,6 +226,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.in(variable.getProcessInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -222,6 +245,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.notIn(variable.getProcessInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -236,6 +260,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.tenantId(variable.getTenantId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -253,6 +278,7 @@ class VariableSearchTest {
         camundaClient
             .newVariableSearchRequest()
             .filter(f -> f.isTruncated(variable.isTruncated()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -262,7 +288,12 @@ class VariableSearchTest {
 
     // when
     final var resultTruncatedTrue =
-        camundaClient.newVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
+        camundaClient
+            .newVariableSearchRequest()
+            .filter(f -> f.isTruncated(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultTruncatedTrue.items().size()).isEqualTo(0);
@@ -284,7 +315,12 @@ class VariableSearchTest {
     // when
 
     final var result =
-        camundaClient.newVariableSearchRequest().sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newVariableSearchRequest()
+            .sort(s -> s.name().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items().size()).isEqualTo(5);
 
@@ -297,7 +333,12 @@ class VariableSearchTest {
   @Test
   void shouldVariableByKey() {
     // when
-    final var result = camundaClient.newVariableGetRequest(variable.getVariableKey()).send().join();
+    final var result =
+        camundaClient
+            .newVariableGetRequest(variable.getVariableKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.getVariableKey()).isEqualTo(variable.getVariableKey());
@@ -309,7 +350,13 @@ class VariableSearchTest {
     final long variableKey = new Random().nextLong();
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
-            .isThrownBy(() -> camundaClient.newVariableGetRequest(variableKey).send().join())
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newVariableGetRequest(variableKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
 
     // then
@@ -322,7 +369,12 @@ class VariableSearchTest {
   void shouldSortByValueDESC() {
     // when
     final var result =
-        camundaClient.newVariableSearchRequest().sort(s -> s.value().desc()).send().join();
+        camundaClient
+            .newVariableSearchRequest()
+            .sort(s -> s.value().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -336,11 +388,21 @@ class VariableSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newVariableSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var thirdKey = resultAll.items().get(2).getVariableKey();
 
     final var resultSearchFrom =
-        camundaClient.newVariableSearchRequest().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newVariableSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -354,10 +416,20 @@ class VariableSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(2);
 
-              final var resultVariable = camundaClient.newVariableSearchRequest().send().join();
+              final var resultVariable =
+                  camundaClient
+                      .newVariableSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(resultVariable.items().size()).isEqualTo(5);
             });
   }

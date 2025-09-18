@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.ProcessDefinition;
 
-public interface ProcessDefinitionGetRequest extends FinalCommandStep<ProcessDefinition> {}
+public interface ProcessDefinitionGetRequest extends FinalFetchRequestStep<ProcessDefinition> {}

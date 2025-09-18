@@ -16,8 +16,10 @@
 package io.camunda.client.impl.http;
 
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -34,9 +36,40 @@ public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
     implements CamundaFuture<RespT> {
 
   private volatile Future<?> transportFuture;
+  private final ConsistencyPolicy<RespT> consistencyPolicy;
+
+  public HttpCamundaFuture() {
+    consistencyPolicy = null;
+  }
+
+  public HttpCamundaFuture(final ConsistencyPolicy<RespT> consistencyPolicy) {
+    this.consistencyPolicy = consistencyPolicy;
+  }
 
   @Override
   public RespT join() {
+    //    final ConsistencyPolicy<SearchResponse<T>> management = new ConsistencyPolicy<>();
+    //    consistencyManagement.accept(management);
+    //
+    //    final long start = System.currentTimeMillis();
+    //    final long end = start + management.getWaitUpTo().toMillis();
+    //    // execute once first to avoid waiting if not necessary
+    //    SearchResponse<T> res = execute();
+    //    if (management.getPredicate().test(res)) {
+    //      return res;
+    //    }
+    //
+    //    // then retry until timeout
+    //    while (System.currentTimeMillis() < end) {
+    //      res = send().join(management.retryBackoff.toMillis(), TimeUnit.MILLISECONDS);
+    //      if (management.getPredicate().test(res)) {
+    //        return res;
+    //      }
+    //    }
+    //    throw new ClientException(
+    //        String.format(
+    //            "Condition for search response not fulfilled within %s",
+    // management.getWaitUpTo()));
     try {
       return get();
     } catch (final ExecutionException e) {
@@ -68,6 +101,11 @@ public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
     } catch (final TimeoutException e) {
       throw new ClientException("Failed: timed out waiting on client response", e);
     }
+  }
+
+  @Override
+  public Optional<ConsistencyPolicy<RespT>> getConsistencyPolicy() {
+    return Optional.ofNullable(consistencyPolicy);
   }
 
   public void transportFuture(final Future<?> httpFuture) {

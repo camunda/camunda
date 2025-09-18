@@ -23,7 +23,6 @@ import io.camunda.client.api.command.SetVariablesCommandStep1;
 import io.camunda.client.api.command.SetVariablesCommandStep1.SetVariablesCommandStep2;
 import io.camunda.client.api.response.SetVariablesResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.SetVariablesResponseImpl;
 import io.camunda.client.protocol.rest.SetVariableRequest;
@@ -90,14 +89,11 @@ public final class SetVariablesCommandImpl extends CommandWithVariables<SetVaria
   }
 
   private CamundaFuture<SetVariablesResponse> sendRestRequest() {
-    final HttpCamundaFuture<SetVariablesResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/element-instances/" + elementInstanceKey + "/variables",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        SetVariablesResponseImpl::new,
-        result);
-    return result;
+        SetVariablesResponseImpl::new);
   }
 
   private CamundaFuture<SetVariablesResponse> sendGrpcRequest() {

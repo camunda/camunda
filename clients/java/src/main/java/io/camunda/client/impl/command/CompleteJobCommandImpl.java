@@ -26,7 +26,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.enums.JobResultType;
 import io.camunda.client.api.response.CompleteJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteJobResponseImpl;
 import io.camunda.client.protocol.rest.JobCompletionRequest;
@@ -260,14 +259,11 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private CamundaFuture<CompleteJobResponse> sendRestRequest() {
-    final HttpCamundaFuture<CompleteJobResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/jobs/" + jobKey + "/completion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        CompleteJobResponseImpl::new,
-        result);
-    return result;
+        CompleteJobResponseImpl::new);
   }
 
   private CamundaFuture<CompleteJobResponse> sendGrpcRequest() {

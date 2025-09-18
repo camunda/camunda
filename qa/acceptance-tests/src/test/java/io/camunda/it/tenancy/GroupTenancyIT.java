@@ -10,6 +10,7 @@ package io.camunda.it.tenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.Group;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.TestUser;
@@ -64,7 +65,12 @@ public class GroupTenancyIT {
   public void shouldReturnAllGroupsWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newGroupsSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newGroupsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Group::getGroupId).toList())
@@ -75,7 +81,12 @@ public class GroupTenancyIT {
   public void shouldReturnAllGroupsWithNoTenantAccess(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newGroupsSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newGroupsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Group::getGroupId).toList())
@@ -101,7 +112,14 @@ public class GroupTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newGroupsSearchRequest().send().join().items()).hasSize(2);
+              assertThat(
+                      camundaClient
+                          .newGroupsSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(2);
             });
   }
 }

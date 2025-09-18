@@ -21,7 +21,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionRequirements;
@@ -32,47 +31,35 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQuery;
 import io.camunda.client.protocol.rest.DecisionRequirementsSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionRequirementsSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<DecisionRequirementsSearchQuery>
+    extends AbstractSearchRequestImpl<DecisionRequirementsSearchQuery, DecisionRequirements>
     implements DecisionRequirementsSearchRequest {
 
   private final DecisionRequirementsSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionRequirementsSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new DecisionRequirementsSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<DecisionRequirements> requestTimeout(
-      final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public HttpCamundaFuture<SearchResponse<DecisionRequirements>> send() {
     final HttpCamundaFuture<SearchResponse<DecisionRequirements>> result =
         new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/decision-requirements/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionRequirementsSearchQueryResult.class,
         SearchResponseMapper::toDecisionRequirementsSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

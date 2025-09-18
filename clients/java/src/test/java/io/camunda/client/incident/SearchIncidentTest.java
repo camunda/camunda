@@ -52,7 +52,7 @@ public class SearchIncidentTest extends ClientRestTest {
             .jobKey("5"));
 
     // when
-    client.newIncidentGetRequest(incidentKey).send().join();
+    client.newIncidentGetRequest(incidentKey).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -63,7 +63,7 @@ public class SearchIncidentTest extends ClientRestTest {
   @Test
   public void shouldSearchIncidentWithEmptyQuery() {
     // when
-    client.newIncidentSearchRequest().send().join();
+    client.newIncidentSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
@@ -89,6 +89,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
     // then
@@ -135,6 +136,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .asc()
                     .creationTime()
                     .desc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -162,6 +164,7 @@ public class SearchIncidentTest extends ClientRestTest {
     client
         .newIncidentSearchRequest()
         .page(p -> p.from(23).limit(5).before("b").after("a"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -188,6 +191,7 @@ public class SearchIncidentTest extends ClientRestTest {
     client
         .newIncidentSearchRequest()
         .filter(f -> f.incidentKey(1L).errorType(incidentErrorType))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

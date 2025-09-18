@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -66,6 +67,7 @@ public class ClientsByTenantIntegrationTest {
                   camundaClient
                       .newClientsByTenantSearchRequest(TENANT_ID)
                       .sort(s -> s.clientId().desc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items())
@@ -93,14 +95,24 @@ public class ClientsByTenantIntegrationTest {
   @Test
   void searchClientsShouldReturnEmptyListWhenSearchingForNonExistingTenantId() {
     final var clientsSearchResponse =
-        camundaClient.newClientsByTenantSearchRequest("someTenantId").send().join();
+        camundaClient
+            .newClientsByTenantSearchRequest("someTenantId")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(clientsSearchResponse.items()).isEmpty();
   }
 
   @Test
   void shouldRejectClientsByTenantSearchIfMissingTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newClientsByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newClientsByTenantSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -108,7 +120,13 @@ public class ClientsByTenantIntegrationTest {
   @Test
   void shouldRejectClientsByTenantSearchIfEmptyTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newClientsByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newClientsByTenantSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }

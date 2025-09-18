@@ -17,6 +17,7 @@ package io.camunda.client.api;
 
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
+import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -45,4 +46,10 @@ public interface CamundaFuture<T> extends Future<T>, CompletionStage<T> {
    * @throws ClientException on unexpected errors
    */
   T join(long timeout, TimeUnit unit);
+
+  /**
+   * The consistency policy to be applied when completing this future, if any. The policy defines
+   * how long to wait and how often to retry the operation until a certain condition is met.
+   */
+  Optional<ConsistencyPolicy<T>> getConsistencyPolicy();
 }

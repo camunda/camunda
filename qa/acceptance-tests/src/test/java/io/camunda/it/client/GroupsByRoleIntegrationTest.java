@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -44,7 +45,12 @@ public class GroupsByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final List<RoleGroup> groups =
-                  camundaClient.newGroupsByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newGroupsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(groups).extracting(RoleGroup::getGroupId).contains(groupId1, groupId2);
             });
   }
@@ -70,6 +76,7 @@ public class GroupsByRoleIntegrationTest {
                   camundaClient
                       .newGroupsByRoleSearchRequest(roleId)
                       .sort(s -> s.groupId().asc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -100,6 +107,7 @@ public class GroupsByRoleIntegrationTest {
                   camundaClient
                       .newGroupsByRoleSearchRequest(roleId)
                       .sort(s -> s.groupId().desc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -112,7 +120,13 @@ public class GroupsByRoleIntegrationTest {
   @Test
   void shouldRejectGroupsByRoleSearchIfEmptyRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newGroupsByRoleSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGroupsByRoleSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
@@ -120,14 +134,25 @@ public class GroupsByRoleIntegrationTest {
   @Test
   void shouldRejectGroupsByRoleSearchIfNullRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newGroupsByRoleSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGroupsByRoleSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
 
   @Test
   void searchGroupsShouldReturnEmptyListWhenSearchingForNonExistingRoleId() {
-    final var response = camundaClient.newGroupsByRoleSearchRequest("someRoleId").send().join();
+    final var response =
+        camundaClient
+            .newGroupsByRoleSearchRequest("someRoleId")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(response.items()).isEmpty();
   }
 

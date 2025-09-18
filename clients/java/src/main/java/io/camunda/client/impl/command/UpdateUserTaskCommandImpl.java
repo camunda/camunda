@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateUserTaskCommandStep1;
 import io.camunda.client.api.response.UpdateUserTaskResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.Changeset;
@@ -57,14 +56,11 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
 
   @Override
   public CamundaFuture<UpdateUserTaskResponse> send() {
-    final HttpCamundaFuture<UpdateUserTaskResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
+    return httpClient.patch(
         "/user-tasks/" + userTaskKey,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UpdateUserTaskResponseImpl::new,
-        result);
-    return result;
+        UpdateUserTaskResponseImpl::new);
   }
 
   @Override

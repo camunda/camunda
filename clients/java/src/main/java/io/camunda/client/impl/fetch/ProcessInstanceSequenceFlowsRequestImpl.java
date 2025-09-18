@@ -13,51 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.impl.search.request;
+package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.request.ProcessInstanceSequenceFlowsRequest;
+import io.camunda.client.api.fetch.ProcessInstanceSequenceFlowsRequest;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessInstanceSequenceFlowsRequestImpl
+    extends AbstractFetchRequestImpl<List<ProcessInstanceSequenceFlow>>
     implements ProcessInstanceSequenceFlowsRequest {
 
   private final long processInstanceKey;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessInstanceSequenceFlowsRequestImpl(
       final HttpClient httpClient, final long processInstanceKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.processInstanceKey = processInstanceKey;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalCommandStep<List<ProcessInstanceSequenceFlow>> requestTimeout(
-      final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<List<ProcessInstanceSequenceFlow>> send() {
-    final HttpCamundaFuture<List<ProcessInstanceSequenceFlow>> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         "/process-instances/" + processInstanceKey + "/sequence-flows",
         httpRequestConfig.build(),
         ProcessInstanceSequenceFlowsQueryResult.class,
         SearchResponseMapper::toProcessInstanceSequenceFlowSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

@@ -23,35 +23,29 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.BatchOperationFilter;
 import io.camunda.client.api.search.request.BatchOperationSearchRequest;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.BatchOperation;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.BatchOperationSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.BatchOperationSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class BatchOperationSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.BatchOperationSearchQuery>
+    extends AbstractSearchRequestImpl<
+        io.camunda.client.protocol.rest.BatchOperationSearchQuery, BatchOperation>
     implements BatchOperationSearchRequest {
 
   private final io.camunda.client.protocol.rest.BatchOperationSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public BatchOperationSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new io.camunda.client.protocol.rest.BatchOperationSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
@@ -95,21 +89,13 @@ public class BatchOperationSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<BatchOperation> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<BatchOperation>> send() {
-    final HttpCamundaFuture<SearchResponse<BatchOperation>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/batch-operations/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         BatchOperationSearchQueryResult.class,
         SearchResponseMapper::toBatchOperationsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

@@ -22,58 +22,45 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.variabl
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.UserTaskVariableFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UserTaskVariableSearchRequest;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.client.api.search.sort.VariableSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.UserTaskVariableSearchQueryRequest;
 import io.camunda.client.protocol.rest.VariableSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UserTaskVariableSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskVariableSearchQueryRequest>
+    extends AbstractSearchRequestImpl<UserTaskVariableSearchQueryRequest, Variable>
     implements UserTaskVariableSearchRequest {
 
   private final UserTaskVariableSearchQueryRequest request;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
+
   private final JsonMapper jsonMapper;
   private final long userTaskKey;
 
   public UserTaskVariableSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.userTaskKey = userTaskKey;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new UserTaskVariableSearchQueryRequest();
   }
 
   @Override
-  public FinalSearchRequestStep<Variable> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<Variable>> send() {
-    final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         String.format("/user-tasks/%d/variables/search", userTaskKey),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,
         SearchResponseMapper::toVariableSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

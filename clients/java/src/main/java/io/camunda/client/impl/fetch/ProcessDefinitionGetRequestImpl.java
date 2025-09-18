@@ -16,45 +16,32 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessDefinitionGetRequestImpl implements ProcessDefinitionGetRequest {
+public class ProcessDefinitionGetRequestImpl extends AbstractFetchRequestImpl<ProcessDefinition>
+    implements ProcessDefinitionGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long processDefinitionKey;
 
   public ProcessDefinitionGetRequestImpl(
       final HttpClient httpClient, final long processDefinitionKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.processDefinitionKey = processDefinitionKey;
   }
 
   @Override
-  public FinalCommandStep<ProcessDefinition> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<ProcessDefinition> send() {
-    final HttpCamundaFuture<ProcessDefinition> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/process-definitions/%d", processDefinitionKey),
         httpRequestConfig.build(),
         ProcessDefinitionResult.class,
         SearchResponseMapper::toProcessDefinitionGetResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

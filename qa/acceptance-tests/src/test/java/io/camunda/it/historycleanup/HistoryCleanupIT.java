@@ -17,6 +17,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
 import java.time.Duration;
@@ -53,7 +54,14 @@ public class HistoryCleanupIT {
             .atMost(TIMEOUT_DATA_AVAILABILITY)
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
-                () -> camundaClient.newUserTaskSearchRequest().send().join().items().getFirst(),
+                () ->
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join()
+                        .items()
+                        .getFirst(),
                 Objects::nonNull);
     camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
 
@@ -71,6 +79,7 @@ public class HistoryCleanupIT {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(0);
@@ -79,6 +88,7 @@ public class HistoryCleanupIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .page()
@@ -87,7 +97,12 @@ public class HistoryCleanupIT {
             });
 
     // the other should still exist
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.page().totalItems()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }
@@ -113,7 +128,14 @@ public class HistoryCleanupIT {
             .atMost(TIMEOUT_DATA_AVAILABILITY)
             .ignoreExceptions() // Ignore exceptions and continue retrying
             .until(
-                () -> camundaClient.newUserTaskSearchRequest().send().join().items().getFirst(),
+                () ->
+                    camundaClient
+                        .newUserTaskSearchRequest()
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join()
+                        .items()
+                        .getFirst(),
                 Objects::nonNull);
     camundaClient.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
 
@@ -131,6 +153,7 @@ public class HistoryCleanupIT {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(0);
@@ -139,6 +162,7 @@ public class HistoryCleanupIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(b -> b.userTaskKey(userTask.getUserTaskKey()))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .page()
@@ -147,7 +171,12 @@ public class HistoryCleanupIT {
             });
 
     // the other should still exist
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.page().totalItems()).isEqualTo(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isNotEqualTo(processInstanceKey);
   }

@@ -10,6 +10,7 @@ package io.camunda.it.auth;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import org.awaitility.Awaitility;
@@ -40,7 +41,11 @@ public class UniqueEntityIdentifiersIT {
         .untilAsserted(
             () -> {
               final var groupsResponse =
-                  client.newGroupsByTenantSearchRequest(tenantId).send().join();
+                  client
+                      .newGroupsByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(groupsResponse.items()).hasSize(1);
               assertThat(groupsResponse.items().get(0).getGroupId()).isEqualTo(conflictingId);
             });
@@ -53,13 +58,22 @@ public class UniqueEntityIdentifiersIT {
         .untilAsserted(
             () -> {
               final var rolesResponse =
-                  client.newRolesByTenantSearchRequest(tenantId).send().join();
+                  client
+                      .newRolesByTenantSearchRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(rolesResponse.items()).hasSize(1);
               assertThat(rolesResponse.items().get(0).getRoleId()).isEqualTo(conflictingId);
             });
 
     // then
-    final var updatedGroupsResponse = client.newGroupsByTenantSearchRequest(tenantId).send().join();
+    final var updatedGroupsResponse =
+        client
+            .newGroupsByTenantSearchRequest(tenantId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(updatedGroupsResponse.items()).hasSize(1);
     assertThat(updatedGroupsResponse.items().get(0).getGroupId()).isEqualTo(conflictingId);
   }
@@ -93,7 +107,12 @@ public class UniqueEntityIdentifiersIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var usersResponse = client.newUsersByGroupSearchRequest(groupId).send().join();
+              final var usersResponse =
+                  client
+                      .newUsersByGroupSearchRequest(groupId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(usersResponse.items()).hasSize(1);
               assertThat(usersResponse.items().get(0).getUsername()).isEqualTo(conflictingId);
             });
@@ -111,14 +130,23 @@ public class UniqueEntityIdentifiersIT {
         .untilAsserted(
             () -> {
               final var clientsResponse =
-                  client.newMappingRulesByGroupSearchRequest(groupId).send().join();
+                  client
+                      .newMappingRulesByGroupSearchRequest(groupId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(clientsResponse.items()).hasSize(1);
               assertThat(clientsResponse.items().get(0).getMappingRuleId())
                   .isEqualTo(conflictingId);
             });
 
     // then
-    final var updatedUsersResponse = client.newUsersByGroupSearchRequest(groupId).send().join();
+    final var updatedUsersResponse =
+        client
+            .newUsersByGroupSearchRequest(groupId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(updatedUsersResponse.items()).hasSize(1);
     assertThat(updatedUsersResponse.items().get(0).getUsername()).isEqualTo(conflictingId);
   }
@@ -145,7 +173,12 @@ public class UniqueEntityIdentifiersIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var usersResponse = client.newUsersByRoleSearchRequest(roleId).send().join();
+              final var usersResponse =
+                  client
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(usersResponse.items()).hasSize(1);
               assertThat(usersResponse.items().get(0).getUsername()).isEqualTo(conflictingId);
             });
@@ -157,13 +190,23 @@ public class UniqueEntityIdentifiersIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var groupsResponse = client.newGroupsByRoleSearchRequest(roleId).send().join();
+              final var groupsResponse =
+                  client
+                      .newGroupsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(groupsResponse.items()).hasSize(1);
               assertThat(groupsResponse.items().get(0).getGroupId()).isEqualTo(conflictingId);
             });
 
     // then
-    final var updatedUsersResponse = client.newUsersByRoleSearchRequest(roleId).send().join();
+    final var updatedUsersResponse =
+        client
+            .newUsersByRoleSearchRequest(roleId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(updatedUsersResponse.items()).hasSize(1);
     assertThat(updatedUsersResponse.items().get(0).getUsername()).isEqualTo(conflictingId);
   }

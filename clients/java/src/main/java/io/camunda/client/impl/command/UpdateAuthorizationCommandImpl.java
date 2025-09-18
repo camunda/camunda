@@ -28,7 +28,6 @@ import io.camunda.client.api.response.UpdateAuthorizationResponse;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateAuthorizationResponseImpl;
 import io.camunda.client.impl.util.EnumUtil;
@@ -113,13 +112,10 @@ public class UpdateAuthorizationCommandImpl
 
   @Override
   public CamundaFuture<UpdateAuthorizationResponse> send() {
-    final HttpCamundaFuture<UpdateAuthorizationResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/authorizations/" + authorizationKey,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        UpdateAuthorizationResponseImpl::new,
-        result);
-    return result;
+        UpdateAuthorizationResponseImpl::new);
   }
 }

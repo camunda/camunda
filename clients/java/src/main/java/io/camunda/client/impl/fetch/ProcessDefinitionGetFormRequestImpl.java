@@ -16,45 +16,32 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.ProcessDefinitionGetFormRequest;
 import io.camunda.client.api.search.response.Form;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.FormImpl;
 import io.camunda.client.protocol.rest.FormResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class ProcessDefinitionGetFormRequestImpl implements ProcessDefinitionGetFormRequest {
+public class ProcessDefinitionGetFormRequestImpl extends AbstractFetchRequestImpl<Form>
+    implements ProcessDefinitionGetFormRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long processDefinitionKey;
 
   public ProcessDefinitionGetFormRequestImpl(
       final HttpClient httpClient, final long processDefinitionKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.processDefinitionKey = processDefinitionKey;
   }
 
   @Override
-  public FinalCommandStep<Form> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<Form> send() {
-    final HttpCamundaFuture<Form> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/process-definitions/%d/form", processDefinitionKey),
         httpRequestConfig.build(),
         FormResult.class,
         FormImpl::new,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1.CreateGroupCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupCreateRequest;
@@ -72,15 +71,12 @@ public class CreateGroupCommandImpl implements CreateGroupCommandStep1, CreateGr
   public CamundaFuture<CreateGroupResponse> send() {
     ArgumentUtil.ensureNotNull("groupId", request.getGroupId());
     ArgumentUtil.ensureNotNull("name", request.getName());
-    final HttpCamundaFuture<CreateGroupResponse> result = new HttpCamundaFuture<>();
     final CreateGroupResponseImpl response = new CreateGroupResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         "/groups",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         GroupCreateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

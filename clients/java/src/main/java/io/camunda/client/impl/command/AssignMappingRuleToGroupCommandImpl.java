@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignMappingRuleToGroupStep1.AssignMapping
 import io.camunda.client.api.command.AssignMappingRuleToGroupStep1.AssignMappingRuleToGroupStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingRuleToGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignMappingRuleToGroupResponseImpl;
 import java.time.Duration;
@@ -66,13 +65,10 @@ public class AssignMappingRuleToGroupCommandImpl
   public CamundaFuture<AssignMappingRuleToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
-    final HttpCamundaFuture<AssignMappingRuleToGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
-        AssignMappingRuleToGroupResponseImpl::new,
-        result);
-    return result;
+        AssignMappingRuleToGroupResponseImpl::new);
   }
 }

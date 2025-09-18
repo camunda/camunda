@@ -10,6 +10,7 @@ package io.camunda.it.orchestration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -61,6 +62,7 @@ public class IncidentIT {
         client
             .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -124,6 +126,7 @@ public class IncidentIT {
                   client
                       .newIncidentSearchRequest()
                       .filter(f -> f.incidentKey(key))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -167,6 +170,7 @@ public class IncidentIT {
     return client
         .newElementInstanceSearchRequest()
         .filter(f -> f.processInstanceKey(parentInstanceKey).elementId(callActivityId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -178,6 +182,7 @@ public class IncidentIT {
     return client
         .newProcessInstanceSearchRequest()
         .filter(p -> p.processInstanceKey(childInstanceKey))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -193,6 +198,7 @@ public class IncidentIT {
                 client
                     .newElementInstanceSearchRequest()
                     .filter(f -> f.processDefinitionId(childProcessId))
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items(),
@@ -277,6 +283,7 @@ public class IncidentIT {
         client
             .newIncidentSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -295,7 +302,14 @@ public class IncidentIT {
         .ignoreExceptions()
         .timeout(Duration.ofSeconds(30))
         .until(
-            () -> client.newIncidentSearchRequest().filter(filterFn).send().join().items(),
+            () ->
+                client
+                    .newIncidentSearchRequest()
+                    .filter(filterFn)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join()
+                    .items(),
             Predicate.not(List::isEmpty))
         .getFirst();
   }

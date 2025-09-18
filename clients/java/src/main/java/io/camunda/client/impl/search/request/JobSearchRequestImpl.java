@@ -21,7 +21,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.JobFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Job;
@@ -32,43 +31,32 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.JobSearchQuery;
 import io.camunda.client.protocol.rest.JobSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class JobSearchRequestImpl extends TypedSearchRequestPropertyProvider<JobSearchQuery>
+public class JobSearchRequestImpl extends AbstractSearchRequestImpl<JobSearchQuery, Job>
     implements JobSearchRequest {
 
   private final JobSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public JobSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new JobSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<Job> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public HttpCamundaFuture<SearchResponse<Job>> send() {
-    final HttpCamundaFuture<SearchResponse<Job>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         "jobs/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         JobSearchQueryResult.class,
         SearchResponseMapper::toJobSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

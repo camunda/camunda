@@ -15,6 +15,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -61,6 +62,7 @@ public class MessageSubscriptionSearchTest {
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .sort(s -> s.messageSubscriptionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -69,7 +71,12 @@ public class MessageSubscriptionSearchTest {
   @Test
   void shouldReturnAllByDefault() {
     // Given / When
-    final var searchResponse = camundaClient.newMessageSubscriptionSearchRequest().send().join();
+    final var searchResponse =
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_MESSAGE_SUBSCRIPTIONS);
@@ -102,6 +109,7 @@ public class MessageSubscriptionSearchTest {
                         .messageName(expectedMessageSubscription.getMessageName())
                         .correlationKey(expectedMessageSubscription.getCorrelationKey())
                         .tenantId(expectedMessageSubscription.getTenantId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -117,6 +125,7 @@ public class MessageSubscriptionSearchTest {
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .filter(f -> f.messageSubscriptionState(MessageSubscriptionState.CORRELATED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -134,6 +143,7 @@ public class MessageSubscriptionSearchTest {
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .sort(s -> s.messageSubscriptionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -150,11 +160,17 @@ public class MessageSubscriptionSearchTest {
   void shouldPaginateWithLimitAndCursor() {
     // Given
     final var response1 =
-        camundaClient.newMessageSubscriptionSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newMessageSubscriptionSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var response2 =
         camundaClient
             .newMessageSubscriptionSearchRequest()
             .page(p -> p.after(response1.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

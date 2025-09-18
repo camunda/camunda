@@ -55,7 +55,11 @@ public class CamundaDataSource {
 
   public List<ProcessInstanceSequenceFlow> findSequenceFlowsByProcessInstanceKey(
       final long processInstanceKey) {
-    return client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+    return client
+        .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
   }
 
   public List<ProcessDefinition> findProcessDefinitionsByProcessDefinitionId(
@@ -65,6 +69,7 @@ public class CamundaDataSource {
         .filter(filter -> filter.processDefinitionId(bpmnProcessId))
         .page(DEFAULT_PAGE_REQUEST)
         .sort(sort -> sort.version().desc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -82,7 +87,11 @@ public class CamundaDataSource {
   }
 
   public String getProcessDefinitionXmlByProcessDefinitionKey(final long processDefinitionKey) {
-    return client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
+    return client
+        .newProcessDefinitionGetXmlRequest(processDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
   }
 
   public List<ElementInstance> findElementInstances(final Consumer<ElementInstanceFilter> filter) {
@@ -91,6 +100,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -106,13 +116,14 @@ public class CamundaDataSource {
         .newVariableSearchRequest()
         .filter(filter)
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
   }
 
   public Variable getVariable(final long variableKey) {
-    return client.newVariableGetRequest(variableKey).send().join();
+    return client.newVariableGetRequest(variableKey).withDefaultConsistencyPolicy().send().join();
   }
 
   public List<ProcessInstance> findProcessInstances() {
@@ -125,6 +136,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.startDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -136,6 +148,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.creationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -147,6 +160,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.creationDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -154,11 +168,21 @@ public class CamundaDataSource {
 
   public List<DecisionInstance> findDecisionInstances(
       final Consumer<DecisionInstanceFilter> filter) {
-    return client.newDecisionInstanceSearchRequest().filter(filter).send().join().items();
+    return client
+        .newDecisionInstanceSearchRequest()
+        .filter(filter)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join()
+        .items();
   }
 
   public DecisionInstance getDecisionInstance(final String decisionInstanceId) {
-    return client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+    return client
+        .newDecisionInstanceGetRequest(decisionInstanceId)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
   }
 
   public List<MessageSubscription> findMessageSubscriptions(
@@ -168,6 +192,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.lastUpdatedDate().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();
@@ -180,6 +205,7 @@ public class CamundaDataSource {
         .filter(filter)
         .sort(sort -> sort.correlationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)
+        .withDefaultConsistencyPolicy()
         .send()
         .join()
         .items();

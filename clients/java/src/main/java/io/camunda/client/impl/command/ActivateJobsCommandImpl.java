@@ -25,7 +25,6 @@ import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsComman
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.client.protocol.rest.JobActivationRequest;
@@ -171,16 +170,13 @@ public final class ActivateJobsCommandImpl
   }
 
   private CamundaFuture<ActivateJobsResponse> sendRestRequest() {
-    final HttpCamundaFuture<ActivateJobsResponse> result = new HttpCamundaFuture<>();
     final ActivateJobsResponseImpl response = new ActivateJobsResponseImpl(jsonMapper);
-    httpClient.post(
+    return httpClient.post(
         "/jobs/activation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         JobActivationResult.class,
-        response::addResponse,
-        result);
-    return result;
+        response::addResponse);
   }
 
   private CamundaFuture<ActivateJobsResponse> sendGrpcRequest() {

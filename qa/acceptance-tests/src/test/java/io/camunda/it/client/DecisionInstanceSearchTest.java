@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionDefinitionType;
@@ -93,7 +94,12 @@ class DecisionInstanceSearchTest {
   @Test
   public void shouldRetrieveAllDecisionInstances() {
     // when
-    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -102,10 +108,20 @@ class DecisionInstanceSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newDecisionInstanceSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var resultWithLimit =
-        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionInstanceKey();
@@ -114,6 +130,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -132,6 +149,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionDefinitionKey(decisionDefinitionKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -153,6 +171,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionDefinitionKey(b -> b.in(Long.MAX_VALUE, decisionDefinitionKey)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -175,6 +194,7 @@ class DecisionInstanceSearchTest {
             .newDecisionInstanceSearchRequest()
             .filter(
                 f -> f.decisionDefinitionKey(b -> b.notIn(Long.MAX_VALUE, decisionDefinitionKey)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -199,6 +219,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.decisionInstanceKey(decisionInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -216,6 +237,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey).elementId(ELEMENT_ID_DMN_CALL))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .singleItem()
@@ -225,6 +247,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.elementInstanceKey(b -> b.in(Long.MAX_VALUE, elementInstanceKey)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -245,6 +268,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -266,6 +290,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.state(state).decisionDefinitionType(type))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -277,7 +302,12 @@ class DecisionInstanceSearchTest {
   public void shouldRetrieveDecisionInstanceByEvaluationDate() {
     // given
     final var allResult =
-        camundaClient.newDecisionInstanceSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var di = allResult.items().getFirst();
 
     // when
@@ -285,6 +315,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(OffsetDateTime.parse(di.getEvaluationDate())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -303,6 +334,7 @@ class DecisionInstanceSearchTest {
             .newDecisionInstanceSearchRequest()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var di = allResult.items().getFirst();
@@ -313,6 +345,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(b -> b.gt(requestDate)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -335,6 +368,7 @@ class DecisionInstanceSearchTest {
             .newDecisionInstanceSearchRequest()
             .sort(s -> s.evaluationDate().asc())
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var di = allResult.items().getFirst();
@@ -345,6 +379,7 @@ class DecisionInstanceSearchTest {
         camundaClient
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.evaluationDate(b -> b.gte(requestDate)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -372,6 +407,7 @@ class DecisionInstanceSearchTest {
                 f ->
                     f.decisionDefinitionId(dmnDecisionId)
                         .decisionDefinitionVersion(decisionVersion))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -388,7 +424,11 @@ class DecisionInstanceSearchTest {
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
     final var decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
     final var result =
-        camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
+        camundaClient
+            .newDecisionInstanceGetRequest(decisionInstanceId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
@@ -402,7 +442,12 @@ class DecisionInstanceSearchTest {
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
-                () -> camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join())
+                () ->
+                    camundaClient
+                        .newDecisionInstanceGetRequest(decisionInstanceId)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
@@ -429,7 +474,12 @@ class DecisionInstanceSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionInstanceSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateRoleCommandStep1.CreateRoleCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateRoleResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateRoleResponseImpl;
 import io.camunda.client.protocol.rest.RoleCreateRequest;
@@ -71,15 +70,12 @@ public final class CreateRoleCommandImpl implements CreateRoleCommandStep1, Crea
   public CamundaFuture<CreateRoleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", request.getRoleId());
     ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
-    final HttpCamundaFuture<CreateRoleResponse> result = new HttpCamundaFuture<>();
     final CreateRoleResponseImpl response = new CreateRoleResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         "/roles",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         RoleCreateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

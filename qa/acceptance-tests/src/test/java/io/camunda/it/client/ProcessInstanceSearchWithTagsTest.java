@@ -13,6 +13,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -55,7 +56,12 @@ public class ProcessInstanceSearchWithTagsTest {
   @Test
   void shouldReturnProcessInstancesWithMatchingTag() {
     final var result =
-        client.newProcessInstanceSearchRequest().filter(f -> f.tags("a")).send().join();
+        client
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.tags("a"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items())
         .hasSize(3)
@@ -68,7 +74,12 @@ public class ProcessInstanceSearchWithTagsTest {
   @Test
   void shouldReturnNoProcessInstancesWithNotMatchingTags() {
     final var result =
-        client.newProcessInstanceSearchRequest().filter(f -> f.tags("a", "d")).send().join();
+        client
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.tags("a", "d"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items()).isEmpty();
   }
@@ -76,7 +87,12 @@ public class ProcessInstanceSearchWithTagsTest {
   @Test
   void shouldReturnProcessInstancesWithMatchingTags() {
     final var result =
-        client.newProcessInstanceSearchRequest().filter(f -> f.tags("a", "b")).send().join();
+        client
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.tags("a", "b"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items())
         .hasSize(2)
@@ -92,6 +108,7 @@ public class ProcessInstanceSearchWithTagsTest {
         client
             .newProcessInstanceSearchRequest()
             .filter(f -> f.tags("a", "c").processDefinitionId("process"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -112,6 +129,7 @@ public class ProcessInstanceSearchWithTagsTest {
         client
             .newProcessInstanceSearchRequest()
             .filter(f -> f.tags("a", "c").processDefinitionId("otherProcess"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.response.Topology;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.TopologyImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -83,12 +82,6 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
     }
   }
 
-  private HttpCamundaFuture<Topology> sendRestRequest() {
-    final HttpCamundaFuture<Topology> result = new HttpCamundaFuture<>();
-    sendHttpRequest(result);
-    return result;
-  }
-
   private RetriableClientFutureImpl<Topology, TopologyResponse> sendGrpcRequest() {
     final TopologyRequest request = TopologyRequest.getDefaultInstance();
 
@@ -110,14 +103,13 @@ public final class TopologyRequestImpl implements TopologyRequestStep1 {
         .topology(request, streamObserver);
   }
 
-  private void sendHttpRequest(final HttpCamundaFuture<Topology> result) {
-    httpClient.get(
+  private CamundaFuture<Topology> sendRestRequest() {
+    return httpClient.get(
         "/topology",
         httpRequestConfig
             .setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS)
             .build(),
         io.camunda.client.protocol.rest.TopologyResponse.class,
-        TopologyImpl::new,
-        result);
+        TopologyImpl::new);
   }
 }

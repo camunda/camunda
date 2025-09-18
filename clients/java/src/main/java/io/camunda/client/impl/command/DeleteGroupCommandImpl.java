@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeleteGroupResponseImpl;
 import java.time.Duration;
@@ -46,9 +45,7 @@ public class DeleteGroupCommandImpl implements DeleteGroupCommandStep1 {
 
   @Override
   public CamundaFuture<DeleteGroupResponse> send() {
-    final HttpCamundaFuture<DeleteGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete(
-        "/groups/" + groupId, httpRequestConfig.build(), DeleteGroupResponseImpl::new, result);
-    return result;
+    return httpClient.delete(
+        "/groups/" + groupId, httpRequestConfig.build(), DeleteGroupResponseImpl::new);
   }
 }

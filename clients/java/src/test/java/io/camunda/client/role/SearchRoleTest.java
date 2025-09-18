@@ -41,7 +41,7 @@ public class SearchRoleTest extends ClientRestTest {
     gatewayService.onRoleRequest(ROLE_ID, Instancio.create(RoleResult.class));
 
     // when
-    client.newRoleGetRequest(ROLE_ID).send().join();
+    client.newRoleGetRequest(ROLE_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -56,6 +56,7 @@ public class SearchRoleTest extends ClientRestTest {
         .newClientsByRoleSearchRequest(ROLE_ID)
         .sort(ClientSort::clientId)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -68,7 +69,13 @@ public class SearchRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullRoleIdWhenSearchingClientsByRoleId() {
     // when / then
-    assertThatThrownBy(() -> client.newClientsByRoleSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByRoleSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -76,7 +83,13 @@ public class SearchRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyRoleIdWhenSearchingClientsByRoleId() {
     // when / then
-    assertThatThrownBy(() -> client.newClientsByRoleSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByRoleSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
@@ -84,7 +97,13 @@ public class SearchRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingClientsByRole() {
     assertThatThrownBy(
-            () -> client.newClientsByRoleSearchRequest(ROLE_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newClientsByRoleSearchRequest(ROLE_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -96,6 +115,7 @@ public class SearchRoleTest extends ClientRestTest {
                 client
                     .newClientsByRoleSearchRequest(ROLE_ID)
                     .filter(new ClientFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)
@@ -110,6 +130,7 @@ public class SearchRoleTest extends ClientRestTest {
         .filter(fn -> fn.name("roleName"))
         .sort(RoleSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -127,7 +148,8 @@ public class SearchRoleTest extends ClientRestTest {
         () -> new ProblemDetail().title("Not Found").status(404));
 
     // when / then
-    assertThatThrownBy(() -> client.newRoleGetRequest(ROLE_ID).send().join())
+    assertThatThrownBy(
+            () -> client.newRoleGetRequest(ROLE_ID).withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -135,7 +157,8 @@ public class SearchRoleTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullRoleId() {
     // when / then
-    assertThatThrownBy(() -> client.newRoleGetRequest(null).send().join())
+    assertThatThrownBy(
+            () -> client.newRoleGetRequest(null).withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }

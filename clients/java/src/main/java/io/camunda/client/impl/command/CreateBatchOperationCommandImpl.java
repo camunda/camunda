@@ -30,7 +30,6 @@ import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
@@ -116,16 +115,13 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
 
   @Override
   public CamundaFuture<CreateBatchOperationResponse> send() {
-    final HttpCamundaFuture<CreateBatchOperationResponse> result = new HttpCamundaFuture<>();
     final CreateBatchOperationResponseImpl response = new CreateBatchOperationResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         getUrl(),
         jsonMapper.toJson(getBody()),
         httpRequestConfig.build(),
         BatchOperationCreatedResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 
   private String getUrl() {

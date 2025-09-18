@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CompleteUserTaskCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CompleteUserTaskResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CompleteUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.UserTaskCompletionRequest;
@@ -63,14 +62,11 @@ public final class CompleteUserTaskCommandImpl
 
   @Override
   public CamundaFuture<CompleteUserTaskResponse> send() {
-    final HttpCamundaFuture<CompleteUserTaskResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/user-tasks/" + userTaskKey + "/completion",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        CompleteUserTaskResponseImpl::new,
-        result);
-    return result;
+        CompleteUserTaskResponseImpl::new);
   }
 
   @Override

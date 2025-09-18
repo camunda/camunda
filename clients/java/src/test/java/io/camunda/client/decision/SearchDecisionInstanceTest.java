@@ -30,7 +30,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionInstance() {
     // when
-    client.newDecisionInstanceSearchRequest().send().join();
+    client.newDecisionInstanceSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final DecisionInstanceSearchQuery request =
@@ -57,6 +57,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .decisionDefinitionName("ddm")
                     .decisionDefinitionVersion(5)
                     .tenantId("t"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -84,6 +85,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     client
         .newDecisionInstanceSearchRequest()
         .filter(f -> f.decisionDefinitionKey(b -> b.in(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -103,6 +105,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     client
         .newDecisionInstanceSearchRequest()
         .filter(f -> f.elementInstanceKey(b -> b.in(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -123,6 +126,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
     client
         .newDecisionInstanceSearchRequest()
         .filter(f -> f.evaluationDate(b -> b.neq(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -167,6 +171,7 @@ class SearchDecisionInstanceTest extends ClientRestTest {
                     .asc()
                     .tenantId()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignUserToTenantCommandStep1.AssignUserTo
 import io.camunda.client.api.command.AssignUserToTenantCommandStep1.AssignUserToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserToTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignUserToTenantResponseImpl;
 import java.time.Duration;
@@ -64,10 +63,8 @@ public final class AssignUserToTenantCommandImpl
 
   @Override
   public CamundaFuture<AssignUserToTenantResponse> send() {
-    final HttpCamundaFuture<AssignUserToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/users/%s", tenantId, username);
-    httpClient.put(
-        endpoint, null, httpRequestConfig.build(), AssignUserToTenantResponseImpl::new, result);
-    return result;
+    return httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignUserToTenantResponseImpl::new);
   }
 }

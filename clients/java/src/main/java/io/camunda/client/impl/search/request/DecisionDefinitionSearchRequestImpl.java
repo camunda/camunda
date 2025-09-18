@@ -23,36 +23,30 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionDefinition;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionDefinitionSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.DecisionDefinitionSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionDefinitionSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery>
+    extends AbstractSearchRequestImpl<
+        io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery, DecisionDefinition>
     implements DecisionDefinitionSearchRequest {
 
   private final io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionDefinitionSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new io.camunda.client.protocol.rest.DecisionDefinitionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
@@ -97,21 +91,13 @@ public class DecisionDefinitionSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<DecisionDefinition> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<DecisionDefinition>> send() {
-    final HttpCamundaFuture<SearchResponse<DecisionDefinition>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/decision-definitions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionDefinitionSearchQueryResult.class,
         SearchResponseMapper::toDecisionDefinitionSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

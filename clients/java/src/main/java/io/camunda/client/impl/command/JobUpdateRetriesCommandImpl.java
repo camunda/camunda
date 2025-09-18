@@ -23,7 +23,6 @@ import io.camunda.client.api.command.UpdateRetriesJobCommandStep1;
 import io.camunda.client.api.command.UpdateRetriesJobCommandStep1.UpdateRetriesJobCommandStep2;
 import io.camunda.client.api.response.UpdateRetriesJobResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateRetriesJobResponseImpl;
 import io.camunda.client.protocol.rest.JobChangeset;
@@ -98,14 +97,11 @@ public final class JobUpdateRetriesCommandImpl
   }
 
   private CamundaFuture<UpdateRetriesJobResponse> sendRestRequest() {
-    final HttpCamundaFuture<UpdateRetriesJobResponse> result = new HttpCamundaFuture<>();
-    httpClient.patch(
+    return httpClient.patch(
         "/jobs/" + jobKey,
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        UpdateRetriesJobResponseImpl::new,
-        result);
-    return result;
+        UpdateRetriesJobResponseImpl::new);
   }
 
   private CamundaFuture<UpdateRetriesJobResponse> sendGrpcRequest() {

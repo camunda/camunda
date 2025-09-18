@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.DecisionDefinition;
 
-public interface DecisionDefinitionGetRequest extends FinalCommandStep<DecisionDefinition> {}
+public interface DecisionDefinitionGetRequest extends FinalFetchRequestStep<DecisionDefinition> {}

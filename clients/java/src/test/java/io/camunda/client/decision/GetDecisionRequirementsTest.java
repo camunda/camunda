@@ -35,7 +35,11 @@ public class GetDecisionRequirementsTest extends ClientRestTest {
         Instancio.create(DecisionRequirementsResult.class).decisionRequirementsKey("3"));
 
     // when
-    client.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+    client
+        .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

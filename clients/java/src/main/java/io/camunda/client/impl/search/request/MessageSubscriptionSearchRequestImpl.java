@@ -22,56 +22,43 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.MessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.MessageSubscriptionSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQuery;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class MessageSubscriptionSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<MessageSubscriptionSearchQuery>
+    extends AbstractSearchRequestImpl<MessageSubscriptionSearchQuery, MessageSubscription>
     implements MessageSubscriptionSearchRequest {
 
   private final MessageSubscriptionSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public MessageSubscriptionSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new MessageSubscriptionSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<MessageSubscription> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<SearchResponse<MessageSubscription>> send() {
-    final HttpCamundaFuture<SearchResponse<MessageSubscription>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         "message-subscriptions/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         MessageSubscriptionSearchQueryResult.class,
         SearchResponseMapper::toMessageSubscriptionSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

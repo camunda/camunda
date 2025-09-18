@@ -15,10 +15,11 @@
  */
 package io.camunda.client.api.statistics.request;
 
-import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.client.api.fetch.FinalFetchRequestStep;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 
-public interface UsageMetricsStatisticsRequest extends FinalCommandStep<UsageMetricsStatistics> {
+public interface UsageMetricsStatisticsRequest
+    extends FinalFetchRequestStep<UsageMetricsStatistics> {
 
   UsageMetricsStatisticsRequest withTenants(boolean withTenants);
 

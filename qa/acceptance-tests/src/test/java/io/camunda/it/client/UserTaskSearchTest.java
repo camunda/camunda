@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
@@ -72,6 +73,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.localVariables(Map.of("task02", "1")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -88,6 +90,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.localVariables(Map.of("task02", 1)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -104,6 +107,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("task02", "1")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -121,6 +125,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("task02", 1)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -142,6 +147,7 @@ class UserTaskSearchTest {
                 f ->
                     f.processInstanceVariables(variableValueFilter)
                         .localVariables(variableValueFilter))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -159,6 +165,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.elementId("form_process"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -174,6 +181,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.elementId("form_process"))
             .page(p -> p.limit(0))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -185,7 +193,12 @@ class UserTaskSearchTest {
   public void shouldUseUserTaskElementIdIfNameNotSet() {
     // when
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("test-2")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("test-2"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getName()).isEqualTo("test-2");
@@ -197,6 +210,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.localVariables(Map.of("task02", "1")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -204,7 +218,11 @@ class UserTaskSearchTest {
     final var userTaskKey = resultUserTaskQuery.items().getFirst().getUserTaskKey();
 
     final var resultVariableQuery =
-        camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+        camundaClient
+            .newUserTaskVariableSearchRequest(userTaskKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(resultVariableQuery.items().size()).isEqualTo(2);
   }
 
@@ -212,7 +230,12 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByPriority() {
     // when
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.priority(30)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.priority(30))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -225,6 +248,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.priority(b -> b.gt(29).lt(31)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -239,6 +263,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.priority(b -> b.gte(30).lte(30)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -253,6 +278,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.priority(b -> b.in(Integer.MAX_VALUE, 30)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -272,6 +298,7 @@ class UserTaskSearchTest {
                         .newUserTaskSearchRequest()
                         .filter(
                             f -> f.processInstanceVariables(List.of(vf -> vf.name("process01"))))
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -294,6 +321,7 @@ class UserTaskSearchTest {
                     camundaClient
                         .newUserTaskSearchRequest()
                         .filter(f -> f.processInstanceVariables(variables))
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -315,6 +343,7 @@ class UserTaskSearchTest {
                             f ->
                                 f.processInstanceVariables(
                                     List.of(vf -> vf.name("process01").value(v -> {}))))
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -329,6 +358,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("process01", "\"pVariable\"")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(0);
@@ -340,6 +370,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.localVariables(Map.of("task02", "1", "task01", "\"test\"")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items()).isEmpty();
@@ -347,7 +378,12 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldRetrieveAllTasks() {
-    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(8);
   }
 
@@ -361,6 +397,7 @@ class UserTaskSearchTest {
                 f ->
                     f.localVariables(
                         List.of(vf -> vf.name("task01").value(v -> v.like("\"te*\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -375,6 +412,7 @@ class UserTaskSearchTest {
             .filter(
                 f ->
                     f.localVariables(List.of(vf -> vf.name("task01").value(v -> v.in("\"test\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -383,7 +421,12 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveTaskByAssignee() {
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.assignee("demo")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.assignee("demo"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().getFirst().getAssignee()).isEqualTo("demo");
     assertThat(result.items().getFirst().getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
@@ -396,6 +439,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.assignee(b -> b.in("not-found", "demo")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -412,6 +456,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.CREATED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(resultCreated.items().size()).isEqualTo(7);
@@ -423,6 +468,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(resultCompleted.items().size()).isEqualTo(1);
@@ -434,7 +480,12 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveTaskByTaskDefinitionId() {
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("test-2")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("test-2"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
     result.items().forEach(item -> assertThat(item.getElementId()).isEqualTo("test-2"));
   }
@@ -445,6 +496,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.bpmnProcessId("process"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -454,7 +506,12 @@ class UserTaskSearchTest {
   @Test
   public void shouldRetrieveTaskByName() {
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.name("P2")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.name("P2"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
     result.items().forEach(item -> assertThat(item.getName()).isEqualTo("P2"));
   }
@@ -466,6 +523,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.candidateGroup("group"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -480,6 +538,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.candidateGroup(b -> b.like("grou?")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -492,7 +551,12 @@ class UserTaskSearchTest {
   public void shouldRetrieveTaskByCandidateUser() {
     final var expectedUser = List.of("user");
     final var result =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.candidateUser("user")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.candidateUser("user"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
 
     result.items().forEach(item -> assertThat(item.getCandidateUsers()).isEqualTo(expectedUser));
@@ -505,6 +569,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.candidateUser(b -> b.in("not-found", "user")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -515,7 +580,13 @@ class UserTaskSearchTest {
 
   @Test
   public void shouldValidatePagination() {
-    final var result = camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
     final var key = result.items().getFirst().getUserTaskKey();
     // apply searchAfter
@@ -523,6 +594,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -533,6 +605,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -542,7 +615,12 @@ class UserTaskSearchTest {
   @Test
   public void shouldSortTasksByCreationDateASC() {
     final var result =
-        camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().asc()).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .sort(s -> s.creationDate().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items().size()).isEqualTo(8);
 
@@ -557,7 +635,12 @@ class UserTaskSearchTest {
   @Test
   public void shouldSortTasksByStartDateDESC() {
     final var result =
-        camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().desc()).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .sort(s -> s.creationDate().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(result.items().size()).isEqualTo(8);
 
@@ -573,16 +656,31 @@ class UserTaskSearchTest {
   void shouldSortTasksByName() {
     // when
     final var resultAsc =
-        camundaClient.newUserTaskSearchRequest().sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .sort(s -> s.name().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newUserTaskSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertSorted(resultAsc, resultDesc, UserTask::getName);
   }
 
   @Test
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.tenantId("<default>")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.tenantId("<default>"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(resultDefaultTenant.items().size()).isEqualTo(8);
     resultDefaultTenant
         .items()
@@ -592,6 +690,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.tenantId("<default123>"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(resultNonExistent.items().size()).isEqualTo(0);
@@ -603,6 +702,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.bpmnProcessId("process-2"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(resultDefaultPriority.items().size()).isEqualTo(1);
@@ -612,6 +712,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.bpmnProcessId("process-3"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(resultDefinedPriority.items().size()).isEqualTo(1);
@@ -621,7 +722,12 @@ class UserTaskSearchTest {
   @Test
   void shouldGetUserTaskByKey() {
     // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKeyTaskAssigned).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskGetRequest(userTaskKeyTaskAssigned)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
@@ -633,7 +739,13 @@ class UserTaskSearchTest {
     final long userTaskKey = new Random().nextLong();
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
-            .isThrownBy(() -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join())
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newUserTaskGetRequest(userTaskKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
@@ -644,14 +756,23 @@ class UserTaskSearchTest {
   @Test
   void shouldReturnFormByUserTaskKey() {
     // when
-    final var userTaskList = camundaClient.newUserTaskSearchRequest().send().join();
+    final var userTaskList =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // filter userTask form the list when form is not null
     final var userTaskKeyWithForm =
         userTaskList.items().stream().filter(item -> item.getFormKey() != null).findFirst().get();
 
     final var result =
-        camundaClient.newUserTaskGetFormRequest(userTaskKeyWithForm.getUserTaskKey()).send().join();
+        camundaClient
+            .newUserTaskGetFormRequest(userTaskKeyWithForm.getUserTaskKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // assert that the form key is the same as the form key of the user task
     assertThat(result.getFormKey()).isEqualTo(userTaskKeyWithForm.getFormKey());
@@ -660,7 +781,12 @@ class UserTaskSearchTest {
   @Test
   void shouldReturnNotFoundByUserTaskKeyWithNoForm() {
     // when
-    final var userTaskList = camundaClient.newUserTaskSearchRequest().send().join();
+    final var userTaskList =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // filter userTask form the list when form is not null
     final var userTaskKeyWithNoForm =
@@ -669,6 +795,7 @@ class UserTaskSearchTest {
     final var result =
         camundaClient
             .newUserTaskGetFormRequest(userTaskKeyWithNoForm.getUserTaskKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -678,7 +805,12 @@ class UserTaskSearchTest {
   @Test
   void shouldFilterByElementInstanceKey() {
     // when
-    final var userTaskList = camundaClient.newUserTaskSearchRequest().send().join();
+    final var userTaskList =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskElementInstanceKey =
         userTaskList.items().stream().findFirst().get().getElementInstanceKey();
@@ -687,6 +819,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.elementInstanceKey(userTaskElementInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -699,7 +832,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskVariablesWithSubProcessVariables() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("TaskSub"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
 
@@ -707,6 +845,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskVariableSearchRequest(userTaskKey)
             .sort(s -> s.name().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -720,7 +859,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskVariablesFilteredByNameEq() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("TaskSub"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
 
@@ -728,6 +872,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.eq("localVariable")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -739,7 +884,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskVariablesFilteredByNameLike() {
     // When
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("TaskSub"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskKey =
         userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
@@ -748,6 +898,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.like("*rocess*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -761,7 +912,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskVariablesFilteredByIn() {
     // When
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("TaskSub"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskKey =
         userTaskList.items().stream().findFirst().orElseThrow().getUserTaskKey();
@@ -770,6 +926,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskVariableSearchRequest(userTaskKey)
             .filter(f -> f.name(b -> b.in(List.of("processVariable", "subProcessVariable"))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -786,6 +943,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.exists(true)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -797,7 +955,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskByCreationDateGt() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -806,6 +969,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.gt(userTaskCreationDateExample.minusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -824,7 +988,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskByCreationDateLt() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -833,6 +1002,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.lt(userTaskCreationDateExample.plusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -851,7 +1021,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskByCreationDateGte() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -860,6 +1035,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.gte(userTaskCreationDateExample.minusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -880,7 +1056,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskByCreationDateLte() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -889,6 +1070,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.lte(userTaskCreationDateExample.plusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -909,7 +1091,12 @@ class UserTaskSearchTest {
   void shouldReturnUserTaskByCreationDateEq() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var userTaskCreationDateExample =
         OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
@@ -918,6 +1105,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.creationDate(b -> b.eq(userTaskCreationDateExample)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -940,6 +1128,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -952,6 +1141,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(
                 f -> f.completionDate(b -> b.gte(userTaskCompletionDateExample.minusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -976,6 +1166,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -987,6 +1178,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.lte(userTaskCompletionDateExample.plusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1011,6 +1203,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1027,6 +1220,7 @@ class UserTaskSearchTest {
                         b ->
                             b.gte(userTaskCompletionDateExample.minusDays(1))
                                 .lte(userTaskCompletionDateExample.plusDays(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1052,6 +1246,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1068,6 +1263,7 @@ class UserTaskSearchTest {
                         b ->
                             b.gt(userTaskCompletionDateExample.minusDays(1))
                                 .lt(userTaskCompletionDateExample.plusDays(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1090,6 +1286,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.exists(true)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1111,6 +1308,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.exists(false)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1127,6 +1325,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1138,6 +1337,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.eq(userTaskCompletionDateExample)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1160,6 +1360,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1171,6 +1372,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.gt(userTaskCompletionDateExample.minusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1193,6 +1395,7 @@ class UserTaskSearchTest {
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.COMPLETED))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1204,6 +1407,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.completionDate(b -> b.lt(userTaskCompletionDateExample.plusSeconds(1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1221,11 +1425,21 @@ class UserTaskSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newUserTaskSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var thirdKey = resultAll.items().get(2).getUserTaskKey();
 
     final var resultSearchFrom =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -1241,6 +1455,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.dueDate(b -> b.gt(now.minusDays(2)).lt(now.plusDays(2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1260,13 +1475,19 @@ class UserTaskSearchTest {
   void shouldRetrieveTaskByDueDateEquals() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var dueDateExample = OffsetDateTime.parse(userTaskList.items().get(0).getDueDate());
 
     final var result =
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.dueDate(b -> b.eq(dueDateExample)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1285,7 +1506,12 @@ class UserTaskSearchTest {
   void shouldRetrieveTaskByFollowUpDateEquals() {
     // when
     final var userTaskList =
-        camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newUserTaskSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var followUpDateExample =
         OffsetDateTime.parse(userTaskList.items().get(0).getFollowUpDate());
 
@@ -1293,6 +1519,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.followUpDate(b -> b.eq(followUpDateExample)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1315,6 +1542,7 @@ class UserTaskSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.followUpDate(b -> b.gte(now.minusDays(5)).lte(now.plusDays(5))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1419,7 +1647,12 @@ class UserTaskSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(8);
               userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
@@ -1442,6 +1675,7 @@ class UserTaskSearchTest {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.assignee("demo"))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items().size()).isEqualTo(1);
@@ -1449,6 +1683,7 @@ class UserTaskSearchTest {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.state(UserTaskState.COMPLETED))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(resultComplete.items().size()).isEqualTo(1);

@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -47,14 +48,24 @@ public class RolesByGroupSearchTest {
 
   @Test
   void shouldReturnRolesByGroup() {
-    final var rolesGroup1 = camundaClient.newRolesByGroupSearchRequest(GROUP_ID).send().join();
+    final var rolesGroup1 =
+        camundaClient
+            .newRolesByGroupSearchRequest(GROUP_ID)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(rolesGroup1.items().size()).isEqualTo(2);
     assertThat(rolesGroup1.items())
         .extracting(Role::getRoleId, Role::getName)
         .contains(tuple(ROLE_ID_1, ROLE_ID_1 + "-name"), tuple(ROLE_ID_2, ROLE_ID_2 + "-name"));
 
-    final var rolesGroup2 = camundaClient.newRolesByGroupSearchRequest(GROUP_ID_2).send().join();
+    final var rolesGroup2 =
+        camundaClient
+            .newRolesByGroupSearchRequest(GROUP_ID_2)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(rolesGroup2.items().size()).isEqualTo(1);
     assertThat(rolesGroup2.items())
         .extracting(Role::getRoleId, Role::getName)
@@ -67,6 +78,7 @@ public class RolesByGroupSearchTest {
         camundaClient
             .newRolesByGroupSearchRequest(GROUP_ID)
             .filter(fn -> fn.roleId(ROLE_ID_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -82,6 +94,7 @@ public class RolesByGroupSearchTest {
         camundaClient
             .newRolesByGroupSearchRequest(GROUP_ID)
             .sort(fn -> fn.roleId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -94,7 +107,13 @@ public class RolesByGroupSearchTest {
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRolesByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRolesByGroupSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -102,7 +121,13 @@ public class RolesByGroupSearchTest {
   @Test
   void shouldRejectIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRolesByGroupSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRolesByGroupSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -126,11 +151,19 @@ public class RolesByGroupSearchTest {
         .untilAsserted(
             () -> {
               final var rolesGroup1 =
-                  camundaClient.newRolesByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newRolesByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(rolesGroup1.items().size()).isEqualTo(2);
 
               final var rolesGroup2 =
-                  camundaClient.newRolesByGroupSearchRequest(GROUP_ID_2).send().join();
+                  camundaClient
+                      .newRolesByGroupSearchRequest(GROUP_ID_2)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(rolesGroup2.items().size()).isEqualTo(1);
             });
   }

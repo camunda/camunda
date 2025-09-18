@@ -10,6 +10,7 @@ package io.camunda.it.tenancy;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.qa.util.auth.Authenticated;
@@ -73,7 +74,11 @@ public class SequenceFlowTenancyIT {
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
     final var result =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).hasSize(1);
     assertThat(
@@ -91,7 +96,11 @@ public class SequenceFlowTenancyIT {
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
     final var result =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).hasSize(0);
   }
@@ -137,6 +146,7 @@ public class SequenceFlowTenancyIT {
                       camundaClient
                           .newProcessInstanceSearchRequest()
                           .filter(f -> f.processInstanceKey(processInstanceKey))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -144,6 +154,7 @@ public class SequenceFlowTenancyIT {
               assertThat(
                       camundaClient
                           .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join())
                   .hasSize(1);
@@ -155,6 +166,7 @@ public class SequenceFlowTenancyIT {
     return camundaClient
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

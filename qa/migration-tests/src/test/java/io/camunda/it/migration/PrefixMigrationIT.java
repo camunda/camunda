@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
 import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.exporter.adapters.ClientAdapter;
@@ -209,7 +210,11 @@ public class PrefixMigrationIT {
             .untilAsserted(
                 () -> {
                   final var processDefinitions =
-                      currentCamundaClient.newProcessDefinitionSearchRequest().send().join();
+                      currentCamundaClient
+                          .newProcessDefinitionSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join();
                   assertThat(processDefinitions.items().size()).isEqualTo(1);
                   assertThat(processDefinitions.items().getFirst().getProcessDefinitionKey())
                       .isEqualTo(event.getProcesses().getFirst().getProcessDefinitionKey());

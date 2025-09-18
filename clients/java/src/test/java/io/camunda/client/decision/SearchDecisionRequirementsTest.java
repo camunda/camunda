@@ -29,7 +29,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirements() {
     // when
-    client.newDecisionRequirementsSearchRequest().send().join();
+    client.newDecisionRequirementsSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final DecisionRequirementsSearchQuery request =
@@ -40,7 +40,12 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionRequirementsByVersion() {
     // when
-    client.newDecisionRequirementsSearchRequest().filter(f -> f.version(1)).send().join();
+    client
+        .newDecisionRequirementsSearchRequest()
+        .filter(f -> f.version(1))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final DecisionRequirementsSearchQuery request =
@@ -54,6 +59,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client
         .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsKey(0L))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -69,6 +75,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client
         .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsName("name"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -84,6 +91,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client
         .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsName("name").version(1))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -100,6 +108,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
     client
         .newDecisionRequirementsSearchRequest()
         .filter(f -> f.resourceName("resource name"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -127,6 +136,7 @@ public class SearchDecisionRequirementsTest extends ClientRestTest {
                     .asc()
                     .tenantId()
                     .desc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

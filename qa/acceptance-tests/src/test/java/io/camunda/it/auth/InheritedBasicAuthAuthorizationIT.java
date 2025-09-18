@@ -8,6 +8,7 @@
 package io.camunda.it.auth;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -178,6 +179,7 @@ public class InheritedBasicAuthAuthorizationIT {
                   client
                       .newGroupGetRequest(
                           UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join());
     }
@@ -195,6 +197,7 @@ public class InheritedBasicAuthAuthorizationIT {
                   client
                       .newGroupGetRequest(
                           UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join())
           .isInstanceOf(ProblemException.class)

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
@@ -193,12 +194,22 @@ public class OidcIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roles = client.newRolesSearchRequest().send().join();
+              final var roles =
+                  client
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .extracting(Role::getRoleId)
                   .contains("operate", "tasklist", "zeebe", "identity");
 
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("operate", "tasklist", "zeebe", "identity");
@@ -207,7 +218,8 @@ public class OidcIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var roles = client.newRolesSearchRequest().send().join();
+    final var roles =
+        client.newRolesSearchRequest().consistencyPolicy(ConsistencyPolicy.noWait()).send().join();
     assertThat(roles.items())
         .extracting(Role::getRoleId, Role::getName)
         .contains(
@@ -216,7 +228,12 @@ public class OidcIdentityMigrationIT {
             tuple("zeebe", "Zeebe"),
             tuple("identity", "Identity"));
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -340,7 +357,12 @@ public class OidcIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var tenants = client.newTenantsSearchRequest().send().join();
+              final var tenants =
+                  client
+                      .newTenantsSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(tenants.items())
                   .extracting(Tenant::getTenantId)
                   .contains("tenant1", "tenant2");
@@ -349,7 +371,13 @@ public class OidcIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var tenants = client.newTenantsSearchRequest().send().join().items();
+    final var tenants =
+        client
+            .newTenantsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(tenants)
         .extracting(Tenant::getTenantId, Tenant::getName)
         .contains(tuple("tenant1", "tenant 1"), tuple("tenant2", "tenant 2"));
@@ -388,17 +416,29 @@ public class OidcIdentityMigrationIT {
             tuple("rule_3", "Rule 3", "claim2", "value2"));
 
     final var mappingRuleByRoleOperate =
-        client.newMappingRulesByRoleSearchRequest("operate").send().join();
+        client
+            .newMappingRulesByRoleSearchRequest("operate")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(mappingRuleByRoleOperate.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");
     final var mappingRuleByRoleZeebe =
-        client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
+        client
+            .newMappingRulesByRoleSearchRequest("zeebe")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(mappingRuleByRoleZeebe.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");
     final var mappingRuleByRoleTasklist =
-        client.newMappingRulesByRoleSearchRequest("tasklist").send().join();
+        client
+            .newMappingRulesByRoleSearchRequest("tasklist")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(mappingRuleByRoleTasklist.items())
         .extracting(MappingRule::getMappingRuleId)
         .contains("rule_2");

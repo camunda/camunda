@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -98,7 +99,12 @@ class GroupAuthorizationIT {
   @Test
   void searchShouldReturnAuthorizedGroups(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var groupSearchResponse = camundaClient.newGroupsSearchRequest().send().join();
+    final var groupSearchResponse =
+        camundaClient
+            .newGroupsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(groupSearchResponse.items())
         .hasSize(2)
@@ -110,7 +116,12 @@ class GroupAuthorizationIT {
   void searchShouldReturnGroupsSortedById(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var groupSearchResponse =
-        camundaClient.newGroupsSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newGroupsSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(groupSearchResponse.items())
         .hasSize(2)
@@ -122,7 +133,12 @@ class GroupAuthorizationIT {
   void searchShouldReturnGroupFilteredByGroupId(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var groupSearchResponse =
-        camundaClient.newGroupsSearchRequest().filter(fn -> fn.groupId(GROUP_1.id())).send().join();
+        camundaClient
+            .newGroupsSearchRequest()
+            .filter(fn -> fn.groupId(GROUP_1.id()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(groupSearchResponse.items())
         .hasSize(1)
@@ -134,7 +150,12 @@ class GroupAuthorizationIT {
   void searchShouldReturnGroupsFilteredByName(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var groupSearchResponse =
-        camundaClient.newGroupsSearchRequest().filter(fn -> fn.name(GROUP_2.name())).send().join();
+        camundaClient
+            .newGroupsSearchRequest()
+            .filter(fn -> fn.name(GROUP_2.name()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(groupSearchResponse.items())
         .hasSize(1)
@@ -145,7 +166,12 @@ class GroupAuthorizationIT {
   @Test
   void searchShouldReturnEmptyListWhenUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final var groupSearchResponse = camundaClient.newGroupsSearchRequest().send().join();
+    final var groupSearchResponse =
+        camundaClient
+            .newGroupsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(groupSearchResponse.items()).hasSize(0).map(Group::getName).isEmpty();
   }
@@ -153,7 +179,12 @@ class GroupAuthorizationIT {
   @Test
   void getGroupByIdShouldReturnGroupIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var group = camundaClient.newGroupGetRequest(GROUP_1.id()).send().join();
+    final var group =
+        camundaClient
+            .newGroupGetRequest(GROUP_1.id())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(group.getGroupId()).isEqualTo(GROUP_1.id());
   }
@@ -163,7 +194,12 @@ class GroupAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newGroupGetRequest(GROUP_1.id()).send().join();
+        () ->
+            camundaClient
+                .newGroupGetRequest(GROUP_1.id())
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -175,7 +211,12 @@ class GroupAuthorizationIT {
   @Test
   void getRolesByGroupShouldReturnRolesIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var roles = camundaClient.newRolesByGroupSearchRequest(GROUP_1.id()).send().join();
+    final var roles =
+        camundaClient
+            .newRolesByGroupSearchRequest(GROUP_1.id())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roles.items().size()).isEqualTo(1);
     assertThat(roles.items().getFirst().getRoleId()).isEqualTo(ROLE.id());
@@ -184,7 +225,12 @@ class GroupAuthorizationIT {
   @Test
   void getRolesByGroupShouldReturnNotFoundIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final var roles = camundaClient.newRolesByGroupSearchRequest(GROUP_1.id()).send().join();
+    final var roles =
+        camundaClient
+            .newRolesByGroupSearchRequest(GROUP_1.id())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(roles.items().size()).isEqualTo(0);
   }
 
@@ -206,7 +252,11 @@ class GroupAuthorizationIT {
         .untilAsserted(
             () -> {
               final var clients =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_1.id())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(clients.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -258,7 +308,11 @@ class GroupAuthorizationIT {
         .untilAsserted(
             () -> {
               final var clients =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_1.id())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(clients.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
 
@@ -276,7 +330,11 @@ class GroupAuthorizationIT {
         .untilAsserted(
             () -> {
               final var clients =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_1.id())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(clients.items()).noneMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -284,7 +342,12 @@ class GroupAuthorizationIT {
   @Test
   void getClientsByGroupShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final var clients = camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+    final var clients =
+        camundaClient
+            .newClientsByGroupSearchRequest(GROUP_1.id())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(clients.items().size()).isEqualTo(0);
   }
 
@@ -314,7 +377,11 @@ class GroupAuthorizationIT {
         .untilAsserted(
             () -> {
               final var clients =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_1.id()).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_1.id())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(clients.items())
                   .map(Client::getClientId)
                   .contains(firstClientId, secondClientId);

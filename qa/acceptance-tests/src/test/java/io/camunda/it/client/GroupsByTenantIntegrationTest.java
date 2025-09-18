@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.TenantGroup;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -62,7 +63,12 @@ public class GroupsByTenantIntegrationTest {
         .untilAsserted(
             () -> {
               final List<TenantGroup> groups =
-                  camundaClient.newGroupsByTenantSearchRequest(TENANT_ID).send().join().items();
+                  camundaClient
+                      .newGroupsByTenantSearchRequest(TENANT_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(groups)
                   .extracting(TenantGroup::getGroupId)
                   .contains(A_GROUP_ID, B_GROUP_ID);
@@ -72,7 +78,12 @@ public class GroupsByTenantIntegrationTest {
   @Test
   void shouldReturnGroupsByTenant() {
     final List<TenantGroup> groups =
-        camundaClient.newGroupsByTenantSearchRequest(TENANT_ID).send().join().items();
+        camundaClient
+            .newGroupsByTenantSearchRequest(TENANT_ID)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(groups).hasSize(2);
     assertThat(groups).extracting(TenantGroup::getGroupId).containsExactly(A_GROUP_ID, B_GROUP_ID);
   }
@@ -83,6 +94,7 @@ public class GroupsByTenantIntegrationTest {
         camundaClient
             .newGroupsByTenantSearchRequest(TENANT_ID)
             .sort(s -> s.groupId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -93,7 +105,13 @@ public class GroupsByTenantIntegrationTest {
   @Test
   void shouldRejectGroupsByTenantSearchIfMissingTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newGroupsByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGroupsByTenantSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -101,7 +119,13 @@ public class GroupsByTenantIntegrationTest {
   @Test
   void shouldRejectGroupsByTenantSearchIfEmptyTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newGroupsByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGroupsByTenantSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -109,7 +133,11 @@ public class GroupsByTenantIntegrationTest {
   @Test
   void searchGroupsShouldReturnEmptyListWhenSearchingForNonExistingTenantId() {
     final var clientsSearchResponse =
-        camundaClient.newGroupsByTenantSearchRequest("someTenantId").send().join();
+        camundaClient
+            .newGroupsByTenantSearchRequest("someTenantId")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(clientsSearchResponse.items()).isEmpty();
   }
 }

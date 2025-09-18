@@ -36,7 +36,11 @@ public class QueryProcessInstanceSequenceFlowsTest extends ClientRestTest {
         processInstanceKey, Instancio.create(ProcessInstanceSequenceFlowsQueryResult.class));
 
     // when
-    client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+    client
+        .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

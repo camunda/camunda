@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -134,6 +135,7 @@ public class TasklistV1ApiGroupPermissionsIT {
                       .newUserTaskSearchRequest()
                       .filter(
                           t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();

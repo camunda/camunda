@@ -18,6 +18,7 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ElementInstanceState;
@@ -94,6 +95,7 @@ public class ElementInstanceSearchTest {
             .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
             .sort(s -> s.elementId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -118,6 +120,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -130,6 +133,7 @@ public class ElementInstanceSearchTest {
             // also filtering by elementId to get a unique result since others may coincidentally
             // have been started at the same time
             .filter(f -> f.startDate(startDate).elementId(ei.getElementId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -147,6 +151,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.startDate(hourAgo))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -160,6 +165,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -172,6 +178,7 @@ public class ElementInstanceSearchTest {
             // also filtering by elementId to get a unique result since others may coincidentally
             // have ended at the same time
             .filter(f -> f.endDate(endDate).elementId(ei.getElementId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -189,6 +196,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.endDate(hourAgo))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -198,7 +206,12 @@ public class ElementInstanceSearchTest {
   @Test
   public void shouldValidateElementInstancePagination() {
     final var result =
-        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getElementInstanceKey();
     // apply searchAfter
@@ -206,6 +219,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -216,6 +230,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -231,6 +246,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceKey(key))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -246,12 +262,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -267,6 +285,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -283,12 +302,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -324,7 +345,12 @@ public class ElementInstanceSearchTest {
     final var elementInstanceKey = elementInstance.getElementInstanceKey();
 
     // when
-    final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceGetRequest(elementInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isNotNull().isEqualTo(elementInstance);
@@ -339,6 +365,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(elementId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -359,6 +386,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementName(elementName))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -377,12 +405,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertSorted(resultAsc, resultDesc, ElementInstance::getElementId);
@@ -395,12 +425,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementName().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.elementName().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertSorted(resultAsc, resultDesc, ElementInstance::getElementName);
@@ -413,6 +445,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId("noOpTask"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -427,6 +460,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId("Event_1p0nsc7"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -443,6 +477,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -458,12 +493,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertSorted(resultAsc, resultDesc, ElementInstance::getProcessDefinitionKey);
@@ -478,6 +515,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.incidentKey(incidentKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -495,12 +533,14 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.incidentKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newElementInstanceSearchRequest()
             .sort(s -> s.incidentKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -516,6 +556,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.state(ElementInstanceState.valueOf(state.name())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -528,9 +569,19 @@ public class ElementInstanceSearchTest {
   void shouldSortElementInstanceByState() {
     // when
     final var resultAsc =
-        camundaClient.newElementInstanceSearchRequest().sort(s -> s.state().asc()).send().join();
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.state().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newElementInstanceSearchRequest().sort(s -> s.state().desc()).send().join();
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .sort(s -> s.state().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertSorted(resultAsc, resultDesc, elementInstance -> elementInstance.getState().name());
   }
@@ -544,6 +595,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.hasIncident(hasIncident))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -561,6 +613,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.type(ElementInstanceType.valueOf(type.name())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -579,6 +632,7 @@ public class ElementInstanceSearchTest {
             .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
             .sort(s -> s.type().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
@@ -586,6 +640,7 @@ public class ElementInstanceSearchTest {
             .newElementInstanceSearchRequest()
             .page(p -> p.limit(100))
             .sort(s -> s.type().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -601,6 +656,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.tenantId(tenantId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -612,7 +668,12 @@ public class ElementInstanceSearchTest {
   @Test
   public void shouldQueryElementInstanceValidatePagination() {
     final var result =
-        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getElementInstanceKey();
     // apply searchAfter
@@ -620,6 +681,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -630,6 +692,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -639,11 +702,21 @@ public class ElementInstanceSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var thirdKey = resultAll.items().get(2).getElementInstanceKey();
 
     final var resultSearchFrom =
-        camundaClient.newElementInstanceSearchRequest().page(p -> p.limit(2).from(2)).send().join();
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultSearchFrom.items().size()).isEqualTo(2);
@@ -665,6 +738,7 @@ public class ElementInstanceSearchTest {
                 f ->
                     f.processInstanceKey(elementInstance.getProcessInstanceKey())
                         .elementId(elementInstance.getElementId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -681,6 +755,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.elementId("taskA").elementInstanceState(ElementInstanceState.ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -700,6 +775,7 @@ public class ElementInstanceSearchTest {
                 f ->
                     f.elementId(elementInstanceWithIncident.getElementId())
                         .hasElementInstanceIncident(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -714,6 +790,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId("subprocess_with_multi_instance"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .singleItem()
@@ -724,6 +801,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceScopeKey(parentProcessInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -743,6 +821,7 @@ public class ElementInstanceSearchTest {
                 f ->
                     f.processDefinitionId("subprocess_with_multi_instance")
                         .elementId("sub_process"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .singleItem()
@@ -753,6 +832,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceScopeKey(subProcessInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -773,6 +853,7 @@ public class ElementInstanceSearchTest {
                     f.processDefinitionId("subprocess_with_multi_instance")
                         .elementId("bar_mi_task")
                         .type(ElementInstanceType.MULTI_INSTANCE_BODY))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -784,6 +865,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceScopeKey(multiInstanceElementInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -803,6 +885,7 @@ public class ElementInstanceSearchTest {
                 f ->
                     f.processDefinitionId("subprocess_with_multi_instance")
                         .elementId("start_event"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .singleItem()
@@ -813,6 +896,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceScopeKey(leafElementInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -830,6 +914,7 @@ public class ElementInstanceSearchTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementInstanceScopeKey(invalidElementInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

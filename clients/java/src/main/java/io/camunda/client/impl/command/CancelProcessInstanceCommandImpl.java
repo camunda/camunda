@@ -23,7 +23,6 @@ import io.camunda.client.api.command.CancelProcessInstanceCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CancelProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CancelProcessInstanceResponseImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -88,14 +87,11 @@ public final class CancelProcessInstanceCommandImpl implements CancelProcessInst
   }
 
   private CamundaFuture<CancelProcessInstanceResponse> sendRestRequest() {
-    final HttpCamundaFuture<CancelProcessInstanceResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/process-instances/" + processInstanceKey + "/cancellation",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        CancelProcessInstanceResponseImpl::new,
-        result);
-    return result;
+        CancelProcessInstanceResponseImpl::new);
   }
 
   public CamundaFuture<CancelProcessInstanceResponse> sendGrpcRequest() {

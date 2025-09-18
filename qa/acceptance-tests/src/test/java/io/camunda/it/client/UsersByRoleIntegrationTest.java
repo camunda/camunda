@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.client.api.search.response.RoleUser;
@@ -47,7 +48,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final List<RoleUser> users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users)
                   .singleElement()
                   .satisfies(
@@ -115,7 +121,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users)
                   .extracting(RoleUser::getUsername)
                   .containsExactlyInAnyOrder(username1, username2);
@@ -130,7 +141,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users).isEmpty();
             });
   }
@@ -151,7 +167,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users).anyMatch(u -> u.getUsername().equals(username));
             });
     // when
@@ -164,7 +185,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users).noneMatch(u -> u.getUsername().equals(username));
             });
   }
@@ -228,7 +254,12 @@ public class UsersByRoleIntegrationTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByRoleSearchRequest(roleId).send().join().items();
+                  camundaClient
+                      .newUsersByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               assertThat(users).extracting(RoleUser::getUsername).contains(user1, user2);
             });
   }
@@ -257,6 +288,7 @@ public class UsersByRoleIntegrationTest {
                       .newUsersByRoleSearchRequest(roleId)
                       .sort(s -> s.username().desc())
                       .page((p) -> p.limit(100))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();

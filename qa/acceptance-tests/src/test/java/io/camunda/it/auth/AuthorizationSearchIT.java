@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateAuthorizationResponse;
 import io.camunda.client.api.response.DeleteAuthorizationResponse;
@@ -88,6 +89,7 @@ class AuthorizationSearchIT {
               final var authorization =
                   adminClient
                       .newAuthorizationGetRequest(response.getAuthorizationKey())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -99,7 +101,13 @@ class AuthorizationSearchIT {
   @Test
   void getAuthorizationByAuthorizationKeyShouldReturnNotFoundIfAuthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newAuthorizationGetRequest(100L).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newAuthorizationGetRequest(100L)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
   }
@@ -112,7 +120,12 @@ class AuthorizationSearchIT {
     final var authorization = getAuthorization(adminClient).getAuthorizationKey();
     final var authorizationKey = Long.valueOf(authorization);
     assertThatThrownBy(
-            () -> camundaClient.newAuthorizationGetRequest(authorizationKey).send().join())
+            () ->
+                camundaClient
+                    .newAuthorizationGetRequest(authorizationKey)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -124,6 +137,7 @@ class AuthorizationSearchIT {
         adminClient
             .newAuthorizationSearchRequest()
             .filter(f -> f.ownerId(RESTRICTED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -136,7 +150,12 @@ class AuthorizationSearchIT {
   @Test
   void searchShouldReturnEmptyListForRestrictedUser(
       @Authenticated(RESTRICTED) final CamundaClient client) throws Exception {
-    final var response = client.newAuthorizationSearchRequest().send().join();
+    final var response =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(response.items()).isEmpty();
   }
 
@@ -167,6 +186,7 @@ class AuthorizationSearchIT {
                             .filter(f -> f.ownerId(ADMIN))
                             .filter(f -> f.resourceType(PROCESS_DEFINITION))
                             .filter(f -> f.resourceIds(List.of(resourceId)))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -199,6 +219,7 @@ class AuthorizationSearchIT {
                             .filter(f -> f.ownerId(ADMIN))
                             .filter(f -> f.resourceType(PROCESS_DEFINITION))
                             .filter(f -> f.resourceIds(resourceId))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -222,6 +243,7 @@ class AuthorizationSearchIT {
                             .filter(f -> f.ownerId(ADMIN))
                             .filter(f -> f.resourceType(PROCESS_DEFINITION))
                             .filter(f -> f.resourceIds(resourceId))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -232,6 +254,7 @@ class AuthorizationSearchIT {
     return client
         .newAuthorizationSearchRequest()
         .page(p -> p.limit(1))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

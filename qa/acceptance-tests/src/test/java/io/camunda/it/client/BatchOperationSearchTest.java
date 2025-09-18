@@ -18,6 +18,7 @@ import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
@@ -122,8 +123,18 @@ public class BatchOperationSearchTest {
   @Test
   void shouldGetBatchOperation() {
     // when
-    final var batch = camundaClient.newBatchOperationGetRequest(batchOperationKey1).send().join();
-    final var batch2 = camundaClient.newBatchOperationGetRequest(batchOperationKey2).send().join();
+    final var batch =
+        camundaClient
+            .newBatchOperationGetRequest(batchOperationKey1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
+    final var batch2 =
+        camundaClient
+            .newBatchOperationGetRequest(batchOperationKey2)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertCancelBatchOperation(batch);
@@ -134,12 +145,14 @@ public class BatchOperationSearchTest {
         camundaClient
             .newBatchOperationItemsSearchRequest()
             .filter(f -> f.batchOperationKey(batchOperationKey1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var items2 =
         camundaClient
             .newBatchOperationItemsSearchRequest()
             .filter(f -> f.batchOperationKey(batchOperationKey2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -163,6 +176,7 @@ public class BatchOperationSearchTest {
                                     BatchOperationType.CANCEL_PROCESS_INSTANCE,
                                     BatchOperationType.MIGRATE_PROCESS_INSTANCE))
                         .state(p -> p.in(BatchOperationState.COMPLETED)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -186,6 +200,7 @@ public class BatchOperationSearchTest {
                         .processInstanceKey(p -> p.in(ACTIVE_PROCESS_INSTANCES_1))
                         .itemKey(p -> p.in(ACTIVE_PROCESS_INSTANCES_1))
                         .state(p -> p.in(BatchOperationItemState.COMPLETED)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -201,6 +216,7 @@ public class BatchOperationSearchTest {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.state(BatchOperationState.COMPLETED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -226,6 +242,7 @@ public class BatchOperationSearchTest {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.state(p -> p.neq(BatchOperationState.COMPLETED)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -243,6 +260,7 @@ public class BatchOperationSearchTest {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.operationType(BatchOperationType.CANCEL_PROCESS_INSTANCE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -261,6 +279,7 @@ public class BatchOperationSearchTest {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.operationType(p -> p.neq(BatchOperationType.CANCEL_PROCESS_INSTANCE)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -282,6 +301,7 @@ public class BatchOperationSearchTest {
                 f ->
                     f.batchOperationKey(p -> p.neq(batchOperationKey1))
                         .state(p -> p.neq(BatchOperationItemState.ACTIVE)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -301,6 +321,7 @@ public class BatchOperationSearchTest {
                     f.batchOperationKey(p -> p.notIn(batchOperationKey1))
                         .processInstanceKey(p -> p.notIn(ACTIVE_PROCESS_INSTANCES_1))
                         .itemKey(p -> p.notIn(ACTIVE_PROCESS_INSTANCES_1)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -316,6 +337,7 @@ public class BatchOperationSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.batchOperationId(batchOperationKey1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

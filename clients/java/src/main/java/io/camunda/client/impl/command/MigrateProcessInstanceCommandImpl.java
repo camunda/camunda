@@ -25,7 +25,6 @@ import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1.MigrateP
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.MigrateProcessInstanceResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.MigrateProcessInstanceResponseImpl;
 import io.camunda.client.impl.util.ParseUtil;
@@ -152,14 +151,11 @@ public final class MigrateProcessInstanceCommandImpl
   }
 
   private CamundaFuture<MigrateProcessInstanceResponse> sendRestRequest() {
-    final HttpCamundaFuture<MigrateProcessInstanceResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/process-instances/" + processInstanceKey + "/migration",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        MigrateProcessInstanceResponseImpl::new,
-        result);
-    return result;
+        MigrateProcessInstanceResponseImpl::new);
   }
 
   private CamundaFuture<MigrateProcessInstanceResponse> sendGrpcRequest() {

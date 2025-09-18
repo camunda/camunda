@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.github.tomakehurst.wiremock.junit5.WireMockTest;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -54,26 +55,47 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var groups = client.newGroupsSearchRequest().send().join();
+              final var groups =
+                  client
+                      .newGroupsSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(groups.items().size()).isEqualTo(3);
             });
 
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var groups = client.newGroupsSearchRequest().send().join();
+    final var groups =
+        client.newGroupsSearchRequest().consistencyPolicy(ConsistencyPolicy.noWait()).send().join();
     assertThat(groups.items().size()).isEqualTo(3);
     assertThat(groups.items())
         .map(Group::getGroupId, Group::getName)
         .containsExactly(
             tuple("groupa", "groupA"), tuple("groupb", "groupB"), tuple("groupc", "groupC"));
-    final var userA = client.newUsersByGroupSearchRequest("groupa").send().join();
+    final var userA =
+        client
+            .newUsersByGroupSearchRequest("groupa")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(userA.items().size()).isEqualTo(1);
     assertThat(userA.items().getFirst().getUsername()).isEqualTo("user0@email.com");
-    final var userB = client.newUsersByGroupSearchRequest("groupb").send().join();
+    final var userB =
+        client
+            .newUsersByGroupSearchRequest("groupb")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(userB.items().size()).isEqualTo(1);
     assertThat(userB.items().getFirst().getUsername()).isEqualTo("user0@email.com");
-    final var userC = client.newUsersByGroupSearchRequest("groupc").send().join();
+    final var userC =
+        client
+            .newUsersByGroupSearchRequest("groupc")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(userC.items().size()).isEqualTo(1);
     assertThat(userC.items().getFirst().getUsername()).isEqualTo("user1@email.com");
   }
@@ -88,7 +110,12 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roles = client.newRolesSearchRequest().send().join();
+              final var roles =
+                  client
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .map(io.camunda.client.api.search.response.Role::getRoleId)
                   .contains(
@@ -101,7 +128,8 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var roles = client.newRolesSearchRequest().send().join();
+    final var roles =
+        client.newRolesSearchRequest().consistencyPolicy(ConsistencyPolicy.noWait()).send().join();
     assertThat(roles.items())
         .map(
             io.camunda.client.api.search.response.Role::getRoleId,
@@ -111,11 +139,21 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
             tuple(Role.OPERATIONS_ENGINEER.getName(), "Operations Engineer"),
             tuple(Role.TASK_USER.getName(), "Task User"),
             tuple(Role.VISITOR.getName(), "Visitor"));
-    final var members = client.newUsersByRoleSearchRequest("admin").send().join();
+    final var members =
+        client
+            .newUsersByRoleSearchRequest("admin")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(members.items())
         .map(RoleUser::getUsername)
         .contains("user0@email.com", "user1@email.com");
-    final var members2 = client.newUsersByRoleSearchRequest("developer").send().join();
+    final var members2 =
+        client
+            .newUsersByRoleSearchRequest("developer")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(members2.items().size()).isEqualTo(2);
     assertThat(members2.items())
         .map(RoleUser::getUsername)
@@ -133,7 +171,12 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .untilAsserted(
             () -> {
               final var authorizations =
-                  client.newAuthorizationSearchRequest().send().join().items();
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               final var migratedAuthorizations =
                   authorizations.stream()
                       .map(Authorization::getOwnerId)
@@ -146,7 +189,11 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
     assertThat(migration.getExitCode()).isEqualTo(0);
 
     final SearchResponse<Authorization> newResponse =
-        client.newAuthorizationSearchRequest().send().join();
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(newResponse.items())
         .extracting(
             Authorization::getOwnerId,
@@ -366,7 +413,11 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<Authorization> authorizations =
-                  client.newAuthorizationSearchRequest().send().join();
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               final var migratedAuthorizations =
                   authorizations.items().stream()
                       .map(Authorization::getOwnerId)
@@ -379,7 +430,11 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
     assertThat(migration.getExitCode()).isEqualTo(0);
 
     final SearchResponse<Authorization> response =
-        client.newAuthorizationSearchRequest().send().join();
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(response.items())
         .map(
             Authorization::getOwnerId,
@@ -421,7 +476,13 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
         .untilAsserted(
             () -> {
               final var authorizations =
-                  client.newAuthorizationSearchRequest().send().join().items().stream()
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items()
+                      .stream()
                       .map(Authorization::getOwnerType)
                       .filter(OwnerType.CLIENT::equals)
                       .toList();
@@ -431,7 +492,12 @@ public class SaaSIdentityMigrationIT extends AbstractSaaSIdentityMigrationIT {
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,

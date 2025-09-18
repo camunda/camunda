@@ -11,6 +11,7 @@ import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPP
 
 import dasniko.testcontainers.keycloak.KeycloakContainer;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -197,6 +198,7 @@ public class InheritedOIDCAuthorizationIT {
                   client
                       .newGroupGetRequest(
                           UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join());
     }
@@ -214,6 +216,7 @@ public class InheritedOIDCAuthorizationIT {
                   client
                       .newGroupGetRequest(
                           UNAUTHORIZED_GROUP.id()) // Attempt to read a random group we've created
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join())
           .isInstanceOf(ProblemException.class)

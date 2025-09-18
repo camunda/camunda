@@ -19,59 +19,44 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.process
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.response.ProcessElementStatistics;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
-import io.camunda.client.impl.search.request.TypedSearchRequestPropertyProvider;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessDefinitionElementStatisticsRequestImpl
-    extends TypedSearchRequestPropertyProvider<ProcessDefinitionElementStatisticsQuery>
+    extends AbstractStatisticsRequestImpl<
+        ProcessDefinitionElementStatisticsQuery, List<ProcessElementStatistics>>
     implements ProcessDefinitionElementStatisticsRequest {
 
   private final long processDefinitionKey;
   private final ProcessDefinitionElementStatisticsQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public ProcessDefinitionElementStatisticsRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long processDefinitionKey) {
+    super(httpClient.newRequestConfig());
     request = new ProcessDefinitionElementStatisticsQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
     this.processDefinitionKey = processDefinitionKey;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalCommandStep<List<ProcessElementStatistics>> requestTimeout(
-      final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<List<ProcessElementStatistics>> send() {
-    final HttpCamundaFuture<List<ProcessElementStatistics>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/process-definitions/" + processDefinitionKey + "/statistics/element-instances",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessDefinitionElementStatisticsQueryResult.class,
         StatisticsResponseMapper::toProcessDefinitionStatisticsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

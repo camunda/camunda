@@ -36,7 +36,11 @@ public class QueryBatchOperationTest extends ClientRestTest {
         batchOperationKey, Instancio.create(BatchOperationResponse.class));
 
     // when
-    client.newBatchOperationGetRequest(batchOperationKey).send().join();
+    client
+        .newBatchOperationGetRequest(batchOperationKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

@@ -33,7 +33,7 @@ public class SearchClientByTenantTest extends ClientRestTest {
   @Test
   void shouldSendSearchRequestForClientsByTenant() {
     // when
-    client.newClientsByTenantSearchRequest(TENANT_ID).send().join();
+    client.newClientsByTenantSearchRequest(TENANT_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final String requestPath = RestGatewayService.getLastRequest().getUrl();
@@ -48,6 +48,7 @@ public class SearchClientByTenantTest extends ClientRestTest {
         .newClientsByTenantSearchRequest(TENANT_ID)
         .sort(s -> s.clientId().desc())
         .page(p -> p.limit(2))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -61,14 +62,26 @@ public class SearchClientByTenantTest extends ClientRestTest {
 
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
-    assertThatThrownBy(() -> client.newClientsByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByTenantSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
 
   @Test
   void shouldRaiseExceptionOnEmptyTenantId() {
-    assertThatThrownBy(() -> client.newClientsByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newClientsByTenantSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -76,7 +89,13 @@ public class SearchClientByTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenSettingFilter() {
     assertThatThrownBy(
-            () -> client.newClientsByTenantSearchRequest(TENANT_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newClientsByTenantSearchRequest(TENANT_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -88,6 +107,7 @@ public class SearchClientByTenantTest extends ClientRestTest {
                 client
                     .newClientsByTenantSearchRequest(TENANT_ID)
                     .filter(new ClientFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)

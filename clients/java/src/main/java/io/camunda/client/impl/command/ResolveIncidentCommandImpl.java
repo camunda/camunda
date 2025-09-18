@@ -22,7 +22,6 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ResolveIncidentCommandStep1;
 import io.camunda.client.api.response.ResolveIncidentResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ResolveIncidentResponseImpl;
 import io.camunda.client.protocol.rest.IncidentResolutionRequest;
@@ -86,14 +85,11 @@ public final class ResolveIncidentCommandImpl implements ResolveIncidentCommandS
   }
 
   private CamundaFuture<ResolveIncidentResponse> sendRestRequest() {
-    final HttpCamundaFuture<ResolveIncidentResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/incidents/" + incidentKey + "/resolution",
         jsonMapper.toJson(incidentResolutionRequest),
         httpRequestConfig.build(),
-        ResolveIncidentResponseImpl::new,
-        result);
-    return result;
+        ResolveIncidentResponseImpl::new);
   }
 
   private CamundaFuture<ResolveIncidentResponse> sendGrpcRequest() {

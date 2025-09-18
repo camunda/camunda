@@ -18,41 +18,29 @@ package io.camunda.client.impl.fetch;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.VariableGetRequest;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.VariableImpl;
 import io.camunda.client.protocol.rest.VariableResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class VariableGetRequestImpl implements VariableGetRequest {
+public class VariableGetRequestImpl extends AbstractFetchRequestImpl<Variable>
+    implements VariableGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long variableKey;
 
   public VariableGetRequestImpl(final HttpClient httpClient, final long variableKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.variableKey = variableKey;
   }
 
   @Override
-  public VariableGetRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<Variable> send() {
-    final HttpCamundaFuture<Variable> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/variables/%d", variableKey),
         httpRequestConfig.build(),
         VariableResult.class,
         VariableImpl::new,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

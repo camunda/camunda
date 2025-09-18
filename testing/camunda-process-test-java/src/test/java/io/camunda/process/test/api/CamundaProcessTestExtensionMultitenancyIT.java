@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -110,7 +111,11 @@ public class CamundaProcessTestExtensionMultitenancyIT {
 
     // when searching with an admin client that has access to both users and tenants
     final SearchResponse<ElementInstance> allElements =
-        client.newElementInstanceSearchRequest().send().join();
+        client
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then returns elements from both
     assertThat(allElements.items()).hasSize(8);
@@ -140,6 +145,7 @@ public class CamundaProcessTestExtensionMultitenancyIT {
         userAClient
             .newElementInstanceSearchRequest()
             .filter(filter -> filter.processDefinitionId(processDefinitionId).tenantId(tenantA))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -273,6 +279,7 @@ public class CamundaProcessTestExtensionMultitenancyIT {
                       camundaClient
                           .newElementInstanceSearchRequest()
                           .filter(filter -> filter.processDefinitionId(processId))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())

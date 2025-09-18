@@ -21,57 +21,45 @@ import static io.camunda.client.impl.search.request.TypedSearchRequestPropertyPr
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.IncidentSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.client.protocol.rest.ProcessInstanceIncidentSearchQuery;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class IncidentsByProcessInstanceSearchRequestImpl
+    extends AbstractSearchRequestImpl<ProcessInstanceIncidentSearchQuery, Incident>
     implements IncidentsByProcessInstanceSearchRequest {
 
   private final ProcessInstanceIncidentSearchQuery request;
   private final long processInstanceKey;
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public IncidentsByProcessInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper, final long processInstanceKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.processInstanceKey = processInstanceKey;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new ProcessInstanceIncidentSearchQuery();
   }
 
   @Override
-  public FinalSearchRequestStep<Incident> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<Incident>> send() {
-    final HttpCamundaFuture<SearchResponse<Incident>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+
+    return httpClient.post(
         String.format("/process-instances/%d/incidents/search", processInstanceKey),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         IncidentSearchQueryResult.class,
         SearchResponseMapper::toIncidentSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override
@@ -96,5 +84,10 @@ public class IncidentsByProcessInstanceSearchRequestImpl
   @Override
   public IncidentsByProcessInstanceSearchRequest page(final Consumer<SearchRequestPage> fn) {
     return page(searchRequestPage(fn));
+  }
+
+  @Override
+  protected ProcessInstanceIncidentSearchQuery getSearchRequestProperty() {
+    return request;
   }
 }

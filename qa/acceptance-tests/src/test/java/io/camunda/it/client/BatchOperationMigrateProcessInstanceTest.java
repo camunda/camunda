@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
@@ -111,6 +112,7 @@ public class BatchOperationMigrateProcessInstanceTest {
                   client
                       .newBatchOperationItemsSearchRequest()
                       .filter(f -> f.batchOperationKey(batchCreated.getBatchOperationKey()))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -275,7 +277,13 @@ public class BatchOperationMigrateProcessInstanceTest {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newElementInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newElementInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -289,7 +297,13 @@ public class BatchOperationMigrateProcessInstanceTest {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newVariableSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newVariableSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -304,7 +318,13 @@ public class BatchOperationMigrateProcessInstanceTest {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -319,7 +339,13 @@ public class BatchOperationMigrateProcessInstanceTest {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }

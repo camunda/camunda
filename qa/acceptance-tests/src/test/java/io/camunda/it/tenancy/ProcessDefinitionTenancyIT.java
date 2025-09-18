@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.qa.util.auth.Authenticated;
@@ -72,7 +73,12 @@ public class ProcessDefinitionTenancyIT {
   public void shouldReturnAllProcessDefinitionsWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(
@@ -84,7 +90,12 @@ public class ProcessDefinitionTenancyIT {
   public void shouldReturnOnlyTenantAProcessDefinitions(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(
@@ -96,7 +107,12 @@ public class ProcessDefinitionTenancyIT {
   public void shouldNotReturnAnyProcessDefinitions(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -109,7 +125,11 @@ public class ProcessDefinitionTenancyIT {
     final var processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID, TENANT_A);
     // when
     final var result =
-        camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        camundaClient
+            .newProcessDefinitionGetRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -130,6 +150,7 @@ public class ProcessDefinitionTenancyIT {
                 () ->
                     camundaClient
                         .newProcessDefinitionGetRequest(processDefinitionKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -182,6 +203,7 @@ public class ProcessDefinitionTenancyIT {
                       camundaClient
                           .newProcessDefinitionSearchRequest()
                           .filter(filter -> filter.processDefinitionId(PROCESS_ID))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -194,6 +216,7 @@ public class ProcessDefinitionTenancyIT {
     return camundaClient
         .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

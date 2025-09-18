@@ -24,7 +24,6 @@ import io.camunda.client.api.command.BroadcastSignalCommandStep1.BroadcastSignal
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.BroadcastSignalResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.BroadcastSignalResponseImpl;
 import io.camunda.client.protocol.rest.SignalBroadcastRequest;
@@ -116,15 +115,12 @@ public final class BroadcastSignalCommandImpl
   }
 
   private CamundaFuture<BroadcastSignalResponse> sendRestRequest() {
-    final HttpCamundaFuture<BroadcastSignalResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/signals/broadcast",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         SignalBroadcastResult.class,
-        BroadcastSignalResponseImpl::new,
-        result);
-    return result;
+        BroadcastSignalResponseImpl::new);
   }
 
   public CamundaFuture<BroadcastSignalResponse> sendGrpcRequest() {

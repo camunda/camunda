@@ -16,6 +16,7 @@ import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.OffsetDateTime;
@@ -62,6 +63,7 @@ public class CorrelatedMessageSearchTest {
         camundaClient
             .newCorrelatedMessageSearchRequest()
             .sort(s -> s.messageKey().asc().subscriptionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -70,7 +72,12 @@ public class CorrelatedMessageSearchTest {
   @Test
   void shouldReturnAllByDefault() {
     // Given / When
-    final var searchResponse = camundaClient.newCorrelatedMessageSearchRequest().send().join();
+    final var searchResponse =
+        camundaClient
+            .newCorrelatedMessageSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(NUMBER_OF_CORRELATED_MESSAGES);
@@ -102,6 +109,7 @@ public class CorrelatedMessageSearchTest {
                         .processInstanceKey(expectedCorrelatedMessage.getProcessInstanceKey())
                         .subscriptionKey(expectedCorrelatedMessage.getSubscriptionKey())
                         .tenantId(expectedCorrelatedMessage.getTenantId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -133,6 +141,7 @@ public class CorrelatedMessageSearchTest {
                         .processInstanceKey(expectedCorrelatedMessage.getProcessInstanceKey())
                         .subscriptionKey(expectedCorrelatedMessage.getSubscriptionKey())
                         .tenantId(expectedCorrelatedMessage.getTenantId()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -148,6 +157,7 @@ public class CorrelatedMessageSearchTest {
         camundaClient
             .newCorrelatedMessageSearchRequest()
             .sort(s -> s.messageKey().desc().subscriptionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -175,6 +185,7 @@ public class CorrelatedMessageSearchTest {
             .newCorrelatedMessageSearchRequest()
             .sort(s -> s.messageKey().asc().subscriptionKey().asc())
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -184,6 +195,7 @@ public class CorrelatedMessageSearchTest {
             .newCorrelatedMessageSearchRequest()
             .sort(s -> s.messageKey().asc().subscriptionKey().asc())
             .page(p -> p.after(response1.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

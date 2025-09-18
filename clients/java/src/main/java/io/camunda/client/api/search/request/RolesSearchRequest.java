@@ -15,9 +15,10 @@
  */
 package io.camunda.client.api.search.request;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
-import java.util.List;
+import io.camunda.client.api.search.filter.RoleFilter;
+import io.camunda.client.api.search.response.Role;
+import io.camunda.client.api.search.sort.RoleSort;
 
-public interface ProcessInstanceSequenceFlowsRequest
-    extends FinalCommandStep<List<ProcessInstanceSequenceFlow>> {}
+public interface RolesSearchRequest
+    extends TypedSearchRequest<RoleFilter, RoleSort, RolesSearchRequest>,
+        FinalSearchRequestStep<Role> {}

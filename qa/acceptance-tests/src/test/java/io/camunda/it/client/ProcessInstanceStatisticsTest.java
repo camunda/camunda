@@ -12,6 +12,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
@@ -40,6 +41,7 @@ public class ProcessInstanceStatisticsTest {
                         camundaClient
                             .newProcessInstanceSearchRequest()
                             .filter(fn)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -56,6 +58,7 @@ public class ProcessInstanceStatisticsTest {
                         camundaClient
                             .newUserTaskSearchRequest()
                             .filter(f -> f.processDefinitionKey(processDefinitionKey))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -72,7 +75,11 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);
@@ -93,7 +100,11 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);
@@ -125,7 +136,11 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);
@@ -157,7 +172,11 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);
@@ -194,7 +213,11 @@ public class ProcessInstanceStatisticsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceElementStatisticsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceElementStatisticsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);

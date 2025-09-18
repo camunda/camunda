@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -87,7 +88,12 @@ class ProcessInstanceAuthorizationIT {
       @Authenticated(USER1) final CamundaClient camundaClient) {
 
     // when
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -102,6 +108,7 @@ class ProcessInstanceAuthorizationIT {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(PROCESS_ID_2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -115,7 +122,12 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -129,7 +141,12 @@ class ProcessInstanceAuthorizationIT {
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_2);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+        () ->
+            camundaClient
+                .newProcessInstanceGetRequest(processInstanceKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -146,7 +163,12 @@ class ProcessInstanceAuthorizationIT {
     // given
     final long processDefinitionKey = getProcessDefinitionKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().getFirst().getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
@@ -160,7 +182,12 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var elementInstanceKey = getAnyElementInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceGetRequest(elementInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey())
@@ -175,7 +202,12 @@ class ProcessInstanceAuthorizationIT {
     final var elementInstanceKey = getAnyElementInstanceKey(adminClient, PROCESS_ID_2);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
+        () ->
+            camundaClient
+                .newElementInstanceGetRequest(elementInstanceKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -189,7 +221,12 @@ class ProcessInstanceAuthorizationIT {
   public void searchShouldReturnAuthorizedIncidents(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessDefinitionId()).isEqualTo(PROCESS_ID_1);
@@ -202,7 +239,12 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var incidentKey = getAnyIncidentKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
+    final var result =
+        camundaClient
+            .newIncidentGetRequest(incidentKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessDefinitionKey())
@@ -217,7 +259,12 @@ class ProcessInstanceAuthorizationIT {
     final var incidentKey = getAnyIncidentKey(adminClient, PROCESS_ID_1);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newIncidentGetRequest(incidentKey).send().join();
+        () ->
+            camundaClient
+                .newIncidentGetRequest(incidentKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -234,7 +281,12 @@ class ProcessInstanceAuthorizationIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newVariableSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -248,7 +300,12 @@ class ProcessInstanceAuthorizationIT {
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
     final var variableKey = getAnyVariableKey(adminClient, processInstanceKey);
     // when
-    final var result = camundaClient.newVariableGetRequest(variableKey).send().join();
+    final var result =
+        camundaClient
+            .newVariableGetRequest(variableKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -263,7 +320,12 @@ class ProcessInstanceAuthorizationIT {
     final var variableKey = getAnyVariableKey(adminClient, processInstanceKey);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newVariableGetRequest(variableKey).send().join();
+        () ->
+            camundaClient
+                .newVariableGetRequest(variableKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -277,6 +339,7 @@ class ProcessInstanceAuthorizationIT {
     return camundaClient
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -288,6 +351,7 @@ class ProcessInstanceAuthorizationIT {
     return camundaClient
         .newElementInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -299,6 +363,7 @@ class ProcessInstanceAuthorizationIT {
     return camundaClient
         .newIncidentSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -310,6 +375,7 @@ class ProcessInstanceAuthorizationIT {
     return camundaClient
         .newVariableSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -321,6 +387,7 @@ class ProcessInstanceAuthorizationIT {
     return adminClient
         .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -350,13 +417,26 @@ class ProcessInstanceAuthorizationIT {
                               filter ->
                                   filter.processDefinitionId(
                                       fn -> fn.in(PROCESS_ID_1, PROCESS_ID_2)))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
                   .hasSize(2); // PROCESS_ID_1 and PROCESS_ID_2
-              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+              assertThat(
+                      camundaClient
+                          .newVariableSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
                   .hasSize(2); // One per process instance
-              assertThat(camundaClient.newElementInstanceSearchRequest().send().join().items())
+              assertThat(
+                      camundaClient
+                          .newElementInstanceSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
                   .hasSize(4); // Start event and service task for each process
             });
   }

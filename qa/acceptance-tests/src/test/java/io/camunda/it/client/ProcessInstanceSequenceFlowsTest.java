@@ -12,6 +12,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.impl.search.response.ProcessInstanceSequenceFlowImpl;
@@ -81,6 +82,7 @@ public class ProcessInstanceSequenceFlowsTest {
               final var result =
                   camundaClient
                       .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result).hasSize(expectedSequenceFlows);
@@ -96,7 +98,11 @@ public class ProcessInstanceSequenceFlowsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(1);
@@ -119,7 +125,11 @@ public class ProcessInstanceSequenceFlowsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(2);
@@ -148,7 +158,11 @@ public class ProcessInstanceSequenceFlowsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(3);
@@ -183,7 +197,11 @@ public class ProcessInstanceSequenceFlowsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(5);
@@ -230,7 +248,11 @@ public class ProcessInstanceSequenceFlowsTest {
 
     // when
     final var actual =
-        camundaClient.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceSequenceFlowsRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).hasSize(5);

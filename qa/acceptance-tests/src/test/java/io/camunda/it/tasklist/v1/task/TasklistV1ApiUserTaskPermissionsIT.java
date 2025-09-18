@@ -20,6 +20,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -107,6 +108,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
               adminClient
                   .newUserTaskSearchRequest()
                   .filter(t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+                  .consistencyPolicy(ConsistencyPolicy.noWait())
                   .send()
                   .join()
                   .items();
@@ -120,6 +122,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
               adminClient
                   .newAuthorizationSearchRequest()
                   .filter(t -> t.ownerId(ADMIN_USERNAME))
+                  .consistencyPolicy(ConsistencyPolicy.noWait())
                   .send()
                   .join()
                   .items();
@@ -130,7 +133,13 @@ public class TasklistV1ApiUserTaskPermissionsIT {
 
     waitUntilAsserted(
         () -> {
-          final var variables = adminClient.newVariableSearchRequest().send().join().items();
+          final var variables =
+              adminClient
+                  .newVariableSearchRequest()
+                  .consistencyPolicy(ConsistencyPolicy.noWait())
+                  .send()
+                  .join()
+                  .items();
           assertThat(variables).describedAs("Wait until the variable exists").hasSize(1);
         });
 
@@ -200,7 +209,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
     assertThat(userTasks).isEmpty();
   }
 
-  private static void waitUntilAsserted(ThrowingRunnable runnable) {
+  private static void waitUntilAsserted(final ThrowingRunnable runnable) {
     await()
         .atMost(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()

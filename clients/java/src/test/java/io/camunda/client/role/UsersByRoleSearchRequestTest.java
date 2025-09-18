@@ -31,7 +31,7 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldSendSearchUsersByRoleRequest() {
-    client.newUsersByRoleSearchRequest(ROLE_ID).send().join();
+    client.newUsersByRoleSearchRequest(ROLE_ID).withDefaultConsistencyPolicy().send().join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).startsWith(REST_API_PATH + "/roles/" + ROLE_ID + "/users/search");
@@ -40,7 +40,12 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldSendRequestWithUsernameSort() {
-    client.newUsersByRoleSearchRequest(ROLE_ID).sort(s -> s.username().asc()).send().join();
+    client
+        .newUsersByRoleSearchRequest(ROLE_ID)
+        .sort(s -> s.username().asc())
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).startsWith(REST_API_PATH + "/roles/" + ROLE_ID + "/users/search");
@@ -51,14 +56,22 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldFailOnEmptyRoleId() {
-    assertThatThrownBy(() -> client.newUsersByRoleSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client.newUsersByRoleSearchRequest("").withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
 
   @Test
   void shouldFailOnNullRoleId() {
-    assertThatThrownBy(() -> client.newUsersByRoleSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newUsersByRoleSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -66,7 +79,13 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingUsersByRole() {
     assertThatThrownBy(
-            () -> client.newUsersByRoleSearchRequest(ROLE_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newUsersByRoleSearchRequest(ROLE_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -78,6 +97,7 @@ public class UsersByRoleSearchRequestTest extends ClientRestTest {
                 client
                     .newUsersByRoleSearchRequest(ROLE_ID)
                     .filter(new RoleUserFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)

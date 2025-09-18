@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -134,6 +135,7 @@ public class OperateInternalApiRolePermissionsIT {
                         adminClient
                             .newProcessInstanceSearchRequest()
                             .filter(f -> f.processInstanceKey(processInstanceKey))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())

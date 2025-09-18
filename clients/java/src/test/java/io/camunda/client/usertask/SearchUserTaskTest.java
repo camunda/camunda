@@ -48,7 +48,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTask() {
     // when
-    client.newUserTaskSearchRequest().send().join();
+    client.newUserTaskSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -58,7 +58,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssignee() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.assignee("demo")).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.assignee("demo"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -68,7 +73,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByAssigneeStringFilter() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.assignee(b -> b.neq("that"))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.assignee(b -> b.neq("that")))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -78,7 +88,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByState() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.state(UserTaskState.COMPLETED)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.state(UserTaskState.COMPLETED))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -128,7 +143,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
       final Consumer<UserTaskStateFilterProperty> assertion) {
 
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.state(filter)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.state(filter))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -138,7 +158,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByKey() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.userTaskKey(12345L)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.userTaskKey(12345L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -148,7 +173,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTaskDefinitionId() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.elementId("task-def-id")).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.elementId("task-def-id"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -158,7 +188,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateGroup() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.candidateGroup("group1")).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.candidateGroup("group1"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -168,7 +203,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByCandidateUser() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.candidateUser("user1")).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.candidateUser("user1"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -178,7 +218,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessDefinitionKey() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.processDefinitionKey(123L)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.processDefinitionKey(123L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -188,7 +233,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByProcessInstanceKey() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.processInstanceKey(456L)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.processInstanceKey(456L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -198,7 +248,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByTenantId() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.tenantId("tenant1")).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.tenantId("tenant1"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -208,7 +263,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriority() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.priority(10)).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.priority(10))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -218,7 +278,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldSearchUserTaskByPriorityLongFilter() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.priority(b -> b.gt(1).lt(10))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.priority(b -> b.gt(1).lt(10)))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -244,6 +309,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.processInstanceVariables(Collections.singletonMap("test", "test")))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -266,6 +332,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.localVariables(Collections.singletonMap("test", "test")))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -282,7 +349,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
         userTaskKey, Instancio.create(FormResult.class).formKey("1"));
 
     // when
-    client.newUserTaskGetFormRequest(userTaskKey).send().join();
+    client.newUserTaskGetFormRequest(userTaskKey).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -296,6 +363,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.exists(true)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -310,6 +378,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.exists(false)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -324,6 +393,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.gt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -338,6 +408,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.lt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -352,6 +423,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.gte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -366,6 +438,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.lte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -380,6 +453,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.creationDate(b -> b.eq(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -394,6 +468,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.completionDate(b -> b.gte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -408,6 +483,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.completionDate(b -> b.lte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -425,6 +501,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
             f ->
                 f.completionDate(
                     b -> b.gte(OffsetDateTime.now().minusDays(3)).lte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -443,6 +520,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
             f ->
                 f.completionDate(
                     b -> b.gt(OffsetDateTime.now().minusDays(3)).lt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -455,7 +533,12 @@ public final class SearchUserTaskTest extends ClientRestTest {
   @Test
   void shouldReturnUserTaskByDueDateExists() {
     // when
-    client.newUserTaskSearchRequest().filter(f -> f.dueDate(b -> b.exists(true))).send().join();
+    client
+        .newUserTaskSearchRequest()
+        .filter(f -> f.dueDate(b -> b.exists(true)))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final UserTaskSearchQuery request = gatewayService.getLastRequest(UserTaskSearchQuery.class);
@@ -468,6 +551,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.dueDate(b -> b.gt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -482,6 +566,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.dueDate(b -> b.lt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -497,6 +582,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
         .newUserTaskSearchRequest()
         .filter(
             f -> f.dueDate(b -> b.gte(OffsetDateTime.now().minusDays(5)).lte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -512,6 +598,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.followUpDate(b -> b.exists(true)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -526,6 +613,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.followUpDate(b -> b.gt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -540,6 +628,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
     client
         .newUserTaskSearchRequest()
         .filter(f -> f.followUpDate(b -> b.lt(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -557,6 +646,7 @@ public final class SearchUserTaskTest extends ClientRestTest {
             f ->
                 f.followUpDate(
                     b -> b.gte(OffsetDateTime.now().minusDays(10)).lte(OffsetDateTime.now())))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

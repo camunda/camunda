@@ -20,6 +20,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -95,6 +96,7 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
                         adminClient
                             .newProcessDefinitionSearchRequest()
                             .filter(f -> f.processDefinitionKey(processDefinitionKey))
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items();
@@ -112,6 +114,7 @@ public class TasklistV1ApiInternalProcessPermissionsIT {
                   adminClient
                       .newAuthorizationSearchRequest()
                       .filter(t -> t.ownerId(ADMIN_USERNAME))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();

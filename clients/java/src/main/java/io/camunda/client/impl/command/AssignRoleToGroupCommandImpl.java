@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignRoleToGroupCommandStep1.AssignRoleToG
 import io.camunda.client.api.command.AssignRoleToGroupCommandStep1.AssignRoleToGroupCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignRoleToGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignRoleToGroupResponseImpl;
 import java.time.Duration;
@@ -65,13 +64,10 @@ public class AssignRoleToGroupCommandImpl
   public CamundaFuture<AssignRoleToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<AssignRoleToGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/roles/" + roleId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
-        AssignRoleToGroupResponseImpl::new,
-        result);
-    return result;
+        AssignRoleToGroupResponseImpl::new);
   }
 }

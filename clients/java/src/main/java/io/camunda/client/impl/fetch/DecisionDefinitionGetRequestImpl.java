@@ -18,42 +18,30 @@ package io.camunda.client.impl.fetch;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.DecisionDefinitionGetRequest;
 import io.camunda.client.api.search.response.DecisionDefinition;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.DecisionDefinitionImpl;
 import io.camunda.client.protocol.rest.DecisionDefinitionResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class DecisionDefinitionGetRequestImpl implements DecisionDefinitionGetRequest {
+public class DecisionDefinitionGetRequestImpl extends AbstractFetchRequestImpl<DecisionDefinition>
+    implements DecisionDefinitionGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long decisionDefinitionKey;
 
   public DecisionDefinitionGetRequestImpl(
       final HttpClient httpClient, final long decisionDefinitionKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.decisionDefinitionKey = decisionDefinitionKey;
   }
 
   @Override
-  public DecisionDefinitionGetRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<DecisionDefinition> send() {
-    final HttpCamundaFuture<DecisionDefinition> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/decision-definitions/%d", decisionDefinitionKey),
         httpRequestConfig.build(),
         DecisionDefinitionResult.class,
         DecisionDefinitionImpl::new,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

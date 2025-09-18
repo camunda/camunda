@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.fail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import java.net.URI;
@@ -161,7 +162,12 @@ public class CamundaDockerIT {
           .ignoreExceptions()
           .untilAsserted(
               () -> {
-                final var response = camundaClient.newProcessInstanceSearchRequest().send().join();
+                final var response =
+                    camundaClient
+                        .newProcessInstanceSearchRequest()
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join();
                 assertThat(response.items()).hasSize(1);
 
                 final var processInstance = response.items().getFirst();

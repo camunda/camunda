@@ -17,6 +17,7 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
@@ -122,6 +123,7 @@ public class IncidentPartialResolveCallActivityTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(f -> f.jobKey(serviceTaskKey[0]))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -143,6 +145,7 @@ public class IncidentPartialResolveCallActivityTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(fn -> fn.state(IncidentState.ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -159,6 +162,7 @@ public class IncidentPartialResolveCallActivityTest {
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(CALL_ACTIVITY_ID))
             .page(p -> p.limit(100))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -177,6 +181,7 @@ public class IncidentPartialResolveCallActivityTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(parentProcess.getProcessDefinitionKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -196,6 +201,7 @@ public class IncidentPartialResolveCallActivityTest {
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(SERVICE_TASK_1_ID))
             .page(p -> p.limit(100))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -214,6 +220,7 @@ public class IncidentPartialResolveCallActivityTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(childProcess.getProcessDefinitionKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()

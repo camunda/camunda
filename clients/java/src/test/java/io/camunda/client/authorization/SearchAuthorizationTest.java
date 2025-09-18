@@ -37,7 +37,11 @@ public class SearchAuthorizationTest extends ClientRestTest {
         AUTHORIZATION_KEY, Instancio.create(AuthorizationResult.class).authorizationKey("1"));
 
     // when
-    client.newAuthorizationGetRequest(AUTHORIZATION_KEY).send().join();
+    client
+        .newAuthorizationGetRequest(AUTHORIZATION_KEY)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -48,7 +52,9 @@ public class SearchAuthorizationTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNegativeAuthorizationKey() {
     // when / then
-    assertThatThrownBy(() -> client.newAuthorizationGetRequest(-1).send().join())
+    assertThatThrownBy(
+            () ->
+                client.newAuthorizationGetRequest(-1).withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("authorizationKey must be greater than 0");
   }
@@ -61,6 +67,7 @@ public class SearchAuthorizationTest extends ClientRestTest {
         .filter(fn -> fn.ownerId("ownerId"))
         .sort(s -> s.ownerType().desc())
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -78,6 +85,7 @@ public class SearchAuthorizationTest extends ClientRestTest {
         .filter(fn -> fn.ownerId("ownerId"))
         .sort(s -> s.ownerType().desc())
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

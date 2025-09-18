@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ClientException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -106,199 +107,229 @@ public final class HttpClient implements AutoCloseable {
     return RequestConfig.copy(defaultRequestConfig);
   }
 
-  public <HttpT, RespT> void get(
+  public <HttpT, RespT> HttpCamundaFuture<RespT> get(
+      final String path,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return get(path, Collections.emptyMap(), requestConfig, responseType, transformer, null);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> get(
       final String path,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    get(path, Collections.emptyMap(), requestConfig, responseType, transformer, result);
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return get(
+        path, Collections.emptyMap(), requestConfig, responseType, transformer, consistencyPolicy);
   }
 
-  public <HttpT, RespT> void get(
+  public <HttpT, RespT> HttpCamundaFuture<RespT> get(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return get(path, queryParams, requestConfig, responseType, transformer, null);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> get(
       final String path,
       final Map<String, String> queryParams,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
-        Method.GET, path, queryParams, null, requestConfig, responseType, transformer, result);
-  }
-
-  public <RespT> void get(
-      final String path,
-      final RequestConfig requestConfig,
-      final Predicate<Integer> successPredicate,
-      final JsonResponseAndStatusCodeTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    get(path, Collections.emptyMap(), requestConfig, successPredicate, transformer, result);
-  }
-
-  public <RespT> void get(
-      final String path,
-      final Map<String, String> queryParams,
-      final RequestConfig requestConfig,
-      final Predicate<Integer> successPredicate,
-      final JsonResponseAndStatusCodeTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return sendRequest(
         Method.GET,
         path,
         queryParams,
         null,
         requestConfig,
+        responseType,
+        transformer,
+        consistencyPolicy);
+  }
+
+  public <RespT> HttpCamundaFuture<RespT> get(
+      final String path,
+      final RequestConfig requestConfig,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<Void, RespT> transformer) {
+    return sendRequest(
+        Method.GET,
+        path,
+        Collections.emptyMap(),
+        null,
+        requestConfig,
         MAX_RETRY_ATTEMPTS,
         successPredicate,
         transformer,
-        result,
+        null,
         null);
   }
 
-  public <RespT> void post(
+  public <RespT> HttpCamundaFuture<RespT> post(
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final JsonResponseTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    post(path, body, requestConfig, Void.class, transformer, result);
+      final JsonResponseTransformer<Void, RespT> transformer) {
+    return post(path, body, requestConfig, Void.class, transformer, null);
   }
 
-  public <HttpT, RespT> void post(
+  public <HttpT, RespT> HttpCamundaFuture<RespT> post(
       final String path,
       final String body,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    post(path, Collections.emptyMap(), body, requestConfig, responseType, transformer, result);
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return post(path, body, requestConfig, responseType, transformer, null);
   }
 
-  public <HttpT, RespT> void post(
+  public <HttpT, RespT> HttpCamundaFuture<RespT> post(
       final String path,
-      final Map<String, String> queryParams,
       final String body,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-
-    sendRequest(
-        Method.POST, path, queryParams, body, requestConfig, responseType, transformer, result);
-  }
-
-  public <HttpT, RespT> void postMultipart(
-      final String path,
-      final MultipartEntityBuilder multipartBuilder,
-      final RequestConfig requestConfig,
-      final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    postMultipart(
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return post(
         path,
         Collections.emptyMap(),
-        multipartBuilder,
+        body,
         requestConfig,
         responseType,
         transformer,
-        result);
+        consistencyPolicy);
   }
 
-  public <HttpT, RespT> void postMultipart(
+  public <HttpT, RespT> HttpCamundaFuture<RespT> post(
+      final String path,
+      final Map<String, String> queryParams,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return post(path, queryParams, body, requestConfig, responseType, transformer, null);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> post(
+      final String path,
+      final Map<String, String> queryParams,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer,
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+
+    return sendRequest(
+        Method.POST,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        responseType,
+        transformer,
+        consistencyPolicy);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> postMultipart(
+      final String path,
+      final MultipartEntityBuilder multipartBuilder,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return postMultipart(
+        path, Collections.emptyMap(), multipartBuilder, requestConfig, responseType, transformer);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> postMultipart(
       final String path,
       final Map<String, String> queryParams,
       final MultipartEntityBuilder multipartBuilder,
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
     final HttpEntity entity = multipartBuilder.build();
-    sendRequest(
-        Method.POST, path, queryParams, entity, requestConfig, responseType, transformer, result);
+    return sendRequest(
+        Method.POST, path, queryParams, entity, requestConfig, responseType, transformer, null);
   }
 
-  public <RespT> void put(
+  public <RespT> HttpCamundaFuture<RespT> put(
       final String path,
       final String body,
       final RequestConfig requestConfig,
-      final JsonResponseTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
+      final JsonResponseTransformer<Void, RespT> transformer) {
+    return put(path, body, requestConfig, Void.class, transformer);
+  }
+
+  public <HttpT, RespT> HttpCamundaFuture<RespT> put(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final Class<HttpT> responseType,
+      final JsonResponseTransformer<HttpT, RespT> transformer) {
+    return sendRequest(
         Method.PUT,
+        path,
+        Collections.emptyMap(),
+        body,
+        requestConfig,
+        responseType,
+        transformer,
+        null);
+  }
+
+  public <RespT> HttpCamundaFuture<RespT> patch(
+      final String path,
+      final String body,
+      final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer) {
+    return sendRequest(
+        Method.PATCH,
         path,
         Collections.emptyMap(),
         body,
         requestConfig,
         Void.class,
         transformer,
-        result);
+        null);
   }
 
-  public <HttpT, RespT> void put(
-      final String path,
-      final String body,
-      final RequestConfig requestConfig,
-      final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
-        Method.PUT,
-        path,
-        Collections.emptyMap(),
-        body,
-        requestConfig,
-        responseType,
-        transformer,
-        result);
-  }
-
-  public <RespT> void patch(
-      final String path,
-      final String body,
-      final RequestConfig requestConfig,
-      final JsonResponseTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    patch(path, body, requestConfig, Void.class, transformer, result);
-  }
-
-  public <HttpT, RespT> void patch(
-      final String path,
-      final String body,
-      final RequestConfig requestConfig,
-      final Class<HttpT> responseType,
-      final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
-        Method.PATCH,
-        path,
-        Collections.emptyMap(),
-        body,
-        requestConfig,
-        responseType,
-        transformer,
-        result);
-  }
-
-  public <RespT> void delete(
+  public <RespT> HttpCamundaFuture<RespT> delete(
       final String path,
       final RequestConfig requestConfig,
-      final JsonResponseTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    delete(path, Collections.emptyMap(), requestConfig, transformer, result);
+      final JsonResponseTransformer<Void, RespT> transformer) {
+    return delete(path, Collections.emptyMap(), requestConfig, transformer, null);
   }
 
-  public <RespT> void delete(
+  public <RespT> HttpCamundaFuture<RespT> delete(
+      final String path,
+      final Map<String, String> queryParams,
+      final RequestConfig requestConfig,
+      final JsonResponseTransformer<Void, RespT> transformer) {
+    return delete(path, queryParams, requestConfig, transformer, null);
+  }
+
+  public <RespT> HttpCamundaFuture<RespT> delete(
       final String path,
       final Map<String, String> queryParams,
       final RequestConfig requestConfig,
       final JsonResponseTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
-        Method.DELETE, path, queryParams, null, requestConfig, Void.class, transformer, result);
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return sendRequest(
+        Method.DELETE,
+        path,
+        queryParams,
+        null,
+        requestConfig,
+        Void.class,
+        transformer,
+        consistencyPolicy);
   }
 
-  private <HttpT, RespT> void sendRequest(
+  private <HttpT, RespT> HttpCamundaFuture<RespT> sendRequest(
       final Method httpMethod,
       final String path,
       final Map<String, String> queryParams,
@@ -306,8 +337,8 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig requestConfig,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result) {
-    sendRequest(
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return sendRequest(
         httpMethod,
         path,
         queryParams,
@@ -316,11 +347,11 @@ public final class HttpClient implements AutoCloseable {
         MAX_RETRY_ATTEMPTS,
         responseType,
         transformer,
-        result,
-        null);
+        null,
+        consistencyPolicy);
   }
 
-  private <HttpT, RespT> void sendRequest(
+  private <HttpT, RespT> HttpCamundaFuture<RespT> sendRequest(
       final Method httpMethod,
       final String path,
       final Map<String, String> queryParams,
@@ -329,9 +360,9 @@ public final class HttpClient implements AutoCloseable {
       final int maxRetries,
       final Class<HttpT> responseType,
       final JsonResponseTransformer<HttpT, RespT> transformer,
-      final HttpCamundaFuture<RespT> result,
-      final ApiCallback<HttpT, RespT> callback) {
-    sendRequest(
+      final ApiCallback<HttpT, RespT> callback,
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return sendRequest(
         httpMethod,
         path,
         queryParams,
@@ -341,11 +372,11 @@ public final class HttpClient implements AutoCloseable {
         responseType,
         null,
         (response, statusCode) -> transformer.transform(response),
-        result,
-        callback);
+        callback,
+        consistencyPolicy);
   }
 
-  private <RespT> void sendRequest(
+  private <RespT> HttpCamundaFuture<RespT> sendRequest(
       final Method httpMethod,
       final String path,
       final Map<String, String> queryParams,
@@ -354,9 +385,9 @@ public final class HttpClient implements AutoCloseable {
       final int maxRetries,
       final Predicate<Integer> successPredicate,
       final JsonResponseAndStatusCodeTransformer<Void, RespT> transformer,
-      final HttpCamundaFuture<RespT> result,
-      final ApiCallback<Void, RespT> callback) {
-    sendRequest(
+      final ApiCallback<Void, RespT> callback,
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    return sendRequest(
         httpMethod,
         path,
         queryParams,
@@ -366,8 +397,36 @@ public final class HttpClient implements AutoCloseable {
         Void.class,
         successPredicate,
         transformer,
-        result,
+        callback,
+        consistencyPolicy);
+  }
+
+  private <HttpT, RespT> HttpCamundaFuture<RespT> sendRequest(
+      final Method httpMethod,
+      final String path,
+      final Map<String, String> queryParams,
+      final Object body, // Can be a String (for JSON) or HttpEntity (for Multipart)
+      final RequestConfig requestConfig,
+      final int maxRetries,
+      final Class<HttpT> responseType,
+      final Predicate<Integer> successPredicate,
+      final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
+      final ApiCallback<HttpT, RespT> callback,
+      final ConsistencyPolicy<RespT> consistencyPolicy) {
+    final HttpCamundaFuture<RespT> result = new HttpCamundaFuture<>(consistencyPolicy);
+    sendRequest(
+        httpMethod,
+        path,
+        queryParams,
+        body,
+        requestConfig,
+        maxRetries,
+        responseType,
+        successPredicate,
+        transformer,
+        new HttpCamundaFuture<>(),
         callback);
+    return result;
   }
 
   private <HttpT, RespT> void sendRequest(

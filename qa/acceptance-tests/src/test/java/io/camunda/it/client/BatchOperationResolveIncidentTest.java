@@ -20,6 +20,7 @@ import static io.camunda.it.util.TestHelper.waitUntilScopedProcessInstanceHasInc
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.response.BatchOperationItems.BatchOperationItem;
@@ -87,7 +88,13 @@ public class BatchOperationResolveIncidentTest {
     waitUntilIncidentsAreActive(camundaClient, AMOUNT_OF_INCIDENTS);
 
     activeIncidents.addAll(
-        camundaClient.newIncidentSearchRequest().send().join().items().stream()
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Incident::getIncidentKey)
             .toList());
   }
@@ -127,6 +134,7 @@ public class BatchOperationResolveIncidentTest {
         camundaClient
             .newBatchOperationItemsSearchRequest()
             .filter(f -> f.batchOperationKey(batchOperationKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();

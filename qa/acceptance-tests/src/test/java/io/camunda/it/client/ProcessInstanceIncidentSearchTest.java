@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.Incident;
@@ -70,6 +71,7 @@ class ProcessInstanceIncidentSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -77,6 +79,7 @@ class ProcessInstanceIncidentSearchTest {
         camundaClient
             .newIncidentSearchRequest()
             .sort(s -> s.incidentKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -99,6 +102,7 @@ class ProcessInstanceIncidentSearchTest {
                     () ->
                         camundaClient
                             .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join())
                 .isInstanceOf(ProblemException.class)
@@ -119,7 +123,11 @@ class ProcessInstanceIncidentSearchTest {
       final long processInstanceKey, final List<Incident> expectedIncidents) {
     // when
     final SearchResponse<Incident> incidentsResult =
-        camundaClient.newIncidentsByProcessInstanceSearchRequest(processInstanceKey).send().join();
+        camundaClient
+            .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(incidentsResult.items().size()).isEqualTo(expectedIncidents.size());
@@ -136,6 +144,7 @@ class ProcessInstanceIncidentSearchTest {
         camundaClient
             .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .sort(s -> s.incidentKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -159,12 +168,14 @@ class ProcessInstanceIncidentSearchTest {
         camundaClient
             .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var response2 =
         camundaClient
             .newIncidentsByProcessInstanceSearchRequest(processInstanceKey)
             .page(p -> p.after(response1.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

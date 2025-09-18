@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.User;
 
-public interface UserGetRequest extends FinalCommandStep<User> {}
+public interface UserGetRequest extends FinalFetchRequestStep<User> {}

@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ResetClockCommandStep1;
 import io.camunda.client.api.response.ResetClockResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ResetClockResponseImpl;
 import java.time.Duration;
@@ -44,9 +43,7 @@ public class ResetClockCommandImpl implements ResetClockCommandStep1 {
 
   @Override
   public CamundaFuture<ResetClockResponse> send() {
-    final HttpCamundaFuture<ResetClockResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
-        "/clock/reset", "", httpRequestConfig.build(), ResetClockResponseImpl::new, result);
-    return result;
+    return httpClient.post(
+        "/clock/reset", "", httpRequestConfig.build(), ResetClockResponseImpl::new);
   }
 }

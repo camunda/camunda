@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.Variable;
 
-public interface VariableGetRequest extends FinalCommandStep<Variable> {}
+public interface VariableGetRequest extends FinalFetchRequestStep<Variable> {}

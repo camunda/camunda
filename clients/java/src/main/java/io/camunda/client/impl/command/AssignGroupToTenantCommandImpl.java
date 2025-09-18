@@ -20,7 +20,6 @@ import io.camunda.client.api.command.AssignGroupToTenantCommandStep1;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1.AssignGroupToTenantCommandStep2;
 import io.camunda.client.api.command.AssignGroupToTenantCommandStep1.AssignGroupToTenantCommandStep3;
 import io.camunda.client.api.response.AssignGroupToTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignGroupToTenantResponseImpl;
 import java.time.Duration;
@@ -64,13 +63,10 @@ public final class AssignGroupToTenantCommandImpl
   public CamundaFuture<AssignGroupToTenantResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<AssignGroupToTenantResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/tenants/" + tenantId + "/groups/" + groupId,
         null, // No request body needed
         httpRequestConfig.build(),
-        AssignGroupToTenantResponseImpl::new,
-        result);
-    return result;
+        AssignGroupToTenantResponseImpl::new);
   }
 }

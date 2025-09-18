@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -36,7 +37,12 @@ public class RolesByGroupIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(EXISTING_ROLE_ID).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(EXISTING_ROLE_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(EXISTING_ROLE_ID);
               assertThat(role.getName()).isEqualTo("ARoleName");
@@ -400,6 +406,10 @@ public class RolesByGroupIntegrationTest {
   }
 
   private static SearchResponse<Role> searchRolesByGroupId(final String groupId) {
-    return camundaClient.newRolesByGroupSearchRequest(groupId).send().join();
+    return camundaClient
+        .newRolesByGroupSearchRequest(groupId)
+        .consistencyPolicy(ConsistencyPolicy.noWait())
+        .send()
+        .join();
   }
 }

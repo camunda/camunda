@@ -28,7 +28,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
   @Test
   void shouldSearchDecisionDefinition() {
     // when
-    client.newDecisionDefinitionSearchRequest().send().join();
+    client.newDecisionDefinitionSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final DecisionDefinitionSearchQuery request =
@@ -50,6 +50,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
                     .decisionRequirementsId("ddri")
                     .version(3)
                     .tenantId("t"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -86,6 +87,7 @@ public final class SearchDecisionDefinitionTest extends ClientRestTest {
                     .asc()
                     .tenantId()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

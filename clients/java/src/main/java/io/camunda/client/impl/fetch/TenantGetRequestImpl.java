@@ -16,46 +16,33 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.TenantGetRequest;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.TenantResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class TenantGetRequestImpl implements TenantGetRequest {
+public class TenantGetRequestImpl extends AbstractFetchRequestImpl<Tenant>
+    implements TenantGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final String tenantId;
 
   public TenantGetRequestImpl(final HttpClient httpClient, final String tenantId) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.tenantId = tenantId;
-  }
-
-  @Override
-  public FinalCommandStep<Tenant> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<Tenant> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
-    final HttpCamundaFuture<Tenant> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/tenants/%s", tenantId),
         httpRequestConfig.build(),
         TenantResult.class,
         SearchResponseMapper::toTenantResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

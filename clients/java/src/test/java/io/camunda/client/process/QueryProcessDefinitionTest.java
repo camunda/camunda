@@ -40,7 +40,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   void shouldGetProcessDefinitionXml() {
     // when
     final long processDefinitionKey = 1L;
-    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
+    client
+        .newProcessDefinitionGetXmlRequest(processDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -57,7 +61,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         processDefinitionKey, Instancio.create(FormResult.class).formKey("2"));
 
     // when
-    client.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+    client
+        .newProcessDefinitionGetFormRequest(processDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -75,7 +83,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         Instancio.create(ProcessDefinitionResult.class).processDefinitionKey("2"));
 
     // when
-    client.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+    client
+        .newProcessDefinitionGetRequest(processDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -87,7 +99,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
   @Test
   public void shouldSearchProcessDefinitionWithEmptyQuery() {
     // when
-    client.newProcessDefinitionSearchRequest().send().join();
+    client.newProcessDefinitionSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final ProcessDefinitionSearchQuery request =
@@ -109,6 +121,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .versionTag("alpha")
                     .processDefinitionId("orderProcess")
                     .tenantId("<default>"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
     // then
@@ -146,6 +159,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
                     .desc()
                     .tenantId()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -171,6 +185,7 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
     client
         .newProcessDefinitionSearchRequest()
         .page(p -> p.from(23).limit(5).before("b").after("a"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

@@ -19,6 +19,7 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -101,7 +102,12 @@ class TenantAuthorizationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var tenantsSearchResponse = adminClient.newTenantsSearchRequest().send().join();
+              final var tenantsSearchResponse =
+                  adminClient
+                      .newTenantsSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               Assertions.assertThat(tenantsSearchResponse.items().stream().map(Tenant::getTenantId))
                   .containsAll(Arrays.asList(TENANT_ID_1, TENANT_ID_2));
             });
@@ -112,7 +118,11 @@ class TenantAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final SearchResponse<Tenant> tenantSearchResponse =
-        userClient.newTenantsSearchRequest().send().join();
+        userClient
+            .newTenantsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(tenantSearchResponse.items())
@@ -126,7 +136,11 @@ class TenantAuthorizationIT {
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
     // when
     final SearchResponse<Tenant> tenantSearchResponse =
-        userClient.newTenantsSearchRequest().send().join();
+        userClient
+            .newTenantsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(tenantSearchResponse.items()).isEmpty();
@@ -136,7 +150,12 @@ class TenantAuthorizationIT {
   void getByIdShouldReturnAuthorizedTenant(
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
-    final Tenant tenant = userClient.newTenantGetRequest(TENANT_ID_1).send().join();
+    final Tenant tenant =
+        userClient
+            .newTenantGetRequest(TENANT_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(tenant.getTenantId()).isEqualTo(TENANT_ID_1);
@@ -146,7 +165,13 @@ class TenantAuthorizationIT {
   void getByIdShouldReturnForbiddenForUnauthorizedTenantId(
       @Authenticated(UNAUTHORIZED) final CamundaClient userClient) {
     // when/then
-    assertThatThrownBy(() -> userClient.newTenantGetRequest(TENANT_ID_1).send().join())
+    assertThatThrownBy(
+            () ->
+                userClient
+                    .newTenantGetRequest(TENANT_ID_1)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Unauthorized to perform operation 'READ' on resource 'TENANT'");
   }
@@ -155,7 +180,11 @@ class TenantAuthorizationIT {
   void searchUsersByTenantShouldReturnEmptyListIfUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
     final SearchResponse<TenantUser> response =
-        camundaClient.newUsersByTenantSearchRequest(TENANT_ID_1).send().join();
+        camundaClient
+            .newUsersByTenantSearchRequest(TENANT_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     Assertions.assertThat(response.items()).isEmpty();
   }
 
@@ -187,7 +216,11 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<TenantUser> response =
-                  adminClient.newUsersByTenantSearchRequest(TENANT_ID_1).send().join();
+                  adminClient
+                      .newUsersByTenantSearchRequest(TENANT_ID_1)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               Assertions.assertThat(response.items().stream().map(TenantUser::getUsername))
                   .contains(userName);
             });
@@ -207,7 +240,11 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<TenantGroup> response =
-                  adminClient.newGroupsByTenantSearchRequest("tenant1").send().join();
+                  adminClient
+                      .newGroupsByTenantSearchRequest("tenant1")
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               Assertions.assertThat(response.items().stream().map(TenantGroup::getGroupId))
                   .contains(groupId);
             });
@@ -217,7 +254,11 @@ class TenantAuthorizationIT {
   void searchGroupsByTenantShouldReturnEmptyListIfUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
     final SearchResponse<TenantGroup> response =
-        camundaClient.newGroupsByTenantSearchRequest("tenant1").send().join();
+        camundaClient
+            .newGroupsByTenantSearchRequest("tenant1")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     Assertions.assertThat(response.items()).isEmpty();
   }
 
@@ -240,7 +281,11 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  adminClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+                  adminClient
+                      .newClientsByTenantSearchRequest(TENANT_ID_1)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               Assertions.assertThat(response.items().stream().map(Client::getClientId))
                   .contains(clientId);
             });
@@ -250,7 +295,11 @@ class TenantAuthorizationIT {
   void searchClientsByTenantShouldReturnEmptyListIfUnauthorized(
       @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
     final SearchResponse<Client> response =
-        camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+        camundaClient
+            .newClientsByTenantSearchRequest(TENANT_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     Assertions.assertThat(response.items()).isEmpty();
   }
 
@@ -287,7 +336,11 @@ class TenantAuthorizationIT {
         .untilAsserted(
             () -> {
               final var clients =
-                  camundaClient.newClientsByTenantSearchRequest(TENANT_ID_1).send().join();
+                  camundaClient
+                      .newClientsByTenantSearchRequest(TENANT_ID_1)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               Assertions.assertThat(clients.items())
                   .anyMatch(r -> clientId.equals(r.getClientId()));
             });

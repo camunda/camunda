@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
@@ -86,7 +87,12 @@ class UserTaskAuthorizationIT {
   public void searchShouldReturnAuthorizedUserTasks(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then return only user tasks from process with id PROCESS_ID_1
     assertThat(result.items()).hasSize(2);
@@ -101,7 +107,12 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskGetRequest(userTaskKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getBpmnProcessId()).isEqualTo(PROCESS_ID_1);
@@ -115,7 +126,12 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
     final ThrowingCallable executeGet =
-        () -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+        () ->
+            camundaClient
+                .newUserTaskGetRequest(userTaskKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGet).actual();
@@ -132,7 +148,12 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
-    final var result = camundaClient.newUserTaskGetFormRequest(userTaskKey).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskGetFormRequest(userTaskKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getFormId()).isEqualTo("test");
@@ -146,7 +167,12 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_2);
     // when
     final ThrowingCallable executeGetForm =
-        () -> camundaClient.newUserTaskGetFormRequest(userTaskKey).send().join();
+        () ->
+            camundaClient
+                .newUserTaskGetFormRequest(userTaskKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeGetForm).actual();
@@ -163,7 +189,12 @@ class UserTaskAuthorizationIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
-    final var result = camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskVariableSearchRequest(userTaskKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).isNotEmpty();
   }
@@ -176,7 +207,12 @@ class UserTaskAuthorizationIT {
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID_1);
     // when
     final ThrowingCallable executeSearchVariables =
-        () -> camundaClient.newUserTaskVariableSearchRequest(userTaskKey).send().join();
+        () ->
+            camundaClient
+                .newUserTaskVariableSearchRequest(userTaskKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
@@ -192,6 +228,7 @@ class UserTaskAuthorizationIT {
     return camundaClient
         .newUserTaskSearchRequest()
         .filter(f -> f.bpmnProcessId(processId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -218,6 +255,7 @@ class UserTaskAuthorizationIT {
                       camundaClient
                           .newProcessDefinitionSearchRequest()
                           .filter(filter -> filter.processDefinitionId(PROCESS_ID_1))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -226,6 +264,7 @@ class UserTaskAuthorizationIT {
                       camundaClient
                           .newProcessDefinitionSearchRequest()
                           .filter(filter -> filter.processDefinitionId(PROCESS_ID_2))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -237,11 +276,19 @@ class UserTaskAuthorizationIT {
                               filter ->
                                   filter.processDefinitionId(
                                       fn -> fn.in(PROCESS_ID_1, PROCESS_ID_2)))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
                   .hasSize(2);
-              assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(3);
+              assertThat(
+                      camundaClient
+                          .newUserTaskSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(3);
             });
   }
 }

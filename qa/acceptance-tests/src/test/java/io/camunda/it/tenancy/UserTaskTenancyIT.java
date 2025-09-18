@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.auth.Authenticated;
@@ -75,7 +76,12 @@ public class UserTaskTenancyIT {
   public void shouldReturnAllUserTasksWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(4);
     assertThat(result.items().stream().map(UserTask::getTenantId).collect(Collectors.toSet()))
@@ -85,7 +91,12 @@ public class UserTaskTenancyIT {
   @Test
   public void shouldOnyTenantAUserTasks(@Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(UserTask::getTenantId).collect(Collectors.toSet()))
@@ -96,7 +107,12 @@ public class UserTaskTenancyIT {
   public void shouldNotReturnAnyUserTasksWithNoTenantAccess(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newUserTaskSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -108,7 +124,12 @@ public class UserTaskTenancyIT {
     // given
     final var userTaskKey = getUserTaskKey(adminClient, PROCESS_ID, TENANT_A);
     // when
-    final var result = camundaClient.newUserTaskGetRequest(userTaskKey).send().join();
+    final var result =
+        camundaClient
+            .newUserTaskGetRequest(userTaskKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getUserTaskKey()).isEqualTo(userTaskKey);
@@ -125,7 +146,13 @@ public class UserTaskTenancyIT {
     // when
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
-            .isThrownBy(() -> camundaClient.newUserTaskGetRequest(userTaskKey).send().join())
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newUserTaskGetRequest(userTaskKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
 
     // then
@@ -173,7 +200,14 @@ public class UserTaskTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newUserTaskSearchRequest().send().join().items()).hasSize(4);
+              assertThat(
+                      camundaClient
+                          .newUserTaskSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(4);
             });
   }
 
@@ -182,6 +216,7 @@ public class UserTaskTenancyIT {
     return camundaClient
         .newUserTaskSearchRequest()
         .filter(f -> f.bpmnProcessId(processId).tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

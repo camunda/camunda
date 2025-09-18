@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.auth.Authenticated;
@@ -75,7 +76,12 @@ public class IncidentTenancyIT {
   public void shouldReturnAllIncidentsWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(result.items().stream().map(Incident::getTenantId).collect(Collectors.toSet()))
@@ -86,7 +92,12 @@ public class IncidentTenancyIT {
   public void shouldReturnOnlyTenantAIncidents(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().stream().map(Incident::getTenantId).collect(Collectors.toSet()))
@@ -96,7 +107,12 @@ public class IncidentTenancyIT {
   @Test
   public void shouldNotReturnAnyIncidents(@Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newIncidentSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -108,7 +124,12 @@ public class IncidentTenancyIT {
     // given
     final var incidentKey = getIncidentKey(adminClient, PROCESS_ID, TENANT_A);
     // when
-    final var result = camundaClient.newIncidentGetRequest(incidentKey).send().join();
+    final var result =
+        camundaClient
+            .newIncidentGetRequest(incidentKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getIncidentKey()).isEqualTo(incidentKey);
@@ -125,7 +146,13 @@ public class IncidentTenancyIT {
     // when
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
-            .isThrownBy(() -> camundaClient.newIncidentGetRequest(incidentKey).send().join())
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newIncidentGetRequest(incidentKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
@@ -176,6 +203,7 @@ public class IncidentTenancyIT {
                       camundaClient
                           .newIncidentSearchRequest()
                           .filter(filter -> filter.processDefinitionId(PROCESS_ID))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -188,6 +216,7 @@ public class IncidentTenancyIT {
     return camundaClient
         .newIncidentSearchRequest()
         .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

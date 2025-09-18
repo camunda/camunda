@@ -36,7 +36,7 @@ public class ElementInstanceTest extends ClientRestTest {
   @Test
   void shouldSearchElementInstance() {
     // when
-    client.newElementInstanceSearchRequest().send().join();
+    client.newElementInstanceSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final ElementInstanceSearchQuery request =
@@ -64,6 +64,7 @@ public class ElementInstanceTest extends ClientRestTest {
                     .startDate(b -> b.exists(true))
                     .endDate(b -> b.exists(true))
                     .elementInstanceScopeKey(4L))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
     // then
@@ -93,6 +94,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.exists(false)).endDate(b -> b.exists(false)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -112,6 +114,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.gt(now)).endDate(b -> b.gt(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -132,6 +135,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.lt(now)).endDate(b -> b.lt(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -151,6 +155,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.gte(now)).endDate(b -> b.gte(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -171,6 +176,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.lte(now)).endDate(b -> b.lte(now)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -192,6 +198,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.gte(startDate)).endDate(b -> b.lte(endDate)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -213,6 +220,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.gt(startDate)).endDate(b -> b.lt(endDate)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -234,6 +242,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.eq(startDate)).endDate(b -> b.eq(endDate)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -255,6 +264,7 @@ public class ElementInstanceTest extends ClientRestTest {
     client
         .newElementInstanceSearchRequest()
         .filter(f -> f.startDate(b -> b.neq(startDate)).endDate(b -> b.neq(endDate)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -277,6 +287,7 @@ public class ElementInstanceTest extends ClientRestTest {
         .newElementInstanceSearchRequest()
         .filter(
             f -> f.startDate(b -> b.in(startDate, endDate)).endDate(b -> b.in(startDate, endDate)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -320,6 +331,7 @@ public class ElementInstanceTest extends ClientRestTest {
                     .asc()
                     .endDate()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -356,7 +368,11 @@ public class ElementInstanceTest extends ClientRestTest {
             .processDefinitionKey("4"));
 
     // when
-    client.newElementInstanceGetRequest(elementInstanceKey).send().join();
+    client
+        .newElementInstanceGetRequest(elementInstanceKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

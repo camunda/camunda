@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
@@ -123,7 +124,11 @@ public class ClusterMultiplePartitionsBatchOperationIT {
             () -> {
               // and
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getEndDate()).isNotNull();
               assertThat(batch.getStatus()).isEqualTo(BatchOperationState.COMPLETED);
@@ -146,6 +151,7 @@ public class ClusterMultiplePartitionsBatchOperationIT {
         camundaClient
             .newBatchOperationItemsSearchRequest()
             .filter(f -> f.batchOperationKey(batchOperationKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();

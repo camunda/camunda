@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DecisionRequirements;
@@ -71,6 +72,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionDefinitionSearchRequest()
             .sort(b -> b.decisionDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -92,6 +94,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionDefinitionSearchRequest()
             .filter(f -> f.decisionDefinitionKey(decisionKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -123,6 +126,7 @@ class DecisionSearchTest {
                         .decisionRequirementsId(dmnDecisionRequirementsId)
                         .version(version)
                         .tenantId(tenantId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -142,6 +146,7 @@ class DecisionSearchTest {
             .newDecisionDefinitionSearchRequest()
             .filter(f -> f.decisionDefinitionId(dmnDecisionId))
             .sort(s -> s.version().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -155,7 +160,12 @@ class DecisionSearchTest {
   void shouldGetDecisionDefinitionXml() throws IOException {
     // when
     final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final var result = camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionGetXmlRequest(decisionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     final String expected =
@@ -175,7 +185,12 @@ class DecisionSearchTest {
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
-                () -> camundaClient.newDecisionDefinitionGetXmlRequest(decisionKey).send().join())
+                () ->
+                    camundaClient
+                        .newDecisionDefinitionGetXmlRequest(decisionKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
@@ -187,7 +202,12 @@ class DecisionSearchTest {
   void shouldGetDecisionDefinition() {
     // when
     final long decisionKey = DEPLOYED_DECISIONS.get(0).getDecisionKey();
-    final var result = camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join();
+    final var result =
+        camundaClient
+            .newDecisionDefinitionGetRequest(decisionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isEqualTo(toDecisionDefinition(DEPLOYED_DECISIONS.get(0)));
@@ -200,7 +220,12 @@ class DecisionSearchTest {
     final var problemException =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
-                () -> camundaClient.newDecisionDefinitionGetRequest(decisionKey).send().join())
+                () ->
+                    camundaClient
+                        .newDecisionDefinitionGetRequest(decisionKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(problemException.code()).isEqualTo(404);
@@ -211,7 +236,12 @@ class DecisionSearchTest {
   @Test
   void shouldRetrieveDecisionRequirements() {
     // when
-    final var result = camundaClient.newDecisionRequirementsSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(3);
@@ -228,6 +258,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsKey(decisionRequirementKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -244,7 +275,11 @@ class DecisionSearchTest {
         DEPLOYED_DECISION_REQUIREMENTS.get(0).getDecisionRequirementsKey();
 
     final var result =
-        camundaClient.newDecisionRequirementsGetXmlRequest(decisionRequirementKey).send().join();
+        camundaClient
+            .newDecisionRequirementsGetXmlRequest(decisionRequirementKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     final String expected =
@@ -268,6 +303,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsId(decisionRequirementId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -288,6 +324,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.decisionRequirementsName(decisionRequirementName))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -304,6 +341,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.tenantId("<default>"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -311,6 +349,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.tenantId("Test"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -327,6 +366,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .filter(f -> f.resourceName("decisions/decision_model_1.dmn"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -345,12 +385,14 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -370,12 +412,14 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -411,12 +455,14 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsName().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.decisionRequirementsName().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -451,12 +497,14 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.version().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .sort(s -> s.version().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -487,7 +535,12 @@ class DecisionSearchTest {
   @Test
   public void shouldValidatePagination() {
     final var result =
-        camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(1)).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(1);
     final var key = result.items().getFirst().getDecisionRequirementsKey();
     // apply searchAfter
@@ -495,6 +548,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -505,6 +559,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -520,6 +575,7 @@ class DecisionSearchTest {
               assertThat(
                       camundaClient
                           .newDecisionDefinitionSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items()
@@ -528,6 +584,7 @@ class DecisionSearchTest {
               assertThat(
                       camundaClient
                           .newDecisionRequirementsSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items()
@@ -560,7 +617,11 @@ class DecisionSearchTest {
     // when
     final long decisionRequirementsKey = DEPLOYED_DECISIONS.get(0).getDecisionRequirementsKey();
     final var result =
-        camundaClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+        camundaClient
+            .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.getDecisionRequirementsKey())
@@ -577,6 +638,7 @@ class DecisionSearchTest {
                 () ->
                     camundaClient
                         .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -590,10 +652,20 @@ class DecisionSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newDecisionRequirementsSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var resultWithLimit =
-        camundaClient.newDecisionRequirementsSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newDecisionRequirementsSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(resultWithLimit.items().size()).isEqualTo(2);
 
     final var thirdKey = resultAll.items().get(2).getDecisionRequirementsKey();
@@ -602,6 +674,7 @@ class DecisionSearchTest {
         camundaClient
             .newDecisionRequirementsSearchRequest()
             .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

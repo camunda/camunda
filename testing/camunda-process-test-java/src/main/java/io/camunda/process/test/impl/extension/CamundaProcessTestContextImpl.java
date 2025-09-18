@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.response.UserTask;
@@ -266,6 +267,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
               client
                   .newUserTaskSearchRequest()
                   .filter(userTaskSelector::applyFilter)
+                  .consistencyPolicy(ConsistencyPolicy.noWait())
                   .send()
                   .join()
                   .items()

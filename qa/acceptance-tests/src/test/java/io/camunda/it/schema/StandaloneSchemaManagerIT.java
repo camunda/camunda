@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import io.camunda.application.Profile;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -236,6 +237,7 @@ final class StandaloneSchemaManagerIT {
                   () ->
                       camundaClient
                           .newUserTaskSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items()
@@ -252,7 +254,11 @@ final class StandaloneSchemaManagerIT {
           .untilAsserted(
               () -> {
                 final var result =
-                    camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+                    camundaClient
+                        .newProcessInstanceGetRequest(processInstanceKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join();
                 assertThat(result.getEndDate()).isNotNull();
               });
     }

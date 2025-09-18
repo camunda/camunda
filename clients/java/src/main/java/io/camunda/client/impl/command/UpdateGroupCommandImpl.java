@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.response.UpdateGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateGroupResponseImpl;
 import io.camunda.client.protocol.rest.GroupUpdateRequest;
@@ -68,16 +67,13 @@ public class UpdateGroupCommandImpl implements UpdateGroupCommandStep1 {
   public CamundaFuture<UpdateGroupResponse> send() {
     ArgumentUtil.ensureNotNull("name", request.getName());
     ArgumentUtil.ensureNotNull("description", request.getDescription());
-    final HttpCamundaFuture<UpdateGroupResponse> result = new HttpCamundaFuture<>();
     final UpdateGroupResponseImpl response = new UpdateGroupResponseImpl();
 
-    httpClient.put(
+    return httpClient.put(
         "/groups/" + groupId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         GroupUpdateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

@@ -16,44 +16,31 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.BatchOperationGetRequest;
 import io.camunda.client.api.search.response.BatchOperation;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.BatchOperationResponse;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class BatchOperationGetRequestImpl implements BatchOperationGetRequest {
+public class BatchOperationGetRequestImpl extends AbstractFetchRequestImpl<BatchOperation>
+    implements BatchOperationGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final String batchOperationKey;
 
   public BatchOperationGetRequestImpl(final HttpClient httpClient, final String batchOperationKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.batchOperationKey = batchOperationKey;
   }
 
   @Override
-  public FinalCommandStep<BatchOperation> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<BatchOperation> send() {
-    final HttpCamundaFuture<BatchOperation> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/batch-operations/%s", batchOperationKey),
         httpRequestConfig.build(),
         BatchOperationResponse.class,
         SearchResponseMapper::toBatchOperationGetResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

@@ -31,7 +31,7 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldSendSearchGroupsByRoleRequest() {
-    client.newGroupsByRoleSearchRequest(ROLE_ID).send().join();
+    client.newGroupsByRoleSearchRequest(ROLE_ID).withDefaultConsistencyPolicy().send().join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl()).startsWith(REST_API_PATH + "/roles/" + ROLE_ID + "/groups/search");
@@ -41,7 +41,12 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
   @Test
   void shouldIncludedSortInSearchRequestBody() {
     // when
-    client.newGroupsByRoleSearchRequest(ROLE_ID).sort(s -> s.groupId().desc()).send().join();
+    client
+        .newGroupsByRoleSearchRequest(ROLE_ID)
+        .sort(s -> s.groupId().desc())
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest lastRequest = gatewayService.getLastRequest();
@@ -52,14 +57,26 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldFailOnEmptyRoleId() {
-    assertThatThrownBy(() -> client.newGroupsByRoleSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newGroupsByRoleSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
 
   @Test
   void shouldFailOnNullRoleId() {
-    assertThatThrownBy(() -> client.newGroupsByRoleSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newGroupsByRoleSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -67,7 +84,13 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionWhenFilteringFunctionIsPresentWhenSearchingGroupsByRole() {
     assertThatThrownBy(
-            () -> client.newGroupsByRoleSearchRequest(ROLE_ID).filter(fn -> {}).send().join())
+            () ->
+                client
+                    .newGroupsByRoleSearchRequest(ROLE_ID)
+                    .filter(fn -> {})
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(UnsupportedOperationException.class)
         .hasMessageContaining("This command does not support filtering");
   }
@@ -79,6 +102,7 @@ public class GroupsByRoleSearchRequestTest extends ClientRestTest {
                 client
                     .newGroupsByRoleSearchRequest(ROLE_ID)
                     .filter(new RoleGroupFilter() {})
+                    .withDefaultConsistencyPolicy()
                     .send()
                     .join())
         .isInstanceOf(UnsupportedOperationException.class)

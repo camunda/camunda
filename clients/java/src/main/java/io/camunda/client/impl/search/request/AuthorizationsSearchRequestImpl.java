@@ -21,56 +21,42 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.searchR
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.fetch.AuthorizationsSearchRequest;
 import io.camunda.client.api.search.filter.AuthorizationFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
+import io.camunda.client.api.search.request.AuthorizationsSearchRequest;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.AuthorizationSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.AuthorizationSearchQuery;
 import io.camunda.client.protocol.rest.AuthorizationSearchResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class AuthorizationsSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<AuthorizationSearchQuery>
+    extends AbstractSearchRequestImpl<AuthorizationSearchQuery, Authorization>
     implements AuthorizationsSearchRequest {
 
   private final AuthorizationSearchQuery request;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
 
   public AuthorizationsSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
-    httpRequestConfig = httpClient.newRequestConfig();
     request = new AuthorizationSearchQuery();
   }
 
   @Override
-  public FinalSearchRequestStep<Authorization> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<Authorization>> send() {
-    final HttpCamundaFuture<SearchResponse<Authorization>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/authorizations/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         AuthorizationSearchResult.class,
         SearchResponseMapper::toAuthorizationsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

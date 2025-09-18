@@ -25,7 +25,6 @@ import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCo
 import io.camunda.client.api.command.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.PublishMessageResponseImpl;
 import io.camunda.client.protocol.rest.MessagePublicationRequest;
@@ -143,15 +142,12 @@ public final class PublishMessageCommandImpl extends CommandWithVariables<Publis
   }
 
   private CamundaFuture<PublishMessageResponse> sendRestRequest() {
-    final HttpCamundaFuture<PublishMessageResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/messages/publication",
         objectMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
         MessagePublicationResult.class,
-        PublishMessageResponseImpl::new,
-        result);
-    return result;
+        PublishMessageResponseImpl::new);
   }
 
   private CamundaFuture<PublishMessageResponse> sendGrpcRequest() {

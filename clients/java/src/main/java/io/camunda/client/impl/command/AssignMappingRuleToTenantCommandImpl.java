@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1.Assig
 import io.camunda.client.api.command.AssignMappingRuleToTenantCommandStep1.AssignMappingRuleToTenantCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignMappingRuleToTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignMappingRuleToTenantResponseImpl;
 import java.time.Duration;
@@ -64,14 +63,8 @@ public final class AssignMappingRuleToTenantCommandImpl
 
   @Override
   public CamundaFuture<AssignMappingRuleToTenantResponse> send() {
-    final HttpCamundaFuture<AssignMappingRuleToTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/mapping-rules/%s", tenantId, mappingRuleId);
-    httpClient.put(
-        endpoint,
-        null,
-        httpRequestConfig.build(),
-        AssignMappingRuleToTenantResponseImpl::new,
-        result);
-    return result;
+    return httpClient.put(
+        endpoint, null, httpRequestConfig.build(), AssignMappingRuleToTenantResponseImpl::new);
   }
 }

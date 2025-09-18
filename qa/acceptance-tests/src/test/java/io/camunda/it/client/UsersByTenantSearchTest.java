@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.TenantUser;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -56,7 +57,12 @@ public class UsersByTenantSearchTest {
 
   @Test
   void shouldReturnUsersByTenant() {
-    final var users = camundaClient.newUsersByTenantSearchRequest(TENANT_ID).send().join();
+    final var users =
+        camundaClient
+            .newUsersByTenantSearchRequest(TENANT_ID)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(users.items().size()).isEqualTo(2);
     assertThat(users.items())
@@ -70,6 +76,7 @@ public class UsersByTenantSearchTest {
         camundaClient
             .newUsersByTenantSearchRequest(TENANT_ID)
             .sort(fn -> fn.username().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -82,7 +89,13 @@ public class UsersByTenantSearchTest {
   @Test
   void shouldRejectIfMissingTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByTenantSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUsersByTenantSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -90,7 +103,13 @@ public class UsersByTenantSearchTest {
   @Test
   void shouldRejectIfEmptyTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByTenantSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUsersByTenantSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -113,7 +132,11 @@ public class UsersByTenantSearchTest {
         .untilAsserted(
             () -> {
               final var users =
-                  camundaClient.newUsersByTenantSearchRequest(TENANT_ID).send().join();
+                  camundaClient
+                      .newUsersByTenantSearchRequest(TENANT_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(users.items().size()).isEqualTo(2);
             });
   }

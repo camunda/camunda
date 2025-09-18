@@ -13,6 +13,7 @@ import static org.assertj.core.api.Fail.fail;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.application.Profile;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.impl.search.response.UserTaskImpl;
 import io.camunda.client.protocol.rest.UserTaskResult;
@@ -79,7 +80,13 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
   @Test
   @Order(1)
   void shouldReturnReindexedTasks(final CamundaMigrator migrator) {
-    final var searchResponse = migrator.getCamundaClient().newUserTaskSearchRequest().send().join();
+    final var searchResponse =
+        migrator
+            .getCamundaClient()
+            .newUserTaskSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(searchResponse.page().totalItems()).isEqualTo(2);
     assertThat(searchResponse.items()).hasSize(2);
@@ -179,6 +186,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
                       .getCamundaClient()
                       .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 

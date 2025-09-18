@@ -30,6 +30,7 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Decision;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -178,6 +179,7 @@ public class OperateV1ApiPermissionsIT {
         adminClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -194,24 +196,57 @@ public class OperateV1ApiPermissionsIT {
     await()
         .untilAsserted(
             () ->
-                assertThat(adminClient.newVariableSearchRequest().send().join().items())
+                assertThat(
+                        adminClient
+                            .newVariableSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .describedAs("Wait until variable exists")
                     .hasSize(1));
     variableKey =
-        adminClient.newVariableSearchRequest().send().join().items().getFirst().getVariableKey();
+        adminClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getVariableKey();
     // create incident
     await()
         .untilAsserted(
             () ->
-                assertThat(adminClient.newJobSearchRequest().send().join().items())
+                assertThat(
+                        adminClient
+                            .newJobSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .describedAs("Wait until job exists")
                     .hasSize(1));
     final long jobKey =
-        adminClient.newJobSearchRequest().send().join().items().getFirst().getJobKey();
+        adminClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getJobKey();
     adminClient.newFailCommand(jobKey).retries(0).send().join();
     waitUntilProcessInstanceHasIncidents(adminClient, 1);
     incidentKey =
-        adminClient.newIncidentSearchRequest().send().join().items().getFirst().getIncidentKey();
+        adminClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .getFirst()
+            .getIncidentKey();
 
     // DMN
     final Decision decision =
@@ -223,6 +258,7 @@ public class OperateV1ApiPermissionsIT {
     decisionInstanceId =
         adminClient
             .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()

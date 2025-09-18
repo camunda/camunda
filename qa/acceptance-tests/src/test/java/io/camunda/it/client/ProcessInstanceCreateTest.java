@@ -13,6 +13,7 @@ import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -70,6 +71,7 @@ public class ProcessInstanceCreateTest {
     final var result =
         camundaClient
             .newProcessInstanceGetRequest(processInstanceCreation.getProcessInstanceKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -120,6 +122,7 @@ public class ProcessInstanceCreateTest {
     final var result =
         camundaClient
             .newProcessInstanceGetRequest(processInstanceCreation.getProcessInstanceKey())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
@@ -156,7 +157,11 @@ class BatchOperationAuthorizationIT {
 
     // then
     final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+        camundaClient
+            .newBatchOperationGetRequest(batchOperationKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(batchOperationResponse).isNotNull();
     assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(3);
   }
@@ -180,6 +185,7 @@ class BatchOperationAuthorizationIT {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -265,7 +271,11 @@ class BatchOperationAuthorizationIT {
 
     // when
     final var batchOperationResponse =
-        camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+        camundaClient
+            .newBatchOperationGetRequest(batchOperationKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(batchOperationResponse).isNotNull();
@@ -292,6 +302,7 @@ class BatchOperationAuthorizationIT {
         camundaClient
             .newBatchOperationSearchRequest()
             .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -345,7 +356,11 @@ class BatchOperationAuthorizationIT {
             () -> {
               int code = 0;
               try {
-                camundaRestictedClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                camundaRestictedClient
+                    .newBatchOperationGetRequest(batchOperationKey)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join();
               } catch (final ProblemException e) {
                 code = e.code();
               }
@@ -379,6 +394,7 @@ class BatchOperationAuthorizationIT {
                   camundaRestictedClient
                       .newBatchOperationSearchRequest()
                       .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(batchOperationResponse.items()).isEmpty();
@@ -396,7 +412,12 @@ class BatchOperationAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }
@@ -410,7 +431,11 @@ class BatchOperationAuthorizationIT {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getOperationsTotalCount()).isEqualTo(itemsCount);
             });
@@ -428,7 +453,11 @@ class BatchOperationAuthorizationIT {
         .untilAsserted(
             () -> {
               final var batch =
-                  camundaClient.newBatchOperationGetRequest(batchOperationKey).send().join();
+                  camundaClient
+                      .newBatchOperationGetRequest(batchOperationKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(batch).isNotNull();
               assertThat(batch.getStatus())
                   .withFailMessage(
@@ -453,6 +482,7 @@ class BatchOperationAuthorizationIT {
                 camundaClient
                     .newBatchOperationItemsSearchRequest()
                     .filter(f -> f.batchOperationKey(String.valueOf(batchOperationKey)))
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items(),

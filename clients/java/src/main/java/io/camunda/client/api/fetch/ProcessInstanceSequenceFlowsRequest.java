@@ -15,12 +15,8 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.search.filter.RoleFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
-import io.camunda.client.api.search.request.TypedSearchRequest;
-import io.camunda.client.api.search.response.Role;
-import io.camunda.client.api.search.sort.RoleSort;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
+import java.util.List;
 
-public interface RolesSearchRequest
-    extends TypedSearchRequest<RoleFilter, RoleSort, RolesSearchRequest>,
-        FinalSearchRequestStep<Role> {}
+public interface ProcessInstanceSequenceFlowsRequest
+    extends FinalFetchRequestStep<List<ProcessInstanceSequenceFlow>> {}

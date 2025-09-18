@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateTenantCommandStep1;
 import io.camunda.client.api.response.UpdateTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateTenantResponseImpl;
 import io.camunda.client.protocol.rest.TenantUpdateRequest;
@@ -65,16 +64,13 @@ public final class UpdateTenantCommandImpl implements UpdateTenantCommandStep1 {
 
   @Override
   public CamundaFuture<UpdateTenantResponse> send() {
-    final HttpCamundaFuture<UpdateTenantResponse> result = new HttpCamundaFuture<>();
     final UpdateTenantResponseImpl response = new UpdateTenantResponseImpl();
 
-    httpClient.put(
+    return httpClient.put(
         "/tenants/" + tenantId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantUpdateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

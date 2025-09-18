@@ -21,7 +21,6 @@ import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1.UnassignUserFromGroupCommandStep2;
 import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1.UnassignUserFromGroupCommandStep3;
 import io.camunda.client.api.response.UnassignUserFromGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UnassignUserFromGroupResponseImpl;
 import java.time.Duration;
@@ -66,12 +65,9 @@ public class UnassignUserFromGroupCommandImpl
   public CamundaFuture<UnassignUserFromGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
     ArgumentUtil.ensureNotNullNorEmpty("username", username);
-    final HttpCamundaFuture<UnassignUserFromGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete(
+    return httpClient.delete(
         "/groups/" + groupId + "/users/" + username,
         httpRequestConfig.build(),
-        UnassignUserFromGroupResponseImpl::new,
-        result);
-    return result;
+        UnassignUserFromGroupResponseImpl::new);
   }
 }

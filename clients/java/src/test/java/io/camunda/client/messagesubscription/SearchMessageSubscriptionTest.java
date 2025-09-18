@@ -40,7 +40,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
   @Test
   void shouldSearchWithEmptyQuery() {
     // When
-    client.newMessageSubscriptionSearchRequest().send().join();
+    client.newMessageSubscriptionSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // Then
     assertThat(RestGatewayService.getLastRequest()).isNotNull();
@@ -71,6 +71,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .messageName("message-name")
                     .correlationKey("correlation-key")
                     .tenantId("tenant-id"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -130,6 +131,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
                     .desc()
                     .tenantId()
                     .asc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -158,6 +160,7 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     client
         .newMessageSubscriptionSearchRequest()
         .page(p -> p.from(2).limit(3).before("beforeCursor").after("afterCursor"))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

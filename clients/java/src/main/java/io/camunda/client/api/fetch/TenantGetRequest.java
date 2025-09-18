@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.Tenant;
 
-public interface TenantGetRequest extends FinalCommandStep<Tenant> {}
+public interface TenantGetRequest extends FinalFetchRequestStep<Tenant> {}

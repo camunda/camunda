@@ -29,7 +29,7 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariables() {
     // when
-    client.newVariableSearchRequest().send().join();
+    client.newVariableSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -39,7 +39,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByValue() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.value("demo")).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.value("demo"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -49,7 +54,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByName() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.name("demo")).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.name("demo"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -59,7 +69,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByNameStringFilter() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.name(b -> b.in("this", "that"))).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.name(b -> b.in("this", "that")))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -69,7 +84,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByScopeKey() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.scopeKey(1L)).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.scopeKey(1L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -79,7 +99,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByProcessInstanceKey() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.processInstanceKey(1L)).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.processInstanceKey(1L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -93,6 +118,7 @@ public class SearchVariableTest extends ClientRestTest {
         .newVariableSearchRequest()
         .sort(s -> s.processInstanceKey().asc().variableKey())
         .filter(f -> f.processInstanceKey(b -> b.in(1L, 10L)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -108,7 +134,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByTenantId() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.tenantId("tenant1")).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.tenantId("tenant1"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -118,7 +149,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByIsTruncated() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.isTruncated(true)).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.isTruncated(true))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);
@@ -128,7 +164,12 @@ public class SearchVariableTest extends ClientRestTest {
   @Test
   void shouldSearchVariablesByVariableKey() {
     // when
-    client.newVariableSearchRequest().filter(f -> f.variableKey(1L)).send().join();
+    client
+        .newVariableSearchRequest()
+        .filter(f -> f.variableKey(1L))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final VariableSearchQuery request = gatewayService.getLastRequest(VariableSearchQuery.class);

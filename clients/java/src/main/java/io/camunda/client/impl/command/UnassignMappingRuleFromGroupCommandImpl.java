@@ -68,12 +68,10 @@ public class UnassignMappingRuleFromGroupCommandImpl
     ArgumentUtil.ensureNotNullNorEmpty("mappingRuleId", mappingRuleId);
     final HttpCamundaFuture<UnassignMappingRuleFromGroupResponse> result =
         new HttpCamundaFuture<>();
-    httpClient.delete(
+    return httpClient.delete(
         "/groups/" + groupId + "/mapping-rules/" + mappingRuleId,
         null,
         httpRequestConfig.build(),
-        UnassignMappingRuleFromGroupResponseImpl::new,
-        result);
-    return result;
+        UnassignMappingRuleFromGroupResponseImpl::new);
   }
 }

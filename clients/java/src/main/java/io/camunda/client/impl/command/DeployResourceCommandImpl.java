@@ -29,7 +29,6 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.impl.RetriableClientFutureImpl;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeploymentEventImpl;
 import io.camunda.client.protocol.rest.DeploymentResult;
@@ -246,15 +245,12 @@ public final class DeployResourceCommandImpl
   }
 
   private CamundaFuture<DeploymentEvent> sendRestRequest() {
-    final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
-    httpClient.postMultipart(
+    return httpClient.postMultipart(
         "/deployments",
         multipartEntityBuilder,
         httpRequestConfig.build(),
         DeploymentResult.class,
-        DeploymentEventImpl::new,
-        result);
-    return result;
+        DeploymentEventImpl::new);
   }
 
   private CamundaFuture<DeploymentEvent> sendGrpcRequest() {

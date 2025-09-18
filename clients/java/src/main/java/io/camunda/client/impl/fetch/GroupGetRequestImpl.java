@@ -16,44 +16,31 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.search.response.Group;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.GroupResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class GroupGetRequestImpl implements GroupGetRequest {
+public class GroupGetRequestImpl extends AbstractFetchRequestImpl<Group>
+    implements GroupGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final String groupId;
 
-  public GroupGetRequestImpl(HttpClient httpClient, String groupId) {
+  public GroupGetRequestImpl(final HttpClient httpClient, final String groupId) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    this.httpRequestConfig = httpClient.newRequestConfig();
     this.groupId = groupId;
   }
 
   @Override
-  public FinalCommandStep<Group> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<Group> send() {
-    final HttpCamundaFuture<Group> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/groups/%s", groupId),
         httpRequestConfig.build(),
         GroupResult.class,
         SearchResponseMapper::toGroupResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

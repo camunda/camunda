@@ -17,12 +17,14 @@ package io.camunda.client.impl;
 
 import com.google.protobuf.GeneratedMessage;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ClientStatusException;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.ClientCallStreamObserver;
 import io.grpc.stub.ClientResponseObserver;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -82,6 +84,11 @@ public class CamundaClientFutureImpl<ClientResponse, BrokerResponse>
     } catch (final TimeoutException e) {
       throw new ClientException("Timed out waiting on client response", e);
     }
+  }
+
+  @Override
+  public Optional<ConsistencyPolicy<ClientResponse>> getConsistencyPolicy() {
+    return Optional.empty();
   }
 
   @Override

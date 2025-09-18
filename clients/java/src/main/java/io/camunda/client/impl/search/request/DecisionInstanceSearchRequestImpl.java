@@ -23,36 +23,30 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.DecisionInstanceSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class DecisionInstanceSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<
-        io.camunda.client.protocol.rest.DecisionInstanceSearchQuery>
+    extends AbstractSearchRequestImpl<
+        io.camunda.client.protocol.rest.DecisionInstanceSearchQuery, DecisionInstance>
     implements DecisionInstanceSearchRequest {
 
   private final io.camunda.client.protocol.rest.DecisionInstanceSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public DecisionInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new io.camunda.client.protocol.rest.DecisionInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
   }
 
   @Override
@@ -96,21 +90,13 @@ public class DecisionInstanceSearchRequestImpl
   }
 
   @Override
-  public FinalSearchRequestStep<DecisionInstance> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<SearchResponse<DecisionInstance>> send() {
-    final HttpCamundaFuture<SearchResponse<DecisionInstance>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/decision-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         DecisionInstanceSearchQueryResult.class,
         resp -> SearchResponseMapper.toDecisionInstanceSearchResponse(resp, jsonMapper),
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

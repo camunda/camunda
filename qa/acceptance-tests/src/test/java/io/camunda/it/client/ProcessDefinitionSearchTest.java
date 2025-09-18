@@ -14,6 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.response.ProcessDefinition;
@@ -79,13 +80,19 @@ public class ProcessDefinitionSearchTest {
   @Test
   void shouldSearchByFromWithLimit() {
     // when
-    final var resultAll = camundaClient.newProcessDefinitionSearchRequest().send().join();
+    final var resultAll =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var thirdKey = resultAll.items().get(2).getProcessDefinitionKey();
 
     final var resultSearchFrom =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .page(p -> p.limit(2).from(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -102,6 +109,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -117,6 +125,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -126,6 +135,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var secondPage =
@@ -133,6 +143,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
             .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -152,6 +163,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -161,6 +173,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var secondPage =
@@ -168,6 +181,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -190,6 +204,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var secondPage =
@@ -197,6 +212,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(1).after(firstPage.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // when
@@ -205,6 +221,7 @@ public class ProcessDefinitionSearchTest {
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
             .page(p -> p.limit(2).before(secondPage.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -224,6 +241,7 @@ public class ProcessDefinitionSearchTest {
                     () ->
                         camundaClient
                             .newProcessDefinitionGetRequest(invalidProcessDefinitionKey)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join())
                 .isInstanceOf(ProblemException.class)
@@ -250,7 +268,11 @@ public class ProcessDefinitionSearchTest {
 
     // when
     final var result =
-        camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        camundaClient
+            .newProcessDefinitionGetRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isNotNull();
@@ -270,7 +292,12 @@ public class ProcessDefinitionSearchTest {
         DEPLOYED_PROCESSES.stream().map(Process::getBpmnProcessId).toList();
 
     // when
-    final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(expectedProcessDefinitionIds.size());
@@ -288,6 +315,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.isLatestVersion(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -320,6 +348,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.isLatestVersion(true).processDefinitionId("processA_ID"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -360,6 +389,7 @@ public class ProcessDefinitionSearchTest {
                       p.after(finalEndCursor);
                     }
                   })
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
       if (!result.items().isEmpty()) {
@@ -425,6 +455,7 @@ public class ProcessDefinitionSearchTest {
                       p.after(finalEndCursor);
                     }
                   })
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
       if (!result.items().isEmpty()) {
@@ -461,6 +492,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.processDefinitionId(processDefinitionId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -476,7 +508,12 @@ public class ProcessDefinitionSearchTest {
 
     // when
     final var result =
-        camundaClient.newProcessDefinitionSearchRequest().filter(f -> f.name(name)).send().join();
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .filter(f -> f.name(name))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(6);
@@ -493,6 +530,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.version(version))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -511,6 +549,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.resourceName(resourceName))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -529,6 +568,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.tenantId(tenantId))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -547,6 +587,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.versionTag(versionTag))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -565,6 +606,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.versionTag(versionTag))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -587,6 +629,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -603,12 +646,14 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -631,12 +676,14 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -656,9 +703,19 @@ public class ProcessDefinitionSearchTest {
   void shouldSortProcessDefinitionsByName() {
     // when
     final var resultAsc =
-        camundaClient.newProcessDefinitionSearchRequest().sort(s -> s.name().asc()).send().join();
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .sort(s -> s.name().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newProcessDefinitionSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var all = resultAsc.items().stream().map(ProcessDefinition::getName).toList();
     final var sortedAsc = all.stream().sorted(Comparator.naturalOrder()).toList();
@@ -678,12 +735,14 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.resourceName().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.resourceName().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -705,12 +764,14 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.version().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.version().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -732,12 +793,14 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.tenantId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessDefinitionSearchRequest()
             .sort(s -> s.tenantId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -755,7 +818,12 @@ public class ProcessDefinitionSearchTest {
   @Test
   public void shouldValidatePagination() {
     final var result =
-        camundaClient.newProcessDefinitionSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newProcessDefinitionSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getProcessDefinitionKey();
     // apply searchAfter
@@ -763,6 +831,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -773,6 +842,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -785,6 +855,7 @@ public class ProcessDefinitionSearchTest {
         camundaClient
             .newProcessDefinitionSearchRequest()
             .filter(f -> f.name("Process With Form"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -792,7 +863,11 @@ public class ProcessDefinitionSearchTest {
         resultProcess.items().stream().findFirst().get().getProcessDefinitionKey();
 
     final var resultForm =
-        camundaClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+        camundaClient
+            .newProcessDefinitionGetFormRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(resultForm.getFormId()).isEqualTo("test");
     assertThat(resultForm.getVersion()).isEqualTo(2L);

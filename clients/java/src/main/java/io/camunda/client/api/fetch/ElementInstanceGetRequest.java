@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.ElementInstance;
 
-public interface ElementInstanceGetRequest extends FinalCommandStep<ElementInstance> {}
+public interface ElementInstanceGetRequest extends FinalFetchRequestStep<ElementInstance> {}

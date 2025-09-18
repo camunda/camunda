@@ -21,7 +21,6 @@ import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1.UnassignGroupFromTenantCommandStep2;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1.UnassignGroupFromTenantCommandStep3;
 import io.camunda.client.api.response.UnassignGroupFromTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UnassignGroupFromTenantResponseImpl;
 import java.time.Duration;
@@ -66,10 +65,8 @@ public final class UnassignGroupFromTenantCommandImpl
   public CamundaFuture<UnassignGroupFromTenantResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("tenantId", tenantId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<UnassignGroupFromTenantResponse> result = new HttpCamundaFuture<>();
     final String endpoint = String.format("/tenants/%s/groups/%s", tenantId, groupId);
-    httpClient.delete(
-        endpoint, httpRequestConfig.build(), UnassignGroupFromTenantResponseImpl::new, result);
-    return result;
+    return httpClient.delete(
+        endpoint, httpRequestConfig.build(), UnassignGroupFromTenantResponseImpl::new);
   }
 }

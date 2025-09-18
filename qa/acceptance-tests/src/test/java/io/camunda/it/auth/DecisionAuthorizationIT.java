@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.qa.util.auth.Authenticated;
@@ -81,7 +82,12 @@ class DecisionAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final var decisionDefinitions =
-        userClient.newDecisionDefinitionSearchRequest().send().join().items();
+        userClient
+            .newDecisionDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
 
     // then
     assertThat(decisionDefinitions).hasSize(1);
@@ -99,7 +105,12 @@ class DecisionAuthorizationIT {
 
     // when
     final ThrowingCallable executeGet =
-        () -> userClient.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
+        () ->
+            userClient
+                .newDecisionDefinitionGetRequest(decisionDefinitionKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
 
     // then
     final var problemException =
@@ -120,7 +131,11 @@ class DecisionAuthorizationIT {
 
     // when
     final var decisionDefinition =
-        userClient.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
+        userClient
+            .newDecisionDefinitionGetRequest(decisionDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(decisionDefinition).isNotNull();
@@ -132,7 +147,12 @@ class DecisionAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final var decisionRequirements =
-        userClient.newDecisionRequirementsSearchRequest().send().join().items();
+        userClient
+            .newDecisionRequirementsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
 
     // then
     assertThat(decisionRequirements).hasSize(1);
@@ -150,7 +170,12 @@ class DecisionAuthorizationIT {
 
     // when
     final ThrowingCallable executeGet =
-        () -> userClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+        () ->
+            userClient
+                .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
 
     // then
     final var problemException =
@@ -171,7 +196,11 @@ class DecisionAuthorizationIT {
 
     // when
     final var decisionRequirements =
-        userClient.newDecisionRequirementsGetRequest(decisionRequirementsKey).send().join();
+        userClient
+            .newDecisionRequirementsGetRequest(decisionRequirementsKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(decisionRequirements).isNotNull();
@@ -184,6 +213,7 @@ class DecisionAuthorizationIT {
     return client
         .newDecisionDefinitionSearchRequest()
         .filter(f -> f.decisionDefinitionId(decisionDefinitionId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -196,6 +226,7 @@ class DecisionAuthorizationIT {
     return client
         .newDecisionRequirementsSearchRequest()
         .filter(f -> f.decisionRequirementsId(decisionRequirementsId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -219,7 +250,12 @@ class DecisionAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionDefinitionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionDefinitionSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }
@@ -231,7 +267,12 @@ class DecisionAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionRequirementsSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionRequirementsSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

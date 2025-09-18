@@ -10,6 +10,7 @@ package io.camunda.it.task;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.UserTaskState;
@@ -190,6 +191,7 @@ public class UserTaskIT {
                   client
                       .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceId))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -228,6 +230,7 @@ public class UserTaskIT {
         client
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "\"value\"")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -238,6 +241,7 @@ public class UserTaskIT {
         client
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("intVariable", "13")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -248,6 +252,7 @@ public class UserTaskIT {
         client
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("boolVariable", "true")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -261,6 +266,7 @@ public class UserTaskIT {
                 f ->
                     f.processInstanceVariables(
                         Map.of("bigVariable", "\"" + "a".repeat(8188) + "\"")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -271,6 +277,7 @@ public class UserTaskIT {
         client
             .newUserTaskSearchRequest()
             .filter(f -> f.processInstanceVariables(Map.of("stringVariable", "wrong-value")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();
@@ -336,6 +343,7 @@ public class UserTaskIT {
     return client
         .newUserTaskSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items();
@@ -393,6 +401,7 @@ public class UserTaskIT {
                     .newUserTaskSearchRequest()
                     .filter(
                         f -> f.processInstanceKey(processInstanceKey).state(UserTaskState.CREATED))
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items()
@@ -425,6 +434,7 @@ public class UserTaskIT {
                 !client
                     .newUserTaskSearchRequest()
                     .filter(filterConsumer)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
                     .send()
                     .join()
                     .items()

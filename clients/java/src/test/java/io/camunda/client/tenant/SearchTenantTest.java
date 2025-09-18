@@ -36,7 +36,7 @@ public class SearchTenantTest extends ClientRestTest {
     gatewayService.onTenantRequest(TENANT_ID, Instancio.create(TenantResult.class));
 
     // when
-    client.newTenantGetRequest(TENANT_ID).send().join();
+    client.newTenantGetRequest(TENANT_ID).withDefaultConsistencyPolicy().send().join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();
@@ -47,7 +47,8 @@ public class SearchTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnNullTenantId() {
     // when / then
-    assertThatThrownBy(() -> client.newTenantGetRequest(null).send().join())
+    assertThatThrownBy(
+            () -> client.newTenantGetRequest(null).withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }
@@ -55,7 +56,8 @@ public class SearchTenantTest extends ClientRestTest {
   @Test
   void shouldRaiseExceptionOnEmptyTenantId() {
     // when / then
-    assertThatThrownBy(() -> client.newTenantGetRequest("").send().join())
+    assertThatThrownBy(
+            () -> client.newTenantGetRequest("").withDefaultConsistencyPolicy().send().join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -68,6 +70,7 @@ public class SearchTenantTest extends ClientRestTest {
         .filter(fn -> fn.name("tenantName"))
         .sort(TenantSort::name)
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -85,6 +88,7 @@ public class SearchTenantTest extends ClientRestTest {
         .filter(fn -> fn.name("tenantName"))
         .sort(s -> s.name().desc())
         .page(fn -> fn.limit(5))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 

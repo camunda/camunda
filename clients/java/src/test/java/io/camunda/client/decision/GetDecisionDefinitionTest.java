@@ -37,7 +37,11 @@ public final class GetDecisionDefinitionTest extends ClientRestTest {
             .decisionRequirementsKey("3"));
 
     // when
-    client.newDecisionDefinitionGetRequest(decisionDefinitionKey).send().join();
+    client
+        .newDecisionDefinitionGetRequest(decisionDefinitionKey)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = gatewayService.getLastRequest();

@@ -17,6 +17,7 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.ElementInstance;
@@ -119,7 +120,13 @@ class IncidentPropagationTest {
   @Test
   void testIncidentsAreActive() {
     // incidents are updated by background task, PENDING state is changed on ACTIVE
-    final List<Incident> incidents = camundaClient.newIncidentSearchRequest().send().join().items();
+    final List<Incident> incidents =
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(incidents).hasSize(2);
     incidents.forEach(
         incident -> {
@@ -134,6 +141,7 @@ class IncidentPropagationTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(SERVICE_TASK_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -145,6 +153,7 @@ class IncidentPropagationTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(LAST_CALLED_TASK_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -159,6 +168,7 @@ class IncidentPropagationTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(CALLED_PROCESS_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -173,6 +183,7 @@ class IncidentPropagationTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(CALL_ACTIVITY_2_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -187,6 +198,7 @@ class IncidentPropagationTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(PARENT_PROCESS_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -201,6 +213,7 @@ class IncidentPropagationTest {
         camundaClient
             .newElementInstanceSearchRequest()
             .filter(f -> f.elementId(CALL_ACTIVITY_1_ID))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()

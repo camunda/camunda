@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.GroupDefinition;
 import io.camunda.qa.util.auth.Membership;
@@ -238,6 +239,7 @@ public class UserTaskRestrictionsIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(count);

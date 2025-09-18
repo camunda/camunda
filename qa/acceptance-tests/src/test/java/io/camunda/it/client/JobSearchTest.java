@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
@@ -61,6 +62,7 @@ public class JobSearchTest {
             .newJobSearchRequest()
             .filter(
                 f -> f.type("taskAExecutionListener").listenerEventType(ListenerEventType.START))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -92,6 +94,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.type("taskAExecutionListener").listenerEventType(ListenerEventType.END))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -104,6 +107,7 @@ public class JobSearchTest {
         camundaClient
             .newUserTaskSearchRequest()
             .filter(f -> f.state(UserTaskState.CREATED))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -121,6 +125,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.type("taskBTaskListener").listenerEventType(ListenerEventType.ASSIGNING))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -149,6 +154,7 @@ public class JobSearchTest {
                     f.type("taskBTaskListener")
                         .state(JobState.CREATED)
                         .listenerEventType(ListenerEventType.ASSIGNING))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -169,6 +175,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.type("taskCBpmn"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -187,6 +194,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.type(p -> p.eq("taskABpmn")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -196,7 +204,12 @@ public class JobSearchTest {
   @Test
   void shouldReturnAllJobsByDefault() {
     // given
-    final var result = camundaClient.newJobSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items())
         .hasSize(7)
@@ -240,6 +253,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.jobKey(taskABpmnJob.getJobKey()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -255,6 +269,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.type(o -> o.eq("taskABpmn")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -271,6 +286,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.worker(o -> o.eq("worker1")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -288,6 +304,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.state(o -> o.eq(JobState.COMPLETED)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -315,6 +332,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.kind(o -> o.eq(JobKind.EXECUTION_LISTENER)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -336,6 +354,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.listenerEventType(o -> o.eq(ListenerEventType.START)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -353,6 +372,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.processDefinitionId(o -> o.eq(taskABpmnJob.getProcessDefinitionId())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -371,6 +391,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.processDefinitionKey(o -> o.eq(taskABpmnJob.getProcessDefinitionKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -390,6 +411,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.processInstanceKey(o -> o.eq(taskABpmnJob.getProcessInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -408,6 +430,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.elementId(o -> o.eq(taskABpmnJob.getElementId())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -426,6 +449,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.elementInstanceKey(o -> o.eq(taskABpmnJob.getElementInstanceKey())))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -446,6 +470,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.tenantId(o -> o.eq(tenantId)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -466,6 +491,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.deadline(o -> o.eq(OffsetDateTime.parse(deadline))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -484,6 +510,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.deniedReason(o -> o.eq(deniedReason)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -502,6 +529,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.endTime(o -> o.eq(OffsetDateTime.parse(endTime))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -520,6 +548,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.errorCode(p -> p.eq(errorCode)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -538,6 +567,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.errorMessage(p -> p.eq(errorMessage)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -554,6 +584,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.hasFailedWithRetriesLeft(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -567,7 +598,12 @@ public class JobSearchTest {
 
     // when
     final var result =
-        camundaClient.newJobSearchRequest().filter(f -> f.isDenied(true)).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .filter(f -> f.isDenied(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(1);
@@ -584,6 +620,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .filter(f -> f.retries(o -> o.gte(retries)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -596,15 +633,31 @@ public class JobSearchTest {
   void shouldSortJobsByKey() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getJobKey)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.jobKey().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.jobKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.jobKey().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.jobKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -620,14 +673,30 @@ public class JobSearchTest {
   void shouldSortJobsByType() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getType)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.type().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.type().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.type().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.type().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -642,14 +711,30 @@ public class JobSearchTest {
   void shouldSortJobsByWorker() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getWorker)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.worker().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.worker().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.worker().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.worker().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -664,14 +749,30 @@ public class JobSearchTest {
   void shouldSortJobsByState() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getState)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.state().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.state().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.state().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.state().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -686,14 +787,30 @@ public class JobSearchTest {
   void shouldSortJobsByKind() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getKind)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.kind().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.kind().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.kind().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.kind().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getKind).filter(Objects::nonNull))
@@ -708,14 +825,30 @@ public class JobSearchTest {
   void shouldSortJobsByListenerEventType() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getListenerEventType)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.listenerEventType().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.listenerEventType().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.listenerEventType().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.listenerEventType().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -730,14 +863,30 @@ public class JobSearchTest {
   void shouldSortJobsByProcessDefinitionId() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getProcessDefinitionId)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.processDefinitionId().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.processDefinitionId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.processDefinitionId().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.processDefinitionId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -752,16 +901,28 @@ public class JobSearchTest {
   void shouldSortJobsByProcessDefinitionKey() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getProcessDefinitionKey)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.processDefinitionKey().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.processDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
         camundaClient
             .newJobSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -778,14 +939,30 @@ public class JobSearchTest {
   void shouldSortJobsByProcessInstanceKey() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getProcessInstanceKey)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.processInstanceKey().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.processInstanceKey().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.processInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -800,14 +977,30 @@ public class JobSearchTest {
   void shouldSortJobsByElementId() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getElementId)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.elementId().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.elementId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.elementId().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.elementId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getElementId).filter(Objects::nonNull))
@@ -822,14 +1015,30 @@ public class JobSearchTest {
   void shouldSortJobsByElementInstanceKey() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getElementInstanceKey)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.elementInstanceKey().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.elementInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.elementInstanceKey().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.elementInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -844,14 +1053,30 @@ public class JobSearchTest {
   void shouldSortJobsByTenantId() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getTenantId)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.tenantId().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.tenantId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.tenantId().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.tenantId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -866,14 +1091,30 @@ public class JobSearchTest {
   void shouldSortJobsByDeadline() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getDeadline)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.deadline().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.deadline().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.deadline().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.deadline().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getDeadline).filter(Objects::nonNull))
@@ -888,14 +1129,30 @@ public class JobSearchTest {
   void shouldSortJobsByDeniedReason() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getDeniedReason)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.deniedReason().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.deniedReason().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.deniedReason().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.deniedReason().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getDeniedReason).filter(Objects::nonNull))
@@ -910,14 +1167,30 @@ public class JobSearchTest {
   void shouldSortJobsByEndTime() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getEndTime)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.endTime().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.endTime().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.endTime().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.endTime().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getEndTime).filter(Objects::nonNull))
@@ -932,14 +1205,30 @@ public class JobSearchTest {
   void shouldSortJobsByErrorCode() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getErrorCode)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.errorCode().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.errorCode().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.errorCode().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.errorCode().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getErrorCode).filter(Objects::nonNull))
@@ -954,14 +1243,30 @@ public class JobSearchTest {
   void shouldSortJobsByErrorMessage() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getErrorMessage)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.errorMessage().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.errorMessage().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.errorMessage().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.errorMessage().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::getErrorMessage).filter(Objects::nonNull))
@@ -976,7 +1281,13 @@ public class JobSearchTest {
   void shouldSortJobsByHasFailedWithRetriesLeft() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::hasFailedWithRetriesLeft)
             .toList();
     // when
@@ -984,12 +1295,14 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .sort(s -> s.hasFailedWithRetriesLeft().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newJobSearchRequest()
             .sort(s -> s.hasFailedWithRetriesLeft().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1008,14 +1321,30 @@ public class JobSearchTest {
   void shouldSortJobsByIsDenied() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::isDenied)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.isDenied().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.isDenied().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.isDenied().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.isDenied().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items().stream().map(Job::isDenied).filter(Objects::nonNull))
@@ -1030,14 +1359,30 @@ public class JobSearchTest {
   void shouldSortJobsByRetries() {
     // given
     final var all =
-        camundaClient.newJobSearchRequest().send().join().items().stream()
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .stream()
             .map(Job::getRetries)
             .toList();
     // when
     final var resultAsc =
-        camundaClient.newJobSearchRequest().sort(s -> s.retries().asc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.retries().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newJobSearchRequest().sort(s -> s.retries().desc()).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .sort(s -> s.retries().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(resultAsc.items())
@@ -1055,6 +1400,7 @@ public class JobSearchTest {
         camundaClient
             .newJobSearchRequest()
             .sort(s -> s.jobKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -1064,7 +1410,13 @@ public class JobSearchTest {
     final int limit = 2;
 
     // when
-    final var result = camundaClient.newJobSearchRequest().page(p -> p.limit(limit)).send().join();
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .page(p -> p.limit(limit))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items()).hasSize(2);
@@ -1074,16 +1426,29 @@ public class JobSearchTest {
   @Test
   void shouldSearchAfterSecondItem() {
     // given
-    final var allJobs = camundaClient.newJobSearchRequest().send().join().items();
+    final var allJobs =
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     final var thirdJobKey = allJobs.get(2).getJobKey();
 
-    final var result = camundaClient.newJobSearchRequest().page(p -> p.limit(2)).send().join();
+    final var result =
+        camundaClient
+            .newJobSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // when
     final var resultSearchAfter =
         camundaClient
             .newJobSearchRequest()
             .page(p -> p.limit(1).after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1095,17 +1460,29 @@ public class JobSearchTest {
   @Test
   void shouldSearchBeforeSecondItem() {
     // given
-    final var allJobs = camundaClient.newJobSearchRequest().send().join().items();
+    final var allJobs =
+        camundaClient
+            .newJobSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     final var firstJobKey = allJobs.getFirst().getJobKey();
 
     final var result =
-        camundaClient.newJobSearchRequest().page(p -> p.limit(2).from(1)).send().join();
+        camundaClient
+            .newJobSearchRequest()
+            .page(p -> p.limit(2).from(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // when
     final var resultSearchBefore =
         camundaClient
             .newJobSearchRequest()
             .page(p -> p.limit(1).before(result.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1120,7 +1497,12 @@ public class JobSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newJobSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newJobSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.page().totalItems()).isEqualTo(expectedCount);
             });
   }
@@ -1135,6 +1517,7 @@ public class JobSearchTest {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.state(UserTaskState.CREATED))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(1);
@@ -1151,6 +1534,7 @@ public class JobSearchTest {
                   camundaClient
                       .newJobSearchRequest()
                       .filter(f -> f.type(o -> o.eq("taskCBpmn")).state(JobState.ERROR_THROWN))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.page().totalItems()).isEqualTo(1);

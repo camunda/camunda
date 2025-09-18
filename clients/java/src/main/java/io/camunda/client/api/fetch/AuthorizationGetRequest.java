@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.search.response.Authorization;
 
-public interface AuthorizationGetRequest extends FinalCommandStep<Authorization> {}
+public interface AuthorizationGetRequest extends FinalFetchRequestStep<Authorization> {}

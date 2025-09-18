@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -155,7 +156,13 @@ public class NoAuthNoSecondaryStorageTest {
 
   @Test
   public void shouldReturnForbiddenWhenQueryingWithNoSecondaryStorage() {
-    assertThatThrownBy(() -> camundaClient.newUsersSearchRequest().send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUsersSearchRequest()
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("This endpoint requires a secondary storage, but none is set")
         .hasMessageContaining(

@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.AssignUserTaskCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignUserTaskResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.UserTaskAssignmentRequest;
@@ -53,14 +52,11 @@ public final class AssignUserTaskCommandImpl implements AssignUserTaskCommandSte
 
   @Override
   public CamundaFuture<AssignUserTaskResponse> send() {
-    final HttpCamundaFuture<AssignUserTaskResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/user-tasks/" + userTaskKey + "/assignment",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
-        AssignUserTaskResponseImpl::new,
-        result);
-    return result;
+        AssignUserTaskResponseImpl::new);
   }
 
   @Override

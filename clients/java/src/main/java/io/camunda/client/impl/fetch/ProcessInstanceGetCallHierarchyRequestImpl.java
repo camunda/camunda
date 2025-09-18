@@ -18,45 +18,32 @@ package io.camunda.client.impl.fetch;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.search.response.ProcessInstanceCallHierarchyEntryResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ProcessInstanceCallHierarchyEntry;
-import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ProcessInstanceGetCallHierarchyRequestImpl
+    extends AbstractFetchRequestImpl<List<ProcessInstanceCallHierarchyEntryResponse>>
     implements ProcessInstanceGetCallHierarchyRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long processInstanceKey;
 
   public ProcessInstanceGetCallHierarchyRequestImpl(
       final HttpClient httpClient, final long processInstanceKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
     this.processInstanceKey = processInstanceKey;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public ProcessInstanceGetCallHierarchyRequest requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<List<ProcessInstanceCallHierarchyEntryResponse>> send() {
-    final HttpCamundaFuture<List<ProcessInstanceCallHierarchyEntryResponse>> result =
-        new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/process-instances/%d/call-hierarchy", processInstanceKey),
         httpRequestConfig.build(),
         ProcessInstanceCallHierarchyEntry[].class,
         SearchResponseMapper::toProcessInstanceCallHierarchyEntryResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

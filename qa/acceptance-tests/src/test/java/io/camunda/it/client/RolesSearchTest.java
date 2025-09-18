@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -40,7 +41,12 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnRoleFilteredByRoleName() {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.name(ROLE_NAME_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -51,7 +57,12 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnRolesFilteredById() {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.roleId(ROLE_ID_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -62,21 +73,36 @@ public class RolesSearchTest {
   @Test
   void searchShouldReturnEmptyListWhenSearchingForNonExistingRoleId() {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId("someRoleId")).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.roleId("someRoleId"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(roleSearchResponse.items()).isEmpty();
   }
 
   @Test
   void searchShouldReturnEmptyListWhenSearchingForNonExistingRoleName() {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.name("someRoleName")).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.name("someRoleName"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(roleSearchResponse.items()).isEmpty();
   }
 
   @Test
   void searchShouldReturnRolesSortedByName() {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().sort(s -> s.name().desc()).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .sort(s -> s.name().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSizeGreaterThanOrEqualTo(2)
@@ -93,7 +119,12 @@ public class RolesSearchTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(roleId).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(roleId);
               assertThat(role.getName()).isEqualTo(roleName);

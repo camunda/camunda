@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.Form;
@@ -96,7 +97,12 @@ class ProcessAuthorizationIT {
       @Authenticated(RESTRICTED) final CamundaClient userClient) {
     // when
     final var processDefinitions =
-        userClient.newProcessDefinitionSearchRequest().send().join().items();
+        userClient
+            .newProcessDefinitionSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
 
     // then
     assertThat(processDefinitions).hasSize(2);
@@ -113,7 +119,12 @@ class ProcessAuthorizationIT {
 
     // when
     final ThrowingCallable executeGet =
-        () -> userClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        () ->
+            userClient
+                .newProcessDefinitionGetRequest(processDefinitionKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send()
+                .join();
 
     // then
     final var problemException =
@@ -133,7 +144,11 @@ class ProcessAuthorizationIT {
 
     // when
     final var processDefinition =
-        userClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+        userClient
+            .newProcessDefinitionGetRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(processDefinition).isNotNull();
@@ -149,7 +164,11 @@ class ProcessAuthorizationIT {
 
     // when
     final var form =
-        userClient.newProcessDefinitionGetFormRequest(processDefinitionKey).send().join();
+        userClient
+            .newProcessDefinitionGetFormRequest(processDefinitionKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(form.getFormId()).isEqualTo("test");
@@ -160,6 +179,7 @@ class ProcessAuthorizationIT {
     return client
         .newProcessDefinitionSearchRequest()
         .filter(f -> f.processDefinitionId(processDefinitionId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -183,7 +203,12 @@ class ProcessAuthorizationIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newProcessDefinitionSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newProcessDefinitionSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
 
@@ -199,6 +224,7 @@ class ProcessAuthorizationIT {
               final Future<Form> resultFuture =
                   camundaClient
                       .newProcessDefinitionGetFormRequest(startFormProcessDefinitionKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send();
 
               assertThat(resultFuture).succeedsWithin(Duration.ofSeconds(10)).isNotNull();

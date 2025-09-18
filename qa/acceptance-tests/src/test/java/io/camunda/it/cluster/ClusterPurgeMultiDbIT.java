@@ -11,6 +11,7 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.ProblemDetail;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
@@ -73,7 +74,11 @@ public class ClusterPurgeMultiDbIT {
     assertThatEntityNotFound(
         () -> client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send());
     assertThatEntityNotFound(
-        () -> client.newProcessDefinitionGetRequest(processDefinitionKey).send());
+        () ->
+            client
+                .newProcessDefinitionGetRequest(processDefinitionKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send());
   }
 
   @Test
@@ -96,7 +101,12 @@ public class ClusterPurgeMultiDbIT {
     // THEN
     assertThatChangesAreApplied(planChangeResponse);
     assertThatEntityNotFound(() -> client.newCancelInstanceCommand(processInstanceKey).send());
-    assertThatEntityNotFound(() -> client.newProcessInstanceGetRequest(processInstanceKey).send());
+    assertThatEntityNotFound(
+        () ->
+            client
+                .newProcessInstanceGetRequest(processInstanceKey)
+                .consistencyPolicy(ConsistencyPolicy.noWait())
+                .send());
   }
 
   @Test
@@ -151,7 +161,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskSearchRequest().send();
+                  client
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchResponse::items)
@@ -174,7 +187,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskSearchRequest().send();
+                  client
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchResponse::items)
@@ -204,7 +220,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<SearchResponse<UserTask>> userTaskFuture =
-                  client.newUserTaskSearchRequest().send();
+                  client
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               Assertions.assertThat(userTaskFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(SearchResponse::items)
@@ -255,6 +274,7 @@ public class ClusterPurgeMultiDbIT {
                       .newElementInstanceSearchRequest()
                       .filter((f) -> f.processInstanceKey(processInstanceKey1))
                       .sort(sort -> sort.startDate().asc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -302,7 +322,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<ProcessInstance> processInstanceFuture =
-                  client.newProcessInstanceGetRequest(processInstanceKey).send();
+                  client
+                      .newProcessInstanceGetRequest(processInstanceKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               Assertions.assertThat(processInstanceFuture)
                   .succeedsWithin(Duration.ofSeconds(TIMEOUT))
                   .extracting(ProcessInstance::getState)
@@ -331,7 +354,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<?> futureRequest =
-                  client.newProcessDefinitionGetRequest(processDefinitionKey).send();
+                  client
+                      .newProcessDefinitionGetRequest(processDefinitionKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(TIMEOUT));
             });
     return processDefinitionKey;
@@ -350,7 +376,10 @@ public class ClusterPurgeMultiDbIT {
         .untilAsserted(
             () -> {
               final Future<?> futureRequest =
-                  client.newProcessInstanceGetRequest(processInstanceKey).send();
+                  client
+                      .newProcessInstanceGetRequest(processInstanceKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send();
               assertThat(futureRequest).succeedsWithin(Duration.ofSeconds(TIMEOUT));
             });
     return processInstanceKey;

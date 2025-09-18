@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Variable;
 import io.camunda.qa.util.auth.Authenticated;
@@ -75,7 +76,12 @@ public class VariableTenancyIT {
   public void shouldReturnAllVariablesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newVariableSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(10);
     assertThat(result.items().stream().map(Variable::getTenantId).collect(Collectors.toSet()))
@@ -86,7 +92,12 @@ public class VariableTenancyIT {
   public void shouldReturnOnlyTenantAVariables(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newVariableSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(5);
     assertThat(result.items().stream().map(Variable::getTenantId).collect(Collectors.toSet()))
@@ -96,7 +107,12 @@ public class VariableTenancyIT {
   @Test
   public void shouldNotReturnAnyVariables(@Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newVariableSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newVariableSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -108,7 +124,12 @@ public class VariableTenancyIT {
     // given
     final var variableKey = getVariableInstanceKey(adminClient, TENANT_A);
     // when
-    final var result = camundaClient.newVariableGetRequest(variableKey).send().join();
+    final var result =
+        camundaClient
+            .newVariableGetRequest(variableKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getVariableKey()).isEqualTo(variableKey);
@@ -125,7 +146,13 @@ public class VariableTenancyIT {
     // when
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
-            .isThrownBy(() -> camundaClient.newVariableGetRequest(variableKey).send().join())
+            .isThrownBy(
+                () ->
+                    camundaClient
+                        .newVariableGetRequest(variableKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
 
     // then
@@ -173,7 +200,13 @@ public class VariableTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              assertThat(camundaClient.newVariableSearchRequest().send().join().items())
+              assertThat(
+                      camundaClient
+                          .newVariableSearchRequest()
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
+                          .send()
+                          .join()
+                          .items())
                   .hasSize(10);
             });
   }
@@ -182,6 +215,7 @@ public class VariableTenancyIT {
     return camundaClient
         .newVariableSearchRequest()
         .filter(f -> f.tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

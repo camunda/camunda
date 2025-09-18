@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.search.response.DecisionInstance;
@@ -76,7 +77,12 @@ public class DecisionInstanceTenancyIT {
   public void shouldReturnAllDecisionInstancesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     // at the moment no tenant ids are returned with the response
@@ -89,7 +95,12 @@ public class DecisionInstanceTenancyIT {
   public void shouldReturnOnlyTenantADecisionInstance(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(
@@ -101,7 +112,12 @@ public class DecisionInstanceTenancyIT {
   public void shouldNotReturnAnyDecisionInstance(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newDecisionInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -116,6 +132,7 @@ public class DecisionInstanceTenancyIT {
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -125,6 +142,7 @@ public class DecisionInstanceTenancyIT {
     final var result =
         camundaClient
             .newDecisionInstanceGetRequest(decisionInstance.getDecisionInstanceId())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -144,6 +162,7 @@ public class DecisionInstanceTenancyIT {
             .newDecisionInstanceSearchRequest()
             .filter(f -> f.tenantId(TENANT_A))
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -156,6 +175,7 @@ public class DecisionInstanceTenancyIT {
                 () ->
                     camundaClient
                         .newDecisionInstanceGetRequest(decisionInstance.getDecisionInstanceId())
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -208,7 +228,12 @@ public class DecisionInstanceTenancyIT {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newDecisionInstanceSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newDecisionInstanceSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items().size()).isEqualTo(expectedCount);
             });
   }

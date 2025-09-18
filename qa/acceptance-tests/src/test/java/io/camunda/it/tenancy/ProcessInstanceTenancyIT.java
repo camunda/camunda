@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.qa.util.auth.Authenticated;
@@ -75,7 +76,12 @@ public class ProcessInstanceTenancyIT {
   public void shouldReturnAllProcessInstancesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(
@@ -87,7 +93,12 @@ public class ProcessInstanceTenancyIT {
   public void shouldReturnOnlyTenantAProcessInstances(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(
@@ -99,7 +110,12 @@ public class ProcessInstanceTenancyIT {
   public void shouldNotReturnAnyProcessInstances(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -111,7 +127,12 @@ public class ProcessInstanceTenancyIT {
     // given
     final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
-    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getProcessInstanceKey()).isEqualTo(processInstanceKey);
@@ -129,7 +150,12 @@ public class ProcessInstanceTenancyIT {
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
-                () -> camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join())
+                () ->
+                    camundaClient
+                        .newProcessInstanceGetRequest(processInstanceKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
@@ -180,6 +206,7 @@ public class ProcessInstanceTenancyIT {
                       camundaClient
                           .newProcessInstanceSearchRequest()
                           .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -192,6 +219,7 @@ public class ProcessInstanceTenancyIT {
     return camundaClient
         .newProcessInstanceSearchRequest()
         .filter(f -> f.processDefinitionId(processId).tenantId(tenantId))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

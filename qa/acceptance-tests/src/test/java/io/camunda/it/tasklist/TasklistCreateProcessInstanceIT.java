@@ -10,6 +10,7 @@ package io.camunda.it.tasklist;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
 import io.camunda.qa.util.cluster.TestRestTasklistClient.CreateProcessInstanceVariable;
@@ -103,6 +104,7 @@ public class TasklistCreateProcessInstanceIT {
                   camundaClient
                       .newProcessDefinitionSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items().size()).isEqualTo(1);
@@ -121,6 +123,7 @@ public class TasklistCreateProcessInstanceIT {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.processDefinitionId(processDefinitionId))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

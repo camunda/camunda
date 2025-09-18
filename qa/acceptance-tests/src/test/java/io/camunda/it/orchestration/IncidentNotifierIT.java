@@ -21,6 +21,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -200,7 +201,11 @@ public class IncidentNotifierIT {
   }
 
   private SearchResponse<Incident> getIncidents(final CamundaClient camundaClient) {
-    return camundaClient.newIncidentSearchRequest().send().join();
+    return camundaClient
+        .newIncidentSearchRequest()
+        .consistencyPolicy(ConsistencyPolicy.noWait())
+        .send()
+        .join();
   }
 
   private ProcessInstanceEvent generateIncident(final CamundaClient camundaClient) {

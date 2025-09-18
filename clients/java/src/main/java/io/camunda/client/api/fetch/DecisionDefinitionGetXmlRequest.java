@@ -15,6 +15,4 @@
  */
 package io.camunda.client.api.fetch;
 
-import io.camunda.client.api.command.FinalCommandStep;
-
-public interface DecisionDefinitionGetXmlRequest extends FinalCommandStep<String> {}
+public interface DecisionDefinitionGetXmlRequest extends FinalFetchRequestStep<String> {}

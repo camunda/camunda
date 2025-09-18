@@ -21,7 +21,6 @@ import io.camunda.client.api.command.AssignClientToGroupCommandStep1.AssignClien
 import io.camunda.client.api.command.AssignClientToGroupCommandStep1.AssignClientToGroupCommandStep3;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.AssignClientToGroupResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.AssignClientToGroupResponseImpl;
 import java.time.Duration;
@@ -66,13 +65,10 @@ public class AssignClientToGroupCommandImpl
   public CamundaFuture<AssignClientToGroupResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("clientId", clientId);
     ArgumentUtil.ensureNotNullNorEmpty("groupId", groupId);
-    final HttpCamundaFuture<AssignClientToGroupResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
+    return httpClient.put(
         "/groups/" + groupId + "/clients/" + clientId,
         null, // No request body needed
         httpRequestConfig.build(),
-        AssignClientToGroupResponseImpl::new,
-        result);
-    return result;
+        AssignClientToGroupResponseImpl::new);
   }
 }

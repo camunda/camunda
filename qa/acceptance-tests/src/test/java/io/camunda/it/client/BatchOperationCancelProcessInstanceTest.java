@@ -18,6 +18,7 @@ import static io.camunda.it.util.TestHelper.waitForScopedProcessInstancesToStart
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
@@ -113,6 +114,7 @@ public class BatchOperationCancelProcessInstanceTest {
         camundaClient
             .newBatchOperationItemsSearchRequest()
             .filter(f -> f.batchOperationKey(batchOperationKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var itemKeys = itemsObj.items().stream().map(BatchOperationItem::getItemKey).toList();

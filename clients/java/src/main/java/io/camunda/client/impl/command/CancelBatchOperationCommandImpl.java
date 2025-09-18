@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CancelBatchOperationStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CancelBatchOperationResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CancelBatchOperationResponseImpl;
 import java.time.Duration;
@@ -49,13 +48,10 @@ public final class CancelBatchOperationCommandImpl implements CancelBatchOperati
 
   @Override
   public CamundaFuture<CancelBatchOperationResponse> send() {
-    final HttpCamundaFuture<CancelBatchOperationResponse> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/batch-operations/" + batchOperationKey + "/cancellation",
         null,
         httpRequestConfig.build(),
-        CancelBatchOperationResponseImpl::new,
-        result);
-    return result;
+        CancelBatchOperationResponseImpl::new);
   }
 }

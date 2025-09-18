@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.response.ElementInstance;
@@ -76,7 +77,12 @@ public class ElementInstanceTenancyIT {
   public void shouldReturnAllElementInstancesWithTenantAccess(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(4);
     assertThat(
@@ -88,7 +94,12 @@ public class ElementInstanceTenancyIT {
   public void shouldReturnOnlyTenantAElementInstances(
       @Authenticated(USER1) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(2);
     assertThat(
@@ -100,7 +111,12 @@ public class ElementInstanceTenancyIT {
   public void shouldNotReturnAnyElementInstances(
       @Authenticated(USER2) final CamundaClient camundaClient) {
     // when
-    final var result = camundaClient.newElementInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result.items()).hasSize(0);
   }
@@ -112,7 +128,12 @@ public class ElementInstanceTenancyIT {
     // given
     final var elementInstanceKey = getElementInstanceKey(adminClient, PROCESS_ID, TENANT_A);
     // when
-    final var result = camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newElementInstanceGetRequest(elementInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     // then
     assertThat(result).isNotNull();
     assertThat(result.getElementInstanceKey()).isEqualTo(elementInstanceKey);
@@ -130,7 +151,12 @@ public class ElementInstanceTenancyIT {
     final var exception =
         assertThatExceptionOfType(ProblemException.class)
             .isThrownBy(
-                () -> camundaClient.newElementInstanceGetRequest(elementInstanceKey).send().join())
+                () ->
+                    camundaClient
+                        .newElementInstanceGetRequest(elementInstanceKey)
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
+                        .send()
+                        .join())
             .actual();
     // then
     assertThat(exception.getMessage()).startsWith("Failed with code 404");
@@ -181,6 +207,7 @@ public class ElementInstanceTenancyIT {
                       camundaClient
                           .newElementInstanceSearchRequest()
                           .filter(filter -> filter.processDefinitionId(PROCESS_ID))
+                          .consistencyPolicy(ConsistencyPolicy.noWait())
                           .send()
                           .join()
                           .items())
@@ -197,6 +224,7 @@ public class ElementInstanceTenancyIT {
                 f.processDefinitionId(processId)
                     .tenantId(tenantId)
                     .state(ElementInstanceState.ACTIVE))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()

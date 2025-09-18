@@ -10,6 +10,7 @@ package io.camunda.it.tasklist.compatibility;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.qa.util.auth.Authenticated;
@@ -309,6 +310,7 @@ public class CompatibilityTasklistUserTaskAuthorizationIT {
                   camundaClient
                       .newUserTaskSearchRequest()
                       .filter(f -> f.processInstanceKey(processInstanceKey))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(result.items()).hasSize(1);

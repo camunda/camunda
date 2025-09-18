@@ -11,6 +11,7 @@ import static io.camunda.it.migration.IdentityMigrationTestUtil.IDENTITY_CLIENT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
@@ -39,12 +40,22 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roles = client.newRolesSearchRequest().send().join();
+              final var roles =
+                  client
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .extracting(Role::getRoleId)
                   .contains("operate", "tasklist", "zeebe", "identity");
 
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("operate", "tasklist", "zeebe", "identity");
@@ -53,7 +64,8 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var roles = client.newRolesSearchRequest().send().join();
+    final var roles =
+        client.newRolesSearchRequest().consistencyPolicy(ConsistencyPolicy.noWait()).send().join();
     assertThat(roles.items())
         .extracting(Role::getRoleId, Role::getName)
         .contains(
@@ -62,7 +74,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             tuple("zeebe", "Zeebe"),
             tuple("identity", "Identity"));
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -189,12 +206,22 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roles = client.newRolesSearchRequest().send().join();
+              final var roles =
+                  client
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roles.items())
                   .extracting(Role::getRoleId)
                   .contains("operate", "tasklist", "zeebe", "identity");
 
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("operate", "tasklist", "zeebe", "identity");
@@ -203,7 +230,8 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var roles = client.newRolesSearchRequest().send().join();
+    final var roles =
+        client.newRolesSearchRequest().consistencyPolicy(ConsistencyPolicy.noWait()).send().join();
     assertThat(roles.items())
         .extracting(Role::getRoleId, Role::getName)
         .contains(
@@ -212,7 +240,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             tuple("zeebe", "Zeebe"),
             tuple("identity", "Identity"));
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -268,7 +301,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("groupa", "groupb");
@@ -277,7 +315,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -313,25 +356,54 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var users = client.newUsersByRoleSearchRequest("zeebe").send().join();
+              final var users =
+                  client
+                      .newUsersByRoleSearchRequest("zeebe")
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(users.items()).hasSize(2);
             });
 
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
-    final var zeebeUsers = client.newUsersByRoleSearchRequest("zeebe").send().join().items();
+    final var zeebeUsers =
+        client
+            .newUsersByRoleSearchRequest("zeebe")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(zeebeUsers)
         .extracting(RoleUser::getUsername)
         .containsExactlyInAnyOrder("user0@email.com", "user1@email.com");
-    final var operateUsers = client.newUsersByRoleSearchRequest("operate").send().join().items();
+    final var operateUsers =
+        client
+            .newUsersByRoleSearchRequest("operate")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(operateUsers)
         .extracting(RoleUser::getUsername)
         .containsExactlyInAnyOrder("user0@email.com");
-    final var tasklistUsers = client.newUsersByRoleSearchRequest("tasklist").send().join().items();
+    final var tasklistUsers =
+        client
+            .newUsersByRoleSearchRequest("tasklist")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(tasklistUsers)
         .extracting(RoleUser::getUsername)
         .containsExactlyInAnyOrder("user0@email.com");
-    final var identityUsers = client.newUsersByRoleSearchRequest("identity").send().join().items();
+    final var identityUsers =
+        client
+            .newUsersByRoleSearchRequest("identity")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(identityUsers)
         .extracting(RoleUser::getUsername)
         .containsExactlyInAnyOrder("user0@email.com");
@@ -347,13 +419,23 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("user0@email.com", "user1@email.com");
             });
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -392,7 +474,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var authorizations = client.newAuthorizationSearchRequest().send().join();
+              final var authorizations =
+                  client
+                      .newAuthorizationSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
                   .contains("migration-app");
@@ -401,7 +488,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var authorizations = client.newAuthorizationSearchRequest().send().join();
+    final var authorizations =
+        client
+            .newAuthorizationSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(authorizations.items())
         .extracting(
             Authorization::getOwnerId,
@@ -500,7 +592,12 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var tenants = client.newTenantsSearchRequest().send().join();
+              final var tenants =
+                  client
+                      .newTenantsSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(tenants.items())
                   .extracting(Tenant::getTenantId)
                   .contains("tenant1", "tenant2");
@@ -509,16 +606,32 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     // then
     assertThat(migration.getExitCode()).isEqualTo(0);
 
-    final var tenants = client.newTenantsSearchRequest().send().join().items();
+    final var tenants =
+        client
+            .newTenantsSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items();
     assertThat(tenants)
         .extracting(Tenant::getTenantId, Tenant::getName)
         .contains(tuple("tenant1", "tenant 1"), tuple("tenant2", "tenant 2"));
 
-    final var tenant1Users = client.newUsersByTenantSearchRequest("tenant1").send().join();
+    final var tenant1Users =
+        client
+            .newUsersByTenantSearchRequest("tenant1")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(tenant1Users.items())
         .extracting(TenantUser::getUsername)
         .containsExactlyInAnyOrder("user0");
-    final var tenant2Users = client.newUsersByTenantSearchRequest("tenant2").send().join();
+    final var tenant2Users =
+        client
+            .newUsersByTenantSearchRequest("tenant2")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(tenant2Users.items())
         .extracting(TenantUser::getUsername)
         .containsExactlyInAnyOrder("user1");

@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.OwnerType;
@@ -100,7 +101,12 @@ class RoleAuthorizationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
+              final var roleSearchResponse =
+                  adminClient
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
                   .containsAll(Arrays.asList(ADMIN, ROLE_ID_1, ROLE_ID_2));
             });
@@ -131,12 +137,22 @@ class RoleAuthorizationIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
+              final var roleSearchResponse =
+                  adminClient
+                      .newRolesSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
                   .contains(roleId);
             });
 
-    final Role role = adminClient.newRoleGetRequest(roleId).send().join();
+    final Role role =
+        adminClient
+            .newRoleGetRequest(roleId)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(role.getRoleId()).isEqualTo(roleId);
     assertThat(role.getName()).isEqualTo(name);
@@ -194,7 +210,12 @@ class RoleAuthorizationIT {
   @Test
   void getRoleByIdShouldReturnRoleIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var role = camundaClient.newRoleGetRequest(ROLE_ID_1).send().join();
+    final var role =
+        camundaClient
+            .newRoleGetRequest(ROLE_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(role.getRoleId()).isEqualTo(ROLE_ID_1);
   }
@@ -202,7 +223,13 @@ class RoleAuthorizationIT {
   @Test
   void getRoleByIdShouldReturnNotFoundIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest(ROLE_ID_1).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest(ROLE_ID_1)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("403: 'Forbidden'");
   }
@@ -211,7 +238,12 @@ class RoleAuthorizationIT {
   void getRoleByIdShouldReturnNotFoundForNonExistentRoleIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     assertThatThrownBy(
-            () -> camundaClient.newRoleGetRequest(Strings.newRandomValidIdentityId()).send().join())
+            () ->
+                camundaClient
+                    .newRoleGetRequest(Strings.newRandomValidIdentityId())
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("404: 'Not Found'");
   }
@@ -220,7 +252,12 @@ class RoleAuthorizationIT {
   void searchRolesShouldReturnRoleByIdIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.roleId(ROLE_ID_1)).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.roleId(ROLE_ID_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -232,7 +269,12 @@ class RoleAuthorizationIT {
   void searchRolesShouldReturnRoleByNameIfAuthorized(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
     final var roleSearchResponse =
-        camundaClient.newRolesSearchRequest().filter(fn -> fn.name(ROLE_NAME_1)).send().join();
+        camundaClient
+            .newRolesSearchRequest()
+            .filter(fn -> fn.name(ROLE_NAME_1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .hasSize(1)
@@ -243,7 +285,12 @@ class RoleAuthorizationIT {
   @Test
   void searchRolesShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
-    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
+    final var roleSearchResponse =
+        camundaClient
+            .newRolesSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(roleSearchResponse.items()).hasSize(0).map(Role::getName).isEmpty();
   }
 
@@ -277,6 +324,7 @@ class RoleAuthorizationIT {
                 assertThat(
                         adminClient
                             .newMappingRulesByRoleSearchRequest(roleId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -304,7 +352,12 @@ class RoleAuthorizationIT {
   @Test
   void searchShouldReturnAuthorizedRoles(
       @Authenticated(RESTRICTED_WITH_READ) final CamundaClient camundaClient) {
-    final var roleSearchResponse = camundaClient.newRolesSearchRequest().send().join();
+    final var roleSearchResponse =
+        camundaClient
+            .newRolesSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(roleSearchResponse.items())
         .map(Role::getName)
@@ -366,7 +419,11 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  adminClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items()).isEmpty();
             });
 
@@ -400,7 +457,12 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        adminClient.newRolesByTenantSearchRequest(tenantId).send().join().items())
+                        adminClient
+                            .newRolesByTenantSearchRequest(tenantId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .isEmpty());
   }
 
@@ -447,7 +509,13 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(adminClient.newRolesByGroupSearchRequest(groupId).send().join().items())
+                assertThat(
+                        adminClient
+                            .newRolesByGroupSearchRequest(groupId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .anyMatch(r -> roleId.equals(r.getRoleId())));
 
     adminClient.newDeleteRoleCommand(roleId).send().join();
@@ -471,7 +539,12 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () ->
                 assertThat(
-                        adminClient.newRolesByTenantSearchRequest(tenantId).send().join().items())
+                        adminClient
+                            .newRolesByTenantSearchRequest(tenantId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .anyMatch(r -> ROLE_ID_1.equals(r.getRoleId())));
   }
 
@@ -525,6 +598,7 @@ class RoleAuthorizationIT {
                 assertThat(
                         adminClient
                             .newRolesByGroupSearchRequest(mappingRuleId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join()
                             .items())
@@ -574,7 +648,13 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () ->
-                assertThat(adminClient.newRolesByGroupSearchRequest(groupId).send().join().items())
+                assertThat(
+                        adminClient
+                            .newRolesByGroupSearchRequest(groupId)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join()
+                            .items())
                     .isEmpty());
   }
 
@@ -609,7 +689,11 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  adminClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
                   .contains(clientId);
             });
@@ -649,7 +733,11 @@ class RoleAuthorizationIT {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> response =
-                  adminClient.newClientsByRoleSearchRequest(roleId).send().join();
+                  adminClient
+                      .newClientsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
                   .contains(clientId);
             });
@@ -662,7 +750,11 @@ class RoleAuthorizationIT {
   void searchClientsByRoleShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     final SearchResponse<Client> response =
-        camundaClient.newClientsByRoleSearchRequest(ROLE_ID_1).send().join();
+        camundaClient
+            .newClientsByRoleSearchRequest(ROLE_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(response.items()).isEmpty();
   }
 
@@ -687,7 +779,12 @@ class RoleAuthorizationIT {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var response = adminClient.newGroupsByRoleSearchRequest(roleId).send().join();
+              final var response =
+                  adminClient
+                      .newGroupsByRoleSearchRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(response.items()).anyMatch(g -> groupId.equals(g.getGroupId()));
             });
 
@@ -699,7 +796,11 @@ class RoleAuthorizationIT {
   void searchGroupsByRoleShouldReturnEmptyListIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     final SearchResponse<RoleGroup> response =
-        camundaClient.newGroupsByRoleSearchRequest(ROLE_ID_1).send().join();
+        camundaClient
+            .newGroupsByRoleSearchRequest(ROLE_ID_1)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(response.items()).isEmpty();
   }
 
@@ -728,13 +829,19 @@ class RoleAuthorizationIT {
               final var response =
                   adminClient
                       .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(response).isNotNull();
             });
 
     // when
-    final var roles = restrictedClient.newRolesSearchRequest().send().join();
+    final var roles =
+        restrictedClient
+            .newRolesSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(roles.items()).isEmpty();
@@ -767,13 +874,19 @@ class RoleAuthorizationIT {
               final var response =
                   adminClient
                       .newAuthorizationGetRequest(authorization.getAuthorizationKey())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(response).isNotNull();
             });
 
     // when
-    final var roles = restrictedClient.newRolesSearchRequest().send().join();
+    final var roles =
+        restrictedClient
+            .newRolesSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(roles.items()).isEmpty();

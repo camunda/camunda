@@ -21,7 +21,6 @@ import static io.camunda.client.api.search.request.SearchRequestBuilders.userTas
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.UserTaskFilter;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.request.UserTaskSearchRequest;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -32,44 +31,32 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.UserTaskSearchQuery;
 import io.camunda.client.protocol.rest.UserTaskSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class UserTaskSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<UserTaskSearchQuery>
+    extends AbstractSearchRequestImpl<UserTaskSearchQuery, UserTask>
     implements UserTaskSearchRequest {
 
   private final UserTaskSearchQuery request;
   private final JsonMapper jsonMapper;
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public UserTaskSearchRequestImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new UserTaskSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<UserTask> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public HttpCamundaFuture<SearchResponse<UserTask>> send() {
-    final HttpCamundaFuture<SearchResponse<UserTask>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/user-tasks/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         UserTaskSearchQueryResult.class,
         SearchResponseMapper::toUserTaskSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

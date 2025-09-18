@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.PinClockCommandStep1;
 import io.camunda.client.api.response.PinClockResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.PinClockResponseImpl;
 import io.camunda.client.protocol.rest.ClockPinRequest;
@@ -65,13 +64,7 @@ public class PinClockCommandImpl implements PinClockCommandStep1 {
 
   @Override
   public CamundaFuture<PinClockResponse> send() {
-    final HttpCamundaFuture<PinClockResponse> result = new HttpCamundaFuture<>();
-    httpClient.put(
-        "/clock",
-        jsonMapper.toJson(request),
-        httpRequestConfig.build(),
-        PinClockResponseImpl::new,
-        result);
-    return result;
+    return httpClient.put(
+        "/clock", jsonMapper.toJson(request), httpRequestConfig.build(), PinClockResponseImpl::new);
   }
 }

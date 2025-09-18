@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -43,7 +44,12 @@ public class TenantIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var tenant = camundaClient.newTenantGetRequest(tenantId).send().join();
+              final var tenant =
+                  camundaClient
+                      .newTenantGetRequest(tenantId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(tenant).isNotNull();
               assertThat(tenant.getTenantId()).isEqualTo(tenantId);
               assertThat(tenant.getName()).isEqualTo(name);
@@ -54,7 +60,13 @@ public class TenantIntegrationTest {
   @Test
   void shouldReturnNotFoundWhenGettingNonExistingTenant() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newTenantGetRequest("someTenantId").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantGetRequest("someTenantId")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
@@ -62,7 +74,13 @@ public class TenantIntegrationTest {
   @Test
   void shouldRejectGetTenantIfEmptyTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newTenantGetRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantGetRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be empty");
   }
@@ -70,7 +88,13 @@ public class TenantIntegrationTest {
   @Test
   void shouldRejectGetTenantIfNullTenantId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newTenantGetRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantGetRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("tenantId must not be null");
   }

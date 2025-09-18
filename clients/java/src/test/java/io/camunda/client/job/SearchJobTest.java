@@ -50,7 +50,7 @@ public class SearchJobTest extends ClientRestTest {
   @Test
   void shouldSearchJobs() {
     // when
-    client.newJobSearchRequest().send().join();
+    client.newJobSearchRequest().withDefaultConsistencyPolicy().send().join();
 
     // then
     assertThat(RestGatewayService.getLastRequest()).isNotNull();
@@ -90,6 +90,7 @@ public class SearchJobTest extends ClientRestTest {
                     .hasFailedWithRetriesLeft(true)
                     .isDenied(false)
                     .retries(f12 -> f12.eq(3)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -149,7 +150,12 @@ public class SearchJobTest extends ClientRestTest {
       mode = Mode.EXCLUDE)
   void shouldSearchJobWithState(final JobState state) {
     // when
-    client.newJobSearchRequest().filter(filter -> filter.state(f -> f.eq(state))).send().join();
+    client
+        .newJobSearchRequest()
+        .filter(filter -> filter.state(f -> f.eq(state)))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
@@ -167,7 +173,12 @@ public class SearchJobTest extends ClientRestTest {
       mode = Mode.EXCLUDE)
   void shouldSearchJobWithKind(final JobKind jobKind) {
     // when
-    client.newJobSearchRequest().filter(filter -> filter.kind(f -> f.eq(jobKind))).send().join();
+    client
+        .newJobSearchRequest()
+        .filter(filter -> filter.kind(f -> f.eq(jobKind)))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);
@@ -188,6 +199,7 @@ public class SearchJobTest extends ClientRestTest {
     client
         .newJobSearchRequest()
         .filter(filter -> filter.listenerEventType(f -> f.eq(listenerEventType)))
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -247,6 +259,7 @@ public class SearchJobTest extends ClientRestTest {
                     .asc()
                     .retries()
                     .desc())
+        .withDefaultConsistencyPolicy()
         .send()
         .join();
 
@@ -281,7 +294,12 @@ public class SearchJobTest extends ClientRestTest {
   @Test
   void shouldSearchJobWithFullPagination() {
     // when
-    client.newJobSearchRequest().page(p -> p.from(3).limit(5).before("b").after("a")).send().join();
+    client
+        .newJobSearchRequest()
+        .page(p -> p.from(3).limit(5).before("b").after("a"))
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final JobSearchQuery request = gatewayService.getLastRequest(JobSearchQuery.class);

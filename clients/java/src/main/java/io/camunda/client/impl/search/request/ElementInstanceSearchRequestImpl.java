@@ -23,55 +23,41 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
-import io.camunda.client.api.search.request.FinalSearchRequestStep;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.client.protocol.rest.ElementInstanceSearchQueryResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import org.apache.hc.client5.http.config.RequestConfig;
 
 public class ElementInstanceSearchRequestImpl
-    extends TypedSearchRequestPropertyProvider<ElementInstanceSearchQuery>
+    extends AbstractSearchRequestImpl<ElementInstanceSearchQuery, ElementInstance>
     implements ElementInstanceSearchRequest {
 
   private final HttpClient httpClient;
   private final JsonMapper jsonMapper;
   private final ElementInstanceSearchQuery request;
-  private final RequestConfig.Builder httpRequestConfig;
 
   public ElementInstanceSearchRequestImpl(
       final HttpClient httpClient, final JsonMapper jsonMapper) {
+    super(httpClient.newRequestConfig());
     request = new ElementInstanceSearchQuery();
     this.jsonMapper = jsonMapper;
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-  }
-
-  @Override
-  public FinalSearchRequestStep<ElementInstance> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<SearchResponse<ElementInstance>> send() {
-    final HttpCamundaFuture<SearchResponse<ElementInstance>> result = new HttpCamundaFuture<>();
-    httpClient.post(
+    return httpClient.post(
         "/element-instances/search",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ElementInstanceSearchQueryResult.class,
         SearchResponseMapper::toElementInstanceSearchResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

@@ -19,6 +19,7 @@ import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -125,6 +126,7 @@ public class TasklistV1ApiFormPermissionsIT {
                       .newUserTaskSearchRequest()
                       .filter(
                           t -> t.processInstanceKey(processInstanceEvent.getProcessInstanceKey()))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();
@@ -136,7 +138,12 @@ public class TasklistV1ApiFormPermissionsIT {
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var form = adminClient.newUserTaskGetFormRequest(taskKey).send().join();
+              final var form =
+                  adminClient
+                      .newUserTaskGetFormRequest(taskKey)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(form).describedAs("Wait until the form exists").isNotNull();
             });
     await()
@@ -148,6 +155,7 @@ public class TasklistV1ApiFormPermissionsIT {
                   adminClient
                       .newAuthorizationSearchRequest()
                       .filter(t -> t.ownerId(ADMIN_USERNAME))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join()
                       .items();

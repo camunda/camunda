@@ -30,7 +30,11 @@ public class ProcessInstanceStatisticsTest extends ClientRestTest {
   @Test
   void shouldGetProcessInstanceElementStatistics() {
     // when
-    client.newProcessInstanceElementStatisticsRequest(PROCESS_INSTANCE_KEY).send().join();
+    client
+        .newProcessInstanceElementStatisticsRequest(PROCESS_INSTANCE_KEY)
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();

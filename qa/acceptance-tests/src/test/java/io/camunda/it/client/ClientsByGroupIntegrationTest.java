@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -52,7 +53,11 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -90,7 +95,11 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items()).anyMatch(r -> clientId.equals(r.getClientId()));
             });
 
@@ -108,7 +117,11 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items()).noneMatch(r -> clientId.equals(r.getClientId()));
             });
   }
@@ -139,14 +152,24 @@ public class ClientsByGroupIntegrationTest {
   @Test
   void searchClientsShouldReturnEmptyListWhenSearchingForNonExistingGroupId() {
     final var clientsSearchResponse =
-        camundaClient.newClientsByGroupSearchRequest("someGroupId").send().join();
+        camundaClient
+            .newClientsByGroupSearchRequest("someGroupId")
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(clientsSearchResponse.items()).isEmpty();
   }
 
   @Test
   void shouldRejectClientsByGroupSearchIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newClientsByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newClientsByGroupSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -154,7 +177,13 @@ public class ClientsByGroupIntegrationTest {
   @Test
   void shouldRejectClientsByGroupSearchIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newClientsByGroupSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newClientsByGroupSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -186,7 +215,11 @@ public class ClientsByGroupIntegrationTest {
         .untilAsserted(
             () -> {
               final SearchResponse<Client> result =
-                  camundaClient.newClientsByGroupSearchRequest(GROUP_ID).send().join();
+                  camundaClient
+                      .newClientsByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items())
                   .map(Client::getClientId)
                   .contains(firstClientId, secondClientId);
@@ -225,6 +258,7 @@ public class ClientsByGroupIntegrationTest {
                   camundaClient
                       .newClientsByGroupSearchRequest(groupId)
                       .sort(fn -> fn.clientId().desc())
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
               assertThat(clients.items().size()).isEqualTo(2);

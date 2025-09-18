@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
@@ -222,6 +223,7 @@ public class ProcessMigrationIT {
     client
         .newIncidentSearchRequest()
         .filter(f -> f.processInstanceKey(processInstanceKey))
+        .consistencyPolicy(ConsistencyPolicy.noWait())
         .send()
         .join()
         .items()
@@ -241,7 +243,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var incidents =
-                  client.newIncidentSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newIncidentSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(incidents);
             });
   }
@@ -319,7 +327,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newElementInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newElementInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -333,7 +347,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newVariableSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newVariableSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -348,7 +368,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessDefinitionSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newProcessDefinitionSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -363,7 +389,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newProcessInstanceSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newProcessInstanceSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }
@@ -378,7 +410,13 @@ public class ProcessMigrationIT {
         .untilAsserted(
             () -> {
               final var result =
-                  client.newUserTaskSearchRequest().filter(filter).send().join().items();
+                  client
+                      .newUserTaskSearchRequest()
+                      .filter(filter)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join()
+                      .items();
               asserter.accept(result);
             });
   }

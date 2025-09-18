@@ -16,46 +16,32 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.RoleResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class RoleGetRequestImpl implements RoleGetRequest {
+public class RoleGetRequestImpl extends AbstractFetchRequestImpl<Role> implements RoleGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final String roleId;
 
   public RoleGetRequestImpl(final HttpClient httpClient, final String roleId) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.roleId = roleId;
-  }
-
-  @Override
-  public FinalCommandStep<Role> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<Role> send() {
     ArgumentUtil.ensureNotNullNorEmpty("roleId", roleId);
-    final HttpCamundaFuture<Role> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/roles/%s", roleId),
         httpRequestConfig.build(),
         RoleResult.class,
         SearchResponseMapper::toRoleResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

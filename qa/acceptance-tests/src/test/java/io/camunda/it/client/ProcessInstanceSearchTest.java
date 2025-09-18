@@ -23,6 +23,7 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
@@ -115,7 +116,12 @@ public class ProcessInstanceSearchTest {
     final long processDefinitionKey = processInstanceEvent.getProcessDefinitionKey();
 
     // when
-    final var result = camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isNotNull();
@@ -135,7 +141,11 @@ public class ProcessInstanceSearchTest {
   void testProcessInstanceWithIncident() {
     // when
     final var result =
-        camundaClient.newProcessInstanceGetRequest(processInstanceWithIncidentKey).send().join();
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceWithIncidentKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result).isNotNull();
@@ -155,6 +165,7 @@ public class ProcessInstanceSearchTest {
                     () ->
                         camundaClient
                             .newProcessInstanceGetRequest(invalidProcessInstanceKey)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
                             .send()
                             .join())
                 .isInstanceOf(ProblemException.class)
@@ -176,7 +187,12 @@ public class ProcessInstanceSearchTest {
     expectedBpmnProcessIds.add("child_process_v1");
 
     // when
-    final var result = camundaClient.newProcessInstanceSearchRequest().send().join();
+    final var result =
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.page().totalItems()).isEqualTo(expectedBpmnProcessIds.size());
@@ -195,6 +211,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(processInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -210,6 +227,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.parentProcessInstanceKey(key -> key.exists(false)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -230,6 +248,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -253,6 +272,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processInstanceKey(b -> b.notIn(processInstanceKeys)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -280,6 +300,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(b -> b.eq(bpmnProcessId)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -303,6 +324,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(b -> b.in("not-found", bpmnProcessId)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -328,6 +350,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId(b -> b.like(bpmnProcessId.replace("_", "?") + "*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -345,6 +368,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -361,6 +385,7 @@ public class ProcessInstanceSearchTest {
                         b ->
                             b.gt(startDate.minus(1, ChronoUnit.MILLIS))
                                 .lt(startDate.plus(1, ChronoUnit.MILLIS))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -377,6 +402,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.endDate(b -> b.exists(true)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -392,6 +418,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.endDate(b -> b.exists(false)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -407,6 +434,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .page(p -> p.limit(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -418,6 +446,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.startDate(b -> b.gte(startDate).lte(startDate)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -444,6 +473,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionKey(processDefinitionKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -456,7 +486,12 @@ public class ProcessInstanceSearchTest {
   void shouldQueryProcessInstancesByStateActive() {
     // when
     final var result =
-        camundaClient.newProcessInstanceSearchRequest().filter(f -> f.state(ACTIVE)).send().join();
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .filter(f -> f.state(ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(result.items().size()).isEqualTo(5);
@@ -476,6 +511,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.orFilters(List.of(f2 -> f2.state(ACTIVE))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -490,6 +526,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.orFilters(List.of(f2 -> f2.state(ACTIVE), f3 -> f3.hasIncident(true))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -506,6 +543,7 @@ public class ProcessInstanceSearchTest {
             .filter(
                 f ->
                     f.endDate(d -> d.exists(false)).orFilters(List.of(f2 -> f2.hasIncident(false))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -536,6 +574,7 @@ public class ProcessInstanceSearchTest {
                             List.of(
                                 f3 -> f3.state(ACTIVE).processDefinitionId("service_tasks_v1"),
                                 (f4 -> f4.state(ACTIVE).hasIncident(true)))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -557,6 +596,7 @@ public class ProcessInstanceSearchTest {
                         List.of(
                             f2 -> f2.state(TERMINATED),
                             f3 -> f3.processDefinitionId("non-existent"))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -576,6 +616,7 @@ public class ProcessInstanceSearchTest {
                         .orFilters(
                             List.of(
                                 f2 -> f2.state(ACTIVE), f3 -> f3.state(ACTIVE).hasIncident(true))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -595,6 +636,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.hasIncident(false)
                         .orFilters(List.of(f2 -> f2.state(ACTIVE).hasIncident(true))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -615,6 +657,7 @@ public class ProcessInstanceSearchTest {
                             f2 -> f2.state(ACTIVE),
                             f3 -> f3.state(ACTIVE),
                             f4 -> f4.state(ACTIVE))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -632,6 +675,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.state(ACTIVE)
                         .orFilters(List.of(f2 -> f2.state(COMPLETED), f3 -> f3.state(TERMINATED))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -646,6 +690,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.state(b -> b.like("ACT*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -667,6 +712,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.state(b -> b.neq(ProcessInstanceState.ACTIVE)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -686,6 +732,7 @@ public class ProcessInstanceSearchTest {
                   camundaClient
                       .newProcessInstanceSearchRequest()
                       .filter(f -> f.state(COMPLETED))
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
                       .send()
                       .join();
 
@@ -705,6 +752,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.hasIncident(true))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -729,6 +777,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.parentProcessInstanceKey(parentProcessInstanceKey))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -752,6 +801,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processDefinitionId().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -771,6 +821,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.variables(List.of(vf -> vf.name("xyz").value(v -> v.eq("\"bar\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -789,6 +840,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.variables(Map.of("xyz", "\"bar\"")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -813,6 +865,7 @@ public class ProcessInstanceSearchTest {
                         List.of(
                             vf -> vf.name("xyz").value(v -> v.like("\"ba*\"")),
                             vf -> vf.name("abc").value(v -> v.in("\"mnp\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -837,6 +890,7 @@ public class ProcessInstanceSearchTest {
                         List.of(
                             vf -> vf.name("xyz").value(v -> v.eq("\"bar\"")),
                             vf -> vf.name("abc").value(v -> v.in("\"foo\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -857,6 +911,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.variables(
                         List.of(vf -> vf.name("xyz").value(v -> v.in("\"foo\"", "\"bar\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -876,6 +931,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.variables(List.of(vf -> vf.name("xyz").value(v -> v.like("\"fo*\"")))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -896,6 +952,7 @@ public class ProcessInstanceSearchTest {
                     camundaClient
                         .newProcessInstanceSearchRequest()
                         .filter(f -> f.variables(Arrays.asList(vf -> vf.name("xyz"))))
+                        .consistencyPolicy(ConsistencyPolicy.noWait())
                         .send()
                         .join())
             .actual();
@@ -910,12 +967,14 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -929,12 +988,14 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processDefinitionName().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processDefinitionName().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -948,12 +1009,14 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.processDefinitionKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -967,12 +1030,14 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.parentProcessInstanceKey().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.parentElementInstanceKey().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -986,12 +1051,14 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.startDate().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     final var resultDesc =
         camundaClient
             .newProcessInstanceSearchRequest()
             .sort(s -> s.startDate().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1002,9 +1069,19 @@ public class ProcessInstanceSearchTest {
   void shouldSortProcessInstancesByState() {
     // when
     final var resultAsc =
-        camundaClient.newProcessInstanceSearchRequest().sort(s -> s.state().asc()).send().join();
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .sort(s -> s.state().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     final var resultDesc =
-        camundaClient.newProcessInstanceSearchRequest().sort(s -> s.state().desc()).send().join();
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .sort(s -> s.state().desc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertSorted(resultAsc, resultDesc, ProcessInstance::getState);
   }
@@ -1012,7 +1089,12 @@ public class ProcessInstanceSearchTest {
   @Test
   public void shouldValidateProcessInstancePagination() {
     final var result =
-        camundaClient.newProcessInstanceSearchRequest().page(p -> p.limit(2)).send().join();
+        camundaClient
+            .newProcessInstanceSearchRequest()
+            .page(p -> p.limit(2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
     assertThat(result.items().size()).isEqualTo(2);
     final var key = result.items().getFirst().getProcessInstanceKey();
     // apply searchAfter
@@ -1020,6 +1102,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .page(p -> p.after(result.page().endCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1030,6 +1113,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .page(p -> p.before(resultAfter.page().startCursor()))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(2);
@@ -1043,6 +1127,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.eq(INCIDENT_ERROR_MESSAGE_V1)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1058,6 +1143,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.neq(INCIDENT_ERROR_MESSAGE_V1)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1073,6 +1159,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.exists(true)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1090,6 +1177,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.exists(false)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1104,6 +1192,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.in(INCIDENT_ERROR_MESSAGE_V1, "foo")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1119,6 +1208,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.in("foo", "bar")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1136,6 +1226,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.like(expectedError)))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1156,6 +1247,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(b -> b.errorMessage(f -> f.like(expectedError).in("foo", "bar")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1180,6 +1272,7 @@ public class ProcessInstanceSearchTest {
           camundaClient
               .newProcessInstanceSearchRequest()
               .filter(f -> f.hasRetriesLeft(true))
+              .consistencyPolicy(ConsistencyPolicy.noWait())
               .send()
               .join();
 
@@ -1198,6 +1291,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     assertThat(result.items().size()).isEqualTo(1);
@@ -1211,6 +1305,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId("child_process_v1"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -1221,6 +1316,7 @@ public class ProcessInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceGetCallHierarchyRequest(childProcessInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1239,6 +1335,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.processDefinitionId("parent_process_v1"))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -1249,6 +1346,7 @@ public class ProcessInstanceSearchTest {
     final var result =
         camundaClient
             .newProcessInstanceGetCallHierarchyRequest(parentProcessInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1265,6 +1363,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .errorMessage(INCIDENT_ERROR_MESSAGE_V2))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -1280,6 +1379,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .errorMessage(INCIDENT_ERROR_MESSAGE_V1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -1295,6 +1395,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .errorMessage(f2 -> f2.like("Expected*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -1310,6 +1411,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .errorMessage(f2 -> f2.like("Failed*")))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -1327,6 +1429,7 @@ public class ProcessInstanceSearchTest {
                         List.of(
                             f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V1),
                             f2 -> f2.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
     // then
@@ -1343,6 +1446,7 @@ public class ProcessInstanceSearchTest {
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .errorMessage(
                             f2 -> f2.in(List.of("Other message", INCIDENT_ERROR_MESSAGE_V2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1358,6 +1462,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .orFilters(List.of(f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1378,6 +1483,7 @@ public class ProcessInstanceSearchTest {
                     f.errorMessage(INCIDENT_ERROR_MESSAGE_V2)
                         .orFilters(
                             List.of(f1 -> f1.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1398,6 +1504,7 @@ public class ProcessInstanceSearchTest {
                     f.errorMessage(INCIDENT_ERROR_MESSAGE_V1)
                         .orFilters(
                             List.of(f1 -> f1.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1413,6 +1520,7 @@ public class ProcessInstanceSearchTest {
                 f ->
                     f.incidentErrorHashCode(INCIDENT_ERROR_HASH_CODE_V2)
                         .orFilters(List.of(f1 -> f1.errorMessage(INCIDENT_ERROR_MESSAGE_V1))))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -1425,6 +1533,7 @@ public class ProcessInstanceSearchTest {
         camundaClient
             .newProcessInstanceSearchRequest()
             .filter(f -> f.incidentErrorHashCode(123456))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 

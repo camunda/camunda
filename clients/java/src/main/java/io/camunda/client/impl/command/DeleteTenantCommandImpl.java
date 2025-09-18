@@ -19,7 +19,6 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeleteTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.DeleteTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeleteTenantResponseImpl;
 import java.time.Duration;
@@ -50,9 +49,7 @@ public final class DeleteTenantCommandImpl implements DeleteTenantCommandStep1 {
 
   @Override
   public CamundaFuture<DeleteTenantResponse> send() {
-    final HttpCamundaFuture<DeleteTenantResponse> result = new HttpCamundaFuture<>();
-    httpClient.delete(
-        "/tenants/" + tenantId, httpRequestConfig.build(), DeleteTenantResponseImpl::new, result);
-    return result;
+    return httpClient.delete(
+        "/tenants/" + tenantId, httpRequestConfig.build(), DeleteTenantResponseImpl::new);
   }
 }

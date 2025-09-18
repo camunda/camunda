@@ -10,6 +10,7 @@ package io.camunda.it.client;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
@@ -76,7 +77,12 @@ public class UsageMetricsTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(camundaClient.newUsageMetricsRequest(startTime, endTime).send().join())
+                assertThat(
+                        camundaClient
+                            .newUsageMetricsRequest(startTime, endTime)
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join())
                     .satisfies(fnRequirements));
   }
 
@@ -159,7 +165,11 @@ public class UsageMetricsTest {
 
     // when
     final var actual =
-        adminClient.newUsageMetricsRequest(now.minusDays(1), now.plusDays(1)).send().join();
+        adminClient
+            .newUsageMetricsRequest(now.minusDays(1), now.plusDays(1))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(actual).isEqualTo(new UsageMetricsStatisticsImpl(7, 3, 2, 3, Map.of()));
@@ -175,6 +185,7 @@ public class UsageMetricsTest {
         adminClient
             .newUsageMetricsRequest(now.minusDays(1), now.plusDays(1))
             .withTenants(true)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -205,6 +216,7 @@ public class UsageMetricsTest {
         adminClient
             .newUsageMetricsRequest(now.minusDays(1), exportedTime)
             .withTenants(true)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -226,6 +238,7 @@ public class UsageMetricsTest {
             .newUsageMetricsRequest(now.minusDays(1), now.plusDays(1))
             .tenantId(TENANT_B)
             .withTenants(true)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join();
 
@@ -286,7 +299,12 @@ public class UsageMetricsTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items()).hasSize(5);
               userTaskKey =
                   result.items().stream()
@@ -310,7 +328,12 @@ public class UsageMetricsTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newUserTaskSearchRequest().send().join();
+              final var result =
+                  camundaClient
+                      .newUserTaskSearchRequest()
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(result.items()).hasSize(5);
               userTaskKey =
                   result.items().stream()
@@ -328,7 +351,12 @@ public class UsageMetricsTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(adminClient.newUserTaskSearchRequest().send().join())
+                assertThat(
+                        adminClient
+                            .newUserTaskSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join())
                     .satisfies(
                         result ->
                             assertThat(result.items().stream())
@@ -342,7 +370,12 @@ public class UsageMetricsTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () ->
-                assertThat(adminClient.newDecisionInstanceSearchRequest().send().join())
+                assertThat(
+                        adminClient
+                            .newDecisionInstanceSearchRequest()
+                            .consistencyPolicy(ConsistencyPolicy.noWait())
+                            .send()
+                            .join())
                     .satisfies(res -> assertThat(res.items()).hasSize(3)));
   }
 }

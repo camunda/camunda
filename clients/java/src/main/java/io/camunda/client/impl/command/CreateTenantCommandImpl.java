@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.CreateTenantResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateTenantResponseImpl;
 import io.camunda.client.protocol.rest.TenantCreateRequest;
@@ -69,15 +68,12 @@ public final class CreateTenantCommandImpl implements CreateTenantCommandStep1 {
   @Override
   public CamundaFuture<CreateTenantResponse> send() {
     ArgumentUtil.ensureNotNull("tenantId", request.getTenantId());
-    final HttpCamundaFuture<CreateTenantResponse> result = new HttpCamundaFuture<>();
     final CreateTenantResponseImpl response = new CreateTenantResponseImpl();
-    httpClient.post(
+    return httpClient.post(
         "/tenants",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         TenantCreateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }

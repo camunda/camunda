@@ -29,7 +29,7 @@ public class MappingRulesByRoleSearchRequestTest extends ClientRestTest {
   @Test
   void shouldSendSearchMappingsByRoleRequest() {
     final String roleId = "testRoleId";
-    client.newMappingRulesByRoleSearchRequest(roleId).send().join();
+    client.newMappingRulesByRoleSearchRequest(roleId).withDefaultConsistencyPolicy().send().join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getUrl())
@@ -40,7 +40,12 @@ public class MappingRulesByRoleSearchRequestTest extends ClientRestTest {
   @Test
   void shouldSendRequestWithSortByResourceType() {
     final String roleId = "testRoleId";
-    client.newMappingRulesByRoleSearchRequest(roleId).sort(s -> s.claimValue().asc()).send().join();
+    client
+        .newMappingRulesByRoleSearchRequest(roleId)
+        .sort(s -> s.claimValue().asc())
+        .withDefaultConsistencyPolicy()
+        .send()
+        .join();
 
     final LoggedRequest request = gatewayService.getLastRequest();
     assertThat(request.getBodyAsString())
@@ -49,14 +54,26 @@ public class MappingRulesByRoleSearchRequestTest extends ClientRestTest {
 
   @Test
   void shouldFailOnEmptyRoleId() {
-    assertThatThrownBy(() -> client.newMappingRulesByRoleSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newMappingRulesByRoleSearchRequest("")
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
 
   @Test
   void shouldFailOnNullRoleId() {
-    assertThatThrownBy(() -> client.newMappingRulesByRoleSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                client
+                    .newMappingRulesByRoleSearchRequest(null)
+                    .withDefaultConsistencyPolicy()
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }

@@ -16,44 +16,31 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.IncidentGetRequest;
 import io.camunda.client.api.search.response.Incident;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.IncidentResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class IncidentGetRequestImpl implements IncidentGetRequest {
+public class IncidentGetRequestImpl extends AbstractFetchRequestImpl<Incident>
+    implements IncidentGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long incidentKey;
 
   public IncidentGetRequestImpl(final HttpClient httpClient, final long incidentKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.incidentKey = incidentKey;
   }
 
   @Override
-  public FinalCommandStep<Incident> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<Incident> send() {
-    final HttpCamundaFuture<Incident> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/incidents/%d", incidentKey),
         httpRequestConfig.build(),
         IncidentResult.class,
         SearchResponseMapper::toIncidentGetResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

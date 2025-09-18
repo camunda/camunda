@@ -18,6 +18,7 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.IncidentState;
@@ -71,7 +72,13 @@ public class IncidentSimpleResolveTest {
 
     camundaClient.newUpdateRetriesCommand(jobKey).retries(1).send().join();
     final Incident incident =
-        camundaClient.newIncidentSearchRequest().send().join().items().getFirst();
+        camundaClient
+            .newIncidentSearchRequest()
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join()
+            .items()
+            .getFirst();
     camundaClient.newResolveIncidentCommand(incident.getIncidentKey()).send().join();
 
     waitUntilIncidentIsResolvedOnProcessInstance(camundaClient, 1);
@@ -93,6 +100,7 @@ public class IncidentSimpleResolveTest {
             .filter(f -> f.elementId(SERVICE_TASK_ID))
             .page(p -> p.limit(100))
             .sort(s -> s.elementId().asc())
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items()
@@ -108,7 +116,11 @@ public class IncidentSimpleResolveTest {
   public void testProcessInstanceWithoutIncident() {
     // when
     final ProcessInstance processInstance =
-        camundaClient.newProcessInstanceGetRequest(processInstanceKey).send().join();
+        camundaClient
+            .newProcessInstanceGetRequest(processInstanceKey)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     // then
     assertThat(processInstance).isNotNull();
@@ -123,6 +135,7 @@ public class IncidentSimpleResolveTest {
         camundaClient
             .newIncidentSearchRequest()
             .filter(fn -> fn.state(IncidentState.ACTIVE))
+            .consistencyPolicy(ConsistencyPolicy.noWait())
             .send()
             .join()
             .items();

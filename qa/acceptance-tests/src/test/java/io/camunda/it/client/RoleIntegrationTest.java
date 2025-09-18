@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
@@ -83,7 +84,13 @@ public class RoleIntegrationTest {
   @Test
   void shouldRejectCreationIfMissingRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -91,7 +98,13 @@ public class RoleIntegrationTest {
   @Test
   void shouldRejectCreationIfEmptyRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
@@ -113,7 +126,13 @@ public class RoleIntegrationTest {
   @Test
   void shouldReturnNotFoundWhenGetRoleDoesNotExist() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("someRoleId").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest("someRoleId")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining("Role with id 'someRoleId' not found");
@@ -122,7 +141,13 @@ public class RoleIntegrationTest {
   @Test
   void shouldRejectGetRoleIfNullRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be null");
   }
@@ -130,7 +155,13 @@ public class RoleIntegrationTest {
   @Test
   void shouldRejectGetRoleIfEmptyRoleId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newRoleGetRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newRoleGetRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("roleId must not be empty");
   }
@@ -154,7 +185,13 @@ public class RoleIntegrationTest {
     Awaitility.await("Role is deleted")
         .untilAsserted(
             () ->
-                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
+                assertThatThrownBy(
+                        () ->
+                            camundaClient
+                                .newRoleGetRequest(roleId)
+                                .consistencyPolicy(ConsistencyPolicy.noWait())
+                                .send()
+                                .join())
                     .isInstanceOf(ProblemException.class)
                     .hasMessageContaining("Failed with code 404: 'Not Found'"));
   }
@@ -231,7 +268,13 @@ public class RoleIntegrationTest {
     Awaitility.await("Role is deleted")
         .untilAsserted(
             () ->
-                assertThatThrownBy(() -> camundaClient.newRoleGetRequest(roleId).send().join())
+                assertThatThrownBy(
+                        () ->
+                            camundaClient
+                                .newRoleGetRequest(roleId)
+                                .consistencyPolicy(ConsistencyPolicy.noWait())
+                                .send()
+                                .join())
                     .isInstanceOf(ProblemException.class)
                     .hasMessageContaining("Failed with code 404: 'Not Found'"));
 
@@ -289,7 +332,12 @@ public class RoleIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(roleId).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(roleId);
               assertThat(role.getName()).isEqualTo(updatedName);
@@ -322,7 +370,12 @@ public class RoleIntegrationTest {
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
-              final var role = camundaClient.newRoleGetRequest(roleId).send().join();
+              final var role =
+                  camundaClient
+                      .newRoleGetRequest(roleId)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(role).isNotNull();
               assertThat(role.getRoleId()).isEqualTo(roleId);
               assertThat(role.getName()).isEqualTo(roleName);

@@ -16,25 +16,22 @@
 package io.camunda.client.impl.statistics.request;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.statistics.request.UsageMetricsStatisticsRequest;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
-import io.camunda.client.impl.http.HttpCamundaFuture;
+import io.camunda.client.impl.fetch.AbstractFetchRequestImpl;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.statistics.response.StatisticsResponseMapper;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
-import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class UsageMetricsStatisticsRequestImpl implements UsageMetricsStatisticsRequest {
+public class UsageMetricsStatisticsRequestImpl
+    extends AbstractFetchRequestImpl<UsageMetricsStatistics>
+    implements UsageMetricsStatisticsRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final OffsetDateTime startTime;
   private final OffsetDateTime endTime;
   private String tenantId;
@@ -42,21 +39,14 @@ public class UsageMetricsStatisticsRequestImpl implements UsageMetricsStatistics
 
   public UsageMetricsStatisticsRequestImpl(
       final HttpClient httpClient, final OffsetDateTime startTime, final OffsetDateTime endTime) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.startTime = startTime;
     this.endTime = endTime;
   }
 
   @Override
-  public FinalCommandStep<UsageMetricsStatistics> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
-  }
-
-  @Override
   public CamundaFuture<UsageMetricsStatistics> send() {
-    final HttpCamundaFuture<UsageMetricsStatistics> result = new HttpCamundaFuture<>();
     final Map<String, String> queryParams = new HashMap<>();
     queryParams.put("startTime", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(startTime));
     queryParams.put("endTime", DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(endTime));
@@ -66,14 +56,13 @@ public class UsageMetricsStatisticsRequestImpl implements UsageMetricsStatistics
     if (tenantId != null) {
       queryParams.put("tenantId", tenantId);
     }
-    httpClient.get(
+    return httpClient.get(
         "/system/usage-metrics",
         queryParams,
         httpRequestConfig.build(),
         UsageMetricsResponse.class,
         StatisticsResponseMapper::toUsageMetricsResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 
   @Override

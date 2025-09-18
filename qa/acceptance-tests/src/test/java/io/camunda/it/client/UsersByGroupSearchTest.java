@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.ConsistencyPolicy;
 import io.camunda.client.api.search.response.GroupUser;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
@@ -47,7 +48,12 @@ public class UsersByGroupSearchTest {
 
   @Test
   void shouldReturnUsersByGroup() {
-    final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
+    final var users =
+        camundaClient
+            .newUsersByGroupSearchRequest(GROUP_ID)
+            .consistencyPolicy(ConsistencyPolicy.noWait())
+            .send()
+            .join();
 
     assertThat(users.items().size()).isEqualTo(2);
     assertThat(users.items())
@@ -58,7 +64,13 @@ public class UsersByGroupSearchTest {
   @Test
   void shouldRejectIfMissingGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByGroupSearchRequest(null).send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUsersByGroupSearchRequest(null)
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be null");
   }
@@ -66,7 +78,13 @@ public class UsersByGroupSearchTest {
   @Test
   void shouldRejectIfEmptyGroupId() {
     // when / then
-    assertThatThrownBy(() -> camundaClient.newUsersByGroupSearchRequest("").send().join())
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUsersByGroupSearchRequest("")
+                    .consistencyPolicy(ConsistencyPolicy.noWait())
+                    .send()
+                    .join())
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("groupId must not be empty");
   }
@@ -96,7 +114,12 @@ public class UsersByGroupSearchTest {
         .ignoreExceptions() // Ignore exceptions and continue retrying
         .untilAsserted(
             () -> {
-              final var users = camundaClient.newUsersByGroupSearchRequest(GROUP_ID).send().join();
+              final var users =
+                  camundaClient
+                      .newUsersByGroupSearchRequest(GROUP_ID)
+                      .consistencyPolicy(ConsistencyPolicy.noWait())
+                      .send()
+                      .join();
               assertThat(users.items().size()).isEqualTo(2);
             });
   }

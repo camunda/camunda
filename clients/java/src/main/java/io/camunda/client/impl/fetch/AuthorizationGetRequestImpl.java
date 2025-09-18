@@ -16,46 +16,33 @@
 package io.camunda.client.impl.fetch;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.fetch.AuthorizationGetRequest;
 import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.impl.command.ArgumentUtil;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.search.response.SearchResponseMapper;
 import io.camunda.client.protocol.rest.AuthorizationResult;
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
-import org.apache.hc.client5.http.config.RequestConfig;
 
-public class AuthorizationGetRequestImpl implements AuthorizationGetRequest {
+public class AuthorizationGetRequestImpl extends AbstractFetchRequestImpl<Authorization>
+    implements AuthorizationGetRequest {
 
   private final HttpClient httpClient;
-  private final RequestConfig.Builder httpRequestConfig;
   private final long authorizationKey;
 
   public AuthorizationGetRequestImpl(final HttpClient httpClient, final long authorizationKey) {
+    super(httpClient.newRequestConfig());
     this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
     this.authorizationKey = authorizationKey;
-  }
-
-  @Override
-  public FinalCommandStep<Authorization> requestTimeout(final Duration requestTimeout) {
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-    return this;
   }
 
   @Override
   public CamundaFuture<Authorization> send() {
     ArgumentUtil.ensureGreaterThan("authorizationKey", authorizationKey, 0);
-    final HttpCamundaFuture<Authorization> result = new HttpCamundaFuture<>();
-    httpClient.get(
+    return httpClient.get(
         String.format("/authorizations/%d", authorizationKey),
         httpRequestConfig.build(),
         AuthorizationResult.class,
         SearchResponseMapper::toAuthorizationResponse,
-        result);
-    return result;
+        consistencyPolicy);
   }
 }

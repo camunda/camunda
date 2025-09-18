@@ -20,7 +20,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.UpdateRoleCommandStep1;
 import io.camunda.client.api.response.UpdateRoleResponse;
-import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.UpdateRoleResponseImpl;
 import io.camunda.client.protocol.rest.RoleUpdateRequest;
@@ -67,16 +66,13 @@ public class UpdateRoleCommandImpl implements UpdateRoleCommandStep1 {
   public CamundaFuture<UpdateRoleResponse> send() {
     ArgumentUtil.ensureNotNullNorEmpty("name", request.getName());
     ArgumentUtil.ensureNotNull("description", request.getDescription());
-    final HttpCamundaFuture<UpdateRoleResponse> result = new HttpCamundaFuture<>();
     final UpdateRoleResponseImpl response = new UpdateRoleResponseImpl();
 
-    httpClient.put(
+    return httpClient.put(
         "/roles/" + roleId,
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         RoleUpdateResult.class,
-        response::setResponse,
-        result);
-    return result;
+        response::setResponse);
   }
 }
