@@ -16,10 +16,10 @@ import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.tenant.TenantAwareElasticsearchClient;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import java.io.IOException;
+import java.util.Optional;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -48,8 +48,7 @@ public class EventReader implements io.camunda.operate.webapp.reader.EventReader
   }
 
   @Override
-  public EventEntity getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
-    final EventEntity eventEntity;
+  public Optional<EventEntity> getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId) {
     // request corresponding event and build cumulative metadata
     final QueryBuilder query =
         constantScoreQuery(termQuery(EventTemplate.FLOW_NODE_INSTANCE_KEY, flowNodeInstanceId));
@@ -58,20 +57,19 @@ public class EventReader implements io.camunda.operate.webapp.reader.EventReader
             .source(new SearchSourceBuilder().query(query).sort(EventTemplate.ID));
     try {
       final SearchResponse response = tenantAwareClient.search(request);
-      if (response.getHits().getTotalHits().value >= 1) {
+      final var hits = response.getHits();
+      final var totalHits =
+          (hits != null && hits.getTotalHits() != null) ? hits.getTotalHits().value : 0L;
+      if (totalHits >= 1) {
         // take last event
-        eventEntity =
+        final EventEntity eventEntity =
             fromSearchHit(
-                response
-                    .getHits()
-                    .getHits()[(int) (response.getHits().getTotalHits().value - 1)]
-                    .getSourceAsString(),
+                hits.getHits()[(int) (totalHits - 1)].getSourceAsString(),
                 objectMapper,
                 EventEntity.class);
+        return Optional.of(eventEntity);
       } else {
-        throw new NotFoundException(
-            String.format(
-                "Could not find flow node instance event with id '%s'.", flowNodeInstanceId));
+        return Optional.empty();
       }
     } catch (final IOException e) {
       final String message =
@@ -80,6 +78,5 @@ public class EventReader implements io.camunda.operate.webapp.reader.EventReader
               e.getMessage());
       throw new OperateRuntimeException(message, e);
     }
-    return eventEntity;
   }
 }
