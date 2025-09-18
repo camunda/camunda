@@ -67,6 +67,13 @@ public class JobBasedAdHocSubProcessTest {
   private static final String AHSP_ELEMENT_ID = "ad-hoc";
   private static final String AHSP_INNER_ELEMENT_ID =
       "ad-hoc" + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+  private static final String MAIN_END_EVENT_ID = "main-end";
+
+  private static final String ERROR_CODE = "error-code";
+  private static final String ERROR_MESSAGE = "BPMN error thrown from job worker";
+  private static final String ERROR_BOUNDARY_EVENT_ELEMENT_ID = "error-boundary";
+  private static final String ERROR_END_EVENT_ID = "error-end";
+
   @Rule public final TestWatcher watcher = new RecordingExporterTestWatcher();
 
   private BpmnModelInstance process(
@@ -75,7 +82,10 @@ public class JobBasedAdHocSubProcessTest {
         .startEvent()
         .adHocSubProcess(AHSP_ELEMENT_ID, modifier)
         .zeebeJobType(jobType)
-        .endEvent()
+        .boundaryEvent(ERROR_BOUNDARY_EVENT_ELEMENT_ID, b -> b.error(ERROR_CODE))
+        .endEvent(ERROR_END_EVENT_ID)
+        .moveToActivity(AHSP_ELEMENT_ID)
+        .endEvent(MAIN_END_EVENT_ID)
         .done();
   }
 
@@ -373,6 +383,35 @@ public class JobBasedAdHocSubProcessTest {
         .hasElementInstanceKey(adHocSubProcess.getKey())
         .hasErrorType(ErrorType.AD_HOC_SUB_PROCESS_NO_RETRIES)
         .hasErrorMessage("jobFailed");
+  }
+
+  @Test
+  public void shouldThrowAndPropagateBpmnError() {
+    // given
+    final var jobType = UUID.randomUUID().toString();
+    final BpmnModelInstance process =
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    ENGINE
+        .job()
+        .withKey(jobKey)
+        .withRetries(0)
+        .withErrorCode(ERROR_CODE)
+        .withErrorMessage(ERROR_MESSAGE)
+        .throwError();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ELEMENT_COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId())
+        .containsSubsequence(ERROR_BOUNDARY_EVENT_ELEMENT_ID, ERROR_END_EVENT_ID, PROCESS_ID);
   }
 
   @Test
