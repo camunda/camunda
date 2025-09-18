@@ -59,6 +59,9 @@ public class SearchEngineConnectPropertiesOverride {
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());
     override.setClusterName(database.getClusterName());
+    override.setDateFormat(database.getDateFormat());
+    override.setSocketTimeout(database.getSocketTimeout());
+    override.setConnectTimeout(database.getConnectionTimeout());
 
     populateFromSecurity(override);
     override.setIndexPrefix(database.getIndexPrefix());
