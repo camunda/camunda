@@ -8,6 +8,7 @@
 package io.camunda.authentication.converter;
 
 import io.camunda.authentication.service.MembershipService;
+import io.camunda.authentication.service.MembershipService.PrincipalType;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.OidcPrincipalLoader;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -44,6 +45,16 @@ public class TokenClaimsConverter {
               .formatted(usernameClaim, clientIdClaim));
     }
 
-    return membershipService.resolveMemberships(tokenClaims, username, clientId);
+    final String principalName;
+    final PrincipalType principalType;
+    if (clientId != null) {
+      principalName = clientId;
+      principalType = PrincipalType.CLIENT;
+    } else {
+      principalName = username;
+      principalType = PrincipalType.USER;
+    }
+
+    return membershipService.resolveMemberships(tokenClaims, principalName, principalType);
   }
 }

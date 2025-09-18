@@ -115,10 +115,10 @@ public final class AuthorizationCheckBehavior {
       final AuthorizationRequest request, final List<AuthorizationRejection> aggregatedRejections) {
     final var username = getUsername(request);
     final var clientId = getClientId(request);
-    if (username.isPresent()) {
-      return checkAccessForEntity(request, EntityType.USER, username.get(), aggregatedRejections);
-    } else if (clientId.isPresent()) {
+    if (clientId.isPresent()) {
       return checkAccessForEntity(request, EntityType.CLIENT, clientId.get(), aggregatedRejections);
+    } else if (username.isPresent()) {
+      return checkAccessForEntity(request, EntityType.USER, username.get(), aggregatedRejections);
     }
     return new AuthorizationResult(false, false);
   }
@@ -355,28 +355,28 @@ public final class AuthorizationCheckBehavior {
 
     final var authorizedScopes = new HashSet<AuthorizationScope>();
 
-    final var optionalUsername = getUsername(request);
-    if (optionalUsername.isPresent()) {
+    final var optionalClientId = getClientId(request);
+    if (optionalClientId.isPresent()) {
       getAuthorizedScopes(
               request.command,
-              EntityType.USER,
-              optionalUsername.get(),
+              EntityType.CLIENT,
+              optionalClientId.get(),
               request.getResourceType(),
               request.getPermissionType())
           .forEach(authorizedScopes::add);
     }
-    // If a username was present, don't use the client id
+    // If a clientId was present, don't use the username
     else {
-      getClientId(request)
+      getUsername(request)
           .map(
-              clientId ->
+              username ->
                   getAuthorizedScopes(
                       request.command,
-                      EntityType.CLIENT,
-                      clientId,
+                      EntityType.USER,
+                      username,
                       request.getResourceType(),
                       request.getPermissionType()))
-          .ifPresent(idsForClientId -> idsForClientId.forEach(authorizedScopes::add));
+          .ifPresent(idsForUsername -> idsForUsername.forEach(authorizedScopes::add));
     }
 
     // mapping rules can layer on top of username/client id
