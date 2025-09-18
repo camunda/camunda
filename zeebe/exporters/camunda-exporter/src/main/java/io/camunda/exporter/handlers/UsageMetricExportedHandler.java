@@ -11,7 +11,7 @@ import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.E
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.TU;
 
-import io.camunda.exporter.handlers.UsageMetricHandler.UsageMetricsBatch;
+import io.camunda.exporter.handlers.UsageMetricExportedHandler.UsageMetricsBatch;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
@@ -31,10 +31,10 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record UsageMetricHandler(String indexName, String tuIndexName)
+public record UsageMetricExportedHandler(String indexName, String tuIndexName)
     implements ExportHandler<UsageMetricsBatch, UsageMetricRecordValue> {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricHandler.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricExportedHandler.class);
   private static final String ID_PATTERN = "%s_%s";
   private static final String TU_ID_PATTERN = "%s_%s_%s";
 
@@ -163,7 +163,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
 
   public record UsageMetricsBatch(
       String id, List<UsageMetricsEntity> variables, List<UsageMetricsTUEntity> tuVariables)
-      implements ExporterEntity<UsageMetricHandler.UsageMetricsBatch> {
+      implements ExporterEntity<UsageMetricExportedHandler.UsageMetricsBatch> {
 
     @Override
     public String getId() {
@@ -171,7 +171,7 @@ public record UsageMetricHandler(String indexName, String tuIndexName)
     }
 
     @Override
-    public UsageMetricHandler.UsageMetricsBatch setId(final String id) {
+    public UsageMetricExportedHandler.UsageMetricsBatch setId(final String id) {
       throw new UnsupportedOperationException("Not allowed to set an id");
     }
   }
