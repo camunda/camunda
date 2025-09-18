@@ -771,7 +771,7 @@ public final class AuthorizationCheckBehavior {
           isTenantOwnedResource,
           tenantId,
           Collections.unmodifiableSet(authorizationScopes),
-          false,
+          true,
           RecordMetadataDecoder.batchOperationReferenceNullValue());
     }
 
