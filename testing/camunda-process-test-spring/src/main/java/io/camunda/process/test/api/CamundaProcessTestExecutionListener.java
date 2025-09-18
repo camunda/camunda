@@ -24,6 +24,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultitenancyConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
@@ -116,9 +117,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     runtime = buildRuntime(runtimeConfiguration);
     runtime.start();
 
-    camundaManagementClient =
-        new CamundaManagementClient(
-            runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    camundaManagementClient = createManagementClient(runtimeConfiguration);
 
     camundaProcessTestContext =
         new CamundaProcessTestContextImpl(
@@ -138,6 +137,20 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize json mapper
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
+  }
+
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+
+    if (runtimeConfiguration.isMultitenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultitenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
   }
 
   @Override
