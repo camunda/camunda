@@ -21,11 +21,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.util.Base64URL;
+import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.time.Instant;
+import java.util.Arrays;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -44,6 +50,12 @@ import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.web.util.UriComponentsBuilder;
 
+/**
+ * Test for OIDC authentication flow using private_key_jwt client authentication.
+ *
+ * <p>Tests the ability to ability to customize the client assertion when calling the token
+ * endpoint, concretely the <code>kid</code> header.
+ */
 @SuppressWarnings({"SpringBootApplicationProperties", "WrongPropertyKeyValueDelimiter"})
 @AutoConfigureMockMvc
 @AutoConfigureWebMvc
@@ -55,20 +67,25 @@ import org.springframework.web.util.UriComponentsBuilder;
     properties = {
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
-      "camunda.security.authentication.oidc.client-id=" + OidcPrivateKeyJwtFlowTest.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-id="
+          + OidcPrivateKeyJwtCustomizeAssertionTest.CLIENT_ID,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.clientAuthenticationMethod="
           + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
-      "camunda.security.authentication.oidc.assertionKeystore.path= ${user.dir}/src/test/resources/keystore.p12",
-      "camunda.security.authentication.oidc.assertionKeystore.password=password",
-      "camunda.security.authentication.oidc.assertionKeystore.keyAlias=camunda-standalone",
-      "camunda.security.authentication.oidc.assertionKeystore.keyPassword=password",
-      "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
+      "camunda.security.authentication.oidc.assertion.keystore.path= ${user.dir}/src/test/resources/keystore.p12",
+      "camunda.security.authentication.oidc.assertion.keystore.password=password",
+      "camunda.security.authentication.oidc.assertion.keystore.keyAlias=camunda-standalone",
+      "camunda.security.authentication.oidc.assertion.keystore.keyPassword=password",
+      "camunda.security.authentication.oidc.assertion.kidSource=certificate",
+      "camunda.security.authentication.oidc.assertion.kidDigestAlgorithm=sha1",
+      "camunda.security.authentication.oidc.assertion.kidEncoding=hex",
+      "camunda.security.authentication.oidc.assertion.kidCase=upper",
+      "camunda.security.authentication.oidc.resource=https://api.example.com/app1/",
       // essential for debugging the flow
       //      "logging.level.org.springframework.security=TRACE",
     })
 @ActiveProfiles("consolidated-auth")
-class OidcPrivateKeyJwtFlowTest {
+class OidcPrivateKeyJwtCustomizeAssertionTest {
 
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -78,21 +95,28 @@ class OidcPrivateKeyJwtFlowTest {
           .failOnUnmatchedRequests(true)
           .build();
 
-  static final String CLIENT_ID = "camunda-test";
-
+  static final String CLIENT_ID = "camunda-client";
+  static final String ENDPOINT_WELL_KNOWN_JWKS = "/adfs/.well-known/jwks.json";
+  static final String ENDPOINT_WELL_KNOWN_OIDC = "/adfs/.well-known/openid-configuration";
+  static final String ENDPOINT_TOKEN = "/adfs/oauth/token";
+  static final String EXPECTED_KEY_ID = "DEA0BAC83B5F4AA9EB808D5282FCAB0317082C12";
+  static final Base64URL EXPECTED_X5T_S256 =
+      Base64URL.from("gCC_MwKDLUCxMYUlm95bDX8ol6nNHhCohhudSkJAJhQ");
+  static final String REGEX_JWT = "[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*";
+  final String expectedTokenEndpointUrl = "http://localhost:" + wireMock.getPort() + ENDPOINT_TOKEN;
   @Autowired MockMvcTester mockMvcTester;
 
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
     registry.add(
         "camunda.security.authentication.oidc.issuer-uri",
-        () -> "http://localhost:" + wireMock.getPort() + "/realms/camunda-test");
+        () -> "http://localhost:" + wireMock.getPort() + "/adfs");
   }
 
   @BeforeAll
   static void stubWellKnownForStartup() {
     stubFor(
-        get(urlEqualTo("/realms/camunda-test/.well-known/openid-configuration"))
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
@@ -100,7 +124,7 @@ class OidcPrivateKeyJwtFlowTest {
   }
 
   @Test
-  public void correctConfigurationShouldEnableStartupAndRedirection() {
+  public void shouldRedirectToOidcAuthorizationEndpointWhenAccessingRoot() {
     final MvcTestResult result =
         mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
     assertThat(result)
@@ -109,23 +133,42 @@ class OidcPrivateKeyJwtFlowTest {
   }
 
   @Test
-  public void tokenEndpointShouldReceiveJwt() {
+  public void shouldSendClientAssertionToTokenEndpointDuringAuthCodeExchange()
+      throws ParseException {
+    stubIdpEndpoints();
+
+    // with an established session, we notify Spring Security we want to authenticate
+    // which builds and saves an authorizationRequest
+    // and we get a state reference that can be matched upon the redirect from the IdP
+    final MockHttpSession session = new MockHttpSession();
+    final var state = beginAuthenticationFlow(session);
+
+    // when inducing an auth code for token exchange
+    mockAuthenticatedRedirectFromIdp(session, state);
+
+    // then the IdP receives the authorization code
+    // with the Spring Security client authenticating using private_key_jwt
+    // in the form of a client id and client assertion
+    verifyRequestStructure();
+    verifyClientAssertion();
+  }
+
+  private static void stubIdpEndpoints() {
     // having an IdP token endpoint
     stubFor(
-        post(urlEqualTo("/realms/camunda-test/oauth/token"))
+        post(urlEqualTo(ENDPOINT_TOKEN))
             .willReturn(
                 aResponse()
                     .withHeader("Content-Type", "application/json")
                     .withBody(tokenResponse())));
 
-    // and a dummy jwks well-known edpont to prevent Spring from breaking
+    // and a dummy jwks well-known endpoint to prevent Spring from breaking
     stubFor(
-        get(urlEqualTo("/realms/camunda-test/.well-known/jwks.json"))
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
             .willReturn(aResponse().withHeader("Content-Type", "application/json").withBody("{}")));
+  }
 
-    // with an established session, we notify Spring Security we want to authenticate
-    // which builds and saves an authorizationRequest
-    final MockHttpSession session = new MockHttpSession();
+  private String beginAuthenticationFlow(final MockHttpSession session) {
     final var redirectResult =
         mockMvcTester
             .get()
@@ -138,13 +181,12 @@ class OidcPrivateKeyJwtFlowTest {
     assertThat(redirectUrl).isNotNull();
     final var queryParams =
         UriComponentsBuilder.fromUriString(redirectUrl).build().getQueryParams();
-    // and we get a state reference that can be matched upon the redirect from the IdP
     assertThat(queryParams).containsKey("state");
+    return URLDecoder.decode(
+        Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8);
+  }
 
-    // when inducing an auth code for token exchange
-    final var state =
-        URLDecoder.decode(
-            Objects.requireNonNull(queryParams.getFirst("state")), StandardCharsets.UTF_8);
+  private void mockAuthenticatedRedirectFromIdp(final MockHttpSession session, final String state) {
     mockMvcTester
         .get()
         .uri("/sso-callback")
@@ -153,39 +195,72 @@ class OidcPrivateKeyJwtFlowTest {
         .queryParam("code", "test_authorization_code")
         .queryParam("state", state)
         .queryParam("session_state", "test_session_state")
-        .queryParam("iss", "http://localhost:" + wireMock.getPort() + "/realms/camunda-test")
+        .queryParam("iss", "http://localhost:" + wireMock.getPort())
         .exchange();
+  }
 
-    // then the IdP receives the authorization code
-    // with the Spring Security client authenticating using private_key_jwt
-    // in the form of a client id and client assertion
+  private void verifyRequestStructure() {
     verify(
         1,
-        postRequestedFor(urlEqualTo("/realms/camunda-test/oauth/token"))
+        postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
             .withRequestBody(matching(".*grant_type=authorization_code.*"))
             .withRequestBody(matching(".*code=test_authorization_code.*"))
             .withRequestBody(matching(".*client_id=" + CLIENT_ID + ".*"))
-            .withRequestBody(
-                matching(
-                    ".*resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F&resource=https%3A%2F%2Fapi.example.com%2Fapp2%2F.*"))
+            .withRequestBody(matching(".*resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F.*"))
             .withRequestBody(
                 matching(
                     ".*client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer.*"))
             // client_assertion=<A JWT>
-            .withRequestBody(
-                matching(
-                    ".*client_assertion=[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*.*")));
+            .withRequestBody(matching(".*client_assertion=" + REGEX_JWT + ".*")));
+  }
+
+  private void verifyClientAssertion() throws ParseException {
+    final var clientAssertion = getClientAssertionFromLastRequest();
+    final var jwt = SignedJWT.parse(clientAssertion);
+
+    assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.RS256);
+    assertThat(jwt.getHeader().getKeyID()).isEqualTo(EXPECTED_KEY_ID); // certificate SHA-1
+    assertThat(jwt.getHeader().getX509CertSHA256Thumbprint()).isEqualTo(EXPECTED_X5T_S256);
+
+    // Keycloak requirements and OIDC specification match
+    // https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
+    final var payload = jwt.getPayload().toJSONObject();
+    final var now = Instant.now().getEpochSecond();
+    assertThat(payload)
+        .containsEntry("iss", CLIENT_ID)
+        .containsEntry("sub", CLIENT_ID)
+        .containsEntry("aud", expectedTokenEndpointUrl)
+        .containsKey("jti")
+        .hasEntrySatisfying(
+            "iat",
+            iat -> assertThat(now).as("issued in the past").isGreaterThanOrEqualTo((Long) iat))
+        .hasEntrySatisfying(
+            "exp", exp -> assertThat(now).as("expires in the future").isLessThan((Long) exp));
+
+    assertThat(jwt.getSignature()).isNotNull(); // null would mean no signature exists
+  }
+
+  private String getClientAssertionFromLastRequest() {
+    final var tokenEvents = wireMock.findAll(postRequestedFor(urlEqualTo(ENDPOINT_TOKEN)));
+    assertThat(tokenEvents).hasSize(1);
+
+    final var exchangeEvent = tokenEvents.getFirst();
+    return Arrays.stream(exchangeEvent.getBodyAsString().split("&"))
+        .filter(field -> field.startsWith("client_assertion="))
+        .map(field -> field.split("=")[1])
+        .findFirst()
+        .orElseThrow();
   }
 
   private static String wellKnownResponse() {
     return """
             {
-                "issuer": "http://localhost:000000/realms/camunda-test",
-                "authorization_endpoint": "http://localhost:000000/realms/camunda-test/oauth/authorize",
-                "token_endpoint": "http://localhost:000000/realms/camunda-test/oauth/token",
-                "userinfo_endpoint": "http://localhost:000000/realms/camunda-test/userinfo",
-                "jwks_uri": "http://localhost:000000/realms/camunda-test/.well-known/jwks.json",
+                "issuer": "http://localhost:000000/adfs",
+                "authorization_endpoint": "http://localhost:000000/adfs/oauth/authorize",
+                "token_endpoint": "http://localhost:000000/adfs/oauth/token",
+                "userinfo_endpoint": "http://localhost:000000/adfs/userinfo",
+                "jwks_uri": "http://localhost:000000/adfs/.well-known/jwks.json",
                 "response_types_supported": [
                     "code",
                     "token",
