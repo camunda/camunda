@@ -14,25 +14,20 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   assertUnauthorizedRequest,
-} from '../../../utils/http';
-import {defaultAssertionOptions} from '../../../utils/constants';
+} from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   EVALUATE_DECISION_EXPECTED_BODY,
   EVALUATED_DECISION_EXPECTED_BODY,
   evaluateDecisionRequiredFields,
-} from '../../../utils/beans/requestBeans';
-import {
-  DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT,
-  deployDecisionAndStoreResponse,
-} from '../../../utils/requestHelpers';
+} from '../../../../utils/beans/requestBeans';
+import {deployDecisionAndStoreResponse} from '../../../../utils/requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
-test.describe.parallel('Decision Definitions Search API Tests', () => {
+test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};
   let decisionDefinition1: DecisionDeployment;
   let decisionDefinition2: DecisionDeployment;
-  let expectedBody1: Record<string, unknown>;
-  let expectedBody2: Record<string, unknown>;
 
   test.beforeAll(async () => {
     await deployDecisionAndStoreResponse(
@@ -47,10 +42,6 @@ test.describe.parallel('Decision Definitions Search API Tests', () => {
     );
     decisionDefinition1 = state['decisionDefinition1'] as DecisionDeployment;
     decisionDefinition2 = state['decisionDefinition2'] as DecisionDeployment;
-    expectedBody1 =
-      DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(decisionDefinition1);
-    expectedBody2 =
-      DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(decisionDefinition2);
   });
 
   test('Evaluate Decision Definition by decisionDefinitionKey For Input 8.8', async ({
