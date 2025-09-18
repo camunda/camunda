@@ -80,6 +80,8 @@ public class TasklistPropertiesOverride {
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
 
     override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getZeebeElasticsearch().setUsername(database.getElasticsearch().getUsername());
+    override.getZeebeElasticsearch().setPassword(database.getElasticsearch().getPassword());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -97,6 +99,8 @@ public class TasklistPropertiesOverride {
     override.getOpenSearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
 
     override.getZeebeOpenSearch().setUrl(database.getOpensearch().getUrl());
+    override.getZeebeOpenSearch().setUsername(database.getOpensearch().getUsername());
+    override.getZeebeOpenSearch().setPassword(database.getOpensearch().getPassword());
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

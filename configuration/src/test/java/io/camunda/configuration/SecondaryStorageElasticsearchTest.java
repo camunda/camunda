@@ -166,11 +166,15 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.database.username=" + EXPECTED_USERNAME,
         "camunda.operate.elasticsearch.username=" + EXPECTED_USERNAME,
         "camunda.tasklist.elasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.tasklist.zeebeElasticsearch.username=" + EXPECTED_USERNAME,
+        "camunda.operate.zeebeElasticsearch.username=" + EXPECTED_USERNAME,
         // password
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.tasklist.elasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.tasklist.zeebeElasticsearch.password=" + EXPECTED_PASSWORD,
+        "camunda.operate.zeebeElasticsearch.password=" + EXPECTED_PASSWORD,
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.

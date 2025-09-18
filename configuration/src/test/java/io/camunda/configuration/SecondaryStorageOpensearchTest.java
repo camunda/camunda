@@ -168,11 +168,15 @@ public class SecondaryStorageOpensearchTest {
         "camunda.database.username=" + EXPECTED_USERNAME,
         "camunda.operate.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.tasklist.opensearch.username=" + EXPECTED_USERNAME,
+        "camunda.tasklist.zeebeOpensearch.username=" + EXPECTED_USERNAME,
+        "camunda.operate.zeebeOpensearch.username=" + EXPECTED_USERNAME,
         // password
         "camunda.data.secondary-storage.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.tasklist.opensearch.password=" + EXPECTED_PASSWORD,
+        "camunda.tasklist.zeebeOpensearch.password=" + EXPECTED_PASSWORD,
+        "camunda.operate.zeebeOpensearch.password=" + EXPECTED_PASSWORD,
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.

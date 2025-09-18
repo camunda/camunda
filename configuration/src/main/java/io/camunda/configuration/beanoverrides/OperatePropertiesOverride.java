@@ -83,6 +83,8 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
 
     override.getZeebeElasticsearch().setUrl(database.getElasticsearch().getUrl());
+    override.getZeebeElasticsearch().setUsername(database.getElasticsearch().getUsername());
+    override.getZeebeElasticsearch().setPassword(database.getElasticsearch().getPassword());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
