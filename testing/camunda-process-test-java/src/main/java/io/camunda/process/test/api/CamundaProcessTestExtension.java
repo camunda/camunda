@@ -36,6 +36,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -159,6 +160,8 @@ public class CamundaProcessTestExtension
         processCoverageBuilder
             .testClass(context.getRequiredTestClass())
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
             .build();
 
     // put in store
@@ -536,7 +539,7 @@ public class CamundaProcessTestExtension
    */
   public CamundaProcessTestExtension withCoverageExcludedProcesses(
       final String... processDefinitionIds) {
-    processCoverageBuilder.excludeProcessDefinitionIds(processDefinitionIds);
+    runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
     return this;
   }
 
@@ -548,7 +551,7 @@ public class CamundaProcessTestExtension
    * @return the extension builder
    */
   public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
-    processCoverageBuilder.reportDirectory(reportDirectory);
+    runtimeBuilder.withCoverageReportDirectory(reportDirectory);
     return this;
   }
 

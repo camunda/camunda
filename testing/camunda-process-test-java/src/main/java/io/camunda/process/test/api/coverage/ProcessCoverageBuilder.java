@@ -16,7 +16,6 @@
 package io.camunda.process.test.api.coverage;
 
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,11 +39,12 @@ public class ProcessCoverageBuilder {
   /**
    * Specifies process definition keys to exclude from coverage analysis.
    *
-   * @param processDefinitionIds Array of process definition ids to exclude
+   * @param processDefinitionIds the process definition ids to exclude
    * @return This builder instance for method chaining
    */
-  public ProcessCoverageBuilder excludeProcessDefinitionIds(final String... processDefinitionIds) {
-    excludedProcessDefinitionIds = Arrays.asList(processDefinitionIds);
+  public ProcessCoverageBuilder excludeProcessDefinitionIds(
+      final List<String> processDefinitionIds) {
+    excludedProcessDefinitionIds = processDefinitionIds;
     return this;
   }
 
