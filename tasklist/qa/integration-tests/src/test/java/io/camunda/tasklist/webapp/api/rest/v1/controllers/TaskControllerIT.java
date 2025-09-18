@@ -1320,6 +1320,7 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
               });
 
       Awaitility.await("task variables are in secondary storage")
+          .atMost(Duration.ofSeconds(30))
           .untilAsserted(
               () -> {
                 final var taskVariables = tester.getTaskVariables();
