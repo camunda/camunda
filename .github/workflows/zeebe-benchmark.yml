@@ -266,7 +266,7 @@ jobs:
           --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
-          ${{ inputs.stable-vms && '-f zeebe/load-tests/setup/default/values-stable.yaml' || '' }}
+          ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.benchmark-load }}
       - name: Summarize deployment
