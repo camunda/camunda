@@ -86,6 +86,7 @@ public class CamundaExporter implements Exporter {
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
+  private Context context;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -105,40 +106,20 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
-    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
-    clientAdapter = ClientAdapter.of(configuration.getConnect());
-    if (metadata == null) {
-      metadata = new ExporterMetadata(clientAdapter.objectMapper());
-    }
     partitionId = context.getPartitionId();
-    provider.init(
-        configuration,
-        clientAdapter.getExporterEntityCacheProvider(),
-        context.getMeterRegistry(),
-        metadata,
-        clientAdapter.objectMapper());
 
-    taskManager =
-        new BackgroundTaskManagerFactory(
-                context.getPartitionId(),
-                context.getConfiguration().getId().toLowerCase(),
-                configuration,
-                provider,
-                metrics,
-                context.getLogger(),
-                metadata,
-                clientAdapter.objectMapper(),
-                provider.getProcessCache())
-            .build();
+    verifySetupOfResources();
     LOG.debug("Exporter configured with {}", configuration);
   }
 
   @Override
   public void open(final Controller controller) {
     this.controller = controller;
+    setupExporterResources();
     searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager = createSchemaManager();
 
@@ -161,20 +142,31 @@ public class CamundaExporter implements Exporter {
     if (writer != null) {
       try {
         flush();
+        writer = null;
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
     }
 
     if (clientAdapter != null) {
-      try {
-        clientAdapter.close();
-      } catch (final Exception e) {
-        LOG.warn("Failed to close elasticsearch client", e);
-      }
+      CloseHelper.close(
+          error -> LOG.warn("Failed to close elasticsearch client", error), clientAdapter);
+      clientAdapter = null;
     }
 
-    CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
+    if (metrics != null) {
+      CloseHelper.close(
+          error -> LOG.warn("Failed to remove exporter metrics from registry.", error), metrics);
+      metrics = null;
+    }
+
+    metadata = null;
+    provider.reset();
+
+    if (taskManager != null) {
+      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
+      taskManager = null;
+    }
     LOG.info("Exporter closed");
   }
 
@@ -258,6 +250,48 @@ public class CamundaExporter implements Exporter {
     searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
         .filter(index -> !emptiedIndices.contains(index))
         .forEach(searchEngineClient::truncateIndex);
+  }
+
+  private void verifySetupOfResources() {
+    // given the context and configuration
+
+    // we need setup all resources
+    // to ensure that we can create the clients,
+    // connect and make use of the configuration given
+    setupExporterResources();
+
+    // afterward we need to clean up all the resources
+    // as we only wanted to verify the setup and the exporter
+    // might simply just run in passive mode - so there is no
+    // need to keep the clients opens
+    close();
+  }
+
+  private void setupExporterResources() {
+    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
+    clientAdapter = ClientAdapter.of(configuration.getConnect());
+    if (metadata == null) {
+      metadata = new ExporterMetadata(clientAdapter.objectMapper());
+    }
+    provider.init(
+        configuration,
+        clientAdapter.getExporterEntityCacheProvider(),
+        context.getMeterRegistry(),
+        metadata,
+        clientAdapter.objectMapper());
+
+    taskManager =
+        new BackgroundTaskManagerFactory(
+                context.getPartitionId(),
+                context.getConfiguration().getId().toLowerCase(),
+                configuration,
+                provider,
+                metrics,
+                context.getLogger(),
+                metadata,
+                clientAdapter.objectMapper(),
+                provider.getProcessCache())
+            .build();
   }
 
   private SchemaManager createSchemaManager() {
