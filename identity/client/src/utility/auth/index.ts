@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { getBaseUrl, getLoginApiUrl } from "src/configuration";
+import { getBaseUrl, getLoginApiUrl, getLogoutApiUrl } from "src/configuration";
 
 let loggedIn = false;
 
@@ -57,7 +57,7 @@ export function login(
 
 export function logout(): Promise<void> {
   const data = new FormData();
-  return fetch("/logout", {
+  return fetch(getLogoutApiUrl(), {
     method: "post",
     body: data,
   })
