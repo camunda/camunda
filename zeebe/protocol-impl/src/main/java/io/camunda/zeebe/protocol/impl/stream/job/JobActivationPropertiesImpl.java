@@ -30,7 +30,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
-  private final DocumentProperty authorizationsProp = new DocumentProperty("authorizations");
+  private final DocumentProperty claimsProp = new DocumentProperty("claims");
 
   public JobActivationPropertiesImpl() {
     super(5);
@@ -38,7 +38,7 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
         .declareProperty(tenantIdsProp)
-        .declareProperty(authorizationsProp);
+        .declareProperty(claimsProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
@@ -85,12 +85,12 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   }
 
   @Override
-  public Map<String, Object> authorizations() {
-    return MsgPackConverter.convertToMap(authorizationsProp.getValue());
+  public Map<String, Object> claims() {
+    return MsgPackConverter.convertToMap(claimsProp.getValue());
   }
 
-  public JobActivationPropertiesImpl setAuthorizations(final Map<String, Object> authorizations) {
-    authorizationsProp.setValue(getDocumentOrEmpty(authorizations));
+  public JobActivationPropertiesImpl setClaims(final Map<String, Object> authorizations) {
+    claimsProp.setValue(getDocumentOrEmpty(authorizations));
     return this;
   }
 
@@ -98,12 +98,5 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
     return value == null || value.isEmpty()
         ? DocumentValue.EMPTY_DOCUMENT
         : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
-  }
-
-  public void wrap(final JobActivationPropertiesImpl other) {
-    workerProp.setValue(other.workerProp.getValue());
-    timeoutProp.setValue(other.timeoutProp.getValue());
-    other.fetchVariablesProp.forEach(v -> fetchVariablesProp.add().wrap(v));
-    other.tenantIdsProp.forEach(t -> tenantIdsProp.add().wrap(t));
   }
 }

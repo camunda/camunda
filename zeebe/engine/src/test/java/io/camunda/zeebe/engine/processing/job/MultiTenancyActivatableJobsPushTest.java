@@ -86,7 +86,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setTimeout(timeout)
             .setFetchVariables(
                 List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
-            .setAuthorizations(authorizationClaims)
+            .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdA));
 
     final JobActivationPropertiesImpl jobActivationPropertiesB =
@@ -95,7 +95,7 @@ public class MultiTenancyActivatableJobsPushTest {
             .setTimeout(timeout)
             .setFetchVariables(
                 List.of(new StringValue("a"), new StringValue("b"), new StringValue("c")))
-            .setAuthorizations(authorizationClaims)
+            .setClaims(authorizationClaims)
             .setTenantIds(List.of(tenantIdB));
 
     final var jobStreamA = JOB_STREAMER.addJobStream(jobTypeBuffer, jobActivationPropertiesA);

@@ -416,7 +416,7 @@ public final class RequestMapper extends RequestUtil {
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
         .setTenantIds(tenantIds)
-        .setAuthorizations(claims);
+        .setClaims(claims);
 
     return jobActivationProperties;
   }
