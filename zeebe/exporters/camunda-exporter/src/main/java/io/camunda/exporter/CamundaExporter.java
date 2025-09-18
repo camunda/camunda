@@ -227,29 +227,34 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void purge() {
-    searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
+    try {
+      setupExporterResources();
+      searchEngineClient = clientAdapter.getSearchEngineClient();
+      final var schemaManager = createSchemaManager();
 
-    // Indices
-    final var emptiedIndices = schemaManager.truncateIndices();
+      // Indices
+      final var emptiedIndices = schemaManager.truncateIndices();
 
-    // Delete archived indices
-    schemaManager.deleteArchivedIndices();
+      // Delete archived indices
+      schemaManager.deleteArchivedIndices();
 
-    // At this point, several indices still have data, e.g.
-    // deployment, tasklist-task, process, operate-event, operate-list-view,
-    // operate-flownode-instance, process-instance-creation, user-task,
-    // process-instance
-    // If I stop deleting things right here, tests will not pass.
+      // At this point, several indices still have data, e.g.
+      // deployment, tasklist-task, process, operate-event, operate-list-view,
+      // operate-flownode-instance, process-instance-creation, user-task,
+      // process-instance
+      // If I stop deleting things right here, tests will not pass.
 
-    // Indices, not managed by the SchemaManager
-    // This code can be removed, once we have the unified SchemaManager, which will take care of
-    // deleting all indices it manages (#26890).
-    final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
-    LOG.debug("Purging exporter indexes: {}", indexNames);
-    searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
-        .filter(index -> !emptiedIndices.contains(index))
-        .forEach(searchEngineClient::truncateIndex);
+      // Indices, not managed by the SchemaManager
+      // This code can be removed, once we have the unified SchemaManager, which will take care of
+      // deleting all indices it manages (#26890).
+      final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
+      LOG.debug("Purging exporter indexes: {}", indexNames);
+      searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
+          .filter(index -> !emptiedIndices.contains(index))
+          .forEach(searchEngineClient::truncateIndex);
+    } finally {
+      close();
+    }
   }
 
   private void verifySetupOfResources() {
