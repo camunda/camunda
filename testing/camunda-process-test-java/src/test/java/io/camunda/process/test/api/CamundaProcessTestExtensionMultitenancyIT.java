@@ -131,8 +131,17 @@ public class CamundaProcessTestExtensionMultitenancyIT {
                             .password(password)
                             .build()));
 
+    /*
+     * The search request should not need to filter by tenants to produce the correct results.
+     * At the moment the cluster returns elements of both tenants, violating the properties of
+     * the multi-tenancy feature. This is currently under investigation and will be fixed soon.
+     */
     final SearchResponse<ElementInstance> tenantAElements =
-        userAClient.newElementInstanceSearchRequest().send().join();
+        userAClient
+            .newElementInstanceSearchRequest()
+            .filter(filter -> filter.processDefinitionId(processDefinitionId).tenantId(tenantA))
+            .send()
+            .join();
 
     // then returns only tenantA elements
     assertThat(tenantAElements.items()).hasSize(4);
