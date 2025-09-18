@@ -51,17 +51,17 @@ public interface JobActivationProperties extends BufferWriter {
   Collection<String> tenantIds();
 
   /**
-   * Returns the authorization data of the user that triggered the creation of this stream. The
-   * following entries may be available:
+   * Returns the claim data of the user that triggered the creation of this stream. The following
+   * entries may be available:
    *
    * <ul>
    *   <li>Key: <code>authorized_tenants</code>; Value: a List of Strings defining the user's
    *       authorized tenants.
-   *   <li>Key: <code>authorized_user_key</code>; Value: the Long representation of the
-   *       authenticated user's key
+   *   <li>Key: <code>authorized_username</code>; Value: the Long representation of the
+   *       authenticated user's username
    * </ul>
    *
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
-  Map<String, Object> authorizations();
+  Map<String, Object> claims();
 }

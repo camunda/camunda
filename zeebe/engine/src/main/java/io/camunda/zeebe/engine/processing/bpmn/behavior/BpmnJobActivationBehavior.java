@@ -18,10 +18,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.AuthorizationCheckMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -169,13 +172,13 @@ public class BpmnJobActivationBehavior {
       return false;
     }
 
-    final var authorizations = jobActivationProperties.authorizations();
+    final var claims = jobActivationProperties.claims();
     final var authorizedTenantIds =
-        authorizationCheckBehavior.getAuthorizedTenantIds(authorizations);
+        authorizationCheckBehavior.getAuthorizedTenantIds(claims);
     final var authorizedProcessIds =
         authorizationCheckBehavior.getAllAuthorizedScopes(
             new AuthorizationRequest(
-                authorizations,
+                new JobAuthorizationCheckMetadata(claims),
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 ownerTenantId));
@@ -188,5 +191,23 @@ public class BpmnJobActivationBehavior {
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
+  }
+
+  public record JobAuthorizationCheckMetadata(Map<String, Object> claims) implements AuthorizationCheckMetadata {
+
+    @Override
+    public Map<String, Object> getAuthorizations() {
+      return claims;
+    }
+
+    @Override
+    public long getBatchOperationReference() {
+      return RecordMetadataDecoder.batchOperationReferenceNullValue();
+    }
+
+    @Override
+    public boolean hasRequestMetadata() {
+      return false;
+    }
   }
 }

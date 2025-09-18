@@ -127,7 +127,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         mutable.timeout(),
         mutable.fetchVariables(),
         mutable.tenantIds(),
-        mutable.authorizations());
+        mutable.claims());
   }
 
   @Override
@@ -140,7 +140,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       long timeout,
       Collection<DirectBuffer> fetchVariables,
       Collection<String> tenantIds,
-      Map<String, Object> authorizations)
+      Map<String, Object> claims)
       implements JobActivationProperties {
 
     @Override
