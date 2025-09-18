@@ -17,6 +17,7 @@ import {
   roleRequiredFields,
   tenantRequiredFields,
   userRequiredFields,
+  decisionDefinitionRequiredFields,
 } from './beans/requestBeans';
 import {
   assertEqualsForKeys,
@@ -28,6 +29,8 @@ import {expect} from '@playwright/test';
 import type {APIRequestContext} from 'playwright-core';
 import {defaultAssertionOptions, generateUniqueId} from './constants';
 import {Serializable} from 'playwright-core/types/structs';
+import {deploy} from './zeebeClient';
+import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
 export async function createGroupAndStoreResponseFields(
   request: APIRequestContext,
@@ -104,6 +107,30 @@ export async function createTenantAndStoreResponseFields(
   for (let i = 1; i <= numberOfTenants; i++) {
     await createTenant(request, state, `${i}`);
   }
+}
+
+export async function deployDecisionAndStoreResponse(
+  state: Record<string, unknown>,
+  key: string,
+  file: string,
+) {
+  const response = await deploy([file]);
+  expect(response.decisions.length).toBe(1);
+  state[`decisionDefinition${key}`] = response.decisions[0];
+}
+
+export function DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT(
+  decision: DecisionDeployment,
+) {
+  return {
+    decisionDefinitionKey: decision.decisionDefinitionKey,
+    decisionRequirementsKey: decision.decisionRequirementsKey,
+    decisionRequirementsId: decision.decisionRequirementsId,
+    decisionDefinitionId: decision.decisionDefinitionId,
+    name: decision.name,
+    version: decision.version,
+    tenantId: decision.tenantId,
+  };
 }
 
 export async function assignMappingToGroup(
@@ -491,6 +518,24 @@ export function assertClientsInResponse(json: Serializable, client: string) {
   expect(matchingItem).toBeDefined();
   assertRequiredFields(matchingItem, ['clientId']);
   assertEqualsForKeys(matchingItem, {clientId: client}, ['clientId']);
+}
+
+export function assertDecisionDefinitionInResponse(
+  json: Serializable,
+  expectedBody: Serializable,
+  decisionDefinitionKey: string,
+) {
+  const matchingItem = json.items.find(
+    (it: {decisionDefinitionKey: string}) =>
+      it.decisionDefinitionKey === decisionDefinitionKey,
+  );
+  expect(matchingItem).toBeDefined();
+  assertRequiredFields(matchingItem, decisionDefinitionRequiredFields);
+  assertEqualsForKeys(
+    matchingItem,
+    expectedBody,
+    decisionDefinitionRequiredFields,
+  );
 }
 
 export function assertRoleInResponse(
