@@ -43,7 +43,7 @@ import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTempla
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.collection.Tuple;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -139,7 +139,7 @@ public final class PrefixMigrationHelper {
     final boolean isElasticsearch = connectConfig.getTypeEnum().isElasticSearch();
 
     final var descriptors = new IndexDescriptors(connectConfig.getIndexPrefix(), isElasticsearch);
-    final var cloneOperations = new HashMap<Tuple<String, String>, List<Tuple<String, String>>>();
+    final var cloneOperations = new ArrayList<AliasCloneTargets>();
 
     TASKLIST_INDICES_TO_MIGRATE.forEach(
         cls ->
@@ -150,7 +150,7 @@ public final class PrefixMigrationHelper {
                     prefixMigrationClient,
                     cls,
                     descriptors)
-                .map(op -> cloneOperations.put(op.getLeft(), op.getRight())));
+                .map(cloneOperations::add));
 
     OPERATE_INDICES_TO_MIGRATE.forEach(
         cls ->
@@ -161,25 +161,25 @@ public final class PrefixMigrationHelper {
                     prefixMigrationClient,
                     cls,
                     descriptors)
-                .map(op -> cloneOperations.put(op.getLeft(), op.getRight())));
+                .map(cloneOperations::add));
 
     final var futures =
-        cloneOperations.entrySet().stream()
+        cloneOperations.stream()
             .parallel()
             .map(
                 entry ->
                     CompletableFuture.supplyAsync(
                         () -> {
                           final var innerFutures =
-                              entry.getValue().stream()
+                              entry.indices().stream()
                                   .parallel()
                                   .map(
-                                      idx -> {
-                                        final var srcAlias = entry.getKey().getLeft();
-                                        final var destAlias = entry.getKey().getRight();
-                                        return prefixMigrationClient.cloneAndDeleteIndex(
-                                            idx.getLeft(), srcAlias, idx.getRight(), destAlias);
-                                      })
+                                      idx ->
+                                          prefixMigrationClient.cloneAndDeleteIndex(
+                                              idx.getLeft(),
+                                              entry.srcAlias,
+                                              idx.getRight(),
+                                              entry.destAlias))
                                   .toArray(CompletableFuture[]::new);
                           return CompletableFuture.allOf(innerFutures).join();
                         },
@@ -189,14 +189,13 @@ public final class PrefixMigrationHelper {
     CompletableFuture.allOf(futures).join();
   }
 
-  private static Optional<Tuple<Tuple<String, String>, List<Tuple<String, String>>>>
-      buildCloneTargets(
-          final String oldPrefix,
-          final String newPrefix,
-          final boolean isElasticsearch,
-          final PrefixMigrationClient prefixMigrationClient,
-          final Class<? extends AbstractIndexDescriptor> cls,
-          final IndexDescriptors descriptors) {
+  private static Optional<AliasCloneTargets> buildCloneTargets(
+      final String oldPrefix,
+      final String newPrefix,
+      final boolean isElasticsearch,
+      final PrefixMigrationClient prefixMigrationClient,
+      final Class<? extends AbstractIndexDescriptor> cls,
+      final IndexDescriptors descriptors) {
     final var descriptor = getDescriptor(cls, descriptors, newPrefix, isElasticsearch);
     final var srcAlias = getSourceAliasFromDescriptor(oldPrefix, descriptor);
     final var destAlias = getDestinationAliasFromDescriptor(descriptor);
@@ -221,7 +220,7 @@ public final class PrefixMigrationHelper {
             .toList();
 
     if (!indicesToMigrate.isEmpty()) {
-      return Optional.of(Tuple.of(Tuple.of(srcAlias, destAlias), indicesToMigrate));
+      return Optional.of(new AliasCloneTargets(srcAlias, destAlias, indicesToMigrate));
     }
     return Optional.empty();
   }
@@ -258,4 +257,7 @@ public final class PrefixMigrationHelper {
     }
     return descriptors.get(cls);
   }
+
+  private record AliasCloneTargets(
+      String srcAlias, String destAlias, List<Tuple<String, String>> indices) {}
 }
