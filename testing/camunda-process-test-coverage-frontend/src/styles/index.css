@@ -1,18 +1,18 @@
  /* Style for regular elements (tasks, events, gateways) */
  .highlight:not(.djs-connection) .djs-visual> :nth-child(1) {
-     fill: rgb(130, 175, 130) !important;
+     stroke: rgb(0, 114, 206) !important;
  }
 
  /* Style for sequence flows (connections) */
  .highlight.djs-connection .djs-visual path {
-     stroke: rgb(130, 175, 130) !important;
+     stroke: rgb(0, 114, 206) !important;
      stroke-width: 2px !important;
  }
 
  /* Style for sequence flow markers/arrows */
  .highlight.djs-connection .djs-visual> :nth-child(2) path {
-     fill: rgb(130, 175, 130) !important;
-     stroke: rgb(130, 175, 130) !important;
+     fill: rgb(0, 114, 206) !important;
+     stroke: rgb(0, 114, 206) !important;
  }
 
  .tree ul li {
@@ -43,14 +43,13 @@
 
  /* Header styling */
  h1 {
-     color: #0d6efd;
      font-weight: 600;
      font-size: 2rem;
      border-bottom: 1px solid #dee2e6;
      margin-bottom: 0rem;
      padding-left: 1rem;
      padding-bottom: 1rem;
-     background-color: #f1f4f9;
+     background-color: #f4f4f4;
  }
 
  h4 {
@@ -60,7 +59,7 @@
  }
 
  h5 {
-     color: #0d6efd;
+     color: #495057;
      font-size: 1.1rem;
      margin-top: 1.5rem;
      font-weight: 600;
@@ -73,7 +72,7 @@
 
  /* Tree navigation panel */
  .col-auto.border-end {
-     background-color: #f1f4f9;
+     background-color: #f4f4f4;
      border-right: 1px solid #dee2e6 !important;
      padding: 1.5rem 0.75rem;
      min-width: 300px;
@@ -99,8 +98,7 @@
  }
 
  .tree-node:hover {
-     background-color: rgba(13, 110, 253, 0.1);
-     color: #0d6efd;
+     background-color: #E6E7E8;
      text-decoration: none;
      cursor: pointer;
  }
@@ -128,7 +126,7 @@
 
  .progress-bar {
      border-radius: 1rem;
-     background-color: #198754;
+     background-color: #26D07C !important;
  }
 
  /* Cards styling */
@@ -150,7 +148,6 @@
  .card-title {
      font-size: 1.75rem;
      font-weight: 700;
-     color: #0d6efd;
  }
 
  /* List groups */
@@ -178,15 +175,15 @@
  }
 
  .badge.bg-secondary {
-     background-color: #6c757d !important;
+     background-color: #888B8D !important;
  }
 
  .badge.bg-info {
-     background-color: #0dcaf0 !important;
+     background-color: #00A7B5 !important;
  }
 
  .badge.bg-primary {
-     background-color: #0d6efd !important;
+     background-color: #0072CE !important;
  }
 
  /* Tree node icons */
@@ -200,5 +197,6 @@
 
  /* Hover effect for list items */
  .list-group-item:hover {
-     background-color: rgba(13, 110, 253, 0.04);
+     background-color: #E6E7E8;
+     cursor: pointer;
  }

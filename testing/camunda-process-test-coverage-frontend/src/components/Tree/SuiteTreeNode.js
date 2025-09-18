@@ -16,8 +16,8 @@ function SuiteTreeNode({ node, onSelect }) {
                     onSelect("suite", node);
                 }}
             >
-                {expanded ? "▼ " : "▶ "}
-                <i className={`bi bi-folder me-2`}></i>
+                <i className={expanded ? `bi me-2 bi-caret-down-fill` : `bi me-2 bi-caret-right-fill`}></i>
+                <i className={`bi bi-folder-fill me-2`}></i>
                 <span>{node.name}</span>
             </div>
             {expanded && (
