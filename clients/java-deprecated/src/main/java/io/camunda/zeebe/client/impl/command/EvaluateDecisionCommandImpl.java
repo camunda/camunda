@@ -92,6 +92,7 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
    *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub, JsonMapper ,
    *     ZeebeClientConfiguration, Predicate, HttpClient)}
    */
+  @Deprecated
   public EvaluateDecisionCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
