@@ -161,7 +161,6 @@ public class CamundaExporter implements Exporter {
       metrics = null;
     }
 
-    metadata = null;
     provider.reset();
 
     if (taskManager != null) {
