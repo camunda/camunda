@@ -950,7 +950,6 @@ jobs:
           -Dsurefire.failIfNoSpecifiedTests=false
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
-      # TODO: We edited the job up until the point. The remainder is copied from the general UTs still
       - name: Analyze Test Runs
         id: analyze-test-run
         if: always()
@@ -961,7 +960,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "General - [UT]"
+          name: "General - ArchUnit Tests"
       - name: Observe build status
         if: always()
         continue-on-error: true
