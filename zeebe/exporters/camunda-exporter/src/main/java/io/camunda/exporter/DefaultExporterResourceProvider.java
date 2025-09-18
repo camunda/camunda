@@ -334,6 +334,28 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
   }
 
   @Override
+  public void reset() {
+    // clean up all references
+    indexDescriptors = null;
+    if (exportHandlers != null) {
+      exportHandlers.clear();
+      exportHandlers = null;
+    }
+    if (batchOperationCache != null) {
+      batchOperationCache.clear();
+      batchOperationCache = null;
+    }
+    if (formCache != null) {
+      formCache.clear();
+      formCache = null;
+    }
+    if (processCache != null) {
+      processCache.clear();
+      processCache = null;
+    }
+  }
+
+  @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
     return indexDescriptors.indices();
   }
