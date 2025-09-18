@@ -125,4 +125,46 @@ describe('OperationEntryStatus', () => {
     expect(screen.getByText(/4 retries succeeded/i)).toBeInTheDocument();
     expect(screen.getByText(/2 rejected/i)).toBeInTheDocument();
   });
+
+  it('should render delete process instance operation status', () => {
+    render(
+      <OperationEntryStatus
+        type="DELETE_PROCESS_INSTANCE"
+        failedCount={1}
+        completedCount={3}
+        state="COMPLETED"
+      />,
+    );
+
+    expect(screen.getByText(/3 operations succeeded/i)).toBeInTheDocument();
+    expect(screen.getByText(/1 failed/i)).toBeInTheDocument();
+  });
+
+  it('should render delete process definition operation status', () => {
+    render(
+      <OperationEntryStatus
+        type="DELETE_PROCESS_DEFINITION"
+        failedCount={0}
+        completedCount={2}
+        state="COMPLETED"
+      />,
+    );
+
+    expect(screen.getByText(/2 operations succeeded/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(failed)/i)).not.toBeInTheDocument();
+  });
+
+  it('should render delete decision definition operation status', () => {
+    render(
+      <OperationEntryStatus
+        type="DELETE_DECISION_DEFINITION"
+        failedCount={5}
+        completedCount={0}
+        state="COMPLETED"
+      />,
+    );
+
+    expect(screen.getByText(/5 operations failed/i)).toBeInTheDocument();
+    expect(screen.queryByText(/\d+\s(succeeded)/i)).not.toBeInTheDocument();
+  });
 });
