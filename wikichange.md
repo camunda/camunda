@@ -1,3 +1,30 @@
+## Ownership
+Each CI test file has an owning team. The owning team can be found either through the `CODEOWNERS` file or on the metadata in the file itself. The `CODEOWNERS` file is organized and broken down by team, any additions to the file should follow that convention. The metadata on a GHA workflow file is used by a scraping tool so that it is easy to gather information about the current state of CI. You can look at the metadata for a quick overview of the owning team, where the tests live, how the test is called, and a description of what the file is actually testing
+
+Metadata follows this structure and is placed at the beginning of a GHA workflow file
+
+```
+# <Description of what the GHA is running and what is being tested>
+# test location: <The filepath of the tests being run>
+# owner: <The name of the owning team>
+```
+
+Each testing job sound also print out the ownership information in the logs when it runs. This is to make it easy to identify the owning team when looking at individual test runs.
+
+The log messages should follow this structure:
+
+```
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+```
+The `env` variables should be set at the job or at the workflow level for reusability. The values should match the metadata at the top of the file.
+```
+    env:
+      TEST_PRODUCT: Optimize
+      TEST_OWNER: Core Features
+      TEST_TYPE: Build
+```
+
 ## Naming Conventions
 
 Names for CI tests are composed by Github Actions, which is a combination of CI job names. The composed name is shown on PRs and when viewing an individual test run in the Github UI. The composed name should follow the below naming convention to ensure consistency, clarity across the CI system, make it easy to identify the owning team, and which component is being tested.
