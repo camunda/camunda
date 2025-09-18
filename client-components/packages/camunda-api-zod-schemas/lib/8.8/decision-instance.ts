@@ -44,8 +44,8 @@ type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
 const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
-		'decisionInstanceKey',
-		'decisionInstanceId',
+		'decisionEvaluationKey',
+		'decisionEvaluationInstanceKey',
 		'state',
 		'evaluationDate',
 		'evaluationFailure',
@@ -65,7 +65,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 			evaluationDate: advancedDateTimeFilterSchema,
 			decisionDefinitionKey: basicStringFilterSchema,
 			...decisionInstanceSchema.pick({
-				decisionInstanceId: true,
+        decisionEvaluationInstanceKey: true,
 				state: true,
 				evaluationFailure: true,
 				decisionDefinitionId: true,
@@ -73,7 +73,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 				decisionDefinitionVersion: true,
 				decisionDefinitionType: true,
 				tenantId: true,
-				decisionInstanceKey: true,
+				decisionEvaluationKey: true,
 				processDefinitionKey: true,
 				processInstanceKey: true,
 				elementInstanceKey: true,
