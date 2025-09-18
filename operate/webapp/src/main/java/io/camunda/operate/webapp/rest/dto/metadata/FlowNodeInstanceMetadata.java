@@ -10,16 +10,9 @@ package io.camunda.operate.webapp.rest.dto.metadata;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import java.time.OffsetDateTime;
 
-@JsonTypeInfo(
-    use = JsonTypeInfo.Id.NAME,
-    include = As.PROPERTY,
-    property = "flowNodeType",
-    defaultImpl = FlowNodeInstanceMetadataDto.class)
 @JsonSubTypes({
   @JsonSubTypes.Type(value = UserTaskInstanceMetadataDto.class, name = "USER_TASK"),
   @JsonSubTypes.Type(value = ServiceTaskInstanceMetadataDto.class, name = "SERVICE_TASK"),
