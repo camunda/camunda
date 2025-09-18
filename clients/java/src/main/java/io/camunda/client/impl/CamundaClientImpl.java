@@ -652,7 +652,7 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public CorrelateMessageCommandStep1 newCorrelateMessageCommand() {
-    return new CorrelateMessageCommandImpl(httpClient, jsonMapper);
+    return new CorrelateMessageCommandImpl(config, httpClient, jsonMapper);
   }
 
   @Override
