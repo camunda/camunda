@@ -24,6 +24,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import io.camunda.process.test.impl.configuration.CoverageReportConfiguration;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
@@ -129,10 +130,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
             zeebeJsonMapper);
 
     // create process coverage
+    final CoverageReportConfiguration coverageReportConfiguration =
+        runtimeConfiguration.getCoverage();
     processCoverage =
         processCoverageBuilder
             .testClass(testContext.getTestClass())
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .reportDirectory(coverageReportConfiguration.getReportDirectory())
+            .excludeProcessDefinitionIds(coverageReportConfiguration.getExcludedProcesses())
             .build();
 
     // initialize json mapper
