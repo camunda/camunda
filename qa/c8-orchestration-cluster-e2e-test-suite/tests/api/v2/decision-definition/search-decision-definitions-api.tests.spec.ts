@@ -13,16 +13,16 @@ import {
   assertUnauthorizedRequest,
   assertPaginatedRequest,
   assertBadRequest,
-} from '../../../utils/http';
-import {defaultAssertionOptions} from '../../../utils/constants';
+} from '../../../../utils/http';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertDecisionDefinitionInResponse,
   DECISION_DEFINITION_RESPONSE_FROM_DEPLOYMENT,
   deployDecisionAndStoreResponse,
-} from '../../../utils/requestHelpers';
+} from '../../../../utils/requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
-test.describe.parallel('Decision Definitions Search API Tests', () => {
+test.describe.parallel('Search Decision Definitions API Tests', () => {
   const state: Record<string, unknown> = {};
   let decisionDefinition1: DecisionDeployment;
   let decisionDefinition2: DecisionDeployment;
