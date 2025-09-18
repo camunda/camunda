@@ -33,6 +33,7 @@ defaults:
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_PRODUCT: Camunda
 
 jobs:
   detect-changes:
@@ -918,10 +919,15 @@ jobs:
     timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
+    env:
+      TEST_OWNER: General
+      TEST_TYPE: Unit
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
       - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: archunit-tests
