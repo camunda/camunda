@@ -9,6 +9,7 @@
 import {expect, test} from '@playwright/test';
 import {
   assertRequiredFields,
+  assertUnauthorizedRequest,
   buildUrl,
   defaultHeaders,
 } from '../../../utils/http';
@@ -37,13 +38,7 @@ test.describe('Cluster API Tests', () => {
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {
     const res = await request.get(buildUrl('/topology'));
-    expect(res.status()).toBe(401);
-    const result = await res.json();
-    expect(result.title).toBe('Unauthorized');
-    expect(result.detail).toBe(
-      'An Authentication object was not found in the SecurityContext',
-    );
-    expect(result.instance).toBe('/v2/topology');
+    await assertUnauthorizedRequest(res);
   });
 
   test('Get Cluster Status', async ({request}) => {
