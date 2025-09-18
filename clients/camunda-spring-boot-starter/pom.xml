@@ -207,6 +207,11 @@
               <groupId>org.springframework.boot</groupId>
               <artifactId>spring-boot-configuration-processor</artifactId>
             </path>
+            <path>
+              <groupId>io.camunda</groupId>
+              <artifactId>annotation-processor</artifactId>
+              <version>${project.version}</version>
+            </path>
           </annotationProcessorPaths>
         </configuration>
       </plugin>
