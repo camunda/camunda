@@ -116,6 +116,26 @@ class MappingRuleAuthorizationIT {
   }
 
   @Test
+  void getMappingRuleShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(UNAUTHORIZED) final CamundaClient camundaClient) {
+    assertThatThrownBy(() -> camundaClient.newMappingRuleGetRequest("mappingRule1").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  void getMappingRuleShouldReturnMappingRuleIfAuthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    // when - get the mapping rule (this should not throw an exception)
+    final var mappingRule = camundaClient.newMappingRuleGetRequest("mappingRule1").send().join();
+
+    // then
+    assertThat(mappingRule.getMappingRuleId()).isEqualTo("mappingRule1");
+    assertThat(mappingRule.getClaimName()).isEqualTo("test-name");
+    assertThat(mappingRule.getClaimValue()).isEqualTo("test-value");
+  }
+
+  @Test
   void deleteMappingRuleShouldDeleteMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
     // given - create a mapping rule specifically for deletion in this test
