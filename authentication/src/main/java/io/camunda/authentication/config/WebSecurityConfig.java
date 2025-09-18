@@ -467,8 +467,7 @@ public class WebSecurityConfig {
         final HttpSecurity httpSecurity,
         final AuthFailureHandler authFailureHandler,
         final SecurityConfiguration securityConfiguration,
-        final CookieCsrfTokenRepository csrfTokenRepository,
-        final CamundaAuthenticationProvider authenticationProvider)
+        final CookieCsrfTokenRepository csrfTokenRepository)
         throws Exception {
       LOG.info("The API is protected by HTTP Basic authentication.");
       final var filterChainBuilder =
@@ -758,8 +757,7 @@ public class WebSecurityConfig {
         final SecurityConfiguration securityConfiguration,
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
-        final OAuth2AuthorizedClientManager authorizedClientManager,
-        final CamundaAuthenticationProvider authenticationProvider)
+        final OAuth2AuthorizedClientManager authorizedClientManager)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -779,6 +777,8 @@ public class WebSecurityConfig {
                           securityConfiguration.getSaas().isConfigured()))
               .exceptionHandling(
                   (exceptionHandling) -> exceptionHandling.accessDeniedHandler(authFailureHandler))
+              .sessionManagement(
+                  configurer -> configurer.sessionCreationPolicy(SessionCreationPolicy.NEVER))
               .cors(AbstractHttpConfigurer::disable)
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
