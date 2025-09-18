@@ -29,6 +29,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
@@ -92,6 +93,19 @@ final class ElasticsearchExporterTest {
 
     // when
     assertThatCode(() -> exporter.open(controller)).doesNotThrowAnyException();
+  }
+
+  @Test
+  void shouldCloseElasticsearchClientIfExporterFailedToOpen() throws IOException {
+    // given
+    final ExporterTestController controller = mock(ExporterTestController.class);
+    doThrow(new RuntimeException("Failed opening exporter!")).when(controller).readMetadata();
+
+    // then
+    assertThatThrownBy(() -> exporter.open(controller))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed opening exporter!");
+    verify(client).close();
   }
 
   @Nested
