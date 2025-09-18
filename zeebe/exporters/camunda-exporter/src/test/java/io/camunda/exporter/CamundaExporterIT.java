@@ -12,7 +12,6 @@ import static io.camunda.exporter.utils.CamundaExporterSchemaUtils.createSchemas
 import static io.camunda.search.test.utils.SearchDBExtension.CUSTOM_PREFIX;
 import static io.camunda.search.test.utils.SearchDBExtension.TEST_INTEGRATION_OPENSEARCH_AWS_URL;
 import static io.camunda.search.test.utils.SearchDBExtension.ZEEBE_IDX_PREFIX;
-import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
@@ -27,7 +26,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.cache.ExporterEntityCacheProvider;
 import io.camunda.exporter.config.ConnectionTypes;
@@ -38,7 +36,6 @@ import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
@@ -749,22 +746,11 @@ final class CamundaExporterIT {
       // Simulate existing zeebe index so it will not skip the wait for importers
       clientAdapter.index("1", zeebeIndexPrefix + "-decision_8.7.0_", Map.of("key", "12345"));
 
-      // if schemas are never created then import position indices do not exist and all checks about
-      // whether the importers are completed will return false.
-      final var provider = new DefaultExporterResourceProvider();
-      final var indexDescriptors = mock(IndexDescriptors.class);
-      when(indexDescriptors.indices())
-          .thenReturn(List.of()) // for schemaManager.isSchemaReadyForUse()
-          .thenReturn( // for importPositionIndices that is passed for
-              // searchEngineClient.importersCompleted;
-              List.of(
-                  new ImportPositionIndex(
-                      CUSTOM_PREFIX, config.getConnect().getTypeEnum().isElasticSearch())));
-      when(indexDescriptors.templates()).thenReturn(emptyList());
-      final var camundaExporter = new CamundaExporter(provider);
+      final var camundaExporter = new CamundaExporter();
+      // we don't want to stop on the SchemaManager checks
+      config.setCreateSchema(false);
       final var context = getContextFromConfig(config);
       camundaExporter.configure(context);
-      provider.setIndexDescriptors(indexDescriptors);
       camundaExporter.open(controller);
 
       clientAdapter.index(
