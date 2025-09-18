@@ -16,6 +16,7 @@ import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
 import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.security.AuthorizationCheckerConfiguration;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
 import io.camunda.migration.identity.config.cluster.ClusterProperties;
 import io.camunda.migration.identity.config.cluster.MembershipConfig;
@@ -46,6 +47,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.context.annotation.Profile;
 
 @Configuration(proxyBeanMethods = false)
@@ -58,6 +60,11 @@ import org.springframework.context.annotation.Profile;
       "io.camunda.application.commons.clustering",
       // security setup is needed for service layer
       "io.camunda.application.commons.security"
+    },
+    excludeFilters = {
+      @ComponentScan.Filter(
+          type = FilterType.ASSIGNABLE_TYPE,
+          value = AuthorizationCheckerConfiguration.class)
     })
 @Profile("identity-migration")
 @EnableConfigurationProperties(IdentityMigrationProperties.class)
