@@ -113,7 +113,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.ENTITY_ADDED, record, command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authCheckBehavior.clearTenantIdCache();
+          authCheckBehavior.clearAuthorizationsCache();
           return true;
         });
 
@@ -130,7 +130,7 @@ public class TenantAddEntityProcessor implements DistributedTypedRecordProcessor
       stateWriter.appendFollowUpEvent(command.getKey(), TenantIntent.ENTITY_ADDED, record);
       sideEffectWriter.appendSideEffect(
           () -> {
-            authCheckBehavior.clearTenantIdCache();
+            authCheckBehavior.clearAuthorizationsCache();
             return true;
           });
     }

@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavi
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -48,6 +49,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
   private final StateWriter stateWriter;
   private final TypedRejectionWriter rejectionWriter;
   private final TypedResponseWriter responseWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final CommandDistributionBehavior commandDistributionBehavior;
 
   public TenantDeleteProcessor(
@@ -65,6 +67,7 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     responseWriter = writers.response();
+    sideEffectWriter = writers.sideEffect();
     this.commandDistributionBehavior = commandDistributionBehavior;
   }
 
@@ -100,6 +103,12 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
 
     stateWriter.appendFollowUpEvent(tenantKey, TenantIntent.DELETED, record);
     responseWriter.writeEventOnCommand(tenantKey, TenantIntent.DELETED, record, command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
+
     distributeCommand(command);
   }
 
@@ -114,6 +123,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
               deleteAuthorizations(command.getValue());
               stateWriter.appendFollowUpEvent(
                   command.getKey(), TenantIntent.DELETED, command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authCheckBehavior.clearAuthorizationsCache();
+                    return true;
+                  });
             },
             () ->
                 rejectCommand(

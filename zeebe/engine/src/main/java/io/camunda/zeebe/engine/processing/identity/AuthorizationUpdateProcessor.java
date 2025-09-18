@@ -11,6 +11,7 @@ import static io.camunda.zeebe.engine.processing.identity.PermissionsBehavior.AU
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -30,6 +31,8 @@ public class AuthorizationUpdateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
 
   public AuthorizationUpdateProcessor(
@@ -43,6 +46,8 @@ public class AuthorizationUpdateProcessor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
+    authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
   }
 
@@ -79,11 +84,17 @@ public class AuthorizationUpdateProcessor
                 permissionsBehavior.authorizationExists(
                     s, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
         .ifRightOrLeft(
-            ignored ->
-                stateWriter.appendFollowUpEvent(
-                    command.getValue().getAuthorizationKey(),
-                    AuthorizationIntent.UPDATED,
-                    command.getValue()),
+            ignored -> {
+              stateWriter.appendFollowUpEvent(
+                  command.getValue().getAuthorizationKey(),
+                  AuthorizationIntent.UPDATED,
+                  command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authorizationCheckBehavior.clearAuthorizationsCache();
+                    return true;
+                  });
+            },
             rejection ->
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
@@ -107,5 +118,10 @@ public class AuthorizationUpdateProcessor
         AuthorizationIntent.UPDATED,
         authorizationRecord,
         command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authorizationCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 }

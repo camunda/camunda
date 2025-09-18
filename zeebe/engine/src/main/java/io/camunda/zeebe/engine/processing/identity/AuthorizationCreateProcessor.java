@@ -85,7 +85,7 @@ public class AuthorizationCreateProcessor
                   command.getKey(), AuthorizationIntent.CREATED, command.getValue());
               sideEffectWriter.appendSideEffect(
                   () -> {
-                    authorizationCheckBehavior.clearAuthorizationScopeCache();
+                    authorizationCheckBehavior.clearAuthorizationsCache();
                     return true;
                   });
             },
@@ -109,7 +109,7 @@ public class AuthorizationCreateProcessor
         .distribute(command);
     sideEffectWriter.appendSideEffect(
         () -> {
-          authorizationCheckBehavior.clearAuthorizationScopeCache();
+          authorizationCheckBehavior.clearAuthorizationsCache();
           return true;
         });
   }

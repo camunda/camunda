@@ -64,7 +64,7 @@ public final class AuthorizationCheckBehavior {
   private final boolean multiTenancyEnabled;
 
   private final LoadingCache<AuthorizationRequestMetadata, Either<Rejection, Void>>
-      authorizationScopeCache;
+      authorizationsCache;
 
   public AuthorizationCheckBehavior(
       final ProcessingState processingState,
@@ -76,7 +76,7 @@ public final class AuthorizationCheckBehavior {
     authorizationsEnabled = securityConfig.getAuthorizations().isEnabled();
     multiTenancyEnabled = securityConfig.getMultiTenancy().isChecksEnabled();
 
-    authorizationScopeCache =
+    authorizationsCache =
         CacheBuilder.newBuilder()
             .maximumSize(config.getAuthorizationsCacheCapacity())
             .build(
@@ -122,7 +122,7 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequestMetadata request) {
     try {
-      return authorizationScopeCache.get(request);
+      return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
       return Either.left(
           new Rejection(
@@ -606,8 +606,8 @@ public final class AuthorizationCheckBehavior {
     return MappingRuleMatcher.matchingRules(mappingRuleState.getAll().stream(), claims);
   }
 
-  public void clearAuthorizationScopeCache() {
-    authorizationScopeCache.invalidateAll();
+  public void clearAuthorizationsCache() {
+    authorizationsCache.invalidateAll();
   }
 
   public record AuthorizationRequestMetadata(
