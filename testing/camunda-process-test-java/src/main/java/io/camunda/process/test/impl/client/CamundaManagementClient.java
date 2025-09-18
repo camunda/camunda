@@ -217,7 +217,7 @@ public final class CamundaManagementClient {
 
   private boolean isNotSuccessfulStatusCode(final int statusCode) {
     /*
-     * Multitenancy uses basic auth to secure the camunda gateway. During the purge, the default
+     * Multi-tenancy uses basic auth to secure the camunda gateway. During the purge, the default
      * user is briefly deleted and previously authenticated requests will fail until the user's
      * been recreated. Therefore, we choose to silently ignore 401 errors.
      */

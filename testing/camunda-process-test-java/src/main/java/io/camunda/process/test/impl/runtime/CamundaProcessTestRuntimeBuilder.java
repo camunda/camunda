@@ -84,7 +84,7 @@ public class CamundaProcessTestRuntimeBuilder {
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
 
-  private boolean isMultitenancyEnabled = false;
+  private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
 
   // ============ For testing =================
 
@@ -215,8 +215,8 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public CamundaProcessTestRuntimeBuilder withCamundaClientRequestTimeout(
       final Duration requestTimeout) {
-    this.camundaClientRequestTimeout = requestTimeout;
-    this.remoteCamundaClientBuilderFactory =
+    camundaClientRequestTimeout = requestTimeout;
+    remoteCamundaClientBuilderFactory =
         () -> remoteCamundaClientBuilderFactory.get().defaultRequestTimeout(requestTimeout);
     return this;
   }
@@ -241,13 +241,13 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public CamundaProcessTestRuntimeBuilder withCredentialsProvider(
       final CredentialsProvider credentialsProvider) {
-    this.remoteCamundaClientBuilderFactory =
+    remoteCamundaClientBuilderFactory =
         () -> remoteCamundaClientBuilderFactory.get().credentialsProvider(credentialsProvider);
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withMultitenancyEnabled(final boolean enabled) {
-    this.isMultitenancyEnabled = enabled;
+  public CamundaProcessTestRuntimeBuilder withMultiTenancyEnabled(final boolean enabled) {
+    isMultiTenancyEnabled = enabled;
     return this;
   }
 
@@ -331,8 +331,8 @@ public class CamundaProcessTestRuntimeBuilder {
     return connectorsEnabled;
   }
 
-  public boolean isMultitenancyEnabled() {
-    return isMultitenancyEnabled;
+  public boolean isMultiTenancyEnabled() {
+    return isMultiTenancyEnabled;
   }
 
   public Map<String, String> getConnectorsSecrets() {

@@ -48,7 +48,7 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
     camundaRestApiAddress = clientConfiguration.getRestAddress();
     camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
 
-    if (runtimeBuilder.isMultitenancyEnabled()) {
+    if (runtimeBuilder.isMultiTenancyEnabled()) {
       LOGGER.warn(
           "Multitenancy detected, but not enabled. Activating multitenancy with a remote "
               + "Camunda runtime has no effect. This feature is only supported for self-managed "

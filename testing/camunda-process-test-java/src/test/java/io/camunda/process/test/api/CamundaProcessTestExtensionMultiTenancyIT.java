@@ -46,7 +46,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
  * This test is a combination of the ConnectorsIT and the ExtensionIT to ensure
  * that the new multitenancy configuration works with and without the connectors container.
  */
-public class CamundaProcessTestExtensionMultitenancyIT {
+public class CamundaProcessTestExtensionMultiTenancyIT {
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";
@@ -57,14 +57,14 @@ public class CamundaProcessTestExtensionMultitenancyIT {
           .withConnectorsEnabled(true)
           .withConnectorsSecret(
               "CONNECTORS_URL", "http://connectors:8080/actuator/health/readiness")
-          .withMultitenancyEnabled();
+          .withMultiTenancyEnabled(true);
 
   // to be injected
   private CamundaClient client;
   private CamundaProcessTestContext processTestContext;
 
   @Test
-  public void shouldHaveFullMultitenancySupportAndIsolation() {
+  public void shouldHaveFullMultiTenancySupportAndIsolation() {
     // given
     final String tenantA = "tenant1";
     final String tenantB = "tenant2";
@@ -172,7 +172,7 @@ public class CamundaProcessTestExtensionMultitenancyIT {
   }
 
   @Test
-  void multitenancyWithConnectorsEnabled() throws IOException {
+  void multiTenancyWithConnectorsEnabled() throws IOException {
     // given
     client
         .newDeployResourceCommand()

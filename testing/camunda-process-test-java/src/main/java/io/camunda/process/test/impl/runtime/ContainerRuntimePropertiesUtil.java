@@ -42,6 +42,7 @@ public final class ContainerRuntimePropertiesUtil {
 
   public static final String PROPERTY_NAME_RUNTIME_MODE = "runtimeMode";
   public static final String PROPERTY_NAME_ELASTICSEARCH_VERSION = "elasticsearch.version";
+  public static final String PROPERTY_NAME_MULTI_TENANCY_ENABLED = "multiTenancyEnabled";
 
   private static final String BASE_DIR = "/";
 
@@ -50,6 +51,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final RemoteRuntimeProperties remoteRuntimeProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
+  private final boolean multiTenancyEnabled;
 
   private final String elasticsearchVersion;
 
@@ -70,6 +72,11 @@ public final class ContainerRuntimePropertiesUtil {
             PROPERTY_NAME_RUNTIME_MODE,
             v -> parseRuntimeModeOrDefault(v, CamundaProcessTestRuntimeMode.MANAGED),
             CamundaProcessTestRuntimeMode.MANAGED);
+
+    multiTenancyEnabled =
+        getPropertyOrDefault(properties, PROPERTY_NAME_MULTI_TENANCY_ENABLED, "false")
+            .trim()
+            .equalsIgnoreCase("true");
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
@@ -117,7 +124,7 @@ public final class ContainerRuntimePropertiesUtil {
 
     try {
       return CamundaProcessTestRuntimeMode.valueOf(value.trim().toUpperCase());
-    } catch (IllegalArgumentException e) {
+    } catch (final IllegalArgumentException e) {
       return defaultValue;
     }
   }
@@ -208,5 +215,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {
     return remoteRuntimeProperties;
+  }
+
+  public boolean isMultiTenancyEnabled() {
+    return multiTenancyEnabled;
   }
 }

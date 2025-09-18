@@ -38,17 +38,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 /*
  * This test is a combination of the ConnectorsIT and the ExtensionIT to ensure
- * that the new multitenancy configuration works with and without the connectors container.
+ * that the new multi-tenancy configuration works with and without the connectors container.
  */
 @SpringBootTest(
-    classes = {CamundaSpringProcessMultitenancyTestListenerIT.class},
+    classes = {CamundaSpringProcessMultiTenancyTestListenerIT.class},
     properties = {
-      "io.camunda.process.test.multitenancy-enabled=true",
+      "io.camunda.process.test.multi-tenancy-enabled=true",
       "io.camunda.process.test.connectors-enabled=true",
       "io.camunda.process.test.connectors-secrets.CONNECTORS_URL=http://connectors:8080/actuator/health/readiness"
     })
 @CamundaSpringProcessTest
-public class CamundaSpringProcessMultitenancyTestListenerIT {
+public class CamundaSpringProcessMultiTenancyTestListenerIT {
 
   // The ID is part of the connector configuration in the BPMN element
   private static final String INBOUND_CONNECTOR_ID = "941c5492-ab2b-4305-aa18-ac86991ff4ca";

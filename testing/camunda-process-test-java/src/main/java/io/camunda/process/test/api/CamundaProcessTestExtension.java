@@ -22,7 +22,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -173,11 +173,11 @@ public class CamundaProcessTestExtension
 
   private CamundaManagementClient createManagementClient(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    if (runtimeBuilder.isMultitenancyEnabled()) {
+    if (runtimeBuilder.isMultiTenancyEnabled()) {
       return CamundaManagementClient.createAuthenticatedClient(
           runtime.getCamundaMonitoringApiAddress(),
           runtime.getCamundaRestApiAddress(),
-          CamundaContainer.MultitenancyConfiguration.getBasicAuthCredentials());
+          MultiTenancyConfiguration.getBasicAuthCredentials());
     } else {
       return CamundaManagementClient.createClient(
           runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
@@ -578,8 +578,14 @@ public class CamundaProcessTestExtension
     return this;
   }
 
-  public CamundaProcessTestExtension withMultitenancyEnabled() {
-    runtimeBuilder.withMultitenancyEnabled(true);
+  /**
+   * Enable or disable multi-tenancy in the runtime. By default, multi-tenancy is disabled.
+   *
+   * @param enabled set {@code true} to enable multi-tenancy
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
+    runtimeBuilder.withMultiTenancyEnabled(enabled);
     return this;
   }
 
