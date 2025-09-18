@@ -10,7 +10,13 @@ import {formatDate} from 'modules/utils/date';
 import {useLoadingProgress} from './useLoadingProgress';
 import {Container, Details, Title, Header, ProgressBar} from './styled';
 import {OperationEntryStatus} from './OperationEntryStatus';
-import {Error, Tools, RetryFailed, MigrateAlt} from '@carbon/react/icons';
+import {
+  Error,
+  Tools,
+  RetryFailed,
+  MigrateAlt,
+  TrashCan,
+} from '@carbon/react/icons';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
@@ -19,17 +25,32 @@ import type {
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate';
+type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate' | 'Delete';
 
-const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
+type ExtendedOperationLabelType =
+  | BatchOperationType
+  | 'DELETE_PROCESS_INSTANCE'
+  | 'DELETE_PROCESS_DEFINITION'
+  | 'DELETE_DECISION_DEFINITION';
+
+const TYPE_LABELS: Readonly<
+  Record<ExtendedOperationLabelType, OperationLabelType>
+> = {
   RESOLVE_INCIDENT: 'Retry',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
   MODIFY_PROCESS_INSTANCE: 'Modify',
   MIGRATE_PROCESS_INSTANCE: 'Migrate',
+  DELETE_PROCESS_INSTANCE: 'Delete',
+  DELETE_PROCESS_DEFINITION: 'Delete',
+  DELETE_DECISION_DEFINITION: 'Delete',
+};
+
+type ExtendedBatchOperation = Omit<BatchOperation, 'batchOperationType'> & {
+  batchOperationType: ExtendedOperationLabelType;
 };
 
 type Props = {
-  operation: BatchOperation;
+  operation: ExtendedBatchOperation;
 };
 
 const OperationsEntry: React.FC<Props> = ({operation}) => {
@@ -49,7 +70,7 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     isFinished: endDate !== undefined,
   });
 
-  const label = TYPE_LABELS[batchOperationType];
+  const label = TYPE_LABELS[batchOperationType] || 'Unknown Operation';
 
   return (
     <Container data-testid="operations-entry">
@@ -67,18 +88,25 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         {label === 'Migrate' && (
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
+        {label === 'Delete' && (
+          <TrashCan size={16} data-testid="operation-delete-icon" />
+        )}
       </Header>
-      <Link
-        data-testid="operation-id"
-        to={{
-          pathname: Paths.processes(),
-          search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${batchOperationKey}`,
-        }}
-        state={{hideOptionalFilters: true}}
-        onClick={panelStatesStore.expandFiltersPanel}
-      >
-        {batchOperationKey}
-      </Link>
+      {!batchOperationType.startsWith('DELETE') ? (
+        <Link
+          data-testid="operation-id"
+          to={{
+            pathname: Paths.processes(),
+            search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${batchOperationKey}`,
+          }}
+          state={{hideOptionalFilters: true}}
+          onClick={panelStatesStore.expandFiltersPanel}
+        >
+          {batchOperationKey}
+        </Link>
+      ) : (
+        <span data-testid="operation-id">{batchOperationKey}</span>
+      )}
       {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         <OperationEntryStatus

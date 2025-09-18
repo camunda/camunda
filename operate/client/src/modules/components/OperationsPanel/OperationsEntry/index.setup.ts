@@ -11,7 +11,18 @@ import type {
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-const OPERATIONS: Record<BatchOperationType, BatchOperation> = {
+type ExtendedOperationType =
+  | BatchOperationType
+  | 'DELETE_PROCESS_INSTANCE'
+  | 'DELETE_PROCESS_DEFINITION'
+  | 'DELETE_DECISION_DEFINITION';
+
+const OPERATIONS: Record<
+  ExtendedOperationType,
+  Omit<BatchOperation, 'batchOperationType'> & {
+    batchOperationType: ExtendedOperationType;
+  }
+> = {
   RESOLVE_INCIDENT: {
     batchOperationKey: 'b42fd629-73b1-4709-befb-7ccd900fb18d',
     batchOperationType: 'RESOLVE_INCIDENT',
@@ -47,6 +58,36 @@ const OPERATIONS: Record<BatchOperationType, BatchOperation> = {
     batchOperationKey: '8ba1a9a7-8537-4af3-97dc-f7249743b20b',
     batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
     startDate: '2023-10-22T09:02:30.178+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
+    operationsFailedCount: 0,
+    operationsTotalCount: 1,
+    operationsCompletedCount: 1,
+    state: 'COMPLETED',
+  },
+  DELETE_PROCESS_INSTANCE: {
+    batchOperationKey: 'delete-pi-12345-67890-abcdef',
+    batchOperationType: 'DELETE_PROCESS_INSTANCE',
+    startDate: '2023-11-22T09:02:30.178+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
+    operationsFailedCount: 0,
+    operationsTotalCount: 3,
+    operationsCompletedCount: 3,
+    state: 'COMPLETED',
+  },
+  DELETE_PROCESS_DEFINITION: {
+    batchOperationKey: 'delete-pd-98765-43210-fedcba',
+    batchOperationType: 'DELETE_PROCESS_DEFINITION',
+    startDate: '2023-11-22T09:02:30.178+0100',
+    endDate: '2023-11-22T09:03:29.564+0100',
+    operationsFailedCount: 1,
+    operationsTotalCount: 2,
+    operationsCompletedCount: 1,
+    state: 'COMPLETED',
+  },
+  DELETE_DECISION_DEFINITION: {
+    batchOperationKey: 'delete-dd-11111-22222-33333',
+    batchOperationType: 'DELETE_DECISION_DEFINITION',
+    startDate: '2023-11-22T09:02:30.178+0100',
     endDate: '2023-11-22T09:03:29.564+0100',
     operationsFailedCount: 0,
     operationsTotalCount: 1,

@@ -137,6 +137,64 @@ describe('OperationsEntry', () => {
     expect(screen.getByTestId('operation-migrate-icon')).toBeInTheDocument();
   });
 
+  it('should render delete process instance operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_PROCESS_INSTANCE}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText('delete-pi-12345-67890-abcdef'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+  });
+
+  it('should render delete process definition operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_PROCESS_DEFINITION}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
+    expect(
+      screen.getByText('delete-pd-98765-43210-fedcba'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+  });
+
+  it('should render delete decision definition operation', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_DECISION_DEFINITION}
+      />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
+
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+    expect(screen.getByText(OPERATIONS_TIMESTAMP)).toBeInTheDocument();
+    expect(screen.getByText('delete-dd-11111-22222-33333')).toBeInTheDocument();
+    expect(screen.getByText('Delete')).toBeInTheDocument();
+    expect(screen.getByTestId('operation-delete-icon')).toBeInTheDocument();
+  });
+
   it('should render id link for non-delete instance operations', () => {
     render(
       <OperationsEntry
@@ -156,6 +214,26 @@ describe('OperationsEntry', () => {
         name: OPERATIONS.CANCEL_PROCESS_INSTANCE.batchOperationKey,
       }),
     ).toBeInTheDocument();
+  });
+
+  it('should render operation id as text for delete operations (not as link)', () => {
+    render(
+      <OperationsEntry
+        {...mockProps}
+        operation={OPERATIONS.DELETE_PROCESS_INSTANCE}
+      />,
+      {wrapper: createWrapper()},
+    );
+
+    expect(screen.getByTestId('operation-id')).toHaveTextContent(
+      'delete-pi-12345-67890-abcdef',
+    );
+
+    expect(
+      screen.queryByRole('link', {
+        name: OPERATIONS.DELETE_PROCESS_INSTANCE.batchOperationKey,
+      }),
+    ).not.toBeInTheDocument();
   });
 
   it('should filter by Operation and expand Filters Panel', async () => {
