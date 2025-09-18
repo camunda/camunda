@@ -18,12 +18,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWrit
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.AuthorizationCheckMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
@@ -31,7 +29,6 @@ import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -173,41 +170,20 @@ public class BpmnJobActivationBehavior {
     }
 
     final var claims = jobActivationProperties.claims();
-    final var authorizedTenantIds =
-        authorizationCheckBehavior.getAuthorizedTenantIds(claims);
-    final var authorizedProcessIds =
-        authorizationCheckBehavior.getAllAuthorizedScopes(
-            new AuthorizationRequest(
-                new JobAuthorizationCheckMetadata(claims),
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_PROCESS_INSTANCE,
-                ownerTenantId));
-
-    return authorizedTenantIds.isAuthorizedForTenantIds(tenantIds)
-        && isAuthorizedForJob(jobRecord, authorizedProcessIds);
+    return authorizationCheckBehavior
+        .isAuthorized(
+            AuthorizationRequest.builder()
+                .authorizationClaims(claims)
+                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                .tenantId(ownerTenantId)
+                .build())
+        .isRight(); // we only care if the job stream is authorized, not why it isn't
   }
 
   private boolean isAuthorizedForJob(
       final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
     return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
         || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
-  }
-
-  public record JobAuthorizationCheckMetadata(Map<String, Object> claims) implements AuthorizationCheckMetadata {
-
-    @Override
-    public Map<String, Object> getAuthorizations() {
-      return claims;
-    }
-
-    @Override
-    public long getBatchOperationReference() {
-      return RecordMetadataDecoder.batchOperationReferenceNullValue();
-    }
-
-    @Override
-    public boolean hasRequestMetadata() {
-      return false;
-    }
   }
 }
