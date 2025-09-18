@@ -340,7 +340,8 @@ public final class EndpointManager {
       topologyResponseBuilder
           .setClusterSize(topology.getClusterSize())
           .setPartitionsCount(topology.getPartitionsCount())
-          .setReplicationFactor(topology.getReplicationFactor());
+          .setReplicationFactor(topology.getReplicationFactor())
+          .setClusterId(topology.getClusterId());
 
       topology
           .getBrokers()

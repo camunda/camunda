@@ -214,6 +214,10 @@ components:
           nullable: true
           items:
             $ref: "#/components/schemas/BrokerInfo"
+        clusterId:
+          description: The cluster Id.
+          type: string
+          nullable: true
         clusterSize:
           description: The number of brokers in the cluster.
           type: integer
