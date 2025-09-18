@@ -529,24 +529,22 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Specifies process definition keys that should be excluded from coverage analysis. These
-   * processes will not be considered when calculating coverage metrics.
+   * Configures the coverage report to exclude the given processes.
    *
-   * @param processDefinitionIds an array of process definition ids to exclude
+   * @param processDefinitionIds the IDs of the process definitions to exclude
    * @return the extension builder
    */
-  public CamundaProcessTestExtension excludeProcessDefinitionIds(
+  public CamundaProcessTestExtension withCoverageExcludedProcesses(
       final String... processDefinitionIds) {
     processCoverageBuilder.excludeProcessDefinitionIds(processDefinitionIds);
     return this;
   }
 
   /**
-   * Specifies the output directory for coverage reports. Coverage reports will be generated and
-   * saved to this directory after test execution.
+   * Configures the output directory for the coverage reports. By default, the directory is {@code
+   * target/process-test-coverage/}.
    *
-   * @param reportDirectory the directory path where reports should be saved (defaults to
-   *     "target/process-test-coverage/")
+   * @param reportDirectory the directory to save the reports
    * @return the extension builder
    */
   public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
