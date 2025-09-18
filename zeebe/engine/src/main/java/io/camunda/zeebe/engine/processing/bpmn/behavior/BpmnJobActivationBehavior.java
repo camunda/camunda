@@ -176,6 +176,7 @@ public class BpmnJobActivationBehavior {
                 .authorizationClaims(claims)
                 .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                 .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                .addAuthorizationScope(AuthorizationScope.id(jobRecord.getBpmnProcessId()))
                 .tenantId(ownerTenantId)
                 .build())
         .isRight(); // we only care if the job stream is authorized, not why it isn't
