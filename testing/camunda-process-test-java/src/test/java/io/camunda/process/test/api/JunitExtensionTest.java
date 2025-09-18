@@ -18,13 +18,11 @@ package io.camunda.process.test.api;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.impl.NoopCredentialsProvider;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -36,7 +34,6 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
 import java.net.URI;
-import java.time.Duration;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -272,9 +269,7 @@ public class JunitExtensionTest {
             .withCamundaEnv(camundaEnvVars)
             .withCamundaEnv("env-3", "test-3")
             .withCamundaExposedPort(100)
-            .withCamundaExposedPort(200)
-            .withClientRequestTimeout(Duration.ofHours(1))
-            .withRemoteCamundaClientCredentialsProvider(new NoopCredentialsProvider());
+            .withCamundaExposedPort(200);
 
     // when
     extension.beforeAll(extensionContext);
@@ -291,9 +286,6 @@ public class JunitExtensionTest {
 
     verify(camundaRuntimeBuilder).withCamundaExposedPort(100);
     verify(camundaRuntimeBuilder).withCamundaExposedPort(200);
-
-    verify(camundaRuntimeBuilder).withCamundaClientRequestTimeout(Duration.ofHours(1));
-    verify(camundaRuntimeBuilder, times(1)).withCredentialsProvider(any());
   }
 
   @Test

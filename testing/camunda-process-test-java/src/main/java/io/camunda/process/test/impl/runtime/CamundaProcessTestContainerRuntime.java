@@ -74,7 +74,6 @@ public class CamundaProcessTestContainerRuntime
 
   private final boolean isMultiTenancyEnabled;
   private final boolean connectorsEnabled;
-  private final Duration camundaClientRequestTimeout;
 
   CamundaProcessTestContainerRuntime(
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
@@ -82,7 +81,6 @@ public class CamundaProcessTestContainerRuntime
 
     isMultiTenancyEnabled = builder.isMultiTenancyEnabled();
     connectorsEnabled = builder.isConnectorsEnabled();
-    camundaClientRequestTimeout = builder.getCamundaClientRequestTimeout();
 
     network = Network.newNetwork();
     camundaContainer = createCamundaContainer(network, builder);
@@ -222,8 +220,7 @@ public class CamundaProcessTestContainerRuntime
       final CamundaClientBuilder client =
           CamundaClient.newClientBuilder()
               .restAddress(getCamundaRestApiAddress())
-              .grpcAddress(getCamundaGrpcApiAddress())
-              .defaultRequestTimeout(camundaClientRequestTimeout);
+              .grpcAddress(getCamundaGrpcApiAddress());
 
       if (isMultiTenancyEnabled) {
         client.credentialsProvider(

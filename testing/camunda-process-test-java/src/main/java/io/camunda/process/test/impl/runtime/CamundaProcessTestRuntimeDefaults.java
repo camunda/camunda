@@ -82,10 +82,9 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
   public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();
+
   public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
-  public static final Duration CAMUNDA_CLIENT_REQUEST_TIMEOUT =
-      PROPERTIES_UTIL.getCamundaClientRequestTimeout();
 
   public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
 }
