@@ -297,7 +297,7 @@ public class UserTaskHandlerTest {
                     .withValue(taskRecordValue)
                     .withTimestamp(System.currentTimeMillis()));
 
-    formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987L));
+    formCache.put(String.valueOf(formKey), new CachedFormEntity("my-form", 987));
     processCache.put(
         processDefinitionKey,
         new CachedProcessEntity("my-process", "v1", List.of(), Map.of(elementId, "my-flow-node")));

@@ -73,7 +73,7 @@ public class FormController extends ApiErrorController {
           @Parameter(
               description = "The version of the form. Valid only for deployed forms.",
               required = false)
-          final Long version) {
+          final Integer version) {
     if (!tasklistPermissionServices.hasWildcardPermissionToReadUserTask()) {
       throw new ForbiddenActionException(
           "User does not have permission to read resource. Please check your permissions.");

@@ -24,6 +24,8 @@ public final class ErrorMessages {
       "Both after and before cannot be set at the same time";
   public static final String ERROR_SEARCH_BEFORE_AND_AFTER_AND_FROM =
       "Both after/before and from cannot be set at the same time";
+  public static final String ERROR_SEARCH_UNKNOWN_PAGE_TYPE =
+      "Page type is unknown, please provide valid pagination parameters";
   public static final String ERROR_MESSAGE_AT_LEAST_ONE_FIELD = "At least one of %s is required";
   public static final String ERROR_MESSAGE_INVALID_TENANT =
       "Expected to handle request %s with tenant identifier '%s', but %s";

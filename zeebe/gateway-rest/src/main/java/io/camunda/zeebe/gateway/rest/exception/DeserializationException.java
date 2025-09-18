@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.search.entities;
+package io.camunda.zeebe.gateway.rest.exception;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+public class DeserializationException extends RuntimeException {
+  private static final long serialVersionUID = 1L;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record FormEntity(
-    Long formKey, String tenantId, String formId, String schema, Integer version)
-    implements TenantOwnedEntity {}
+  public DeserializationException(final String message) {
+    super(message);
+  }
+}

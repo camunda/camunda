@@ -725,7 +725,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturnFormItemForValidFormKey() {
     when(userTaskServices.getUserTaskForm(VALID_FORM_KEY))
-        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "bpmn-1", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "bpmn-1", "schema", 1)));
 
     webClient
         .get()

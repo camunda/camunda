@@ -406,7 +406,7 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
   @Test
   public void shouldReturnFormItemForValidFormKey() throws Exception {
     when(processDefinitionServices.getProcessDefinitionStartForm(1L))
-        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1L)));
+        .thenReturn(Optional.of(new FormEntity(0L, "tenant-1", "formId", "schema", 1)));
 
     webClient
         .get()

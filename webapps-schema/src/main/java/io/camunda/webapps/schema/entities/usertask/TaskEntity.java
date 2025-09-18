@@ -73,7 +73,7 @@ public class TaskEntity
   private String formId;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  private Long formVersion;
+  private Integer formVersion;
 
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Boolean isFormEmbedded;
@@ -286,11 +286,11 @@ public class TaskEntity
     return this;
   }
 
-  public Long getFormVersion() {
+  public Integer getFormVersion() {
     return formVersion;
   }
 
-  public TaskEntity setFormVersion(final Long formVersion) {
+  public TaskEntity setFormVersion(final Integer formVersion) {
     this.formVersion = formVersion;
     return this;
   }
@@ -377,10 +377,10 @@ public class TaskEntity
   }
 
   public TaskEntity addChangedAttribute(final String changedAttribute) {
-    if (this.changedAttributes == null) {
-      this.changedAttributes = new ArrayList<>();
+    if (changedAttributes == null) {
+      changedAttributes = new ArrayList<>();
     }
-    this.changedAttributes.add(changedAttribute);
+    changedAttributes.add(changedAttribute);
     return this;
   }
 

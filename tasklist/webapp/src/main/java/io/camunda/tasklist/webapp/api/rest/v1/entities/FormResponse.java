@@ -33,8 +33,8 @@ public class FormResponse {
   @Schema(
       description =
           "The version field is null in the case of an embedded form, while it represents the deployed form's version in other scenarios.",
-      format = "int64")
-  private Long version;
+      format = "int32")
+  private Integer version;
 
   @Schema(description = "The tenant ID associated with the form.")
   private String tenantId;
@@ -81,11 +81,11 @@ public class FormResponse {
     return this;
   }
 
-  public Long getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
-  public FormResponse setVersion(final Long version) {
+  public FormResponse setVersion(final Integer version) {
     this.version = version;
     return this;
   }

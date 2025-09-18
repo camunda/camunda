@@ -147,7 +147,7 @@ class FormControllerTest {
       final var formId = "form";
       final var formKey = "232323323";
       final var processDefinitionKey = "1234";
-      final long version = 1;
+      final int version = 1;
       final var formEntity =
           new FormEntity()
               .setId(formKey)
@@ -190,7 +190,7 @@ class FormControllerTest {
       final var formId = "form";
       final var formKey = "232323323";
       final var processDefinitionKey = "1234";
-      final long version = 2;
+      final int version = 2;
       final var formEntity =
           new FormEntity()
               .setId(formKey)

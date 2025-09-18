@@ -60,7 +60,7 @@ public class FormHandler implements ExportHandler<FormEntity, Form> {
     final var isDeleted = record.getIntent().equals(FormIntent.DELETED);
 
     entity
-        .setVersion((long) value.getVersion())
+        .setVersion(value.getVersion())
         .setKey(value.getFormKey())
         .setFormId(value.getFormId())
         .setSchema(new String(value.getResource(), StandardCharsets.UTF_8))

@@ -22,7 +22,7 @@ public class FormEntity implements ExporterEntity<FormEntity>, TenantOwned {
   private String formId;
 
   private String schema;
-  private Long version;
+  private int version;
   private Boolean isDeleted;
   private String processDefinitionId;
   private boolean embedded;
@@ -75,11 +75,11 @@ public class FormEntity implements ExporterEntity<FormEntity>, TenantOwned {
     return this;
   }
 
-  public Long getVersion() {
+  public Integer getVersion() {
     return version;
   }
 
-  public FormEntity setVersion(final Long version) {
+  public FormEntity setVersion(final Integer version) {
     this.version = version;
     return this;
   }

@@ -42,7 +42,7 @@ public class FormZeebeRecordProcessorOpenSearch {
       persistForm(
           recordValue.getFormKey(),
           bytesToXml(recordValue.getResource()),
-          (long) recordValue.getVersion(),
+          recordValue.getVersion(),
           recordValue.getTenantId(),
           recordValue.getFormId(),
           false,
@@ -51,7 +51,7 @@ public class FormZeebeRecordProcessorOpenSearch {
       persistForm(
           recordValue.getFormKey(),
           bytesToXml(recordValue.getResource()),
-          (long) recordValue.getVersion(),
+          recordValue.getVersion(),
           recordValue.getTenantId(),
           recordValue.getFormId(),
           true,
@@ -64,7 +64,7 @@ public class FormZeebeRecordProcessorOpenSearch {
   private void persistForm(
       final Long formKey,
       final String schema,
-      final Long version,
+      final int version,
       final String tenantId,
       final String formId,
       final boolean isDelete,
