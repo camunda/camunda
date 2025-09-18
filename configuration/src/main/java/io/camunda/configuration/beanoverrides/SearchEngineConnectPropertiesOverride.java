@@ -12,19 +12,15 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-@EnableConfigurationProperties(LegacySearchEngineConnectProperties.class)
 @DependsOn("unifiedConfigurationHelper")
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
@@ -33,28 +29,39 @@ import org.springframework.context.annotation.Primary;
 public class SearchEngineConnectPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public SearchEngineConnectPropertiesOverride(
-      @Autowired final UnifiedConfiguration unifiedConfiguration,
-      @Autowired final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
+      @Autowired final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
 
   @Bean
   @Primary
   public SearchEngineConnectProperties searchEngineConnectProperties() {
     final SearchEngineConnectProperties override = new SearchEngineConnectProperties();
-    BeanUtils.copyProperties(legacySearchEngineConnectProperties, override);
 
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
-    final SecondaryStorageDatabase database =
-        (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
-            ? secondaryStorage.getElasticsearch()
-            : secondaryStorage.getOpensearch();
+    final SecondaryStorageDatabase database;
+
+    switch (secondaryStorage.getType()) {
+      case elasticsearch:
+        {
+          database = secondaryStorage.getElasticsearch();
+          break;
+        }
+      case rdbms:
+        {
+          database = secondaryStorage.getRdbms();
+          break;
+        }
+      default:
+        {
+          database = secondaryStorage.getOpensearch();
+          break;
+        }
+    }
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());

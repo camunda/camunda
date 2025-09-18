@@ -5,10 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration.beans;
+package io.camunda.configuration;
 
-import io.camunda.search.connect.configuration.ConnectConfiguration;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+public class Rdbms extends SecondaryStorageDatabase {
 
-@ConfigurationProperties("camunda.database")
-public class LegacySearchEngineConnectProperties extends ConnectConfiguration {}
+  @Override
+  protected String databaseName() {
+    return "rdbms";
+  }
+}
