@@ -212,10 +212,17 @@ public class VariableAssertj extends AbstractAssert<VariableAssertj, String> {
                 actual, variableName, e.getMessage());
 
           } catch (final JsonMappingException e) {
+            final Throwable reason =
+                Optional.ofNullable(e.getCause())
+                    .map(cause -> Optional.ofNullable(cause.getCause()).orElse(cause))
+                    .orElse(e);
+
             final String failureMessage =
                 String.format(
-                    "%s should have a variable '%s' of type '%s', but was: '%s'",
-                    actual, variableName, variableValueType.getName(), actualVariable);
+                    "%s should have a variable '%s' of type '%s', but the JSON mapping failed:\n"
+                        + "Error: %s\n"
+                        + "Reason: %s",
+                    actual, variableName, variableValueType.getName(), e.getMessage(), reason);
 
             fail(failureMessage);
           }
