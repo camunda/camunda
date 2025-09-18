@@ -42,7 +42,7 @@ class TaskPanelPage {
   async openTask(name: string) {
     // V1/V2 mode difference:
     // V1: displays process name ("User registration")
-    // V2: always displays process ID ("user_registration") regardless of task name
+    // V2: always displays process ID ("user_registration") regardless of task name\
 
     // Mapping of processes names to process IDs for V2 mode compatibility
     const processNameToIdMapping: Record<string, string> = {
@@ -58,32 +58,34 @@ class TaskPanelPage {
       'Checklist User Task': 'Checklist_Task',
       'Tag list Task': 'Tag_List_Task',
     };
-
     const processId = processNameToIdMapping[name] || name;
-
-    const winner = await Promise.race([
-      this.availableTasks
+    let taskLocator: Locator;
+    try {
+      await Promise.race([
+        this.availableTasks
+          .getByText(name, {exact: true})
+          .nth(0)
+          .waitFor({state: 'visible', timeout: 5000}),
+        this.availableTasks
+          .getByText(processId, {exact: true})
+          .nth(0)
+          .waitFor({state: 'visible', timeout: 5000}),
+      ]);
+      const nameLocator = this.availableTasks
         .getByText(name, {exact: true})
-        .nth(0)
-        .waitFor({state: 'visible', timeout: 5000})
-        .then(() => 'v1'),
-      this.availableTasks
+        .nth(0);
+      const idLocator = this.availableTasks
         .getByText(processId, {exact: true})
-        .nth(0)
-        .waitFor({state: 'visible', timeout: 5000})
-        .then(() => 'v2'),
-    ]).catch(() => {
+        .nth(0);
+      if (await nameLocator.isVisible()) {
+        taskLocator = nameLocator;
+      } else {
+        taskLocator = idLocator;
+      }
+      await taskLocator.click();
+    } catch {
       console.log('Failed to open task with name:', name);
       throw new Error(`Task not found: ${name}`);
-    });
-
-    if (winner === 'v1') {
-      await this.availableTasks.getByText(name, {exact: true}).nth(0).click();
-    } else {
-      await this.availableTasks
-        .getByText(processId, {exact: true})
-        .nth(0)
-        .click();
     }
   }
 
@@ -97,16 +99,13 @@ class TaskPanelPage {
   ) {
     await this.expandSidePanelButton.click();
     await this.page.getByRole('link', {name: option, exact: true}).click();
-
     const expectedSegment =
       option === 'All open tasks'
         ? 'all-open'
         : option === 'Assigned to me'
           ? 'assigned-to-me'
           : option.toLowerCase().replace(/\s+/g, '-');
-
     await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`));
-
     await this.collapseSidePanelButton.click();
   }
 
@@ -134,5 +133,4 @@ class TaskPanelPage {
     await this.page.getByText(name).first().scrollIntoViewIfNeeded();
   }
 }
-
 export {TaskPanelPage};
