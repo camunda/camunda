@@ -8,7 +8,6 @@
 package io.camunda.zeebe.gateway.rest.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
 
 /**
@@ -39,15 +38,4 @@ public abstract class OpenApiConfigurer {
    * @return the API description text
    */
   public abstract String getApiDescription();
-
-  /**
-   * Adds bearer authentication to the OpenAPI specification. This is common for both SaaS and
-   * Self-Managed deployments.
-   *
-   * @param openApi the OpenAPI object to configure
-   */
-  protected final void addBearerAuthentication(final OpenAPI openApi) {
-    openApi.getComponents().addSecuritySchemes(BEARER_SECURITY_SCHEMA_NAME, BEARER_SECURITY_SCHEMA);
-    openApi.addSecurityItem(new SecurityRequirement().addList(BEARER_SECURITY_SCHEMA_NAME));
-  }
 }
