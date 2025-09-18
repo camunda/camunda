@@ -17,7 +17,6 @@ public class SecondaryStorage {
   private static final String PREFIX = "camunda.data.secondary-storage";
   private static final Set<String> LEGACY_TYPE_PROPERTIES =
       Set.of(
-          "camunda.database.type",
           "camunda.operate.database",
           "camunda.tasklist.database",
           "zeebe.broker.exporters.camundaexporter.args.connect.type");
@@ -39,6 +38,9 @@ public class SecondaryStorage {
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   @NestedConfigurationProperty private Opensearch opensearch = new Opensearch();
+
+  /** Stores the RDBMS configuration, when type is set to 'rdbms'. */
+  private Rdbms rdbms = new Rdbms();
 
   public boolean getAutoconfigureCamundaExporter() {
     return autoconfigureCamundaExporter;
@@ -75,6 +77,14 @@ public class SecondaryStorage {
 
   public void setOpensearch(final Opensearch opensearch) {
     this.opensearch = opensearch;
+  }
+
+  public Rdbms getRdbms() {
+    return rdbms;
+  }
+
+  public void setRdbms(final Rdbms rdbms) {
+    this.rdbms = rdbms;
   }
 
   public enum SecondaryStorageType {
