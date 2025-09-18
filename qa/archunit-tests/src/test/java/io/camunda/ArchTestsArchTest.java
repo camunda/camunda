@@ -21,7 +21,7 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 /**
  * ArchUnit rules related to arch tests themselves.
  *
- * Checks proper naming conventions and placement of arch test classes and fields.
+ * <p>Checks proper naming conventions and placement of arch test classes and fields.
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.OnlyIncludeTests.class)
 public final class ArchTestsArchTest {
@@ -52,9 +52,11 @@ public final class ArchTestsArchTest {
                 public void check(final JavaClass item, final ConditionEvents events) {
                   if (item.getFields().stream()
                       .noneMatch(field -> field.isAnnotatedWith(ArchTest.class))) {
-                    events.add(violated(item,
-                        String.format("Class '%s' does not contain arch tests",
-                            item.getSimpleName())));
+                    events.add(
+                        violated(
+                            item,
+                            String.format(
+                                "Class '%s' does not contain arch tests", item.getSimpleName())));
                   }
                 }
               })
@@ -71,9 +73,12 @@ public final class ArchTestsArchTest {
                 public void check(final JavaClass item, final ConditionEvents events) {
                   final String classPath = item.getSource().get().getUri().getPath();
                   if (!classPath.contains(QA_MODULE_PATH)) {
-                    events.add(violated(item,
-                        String.format("Class '%s' located in '%s' instead of inside '%s'",
-                            item.getSimpleName(), classPath, QA_MODULE_PATH)));
+                    events.add(
+                        violated(
+                            item,
+                            String.format(
+                                "Class '%s' located in '%s' instead of inside '%s'",
+                                item.getSimpleName(), classPath, QA_MODULE_PATH)));
                   }
                 }
               })
