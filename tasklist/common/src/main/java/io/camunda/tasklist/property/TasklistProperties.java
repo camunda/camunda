@@ -20,7 +20,7 @@ public class TasklistProperties {
   public static final String OPEN_SEARCH = "opensearch";
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  private boolean importerEnabled = true;
+  private boolean importerEnabled = false;
   private boolean webappEnabled = true;
 
   private boolean persistentSessionsEnabled = false;
