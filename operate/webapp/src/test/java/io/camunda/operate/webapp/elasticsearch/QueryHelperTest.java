@@ -1,7 +1,8 @@
 package io.camunda.operate.webapp.elasticsearch;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
@@ -26,15 +27,17 @@ public class QueryHelperTest {
         .thenReturn(ResourcesAllowed.wildcard());
 
     final QueryBuilder qb = queryHelper.createQueryFragment(queryDto);
-    assertNotNull(qb, "QueryBuilder should not be null");
+    assertThat(qb).as("QueryBuilder should not be null").isNotNull();
     final String queryString = qb.toString();
-    assertTrue(queryString.contains("activityState"), "Should contain activityState field");
-    assertTrue(queryString.contains("ACTIVE"), "Should contain activityState=ACTIVE");
-    assertTrue(queryString.contains("activityId"), "Should contain activityId field");
-    assertTrue(queryString.contains(activityId), "Should contain the provided activityId");
-    assertTrue(queryString.contains("incident"), "Should contain incident field");
-    assertTrue(queryString.contains("true"), "Should contain incident=true");
+    assertThat(queryString).as("Should contain activityState field").contains("activityState");
+    assertThat(queryString).as("Should contain activityState=ACTIVE").contains("ACTIVE");
+    assertThat(queryString).as("Should contain activityId field").contains("activityId");
+    assertThat(queryString).as("Should contain the provided activityId").contains(activityId);
+    assertThat(queryString).as("Should contain incident field").contains("incident");
+    assertThat(queryString).as("Should contain incident=true").contains("true");
     // Ensure error message field is not used
-    assertFalse(queryString.contains("errorMessage"), "Should not contain errorMessage field");
+    assertThat(queryString)
+        .as("Should not contain errorMessage field")
+        .doesNotContain("errorMessage");
   }
 }
