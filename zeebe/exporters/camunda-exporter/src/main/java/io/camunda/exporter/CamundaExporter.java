@@ -108,16 +108,17 @@ public class CamundaExporter implements Exporter {
   public void configure(final Context context) {
     this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
-    ConfigValidator.validate(configuration);
-    context.setFilter(new CamundaExporterRecordFilter());
     partitionId = context.getPartitionId();
 
+    LOG.info("Configuring exporter with {}", configuration);
+    ConfigValidator.validate(configuration);
+    context.setFilter(new CamundaExporterRecordFilter());
     verifySetupOfResources();
-    LOG.debug("Exporter configured with {}", configuration);
   }
 
   @Override
   public void open(final Controller controller) {
+    LOG.info("Opening Exporter on partition {}", partitionId);
     this.controller = controller;
     setupExporterResources();
     searchEngineClient = clientAdapter.getSearchEngineClient();
@@ -167,7 +168,7 @@ public class CamundaExporter implements Exporter {
       CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
       taskManager = null;
     }
-    LOG.info("Exporter closed");
+    LOG.info("Exporter resources closed");
   }
 
   @Override
