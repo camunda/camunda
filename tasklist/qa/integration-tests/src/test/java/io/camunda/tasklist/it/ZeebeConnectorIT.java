@@ -36,7 +36,7 @@ import org.springframework.test.util.ReflectionTestUtils;
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {
       TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
+      TasklistProperties.PREFIX + ".importer-enabled = true",
       TasklistProperties.PREFIX + ".zeebe.gatewayAddress = localhost:55500",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     },

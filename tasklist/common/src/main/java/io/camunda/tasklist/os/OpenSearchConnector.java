@@ -66,6 +66,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -130,6 +131,7 @@ public class OpenSearchConnector {
   }
 
   @Bean
+  @ConditionalOnProperty(value = "camunda.tasklist.importer-enabled", havingValue = "true")
   public OpenSearchClient tasklistZeebeOsClient() {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     zeebeOsClientRepository.load(tasklistProperties.getZeebeOpenSearch().getInterceptorPlugins());

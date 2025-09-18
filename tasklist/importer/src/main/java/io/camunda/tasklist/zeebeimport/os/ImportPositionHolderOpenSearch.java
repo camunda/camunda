@@ -49,7 +49,7 @@ public class ImportPositionHolderOpenSearch extends ImportPositionHolderAbstract
 
   // this is the in-memory only storage
 
-  @Qualifier("tasklistZeebeOsClient")
+  @Qualifier("tasklistOsClient")
   @Autowired
   private OpenSearchClient osClient;
 

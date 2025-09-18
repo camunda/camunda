@@ -16,15 +16,12 @@ import io.zeebe.containers.ZeebeContainer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import org.elasticsearch.client.RestHighLevelClient;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
-import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,8 +36,6 @@ public abstract class TasklistZeebeExtension
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   private static final Logger LOGGER = LoggerFactory.getLogger(TasklistZeebeExtension.class);
 
-  private static ContainerPoolManager<ZeebeContainer> zeebeContainerContainerPoolManager;
-
   @Autowired protected TasklistProperties tasklistProperties;
   @Autowired protected SecurityConfiguration securityConfiguration;
   @Autowired protected TasklistIndexPrefixHolder indexPrefixHolder;
@@ -53,8 +48,6 @@ public abstract class TasklistZeebeExtension
   private Environment environment;
 
   private String prefix;
-
-  public abstract void refreshIndices(Instant instant);
 
   @Override
   public void beforeEach(final ExtensionContext extensionContext) {
@@ -169,10 +162,6 @@ public abstract class TasklistZeebeExtension
   public void setTasklistProperties(final TasklistProperties tasklistProperties) {
     this.tasklistProperties = tasklistProperties;
   }
-
-  public abstract void setZeebeOsClient(final OpenSearchClient zeebeOsClient);
-
-  public abstract void setZeebeEsClient(final RestHighLevelClient zeebeOsClient);
 
   protected abstract int getDatabasePort();
 }

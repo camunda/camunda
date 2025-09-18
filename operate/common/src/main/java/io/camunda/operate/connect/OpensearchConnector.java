@@ -62,6 +62,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -145,6 +146,7 @@ public class OpensearchConnector {
   }
 
   @Bean("zeebeOpensearchClient")
+  @ConditionalOnProperty(value = "camunda.operate.importer-enabled", havingValue = "true")
   public OpenSearchClient zeebeOpensearchClient() {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     zeebeOsClientRepository.load(operateProperties.getZeebeOpensearch().getInterceptorPlugins());

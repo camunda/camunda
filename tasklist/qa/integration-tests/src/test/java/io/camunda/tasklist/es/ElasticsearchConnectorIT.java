@@ -50,7 +50,9 @@ import org.testcontainers.utility.DockerImageName;
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
     },
-    properties = TasklistProperties.PREFIX + ".database=elasticsearch")
+    properties = {
+      TasklistProperties.PREFIX + ".importer-enabled=true",
+    })
 public class ElasticsearchConnectorIT {
 
   @Container

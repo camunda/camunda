@@ -86,10 +86,6 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
 
   @Autowired protected RestHighLevelClient esClient;
 
-  @Autowired
-  @Qualifier("zeebeEsClient")
-  protected RestHighLevelClient zeebeEsClient;
-
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
   protected boolean failed = false;
@@ -169,7 +165,7 @@ public class ElasticsearchTestRuleProvider implements SearchTestRuleProvider {
     try {
       final RefreshRequest refreshRequest =
           new RefreshRequest(operateProperties.getZeebeElasticsearch().getPrefix() + "*");
-      zeebeEsClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
+      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
     }

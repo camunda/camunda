@@ -49,7 +49,7 @@ import org.testcontainers.utility.DockerImageName;
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class
     },
-    properties = "camunda.data.secondary-storage.type=elasticsearch")
+    properties = OperateProperties.PREFIX + ".importer-enabled=true")
 public class ElasticsearchConnectorIT {
 
   @Container

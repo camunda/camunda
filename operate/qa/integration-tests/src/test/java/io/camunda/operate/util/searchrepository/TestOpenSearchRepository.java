@@ -26,7 +26,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
@@ -57,19 +56,7 @@ import org.springframework.stereotype.Component;
 public class TestOpenSearchRepository implements TestSearchRepository {
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired private ZeebeRichOpenSearchClient zeebeRichOpenSearchClient;
-
   @Autowired private ObjectMapper objectMapper;
-
-  @Override
-  public boolean isConnected() {
-    return richOpenSearchClient != null;
-  }
-
-  @Override
-  public boolean isZeebeConnected() {
-    return zeebeRichOpenSearchClient != null;
-  }
 
   @Override
   public boolean createIndex(final String indexName, final Map<String, ?> mapping)

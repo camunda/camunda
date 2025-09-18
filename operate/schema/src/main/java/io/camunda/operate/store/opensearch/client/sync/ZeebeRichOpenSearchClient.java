@@ -13,11 +13,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
 @Component
+@ConditionalOnProperty(name = "camunda.operate.importer-enabled", havingValue = "true")
 public class ZeebeRichOpenSearchClient {
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeRichOpenSearchClient.class);
   BeanFactory beanFactory;
