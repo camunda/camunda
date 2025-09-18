@@ -16,9 +16,8 @@ check_pr_commits() {
   fi
   
   # Get commits and filter renovate
-  local commit_list commits_behind
-  commit_list=$(git rev-list origin/"$branch_name"..origin/"$base_branch" --pretty=format:"%H|%an|%ae" --no-merges)
-  commits_behind=$(echo "$commit_list" | grep "^[a-f0-9]" | grep -c -v "|renovate\[bot\]|mend\[bot\]" | tr -d ' ')
+  local commits_behind
+  commits_behind=$(git log origin/"$branch_name"..origin/"$base_branch" --pretty=format:"%an|%ae" --no-merges | grep -v -E 'renovate\[bot\]|mend\[bot\]' | wc -l)
   
   echo "🔧 Found $commits_behind non-renovate and non-mend commits behind $base_branch" >&2
   echo "$commits_behind"
