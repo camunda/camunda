@@ -84,7 +84,8 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
-  public CorrelatedMessageSubscriptionFilter elementInstanceKey(final Consumer<BasicLongProperty> fn) {
+  public CorrelatedMessageSubscriptionFilter elementInstanceKey(
+      final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setElementInstanceKey(provideSearchRequestProperty(property));
@@ -136,7 +137,8 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
-  public CorrelatedMessageSubscriptionFilter processDefinitionId(final Consumer<StringProperty> fn) {
+  public CorrelatedMessageSubscriptionFilter processDefinitionId(
+      final Consumer<StringProperty> fn) {
     final StringProperty property = new StringPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionId(provideSearchRequestProperty(property));
@@ -149,7 +151,8 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
-  public CorrelatedMessageSubscriptionFilter processDefinitionKey(final Consumer<BasicLongProperty> fn) {
+  public CorrelatedMessageSubscriptionFilter processDefinitionKey(
+      final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessDefinitionKey(provideSearchRequestProperty(property));
@@ -162,7 +165,8 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
-  public CorrelatedMessageSubscriptionFilter processInstanceKey(final Consumer<BasicLongProperty> fn) {
+  public CorrelatedMessageSubscriptionFilter processInstanceKey(
+      final Consumer<BasicLongProperty> fn) {
     final BasicLongProperty property = new BasicLongPropertyImpl();
     fn.accept(property);
     filter.setProcessInstanceKey(provideSearchRequestProperty(property));
@@ -196,7 +200,8 @@ public class CorrelatedMessageSubscriptionFilterImpl
   }
 
   @Override
-  protected io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionFilter getSearchRequestProperty() {
+  protected io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionFilter
+      getSearchRequestProperty() {
     return filter;
   }
 }
