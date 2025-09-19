@@ -31,7 +31,6 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {useJobs} from 'modules/queries/jobs/useJobs';
-import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -128,12 +127,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     );
 
+  const shouldFilterByElementInstance =
+    elementInstanceMetadata?.elementInstanceKey &&
+    elementInstanceMetadata?.type !== 'CALL_ACTIVITY' &&
+    elementInstanceMetadata?.type !== 'BUSINESS_RULE_TASK';
+
   const {
     data: elementInstancesIncidentsSearchResult,
     isLoading: isSearchingIncidents,
   } = useGetIncidentsByProcessInstance(
     processInstance?.processInstanceKey ?? '',
     elementInstanceMetadata?.elementInstanceKey,
+    !!shouldFilterByElementInstance,
     {
       enabled: !!processInstance?.processInstanceKey,
     },
@@ -170,20 +175,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
-  const {
-    data: decisionInstanceSearchResult,
-    isLoading: isSearchingDecisionInstance,
-  } = useDecisionInstancesSearch(
-    {
-      filter: {
-        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
-      },
-    },
-    {
-      enabled: !!elementInstanceMetadata?.elementInstanceKey,
-    },
-  );
-
   if (
     elementId === undefined ||
     metaData === null ||
@@ -191,8 +182,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     (!!elementInstanceId && isFetchingInstance) ||
     isSearchingUserTasks ||
     isSearchingProcessInstances ||
-    isSearchingJob ||
-    isSearchingDecisionInstance
+    isSearchingJob
   ) {
     return null;
   }
@@ -258,9 +248,6 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
               processInstanceId={processInstance?.processInstanceKey}
               incidentV2={singleIncident}
               incident={incident}
-              rootCauseDecisionInstance={
-                decisionInstanceSearchResult?.items?.[0] || null
-              }
               onButtonClick={() => {
                 incidentsStore.clearSelection();
                 incidentsStore.toggleFlowNodeSelection(elementId);

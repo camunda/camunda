@@ -14,6 +14,7 @@ const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearch';
 const useGetIncidentsByProcessInstance = (
   processInstanceKey: string,
   elementInstanceKey?: string,
+  shouldFilterByElementInstance?: boolean,
   options: {enabled: boolean} = {enabled: true},
 ) => {
   return useQuery({
@@ -28,11 +29,13 @@ const useGetIncidentsByProcessInstance = (
       });
 
       if (response !== null) {
-        const incidents = elementInstanceKey
-          ? response.items.filter(
-              (incident) => incident.elementInstanceKey === elementInstanceKey,
-            )
-          : response.items;
+        const incidents =
+          shouldFilterByElementInstance && elementInstanceKey
+            ? response.items.filter(
+                (incident) =>
+                  incident.elementInstanceKey === elementInstanceKey,
+              )
+            : response.items;
 
         return incidents.length > 0 ? incidents : null;
       }
