@@ -23,6 +23,7 @@ import {getScopeId} from 'modules/utils/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
+import {ERRORS} from './constants';
 
 type Props = {
   id?: string;
@@ -125,6 +126,25 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
 
+    /* This is a temporary solution until we can properly use the form state submission validation for the modification mode
+     * This should be done together with #38482
+     */
+    const validateValueNotEmptyWithModifications = (variableValue = '') => {
+      const scopeId = getScopeId();
+      const hasModificationForThisVariable =
+        modificationsStore.getLastVariableModification(
+          scopeId,
+          variableName,
+          'EDIT_VARIABLE',
+        );
+
+      if (hasModificationForThisVariable && variableValue === '') {
+        return ERRORS.INVALID_VALUE;
+      }
+
+      return;
+    };
+
     return (
       <Layer>
         <Field
@@ -133,7 +153,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
           validate={
             pauseValidation
               ? () => undefined
-              : mergeValidators(validateValueComplete, validateValueValid)
+              : mergeValidators(
+                  validateValueComplete,
+                  validateValueValid,
+                  validateValueNotEmptyWithModifications,
+                )
           }
           parse={(value) => value}
         >
