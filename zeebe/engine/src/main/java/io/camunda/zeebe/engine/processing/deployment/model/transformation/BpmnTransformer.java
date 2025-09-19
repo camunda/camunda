@@ -83,7 +83,7 @@ public final class BpmnTransformer {
     step1Visitor.registerHandler(new FlowElementInstantiationTransformer());
     step1Visitor.registerHandler(new MessageTransformer());
     step1Visitor.registerHandler(new SignalTransformer());
-    step1Visitor.registerHandler(new ProcessTransformer());
+    step1Visitor.registerHandler(new ProcessTransformer(listenersConfiguration));
 
     step2Visitor = new TransformationVisitor();
     step2Visitor.registerHandler(new BoundaryEventTransformer());
