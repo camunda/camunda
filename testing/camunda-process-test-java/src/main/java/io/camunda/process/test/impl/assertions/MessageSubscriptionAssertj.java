@@ -18,9 +18,9 @@ package io.camunda.process.test.impl.assertions;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
-import io.camunda.client.api.search.response.CorrelatedMessage;
+import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import java.util.List;
@@ -143,8 +143,8 @@ public class MessageSubscriptionAssertj extends AbstractAssert<MessageSubscripti
 
   private void awaitCorrelatedMessages(
       final long processInstanceKey,
-      final Consumer<CorrelatedMessageFilter> filter,
-      final Consumer<List<CorrelatedMessage>> assertionCallback) {
+      final Consumer<CorrelatedMessageSubscriptionFilter> filter,
+      final Consumer<List<CorrelatedMessageSubscription>> assertionCallback) {
 
     awaitBehavior.untilAsserted(
         () ->

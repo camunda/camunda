@@ -4341,27 +4341,27 @@ paths:
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
 
-  /correlated-messages/search:
+  /correlated-message-subscriptions/search:
     post:
       tags:
         - Message
-      operationId: searchCorrelatedMessages
-      summary: Search correlated messages
+      operationId: searchCorrelatedMessageSubscriptions
+      summary: Search correlated message subscriptions
       description: |
-        Search for correlated messages based on given criteria.
+        Search for correlated message subscriptions based on given criteria.
       requestBody:
         required: false
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CorrelatedMessageSearchQuery"
+              $ref: "#/components/schemas/CorrelatedMessageSubscriptionSearchQuery"
       responses:
         "200":
-          description: The correlated messages search result.
+          description: The correlated message subscriptions search result.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CorrelatedMessageSearchQueryResult"
+                $ref: "#/components/schemas/CorrelatedMessageSubscriptionSearchQueryResult"
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -7141,17 +7141,17 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/IncidentResult"
-    CorrelatedMessageSearchQueryResult:
+    CorrelatedMessageSubscriptionSearchQueryResult:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryResponse"
       properties:
         items:
-          description: The matching correlated messages.
+          description: The matching correlated message subscriptions.
           type: array
           items:
-            $ref: "#/components/schemas/CorrelatedMessageResult"
-    CorrelatedMessageResult:
+            $ref: "#/components/schemas/CorrelatedMessageSubscriptionResult"
+    CorrelatedMessageSubscriptionResult:
       type: object
       properties:
         correlationKey:
@@ -7178,19 +7178,19 @@ components:
           type: integer
           format: int32
         processDefinitionId:
-          description: The process definition ID associated with this correlated message.
+          description: The process definition ID associated with this correlated message subscription.
           type: string
         processDefinitionKey:
-          description: The process definition key associated with this correlated message.
+          description: The process definition key associated with this correlated message subscription.
           type: string
         processInstanceKey:
-          description: The process instance key associated with this correlated message.
+          description: The process instance key associated with this correlated message subscription.
           type: string
         subscriptionKey:
           description: The subscription key that received the message.
           type: string
         tenantId:
-          description: The tenant ID associated with this correlated message.
+          description: The tenant ID associated with this correlated message subscription.
           type: string
       required:
         - correlationKey
@@ -7203,7 +7203,7 @@ components:
         - processInstanceKey
         - subscriptionKey
         - tenantId
-    CorrelatedMessageSearchQuery:
+    CorrelatedMessageSubscriptionSearchQuery:
       type: object
       allOf:
         - $ref: "#/components/schemas/SearchQueryRequest"
@@ -7212,12 +7212,12 @@ components:
           description: Sort field criteria.
           type: array
           items:
-            $ref: "#/components/schemas/CorrelatedMessageSearchQuerySortRequest"
+            $ref: "#/components/schemas/CorrelatedMessageSubscriptionSearchQuerySortRequest"
         filter:
-          description: The correlated messages search filters.
+          description: The correlated message subscriptions search filters.
           allOf:
-            - $ref: "#/components/schemas/CorrelatedMessageFilter"
-    CorrelatedMessageSearchQuerySortRequest:
+            - $ref: "#/components/schemas/CorrelatedMessageSubscriptionFilter"
+    CorrelatedMessageSubscriptionSearchQuerySortRequest:
       type: object
       properties:
         field:
@@ -7240,8 +7240,8 @@ components:
           $ref: "#/components/schemas/SortOrderEnum"
       required:
         - field
-    CorrelatedMessageFilter:
-      description: Correlated messages search filter.
+    CorrelatedMessageSubscriptionFilter:
+      description: Correlated message subscriptions search filter.
       type: object
       properties:
         correlationKey:
@@ -7273,15 +7273,15 @@ components:
           allOf:
             - $ref: "#/components/schemas/IntegerFilterProperty"
         processDefinitionId:
-          description: The process definition ID associated with this correlated message.
+          description: The process definition ID associated with this correlated message subscription.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
-          description: The process definition key associated with this correlated message.
+          description: The process definition key associated with this correlated message subscription.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
-          description: The process instance key associated with this correlated message.
+          description: The process instance key associated with this correlated message subscription.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         subscriptionKey:
@@ -7289,7 +7289,7 @@ components:
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         tenantId:
-          description: The tenant ID associated with this correlated message.
+          description: The tenant ID associated with this correlated message subscription.
           allOf:
             - $ref: "#/components/schemas/StringFilterProperty"
     MessageSubscriptionSearchQueryResult:

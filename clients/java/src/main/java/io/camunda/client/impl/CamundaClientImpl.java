@@ -129,7 +129,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
-import io.camunda.client.api.search.request.CorrelatedMessageSearchRequest;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -263,7 +263,7 @@ import io.camunda.client.impl.search.request.BatchOperationSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByGroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.ClientsByTenantSearchRequestImpl;
-import io.camunda.client.impl.search.request.CorrelatedMessageSearchRequestImpl;
+import io.camunda.client.impl.search.request.CorrelatedMessageSubscriptionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
@@ -1335,8 +1335,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CorrelatedMessageSearchRequest newCorrelatedMessageSearchRequest() {
-    return new CorrelatedMessageSearchRequestImpl(httpClient, jsonMapper);
+  public CorrelatedMessageSubscriptionSearchRequest newCorrelatedMessageSubscriptionSearchRequest() {
+    return new CorrelatedMessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

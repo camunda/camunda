@@ -17,8 +17,8 @@ import io.camunda.search.clients.reader.BatchOperationDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemDocumentReader;
 import io.camunda.search.clients.reader.BatchOperationItemReader;
 import io.camunda.search.clients.reader.BatchOperationReader;
-import io.camunda.search.clients.reader.CorrelatedMessageDocumentReader;
-import io.camunda.search.clients.reader.CorrelatedMessageReader;
+import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionDocumentReader;
+import io.camunda.search.clients.reader.CorrelatedMessageSubscriptionReader;
 import io.camunda.search.clients.reader.DecisionDefinitionDocumentReader;
 import io.camunda.search.clients.reader.DecisionDefinitionReader;
 import io.camunda.search.clients.reader.DecisionInstanceDocumentReader;
@@ -85,7 +85,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -140,10 +140,10 @@ public class SearchClientReaderConfiguration {
   }
 
   @Bean
-  public CorrelatedMessageReader correlatedMessagesReader(
+  public CorrelatedMessageSubscriptionReader correlatedMessageSubscriptionsReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
-    return new CorrelatedMessageDocumentReader(
-        executor, descriptors.get(CorrelatedMessageTemplate.class));
+    return new CorrelatedMessageSubscriptionDocumentReader(
+        executor, descriptors.get(CorrelatedMessageSubscriptionTemplate.class));
   }
 
   @Bean

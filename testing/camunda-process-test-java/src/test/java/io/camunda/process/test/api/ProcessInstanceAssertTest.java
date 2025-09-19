@@ -29,15 +29,15 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.response.ProcessInstanceResult;
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.impl.search.response.CorrelatedMessageImpl;
+import io.camunda.client.impl.search.response.CorrelatedMessageSubscriptionImpl;
 import io.camunda.client.impl.search.response.MessageSubscriptionImpl;
-import io.camunda.client.protocol.rest.CorrelatedMessageResult;
+import io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionResult;
 import io.camunda.client.protocol.rest.MessageSubscriptionResult;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelector;
 import io.camunda.process.test.api.assertions.ProcessInstanceSelectors;
@@ -1051,10 +1051,10 @@ public class ProcessInstanceAssertTest {
   @Nested
   class CorrelatedMessages {
 
-    @Captor private ArgumentCaptor<Consumer<CorrelatedMessageFilter>> filterCaptor;
+    @Captor private ArgumentCaptor<Consumer<CorrelatedMessageSubscriptionFilter>> filterCaptor;
 
     @Mock(answer = Answers.RETURNS_SELF)
-    private CorrelatedMessageFilter correlatedMessageFilter;
+    private CorrelatedMessageSubscriptionFilter correlatedMessageFilter;
 
     @Test
     void shouldFindCorrelatedMessage() {
@@ -1067,7 +1067,9 @@ public class ProcessInstanceAssertTest {
 
       when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
-              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+              Collections.singletonList(
+                  new CorrelatedMessageSubscriptionImpl(
+                      new CorrelatedMessageSubscriptionResult())));
 
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -1089,7 +1091,9 @@ public class ProcessInstanceAssertTest {
 
       when(camundaDataSource.findCorrelatedMessages(filterCaptor.capture()))
           .thenReturn(
-              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+              Collections.singletonList(
+                  new CorrelatedMessageSubscriptionImpl(
+                      new CorrelatedMessageSubscriptionResult())));
 
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)
@@ -1118,7 +1122,9 @@ public class ProcessInstanceAssertTest {
           .thenReturn(Collections.emptyList())
           .thenReturn(Collections.emptyList())
           .thenReturn(
-              Collections.singletonList(new CorrelatedMessageImpl(new CorrelatedMessageResult())));
+              Collections.singletonList(
+                  new CorrelatedMessageSubscriptionImpl(
+                      new CorrelatedMessageSubscriptionResult())));
 
       // then
       CamundaAssert.assertThatProcessInstance(processInstanceEvent)

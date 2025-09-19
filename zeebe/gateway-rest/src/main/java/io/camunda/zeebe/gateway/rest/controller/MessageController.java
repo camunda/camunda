@@ -7,14 +7,14 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
-import io.camunda.search.query.CorrelatedMessageQuery;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.MessageServices;
 import io.camunda.service.MessageServices.CorrelateMessageRequest;
 import io.camunda.service.MessageServices.PublicationMessageRequest;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSearchQuery;
-import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQuery;
+import io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -63,22 +63,24 @@ public class MessageController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/correlated-messages/search")
-  public ResponseEntity<CorrelatedMessageSearchQueryResult> searchCorrelatedMessages(
-      @RequestBody(required = false) final CorrelatedMessageSearchQuery searchRequest) {
-    return SearchQueryRequestMapper.toCorrelatedMessageQuery(searchRequest)
-        .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessages);
+  @CamundaPostMapping(path = "/correlated-message-subscriptions/search")
+  public ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
+      searchCorrelatedMessageSubscriptions(
+          @RequestBody(required = false)
+              final CorrelatedMessageSubscriptionSearchQuery searchRequest) {
+    return SearchQueryRequestMapper.toCorrelatedMessageSubscriptionQuery(searchRequest)
+        .fold(RestErrorMapper::mapProblemToResponse, this::searchCorrelatedMessageSubscriptions);
   }
 
-  private ResponseEntity<CorrelatedMessageSearchQueryResult> searchCorrelatedMessages(
-      final CorrelatedMessageQuery query) {
+  private ResponseEntity<CorrelatedMessageSubscriptionSearchQueryResult>
+      searchCorrelatedMessageSubscriptions(final CorrelatedMessageSubscriptionQuery query) {
     try {
       final var result =
           messageServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .search(query);
       return ResponseEntity.ok(
-          SearchQueryResponseMapper.toCorrelatedMessageSearchQueryResponse(result));
+          SearchQueryResponseMapper.toCorrelatedMessageSubscriptionSearchQueryResponse(result));
     } catch (final Exception e) {
       return RestErrorMapper.mapErrorToResponse(e);
     }

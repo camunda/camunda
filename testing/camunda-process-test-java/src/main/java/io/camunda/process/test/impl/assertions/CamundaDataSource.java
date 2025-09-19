@@ -16,7 +16,7 @@
 package io.camunda.process.test.impl.assertions;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.search.filter.CorrelatedMessageFilter;
+import io.camunda.client.api.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -25,7 +25,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.filter.VariableFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
-import io.camunda.client.api.search.response.CorrelatedMessage;
+import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.client.api.search.response.DecisionInstance;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Incident;
@@ -173,10 +173,10 @@ public class CamundaDataSource {
         .items();
   }
 
-  public List<CorrelatedMessage> findCorrelatedMessages(
-      final Consumer<CorrelatedMessageFilter> filter) {
+  public List<CorrelatedMessageSubscription> findCorrelatedMessages(
+      final Consumer<CorrelatedMessageSubscriptionFilter> filter) {
     return client
-        .newCorrelatedMessageSearchRequest()
+        .newCorrelatedMessageSubscriptionSearchRequest()
         .filter(filter)
         .sort(sort -> sort.correlationTime().asc())
         .page(DEFAULT_PAGE_REQUEST)

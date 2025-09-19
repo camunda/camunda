@@ -9,9 +9,9 @@ package io.camunda.service;
 
 import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
 
-import io.camunda.search.clients.CorrelatedMessageSearchClient;
-import io.camunda.search.entities.CorrelatedMessageEntity;
-import io.camunda.search.query.CorrelatedMessageQuery;
+import io.camunda.search.clients.CorrelatedMessageSubscriptionSearchClient;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -27,14 +27,15 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class MessageServices
-    extends SearchQueryService<MessageServices, CorrelatedMessageQuery, CorrelatedMessageEntity> {
+    extends SearchQueryService<
+        MessageServices, CorrelatedMessageSubscriptionQuery, CorrelatedMessageSubscriptionEntity> {
 
-  private final CorrelatedMessageSearchClient searchClient;
+  private final CorrelatedMessageSubscriptionSearchClient searchClient;
 
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CorrelatedMessageSearchClient searchClient,
+      final CorrelatedMessageSubscriptionSearchClient searchClient,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -80,14 +81,15 @@ public final class MessageServices
   }
 
   @Override
-  public SearchQueryResult<CorrelatedMessageEntity> search(final CorrelatedMessageQuery query) {
+  public SearchQueryResult<CorrelatedMessageSubscriptionEntity> search(
+      final CorrelatedMessageSubscriptionQuery query) {
     return executeSearchRequest(
         () ->
             searchClient
                 .withSecurityContext(
                     securityContextProvider.provideSecurityContext(
                         authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .searchCorrelatedMessages(query));
+                .searchCorrelatedMessageSubscriptions(query));
   }
 
   public record CorrelateMessageRequest(
