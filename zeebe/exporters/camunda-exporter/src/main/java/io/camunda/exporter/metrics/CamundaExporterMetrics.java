@@ -264,12 +264,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(recordExportDuration);
 
     // Remove custom gauges by their names if needed
-    Gauge gauge = meterRegistry.find(meterName("since.last.flush.seconds")).gauge();
-    if (gauge != null) {
-      meterRegistry.remove(gauge);
-    }
+    removeGaugeIfExists(meterName("since.last.flush.seconds"));
+    removeGaugeIfExists(meterName("process.instances.awaiting.archival"));
+  }
 
-    gauge = meterRegistry.find(meterName("process.instances.awaiting.archival")).gauge();
+  private void removeGaugeIfExists(final String meterName) {
+    final var gauge = meterRegistry.find(meterName).gauge();
     if (gauge != null) {
       meterRegistry.remove(gauge);
     }
