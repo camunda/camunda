@@ -15,12 +15,10 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -74,8 +72,6 @@ public class CamundaProcessTestRuntimeBuilder {
   private CamundaProcessTestRuntimeMode runtimeMode =
       CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
 
-  private Duration camundaClientRequestTimeout =
-      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_REQUEST_TIMEOUT;
   private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
 
@@ -213,14 +209,6 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withCamundaClientRequestTimeout(
-      final Duration requestTimeout) {
-    this.camundaClientRequestTimeout = requestTimeout;
-    this.remoteCamundaClientBuilderFactory =
-        () -> remoteCamundaClientBuilderFactory.get().defaultRequestTimeout(requestTimeout);
-    return this;
-  }
-
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
       final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
     this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
@@ -239,15 +227,8 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withCredentialsProvider(
-      final CredentialsProvider credentialsProvider) {
-    this.remoteCamundaClientBuilderFactory =
-        () -> remoteCamundaClientBuilderFactory.get().credentialsProvider(credentialsProvider);
-    return this;
-  }
-
   public CamundaProcessTestRuntimeBuilder withMultitenancyEnabled(final boolean enabled) {
-    this.isMultitenancyEnabled = enabled;
+    isMultitenancyEnabled = enabled;
     return this;
   }
 
@@ -353,9 +334,5 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
-  }
-
-  public Duration getCamundaClientRequestTimeout() {
-    return camundaClientRequestTimeout;
   }
 }
