@@ -9,7 +9,7 @@ package io.camunda.operate.store.elasticsearch.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,11 +19,11 @@ import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
-public class UsageMetricDAO extends GenericDAO<UsageMetricsEntity, UsageMetricIndex> {
+public class UsageMetricDAO extends GenericDAO<UsageMetricsEntity, UsageMetricTemplate> {
   @Autowired
   public UsageMetricDAO(
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,
-      final UsageMetricIndex index,
+      final UsageMetricTemplate index,
       final RestHighLevelClient esClient) {
     super(objectMapper, index, esClient);
   }

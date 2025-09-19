@@ -8,9 +8,9 @@
 package io.camunda.operate.elasticsearch.reader;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.END_TIME;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.END_TIME;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.EVENT_VALUE;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 import static org.assertj.core.api.Assertions.assertThat;

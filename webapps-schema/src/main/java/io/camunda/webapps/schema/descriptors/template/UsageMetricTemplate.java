@@ -5,26 +5,26 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.webapps.schema.descriptors.index;
+package io.camunda.webapps.schema.descriptors.template;
 
-import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.ComponentNames;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
 import java.util.Optional;
 
-public class UsageMetricTUIndex extends AbstractIndexDescriptor implements Prio5Backup {
-  public static final String INDEX_NAME = "usage-metric-tu";
+public class UsageMetricTemplate extends AbstractTemplateDescriptor implements Prio5Backup {
+  public static final String INDEX_NAME = "usage-metric";
   public static final String INDEX_VERSION = "8.8.0";
 
   public static final String ID = "id";
-  public static final String TENANT_ID = IndexDescriptor.TENANT_ID;
-  public static final String PARTITION_ID = "partitionId";
   public static final String START_TIME = "startTime";
   public static final String END_TIME = "endTime";
-  public static final String ASSIGNEE_HASH = "assigneeHash";
+  public static final String EVENT_TYPE = "eventType";
+  public static final String EVENT_VALUE = "eventValue";
+  public static final String TENANT_ID = "tenantId";
+  public static final String PARTITION_ID = "partitionId";
 
-  public UsageMetricTUIndex(final String indexPrefix, final boolean isElasticsearch) {
+  public UsageMetricTemplate(final String indexPrefix, final boolean isElasticsearch) {
     super(indexPrefix, isElasticsearch);
   }
 

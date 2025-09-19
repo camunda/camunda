@@ -16,7 +16,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.ElasticsearchMetricsStore;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
@@ -30,7 +30,7 @@ public class MetricWriterTest {
 
   @Mock BatchRequest batchRequest;
   @InjectMocks private MetricsStore subject = new ElasticsearchMetricsStore();
-  @Mock private UsageMetricIndex metricIndex;
+  @Mock private UsageMetricTemplate metricTemplate;
 
   @Test
   public void verifyRegisterProcessEventWasCalledWithRightArgument() throws PersistenceException {
@@ -45,7 +45,7 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            metricIndex.getFullQualifiedName(),
+            metricTemplate.getFullQualifiedName(),
             new UsageMetricsEntity()
                 .setId(ID_PATTERN.formatted(key, tenantId))
                 .setEventType(RPI)
@@ -69,7 +69,7 @@ public class MetricWriterTest {
     // Then
     verify(batchRequest)
         .add(
-            metricIndex.getFullQualifiedName(),
+            metricTemplate.getFullQualifiedName(),
             new UsageMetricsEntity()
                 .setId(ID_PATTERN.formatted(key, tenantId))
                 .setEventType(EDI)

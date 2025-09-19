@@ -34,11 +34,12 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -58,7 +59,6 @@ import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -168,11 +168,13 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {UsageMetricIndex.INDEX_NAME, UsageMetricTUIndex.INDEX_NAME})
-  @Disabled("https://github.com/camunda/camunda/issues/34709")
-  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+  @ValueSource(classes = {UsageMetricTemplate.class, UsageMetricTUTemplate.class})
+  void shouldSetIndexLifeCycleForUsageMetric(
+      final Class<? extends AbstractTemplateDescriptor> descriptorClass) throws IOException {
     // given
-    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var usageMetricIndex =
+        resourceProvider.getIndexTemplateDescriptor(descriptorClass).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
     testClient.indices().create(r -> r.index(usageMetricIndex));
@@ -662,13 +664,13 @@ final class ElasticsearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        indicesClientSpy, times(16) // number of index templates
+                        indicesClientSpy, times(18) // number of index templates
                         )
                     .putSettings(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(16)
+        .hasSize(18)
         .allSatisfy(
             request -> {
               assertThat(request.index()).hasSize(1);
@@ -714,7 +716,8 @@ final class ElasticsearchArchiverRepositoryIT {
                             .index()
                             .lifecycle()
                             .name())
-                    .isEqualTo("camunda-retention-policy");
+                    .isEqualTo(
+                        repository.getRetentionPolicyName(template.getIndexName(), retention));
               });
     }
   }
