@@ -46,6 +46,8 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
 
   const {data: operationsData} = useOperations();
 
+  // TODO: Remove this effect and use mutation state instead
+  // https://github.com/camunda/camunda/issues/38411
   useEffect(() => {
     if (
       !operationsData?.some(
