@@ -152,6 +152,24 @@ describe('FlowNodeInstanceLog', () => {
     ).toBeInTheDocument();
   });
 
+  //TODO unskip when endpoint migrated
+  it.skip('should display permissions error when access to the process definition is forbidden', async () => {
+    mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
+    mockFetchProcessDefinitionXml().withServerError(403);
+    init(mockProcessInstance);
+
+    render(<FlowNodeInstanceLog />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to access Instance History'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to access this instance history',
+      ),
+    ).toBeInTheDocument();
+  });
+
   it('should continue polling after poll failure', async () => {
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchProcessDefinitionXml().withSuccess('');

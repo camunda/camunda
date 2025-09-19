@@ -87,4 +87,22 @@ describe('<DecisionPanel />', () => {
 
     expect(await screen.findByText('An error occurred')).toBeInTheDocument();
   });
+
+  it('should show permission error when decision definition access is forbidden', async () => {
+    mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockFetchDecisionDefinitionXML().withServerError(403);
+
+    decisionInstanceDetailsStore.fetchDecisionInstance('337423841237089');
+
+    render(<DecisionPanel />, {wrapper: Wrapper});
+
+    expect(
+      await screen.findByText('Missing permissions to view the Definition'),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Please contact your organization owner or admin to give you the necessary permissions to read this definition',
+      ),
+    ).toBeInTheDocument();
+  });
 });

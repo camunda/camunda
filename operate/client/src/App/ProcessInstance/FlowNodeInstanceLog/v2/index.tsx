@@ -78,6 +78,7 @@ const FlowNodeInstanceLog: React.FC = observer(() => {
       ) : (
         <>
           {(flowNodeInstanceStatus === 'error' || isError) && (
+            //TODO update the message with 403 related error during v2 endpoint integration #33542
             <ErrorMessage message="Instance History could not be fetched" />
           )}
           {(LOADING_STATES.includes(flowNodeInstanceStatus) || isPending) && (
