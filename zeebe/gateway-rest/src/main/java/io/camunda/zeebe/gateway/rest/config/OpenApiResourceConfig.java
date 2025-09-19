@@ -11,7 +11,9 @@ import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader;
 import io.camunda.zeebe.gateway.rest.util.OpenApiYamlLoader.OpenApiLoadingException;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springdoc.core.models.GroupedOpenApi;
@@ -48,8 +50,17 @@ public class OpenApiResourceConfig {
     // Load base OpenAPI specification from YAML
     loadBaseOpenApiSpec(openApi);
 
-    // Set API description and configure security based on deployment type
-    openApi.info(new Info().description(openApiConfigurer.getApiDescription()));
+    // Set API info and configure security based on deployment type
+    openApi.info(
+        new Info()
+            .title("Orchestration Cluster API")
+            .version("v2")
+            .contact(new Contact().url("https://www.camunda.com"))
+            .license(
+                new License()
+                    .name("License")
+                    .url("https://docs.camunda.io/docs/reference/licenses/"))
+            .description(openApiConfigurer.getApiDescription()));
     openApiConfigurer.configureSecurity(openApi);
   }
 
