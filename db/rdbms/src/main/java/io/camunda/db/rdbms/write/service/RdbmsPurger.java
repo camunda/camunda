@@ -21,7 +21,7 @@ public class RdbmsPurger {
           "BATCH_OPERATION_ITEM",
           "CANDIDATE_GROUP",
           "CANDIDATE_USER",
-          "CORRELATED_MESSAGE",
+          "CORRELATED_MESSAGE_SUBSCRIPTION",
           "DECISION_DEFINITION",
           "DECISION_INSTANCE",
           "DECISION_INSTANCE_INPUT",

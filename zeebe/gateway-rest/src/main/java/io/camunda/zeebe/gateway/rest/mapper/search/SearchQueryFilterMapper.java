@@ -19,7 +19,7 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
 import io.camunda.search.filter.AuthorizationFilter;
 import io.camunda.search.filter.BatchOperationFilter;
-import io.camunda.search.filter.CorrelatedMessageFilter;
+import io.camunda.search.filter.CorrelatedMessageSubscriptionFilter;
 import io.camunda.search.filter.DecisionDefinitionFilter;
 import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.DecisionRequirementsFilter;
@@ -766,9 +766,9 @@ public class SearchQueryFilterMapper {
     return builder.build();
   }
 
-  static CorrelatedMessageFilter toCorrelatedMessageFilter(
-      final io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageFilter filter) {
-    final var builder = FilterBuilders.correlatedMessage();
+  static CorrelatedMessageSubscriptionFilter toCorrelatedMessageSubscriptionFilter(
+      final io.camunda.zeebe.gateway.protocol.rest.CorrelatedMessageSubscriptionFilter filter) {
+    final var builder = FilterBuilders.correlatedMessageSubscription();
 
     if (filter != null) {
       ofNullable(filter.getCorrelationKey())

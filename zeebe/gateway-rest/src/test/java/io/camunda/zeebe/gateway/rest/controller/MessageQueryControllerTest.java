@@ -11,8 +11,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.entities.CorrelatedMessageEntity;
-import io.camunda.search.query.CorrelatedMessageQuery;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -58,13 +58,14 @@ public class MessageQueryControllerTest extends RestControllerTest {
             }
         }
       """;
-  private static final String CORRELATED_MESSAGES_SEARCH_URL = "/v2/correlated-messages/search";
-  private static final SearchQueryResult<CorrelatedMessageEntity> SEARCH_QUERY_RESULT =
-      new SearchQueryResult.Builder<CorrelatedMessageEntity>()
+  private static final String CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL =
+      "/v2/correlated-message-subscriptions/search";
+  private static final SearchQueryResult<CorrelatedMessageSubscriptionEntity> SEARCH_QUERY_RESULT =
+      new SearchQueryResult.Builder<CorrelatedMessageSubscriptionEntity>()
           .total(1L)
           .items(
               List.of(
-                  new CorrelatedMessageEntity.Builder()
+                  new CorrelatedMessageSubscriptionEntity.Builder()
                       .correlationKey("test")
                       .correlationTime(OffsetDateTime.parse("2025-07-05T12:11:00.975Z"))
                       .flowNodeId("Activity_1ludhs2")
@@ -101,7 +102,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CORRELATED_MESSAGES_SEARCH_URL)
+        .uri(CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL)
         .exchange()
         .expectStatus()
         .isOk()
@@ -110,7 +111,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(new CorrelatedMessageQuery.Builder().build());
+    verify(services).search(new CorrelatedMessageSubscriptionQuery.Builder().build());
   }
 
   @Test
@@ -121,7 +122,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CORRELATED_MESSAGES_SEARCH_URL)
+        .uri(CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue("{}")
         .exchange()
@@ -132,7 +133,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
         .expectBody()
         .json(EXPECTED_SEARCH_RESPONSE, JsonCompareMode.STRICT);
 
-    verify(services).search(new CorrelatedMessageQuery.Builder().build());
+    verify(services).search(new CorrelatedMessageSubscriptionQuery.Builder().build());
   }
 
   @Test
@@ -143,7 +144,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CORRELATED_MESSAGES_SEARCH_URL)
+        .uri(CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
@@ -174,7 +175,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .search(
-            new CorrelatedMessageQuery.Builder()
+            new CorrelatedMessageSubscriptionQuery.Builder()
                 .filter(
                     f ->
                         f.correlationKeys("test")
@@ -200,7 +201,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
     // when / then
     webClient
         .post()
-        .uri(CORRELATED_MESSAGES_SEARCH_URL)
+        .uri(CORRELATED_MESSAGE_SUBSCRIPTIONS_SEARCH_URL)
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(
@@ -267,7 +268,7 @@ public class MessageQueryControllerTest extends RestControllerTest {
 
     verify(services)
         .search(
-            new CorrelatedMessageQuery.Builder()
+            new CorrelatedMessageSubscriptionQuery.Builder()
                 .sort(
                     s ->
                         s.correlationKey()

@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.write;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
-import io.camunda.db.rdbms.sql.CorrelatedMessageMapper;
+import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
@@ -48,7 +48,7 @@ public class RdbmsWriterFactory {
   private final UsageMetricTUMapper usageMetricTUMapper;
   private final BatchOperationMapper batchOperationMapper;
   private final MessageSubscriptionMapper messageSubscriptionMapper;
-  private final CorrelatedMessageMapper correlatedMessageMapper;
+  private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -69,7 +69,7 @@ public class RdbmsWriterFactory {
       final UsageMetricTUMapper usageMetricTUMapper,
       final BatchOperationMapper batchOperationMapper,
       final MessageSubscriptionMapper messageSubscriptionMapper,
-      final CorrelatedMessageMapper correlatedMessageMapper) {
+      final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -88,7 +88,7 @@ public class RdbmsWriterFactory {
     this.usageMetricTUMapper = usageMetricTUMapper;
     this.batchOperationMapper = batchOperationMapper;
     this.messageSubscriptionMapper = messageSubscriptionMapper;
-    this.correlatedMessageMapper = correlatedMessageMapper;
+    this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
   }
 
   public RdbmsWriter createWriter(final RdbmsWriterConfig config) {
@@ -115,6 +115,6 @@ public class RdbmsWriterFactory {
         usageMetricTUMapper,
         batchOperationMapper,
         messageSubscriptionMapper,
-        correlatedMessageMapper);
+        correlatedMessageSubscriptionMapper);
   }
 }

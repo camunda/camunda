@@ -17,8 +17,8 @@ import io.camunda.exporter.errorhandling.ErrorHandler;
 import io.camunda.exporter.errorhandling.ErrorHandlers;
 import io.camunda.exporter.handlers.AuthorizationCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.AuthorizationDeletedHandler;
-import io.camunda.exporter.handlers.CorrelatedMessageFromMessageStartEventSubscriptionHandler;
-import io.camunda.exporter.handlers.CorrelatedMessageFromProcessMessageSubscriptionHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler;
+import io.camunda.exporter.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler;
 import io.camunda.exporter.handlers.DecisionEvaluationHandler;
 import io.camunda.exporter.handlers.DecisionHandler;
 import io.camunda.exporter.handlers.DecisionRequirementsHandler;
@@ -96,7 +96,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -310,10 +310,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new UsageMetricExportedHandler(
                 indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
                 indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
-            new CorrelatedMessageFromMessageStartEventSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName()),
-            new CorrelatedMessageFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageTemplate.class).getFullQualifiedName())));
+            new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
+                indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class).getFullQualifiedName()),
+            new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
+                indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class).getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

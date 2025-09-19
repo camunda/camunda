@@ -675,8 +675,8 @@
     </modifySql>
   </changeSet>
 
-  <changeSet id="create_correlated_message_table" author="camunda">
-    <createTable tableName="${prefix}CORRELATED_MESSAGE">
+  <changeSet id="create_correlated_message_subscription_table" author="camunda">
+    <createTable tableName="${prefix}CORRELATED_MESSAGE_SUBSCRIPTION">
       <column name="CORRELATION_KEY" type="VARCHAR(255)"/>
       <column name="CORRELATION_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="FLOW_NODE_ID" type="VARCHAR(255)"/>

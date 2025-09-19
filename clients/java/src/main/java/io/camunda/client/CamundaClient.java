@@ -120,7 +120,7 @@ import io.camunda.client.api.search.request.BatchOperationSearchRequest;
 import io.camunda.client.api.search.request.ClientsByGroupSearchRequest;
 import io.camunda.client.api.search.request.ClientsByRoleSearchRequest;
 import io.camunda.client.api.search.request.ClientsByTenantSearchRequest;
-import io.camunda.client.api.search.request.CorrelatedMessageSearchRequest;
+import io.camunda.client.api.search.request.CorrelatedMessageSubscriptionSearchRequest;
 import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
@@ -2724,18 +2724,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   MessageSubscriptionSearchRequest newMessageSubscriptionSearchRequest();
 
   /**
-   * Executes a search request to query correlated messages.
+   * Executes a search request to query correlated message subscriptions.
    *
    * <pre>
    * camundaClient
-   *  .newCorrelatedMessageSearchRequest()
+   *  .newCorrelatedMessageSubscriptionSearchRequest()
    *  .filter((f) -> f.messageName("myMessage"))
    *  .sort((s) -> s.correlationTime().desc())
    *  .page((p) -> p.limit(100))
    *  .send();
    * </pre>
    *
-   * @return a builder for the correlated message search request
+   * @return a builder for the correlated message subscription search request
    */
-  CorrelatedMessageSearchRequest newCorrelatedMessageSearchRequest();
+  CorrelatedMessageSubscriptionSearchRequest newCorrelatedMessageSubscriptionSearchRequest();
 }

@@ -13,7 +13,7 @@ import io.camunda.security.auth.SecurityContext;
 public interface SearchClientsProxy
     extends AuthorizationSearchClient,
         BatchOperationSearchClient,
-        CorrelatedMessageSearchClient,
+        CorrelatedMessageSubscriptionSearchClient,
         DecisionDefinitionSearchClient,
         DecisionInstanceSearchClient,
         DecisionRequirementSearchClient,

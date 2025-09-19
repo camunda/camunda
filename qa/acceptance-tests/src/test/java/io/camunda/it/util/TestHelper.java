@@ -964,15 +964,17 @@ public final class TestHelper {
             });
   }
 
-  public static void waitForCorrelatedMessages(
-      final CamundaClient camundaClient, final int expectedCorrelatedMessages) {
-    Awaitility.await("should wait until correlated messages are available")
+  public static void waitForCorrelatedMessageSubscriptions(
+      final CamundaClient camundaClient, final int expectedCorrelatedMessageSubscriptions) {
+    Awaitility.await("should wait until correlated message subscriptions are available")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .untilAsserted(
             () -> {
-              final var result = camundaClient.newCorrelatedMessageSearchRequest().send().join();
-              assertThat(result.page().totalItems()).isEqualTo(expectedCorrelatedMessages);
+              final var result =
+                  camundaClient.newCorrelatedMessageSubscriptionSearchRequest().send().join();
+              assertThat(result.page().totalItems())
+                  .isEqualTo(expectedCorrelatedMessageSubscriptions);
             });
   }
 

@@ -197,9 +197,9 @@ public class SearchQuerySortRequestMapper {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
-  static List<SearchQuerySortRequest<CorrelatedMessageSearchQuerySortRequest.FieldEnum>>
-      fromCorrelatedMessageSearchQuerySortRequest(
-          final List<CorrelatedMessageSearchQuerySortRequest> requests) {
+  static List<SearchQuerySortRequest<CorrelatedMessageSubscriptionSearchQuerySortRequest.FieldEnum>>
+      fromCorrelatedMessageSubscriptionSearchQuerySortRequest(
+          final List<CorrelatedMessageSubscriptionSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -711,9 +711,9 @@ public class SearchQuerySortRequestMapper {
     return validationErrors;
   }
 
-  static List<String> applyCorrelatedMessageSortField(
-      final CorrelatedMessageSearchQuerySortRequest.FieldEnum field,
-      final io.camunda.search.sort.CorrelatedMessageSort.Builder builder) {
+  static List<String> applyCorrelatedMessageSubscriptionSortField(
+      final CorrelatedMessageSubscriptionSearchQuerySortRequest.FieldEnum field,
+      final io.camunda.search.sort.CorrelatedMessageSubscriptionSort.Builder builder) {
     final List<String> validationErrors = new ArrayList<>();
     if (field == null) {
       validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);

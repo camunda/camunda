@@ -10,7 +10,7 @@ package io.camunda.db.rdbms.write.queue;
 public enum ContextType {
   AUTHORIZATION(true),
   BATCH_OPERATION(false),
-  CORRELATED_MESSAGE(false),
+  CORRELATED_MESSAGE_SUBSCRIPTION(false),
   DECISION_DEFINITION(false),
   DECISION_INSTANCE(false),
   EXPORTER_POSITION(false),
