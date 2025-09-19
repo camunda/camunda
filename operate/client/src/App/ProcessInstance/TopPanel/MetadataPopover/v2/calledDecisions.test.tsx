@@ -294,8 +294,8 @@ describe('MetadataPopover', () => {
     const {rootCauseDecision} = calledFailedDecisionMetadata!.incident!;
 
     const mockRootCauseDecisionInstance = {
-      decisionInstanceId: rootCauseDecision!.instanceId,
-      decisionInstanceKey: rootCauseDecision!.instanceId,
+      decisionEvaluationInstanceKey: rootCauseDecision!.instanceId,
+      decisionEvaluationKey: rootCauseDecision!.instanceId,
       decisionDefinitionName: rootCauseDecision!.decisionName!,
       decisionDefinitionId: 'decision-2',
       decisionDefinitionKey: '456',
