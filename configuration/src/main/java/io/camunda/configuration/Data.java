@@ -7,15 +7,10 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Data {
-  private static final String PREFIX = "camunda.data";
-  private static final Set<String> LEGACY_SNAPSHOT_PERIOD_PROPERTIES =
-      Set.of("zeebe.broker.data.snapshotPeriod");
 
   /** How often we take snapshots of streams (time unit) */
   private Duration snapshotPeriod = Duration.ofMinutes(5);
@@ -33,12 +28,7 @@ public class Data {
   @NestedConfigurationProperty private SecondaryStorage secondaryStorage = new SecondaryStorage();
 
   public Duration getSnapshotPeriod() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".snapshot-period",
-        snapshotPeriod,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SNAPSHOT_PERIOD_PROPERTIES);
+    return snapshotPeriod;
   }
 
   public void setSnapshotPeriod(final Duration snapshotPeriod) {
