@@ -10,6 +10,7 @@ package io.camunda.search.schema.opensearch;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -71,6 +72,44 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
         .exceptionally(ex -> handleMigrationFailure(ex, source, destination));
   }
 
+  @Override
+  public CompletableFuture<Void> deleteIndex(final String... index) {
+    try {
+      return asyncClient
+          .indices()
+          .delete(d -> d.index(Arrays.asList(index)))
+          .thenRun(() -> LOG.info("Deleted index [{}]", index));
+    } catch (final IOException e) {
+      throw new IllegalStateException("Failed to delete index [" + index + "]", e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteComponentTemplate(final String componentTemplateName) {
+    try {
+      return asyncClient
+          .cluster()
+          .deleteComponentTemplate(d -> d.name(componentTemplateName))
+          .thenRun(() -> LOG.info("Deleted component template [{}]", componentTemplateName));
+    } catch (final IOException e) {
+      throw new IllegalStateException(
+          "Failed to delete component template [" + componentTemplateName + "]", e);
+    }
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteIndexTemplate(final String indexTemplateName) {
+    try {
+      return asyncClient
+          .indices()
+          .deleteIndexTemplate(d -> d.name(indexTemplateName))
+          .thenRun(() -> LOG.info("Deleted index template [{}]", indexTemplateName));
+    } catch (final IOException e) {
+      throw new IllegalStateException(
+          "Failed to delete index template [" + indexTemplateName + "]", e);
+    }
+  }
+
   private CompletableFuture<Void> cloneIndex(final String source, final String destination) {
     try {
       return asyncClient
@@ -126,17 +165,6 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
     } catch (final IOException e) {
       throw new IllegalStateException(
           "Failed to update setting block: " + block + " index [" + index + "]", e);
-    }
-  }
-
-  private CompletableFuture<Void> deleteIndex(final String index) {
-    try {
-      return asyncClient
-          .indices()
-          .delete(d -> d.index(index))
-          .thenRun(() -> LOG.info("Deleted index [{}]", index));
-    } catch (final IOException e) {
-      throw new IllegalStateException("Failed to delete index [" + index + "]", e);
     }
   }
 

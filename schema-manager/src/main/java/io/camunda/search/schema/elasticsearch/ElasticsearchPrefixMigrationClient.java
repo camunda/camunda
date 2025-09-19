@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch.indices.update_aliases.Action;
 import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.utils.CloneResult;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -73,6 +74,30 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
         .exceptionally(ex -> handleMigrationFailure(ex, source, destination));
   }
 
+  @Override
+  public CompletableFuture<Void> deleteIndex(final String... index) {
+    return asyncClient
+        .indices()
+        .delete(d -> d.index(Arrays.asList(index)))
+        .thenRun(() -> LOG.info("Deleted indices [{}]", Arrays.stream(index).toList()));
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteComponentTemplate(final String componentTemplateName) {
+    return asyncClient
+        .cluster()
+        .deleteComponentTemplate(d -> d.name(componentTemplateName))
+        .thenRun(() -> LOG.info("Deleted component template [{}]", componentTemplateName));
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteIndexTemplate(final String indexTemplateName) {
+    return asyncClient
+        .indices()
+        .deleteIndexTemplate(d -> d.name(indexTemplateName))
+        .thenRun(() -> LOG.info("Deleted index template [{}]", indexTemplateName));
+  }
+
   private CompletableFuture<Void> cloneIndex(final String source, final String destination) {
     return asyncClient
         .indices()
@@ -113,13 +138,6 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
         .indices()
         .putSettings(r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(block)))))
         .thenRun(() -> LOG.info("Updated setting index.blocks.write: {}, for [{}]", block, index));
-  }
-
-  private CompletableFuture<Void> deleteIndex(final String index) {
-    return asyncClient
-        .indices()
-        .delete(d -> d.index(index))
-        .thenRun(() -> LOG.info("Deleted index [{}]", index));
   }
 
   private CloneResult handleMigrationFailure(

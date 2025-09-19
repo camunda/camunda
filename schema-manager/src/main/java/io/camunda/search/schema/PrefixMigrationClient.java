@@ -20,4 +20,10 @@ public interface PrefixMigrationClient {
       final String sourceAlias,
       final String destination,
       final String destinationAlias);
+
+  CompletableFuture<Void> deleteIndex(String... indexName);
+
+  CompletableFuture<Void> deleteComponentTemplate(String componentTemplateName);
+
+  CompletableFuture<Void> deleteIndexTemplate(String indexTemplateName);
 }

@@ -29,12 +29,18 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
+import io.camunda.search.schema.MappingSource;
 import io.camunda.search.schema.SchemaManager;
+import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.qa.util.cluster.TestPrefixMigrationApp;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.net.http.HttpResponse.BodyHandlers;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.util.Collections;
@@ -81,7 +87,7 @@ public class PrefixMigrationIT {
   }
 
   @Test
-  void shouldMigrateCorrectIndicesDuringPrefixMigration() throws IOException {
+  void shouldMigrateCorrectIndicesDuringPrefixMigration() throws IOException, InterruptedException {
     // given
     final var camundaContainer = createCamundaContainer();
     // to avoid collisions with other tests
@@ -132,6 +138,12 @@ public class PrefixMigrationIT {
     final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
 
     assertIndices(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
+
+    assertOldIndicesAreRemoved(searchEngineClient, oldTasklistPrefix, oldOperatePrefix);
+
+    assertOldIndexTemplatesAreRemoved(searchEngineClient, oldTasklistPrefix, oldOperatePrefix);
+
+    assertOldComponentTemplatesAreRemoved(connectConfig, oldTasklistPrefix, oldOperatePrefix);
 
     final var schemaManager =
         new SchemaManager(
@@ -427,5 +439,71 @@ public class PrefixMigrationIT {
         operateAliases,
         oldTasklistAliases,
         oldOperateAliases);
+  }
+
+  private void assertOldIndicesAreRemoved(
+      final SearchEngineClient searchEngineClient,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix) {
+
+    assertThat(searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX))
+        .isEmpty();
+
+    assertThat(searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX))
+        .isEmpty();
+  }
+
+  private void assertOldIndexTemplatesAreRemoved(
+      final SearchEngineClient searchEngineClient,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix) {
+
+    assertThat(
+            searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX_TEMPLATE))
+        .isEmpty();
+
+    assertThat(
+            searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX_TEMPLATE))
+        .isEmpty();
+  }
+
+  private void assertOldComponentTemplatesAreRemoved(
+      final ConnectConfiguration connectConfig,
+      final String oldTasklistPrefix,
+      final String oldOperatePrefix)
+      throws IOException, InterruptedException {
+
+    final var oldTasklistComponentTemplate = oldTasklistPrefix + "_template";
+    final var oldOperateComponentTemplate = oldOperatePrefix + "_template";
+
+    try (final var httpClient = HttpClient.newHttpClient()) {
+      var req =
+          HttpRequest.newBuilder()
+              .uri(
+                  URI.create(
+                      connectConfig.getUrl()
+                          + "/_component_template/"
+                          + oldTasklistComponentTemplate))
+              .GET()
+              .build();
+
+      assertThat(httpClient.send(req, BodyHandlers.discarding()))
+          .extracting(HttpResponse::statusCode)
+          .isEqualTo(404);
+
+      req =
+          HttpRequest.newBuilder()
+              .uri(
+                  URI.create(
+                      connectConfig.getUrl()
+                          + "/_component_template/"
+                          + oldOperateComponentTemplate))
+              .GET()
+              .build();
+
+      assertThat(httpClient.send(req, BodyHandlers.discarding()))
+          .extracting(HttpResponse::statusCode)
+          .isEqualTo(404);
+    }
   }
 }

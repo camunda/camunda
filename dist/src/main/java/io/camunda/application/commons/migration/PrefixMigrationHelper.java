@@ -7,6 +7,8 @@
  */
 package io.camunda.application.commons.migration;
 
+import static io.camunda.webapps.schema.descriptors.ComponentNames.TASK_LIST;
+
 import io.camunda.application.StandalonePrefixMigration.OperateIndexPrefixPropertiesOverride;
 import io.camunda.application.StandalonePrefixMigration.TasklistIndexPrefixPropertiesOverride;
 import io.camunda.migration.commons.storage.MigrationRepositoryIndex;
@@ -20,6 +22,7 @@ import io.camunda.search.schema.PrefixMigrationClient;
 import io.camunda.search.schema.elasticsearch.ElasticsearchPrefixMigrationClient;
 import io.camunda.search.schema.opensearch.OpensearchPrefixMigrationClient;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
@@ -28,8 +31,10 @@ import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -50,6 +55,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +66,8 @@ public final class PrefixMigrationHelper {
           FormIndex.class,
           // Not pointing to the new TaskTemplate as we care about the old version
           TaskLegacyIndex.class,
+          DraftTaskVariableTemplate.class,
+          TasklistMetricIndex.class,
           SnapshotTaskVariableTemplate.class,
           TasklistMigrationRepositoryIndex.class,
           TasklistImportPositionIndex.class);
@@ -86,6 +94,22 @@ public final class PrefixMigrationHelper {
           ImportPositionIndex.class,
           MigrationRepositoryIndex.class);
 
+  @VisibleForTesting
+  public static final Set<Class<? extends AbstractIndexDescriptor>>
+      OPERATE_DEPRECATED_INDICES_TO_DELETE =
+          Set.of(OperateUserIndex.class, OperateWebSessionIndex.class, OperateUserTaskIndex.class);
+
+  @VisibleForTesting
+  public static final Set<Class<? extends AbstractIndexDescriptor>>
+      TASKLIST_DEPRECATED_INDICES_TO_DELETE =
+          Set.of(
+              TasklistUserIndex.class,
+              TasklistWebSessionIndex.class,
+              TasklistFlownodeInstanceIndex.class,
+              TasklistProcessInstanceIndex.class,
+              TasklistProcessIndex.class,
+              TasklistVariableIndex.class);
+
   private static final Logger LOG = LoggerFactory.getLogger(PrefixMigrationHelper.class);
 
   private PrefixMigrationHelper() {}
@@ -105,47 +129,67 @@ public final class PrefixMigrationHelper {
             ? tasklistProperties.elasticsearchIndexPrefix()
             : tasklistProperties.opensearchIndexPrefix();
 
+    final var prefixMigrationClient = getPrefixMigrationClient(connectConfiguration);
+    final var targetPrefix = connectConfiguration.getIndexPrefix();
+    final var descriptors = new IndexDescriptors(targetPrefix, isElasticsearch);
     final var executor = Executors.newVirtualThreadPerTaskExecutor();
 
-    PrefixMigrationHelper.migrate(
-        operatePrefix,
-        tasklistPrefix,
-        connectConfiguration,
-        getPrefixMigrationClient(connectConfiguration),
-        executor);
+    final var migrateFutures =
+        PrefixMigrationHelper.migrate(
+            operatePrefix,
+            tasklistPrefix,
+            targetPrefix,
+            isElasticsearch,
+            descriptors,
+            prefixMigrationClient,
+            executor);
 
-    LOG.info("Migration completed, shutting down executor.");
+    final var deleteFutures =
+        PrefixMigrationHelper.deleteDeprecatedIndices(
+            operatePrefix, tasklistPrefix, isElasticsearch, prefixMigrationClient, descriptors);
+
+    final var deleteIndexTemplateFutures =
+        PrefixMigrationHelper.deleteIndexTemplates(
+            operatePrefix,
+            tasklistPrefix,
+            isElasticsearch,
+            prefixMigrationClient,
+            descriptors,
+            executor);
+
+    final var deleteComponentTemplateFutures =
+        PrefixMigrationHelper.deleteComponentTemplates(
+            operatePrefix, tasklistPrefix, prefixMigrationClient);
+
+    CompletableFuture.allOf(migrateFutures.get())
+        .thenRun(() -> LOG.info("Migration of indices completed."))
+        .thenCompose(v -> CompletableFuture.allOf(deleteFutures.get()))
+        .thenRun(() -> LOG.info("Deletion of indices completed."))
+        .thenCompose(v -> CompletableFuture.allOf(deleteIndexTemplateFutures.get()))
+        .thenRun(() -> LOG.info("Deletion of index templates completed."))
+        .thenCompose(v -> CompletableFuture.allOf(deleteComponentTemplateFutures.get()))
+        .thenRun(() -> LOG.info("Deletion of component templates completed."))
+        .join();
+
     executor.close();
   }
 
-  private static PrefixMigrationClient getPrefixMigrationClient(
-      final ConnectConfiguration connectConfiguration) {
-    if (connectConfiguration.getTypeEnum().isElasticSearch()) {
-      return new ElasticsearchPrefixMigrationClient(
-          new ElasticsearchConnector(connectConfiguration).createClient());
-    } else {
-      return new OpensearchPrefixMigrationClient(
-          new OpensearchConnector(connectConfiguration).createClient());
-    }
-  }
-
-  public static void migrate(
+  public static Supplier<CompletableFuture[]> migrate(
       final String operatePrefix,
       final String tasklistPrefix,
-      final ConnectConfiguration connectConfig,
+      final String targetPrefix,
+      final boolean isElasticsearch,
+      final IndexDescriptors descriptors,
       final PrefixMigrationClient prefixMigrationClient,
       final ExecutorService executor) {
 
-    final boolean isElasticsearch = connectConfig.getTypeEnum().isElasticSearch();
-
-    final var descriptors = new IndexDescriptors(connectConfig.getIndexPrefix(), isElasticsearch);
     final var cloneOperations = new ArrayList<AliasCloneTargets>();
 
     TASKLIST_INDICES_TO_MIGRATE.forEach(
         cls ->
             buildCloneTargets(
                     tasklistPrefix,
-                    connectConfig.getIndexPrefix(),
+                    targetPrefix,
                     isElasticsearch,
                     prefixMigrationClient,
                     cls,
@@ -156,14 +200,14 @@ public final class PrefixMigrationHelper {
         cls ->
             buildCloneTargets(
                     operatePrefix,
-                    connectConfig.getIndexPrefix(),
+                    targetPrefix,
                     isElasticsearch,
                     prefixMigrationClient,
                     cls,
                     descriptors)
                 .map(cloneOperations::add));
 
-    final var futures =
+    return () ->
         cloneOperations.stream()
             .parallel()
             .map(
@@ -185,8 +229,108 @@ public final class PrefixMigrationHelper {
                         },
                         executor))
             .toArray(CompletableFuture[]::new);
+  }
 
-    CompletableFuture.allOf(futures).join();
+  private static Supplier<CompletableFuture> deleteDeprecatedIndices(
+      final String operatePrefix,
+      final String tasklistPrefix,
+      final boolean isElasticsearch,
+      final PrefixMigrationClient prefixMigrationClient,
+      final IndexDescriptors descriptors) {
+
+    final var deleteOperations = new ArrayList<String>();
+
+    OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
+        .flatMap(
+            cls ->
+                indicesToDelete(
+                    operatePrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
+                    .stream())
+        .forEach(deleteOperations::add);
+
+    TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
+        .flatMap(
+            cls ->
+                indicesToDelete(
+                    tasklistPrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
+                    .stream())
+        .forEach(deleteOperations::add);
+
+    return () ->
+        CompletableFuture.supplyAsync(
+            () ->
+                prefixMigrationClient.deleteIndex(deleteOperations.toArray(String[]::new)).join());
+  }
+
+  private static Supplier<CompletableFuture[]> deleteIndexTemplates(
+      final String operatePrefix,
+      final String tasklistPrefix,
+      final boolean isElasticsearch,
+      final PrefixMigrationClient prefixMigrationClient,
+      final IndexDescriptors descriptors,
+      final ExecutorService executor) {
+
+    final String indexTemplateFormat = "%s-%s-%s_template";
+    final var targetTemplates = new ArrayList<AbstractIndexDescriptor>();
+
+    OPERATE_INDICES_TO_MIGRATE.stream()
+        .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
+        .filter(AbstractTemplateDescriptor.class::isInstance)
+        .forEach(targetTemplates::add);
+
+    TASKLIST_INDICES_TO_MIGRATE.stream()
+        .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
+        .filter(AbstractTemplateDescriptor.class::isInstance)
+        .forEach(targetTemplates::add);
+
+    OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
+        .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
+        .filter(AbstractTemplateDescriptor.class::isInstance)
+        .forEach(targetTemplates::add);
+
+    TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
+        .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
+        .filter(AbstractTemplateDescriptor.class::isInstance)
+        .forEach(targetTemplates::add);
+
+    return () ->
+        targetTemplates.stream()
+            .map(
+                desc ->
+                    String.format(
+                        indexTemplateFormat,
+                        desc.getComponentName().equals(TASK_LIST.toString())
+                            ? tasklistPrefix
+                            : operatePrefix,
+                        desc.getIndexName(),
+                        desc.getVersion()))
+            .map(
+                indexTemplate ->
+                    CompletableFuture.supplyAsync(
+                            () -> prefixMigrationClient.deleteIndexTemplate(indexTemplate),
+                            executor)
+                        .join())
+            .toArray(CompletableFuture[]::new);
+  }
+
+  private static Supplier<CompletableFuture[]> deleteComponentTemplates(
+      final String operatePrefix,
+      final String tasklistPrefix,
+      final PrefixMigrationClient prefixMigrationClient) {
+
+    final String operateComponentTemplate = "%s_template".formatted(operatePrefix);
+    final String tasklistComponentTemplate = "%s_template".formatted(tasklistPrefix);
+
+    return () -> {
+      final var futures = new CompletableFuture[2];
+      futures[0] =
+          CompletableFuture.supplyAsync(
+              () -> prefixMigrationClient.deleteComponentTemplate(operateComponentTemplate));
+      futures[1] =
+          CompletableFuture.supplyAsync(
+              () -> prefixMigrationClient.deleteComponentTemplate(tasklistComponentTemplate));
+      return futures;
+    };
   }
 
   private static Optional<AliasCloneTargets> buildCloneTargets(
@@ -201,7 +345,7 @@ public final class PrefixMigrationHelper {
     final var destAlias = getDestinationAliasFromDescriptor(descriptor);
     final var srcIndices = prefixMigrationClient.getIndicesInAlias(srcAlias);
 
-    final var indicesToMigrate =
+    final var targetIndices =
         srcIndices.stream()
             .map(
                 srcIndex -> {
@@ -219,10 +363,21 @@ public final class PrefixMigrationHelper {
                 })
             .toList();
 
-    if (!indicesToMigrate.isEmpty()) {
-      return Optional.of(new AliasCloneTargets(srcAlias, destAlias, indicesToMigrate));
+    if (!targetIndices.isEmpty()) {
+      return Optional.of(new AliasCloneTargets(srcAlias, destAlias, targetIndices));
     }
     return Optional.empty();
+  }
+
+  private static List<String> indicesToDelete(
+      final String oldPrefix,
+      final boolean isElasticsearch,
+      final PrefixMigrationClient prefixMigrationClient,
+      final Class<? extends AbstractIndexDescriptor> cls,
+      final IndexDescriptors descriptors) {
+    final var descriptor = getDescriptor(cls, descriptors, oldPrefix, isElasticsearch);
+    final var srcAlias = getSourceAliasFromDescriptor(oldPrefix, descriptor);
+    return prefixMigrationClient.getIndicesInAlias(srcAlias);
   }
 
   public static boolean isHistoricIndex(
@@ -242,6 +397,17 @@ public final class PrefixMigrationHelper {
     return descriptor.getAlias();
   }
 
+  private static PrefixMigrationClient getPrefixMigrationClient(
+      final ConnectConfiguration connectConfiguration) {
+    if (connectConfiguration.getTypeEnum().isElasticSearch()) {
+      return new ElasticsearchPrefixMigrationClient(
+          new ElasticsearchConnector(connectConfiguration).createClient());
+    } else {
+      return new OpensearchPrefixMigrationClient(
+          new OpensearchConnector(connectConfiguration).createClient());
+    }
+  }
+
   @VisibleForTesting
   public static AbstractIndexDescriptor getDescriptor(
       final Class<? extends AbstractIndexDescriptor> cls,
@@ -254,10 +420,226 @@ public final class PrefixMigrationHelper {
       return new TasklistMigrationRepositoryIndex(prefix, isElasticsearch);
     } else if (cls.equals(MigrationRepositoryIndex.class)) {
       return new MigrationRepositoryIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistUserIndex.class)) {
+      return new TasklistUserIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistWebSessionIndex.class)) {
+      return new TasklistWebSessionIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistFlownodeInstanceIndex.class)) {
+      return new TasklistFlownodeInstanceIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistProcessInstanceIndex.class)) {
+      return new TasklistProcessInstanceIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistProcessIndex.class)) {
+      return new TasklistProcessIndex(prefix, isElasticsearch);
+    } else if (cls.equals(TasklistVariableIndex.class)) {
+      return new TasklistVariableIndex(prefix, isElasticsearch);
+    } else if (cls.equals(OperateUserIndex.class)) {
+      return new OperateUserIndex(prefix, isElasticsearch);
+    } else if (cls.equals(OperateWebSessionIndex.class)) {
+      return new OperateWebSessionIndex(prefix, isElasticsearch);
+    } else if (cls.equals(OperateUserTaskIndex.class)) {
+      return new OperateUserTaskIndex(prefix, isElasticsearch);
     }
     return descriptors.get(cls);
   }
 
   private record AliasCloneTargets(
       String srcAlias, String destAlias, List<Tuple<String, String>> indices) {}
+
+  private static class TasklistUserIndex extends AbstractIndexDescriptor {
+
+    public TasklistUserIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "user";
+    }
+
+    @Override
+    public String getVersion() {
+      return "1.4.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class TasklistWebSessionIndex extends AbstractIndexDescriptor {
+
+    public TasklistWebSessionIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "web-session";
+    }
+
+    @Override
+    public String getVersion() {
+      return "1.1.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class TasklistFlownodeInstanceIndex extends AbstractIndexDescriptor {
+
+    public TasklistFlownodeInstanceIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "flownode-instance";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.3.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class TasklistProcessInstanceIndex extends AbstractIndexDescriptor {
+
+    public TasklistProcessInstanceIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "process-instance";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.3.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class TasklistProcessIndex extends AbstractIndexDescriptor {
+
+    public TasklistProcessIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "process";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.4.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class TasklistVariableIndex extends AbstractIndexDescriptor {
+
+    public TasklistVariableIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "variable";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.3.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "tasklist";
+    }
+  }
+
+  private static class OperateUserIndex extends AbstractIndexDescriptor {
+
+    public OperateUserIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "user";
+    }
+
+    @Override
+    public String getVersion() {
+      return "1.2.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "operate";
+    }
+  }
+
+  private static class OperateWebSessionIndex extends AbstractIndexDescriptor {
+
+    public OperateWebSessionIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "web-session";
+    }
+
+    @Override
+    public String getVersion() {
+      return "1.1.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "operate";
+    }
+  }
+
+  private static class OperateUserTaskIndex extends AbstractTemplateDescriptor {
+
+    public OperateUserTaskIndex(final String indexPrefix, final boolean isElasticsearch) {
+      super(indexPrefix, isElasticsearch);
+    }
+
+    @Override
+    public String getIndexName() {
+      return "user-task";
+    }
+
+    @Override
+    public String getVersion() {
+      return "8.5.0";
+    }
+
+    @Override
+    public String getComponentName() {
+      return "operate";
+    }
+  }
 }
