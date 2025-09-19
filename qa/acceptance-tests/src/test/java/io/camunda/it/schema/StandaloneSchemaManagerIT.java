@@ -87,10 +87,6 @@ final class StandaloneSchemaManagerIT {
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.class-name",
               ElasticsearchExporter.class.getName())
-          .withProperty("camunda.operate.zeebe-elasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.zeebe-elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.zeebe-elasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.zeebe-elasticsearch.password", APP_PASSWORD)
           .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
           .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
           .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
