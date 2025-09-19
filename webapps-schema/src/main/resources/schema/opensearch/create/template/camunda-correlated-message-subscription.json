@@ -1,0 +1,53 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "bpmnProcessId": {
+        "type": "keyword"
+      },
+      "correlationKey": {
+        "type": "keyword"
+      },
+      "correlationTime": {
+        "type": "date",
+        "format": "date_time || epoch_millis"
+      },
+      "flowNodeId": {
+        "type": "keyword"
+      },
+      "flowNodeInstanceKey": {
+        "type": "long"
+      },
+      "messageKey": {
+        "type": "long"
+      },
+      "messageName": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      },
+      "position": {
+        "type": "long"
+      },
+      "processDefinitionKey": {
+        "type": "long"
+      },
+      "processInstanceKey": {
+        "type": "long"
+      },
+      "subscriptionKey": {
+        "type": "long"
+      },
+      "subscriptionType": {
+        "type": "keyword"
+      },
+      "tenantId": {
+        "type": "keyword"
+      }
+    }
+  }
+}

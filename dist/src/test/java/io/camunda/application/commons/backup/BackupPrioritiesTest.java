@@ -144,7 +144,7 @@ class BackupPrioritiesTest {
             "operate-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_",
-            "camunda-correlated-message-8.8.0_");
+            "camunda-correlated-message-subscription-8.8.0_");
 
     // PRIO 4 TEMPLATES
     assertThat(indices.get(5).allIndices())
@@ -171,8 +171,8 @@ class BackupPrioritiesTest {
             "tasklist-draft-task-variable-8.3.0_*",
             "-tasklist-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_*",
-            "-camunda-correlated-message-8.8.0_",
-            "camunda-correlated-message-8.8.0_*");
+            "-camunda-correlated-message-subscription-8.8.0_",
+            "camunda-correlated-message-subscription-8.8.0_*");
 
     // PRIO 5
     assertThat(indices.get(6).allIndices())

@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper">
+
+  <resultMap id="correlatedMessageSubscriptionResultMap" type="io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel">
+    <constructor>
+      <arg column="CORRELATION_KEY" javaType="java.lang.String"/>
+      <arg column="CORRELATION_TIME" javaType="java.time.OffsetDateTime"/>
+      <arg column="FLOW_NODE_ID" javaType="java.lang.String"/>
+      <arg column="FLOW_NODE_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="HISTORY_CLEANUP_DATE" javaType="java.time.OffsetDateTime"/>
+      <idArg column="MESSAGE_KEY" javaType="java.lang.Long"/>
+      <arg column="MESSAGE_NAME" javaType="java.lang.String"/>
+      <arg column="PARTITION_ID" javaType="java.lang.Integer"/>
+      <arg column="PROCESS_DEFINITION_ID" javaType="java.lang.String"/>
+      <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
+      <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
+      <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
+      <arg column="TENANT_ID" javaType="java.lang.String"/>
+    </constructor>
+  </resultMap>
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel">
+    INSERT INTO ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION (
+      CORRELATION_KEY,
+      CORRELATION_TIME,
+      FLOW_NODE_ID,
+      FLOW_NODE_INSTANCE_KEY,
+      HISTORY_CLEANUP_DATE,
+      MESSAGE_KEY,
+      MESSAGE_NAME,
+      PARTITION_ID,
+      PROCESS_DEFINITION_ID,
+      PROCESS_DEFINITION_KEY,
+      PROCESS_INSTANCE_KEY,
+      SUBSCRIPTION_KEY,
+      SUBSCRIPTION_TYPE,
+      TENANT_ID
+    )
+    VALUES (
+      #{correlationKey},
+      #{correlationTime, jdbcType=TIMESTAMP},
+      #{flowNodeId},
+      #{flowNodeInstanceKey},
+      #{historyCleanupDate, jdbcType=TIMESTAMP},
+      #{messageKey},
+      #{messageName},
+      #{partitionId},
+      #{processDefinitionId},
+      #{processDefinitionKey},
+      #{processInstanceKey},
+      #{subscriptionKey},
+      #{subscriptionType},
+      #{tenantId}
+    )
+  </insert>
+
+  <select id="count" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessageSubscriptionDbQuery" resultType="long">
+    SELECT COUNT(*)
+    FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
+  </select>
+
+  <!-- default search statement for databases supporting LIMIT/OFFSET-->
+  <select id="search" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessageSubscriptionDbQuery" resultMap="correlatedMessageSubscriptionResultMap">
+    SELECT * FROM (
+      SELECT
+        CORRELATION_KEY,
+        CORRELATION_TIME,
+        FLOW_NODE_ID,
+        FLOW_NODE_INSTANCE_KEY,
+        HISTORY_CLEANUP_DATE,
+        MESSAGE_KEY,
+        MESSAGE_NAME,
+        PARTITION_ID,
+        PROCESS_DEFINITION_ID,
+        PROCESS_DEFINITION_KEY,
+        PROCESS_INSTANCE_KEY,
+        SUBSCRIPTION_KEY,
+        SUBSCRIPTION_TYPE,
+        TENANT_ID
+      FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
+    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
+    ) t
+    <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="searchAndAuthFilter">
+    <where>
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND PROCESS_DEFINITION_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+      <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+          #{tenantId}
+        </foreach>
+      </if>
+      <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchFilter"/>
+    </where>
+  </sql>
+
+  <sql id="searchFilter">
+    <!-- basic filter -->
+    <if test="filter.correlationKeyOperations != null and !filter.correlationKeyOperations.isEmpty()">
+      <foreach collection="filter.correlationKeyOperations" item="operation">
+        AND CORRELATION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.correlationTimeOperations != null and !filter.correlationTimeOperations.isEmpty()">
+      <foreach collection="filter.correlationTimeOperations" item="operation">
+        AND CORRELATION_TIME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.flowNodeIdOperations != null and !filter.flowNodeIdOperations.isEmpty()">
+      <foreach collection="filter.flowNodeIdOperations" item="operation">
+        AND FLOW_NODE_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.flowNodeInstanceKeyOperations != null and !filter.flowNodeInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.flowNodeInstanceKeyOperations" item="operation">
+        AND FLOW_NODE_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.messageKeyOperations != null and !filter.messageKeyOperations.isEmpty()">
+      <foreach collection="filter.messageKeyOperations" item="operation">
+        AND MESSAGE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.messageNameOperations != null and !filter.messageNameOperations.isEmpty()">
+      <foreach collection="filter.messageNameOperations" item="operation">
+        AND MESSAGE_NAME
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.partitionIdOperations != null and !filter.partitionIdOperations.isEmpty()">
+      <foreach collection="filter.partitionIdOperations" item="operation">
+        AND PARTITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionIdOperations != null and !filter.processDefinitionIdOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionIdOperations" item="operation">
+        AND PROCESS_DEFINITION_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processDefinitionKeyOperations != null and !filter.processDefinitionKeyOperations.isEmpty()">
+      <foreach collection="filter.processDefinitionKeyOperations" item="operation">
+        AND PROCESS_DEFINITION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.processInstanceKeyOperations != null and !filter.processInstanceKeyOperations.isEmpty()">
+      <foreach collection="filter.processInstanceKeyOperations" item="operation">
+        AND PROCESS_INSTANCE_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.subscriptionKeyOperations != null and !filter.subscriptionKeyOperations.isEmpty()">
+      <foreach collection="filter.subscriptionKeyOperations" item="operation">
+        AND SUBSCRIPTION_KEY
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+    <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
+      <foreach collection="filter.tenantIdOperations" item="operation">
+        AND TENANT_ID
+        <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+      </foreach>
+    </if>
+  </sql>
+
+  <update id="updateHistoryCleanupDate">
+    UPDATE ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION SET
+      HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE PROCESS_INSTANCE_KEY IN
+    <foreach collection="processInstanceKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </update>
+
+  <delete id="cleanupHistory">
+    <bind name="tableName" value="'CORRELATED_MESSAGE_SUBSCRIPTION'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyCleanup"/>
+  </delete>
+</mapper>
