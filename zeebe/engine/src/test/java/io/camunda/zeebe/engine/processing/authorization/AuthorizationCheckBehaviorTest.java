@@ -17,6 +17,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.security.configuration.AuthorizationsConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.appliers.AuthorizationCreatedApplier;
@@ -72,9 +73,11 @@ final class AuthorizationCheckBehaviorTest {
   public void before() {
     final var securityConfig = new SecurityConfiguration();
     final var authConfig = new AuthorizationsConfiguration();
+    final var engineConfig = new EngineConfiguration();
     authConfig.setEnabled(true);
     securityConfig.setAuthorizations(authConfig);
-    authorizationCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    authorizationCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, engineConfig);
 
     userCreatedApplier = new UserCreatedApplier(processingState.getUserState());
     mappingRuleCreatedApplier =

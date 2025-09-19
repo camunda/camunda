@@ -63,6 +63,7 @@ import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import org.agrona.DirectBuffer;
@@ -403,7 +404,7 @@ public final class RequestMapper extends RequestUtil {
   }
 
   public static JobActivationProperties toJobActivationProperties(
-      final StreamActivatedJobsRequest request) {
+      final StreamActivatedJobsRequest request, final Map<String, Object> claims) {
 
     List<String> tenantIds = request.getTenantIdsList();
     tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
@@ -414,7 +415,8 @@ public final class RequestMapper extends RequestUtil {
         .setWorker(worker, 0, worker.capacity())
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
-        .setTenantIds(tenantIds);
+        .setTenantIds(tenantIds)
+        .setClaims(claims);
 
     return jobActivationProperties;
   }

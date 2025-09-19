@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
 import io.camunda.zeebe.engine.metrics.EngineMetricsDoc.JobAction;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.job.JobVariablesCollector;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer.JobStream;
@@ -21,10 +23,14 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJobImpl;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.InstantSource;
 import java.util.Optional;
+import java.util.Set;
 import org.agrona.concurrent.UnsafeBuffer;
 
 /**
@@ -46,6 +52,7 @@ public class BpmnJobActivationBehavior {
   private final KeyGenerator keyGenerator;
   private final JobProcessingMetrics jobMetrics;
   private final InstantSource clock;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
 
   public BpmnJobActivationBehavior(
       final JobStreamer jobStreamer,
@@ -53,7 +60,8 @@ public class BpmnJobActivationBehavior {
       final Writers writers,
       final KeyGenerator keyGenerator,
       final JobProcessingMetrics jobMetrics,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final AuthorizationCheckBehavior authCheckBehavior) {
     this.jobStreamer = jobStreamer;
     this.keyGenerator = keyGenerator;
     this.jobMetrics = jobMetrics;
@@ -61,6 +69,7 @@ public class BpmnJobActivationBehavior {
     stateWriter = writers.state();
     sideEffectWriter = writers.sideEffect();
     this.clock = clock;
+    authorizationCheckBehavior = authCheckBehavior;
   }
 
   public void publishWork(final long jobKey, final JobRecord jobRecord) {
@@ -69,11 +78,10 @@ public class BpmnJobActivationBehavior {
 
     final String jobType = wrappedJobRecord.getType();
     final JobKind jobKind = wrappedJobRecord.getJobKind();
-    final String tenantId = wrappedJobRecord.getTenantId();
     final Optional<JobStream> optionalJobStream =
         jobStreamer.streamFor(
             wrappedJobRecord.getTypeBuffer(),
-            jobActivationProperties -> jobActivationProperties.tenantIds().contains(tenantId));
+            jobActivationProperties -> isAuthorized(jobActivationProperties, wrappedJobRecord));
 
     if (optionalJobStream.isPresent()) {
       final JobStream jobStream = optionalJobStream.get();
@@ -149,5 +157,34 @@ public class BpmnJobActivationBehavior {
     final var jobCopyBuffer = new UnsafeBuffer(bytes);
     jobRecord.write(jobCopyBuffer, 0);
     jobRecordClone.wrap(jobCopyBuffer, 0, jobRecord.getLength());
+  }
+
+  private boolean isAuthorized(
+      final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
+
+    final var ownerTenantId = jobRecord.getTenantId();
+    final var tenantIds = jobActivationProperties.tenantIds().stream().toList();
+    if (!tenantIds.contains(ownerTenantId)) {
+      // don't push jobs to workers that don't request them from the job's tenant
+      return false;
+    }
+
+    final var claims = jobActivationProperties.claims();
+    return authorizationCheckBehavior
+        .isAuthorized(
+            AuthorizationRequest.builder()
+                .authorizationClaims(claims)
+                .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
+                .addAuthorizationScope(AuthorizationScope.id(jobRecord.getBpmnProcessId()))
+                .tenantId(ownerTenantId)
+                .build())
+        .isRight(); // we only care if the job stream is authorized, not why it isn't
+  }
+
+  private boolean isAuthorizedForJob(
+      final JobRecord jobRecord, final Set<AuthorizationScope> authorizedProcessIds) {
+    return authorizedProcessIds.contains(AuthorizationScope.WILDCARD)
+        || authorizedProcessIds.contains(AuthorizationScope.id(jobRecord.getBpmnProcessId()));
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.processing.streamprocessor.writers.SideEffectWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
@@ -30,7 +31,9 @@ public class AuthorizationCreateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final SideEffectWriter sideEffectWriter;
   private final PermissionsBehavior permissionsBehavior;
+  private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final UserState userState;
 
   public AuthorizationCreateProcessor(
@@ -44,6 +47,8 @@ public class AuthorizationCreateProcessor
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
+    sideEffectWriter = writers.sideEffect();
+    authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
     userState = processingState.getUserState();
   }
@@ -75,9 +80,15 @@ public class AuthorizationCreateProcessor
         .mappingRuleExists(command.getValue())
         .flatMap(permissionsBehavior::permissionsAlreadyExist)
         .ifRightOrLeft(
-            ignored ->
-                stateWriter.appendFollowUpEvent(
-                    command.getKey(), AuthorizationIntent.CREATED, command.getValue()),
+            ignored -> {
+              stateWriter.appendFollowUpEvent(
+                  command.getKey(), AuthorizationIntent.CREATED, command.getValue());
+              sideEffectWriter.appendSideEffect(
+                  () -> {
+                    authorizationCheckBehavior.clearAuthorizationsCache();
+                    return true;
+                  });
+            },
             rejection ->
                 rejectionWriter.appendRejection(command, rejection.type(), rejection.reason()));
 
@@ -96,5 +107,10 @@ public class AuthorizationCreateProcessor
         .withKey(key)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
         .distribute(command);
+    sideEffectWriter.appendSideEffect(
+        () -> {
+          authorizationCheckBehavior.clearAuthorizationsCache();
+          return true;
+        });
   }
 }

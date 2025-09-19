@@ -9,13 +9,18 @@ package io.camunda.zeebe.protocol.impl.stream.job;
 
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
+import java.util.Map;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class JobActivationPropertiesImpl extends UnpackedObject implements JobActivationProperties {
   private final StringProperty workerProp = new StringProperty("worker", "");
@@ -25,13 +30,15 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   private final ArrayProperty<StringValue> tenantIdsProp =
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+  private final DocumentProperty claimsProp = new DocumentProperty("claims");
 
   public JobActivationPropertiesImpl() {
-    super(4);
+    super(5);
     declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
-        .declareProperty(tenantIdsProp);
+        .declareProperty(tenantIdsProp)
+        .declareProperty(claimsProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
@@ -75,5 +82,21 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   @Override
   public Collection<String> tenantIds() {
     return tenantIdsProp.stream().map(StringValue::toString).toList();
+  }
+
+  @Override
+  public Map<String, Object> claims() {
+    return MsgPackConverter.convertToMap(claimsProp.getValue());
+  }
+
+  public JobActivationPropertiesImpl setClaims(final Map<String, Object> authorizations) {
+    claimsProp.setValue(getDocumentOrEmpty(authorizations));
+    return this;
+  }
+
+  protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {
+    return value == null || value.isEmpty()
+        ? DocumentValue.EMPTY_DOCUMENT
+        : new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value));
   }
 }
