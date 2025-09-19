@@ -33,7 +33,6 @@ defaults:
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
-  TEST_PRODUCT: Camunda
 
 jobs:
   detect-changes:
@@ -921,6 +920,7 @@ jobs:
     runs-on: gcp-perf-core-16-default
     env:
       TEST_OWNER: General
+      TEST_PRODUCT: Camunda
       TEST_TYPE: Unit
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
