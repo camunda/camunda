@@ -27,7 +27,6 @@ import {getScopeId} from 'modules/utils/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
-import {ERRORS} from './constants';
 
 type Props = {
   id?: string;
