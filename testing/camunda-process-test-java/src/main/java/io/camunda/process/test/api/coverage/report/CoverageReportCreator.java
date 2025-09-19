@@ -92,7 +92,7 @@ public class CoverageReportCreator {
   }
 
   /**
-   * Extracts amd flattens all coverage entries from a collection of test suites.
+   * Extracts and flattens all coverage entries from a collection of test suites.
    *
    * @param suites Collection of test suites to extract coverage data from
    * @return A flat collection of all Coverage objects from all test runs
