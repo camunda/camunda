@@ -84,7 +84,6 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(operateProperties.getOpensearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getZeebeOpensearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -98,7 +97,6 @@ public class SecondaryStorageOpensearchTest {
       assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(tasklistProperties.getOpenSearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getZeebeOpenSearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -143,9 +141,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
         "camunda.tasklist.opensearch.url=http://matching-url:4321",
-        "camunda.tasklist.zeebeOpensearch.url=http://matching-url:4321",
         "camunda.operate.opensearch.url=http://matching-url:4321",
-        "camunda.operate.zeebeOpensearch.url=http://matching-url:4321",
         // username
         "camunda.data.secondary-storage.opensearch.username=" + EXPECTED_USERNAME,
         "camunda.database.username=" + EXPECTED_USERNAME,
@@ -207,7 +203,6 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getZeebeOpensearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -223,7 +218,6 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getOpenSearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getZeebeOpenSearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
