@@ -9,7 +9,6 @@ package io.camunda.it.schema;
 
 import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
-import static io.camunda.zeebe.qa.util.cluster.TestSpringApplication.setupElasticsearchUrl;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -64,16 +63,15 @@ final class StandaloneSchemaManagerIT {
   final TestStandaloneSchemaManager schemaManager =
       new TestStandaloneSchemaManager()
           .withProperty(
-              "zeebe.broker.exporters.elasticsearch.className",
+              "zeebe.broker.exporters.elasticsearch.class-name",
               ElasticsearchExporter.class.getName())
-          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.createTemplate", "true")
+          .withProperty("zeebe.broker.exporters.elasticsearch.args.index.create-template", "true")
           .withProperty("zeebe.broker.exporters.elasticsearch.args.retention.enabled", "true")
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.args.authentication.username", ADMIN_USER)
           .withProperty(
               "zeebe.broker.exporters.elasticsearch.args.authentication.password", ADMIN_PASSWORD)
-          .withProperty("camunda.database.username", ADMIN_USER)
-          .withProperty("camunda.database.password", ADMIN_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
           .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
           .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
           .withProperty("camunda.database.retention.enabled", "true");
@@ -83,26 +81,19 @@ final class StandaloneSchemaManagerIT {
       new TestCamundaApplication()
           .withAdditionalProfile(Profile.CONSOLIDATED_AUTH)
           .withUnauthenticatedAccess()
-          .withProperty("camunda.database.username", APP_USER)
-          .withProperty("camunda.database.password", APP_PASSWORD)
           .withProperty(CREATE_SCHEMA_PROPERTY, "false")
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
+          .withProperty("camunda.operate.elasticsearch.health-check-enabled", "false")
+          .withProperty("camunda.tasklist.elasticsearch.health-check-enabled", "false")
           .withProperty(
-              "zeebe.broker.exporters.elasticsearch.className",
+              "zeebe.broker.exporters.elasticsearch.class-name",
               ElasticsearchExporter.class.getName())
-          .withProperty("camunda.operate.elasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.operate.zeebeelasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.operate.elasticsearch.healthCheckEnabled", "false")
-          .withProperty("camunda.tasklist.elasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.username", APP_USER)
-          .withProperty("camunda.tasklist.zeebeelasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.operate.zeebe-elasticsearch.username", APP_USER)
+          .withProperty("camunda.operate.zeebe-elasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.tasklist.zeebe-elasticsearch.username", APP_USER)
+          .withProperty("camunda.tasklist.zeebe-elasticsearch.password", APP_PASSWORD)
+          .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
           .withProperty("camunda.data.secondary-storage.elasticsearch.username", APP_USER)
           .withProperty("camunda.data.secondary-storage.elasticsearch.password", APP_PASSWORD)
-          .withProperty("camunda.tasklist.elasticsearch.healthCheckEnabled", "false")
           .withExporter(
               CamundaExporter.class.getSimpleName(),
               cfg -> {
@@ -180,15 +171,13 @@ final class StandaloneSchemaManagerIT {
     final String esUrl = "http://" + es.getHttpHostAddress();
 
     // Connect to ES in Standalone Schema Manager
-    setupElasticsearchUrl(schemaManager, esUrl);
     schemaManager
-        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
         .withProperty("zeebe.broker.exporters.elasticsearch.args.url", esUrl);
 
     // Connect to ES in Camunda
-    setupElasticsearchUrl(camunda, esUrl);
     camunda
-        .withProperty("camunda.data.secondary-storage.type", "elasticsearch")
+        .withProperty("camunda.data.secondary-storage.elasticsearch.url", esUrl)
         .updateExporterArgs(
             CamundaExporter.class.getSimpleName(),
             args -> ((Map) args.get("connect")).put("url", esUrl))
