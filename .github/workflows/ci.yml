@@ -410,8 +410,8 @@ jobs:
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
           ./mvnw -B --no-snapshot-updates
-          -D skipITs -D skipQaBuild=false -D skipChecks
-          -P skipFrontendBuild
+          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=3
+          -P skipFrontendBuild,extract-flaky-tests
           -pl :camunda-archunit-tests
           -am
           -Dtest='*ArchTest'
