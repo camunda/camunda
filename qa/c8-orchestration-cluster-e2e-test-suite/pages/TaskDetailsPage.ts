@@ -119,6 +119,7 @@ class TaskDetailsPage {
   }
 
   async clickUnassignButton() {
+    await expect(this.unassignButton).toBeVisible({timeout: 30000});
     await this.unassignButton.click();
   }
 
