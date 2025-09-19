@@ -11,6 +11,7 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
@@ -59,7 +60,8 @@ class BatchOperationSuspendProcessorTest {
     when(state.getBatchOperationState()).thenReturn(batchOperationState);
 
     final var authCheckBehavior = mock(AuthorizationCheckBehavior.class);
-    when(authCheckBehavior.isAuthorized(any())).thenReturn(Either.right(null));
+    when(authCheckBehavior.isAuthorized(any(AuthorizationRequest.class)))
+        .thenReturn(Either.right(null));
 
     when(keyGenerator.nextKey()).thenReturn(1L);
 

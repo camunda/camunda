@@ -128,7 +128,8 @@ public final class EngineProcessors {
     final var decisionBehavior =
         new DecisionBehavior(
             DecisionEngineFactory.createDecisionEngine(), processingState, processEngineMetrics);
-    final var authCheckBehavior = new AuthorizationCheckBehavior(processingState, securityConfig);
+    final var authCheckBehavior =
+        new AuthorizationCheckBehavior(processingState, securityConfig, config);
     final var asyncRequestBehavior =
         new AsyncRequestBehavior(processingState.getKeyGenerator(), writers.state());
     final var transientProcessMessageSubscriptionState =
