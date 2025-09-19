@@ -10,6 +10,7 @@ package io.camunda.zeebe.shared.management;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.atomix.cluster.MemberId;
+import io.camunda.zeebe.dynamic.config.state.ClusterChangePlan.CompletedOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.DeleteHistoryOperation;
@@ -38,6 +39,8 @@ import io.camunda.zeebe.dynamic.config.state.RoutingState;
 import io.camunda.zeebe.management.cluster.ExporterStatus;
 import io.camunda.zeebe.management.cluster.ExporterStatus.StatusEnum;
 import io.camunda.zeebe.management.cluster.Operation.OperationEnum;
+import io.camunda.zeebe.management.cluster.TopologyChangeCompletedInner;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -73,6 +76,19 @@ final class ClusterApiUtilsTest {
     assertThat(encoded).isNotNull();
     assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
     assertThat(OperationEnum.values())
+        .as("Operation " + operation + "is not mapped correctly")
+        .contains(encoded.getOperation());
+  }
+
+  @ParameterizedTest
+  @MethodSource("generateAllClusterConfigurationChangeOperationsAsArguments")
+  void shouldMapClusterCompletedOperation(final ClusterConfigurationChangeOperation operation) {
+    final var encoded =
+        ClusterApiUtils.mapCompletedOperation(
+            new CompletedOperation(operation, Instant.ofEpochSecond(17172371723L)));
+    assertThat(encoded).isNotNull();
+    assertThat(encoded.getOperation()).isNotEqualTo(OperationEnum.UNKNOWN);
+    assertThat(TopologyChangeCompletedInner.OperationEnum.values())
         .as("Operation " + operation + "is not mapped correctly")
         .contains(encoded.getOperation());
   }
