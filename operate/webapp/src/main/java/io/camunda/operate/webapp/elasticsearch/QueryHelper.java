@@ -428,11 +428,16 @@ public class QueryHelper {
   private QueryBuilder createActivityIdIncidentQuery(final String activityId) {
     final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE, FlowNodeState.ACTIVE.name());
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ID, activityId);
-    final ExistsQueryBuilder incidentExists = existsQuery(ERROR_MSG);
+    final QueryBuilder activityHasIncident = termQuery(INCIDENT, true);
 
     return hasChildQuery(
         ACTIVITIES_JOIN_RELATION,
-        joinWithAnd(activitiesQuery, activityIdQuery, incidentExists),
+        joinWithAnd(activitiesQuery, activityIdQuery, activityHasIncident),
         None);
+  }
+
+  /** Setter for PermissionsService for testing purposes. */
+  void setPermissionsService(final PermissionsService permissionsService) {
+    this.permissionsService = permissionsService;
   }
 }
