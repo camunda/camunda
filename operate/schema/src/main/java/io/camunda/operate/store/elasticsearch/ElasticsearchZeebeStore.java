@@ -21,11 +21,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Conditional(ElasticsearchCondition.class)
 @Component
+@ConditionalOnProperty(value = "camunda.operate.importer-enabled", havingValue = "true")
 public class ElasticsearchZeebeStore implements ZeebeStore {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ZeebeStore.class);

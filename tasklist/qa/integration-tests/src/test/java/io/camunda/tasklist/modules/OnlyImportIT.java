@@ -20,8 +20,8 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
     properties = {
-      TasklistProperties.PREFIX + ".webappEnabled = false",
-      TasklistProperties.PREFIX + ".archiverEnabled = false"
+      TasklistProperties.PREFIX + ".importer-enabled = true",
+      TasklistProperties.PREFIX + ".webapp-enabled = false",
     })
 public class OnlyImportIT extends ModuleIntegrationTest {
 

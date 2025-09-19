@@ -17,9 +17,6 @@ import java.util.Optional;
 import java.util.Set;
 
 public interface TestSearchRepository {
-  boolean isConnected();
-
-  boolean isZeebeConnected();
 
   boolean createIndex(String indexName, Map<String, ?> mapping) throws Exception;
 

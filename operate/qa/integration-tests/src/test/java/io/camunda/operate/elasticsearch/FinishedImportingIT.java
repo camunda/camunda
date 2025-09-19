@@ -45,6 +45,8 @@ import org.jetbrains.annotations.NotNull;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 public class FinishedImportingIT extends OperateZeebeAbstractIT {
   private static final ElasticsearchExporter EXPORTER = new ElasticsearchExporter();
@@ -58,6 +60,11 @@ public class FinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private MeterRegistry registry;
   private final ProtocolFactory factory = new ProtocolFactory();
   private int emptyBatches = 0;
+
+  @DynamicPropertySource
+  static void setProperties(final DynamicPropertyRegistry registry) {
+    registry.add("camunda.operate.importer-enabled", () -> true);
+  }
 
   @Before
   public void beforeEach() {

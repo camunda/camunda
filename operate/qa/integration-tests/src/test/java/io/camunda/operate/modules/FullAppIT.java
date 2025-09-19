@@ -11,9 +11,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
 import org.junit.Test;
+import org.springframework.test.context.TestPropertySource;
 
+@TestPropertySource(
+    properties = {
+      OperateProperties.PREFIX + ".importer-enabled = true",
+    })
 public class FullAppIT extends ModuleAbstractIT {
 
   @Test

@@ -12,17 +12,10 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 
 import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(
-    properties = {
-      TasklistProperties.PREFIX + ".importerEnabled = false",
-      TasklistProperties.PREFIX + ".archiverEnabled = false",
-    })
 public class OnlyWebappIT extends ModuleIntegrationTest {
 
   @Test

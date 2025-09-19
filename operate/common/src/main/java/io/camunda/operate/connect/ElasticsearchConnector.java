@@ -54,6 +54,7 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -174,6 +175,7 @@ public class ElasticsearchConnector {
   }
 
   @Bean("zeebeEsClient")
+  @ConditionalOnProperty(value = "camunda.operate.importer-enabled", havingValue = "true")
   public RestHighLevelClient zeebeEsClient() {
     // some weird error when ELS sets available processors number for Netty - see
     // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3

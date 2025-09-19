@@ -148,6 +148,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
                   cfg.getGateway().setEnable(true);
                 })
+            .withProperty("camunda.operate.importer-enabled", "true")
+            .withProperty("camunda.tasklist.importer-enabled", "true")
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
 
     if (profiles != null && profiles.length > 0) {

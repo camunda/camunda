@@ -19,6 +19,7 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
     properties = {
+      OperateProperties.PREFIX + ".importer-enabled = true",
       OperateProperties.PREFIX + ".webappEnabled = false",
     })
 public class OnlyImportIT extends ModuleAbstractIT {

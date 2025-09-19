@@ -53,7 +53,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.junit.runner.Description;
-import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ExpandWildcard;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.slf4j.Logger;
@@ -70,10 +69,6 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   protected static final Logger LOGGER = LoggerFactory.getLogger(OpensearchTestRuleProvider.class);
 
   @Autowired protected RichOpenSearchClient richOpenSearchClient;
-
-  @Autowired
-  @Qualifier("zeebeOpensearchClient")
-  protected OpenSearchClient zeebeOsClient;
 
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected RecordsReaderHolder recordsReaderHolder;
@@ -152,9 +147,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Override
   public void refreshZeebeIndices() {
     try {
-      zeebeOsClient
-          .indices()
-          .refresh(r -> r.index(operateProperties.getZeebeOpensearch().getPrefix() + "*"));
+      richOpenSearchClient
+          .index()
+          .refresh(operateProperties.getZeebeOpensearch().getPrefix() + "*");
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Zeebe Opensearch indices", t);
     }
