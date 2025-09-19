@@ -11,9 +11,9 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.Tuple;
-import io.camunda.operate.webapp.elasticsearch.reader.ElasticsearchJobReader;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.EventReader;
+import io.camunda.operate.webapp.reader.JobReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
@@ -48,7 +48,7 @@ class FlowNodeInstanceMetadataBuilderTest {
   @Mock private DecisionInstanceReader decisionInstanceReader;
   @Mock private EventReader eventReader;
   @Mock private UserTaskReader userTaskReader;
-  @Mock private ElasticsearchJobReader elasticsearchJobReader;
+  @Mock private JobReader elasticsearchJobReader;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
 
