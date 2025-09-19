@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Disk {
 
@@ -30,7 +31,7 @@ public class Disk {
   /** Sets the interval at which the disk usage is monitored */
   private Duration monitoringInterval = Duration.ofSeconds(1);
 
-  private FreeSpace freeSpace = new FreeSpace();
+  @NestedConfigurationProperty private FreeSpace freeSpace = new FreeSpace();
 
   public FreeSpace getFreeSpace() {
     return freeSpace;

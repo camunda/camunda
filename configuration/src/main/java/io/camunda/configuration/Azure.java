@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Azure {
   private static final String PREFIX = "camunda.data.backup.azure";
@@ -66,7 +67,7 @@ public class Azure {
    * runtime error. See more in: <a
    * href="https://learn.microsoft.com/en-us/rest/api/storageservices/delegate-access-with-shared-access-signature">...</a>
    */
-  private SasToken sasToken;
+  @NestedConfigurationProperty private SasToken sasToken;
 
   public String getEndpoint() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

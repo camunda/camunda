@@ -7,8 +7,10 @@
  */
 package io.camunda.configuration;
 
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
 public class Actor {
-  private ActorIdleStrategy idle = new ActorIdleStrategy();
+  @NestedConfigurationProperty private ActorIdleStrategy idle = new ActorIdleStrategy();
 
   public ActorIdleStrategy getIdle() {
     return idle;

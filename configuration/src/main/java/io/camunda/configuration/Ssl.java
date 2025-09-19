@@ -13,6 +13,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.io.File;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Ssl {
   private static final String PREFIX = "camunda.api.grpc.ssl";
@@ -42,7 +43,7 @@ public class Ssl {
    * Configures the keystore file containing both the certificate chain and the private key.
    * Currently only supports PKCS12 format.
    */
-  private KeyStore keyStore = new KeyStore();
+  @NestedConfigurationProperty private KeyStore keyStore = new KeyStore();
 
   public boolean isEnabled() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

@@ -11,6 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.time.Duration;
 import java.util.Map;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Backup {
   private static final String PREFIX = "camunda.data.backup";
@@ -76,16 +77,16 @@ public class Backup {
   private BackupStoreType store = BackupStoreType.NONE;
 
   /** Configuration for backup store AWS S3 */
-  private S3 s3 = new S3();
+  @NestedConfigurationProperty private S3 s3 = new S3();
 
   /** Configuration for backup store GCS */
-  private Gcs gcs = new Gcs();
+  @NestedConfigurationProperty private Gcs gcs = new Gcs();
 
   /** Configuration for backup store Filesystem */
-  private Filesystem filesystem = new Filesystem();
+  @NestedConfigurationProperty private Filesystem filesystem = new Filesystem();
 
   /** Configuration for backup store Azure */
-  private Azure azure = new Azure();
+  @NestedConfigurationProperty private Azure azure = new Azure();
 
   public String getRepositoryName() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Data {
   private static final String PREFIX = "camunda.data";
@@ -20,16 +21,16 @@ public class Data {
   private Duration snapshotPeriod = Duration.ofMinutes(5);
 
   /** This section allows to configure primary Zeebe's data storage. */
-  private PrimaryStorage primaryStorage = new PrimaryStorage();
+  @NestedConfigurationProperty private PrimaryStorage primaryStorage = new PrimaryStorage();
 
   /** This section allows configuring a backup store. */
-  private Backup backup = new Backup();
+  @NestedConfigurationProperty private Backup backup = new Backup();
 
   /** This section allows configuring export. */
-  private Export export = new Export();
+  @NestedConfigurationProperty private Export export = new Export();
 
   /** This section allows to configure Zeebe's secondary storage. */
-  private SecondaryStorage secondaryStorage = new SecondaryStorage();
+  @NestedConfigurationProperty private SecondaryStorage secondaryStorage = new SecondaryStorage();
 
   public Duration getSnapshotPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Properties;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 public class RocksDb {
@@ -52,7 +53,7 @@ public class RocksDb {
    * none (the default), and fine which exposes many metrics covering the read, write, delete and
    * iteration latency per partition and column family.
    */
-  private AccessMetricsKind accessMetrics = AccessMetricsKind.NONE;
+  @NestedConfigurationProperty private AccessMetricsKind accessMetrics = AccessMetricsKind.NONE;
 
   /**
    * Configures the memory limit, which can be used by RocksDB. Be aware that this setting only
