@@ -33,7 +33,8 @@ class CorrelatedMessageSubscriptionDbReaderTest {
             AuthorizationCheck.enabled(Authorization.of(a -> a.readProcessInstance().read())),
             TenantCheck.disabled());
 
-    final var items = correlatedMessageSubscriptionDbReader.search(query, resourceAccessChecks).items();
+    final var items =
+        correlatedMessageSubscriptionDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 
@@ -43,7 +44,8 @@ class CorrelatedMessageSubscriptionDbReaderTest {
     final ResourceAccessChecks resourceAccessChecks =
         ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of()));
 
-    final var items = correlatedMessageSubscriptionDbReader.search(query, resourceAccessChecks).items();
+    final var items =
+        correlatedMessageSubscriptionDbReader.search(query, resourceAccessChecks).items();
     assertThat(items).isEmpty();
   }
 }

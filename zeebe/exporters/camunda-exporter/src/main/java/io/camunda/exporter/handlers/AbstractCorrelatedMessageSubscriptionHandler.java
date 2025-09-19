@@ -42,7 +42,8 @@ public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends Rec
   }
 
   @Override
-  public void updateEntity(final Record<T> record, final CorrelatedMessageSubscriptionEntity entity) {
+  public void updateEntity(
+      final Record<T> record, final CorrelatedMessageSubscriptionEntity entity) {
 
     entity
         .setCorrelationTime(toOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
@@ -54,7 +55,8 @@ public abstract class AbstractCorrelatedMessageSubscriptionHandler<T extends Rec
   }
 
   @Override
-  public void flush(final CorrelatedMessageSubscriptionEntity entity, final BatchRequest batchRequest) {
+  public void flush(
+      final CorrelatedMessageSubscriptionEntity entity, final BatchRequest batchRequest) {
     batchRequest.add(getIndexName(), entity);
   }
 }

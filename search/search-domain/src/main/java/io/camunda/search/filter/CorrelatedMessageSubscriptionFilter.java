@@ -32,7 +32,8 @@ public record CorrelatedMessageSubscriptionFilter(
     List<Operation<String>> tenantIdOperations)
     implements FilterBase {
 
-  public static final CorrelatedMessageSubscriptionFilter EMPTY = new CorrelatedMessageSubscriptionFilter.Builder().build();
+  public static final CorrelatedMessageSubscriptionFilter EMPTY =
+      new CorrelatedMessageSubscriptionFilter.Builder().build();
 
   public static final class Builder implements ObjectBuilder<CorrelatedMessageSubscriptionFilter> {
     private List<Operation<String>> correlationKeyOperations;

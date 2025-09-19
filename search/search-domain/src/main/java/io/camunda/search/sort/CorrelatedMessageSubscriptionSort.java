@@ -11,7 +11,8 @@ import io.camunda.util.ObjectBuilder;
 import java.util.List;
 import java.util.function.Function;
 
-public record CorrelatedMessageSubscriptionSort(List<FieldSorting> orderings) implements SortOption {
+public record CorrelatedMessageSubscriptionSort(List<FieldSorting> orderings)
+    implements SortOption {
 
   @Override
   public List<FieldSorting> getFieldSortings() {
@@ -19,7 +20,10 @@ public record CorrelatedMessageSubscriptionSort(List<FieldSorting> orderings) im
   }
 
   public static CorrelatedMessageSubscriptionSort of(
-      final Function<CorrelatedMessageSubscriptionSort.Builder, ObjectBuilder<CorrelatedMessageSubscriptionSort>> fn) {
+      final Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn) {
     return SortOptionBuilders.correlatedMessageSubscription(fn);
   }
 

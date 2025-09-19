@@ -312,9 +312,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
                 indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
             new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class).getFullQualifiedName()),
+                indexDescriptors
+                    .get(CorrelatedMessageSubscriptionTemplate.class)
+                    .getFullQualifiedName()),
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
-                indexDescriptors.get(CorrelatedMessageSubscriptionTemplate.class).getFullQualifiedName())));
+                indexDescriptors
+                    .get(CorrelatedMessageSubscriptionTemplate.class)
+                    .getFullQualifiedName())));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation

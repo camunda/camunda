@@ -70,7 +70,8 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(0);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(0);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
-    when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
+    when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
+        .thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
@@ -117,7 +118,8 @@ class HistoryCleanupServiceTest {
     when(batchOperationWriter.cleanupItemHistory(any(), anyInt())).thenReturn(1);
     when(batchOperationWriter.cleanupHistory(any(), anyInt())).thenReturn(1);
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
-    when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(1);
+    when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
+        .thenReturn(1);
 
     // when
     final Duration nextCleanupInterval =

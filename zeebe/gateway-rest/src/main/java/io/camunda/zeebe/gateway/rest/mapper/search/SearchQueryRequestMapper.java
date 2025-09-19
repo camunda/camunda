@@ -568,8 +568,8 @@ public final class SearchQueryRequestMapper {
         filter, sort, page, SearchQueryBuilders::messageSubscriptionSearchQuery);
   }
 
-  public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery> toCorrelatedMessageSubscriptionQuery(
-      final CorrelatedMessageSubscriptionSearchQuery request) {
+  public static Either<ProblemDetail, CorrelatedMessageSubscriptionQuery>
+      toCorrelatedMessageSubscriptionQuery(final CorrelatedMessageSubscriptionSearchQuery request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery().build());
     }
@@ -580,8 +580,10 @@ public final class SearchQueryRequestMapper {
                 request.getSort()),
             SortOptionBuilders::correlatedMessageSubscription,
             SearchQuerySortRequestMapper::applyCorrelatedMessageSubscriptionSortField);
-    final var filter = SearchQueryFilterMapper.toCorrelatedMessageSubscriptionFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
+    final var filter =
+        SearchQueryFilterMapper.toCorrelatedMessageSubscriptionFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, sort, page, SearchQueryBuilders::correlatedMessageSubscriptionSearchQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
