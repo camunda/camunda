@@ -76,7 +76,7 @@ public class GatewayRestConfiguration {
     private static final int DEFAULT_CORE_POOL_SIZE_MULTIPLIER = 1;
     private static final int DEFAULT_MAX_POOL_SIZE_MULTIPLIER = 8;
     private static final long DEFAULT_KEEP_ALIVE_SECONDS = 60L;
-    private static final int DEFAULT_QUEUE_CAPACITY = 64;
+    private static final int DEFAULT_QUEUE_CAPACITY = 16;
 
     /**
      * Multiplier applied to the number of available processors to compute the executor's core pool
