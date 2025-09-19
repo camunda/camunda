@@ -272,6 +272,25 @@ class ProcessInstanceAuthorizationIT {
             "Unauthorized to perform operation 'READ_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION'");
   }
 
+  @Test
+  void getElementInstancesShouldReturnBadRequestForSpecificProcessPermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(USER1) final CamundaClient camundaClient) {
+    // given - USER1 has READ_PROCESS_INSTANCE permission only for PROCESS_ID_1 (not wildcard)
+    final var processInstanceKey = getProcessInstanceKey(adminClient, PROCESS_ID_1);
+
+    // when - attempting to get element instances for authorized process instance
+    final var result =
+        camundaClient
+            .newElementInstanceSearchRequest()
+            .filter(f -> f.processInstanceKey(processInstanceKey))
+            .send()
+            .join();
+
+    // then
+    assertThat(result.items()).isNotEmpty();
+  }
+
   private long getProcessInstanceKey(final CamundaClient camundaClient, final String processId) {
     return camundaClient
         .newProcessInstanceSearchRequest()
