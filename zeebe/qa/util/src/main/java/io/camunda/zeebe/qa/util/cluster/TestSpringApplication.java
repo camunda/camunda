@@ -26,7 +26,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -288,19 +287,5 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     }
 
     return Integer.parseInt(portProperty.toString());
-  }
-
-  public static void setupElasticsearchUrl(
-      final TestSpringApplication application, final String url) {
-    final Set<String> properties =
-        Set.of(
-            "camunda.data.secondary-storage.elasticsearch.url",
-            "camunda.database.url",
-            "camunda.operate.elasticsearch.url",
-            "camunda.tasklist.elasticsearch.url");
-
-    for (final String property : properties) {
-      application.withProperty(property, url);
-    }
   }
 }
