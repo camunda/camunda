@@ -92,8 +92,6 @@ import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -108,6 +106,8 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -308,8 +308,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
             new UsageMetricExportedHandler(
-                indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
-                indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName()),
+                indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
+                indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName()),
             new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)

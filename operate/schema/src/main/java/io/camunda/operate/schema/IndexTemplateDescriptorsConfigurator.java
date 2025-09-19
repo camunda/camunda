@@ -14,7 +14,6 @@ import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
@@ -28,6 +27,7 @@ import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -62,9 +62,9 @@ public class IndexTemplateDescriptorsConfigurator {
   }
 
   @Bean
-  public UsageMetricIndex getUsageMetricIndex(
+  public UsageMetricTemplate getUsageMetricIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new UsageMetricIndex(
+    return new UsageMetricTemplate(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb());
   }

@@ -8,14 +8,14 @@
 package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.OpenSearchUtil.AGGREGATION_TERMS_SIZE;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
 
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
 import io.camunda.tasklist.util.OpenSearchUtil;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.HashUtil;
@@ -56,7 +56,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreOpenSearch.class);
   private static final String TU_ID_PATTERN = "%s_%s_%s";
 
-  @Autowired private UsageMetricTUIndex index;
+  @Autowired private UsageMetricTUTemplate template;
 
   @Autowired
   @Qualifier("tasklistOsClient")
@@ -98,7 +98,9 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
                 queryBuilder,
                 new Builder()
                     .term(
-                        t -> t.field(UsageMetricTUIndex.TENANT_ID).value(FieldValue.of(tenantId))))
+                        t ->
+                            t.field(UsageMetricTUTemplate.TENANT_ID)
+                                .value(FieldValue.of(tenantId))))
             : queryBuilder.build();
 
     final SearchRequest searchRequest =
@@ -106,7 +108,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
             .allowNoIndices(true)
             .ignoreUnavailable(true)
             .expandWildcards(ExpandWildcard.Open)
-            .index(index.getFullQualifiedName())
+            .index(template.getFullQualifiedName())
             .query(query)
             .aggregations(
                 ASSIGNEE,
@@ -129,7 +131,8 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
       final List<LongTermsBucket> buckets = aggregate.lterms().buckets().array();
       return buckets.stream().map(l -> Long.valueOf(l.key())).collect(Collectors.toSet());
     } catch (final IOException | OpenSearchException e) {
-      LOGGER.error("Error while retrieving assigned users between dates from index: " + index, e);
+      LOGGER.error(
+          "Error while retrieving assigned users between dates from index: " + template, e);
       final String message = "Error while retrieving assigned users between dates";
       throw new TasklistRuntimeException(message);
     }
@@ -140,7 +143,10 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
       final IndexRequest<UsageMetricsTUEntity> request =
           IndexRequest.of(
               builder ->
-                  builder.index(index.getFullQualifiedName()).id(entity.getId()).document(entity));
+                  builder
+                      .index(template.getFullQualifiedName())
+                      .id(entity.getId())
+                      .document(entity));
 
       final IndexResponse response = openSearchClient.index(request);
       return Result.Created.equals(response.result());
