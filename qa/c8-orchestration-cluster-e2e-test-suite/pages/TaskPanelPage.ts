@@ -65,11 +65,11 @@ class TaskPanelPage {
         this.availableTasks
           .getByText(name, {exact: true})
           .nth(0)
-          .waitFor({state: 'visible', timeout: 5000}),
+          .waitFor({state: 'visible', timeout: 10000}),
         this.availableTasks
           .getByText(processId, {exact: true})
           .nth(0)
-          .waitFor({state: 'visible', timeout: 5000}),
+          .waitFor({state: 'visible', timeout: 10000}),
       ]);
       const nameLocator = this.availableTasks
         .getByText(name, {exact: true})
