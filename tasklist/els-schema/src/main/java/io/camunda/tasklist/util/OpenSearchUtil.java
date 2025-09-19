@@ -435,10 +435,10 @@ public abstract class OpenSearchUtil {
    * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
    * #DEFAULT_MAX_TERMS_COUNT}
    */
-  public static <T> List<T> scrollInChunks(
-      final List<String> ids,
+  public static <T, ID> List<T> scrollInChunks(
+      final List<ID> ids,
       final int chunkSize,
-      final Function<List<String>, SearchRequest.Builder> chunkToSearchRequestBuilder,
+      final Function<List<ID>, SearchRequest.Builder> chunkToSearchRequestBuilder,
       final Class<T> clazz,
       final OpenSearchClient osClient)
       throws IOException {

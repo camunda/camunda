@@ -458,7 +458,9 @@ public class TaskStoreOpenSearch implements TaskStore {
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
 
     final List<String> processIdsCreatedFiltered =
-        variableStoreOpensearch.getProcessInstanceIdsWithMatchingVars(varNames, varValues);
+        variableStoreOpensearch.getProcessInstanceKeysWithMatchingVars(varNames, varValues).stream()
+            .map(String::valueOf)
+            .toList();
 
     final List<String> tasksIdsCreatedFiltered =
         processIdsCreatedFiltered.isEmpty()

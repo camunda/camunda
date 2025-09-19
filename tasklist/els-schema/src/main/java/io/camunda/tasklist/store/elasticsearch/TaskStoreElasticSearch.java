@@ -762,7 +762,11 @@ public class TaskStoreElasticSearch implements TaskStore {
         Arrays.stream(taskVariablesFilter).map(TaskByVariables::getValue).collect(toList());
 
     final List<String> processIdsCreatedFiltered =
-        variableStoreElasticSearch.getProcessInstanceIdsWithMatchingVars(varNames, varValues);
+        variableStoreElasticSearch
+            .getProcessInstanceKeysWithMatchingVars(varNames, varValues)
+            .stream()
+            .map(String::valueOf)
+            .toList();
 
     final List<String> tasksIdsCreatedFiltered =
         retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
