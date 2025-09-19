@@ -381,10 +381,10 @@ public abstract class ElasticsearchUtil {
    * to avoid sending them all at once to OpenSearch to not hit the max allowed terms limit {@link
    * #DEFAULT_MAX_TERMS_COUNT}
    */
-  public static <T> List<T> scrollInChunks(
-      final List<String> list,
+  public static <T, ID> List<T> scrollInChunks(
+      final List<ID> list,
       final int chunkSize,
-      final Function<List<String>, SearchRequest> chunkToSearchRequest,
+      final Function<List<ID>, SearchRequest> chunkToSearchRequest,
       final Class<T> clazz,
       final ObjectMapper objectMapper,
       final RestHighLevelClient esClient)

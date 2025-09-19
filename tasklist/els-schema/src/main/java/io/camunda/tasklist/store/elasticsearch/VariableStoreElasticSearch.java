@@ -195,11 +195,11 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   @Override
-  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
     final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
     final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
+        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
     final var flowNodeInstanceStateQuery =
         termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
 
@@ -230,9 +230,9 @@ public class VariableStoreElasticSearch implements VariableStore {
                     .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scrollInChunks(
-          processInstanceIds,
+          processInstanceKeys,
           tasklistProperties.getElasticsearch().getMaxTermsCount(),
-          this::buildSearchFNIByProcessInstanceIdsRequest,
+          this::buildSearchFNIByProcessInstanceKeysRequest,
           FlowNodeInstanceEntity.class,
           objectMapper,
           esClient);
@@ -300,10 +300,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   }
 
   @Override
-  public List<String> getProcessInstanceIdsWithMatchingVars(
+  public List<Long> getProcessInstanceKeysWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
 
-    Set<String> processInstanceIds = null;
+    Set<Long> processInstanceKeys = null;
 
     for (int i = 0; i < varNames.size(); i++) {
       final BoolQueryBuilder boolQuery = QueryBuilders.boolQuery();
@@ -319,9 +319,9 @@ public class VariableStoreElasticSearch implements VariableStore {
       final SearchRequest searchRequest =
           new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
 
-      final Set<String> currentIds;
+      final Set<Long> currentKeys;
       try {
-        currentIds =
+        currentKeys =
             new HashSet<>(
                 ElasticsearchUtil.scrollFieldToList(searchRequest, PROCESS_INSTANCE_KEY, esClient));
       } catch (final IOException e) {
@@ -332,30 +332,30 @@ public class VariableStoreElasticSearch implements VariableStore {
         throw new TasklistRuntimeException(message, e);
       }
       // Early exit if empty result
-      if (currentIds.isEmpty()) {
+      if (currentKeys.isEmpty()) {
         return Collections.emptyList();
       }
-      if (processInstanceIds == null) {
-        processInstanceIds = currentIds;
+      if (processInstanceKeys == null) {
+        processInstanceKeys = currentKeys;
       } else {
-        processInstanceIds.retainAll(currentIds);
-        if (processInstanceIds.isEmpty()) {
+        processInstanceKeys.retainAll(currentKeys);
+        if (processInstanceKeys.isEmpty()) {
           // Early exit if intersection is empty
           return Collections.emptyList();
         }
       }
     }
-    return processInstanceIds == null
+    return processInstanceKeys == null
         ? Collections.emptyList()
-        : new ArrayList<>(processInstanceIds);
+        : new ArrayList<>(processInstanceKeys);
   }
 
-  private SearchRequest buildSearchFNIByProcessInstanceIdsRequest(
-      final List<String> processInstanceIds) {
+  private SearchRequest buildSearchFNIByProcessInstanceKeysRequest(
+      final List<Long> processInstanceKeys) {
     final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
 
     final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceIds);
+        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
     final var flowNodeInstanceStateQuery =
         termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
 
