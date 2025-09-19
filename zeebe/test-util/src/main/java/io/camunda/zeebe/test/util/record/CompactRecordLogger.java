@@ -1583,11 +1583,12 @@ public class CompactRecordLogger {
     }
 
     if (value instanceof String str) {
-      final int length = str.length();
+      int length = str.length();
 
       // strip outer quotes, if present
       if (length >= 2 && str.startsWith("\"") && str.endsWith("\"")) {
         str = str.substring(1, length - 1);
+        length -= 2; // adjust length after stripping quotes
       }
 
       final int maxLength = 15;
