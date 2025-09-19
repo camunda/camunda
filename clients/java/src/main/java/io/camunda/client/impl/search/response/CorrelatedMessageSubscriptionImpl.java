@@ -135,7 +135,8 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final CorrelatedMessageSubscriptionImpl correlatedMessageSubscription = (CorrelatedMessageSubscriptionImpl) o;
+    final CorrelatedMessageSubscriptionImpl correlatedMessageSubscription =
+        (CorrelatedMessageSubscriptionImpl) o;
     return Objects.equals(correlationKey, correlatedMessageSubscription.correlationKey)
         && Objects.equals(correlationTime, correlatedMessageSubscription.correlationTime)
         && Objects.equals(elementId, correlatedMessageSubscription.elementId)
