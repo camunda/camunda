@@ -18,7 +18,8 @@ package io.camunda.client.impl.search.sort;
 import io.camunda.client.api.search.sort.CorrelatedMessageSubscriptionSort;
 import io.camunda.client.impl.search.request.SearchRequestSortBase;
 
-public class CorrelatedMessageSubscriptionSortImpl extends SearchRequestSortBase<CorrelatedMessageSubscriptionSort>
+public class CorrelatedMessageSubscriptionSortImpl
+    extends SearchRequestSortBase<CorrelatedMessageSubscriptionSort>
     implements CorrelatedMessageSubscriptionSort {
 
   @Override

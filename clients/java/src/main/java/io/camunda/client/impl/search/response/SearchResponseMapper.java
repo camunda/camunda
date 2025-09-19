@@ -410,8 +410,9 @@ public final class SearchResponseMapper {
     return new SearchResponseImpl<>(instances, page);
   }
 
-  public static SearchResponse<CorrelatedMessageSubscription> toCorrelatedMessageSubscriptionSearchResponse(
-      final CorrelatedMessageSubscriptionSearchQueryResult response) {
+  public static SearchResponse<CorrelatedMessageSubscription>
+      toCorrelatedMessageSubscriptionSearchResponse(
+          final CorrelatedMessageSubscriptionSearchQueryResult response) {
     final SearchResponsePage page = toSearchResponsePage(response.getPage());
     final List<CorrelatedMessageSubscription> instances =
         toSearchResponseInstances(response.getItems(), CorrelatedMessageSubscriptionImpl::new);

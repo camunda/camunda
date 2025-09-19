@@ -1349,7 +1349,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public CorrelatedMessageSubscriptionSearchRequest newCorrelatedMessageSubscriptionSearchRequest() {
+  public CorrelatedMessageSubscriptionSearchRequest
+      newCorrelatedMessageSubscriptionSearchRequest() {
     return new CorrelatedMessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
   }
 
