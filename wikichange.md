@@ -17,7 +17,7 @@ The log messages should follow this structure:
       - name: Log Test Details
         run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
 ```
-The `env` variables should be set at the job or at the workflow level for reusability. The values should match the metadata at the top of the file.
+The `env` variables should be set at the job or at the workflow level for reusability. The values should match the metadata at the top of the file. `TEST_OWNER` should be specific team names. If a test would be owned by all teams, then `General` should be the owner. 
 ```
     env:
       TEST_PRODUCT: Optimize
