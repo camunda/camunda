@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.ListenersConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskSchedule;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeUserTask;
 import io.camunda.zeebe.protocol.Protocol;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,9 +44,13 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
   private static final Logger LOG = Loggers.STREAM_PROCESSING;
 
   private final ExpressionLanguage expressionLanguage;
+  private final ListenersConfiguration listenersConfiguration;
 
-  public UserTaskTransformer(final ExpressionLanguage expressionLanguage) {
+  public UserTaskTransformer(
+      final ExpressionLanguage expressionLanguage,
+      final ListenersConfiguration listenersConfiguration) {
     this.expressionLanguage = expressionLanguage;
+    this.listenersConfiguration = listenersConfiguration;
   }
 
   @Override
@@ -298,13 +304,40 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
       final FlowNode element,
       final ExecutableUserTask userTask,
       final UserTaskProperties userTaskProperties) {
+
+    final var taskListeners = new ArrayList<TaskListener>();
+
+    Optional.ofNullable(listenersConfiguration.task())
+        .ifPresent(
+            listeners ->
+                listeners.forEach(
+                    l -> {
+                      final var eventType = ZeebeTaskListenerEventType.valueOf(l.eventType());
+                      final var jobType = l.jobType();
+                      final var jobRetries = l.jobRetries();
+
+                      final TaskListener listener = new TaskListener();
+                      listener.setEventType(eventType);
+
+                      final JobWorkerProperties jobProperties = new JobWorkerProperties();
+                      jobProperties.wrap(userTaskProperties);
+                      jobProperties.setType(expressionLanguage.parseExpression(jobType));
+                      jobProperties.setRetries(expressionLanguage.parseExpression(jobRetries));
+                      listener.setJobWorkerProperties(jobProperties);
+                      taskListeners.add(listener);
+                    }));
+
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeTaskListeners.class))
         .map(
             listeners ->
                 listeners.getTaskListeners().stream()
                     .map(listener -> toTaskListenerModel(listener, userTaskProperties))
                     .toList())
-        .ifPresent(userTask::setTaskListeners);
+        .ifPresent(taskListeners::addAll);
+
+    if (!taskListeners.isEmpty()) {
+      userTask.setTaskListeners(taskListeners);
+    }
   }
 
   private TaskListener toTaskListenerModel(
