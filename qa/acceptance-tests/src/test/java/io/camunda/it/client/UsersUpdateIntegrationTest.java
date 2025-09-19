@@ -75,6 +75,43 @@ public class UsersUpdateIntegrationTest {
   }
 
   @Test
+  void shouldUpdateUserWhenOptionalParametersAreNotPresent() {
+    // given
+    final var username = "BUserName";
+    final var name = "B User Name";
+    final var email = "some_email@email.com";
+
+    camundaClient
+        .newCreateUserCommand()
+        .username(username)
+        .password("password")
+        .name(name)
+        .email(email)
+        .send()
+        .join();
+    assertUserCreated(username);
+
+    // when
+    camundaClient.newUpdateUserCommand(username).send().join();
+
+    // then
+    Awaitility.await("User is updated")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final SearchResponse<User> response =
+                  camundaClient
+                      .newUsersSearchRequest()
+                      .filter(fn -> fn.username(username))
+                      .send()
+                      .join();
+              assertThat(response.items().getFirst().getUsername()).isEqualTo(username);
+              assertThat(response.items().getFirst().getName()).isEmpty();
+              assertThat(response.items().getFirst().getEmail()).isEmpty();
+            });
+  }
+
+  @Test
   void shouldReturnNotFoundWhenUpdatingIfUserDoesNotExist() {
     // when / then
     final var nonExistingUserName = "nonExistingUserName";
