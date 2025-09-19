@@ -203,7 +203,15 @@ class TaskMapperTest {
 
     // Then
     assertThat(result.getVariables()).hasSize(2);
-    assertThat(result.getVariables()[0].getValue()).isEqualTo("fullValue");
+    assertThat(result.getVariables()[0].getId()).isEqualTo("var1");
+    assertThat(result.getVariables()[0].getName()).isEqualTo("varName1");
+    assertThat(result.getVariables()[0].getValue()).isEqualTo("previewValue");
+    assertThat(result.getVariables()[0].getIsValueTruncated()).isFalse();
+    assertThat(result.getVariables()[0].getPreviewValue()).isEqualTo("previewValue");
+    assertThat(result.getVariables()[1].getId()).isEqualTo("var2");
+    assertThat(result.getVariables()[1].getName()).isEqualTo("varName2");
+    assertThat(result.getVariables()[1].getIsValueTruncated()).isTrue();
+    assertThat(result.getVariables()[1].getPreviewValue()).isEqualTo("truncatedPreviewValue");
     assertThat(result.getVariables()[1].getValue()).isEqualTo("truncatedFullValue");
   }
 }

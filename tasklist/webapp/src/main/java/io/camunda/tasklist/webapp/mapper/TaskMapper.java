@@ -98,7 +98,10 @@ public class TaskMapper {
     return new VariableSearchResponse()
         .setId(variableDTO.getId())
         .setName(variableDTO.getName())
-        .setValue(variableDTO.getValue())
+        .setValue(
+            variableDTO.getIsValueTruncated()
+                ? variableDTO.getValue()
+                : variableDTO.getPreviewValue())
         .setIsValueTruncated(variableDTO.getIsValueTruncated())
         .setPreviewValue(variableDTO.getPreviewValue());
   }

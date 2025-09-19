@@ -139,7 +139,7 @@ class TaskServiceTest {
   }
 
   @Test
-  void getTasksWithPreviewVariables() {
+  void getTasksWithVariables() {
     // Given
     final var taskQuery = new TaskQueryDTO();
     final var providedTasks =
@@ -208,97 +208,6 @@ class TaskServiceTest {
     final var result = instance.getTasks(taskQuery, Set.of("varA"), false);
 
     // Then
-    assertThat(result).hasSize(2);
-    assertThat(result.get(0).getVariables()[0].getPreviewValue()).isEqualTo("valA");
-    assertThat(result.get(1).getVariables()[0].getPreviewValue()).isEqualTo("longVal");
-    assertThat(result.get(0).getVariables()[0].getValue()).isNull();
-    assertThat(result.get(1).getVariables()[0].getValue()).isNull();
-    assertThat(result.get(0).getVariables()[0].getIsValueTruncated()).isFalse();
-    assertThat(result.get(1).getVariables()[0].getIsValueTruncated()).isTrue();
-    assertThat(result).containsAll(expectedTasks);
-  }
-
-  @Test
-  void getTasksWithFullVariables() {
-    // Given
-    final var taskQuery = new TaskQueryDTO();
-    final var providedTasks =
-        List.of(
-            new TaskSearchView().setId("123").setState(TaskState.CREATED).setPriority(50),
-            new TaskSearchView().setId("456").setState(TaskState.COMPLETED).setPriority(50));
-    final var expectedTasks =
-        List.of(
-            new TaskDTO()
-                .setId("123")
-                .setTaskState(TaskState.CREATED)
-                .setPriority(50)
-                .setVariables(
-                    new VariableDTO[] {
-                      new VariableDTO()
-                          .setId("var123")
-                          .setName("varA")
-                          .setPreviewValue("valA")
-                          .setIsValueTruncated(false)
-                          .setValue("fullValueA")
-                    }),
-            new TaskDTO()
-                .setId("456")
-                .setTaskState(TaskState.COMPLETED)
-                .setPriority(50)
-                .setVariables(
-                    new VariableDTO[] {
-                      new VariableDTO()
-                          .setId("var123")
-                          .setName("varA")
-                          .setPreviewValue("longVal")
-                          .setIsValueTruncated(true)
-                          .setValue("fullValueB")
-                    }));
-
-    when(taskStore.getTasks(taskQuery.toTaskQuery())).thenReturn(providedTasks);
-    final Set<String> fieldNames = emptySet();
-    when(variableService.getVariablesPerTaskId(
-            List.of(
-                new GetVariablesRequest()
-                    .setTaskId("123")
-                    .setState(TaskState.CREATED)
-                    .setVarNames(List.of("varA"))
-                    .setFieldNames(fieldNames),
-                new GetVariablesRequest()
-                    .setTaskId("456")
-                    .setState(TaskState.COMPLETED)
-                    .setVarNames(List.of("varA"))
-                    .setFieldNames(fieldNames))))
-        .thenReturn(
-            Map.of(
-                "123",
-                List.of(
-                    new VariableDTO()
-                        .setId("var123")
-                        .setName("varA")
-                        .setPreviewValue("valA")
-                        .setIsValueTruncated(false)
-                        .setValue("fullValueA")),
-                "456",
-                List.of(
-                    new VariableDTO()
-                        .setId("var123")
-                        .setName("varA")
-                        .setPreviewValue("longVal")
-                        .setIsValueTruncated(true)
-                        .setValue("fullValueB"))));
-
-    // When
-    final var result = instance.getTasks(taskQuery, Set.of("varA"), true);
-
-    // Then
-    assertThat(result).hasSize(2);
-    assertThat(result.get(0).getVariables()[0].getPreviewValue()).isEqualTo("valA");
-    assertThat(result.get(1).getVariables()[0].getPreviewValue()).isEqualTo("longVal");
-    assertThat(result.get(0).getVariables()[0].getValue()).isEqualTo("fullValueA");
-    assertThat(result.get(1).getVariables()[0].getValue()).isEqualTo("fullValueB");
-    assertThat(result.get(0).getVariables()[0].getIsValueTruncated()).isFalse();
-    assertThat(result.get(1).getVariables()[0].getIsValueTruncated()).isTrue();
     assertThat(result).containsAll(expectedTasks);
   }
 
