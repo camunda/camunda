@@ -181,6 +181,7 @@ final class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandle
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getSubscriptionKey()).isEqualTo(recordKey);
+    assertThat(entity.getSubscriptionType()).isEqualTo("START_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
   }
 

@@ -12,7 +12,8 @@ import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 
 public class CorrelatedMessageSubscriptionEntityMapper {
 
-  public static CorrelatedMessageSubscriptionEntity toEntity(final CorrelatedMessageSubscriptionDbModel dbModel) {
+  public static CorrelatedMessageSubscriptionEntity toEntity(
+      final CorrelatedMessageSubscriptionDbModel dbModel) {
     return CorrelatedMessageSubscriptionEntity.builder()
         .correlationKey(dbModel.correlationKey())
         .correlationTime(dbModel.correlationTime())
@@ -25,6 +26,7 @@ public class CorrelatedMessageSubscriptionEntityMapper {
         .processDefinitionKey(dbModel.processDefinitionKey())
         .processInstanceKey(dbModel.processInstanceKey())
         .subscriptionKey(dbModel.subscriptionKey())
+        .subscriptionType(dbModel.subscriptionType())
         .tenantId(dbModel.tenantId())
         .build();
   }

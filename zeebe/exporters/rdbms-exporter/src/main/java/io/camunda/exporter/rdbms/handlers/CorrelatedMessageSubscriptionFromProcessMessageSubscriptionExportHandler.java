@@ -11,6 +11,7 @@ import static io.camunda.exporter.rdbms.utils.ExportUtil.tenantOrDefault;
 
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel.Builder;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -19,7 +20,8 @@ import io.camunda.zeebe.protocol.record.value.ProcessMessageSubscriptionRecordVa
 import java.util.Set;
 
 public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler
-    extends AbstractCorrelatedMessageSubscriptionExportHandler<ProcessMessageSubscriptionRecordValue> {
+    extends AbstractCorrelatedMessageSubscriptionExportHandler<
+        ProcessMessageSubscriptionRecordValue> {
 
   private static final Set<Intent> SUPPORTED_INTENTS =
       Set.of(ProcessMessageSubscriptionIntent.CORRELATED);
@@ -41,6 +43,7 @@ public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHa
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(null) // not available for process message subscriptions
         .processInstanceKey(value.getProcessInstanceKey())
+        .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
         .tenantId(tenantOrDefault(value.getTenantId()));
   }
 

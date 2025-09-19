@@ -26,6 +26,7 @@
       <arg column="PROCESS_DEFINITION_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <idArg column="SUBSCRIPTION_KEY" javaType="java.lang.Long"/>
+      <arg column="SUBSCRIPTION_TYPE" javaType="io.camunda.search.entities.CorrelatedMessageSubscriptionEntity$MessageSubscriptionType" />
       <arg column="TENANT_ID" javaType="java.lang.String"/>
     </constructor>
   </resultMap>
@@ -44,6 +45,7 @@
       PROCESS_DEFINITION_KEY,
       PROCESS_INSTANCE_KEY,
       SUBSCRIPTION_KEY,
+      SUBSCRIPTION_TYPE,
       TENANT_ID
     )
     VALUES (
@@ -59,6 +61,7 @@
       #{processDefinitionKey},
       #{processInstanceKey},
       #{subscriptionKey},
+      #{subscriptionType},
       #{tenantId}
     )
   </insert>
@@ -85,6 +88,7 @@
         PROCESS_DEFINITION_KEY,
         PROCESS_INSTANCE_KEY,
         SUBSCRIPTION_KEY,
+        SUBSCRIPTION_TYPE,
         TENANT_ID
       FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
     <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>

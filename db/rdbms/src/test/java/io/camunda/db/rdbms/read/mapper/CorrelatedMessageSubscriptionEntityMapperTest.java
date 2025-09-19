@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.mapper;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import java.time.OffsetDateTime;
 import org.junit.jupiter.api.Test;
 
@@ -32,6 +33,7 @@ public class CorrelatedMessageSubscriptionEntityMapperTest {
             .processDefinitionKey(789L)
             .processInstanceKey(1011L)
             .subscriptionKey(321L)
+            .subscriptionType(MessageSubscriptionType.PROCESS_EVENT)
             .tenantId("tenantId")
             .build();
 

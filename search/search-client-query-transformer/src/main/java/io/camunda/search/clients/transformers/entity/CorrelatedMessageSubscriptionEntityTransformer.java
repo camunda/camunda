@@ -9,10 +9,12 @@ package io.camunda.search.clients.transformers.entity;
 
 import io.camunda.search.clients.transformers.ServiceTransformer;
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 
 public class CorrelatedMessageSubscriptionEntityTransformer
     implements ServiceTransformer<
-        io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity, CorrelatedMessageSubscriptionEntity> {
+        io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity,
+        CorrelatedMessageSubscriptionEntity> {
 
   @Override
   public CorrelatedMessageSubscriptionEntity apply(
@@ -29,6 +31,19 @@ public class CorrelatedMessageSubscriptionEntityTransformer
         value.getProcessDefinitionKey(),
         value.getProcessInstanceKey(),
         value.getSubscriptionKey(),
+        toMessageSubscriptionType(value.getSubscriptionType()),
         value.getTenantId());
+  }
+
+  private MessageSubscriptionType toMessageSubscriptionType(final String value) {
+    if (value == null) {
+      return null;
+    }
+
+    return switch (value) {
+      case "PROCESS_EVENT" -> MessageSubscriptionType.PROCESS_EVENT;
+      case "START_EVENT" -> MessageSubscriptionType.START_EVENT;
+      default -> throw new IllegalArgumentException("Unknown listener event type: " + value);
+    };
   }
 }

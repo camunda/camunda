@@ -25,7 +25,8 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandl
 
   private final String indexName;
 
-  public CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(final String indexName) {
+  public CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandler(
+      final String indexName) {
     this.indexName = indexName;
   }
 
@@ -52,7 +53,8 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandl
 
   @Override
   protected void updateEntityFromRecordValue(
-      final MessageStartEventSubscriptionRecordValue value, final CorrelatedMessageSubscriptionEntity entity) {
+      final MessageStartEventSubscriptionRecordValue value,
+      final CorrelatedMessageSubscriptionEntity entity) {
 
     entity
         .setBpmnProcessId(value.getBpmnProcessId())
@@ -63,6 +65,7 @@ public class CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionHandl
         .setMessageName(value.getMessageName())
         .setProcessDefinitionKey(value.getProcessDefinitionKey())
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setSubscriptionType("START_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));
   }
 }
