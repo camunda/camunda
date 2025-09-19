@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.4
+
+### 🩹 Fixes
+
+- rename decisionInstanceSchema properties to match the api spec ([#38357](https://github.com/camunda/camunda/pull/38357))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.3
 
 ### 🩹 Fixes

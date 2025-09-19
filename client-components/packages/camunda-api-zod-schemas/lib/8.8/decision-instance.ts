@@ -24,7 +24,7 @@ const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED', 'UNSPECIFIED'
 type DecisionInstanceState = z.infer<typeof decisionInstanceStateSchema>;
 
 const decisionInstanceSchema = z.object({
-	decisionInstanceId: z.string(),
+	decisionEvaluationInstanceKey: z.string(),
 	state: decisionInstanceStateSchema,
 	evaluationDate: z.string(),
 	evaluationFailure: z.string(),
@@ -34,7 +34,7 @@ const decisionInstanceSchema = z.object({
 	decisionDefinitionType: decisionDefinitionTypeSchema,
 	result: z.string(),
 	tenantId: z.string(),
-	decisionInstanceKey: z.string(),
+	decisionEvaluationKey: z.string(),
 	processDefinitionKey: z.string(),
 	processInstanceKey: z.string(),
 	decisionDefinitionKey: z.string(),
@@ -44,8 +44,8 @@ type DecisionInstance = z.infer<typeof decisionInstanceSchema>;
 
 const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
-		'decisionInstanceKey',
-		'decisionInstanceId',
+		'decisionEvaluationKey',
+		'decisionEvaluationInstanceKey',
 		'state',
 		'evaluationDate',
 		'evaluationFailure',
@@ -65,7 +65,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 			evaluationDate: advancedDateTimeFilterSchema,
 			decisionDefinitionKey: basicStringFilterSchema,
 			...decisionInstanceSchema.pick({
-				decisionInstanceId: true,
+        decisionEvaluationInstanceKey: true,
 				state: true,
 				evaluationFailure: true,
 				decisionDefinitionId: true,
@@ -73,7 +73,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 				decisionDefinitionVersion: true,
 				decisionDefinitionType: true,
 				tenantId: true,
-				decisionInstanceKey: true,
+				decisionEvaluationKey: true,
 				processDefinitionKey: true,
 				processInstanceKey: true,
 				elementInstanceKey: true,
@@ -98,9 +98,9 @@ const queryDecisionInstances: Endpoint = {
 	getUrl: () => `/${API_VERSION}/decision-instances/search`,
 };
 
-const getDecisionInstance: Endpoint<Pick<DecisionInstance, 'decisionInstanceId'>> = {
+const getDecisionInstance: Endpoint<Pick<DecisionInstance, 'decisionEvaluationInstanceKey'>> = {
 	method: 'GET',
-	getUrl: ({decisionInstanceId}) => `/${API_VERSION}/decision-instances/${decisionInstanceId}`,
+	getUrl: ({decisionEvaluationInstanceKey}) => `/${API_VERSION}/decision-instances/${decisionEvaluationInstanceKey}`,
 };
 
 export {

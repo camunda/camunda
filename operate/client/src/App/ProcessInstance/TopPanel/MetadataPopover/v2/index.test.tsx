@@ -90,8 +90,8 @@ const mockElementInstance: ElementInstance = {
 };
 
 const mockDecisionInstance: DecisionInstance = {
-  decisionInstanceId: '2251799813685591',
-  decisionInstanceKey: '2251799813685591',
+  decisionEvaluationInstanceKey: '2251799813685591',
+  decisionEvaluationKey: '2251799813685591',
   decisionDefinitionName: 'Test Decision',
   decisionDefinitionId: 'decision-1',
   decisionDefinitionKey: '123',

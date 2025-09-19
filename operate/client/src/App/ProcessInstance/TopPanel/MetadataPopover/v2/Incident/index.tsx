@@ -89,12 +89,12 @@ const Incident: React.FC<Props> = ({
             <SummaryDataValue>
               <Link
                 to={Paths.decisionInstance(
-                  rootCauseDecisionInstance.decisionInstanceKey,
+                  rootCauseDecisionInstance.decisionEvaluationKey,
                 )}
-                title={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
-                aria-label={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
+                title={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionEvaluationKey}`}
+                aria-label={`View root cause decision ${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionEvaluationKey}`}
               >
-                {`${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionInstanceKey}`}
+                {`${rootCauseDecisionInstance.decisionDefinitionName} - ${rootCauseDecisionInstance.decisionEvaluationKey}`}
               </Link>
             </SummaryDataValue>
           </Stack>
