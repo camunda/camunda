@@ -15,7 +15,7 @@ servers:
     variables:
       host:
         default: localhost
-        description: The hostname of the Orchestration Cluster REST Gateway.
+        description: The host name of the Orchestration Cluster REST Gateway.
       port:
         default: "8080"
         description: The port of the Orchestration Cluster REST API server.
