@@ -492,7 +492,7 @@ test('add a report from the dashboard', async (t) => {
 
   await t.expect(Common.selectedOption('Order process').exists).ok();
 
-  await t.click(Common.modalConfirmButton).hover(Common.addButton).click('.DashboardRenderer');
+  await t.click(Common.modalConfirmButton).click(e.dashboardContainer);
 
   await u.save(t);
 
