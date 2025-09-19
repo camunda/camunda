@@ -257,9 +257,13 @@ public final class PrefixMigrationHelper {
         .forEach(deleteOperations::add);
 
     return () ->
-        CompletableFuture.supplyAsync(
-            () ->
-                prefixMigrationClient.deleteIndex(deleteOperations.toArray(String[]::new)).join());
+        deleteOperations.isEmpty()
+            ? CompletableFuture.completedFuture(null)
+            : CompletableFuture.supplyAsync(
+                () ->
+                    prefixMigrationClient
+                        .deleteIndex(deleteOperations.toArray(String[]::new))
+                        .join());
   }
 
   private static Supplier<CompletableFuture[]> deleteIndexTemplates(

@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.OpenSearchException;
@@ -77,10 +78,11 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
     try {
       return asyncClient
           .indices()
-          .delete(d -> d.index(Arrays.asList(index)))
-          .thenRun(() -> LOG.info("Deleted index [{}]", index));
+          .delete(d -> d.index(Arrays.asList(index)).ignoreUnavailable(true))
+          .thenRun(() -> LOG.info("Deleted index [{}]", Arrays.stream(index).toList()));
     } catch (final IOException e) {
-      throw new IllegalStateException("Failed to delete index [" + index + "]", e);
+      throw new IllegalStateException(
+          "Failed to delete index [" + Arrays.stream(index).toList() + "]", e);
     }
   }
 
@@ -90,6 +92,18 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
       return asyncClient
           .cluster()
           .deleteComponentTemplate(d -> d.name(componentTemplateName))
+          .exceptionally(
+              ex -> {
+                if (ex.getCause() instanceof final OpenSearchException osx && osx.status() == 404) {
+                  LOG.warn(
+                      "Component template [{}] does not exist, nothing to delete",
+                      componentTemplateName);
+                  return null;
+                } else {
+                  throw new CompletionException(
+                      "Failed to delete component template [" + componentTemplateName + "]", ex);
+                }
+              })
           .thenRun(() -> LOG.info("Deleted component template [{}]", componentTemplateName));
     } catch (final IOException e) {
       throw new IllegalStateException(
@@ -103,6 +117,17 @@ public class OpensearchPrefixMigrationClient implements PrefixMigrationClient {
       return asyncClient
           .indices()
           .deleteIndexTemplate(d -> d.name(indexTemplateName))
+          .exceptionally(
+              ex -> {
+                if (ex.getCause() instanceof final OpenSearchException osx && osx.status() == 404) {
+                  LOG.warn(
+                      "Index template [{}] does not exist, nothing to delete", indexTemplateName);
+                  return null;
+                } else {
+                  throw new CompletionException(
+                      "Failed to delete index template [" + indexTemplateName + "]", ex);
+                }
+              })
           .thenRun(() -> LOG.info("Deleted index template [{}]", indexTemplateName));
     } catch (final IOException e) {
       throw new IllegalStateException(

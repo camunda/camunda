@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,7 +79,7 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
   public CompletableFuture<Void> deleteIndex(final String... index) {
     return asyncClient
         .indices()
-        .delete(d -> d.index(Arrays.asList(index)))
+        .delete(d -> d.index(Arrays.asList(index)).ignoreUnavailable(true))
         .thenRun(() -> LOG.info("Deleted indices [{}]", Arrays.stream(index).toList()));
   }
 
@@ -87,6 +88,18 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
     return asyncClient
         .cluster()
         .deleteComponentTemplate(d -> d.name(componentTemplateName))
+        .exceptionally(
+            ex -> {
+              if (ex instanceof final ElasticsearchException esx && esx.status() == 404) {
+                LOG.warn(
+                    "Component template [{}] does not exist, nothing to delete",
+                    componentTemplateName);
+                return null;
+              } else {
+                throw new CompletionException(
+                    "Failed to delete component template [" + componentTemplateName + "]", ex);
+              }
+            })
         .thenRun(() -> LOG.info("Deleted component template [{}]", componentTemplateName));
   }
 
@@ -95,6 +108,17 @@ public class ElasticsearchPrefixMigrationClient implements PrefixMigrationClient
     return asyncClient
         .indices()
         .deleteIndexTemplate(d -> d.name(indexTemplateName))
+        .exceptionally(
+            ex -> {
+              if (ex instanceof final ElasticsearchException esx && esx.status() == 404) {
+                LOG.warn(
+                    "Index template [{}] does not exist, nothing to delete", indexTemplateName);
+                return null;
+              } else {
+                throw new CompletionException(
+                    "Failed to delete index template [" + indexTemplateName + "]", ex);
+              }
+            })
         .thenRun(() -> LOG.info("Deleted index template [{}]", indexTemplateName));
   }
 
