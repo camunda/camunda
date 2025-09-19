@@ -1,5 +1,5 @@
 # C8 REST OpenAPI changes are owned by the API reviewers team
-/zeebe/gateway-protocol/src/main/proto/rest-api.yaml @camunda/docs-api-reviewers
+/zeebe/gateway-protocol/src/main/proto/rest-api.yaml @camunda/c8-api-team
 
 # C8Run by Distro team
 .github/actions/setup-c8run/* @camunda/distribution
