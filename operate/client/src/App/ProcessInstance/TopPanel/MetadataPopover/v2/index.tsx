@@ -127,12 +127,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     );
 
+  const shouldFilterByElementInstance =
+    elementInstanceMetadata?.elementInstanceKey &&
+    elementInstanceMetadata?.type !== 'CALL_ACTIVITY' &&
+    elementInstanceMetadata?.type !== 'BUSINESS_RULE_TASK';
+
   const {
     data: elementInstancesIncidentsSearchResult,
     isLoading: isSearchingIncidents,
   } = useGetIncidentsByProcessInstance(
     processInstance?.processInstanceKey ?? '',
     elementInstanceMetadata?.elementInstanceKey,
+    !!shouldFilterByElementInstance,
     {
       enabled: !!processInstance?.processInstanceKey,
     },
