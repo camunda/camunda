@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
-import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -38,10 +37,10 @@ public class MultiInstanceInputCollectionBehavior {
         .map(
             inputCollection -> {
               final var record = new MultiInstanceRecord().setInputCollection(inputCollection);
-              stateWriter.appendFollowUpEvent(
-                  context.getElementInstanceKey(),
-                  MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,
-                  record);
+              //              stateWriter.appendFollowUpEvent(
+              //                  context.getElementInstanceKey(),
+              //                  MultiInstanceIntent.INPUT_COLLECTION_EVALUATED,
+              //                  record);
               return inputCollection;
             });
   }

@@ -125,7 +125,7 @@ public final class SubProcessProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
@@ -133,6 +133,7 @@ public final class SubProcessProcessor
     if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.completeElement(flowScopeContext);
     }
+    return Either.right(null);
   }
 
   @Override

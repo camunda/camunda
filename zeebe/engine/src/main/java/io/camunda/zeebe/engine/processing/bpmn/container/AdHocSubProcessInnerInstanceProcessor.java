@@ -74,7 +74,7 @@ public class AdHocSubProcessInnerInstanceProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
@@ -82,6 +82,7 @@ public class AdHocSubProcessInnerInstanceProcessor
     if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.completeElement(flowScopeContext);
     }
+    return Either.right(null);
   }
 
   @Override

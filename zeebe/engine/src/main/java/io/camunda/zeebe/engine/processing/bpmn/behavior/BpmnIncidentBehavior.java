@@ -56,29 +56,31 @@ public final class BpmnIncidentBehavior {
   }
 
   public void createIncident(final Failure failure, final BpmnElementContext context) {
+    final var incidentContext = failure.getContext() != null ? failure.getContext() : context;
+
     final var variableScopeKey =
         failure.getVariableScopeKey() > 0
             ? failure.getVariableScopeKey()
-            : context.getElementInstanceKey();
+            : incidentContext.getElementInstanceKey();
 
     final var treePathProperties =
         new ElementTreePathBuilder()
             .withElementInstanceProvider(elementInstanceState::getInstance)
             .withCallActivityIndexProvider(processState::getFlowElement)
-            .withElementInstanceKey(context.getElementInstanceKey())
+            .withElementInstanceKey(incidentContext.getElementInstanceKey())
             .build();
 
     incidentRecord.reset();
     incidentRecord
-        .setProcessInstanceKey(context.getProcessInstanceKey())
-        .setBpmnProcessId(context.getBpmnProcessId())
-        .setProcessDefinitionKey(context.getProcessDefinitionKey())
-        .setElementInstanceKey(context.getElementInstanceKey())
-        .setElementId(context.getElementId())
+        .setProcessInstanceKey(incidentContext.getProcessInstanceKey())
+        .setBpmnProcessId(incidentContext.getBpmnProcessId())
+        .setProcessDefinitionKey(incidentContext.getProcessDefinitionKey())
+        .setElementInstanceKey(incidentContext.getElementInstanceKey())
+        .setElementId(incidentContext.getElementId())
         .setVariableScopeKey(variableScopeKey)
         .setErrorType(failure.getErrorType())
         .setErrorMessage(failure.getMessage())
-        .setTenantId(context.getTenantId())
+        .setTenantId(incidentContext.getTenantId())
         .setElementInstancePath(treePathProperties.elementInstancePath())
         .setProcessDefinitionPath(treePathProperties.processDefinitionPath())
         .setCallingElementPath(treePathProperties.callingElementPath());

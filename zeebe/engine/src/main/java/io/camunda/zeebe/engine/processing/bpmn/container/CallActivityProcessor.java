@@ -165,7 +165,7 @@ public final class CallActivityProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableCallActivity element,
       final BpmnElementContext callActivityContext,
       final BpmnElementContext childContext,
@@ -183,6 +183,7 @@ public final class CallActivityProcessor
       final var message = String.format(UNABLE_TO_COMPLETE_FROM_STATE_MESSAGE, currentState);
       throw new BpmnProcessingException(callActivityContext, message);
     }
+    return Either.right(null);
   }
 
   @Override

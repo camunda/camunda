@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.common;
 
+import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.Objects;
 
@@ -16,6 +17,7 @@ public final class Failure {
   private final String message;
   private final ErrorType errorType;
   private final long variableScopeKey;
+  private BpmnElementContext context;
 
   public Failure(final String message) {
     this.message = message;
@@ -77,5 +79,14 @@ public final class Failure {
         + ", variableScopeKey="
         + variableScopeKey
         + '}';
+  }
+
+  public BpmnElementContext getContext() {
+    return context;
+  }
+
+  public Failure setContext(final BpmnElementContext context) {
+    this.context = context;
+    return this;
   }
 }

@@ -208,7 +208,7 @@ public final class MultiInstanceBodyProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableMultiInstanceBody element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
@@ -227,14 +227,14 @@ public final class MultiInstanceBodyProcessor
         // complete the multi-instance body immediately
         stateTransitionBehavior.completeElement(flowScopeContext);
       }
-      return;
+      return null;
     }
     final var inputCollectionOrFailure =
         multiInstanceInputCollectionBehavior.getInputCollection(element, flowScopeContext);
     if (inputCollectionOrFailure.isLeft()) {
       // this incident is un-resolvable
       incidentBehavior.createIncident(inputCollectionOrFailure.getLeft(), childContext);
-      return;
+      return null;
     }
 
     final ElementInstance multiInstanceElementInstance =
@@ -255,11 +255,18 @@ public final class MultiInstanceBodyProcessor
 
     if (!childInstanceCreated && stateBehavior.canBeCompleted(childContext)) {
       final int inputCollectionSize = inputCollectionOrFailure.get().size();
-      if (isAllChildrenHasCompletedOrTerminated(
-          multiInstanceElementInstance, inputCollectionSize)) {
+      final var canBeCompletedOrFailure =
+          verifyAllChildrenAreCompletedOrTerminated(
+              multiInstanceElementInstance, inputCollectionSize, flowScopeContext);
+      if (canBeCompletedOrFailure.isLeft()) {
+        return canBeCompletedOrFailure;
+      }
+      if (canBeCompletedOrFailure.get()) {
         stateTransitionBehavior.completeElement(flowScopeContext);
       }
     }
+
+    return Either.right(null);
   }
 
   @Override
@@ -278,12 +285,25 @@ public final class MultiInstanceBodyProcessor
     }
   }
 
-  private static boolean isAllChildrenHasCompletedOrTerminated(
-      final ElementInstance multiInstanceElementInstance, final int inputCollectionSize) {
+  private static Either<Failure, Boolean> verifyAllChildrenAreCompletedOrTerminated(
+      final ElementInstance multiInstanceElementInstance,
+      final int inputCollectionSize,
+      final BpmnElementContext parentContext) {
     final int completedOrTerminatedChildren =
         multiInstanceElementInstance.getNumberOfCompletedElementInstances()
             + multiInstanceElementInstance.getNumberOfTerminatedElementInstances();
-    return inputCollectionSize == completedOrTerminatedChildren;
+
+    if (inputCollectionSize < completedOrTerminatedChildren) {
+      final var incidentMessage =
+          String.format(
+              "Expected to have at most %d completed or terminated child instances of the multiInstanceBody, but found %d. The input collection might be modified while iterating over it.",
+              inputCollectionSize, completedOrTerminatedChildren);
+      final var failure =
+          new Failure(incidentMessage, ErrorType.EXTRACT_VALUE_ERROR).setContext(parentContext);
+      return Either.left(failure);
+    }
+
+    return Either.right(inputCollectionSize == completedOrTerminatedChildren);
   }
 
   private void activate(

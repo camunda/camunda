@@ -246,8 +246,9 @@ public final class BpmnStateTransitionBehavior {
 
     if (endOfExecutionPath) {
       // afterExecutionPathCompleted is not allowed to fail (incident would be unresolvable)
-      afterExecutionPathCompleted(
-          element, completed, (Boolean) satisfiesCompletionConditionOrFailure.get());
+      return afterExecutionPathCompleted(
+              element, completed, (Boolean) satisfiesCompletionConditionOrFailure.get())
+          .map(unused -> context);
     }
     return Either.right(completed);
   }
@@ -550,19 +551,17 @@ public final class BpmnStateTransitionBehavior {
     containerProcessor.onChildTerminated(containerScope, parentInstanceContext, childContext);
   }
 
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableFlowElement element,
       final BpmnElementContext childContext,
       final Boolean satisfiesCompletionCondition) {
 
-    invokeElementContainerIfPresent(
+    return invokeElementContainerIfPresent(
         element,
         childContext,
-        (containerProcessor, containerScope, containerContext) -> {
-          containerProcessor.afterExecutionPathCompleted(
-              containerScope, containerContext, childContext, satisfiesCompletionCondition);
-          return Either.right(null);
-        });
+        (containerProcessor, containerScope, containerContext) ->
+            containerProcessor.afterExecutionPathCompleted(
+                containerScope, containerContext, childContext, satisfiesCompletionCondition));
   }
 
   public void onElementTerminated(

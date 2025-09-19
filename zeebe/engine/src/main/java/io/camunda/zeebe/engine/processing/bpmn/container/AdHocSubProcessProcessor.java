@@ -251,7 +251,7 @@ public class AdHocSubProcessProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableAdHocSubProcess adHocSubProcess,
       final BpmnElementContext adHocSubProcessContext,
       final BpmnElementContext childContext,
@@ -259,6 +259,7 @@ public class AdHocSubProcessProcessor
     behaviorFor(adHocSubProcess)
         .afterExecutionPathCompleted(
             adHocSubProcess, adHocSubProcessContext, childContext, satisfiesCompletionCondition);
+    return Either.right(null);
   }
 
   @Override

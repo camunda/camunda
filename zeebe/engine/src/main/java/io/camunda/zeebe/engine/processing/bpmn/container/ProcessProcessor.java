@@ -159,7 +159,7 @@ public final class ProcessProcessor
   }
 
   @Override
-  public void afterExecutionPathCompleted(
+  public Either<Failure, ?> afterExecutionPathCompleted(
       final ExecutableFlowElementContainer element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
@@ -168,6 +168,7 @@ public final class ProcessProcessor
     if (stateBehavior.canBeCompleted(childContext)) {
       stateTransitionBehavior.completeElement(flowScopeContext);
     }
+    return Either.right(null);
   }
 
   @Override

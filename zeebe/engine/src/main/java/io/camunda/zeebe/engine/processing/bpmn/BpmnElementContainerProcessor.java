@@ -79,7 +79,7 @@ public interface BpmnElementContainerProcessor<T extends ExecutableFlowElement>
    *     this point in time the element has already been removed from the state.
    * @param satisfiesCompletionCondition the evaluation result of completion condition
    */
-  void afterExecutionPathCompleted(
+  Either<Failure, ?> afterExecutionPathCompleted(
       final T element,
       final BpmnElementContext flowScopeContext,
       final BpmnElementContext childContext,
