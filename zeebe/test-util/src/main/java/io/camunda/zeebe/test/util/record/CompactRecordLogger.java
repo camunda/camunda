@@ -61,6 +61,7 @@ import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -1004,14 +1005,41 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionEvaluation(final Record<?> record) {
     final var value = (DecisionEvaluationRecordValue) record.getValue();
-    return new StringBuilder()
-        .append(value.getDecisionOutput())
-        .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
-        .append(formatVariables(value))
+
+    final var summary = new StringBuilder();
+
+    // On failure, show error message
+    if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
+      // Show which decision failed (could be a required decision of the one being evaluated)
+      summary.append("Error in <decision ").append(formatId(value.getFailedDecisionId()));
+      if (value.getFailedDecisionId().equals(value.getDecisionId())) {
+        summary.append("[").append(formatKey(value.getDecisionKey())).append("]>");
+      } else {
+        summary
+            .append("> while evaluating <decision ")
+            .append(formatId(value.getDecisionId()))
+            .append("[")
+            .append(formatKey(value.getDecisionKey()))
+            .append("]>");
+      }
+
+      // Add input variables to facilitate debugging
+      summary.append(formatVariables(value));
+
+      // Add failure message
+      summary.append(": \"").append(value.getEvaluationFailureMessage()).append("\"");
+    } else { // On success, show decision input/output
+      summary
+          .append(value.getDecisionOutput())
+          .append(summarizeDecisionInformation(value.getDecisionId(), value.getDecisionKey()))
+          .append(formatVariables(value));
+    }
+    // In all cases, show variables and process/element information
+    summary
         .append(
             summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
-        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()))
-        .toString();
+        .append(summarizeElementInformation(value.getElementId(), value.getElementInstanceKey()));
+    return summary.toString();
   }
 
   private String summarizeDecisionInformation(final String decisionId, final long decisionKey) {
