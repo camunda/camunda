@@ -21,6 +21,8 @@ import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
@@ -63,6 +65,8 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String archiverBlockedMetaIndex;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
@@ -91,6 +95,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     batchOperationTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    usageMetricTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
+    usageMetricTUTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
     this.metrics = metrics;
     this.genericClient = genericClient;
   }
@@ -129,6 +137,42 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
                 createArchiveBatch(
                     response, BatchOperationTemplate.END_DATE, batchOperationTemplateDescriptor),
             executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(), UsageMetricTUTemplate.END_TIME);
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTemplateDescriptor.getFullQualifiedName(), UsageMetricTemplate.END_TIME);
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
+            executor);
+  }
+
+  private SearchRequest createUsageMetricSearchRequest(
+      final String indexName, final String endTimeField) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(endTimeField)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build();
+    return createSearchRequest(indexName, endDateQ.toQuery(), endTimeField);
   }
 
   @Override
