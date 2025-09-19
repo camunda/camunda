@@ -545,7 +545,7 @@ public class CamundaProcessTestExtension
 
   /**
    * Configures the output directory for the coverage reports. By default, the directory is {@code
-   * target/process-test-coverage/}.
+   * target/coverage-report/}.
    *
    * @param reportDirectory the directory to save the reports
    * @return the extension builder
