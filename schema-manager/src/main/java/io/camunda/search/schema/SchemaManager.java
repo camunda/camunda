@@ -18,6 +18,7 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,7 +37,7 @@ import org.agrona.LangUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SchemaManager {
+public class SchemaManager implements CloseableSilently {
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
   public static final String PI_ARCHIVING_BLOCKED_META_KEY = "processInstanceArchivingBlocked";
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
@@ -473,5 +474,10 @@ public class SchemaManager {
 
   public boolean isAllIndicesExist() {
     return getMissingIndices(allIndexDescriptors).isEmpty();
+  }
+
+  @Override
+  public void close() {
+    virtualThreadExecutor.close();
   }
 }
