@@ -42,6 +42,9 @@
       "subscriptionKey": {
         "type": "long"
       },
+      "subscriptionType": {
+        "type": "keyword"
+      },
       "tenantId": {
         "type": "keyword"
       }

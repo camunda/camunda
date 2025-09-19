@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.write.domain.CorrelatedMessageSubscriptionDbModel;
 import io.camunda.db.rdbms.write.service.CorrelatedMessageSubscriptionWriter;
 import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -37,7 +38,8 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
   private final CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter =
       mock(CorrelatedMessageSubscriptionWriter.class);
   private final CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler underTest =
-      new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(correlatedMessageSubscriptionWriter);
+      new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(
+          correlatedMessageSubscriptionWriter);
 
   @Test
   void shouldHandleProcessMessageSubscriptionCorrelatedRecord() {
@@ -137,6 +139,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.processDefinitionKey()).isNull();
     assertThat(entity.processInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.subscriptionKey()).isEqualTo(recordKey);
+    assertThat(entity.subscriptionType()).isEqualTo(MessageSubscriptionType.PROCESS_EVENT);
     assertThat(entity.tenantId()).isEqualTo(tenantId);
   }
 

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity.MessageSubscriptionType;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
 import java.util.function.Function;
@@ -24,13 +25,15 @@ public record CorrelatedMessageSubscriptionDbModel(
     Long processDefinitionKey,
     Long processInstanceKey,
     Long subscriptionKey,
+    MessageSubscriptionType subscriptionType,
     String tenantId)
     implements DbModel<CorrelatedMessageSubscriptionDbModel> {
 
   @Override
   public CorrelatedMessageSubscriptionDbModel copy(
       final Function<
-              ObjectBuilder<CorrelatedMessageSubscriptionDbModel>, ObjectBuilder<CorrelatedMessageSubscriptionDbModel>>
+              ObjectBuilder<CorrelatedMessageSubscriptionDbModel>,
+              ObjectBuilder<CorrelatedMessageSubscriptionDbModel>>
           copyFunction) {
     return copyFunction
         .apply(
@@ -47,6 +50,7 @@ public record CorrelatedMessageSubscriptionDbModel(
                 .processDefinitionKey(processDefinitionKey)
                 .processInstanceKey(processInstanceKey)
                 .subscriptionKey(subscriptionKey)
+                .subscriptionType(subscriptionType)
                 .tenantId(tenantId))
         .build();
   }
@@ -64,6 +68,7 @@ public record CorrelatedMessageSubscriptionDbModel(
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long subscriptionKey;
+    private MessageSubscriptionType subscriptionType;
     private String tenantId;
 
     public Builder() {}
@@ -128,6 +133,11 @@ public record CorrelatedMessageSubscriptionDbModel(
       return this;
     }
 
+    public Builder subscriptionType(final MessageSubscriptionType subscriptionType) {
+      this.subscriptionType = subscriptionType;
+      return this;
+    }
+
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
@@ -148,6 +158,7 @@ public record CorrelatedMessageSubscriptionDbModel(
           processDefinitionKey,
           processInstanceKey,
           subscriptionKey,
+          subscriptionType,
           tenantId);
     }
   }

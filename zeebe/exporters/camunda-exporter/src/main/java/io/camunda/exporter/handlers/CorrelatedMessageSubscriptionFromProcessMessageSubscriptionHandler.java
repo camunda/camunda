@@ -65,6 +65,7 @@ public class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler
         .setMessageName(value.getMessageName())
         .setProcessDefinitionKey(null) // not available for process message subscriptions
         .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setSubscriptionType("PROCESS_EVENT")
         .setTenantId(tenantOrDefault(value.getTenantId()));
   }
 }

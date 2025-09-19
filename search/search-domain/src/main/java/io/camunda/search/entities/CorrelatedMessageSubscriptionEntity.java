@@ -23,6 +23,7 @@ public record CorrelatedMessageSubscriptionEntity(
     Long processDefinitionKey,
     Long processInstanceKey,
     Long subscriptionKey,
+    MessageSubscriptionType subscriptionType,
     String tenantId)
     implements TenantOwnedEntity {
   public static Builder builder() {
@@ -41,6 +42,7 @@ public record CorrelatedMessageSubscriptionEntity(
     private Long processDefinitionKey;
     private Long processInstanceKey;
     private Long subscriptionKey;
+    private MessageSubscriptionType subscriptionType;
     private String tenantId;
 
     public Builder correlationKey(final String correlationKey) {
@@ -98,6 +100,11 @@ public record CorrelatedMessageSubscriptionEntity(
       return this;
     }
 
+    public Builder subscriptionType(final MessageSubscriptionType subscriptionType) {
+      this.subscriptionType = subscriptionType;
+      return this;
+    }
+
     public Builder tenantId(final String tenantId) {
       this.tenantId = tenantId;
       return this;
@@ -116,7 +123,13 @@ public record CorrelatedMessageSubscriptionEntity(
           processDefinitionKey,
           processInstanceKey,
           subscriptionKey,
+          subscriptionType,
           tenantId);
     }
+  }
+
+  public enum MessageSubscriptionType {
+    PROCESS_EVENT,
+    START_EVENT
   }
 }

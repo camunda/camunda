@@ -180,6 +180,7 @@ final class CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandlerTe
     assertThat(entity.getProcessDefinitionKey()).isNull();
     assertThat(entity.getProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(entity.getSubscriptionKey()).isEqualTo(recordKey);
+    assertThat(entity.getSubscriptionType()).isEqualTo("PROCESS_EVENT");
     assertThat(entity.getTenantId()).isEqualTo(tenantId);
   }
 
