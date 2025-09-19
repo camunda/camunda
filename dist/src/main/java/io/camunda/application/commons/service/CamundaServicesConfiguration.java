@@ -11,7 +11,6 @@ import io.camunda.document.store.EnvironmentConfigurationLoader;
 import io.camunda.document.store.SimpleDocumentStoreRegistry;
 import io.camunda.search.clients.AuthorizationSearchClient;
 import io.camunda.search.clients.BatchOperationSearchClient;
-import io.camunda.search.clients.CorrelatedMessageSubscriptionSearchClient;
 import io.camunda.search.clients.DecisionDefinitionSearchClient;
 import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
@@ -364,13 +363,11 @@ public class CamundaServicesConfiguration {
   public MessageServices messageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CorrelatedMessageSubscriptionSearchClient correlatedMessageSubscriptionSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new MessageServices(
         brokerClient,
         securityContextProvider,
-        correlatedMessageSubscriptionSearchClient,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);
