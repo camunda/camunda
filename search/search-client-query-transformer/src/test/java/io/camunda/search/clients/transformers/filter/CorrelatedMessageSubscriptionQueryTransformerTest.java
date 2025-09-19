@@ -39,7 +39,9 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
   @ParameterizedTest
   @MethodSource("queryFilterParameters")
   void shouldQueryByMessageSubscriptionKey(
-      final Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>
+      final Function<
+              CorrelatedMessageSubscriptionFilter.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionFilter>>
           filterFunction,
       final String expectedFieldName,
       final Object expectedValue) {
@@ -64,63 +66,87 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
   private static Stream<Arguments> queryFilterParameters() {
     return Stream.of(
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.correlationKeys("key1"),
             "correlationKey",
             "key1"),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.correlationTimes(OffsetDateTime.parse("2024-07-24T00:00Z")),
             "correlationTime",
             OffsetDateTime.parse("2024-07-24T00:00Z")
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSZ"))),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.flowNodeIds("abcd"),
             "flowNodeId",
             "abcd"),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.flowNodeInstanceKeys(784L),
             "flowNodeInstanceKey",
             784L),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.messageKeys(345L),
             "messageKey",
             345L),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.messageNames("msg_name"),
             "messageName",
             "msg_name"),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.partitionIds(4),
             "partitionId",
             4),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.processDefinitionIds("abcd"),
             "bpmnProcessId",
             "abcd"),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.processDefinitionKeys(456L),
             "processDefinitionKey",
             456L),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.processInstanceKeys(999L),
             "processInstanceKey",
             999L),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.subscriptionKeys(555L),
             "subscriptionKey",
             555L),
         Arguments.of(
-            (Function<CorrelatedMessageSubscriptionFilter.Builder, ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
+            (Function<
+                    CorrelatedMessageSubscriptionFilter.Builder,
+                    ObjectBuilder<CorrelatedMessageSubscriptionFilter>>)
                 b -> b.tenantIds("tnt1"),
             "tenantId",
             "tnt1"));
@@ -139,7 +165,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")), resourceAccessChecks);
+            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")),
+            resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -195,7 +222,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")), resourceAccessChecks);
+            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")),
+            resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -203,7 +231,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
         .isInstanceOfSatisfying(
             SearchTermQuery.class,
             t ->
-                Assertions.assertThat(t.field()).isEqualTo(CorrelatedMessageSubscriptionTemplate.MESSAGE_NAME));
+                Assertions.assertThat(t.field())
+                    .isEqualTo(CorrelatedMessageSubscriptionTemplate.MESSAGE_NAME));
   }
 
   @Test
@@ -216,7 +245,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")), resourceAccessChecks);
+            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")),
+            resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -255,7 +285,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")), resourceAccessChecks);
+            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")),
+            resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();
@@ -263,7 +294,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
         .isInstanceOfSatisfying(
             SearchTermQuery.class,
             t ->
-                Assertions.assertThat(t.field()).isEqualTo(CorrelatedMessageSubscriptionTemplate.MESSAGE_NAME));
+                Assertions.assertThat(t.field())
+                    .isEqualTo(CorrelatedMessageSubscriptionTemplate.MESSAGE_NAME));
   }
 
   @Test
@@ -280,7 +312,8 @@ public class CorrelatedMessageSubscriptionQueryTransformerTest extends AbstractT
     // when
     final var searchQuery =
         transformQuery(
-            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")), resourceAccessChecks);
+            FilterBuilders.correlatedMessageSubscription(b -> b.messageNames("abc")),
+            resourceAccessChecks);
 
     // then
     final var queryVariant = searchQuery.queryOption();

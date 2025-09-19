@@ -204,7 +204,10 @@ public final class SortOptionBuilders {
   }
 
   public static CorrelatedMessageSubscriptionSort correlatedMessageSubscription(
-      final Function<CorrelatedMessageSubscriptionSort.Builder, ObjectBuilder<CorrelatedMessageSubscriptionSort>> fn) {
+      final Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn) {
     return fn.apply(correlatedMessageSubscription()).build();
   }
 }

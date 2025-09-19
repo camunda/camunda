@@ -9,7 +9,8 @@ package io.camunda.search.clients.transformers.sort;
 
 import static io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate.*;
 
-public class CorrelatedMessageSubscriptionFieldSortingTransformer implements FieldSortingTransformer {
+public class CorrelatedMessageSubscriptionFieldSortingTransformer
+    implements FieldSortingTransformer {
 
   @Override
   public String apply(final String domainField) {

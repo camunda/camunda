@@ -108,7 +108,8 @@ public class HistoryCleanupService {
     jobWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     sequenceFlowWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
     messageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
-    correlatedMessageSubscriptionWriter.scheduleForHistoryCleanup(processInstanceKey, historyCleanupDate);
+    correlatedMessageSubscriptionWriter.scheduleForHistoryCleanup(
+        processInstanceKey, historyCleanupDate);
   }
 
   public void scheduleBatchOperationForHistoryCleanup(
@@ -175,7 +176,8 @@ public class HistoryCleanupService {
         messageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
     numDeletedRecords.put(
         "correlatedMessageSubscription",
-        correlatedMessageSubscriptionWriter.cleanupHistory(partitionId, cleanupDate, cleanupBatchSize));
+        correlatedMessageSubscriptionWriter.cleanupHistory(
+            partitionId, cleanupDate, cleanupBatchSize));
     final long end = System.currentTimeMillis();
     sample.close();
 

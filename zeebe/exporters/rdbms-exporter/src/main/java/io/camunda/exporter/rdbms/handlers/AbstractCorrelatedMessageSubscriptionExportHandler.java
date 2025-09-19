@@ -32,7 +32,8 @@ public abstract class AbstractCorrelatedMessageSubscriptionExportHandler<T exten
     correlatedMessageSubscriptionWriter.create(map(record));
   }
 
-  protected abstract void mapValue(final T value, final CorrelatedMessageSubscriptionDbModel.Builder builder);
+  protected abstract void mapValue(
+      final T value, final CorrelatedMessageSubscriptionDbModel.Builder builder);
 
   private CorrelatedMessageSubscriptionDbModel map(final Record<T> record) {
     final CorrelatedMessageSubscriptionDbModel.Builder builder =

@@ -19,7 +19,9 @@ public final class CorrelatedMessageSubscriptionFixtures extends CommonFixtures 
   private CorrelatedMessageSubscriptionFixtures() {}
 
   public static CorrelatedMessageSubscriptionDbModel createRandomized(
-      final Function<CorrelatedMessageSubscriptionDbModel.Builder, CorrelatedMessageSubscriptionDbModel.Builder>
+      final Function<
+              CorrelatedMessageSubscriptionDbModel.Builder,
+              CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
     final var builder =
         new CorrelatedMessageSubscriptionDbModel.Builder()
@@ -38,23 +40,30 @@ public final class CorrelatedMessageSubscriptionFixtures extends CommonFixtures 
     return builderFunction.apply(builder).build();
   }
 
-  public static void createAndSaveRandomCorrelatedMessageSubscriptions(final RdbmsWriter rdbmsWriter) {
+  public static void createAndSaveRandomCorrelatedMessageSubscriptions(
+      final RdbmsWriter rdbmsWriter) {
     createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriter, b -> b);
   }
 
   public static void createAndSaveRandomCorrelatedMessageSubscriptions(
       final RdbmsWriter rdbmsWriter,
-      final Function<CorrelatedMessageSubscriptionDbModel.Builder, CorrelatedMessageSubscriptionDbModel.Builder>
+      final Function<
+              CorrelatedMessageSubscriptionDbModel.Builder,
+              CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
     for (int i = 0; i < 20; i++) {
-      rdbmsWriter.getCorrelatedMessageSubscriptionWriter().create(createRandomized(builderFunction));
+      rdbmsWriter
+          .getCorrelatedMessageSubscriptionWriter()
+          .create(createRandomized(builderFunction));
     }
     rdbmsWriter.flush();
   }
 
   public static CorrelatedMessageSubscriptionDbModel createAndSaveCorrelatedMessageSubscription(
       final RdbmsWriter rdbmsWriter,
-      final Function<CorrelatedMessageSubscriptionDbModel.Builder, CorrelatedMessageSubscriptionDbModel.Builder>
+      final Function<
+              CorrelatedMessageSubscriptionDbModel.Builder,
+              CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
     final CorrelatedMessageSubscriptionDbModel randomized = createRandomized(builderFunction);
     createAndSaveCorrelatedMessageSubscriptions(rdbmsWriter, List.of(randomized));

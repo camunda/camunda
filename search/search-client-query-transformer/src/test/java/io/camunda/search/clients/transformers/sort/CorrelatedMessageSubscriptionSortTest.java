@@ -44,9 +44,13 @@ public class CorrelatedMessageSubscriptionSortTest extends AbstractSortTransform
   public void shouldSortByField(
       final String field,
       final SortOrder sortOrder,
-      final Function<CorrelatedMessageSubscriptionSort.Builder, ObjectBuilder<CorrelatedMessageSubscriptionSort>> fn) {
+      final Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn) {
     // when
-    final var request = SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery(q -> q.sort(fn));
+    final var request =
+        SearchQueryBuilders.correlatedMessageSubscriptionSearchQuery(q -> q.sort(fn));
     final var sort = transformRequest(request);
 
     // then
@@ -70,7 +74,10 @@ public class CorrelatedMessageSubscriptionSortTest extends AbstractSortTransform
   private record TestArguments(
       String field,
       SortOrder sortOrder,
-      Function<CorrelatedMessageSubscriptionSort.Builder, ObjectBuilder<CorrelatedMessageSubscriptionSort>> fn)
+      Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn)
       implements Arguments {
 
     @Override

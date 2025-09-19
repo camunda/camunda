@@ -24,7 +24,8 @@ public class CorrelatedMessageSubscriptionDocumentReader extends DocumentBasedRe
 
   @Override
   public SearchQueryResult<CorrelatedMessageSubscriptionEntity> search(
-      final CorrelatedMessageSubscriptionQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final CorrelatedMessageSubscriptionQuery query,
+      final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .search(
             query,

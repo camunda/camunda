@@ -9,7 +9,8 @@ package io.camunda.db.rdbms.sql.columns;
 
 import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
 
-public enum CorrelatedMessageSubscriptionSearchColumn implements SearchColumn<CorrelatedMessageSubscriptionEntity> {
+public enum CorrelatedMessageSubscriptionSearchColumn
+    implements SearchColumn<CorrelatedMessageSubscriptionEntity> {
   CORRELATION_KEY("correlationKey"),
   CORRELATION_TIME("correlationTime"),
   FLOW_NODE_ID("flowNodeId"),

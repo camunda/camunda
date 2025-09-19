@@ -345,7 +345,9 @@ public final class ServiceTransformers {
     // document entity -> domain entity
     mappers.put(AuthorizationEntity.class, new AuthorizationEntityTransformer());
     mappers.put(BatchOperationEntity.class, new BatchOperationEntityTransformer());
-    mappers.put(CorrelatedMessageSubscriptionEntity.class, new CorrelatedMessageSubscriptionEntityTransformer());
+    mappers.put(
+        CorrelatedMessageSubscriptionEntity.class,
+        new CorrelatedMessageSubscriptionEntityTransformer());
     mappers.put(DecisionDefinitionEntity.class, new DecisionDefinitionEntityTransformer());
     mappers.put(DecisionRequirementsEntity.class, new DecisionRequirementsEntityTransformer());
     mappers.put(DecisionInstanceEntity.class, new DecisionInstanceEntityTransformer());
@@ -373,7 +375,9 @@ public final class ServiceTransformers {
     mappers.put(AuthorizationSort.class, new AuthorizationFieldSortingTransformer());
     mappers.put(BatchOperationSort.class, new BatchOperationFieldSortingTransformer());
     mappers.put(BatchOperationItemSort.class, new BatchOperationItemFieldSortingTransformer());
-    mappers.put(CorrelatedMessageSubscriptionSort.class, new CorrelatedMessageSubscriptionFieldSortingTransformer());
+    mappers.put(
+        CorrelatedMessageSubscriptionSort.class,
+        new CorrelatedMessageSubscriptionFieldSortingTransformer());
     mappers.put(DecisionDefinitionSort.class, new DecisionDefinitionFieldSortingTransformer());
     mappers.put(DecisionRequirementsSort.class, new DecisionRequirementsFieldSortingTransformer());
     mappers.put(DecisionInstanceSort.class, new DecisionInstanceFieldSortingTransformer());
