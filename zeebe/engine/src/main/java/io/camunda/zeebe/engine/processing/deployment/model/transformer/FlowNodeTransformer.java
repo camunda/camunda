@@ -107,15 +107,24 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
             listeners ->
                 listeners.forEach(
                     l -> {
-                      final var eventType = l.eventType();
-                      final var jobType = l.jobType();
-                      final var jobRetries = l.jobRetries();
+                      final var elementTypes = l.elementTypes();
+                      final var elementType = flowNode.getElementType().getElementTypeName().get();
 
-                      flowNode.addListener(
-                          ZeebeExecutionListenerEventType.valueOf(eventType),
-                          expressionLanguage.parseExpression(jobType),
-                          expressionLanguage.parseExpression(jobRetries),
-                          Map.of());
+                      if (elementTypes == null
+                          || elementTypes.isEmpty()
+                          || elementTypes.contains(elementType)) {
+                        final var eventType = l.eventType();
+                        final var jobType = l.jobType();
+                        final var jobRetries = l.jobRetries();
+
+                        flowNode.getElementType().getElementTypeName();
+
+                        flowNode.addListener(
+                            ZeebeExecutionListenerEventType.valueOf(eventType),
+                            expressionLanguage.parseExpression(jobType),
+                            expressionLanguage.parseExpression(jobRetries),
+                            Map.of());
+                      }
                     }));
 
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeExecutionListeners.class))

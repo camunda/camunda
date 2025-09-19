@@ -8,6 +8,8 @@
 package io.camunda.zeebe.broker.system.configuration.engine;
 
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ListenerCfg implements ConfigurationEntry {
 
@@ -16,6 +18,7 @@ public class ListenerCfg implements ConfigurationEntry {
   private String eventType;
   private String jobType;
   private String retries = DEFAULT_RETRIES;
+  private List<String> elementTypes = new ArrayList<>();
 
   public String getEventType() {
     return eventType;
@@ -39,5 +42,13 @@ public class ListenerCfg implements ConfigurationEntry {
 
   public void setRetries(final String retries) {
     this.retries = retries;
+  }
+
+  public List<String> getElementTypes() {
+    return elementTypes;
+  }
+
+  public void setElementTypes(final List<String> elementTypes) {
+    this.elementTypes = elementTypes;
   }
 }

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.ListenerConfiguration;
 import io.camunda.zeebe.engine.ListenersConfiguration;
 import java.util.ArrayList;
+import java.util.List;
 
 public final class EngineCfg implements ConfigurationEntry {
 
@@ -141,7 +142,8 @@ public final class EngineCfg implements ConfigurationEntry {
       final var eventType = globalExecutionListener.getEventType();
       final var jobType = globalExecutionListener.getJobType();
       final var jobRetries = globalExecutionListener.getRetries();
-      final var listener = new ListenerConfiguration(eventType, jobType, jobRetries);
+      final var elementTypes = globalExecutionListener.getElementTypes();
+      final var listener = new ListenerConfiguration(eventType, jobType, jobRetries, elementTypes);
       executionListeners.add(listener);
     }
 
@@ -150,7 +152,7 @@ public final class EngineCfg implements ConfigurationEntry {
       final var eventType = globalTaskListener.getEventType();
       final var jobType = globalTaskListener.getJobType();
       final var jobRetries = globalTaskListener.getRetries();
-      final var listener = new ListenerConfiguration(eventType, jobType, jobRetries);
+      final var listener = new ListenerConfiguration(eventType, jobType, jobRetries, List.of());
       taskListeners.add(listener);
     }
 

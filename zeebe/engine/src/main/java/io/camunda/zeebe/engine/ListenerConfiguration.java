@@ -7,4 +7,7 @@
  */
 package io.camunda.zeebe.engine;
 
-public record ListenerConfiguration(String eventType, String jobType, String jobRetries) {}
+import java.util.List;
+
+public record ListenerConfiguration(
+    String eventType, String jobType, String jobRetries, List<String> elementTypes) {}
