@@ -224,7 +224,7 @@ public class VariableStoreOpenSearch implements VariableStore {
   }
 
   @Override
-  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds) {
+  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
     final var processInstanceKeyQuery =
         TermsQuery.of(
                 t ->
@@ -232,7 +232,7 @@ public class VariableStoreOpenSearch implements VariableStore {
                         .terms(
                             v ->
                                 v.value(
-                                    processInstanceIds.stream()
+                                    processInstanceKeys.stream()
                                         .map(FieldValue::of)
                                         .collect(toList()))))
             .toQuery();
@@ -279,9 +279,9 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     try {
       return scrollInChunks(
-          processInstanceIds,
+          processInstanceKeys,
           maxTermsCount,
-          this::buildSearchFNIByProcessInstanceIdsRequest,
+          this::buildSearchFNIByProcessInstanceKeysRequest,
           FlowNodeInstanceEntity.class,
           osClient);
     } catch (final IOException e) {
@@ -365,9 +365,9 @@ public class VariableStoreOpenSearch implements VariableStore {
   }
 
   @Override
-  public List<String> getProcessInstanceIdsWithMatchingVars(
+  public List<Long> getProcessInstanceKeysWithMatchingVars(
       final List<String> varNames, final List<String> varValues) {
-    Set<String> processInstanceIds = null;
+    Set<Long> processInstanceKeys = null;
     for (int i = 0; i < varNames.size(); i++) {
       final Query.Builder nameQ = new Query.Builder();
       final int finalI = i;
@@ -395,9 +395,9 @@ public class VariableStoreOpenSearch implements VariableStore {
           .query(q -> q.constantScore(cs -> cs.filter(boolQuery)))
           .source(s -> s.filter(f -> f.includes(PROCESS_INSTANCE_KEY)))
           .size(tasklistProperties.getOpenSearch().getBatchSize());
-      final Set<String> currentIds;
+      final Set<Long> currentKeys;
       try {
-        currentIds =
+        currentKeys =
             new HashSet<>(
                 OpenSearchUtil.scrollFieldToList(
                     searchRequestBuilder, PROCESS_INSTANCE_KEY, osClient));
@@ -409,25 +409,25 @@ public class VariableStoreOpenSearch implements VariableStore {
         throw new TasklistRuntimeException(message, e);
       }
       // Early exit if empty result
-      if (currentIds.isEmpty()) {
+      if (currentKeys.isEmpty()) {
         return Collections.emptyList();
       }
-      if (processInstanceIds == null) {
-        processInstanceIds = currentIds;
+      if (processInstanceKeys == null) {
+        processInstanceKeys = currentKeys;
       } else {
-        processInstanceIds.retainAll(currentIds);
-        if (processInstanceIds.isEmpty()) {
+        processInstanceKeys.retainAll(currentKeys);
+        if (processInstanceKeys.isEmpty()) {
           // Early exit if intersection is empty
           return Collections.emptyList();
         }
       }
     }
-    return processInstanceIds == null
+    return processInstanceKeys == null
         ? Collections.emptyList()
-        : new ArrayList<>(processInstanceIds);
+        : new ArrayList<>(processInstanceKeys);
   }
 
-  private Builder buildSearchFNIByProcessInstanceIdsRequest(final List<String> processInstanceIds) {
+  private Builder buildSearchFNIByProcessInstanceKeysRequest(final List<Long> processInstanceKeys) {
     final var processInstanceKeyQuery =
         TermsQuery.of(
                 t ->
@@ -435,7 +435,7 @@ public class VariableStoreOpenSearch implements VariableStore {
                         .terms(
                             v ->
                                 v.value(
-                                    processInstanceIds.stream()
+                                    processInstanceKeys.stream()
                                         .map(FieldValue::of)
                                         .collect(toList()))))
             .toQuery();

@@ -26,6 +26,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship;
 import io.camunda.webapps.schema.entities.usertask.TaskJoinRelationship.TaskJoinRelationshipType;
 import io.camunda.webapps.schema.entities.usertask.TaskProcessInstanceEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
+import io.camunda.zeebe.protocol.Protocol;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -84,38 +85,44 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
     final long taskOffset = total * 2;
     final long variableOffset = total * 3;
     for (int i = 0; i < total; i++) {
+      final long fniKey = Protocol.encodePartitionId(1, fniOffset + i);
+      final long processInstanceKey = Protocol.encodePartitionId(1, piOffset + i);
+      final long taskKey = Protocol.encodePartitionId(1, taskOffset + i);
       flowNodeInstances.add(
           new FlowNodeInstanceEntity()
-              .setId(String.valueOf(fniOffset + i))
-              .setKey(fniOffset + i)
-              .setProcessInstanceKey(piOffset + i)
+              .setId(String.valueOf(fniKey))
+              .setKey(fniKey)
+              .setProcessInstanceKey(processInstanceKey)
               .setType(FlowNodeType.USER_TASK)
               .setState(FlowNodeState.ACTIVE));
       for (int j = 0; j < numberOfVariablesPerTask; j++) {
+        final long variableKey =
+            Protocol.encodePartitionId(1, variableOffset + numberOfVariablesPerTask * i + j);
         variables.add(
             new VariableEntity()
-                .setId(String.valueOf(variableOffset + numberOfVariablesPerTask * i + j))
-                .setKey(variableOffset + numberOfVariablesPerTask * i + j)
-                .setProcessInstanceKey(piOffset + i)
-                .setScopeKey(fniOffset + i)
+                .setId(String.valueOf(variableKey))
+                .setKey(variableKey)
+                .setProcessInstanceKey(processInstanceKey)
+                .setScopeKey(fniKey)
                 .setName("var" + j)
                 .setValue(
                     i < numberOfMatchingTasks ? String.format("\"value%d\"", j) : "\"other\""));
       }
       tasksPIs.add(
           new TaskProcessInstanceEntity()
-              .setId(String.valueOf(piOffset + i))
-              .setProcessInstanceId(piOffset + i)
+              .setId(String.valueOf(processInstanceKey))
+              .setProcessInstanceId(processInstanceKey)
               .setJoin(new TaskJoinRelationship(TaskJoinRelationshipType.PROCESS.getType())));
       tasks.add(
           new TaskEntity()
-              .setId(String.valueOf(taskOffset + i))
-              .setKey(taskOffset + i)
-              .setProcessInstanceId(String.valueOf(piOffset + i))
-              .setFlowNodeInstanceId(String.valueOf(fniOffset + i))
+              .setId(String.valueOf(taskKey))
+              .setKey(taskKey)
+              .setProcessInstanceId(String.valueOf(processInstanceKey))
+              .setFlowNodeInstanceId(String.valueOf(fniKey))
               .setState(TaskState.CREATED)
               .setJoin(
-                  new TaskJoinRelationship(TaskJoinRelationshipType.TASK.getType(), piOffset + i)));
+                  new TaskJoinRelationship(
+                      TaskJoinRelationshipType.TASK.getType(), processInstanceKey)));
     }
     databaseTestExtension.bulkIndex(flowNodeInstanceIndex, flowNodeInstances);
     databaseTestExtension.bulkIndex(variableIndex, variables);

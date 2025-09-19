@@ -354,10 +354,11 @@ public class VariableService {
             .map(GetVariablesRequest::getProcessInstanceId)
             .filter(Objects::nonNull)
             .distinct()
-            .collect(toList());
+            .toList();
     // get all flow node instances for all process instance ids
     final List<FlowNodeInstanceEntity> flowNodeInstances =
-        variableStore.getFlowNodeInstances(processInstanceIds);
+        variableStore.getFlowNodeInstances(
+            processInstanceIds.stream().map(Long::parseLong).toList());
 
     final Map<String, FlowNodeTree> flowNodeTrees = new HashMap<>();
     for (final FlowNodeInstanceEntity flowNodeInstance : flowNodeInstances) {

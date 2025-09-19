@@ -78,7 +78,8 @@ public class TaskVariableSearchUtil {
         CollectionUtil.map(requests, VariableStore.GetVariablesRequest::getProcessInstanceId);
     // get all flow node instances for all process instance ids
     final List<FlowNodeInstanceEntity> flowNodeInstances =
-        variableStore.getFlowNodeInstances(processInstanceIds);
+        variableStore.getFlowNodeInstances(
+            processInstanceIds.stream().map(Long::parseLong).toList());
 
     final Map<String, VariableStore.FlowNodeTree> flowNodeTrees = new HashMap<>();
     for (final FlowNodeInstanceEntity flowNodeInstance : flowNodeInstances) {
