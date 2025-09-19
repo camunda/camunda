@@ -44,7 +44,9 @@ public class CorrelatedMessageSubscriptionWriter {
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(
             new UpdateHistoryCleanupDateMerger(
-                ContextType.CORRELATED_MESSAGE_SUBSCRIPTION, processInstanceKey, historyCleanupDate));
+                ContextType.CORRELATED_MESSAGE_SUBSCRIPTION,
+                processInstanceKey,
+                historyCleanupDate));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
