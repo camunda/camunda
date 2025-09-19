@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine;
 
 import java.time.Duration;
+import java.util.List;
 
 public final class EngineConfiguration {
 
@@ -85,6 +86,8 @@ public final class EngineConfiguration {
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+
+  private ListenersConfiguration listeners = new ListenersConfiguration(List.of(), List.of());
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -311,6 +314,15 @@ public final class EngineConfiguration {
   public EngineConfiguration setCommandRedistributionMaxBackoff(
       final Duration commandRedistributionMaxBackoff) {
     this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
+    return this;
+  }
+
+  public ListenersConfiguration getListeners() {
+    return listeners;
+  }
+
+  public EngineConfiguration setListeners(final ListenersConfiguration listeners) {
+    this.listeners = listeners;
     return this;
   }
 }

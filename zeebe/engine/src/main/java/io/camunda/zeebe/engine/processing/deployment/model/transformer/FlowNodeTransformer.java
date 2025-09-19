@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.ListenersConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElementContainer;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
@@ -16,9 +17,11 @@ import io.camunda.zeebe.engine.processing.deployment.model.transformation.Transf
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.impl.BpmnModelConstants;
 import io.camunda.zeebe.model.bpmn.instance.FlowNode;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import java.util.Optional;
 
 public final class FlowNodeTransformer implements ModelElementTransformer<FlowNode> {
@@ -28,6 +31,12 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
 
   private final ExecutionListenerTransformer executionListenerTransformer =
       new ExecutionListenerTransformer();
+
+  private final ListenersConfiguration listenersConfiguration;
+
+  public FlowNodeTransformer(final ListenersConfiguration listenersConfiguration) {
+    this.listenersConfiguration = listenersConfiguration;
+  }
 
   @Override
   public Class<FlowNode> getType() {
@@ -92,6 +101,22 @@ public final class FlowNodeTransformer implements ModelElementTransformer<FlowNo
       final FlowNode element,
       final ExecutableFlowNode flowNode,
       final ExpressionLanguage expressionLanguage) {
+
+    Optional.ofNullable(listenersConfiguration.execution())
+        .ifPresent(
+            listeners ->
+                listeners.forEach(
+                    l -> {
+                      final var eventType = l.eventType();
+                      final var jobType = l.jobType();
+                      final var jobRetries = l.jobRetries();
+
+                      flowNode.addListener(
+                          ZeebeExecutionListenerEventType.valueOf(eventType),
+                          expressionLanguage.parseExpression(jobType),
+                          expressionLanguage.parseExpression(jobRetries),
+                          Map.of());
+                    }));
 
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeExecutionListeners.class))
         .ifPresent(

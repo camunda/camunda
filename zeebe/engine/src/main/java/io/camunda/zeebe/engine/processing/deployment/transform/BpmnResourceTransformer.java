@@ -60,7 +60,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final boolean enableStraightThroughProcessingLoopDetector,
       final EngineConfiguration config,
       final InstantSource clock) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock);
+    bpmnTransformer = BpmnFactory.createTransformer(clock, config);
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
