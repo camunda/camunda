@@ -86,6 +86,7 @@ public class CamundaExporter implements Exporter {
   private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
+  private Context context;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -105,40 +106,21 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void configure(final Context context) {
+    this.context = context;
     configuration = context.getConfiguration().instantiate(ExporterConfiguration.class);
+    partitionId = context.getPartitionId();
+
+    LOG.info("Configuring exporter with {}", configuration);
     ConfigValidator.validate(configuration);
     context.setFilter(new CamundaExporterRecordFilter());
-    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
-    clientAdapter = ClientAdapter.of(configuration.getConnect());
-    if (metadata == null) {
-      metadata = new ExporterMetadata(clientAdapter.objectMapper());
-    }
-    partitionId = context.getPartitionId();
-    provider.init(
-        configuration,
-        clientAdapter.getExporterEntityCacheProvider(),
-        context.getMeterRegistry(),
-        metadata,
-        clientAdapter.objectMapper());
-
-    taskManager =
-        new BackgroundTaskManagerFactory(
-                context.getPartitionId(),
-                context.getConfiguration().getId().toLowerCase(),
-                configuration,
-                provider,
-                metrics,
-                context.getLogger(),
-                metadata,
-                clientAdapter.objectMapper(),
-                provider.getProcessCache())
-            .build();
-    LOG.debug("Exporter configured with {}", configuration);
+    verifySetupOfResources();
   }
 
   @Override
   public void open(final Controller controller) {
+    LOG.info("Opening Exporter on partition {}", partitionId);
     this.controller = controller;
+    setupExporterResources();
     searchEngineClient = clientAdapter.getSearchEngineClient();
     final var schemaManager = createSchemaManager();
 
@@ -161,21 +143,31 @@ public class CamundaExporter implements Exporter {
     if (writer != null) {
       try {
         flush();
+        writer = null;
       } catch (final Exception e) {
         LOG.warn("Failed to flush records before closing exporter.", e);
       }
     }
 
     if (clientAdapter != null) {
-      try {
-        clientAdapter.close();
-      } catch (final Exception e) {
-        LOG.warn("Failed to close elasticsearch client", e);
-      }
+      CloseHelper.close(
+          error -> LOG.warn("Failed to close elasticsearch client", error), clientAdapter);
+      clientAdapter = null;
     }
 
-    CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
-    LOG.info("Exporter closed");
+    if (metrics != null) {
+      CloseHelper.close(
+          error -> LOG.warn("Failed to remove exporter metrics from registry.", error), metrics);
+      metrics = null;
+    }
+
+    provider.reset();
+
+    if (taskManager != null) {
+      CloseHelper.close(error -> LOG.warn("Failed to close background tasks", error), taskManager);
+      taskManager = null;
+    }
+    LOG.info("Exporter resources closed");
   }
 
   @Override
@@ -235,29 +227,77 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void purge() {
-    searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
+    try {
+      setupExporterResources();
+      searchEngineClient = clientAdapter.getSearchEngineClient();
+      final var schemaManager = createSchemaManager();
 
-    // Indices
-    final var emptiedIndices = schemaManager.truncateIndices();
+      // Indices
+      final var emptiedIndices = schemaManager.truncateIndices();
 
-    // Delete archived indices
-    schemaManager.deleteArchivedIndices();
+      // Delete archived indices
+      schemaManager.deleteArchivedIndices();
 
-    // At this point, several indices still have data, e.g.
-    // deployment, tasklist-task, process, operate-event, operate-list-view,
-    // operate-flownode-instance, process-instance-creation, user-task,
-    // process-instance
-    // If I stop deleting things right here, tests will not pass.
+      // At this point, several indices still have data, e.g.
+      // deployment, tasklist-task, process, operate-event, operate-list-view,
+      // operate-flownode-instance, process-instance-creation, user-task,
+      // process-instance
+      // If I stop deleting things right here, tests will not pass.
 
-    // Indices, not managed by the SchemaManager
-    // This code can be removed, once we have the unified SchemaManager, which will take care of
-    // deleting all indices it manages (#26890).
-    final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
-    LOG.debug("Purging exporter indexes: {}", indexNames);
-    searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
-        .filter(index -> !emptiedIndices.contains(index))
-        .forEach(searchEngineClient::truncateIndex);
+      // Indices, not managed by the SchemaManager
+      // This code can be removed, once we have the unified SchemaManager, which will take care of
+      // deleting all indices it manages (#26890).
+      final var indexNames = String.join(",", prefixedNames("operate-*", "tasklist-*"));
+      LOG.debug("Purging exporter indexes: {}", indexNames);
+      searchEngineClient.getMappings(indexNames, MappingSource.INDEX).keySet().stream()
+          .filter(index -> !emptiedIndices.contains(index))
+          .forEach(searchEngineClient::truncateIndex);
+    } finally {
+      close();
+    }
+  }
+
+  private void verifySetupOfResources() {
+    // given the context and configuration
+    try {
+      // we need setup all resources
+      // to ensure that we can create the clients,
+      // connect and make use of the configuration given
+      setupExporterResources();
+    } finally {
+      // afterward we need to clean up all the resources
+      // as we only wanted to verify the setup and the exporter
+      // might simply just run in passive mode - so there is no
+      // need to keep the clients opens
+      close();
+    }
+  }
+
+  private void setupExporterResources() {
+    metrics = new CamundaExporterMetrics(context.getMeterRegistry(), context.clock());
+    clientAdapter = ClientAdapter.of(configuration.getConnect());
+    if (metadata == null) {
+      metadata = new ExporterMetadata(clientAdapter.objectMapper());
+    }
+    provider.init(
+        configuration,
+        clientAdapter.getExporterEntityCacheProvider(),
+        context.getMeterRegistry(),
+        metadata,
+        clientAdapter.objectMapper());
+
+    taskManager =
+        new BackgroundTaskManagerFactory(
+                context.getPartitionId(),
+                context.getConfiguration().getId().toLowerCase(),
+                configuration,
+                provider,
+                metrics,
+                context.getLogger(),
+                metadata,
+                clientAdapter.objectMapper(),
+                provider.getProcessCache())
+            .build();
   }
 
   private SchemaManager createSchemaManager() {
