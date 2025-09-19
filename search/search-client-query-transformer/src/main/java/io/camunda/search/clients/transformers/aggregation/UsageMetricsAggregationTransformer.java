@@ -17,7 +17,7 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.term
 import io.camunda.search.aggregation.UsageMetricsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
@@ -29,12 +29,12 @@ public class UsageMetricsAggregationTransformer
       final Tuple<UsageMetricsAggregation, ServiceTransformers> value) {
 
     final var sumEventTypeAgg =
-        sum().name(AGGREGATION_SUM_EVENT_TYPE).field(UsageMetricIndex.EVENT_VALUE).build();
+        sum().name(AGGREGATION_SUM_EVENT_TYPE).field(UsageMetricTemplate.EVENT_VALUE).build();
 
     final var termEventTypeAgg =
         terms()
             .name(AGGREGATION_TERMS_EVENT_TYPE)
-            .field(UsageMetricIndex.EVENT_TYPE)
+            .field(UsageMetricTemplate.EVENT_TYPE)
             .size(AGGREGATION_TERMS_SIZE)
             .aggregations(sumEventTypeAgg)
             .build();
@@ -42,7 +42,7 @@ public class UsageMetricsAggregationTransformer
     final var termsTenantIdAggBuilder =
         terms()
             .name(AGGREGATION_TERMS_TENANT_ID)
-            .field(UsageMetricIndex.TENANT_ID)
+            .field(UsageMetricTemplate.TENANT_ID)
             .size(AGGREGATION_TERMS_SIZE);
 
     final var filter = value.getLeft().filter();

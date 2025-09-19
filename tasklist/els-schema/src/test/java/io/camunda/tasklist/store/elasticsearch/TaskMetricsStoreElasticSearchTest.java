@@ -11,8 +11,8 @@ import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSea
 import static io.camunda.tasklist.store.elasticsearch.TaskMetricsStoreElasticSearch.TU_ID_PATTERN;
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.CommonUtils;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.HashUtil;
@@ -61,7 +61,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class TaskMetricsStoreElasticSearchTest {
 
   private static final String METRIC_INDEX_NAME = "usage_metric_tu_x.0.0";
-  @Mock private UsageMetricTUIndex index;
+  @Mock private UsageMetricTUTemplate template;
   @Mock private RestHighLevelClient esClient;
   @Spy private ObjectMapper objectMapper = CommonUtils.OBJECT_MAPPER;
 
@@ -69,7 +69,7 @@ public class TaskMetricsStoreElasticSearchTest {
 
   @BeforeEach
   void setUp() {
-    when(index.getFullQualifiedName()).thenReturn(METRIC_INDEX_NAME);
+    when(template.getFullQualifiedName()).thenReturn(METRIC_INDEX_NAME);
   }
 
   @Test
@@ -168,7 +168,7 @@ public class TaskMetricsStoreElasticSearchTest {
     final SearchSourceBuilder source =
         SearchSourceBuilder.searchSource().query(rangeQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
-        new SearchRequest(index.getFullQualifiedName())
+        new SearchRequest(template.getFullQualifiedName())
             .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
             .source(source);
     return searchRequest;

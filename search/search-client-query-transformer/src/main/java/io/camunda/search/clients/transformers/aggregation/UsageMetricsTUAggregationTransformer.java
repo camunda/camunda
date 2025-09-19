@@ -15,7 +15,7 @@ import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.term
 import io.camunda.search.aggregation.UsageMetricsTUAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 
@@ -29,14 +29,14 @@ public class UsageMetricsTUAggregationTransformer
     final var termsEventTypeAgg =
         terms()
             .name(AGGREGATION_TERMS_ASSIGNEE_HASH)
-            .field(UsageMetricTUIndex.ASSIGNEE_HASH)
+            .field(UsageMetricTUTemplate.ASSIGNEE_HASH)
             .size(AGGREGATION_TERMS_SIZE)
             .build();
 
     final var termTenantAgg =
         terms()
             .name(AGGREGATION_TERMS_TENANT_ID)
-            .field(UsageMetricTUIndex.TENANT_ID)
+            .field(UsageMetricTUTemplate.TENANT_ID)
             .size(AGGREGATION_TERMS_SIZE)
             .aggregations(termsEventTypeAgg)
             .build();
