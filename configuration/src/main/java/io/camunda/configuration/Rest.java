@@ -9,17 +9,18 @@ package io.camunda.configuration;
 
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rest {
 
   /** Set the filters */
-  private List<Filter> filters = new ArrayList<>();
+  @NestedConfigurationProperty private List<Filter> filters = new ArrayList<>();
 
   /** Set the process cache configuration */
-  private ProcessCache processCache = new ProcessCache();
+  @NestedConfigurationProperty private ProcessCache processCache = new ProcessCache();
 
   /** Set the executor configuration */
-  private Executor executor = new Executor();
+  @NestedConfigurationProperty private Executor executor = new Executor();
 
   public List<Filter> getFilters() {
     return filters;

@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
 
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class SecondaryStorage {
 
@@ -25,10 +26,10 @@ public class SecondaryStorage {
   private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
-  private Elasticsearch elasticsearch = new Elasticsearch();
+  @NestedConfigurationProperty private Elasticsearch elasticsearch = new Elasticsearch();
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
-  private Opensearch opensearch = new Opensearch();
+  @NestedConfigurationProperty private Opensearch opensearch = new Opensearch();
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -39,7 +40,7 @@ public class SecondaryStorage {
         LEGACY_TYPE_PROPERTIES);
   }
 
-  public void setType(SecondaryStorageType type) {
+  public void setType(final SecondaryStorageType type) {
     this.type = type;
   }
 
@@ -47,7 +48,7 @@ public class SecondaryStorage {
     return elasticsearch;
   }
 
-  public void setElasticsearch(Elasticsearch elasticsearch) {
+  public void setElasticsearch(final Elasticsearch elasticsearch) {
     this.elasticsearch = elasticsearch;
   }
 
@@ -55,7 +56,7 @@ public class SecondaryStorage {
     return opensearch;
   }
 
-  public void setOpensearch(Opensearch opensearch) {
+  public void setOpensearch(final Opensearch opensearch) {
     this.opensearch = opensearch;
   }
 

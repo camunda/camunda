@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class PrimaryStorage {
 
@@ -33,9 +34,9 @@ public class PrimaryStorage {
    */
   private String runtimeDirectory;
 
-  private Disk disk = new Disk();
-  private LogStream logStream = new LogStream();
-  private RocksDb rocksDb = new RocksDb();
+  @NestedConfigurationProperty private Disk disk = new Disk();
+  @NestedConfigurationProperty private LogStream logStream = new LogStream();
+  @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
 
   public String getDirectory() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

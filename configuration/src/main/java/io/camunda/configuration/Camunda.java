@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 /**
  * Section of the new Unified Configuration system that wraps all the config keys that belong to the
@@ -18,10 +19,10 @@ public class Camunda {
 
   public static final String PREFIX = "camunda";
 
-  private Cluster cluster = new Cluster();
-  private System system = new System();
-  private Data data = new Data();
-  private Api api = new Api();
+  @NestedConfigurationProperty private Cluster cluster = new Cluster();
+  @NestedConfigurationProperty private System system = new System();
+  @NestedConfigurationProperty private Data data = new Data();
+  @NestedConfigurationProperty private Api api = new Api();
 
   public Cluster getCluster() {
     return cluster;
@@ -43,7 +44,7 @@ public class Camunda {
     return data;
   }
 
-  public void setData(Data data) {
+  public void setData(final Data data) {
     this.data = data;
   }
 

@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class System {
   private static final String PREFIX = "camunda.system";
@@ -40,8 +41,8 @@ public class System {
    */
   private boolean clockControlled = false;
 
-  private Actor actor = new Actor();
-  private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private Actor actor = new Actor();
+  @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(

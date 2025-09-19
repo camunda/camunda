@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Cluster {
 
@@ -21,10 +22,10 @@ public class Cluster {
   private static final String LEGACY_SIZE_PROPERTY = "zeebe.broker.cluster.clusterSize";
 
   /** Configuration for the distributed metadata manager in the cluster. */
-  private Metadata metadata = new Metadata();
+  @NestedConfigurationProperty private Metadata metadata = new Metadata();
 
   /** Network configuration for cluster communication. */
-  private Network network = new Network();
+  @NestedConfigurationProperty private Network network = new Network();
 
   /**
    * Specifies the unique id of this broker node in a cluster. The id should be between 0 and number
@@ -48,10 +49,10 @@ public class Cluster {
    * Configure parameters for SWIM protocol which is used to propagate cluster membership #
    * information among brokers and gateways
    */
-  private Membership membership = new Membership();
+  @NestedConfigurationProperty private Membership membership = new Membership();
 
   /** Configuration for the Raft protocol in the cluster. */
-  private Raft raft = new Raft();
+  @NestedConfigurationProperty private Raft raft = new Raft();
 
   public Metadata getMetadata() {
     return metadata;

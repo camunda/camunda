@@ -7,16 +7,18 @@
  */
 package io.camunda.configuration;
 
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
+
 public class Api {
 
   /** Configuration for long-polling behavior */
-  private LongPolling longPolling = new LongPolling();
+  @NestedConfigurationProperty private LongPolling longPolling = new LongPolling();
 
   /** Configuration for grpc behavior */
-  private Grpc grpc = new Grpc();
+  @NestedConfigurationProperty private Grpc grpc = new Grpc();
 
   /** Configuration for rest behavior */
-  private Rest rest = new Rest();
+  @NestedConfigurationProperty private Rest rest = new Rest();
 
   public LongPolling getLongPolling() {
     return longPolling;
