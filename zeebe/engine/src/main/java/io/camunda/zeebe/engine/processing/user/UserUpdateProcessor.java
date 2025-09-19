@@ -102,13 +102,8 @@ public class UserUpdateProcessor implements DistributedTypedRecordProcessor<User
   }
 
   private UserRecord overlayUser(final UserRecord persistedUser, final UserRecord updatedUser) {
-    if (!updatedUser.getName().isEmpty()) {
-      persistedUser.setName(updatedUser.getName());
-    }
-
-    if (!updatedUser.getEmail().isEmpty()) {
-      persistedUser.setEmail(updatedUser.getEmail());
-    }
+    persistedUser.setName(updatedUser.getName());
+    persistedUser.setEmail(updatedUser.getEmail());
 
     if (!updatedUser.getPassword().isEmpty()) {
       persistedUser.setPassword(updatedUser.getPassword());
