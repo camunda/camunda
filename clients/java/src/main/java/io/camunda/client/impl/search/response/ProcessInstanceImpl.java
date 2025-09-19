@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
+import java.time.OffsetDateTime;
 import java.util.Set;
 
 public class ProcessInstanceImpl implements ProcessInstance {
@@ -32,8 +33,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Long processDefinitionKey;
   private final Long parentProcessInstanceKey;
   private final Long parentElementInstanceKey;
-  private final String startDate;
-  private final String endDate;
+  private final OffsetDateTime startDate;
+  private final OffsetDateTime endDate;
   private final ProcessInstanceState state;
   private final Boolean hasIncident;
   private final String tenantId;
@@ -48,8 +49,8 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
     parentElementInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
-    startDate = item.getStartDate();
-    endDate = item.getEndDate();
+    startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
+    endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
     state = EnumUtil.convert(item.getState(), ProcessInstanceState.class);
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
@@ -97,12 +98,12 @@ public class ProcessInstanceImpl implements ProcessInstance {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 

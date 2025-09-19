@@ -18,11 +18,12 @@ package io.camunda.process.test.utils;
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
 import io.camunda.client.api.search.response.ElementInstance;
+import java.time.OffsetDateTime;
 
 public class ElementInstanceBuilder implements ElementInstance {
 
-  private static final String START_DATE = "2024-01-01T10:00:00";
-  private static final String END_DATE = "2024-01-02T15:00:00";
+  private static final OffsetDateTime START_DATE = OffsetDateTime.parse("2024-01-01T10:00:00Z");
+  private static final OffsetDateTime END_DATE = OffsetDateTime.parse("2024-01-02T15:00:00Z");
 
   private Long elementInstanceKey;
   private Long processDefinitionKey;
@@ -30,8 +31,8 @@ public class ElementInstanceBuilder implements ElementInstance {
   private Long processInstanceKey;
   private String elementId;
   private String elementName;
-  private String startDate;
-  private String endDate;
+  private OffsetDateTime startDate;
+  private OffsetDateTime endDate;
   private Boolean incident;
   private Long incidentKey;
   private ElementInstanceState state;
@@ -69,12 +70,12 @@ public class ElementInstanceBuilder implements ElementInstance {
   }
 
   @Override
-  public String getStartDate() {
+  public OffsetDateTime getStartDate() {
     return startDate;
   }
 
   @Override
-  public String getEndDate() {
+  public OffsetDateTime getEndDate() {
     return endDate;
   }
 
@@ -128,12 +129,12 @@ public class ElementInstanceBuilder implements ElementInstance {
     return this;
   }
 
-  public ElementInstanceBuilder setEndDate(final String endDate) {
+  public ElementInstanceBuilder setEndDate(final OffsetDateTime endDate) {
     this.endDate = endDate;
     return this;
   }
 
-  public ElementInstanceBuilder setStartDate(final String startDate) {
+  public ElementInstanceBuilder setStartDate(final OffsetDateTime startDate) {
     this.startDate = startDate;
     return this;
   }

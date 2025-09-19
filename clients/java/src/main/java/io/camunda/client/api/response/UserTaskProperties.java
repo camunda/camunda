@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.response;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /** Represents the properties of a user task associated with a job. */
@@ -48,12 +49,12 @@ public interface UserTaskProperties {
   /**
    * @return the due date of the user task in ISO 8601 format.
    */
-  String getDueDate();
+  OffsetDateTime getDueDate();
 
   /**
    * @return the follow-up date of the user task in ISO 8601 format.
    */
-  String getFollowUpDate();
+  OffsetDateTime getFollowUpDate();
 
   /**
    * @return the key of the form associated with the user task.

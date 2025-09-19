@@ -15,11 +15,13 @@
  */
 package io.camunda.client.api.search.response;
 
+import java.time.OffsetDateTime;
+
 public interface CorrelatedMessageSubscription {
 
   String getCorrelationKey();
 
-  String getCorrelationTime();
+  OffsetDateTime getCorrelationTime();
 
   String getElementId();
 
