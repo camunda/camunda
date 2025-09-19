@@ -772,9 +772,36 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       final ValueType valueType = metadata.getValueType();
       final Intent intent = metadata.getIntent();
 
-      return acceptRecordTypes.get(recordType)
-          && acceptValueTypes.get(valueType)
-          && acceptIntents.get(intent);
+      try {
+        return acceptRecordTypes.get(recordType)
+            && acceptValueTypes.get(valueType)
+            && acceptIntents.get(intent);
+      } catch (final NullPointerException e) {
+        // Log added to root cause https://github.com/camunda/camunda/issues/36621
+        LOG.error(
+            """
+                NPE when applying event filter for event: {}
+                - metadata: {}
+                - acceptRecordTypes: {}
+                - acceptValueTypes: {}
+                - acceptIntents: {}""",
+            event,
+            metadata,
+            acceptRecordTypes,
+            acceptValueTypes,
+            acceptIntents.entrySet().stream()
+                .map(
+                    entry -> {
+                      final var key = entry.getKey();
+                      if (key == null) {
+                        return "null: %s".formatted(entry.getValue());
+                      }
+                      return String.format(
+                          "%s.%s: %s", key.getClass().getSimpleName(), key, entry.getValue());
+                    })
+                .toList());
+        throw e;
+      }
     }
 
     @Override
