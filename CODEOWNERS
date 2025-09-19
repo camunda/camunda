@@ -4,6 +4,7 @@
 
 # C8 REST OpenAPI specification
 /zeebe/gateway-protocol/src/main/proto/rest-api.yaml @camunda/c8-api-team
+/zeebe/gateway-protocol/src/main/proto/hidden/generation-spec.yaml @camunda/c8-api-team
 
 # Testing guide
 /docs/testing.md       @npepinpe @ChrisKujawa
