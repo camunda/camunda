@@ -7,15 +7,8 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.authorization.Authorizations.PROCESS_INSTANCE_READ_AUTHORIZATION;
-
-import io.camunda.search.clients.CorrelatedMessageSubscriptionSearchClient;
-import io.camunda.search.entities.CorrelatedMessageSubscriptionEntity;
-import io.camunda.search.query.CorrelatedMessageSubscriptionQuery;
-import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
@@ -26,16 +19,11 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-public final class MessageServices
-    extends SearchQueryService<
-        MessageServices, CorrelatedMessageSubscriptionQuery, CorrelatedMessageSubscriptionEntity> {
-
-  private final CorrelatedMessageSubscriptionSearchClient searchClient;
+public final class MessageServices extends ApiServices<MessageServices> {
 
   public MessageServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
-      final CorrelatedMessageSubscriptionSearchClient searchClient,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -45,7 +33,6 @@ public final class MessageServices
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
-    this.searchClient = searchClient;
   }
 
   @Override
@@ -53,7 +40,6 @@ public final class MessageServices
     return new MessageServices(
         brokerClient,
         securityContextProvider,
-        searchClient,
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
@@ -78,18 +64,6 @@ public final class MessageServices
             .setVariables(getDocumentOrEmpty(request.variables))
             .setTenantId(request.tenantId);
     return sendBrokerRequestWithFullResponse(brokerRequest);
-  }
-
-  @Override
-  public SearchQueryResult<CorrelatedMessageSubscriptionEntity> search(
-      final CorrelatedMessageSubscriptionQuery query) {
-    return executeSearchRequest(
-        () ->
-            searchClient
-                .withSecurityContext(
-                    securityContextProvider.provideSecurityContext(
-                        authentication, PROCESS_INSTANCE_READ_AUTHORIZATION))
-                .searchCorrelatedMessageSubscriptions(query));
   }
 
   public record CorrelateMessageRequest(

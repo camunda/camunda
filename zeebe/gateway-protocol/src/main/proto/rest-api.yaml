@@ -4344,7 +4344,7 @@ paths:
   /correlated-message-subscriptions/search:
     post:
       tags:
-        - Message
+        - Message subscription
       operationId: searchCorrelatedMessageSubscriptions
       summary: Search correlated message subscriptions
       description: |
