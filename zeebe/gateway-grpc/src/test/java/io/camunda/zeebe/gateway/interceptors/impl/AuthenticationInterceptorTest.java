@@ -426,7 +426,7 @@ public class AuthenticationInterceptorTest {
   }
 
   @Test
-  public void addsUsernameInPreferenceToClientIdInOidcToContext() {
+  public void addsClientIdInPreferenceToUsernameInOidcToContext() {
     // given
     final Metadata metadata = createAuthHeader();
     final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
@@ -452,8 +452,8 @@ public class AuthenticationInterceptorTest {
             metadata,
             (call, headers) -> {
               // then
-              assertUsername().isEqualTo("test-user");
-              assertClientId().isNull();
+              assertUsername().isNull();
+              assertClientId().isEqualTo("app-id");
 
               call.close(Status.OK, headers);
               return null;
