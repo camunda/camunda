@@ -51,6 +51,8 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest {
   private static final OpensearchExporter EXPORTER = new OpensearchExporter();
@@ -73,6 +75,11 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isOpenSearch());
+  }
+
+  @DynamicPropertySource
+  static void setProperties(final DynamicPropertyRegistry registry) {
+    registry.add("camunda.tasklist.importer-enabled", () -> true);
   }
 
   @BeforeEach

@@ -44,7 +44,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     },
     properties = {
       TasklistProperties.PREFIX + ".elasticsearch.createSchema = false",
-      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
+      TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
+      TasklistProperties.PREFIX + ".importer-enabled=true",
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ContextConfiguration(initializers = {OpenSearchConnectorBasicAuthIT.OpenSearchStarter.class})

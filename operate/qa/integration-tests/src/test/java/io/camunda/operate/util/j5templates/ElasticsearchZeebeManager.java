@@ -25,20 +25,20 @@ import org.springframework.stereotype.Component;
 public class ElasticsearchZeebeManager extends ZeebeContainerManager {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchZeebeManager.class);
 
-  private final RestHighLevelClient zeebeEsClient;
+  private final RestHighLevelClient esClient;
 
   public ElasticsearchZeebeManager(
       final OperateProperties operateProperties,
       final SecurityConfiguration securityConfiguration,
       final TestContainerUtil testContainerUtil,
-      @Qualifier("zeebeEsClient") final RestHighLevelClient zeebeEsClient,
+      @Qualifier("esClient") final RestHighLevelClient esClient,
       final IndexPrefixHolder indexPrefixHolder) {
     super(
         operateProperties,
         securityConfiguration,
         testContainerUtil,
         indexPrefixHolder.createNewIndexPrefix());
-    this.zeebeEsClient = zeebeEsClient;
+    this.esClient = esClient;
   }
 
   @Override
@@ -49,6 +49,6 @@ public class ElasticsearchZeebeManager extends ZeebeContainerManager {
 
   @Override
   protected void removeIndices() {
-    TestUtil.removeAllIndices(zeebeEsClient, prefix);
+    TestUtil.removeAllIndices(esClient, prefix);
   }
 }

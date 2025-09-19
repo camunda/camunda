@@ -18,7 +18,6 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import io.camunda.tasklist.zeebeimport.RecordsReaderHolder;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
@@ -58,13 +57,8 @@ public class OpenSearchTestExtension
   @Qualifier("tasklistOsClient")
   private OpenSearchClient osClient;
 
-  @Autowired
-  @Qualifier("tasklistZeebeOsClient")
-  private OpenSearchClient zeebeOsClient;
-
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
-  @Autowired private RecordsReaderHolder recordsReaderHolder;
   private boolean failed = false;
   @Autowired private TestSchemaManager schemaManager;
 
@@ -151,7 +145,7 @@ public class OpenSearchTestExtension
   @Override
   public void refreshZeebeIndices() {
     try {
-      zeebeOsClient
+      osClient
           .indices()
           .refresh(
               r -> r.index(List.of(tasklistProperties.getZeebeOpenSearch().getPrefix() + "*")));

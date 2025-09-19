@@ -37,6 +37,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 
 /**
@@ -68,6 +70,11 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   @Autowired private RichOpenSearchClient osClient;
   private final ProtocolFactory factory = new ProtocolFactory();
   private int emptyBatches;
+
+  @DynamicPropertySource
+  static void setProperties(final DynamicPropertyRegistry registry) {
+    registry.add("camunda.operate.importer-enabled", () -> true);
+  }
 
   @Before
   public void beforeEach() {
