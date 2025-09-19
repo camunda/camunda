@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useQueryClient} from '@tanstack/react-query';
 import {useNavigate} from 'react-router-dom';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
@@ -18,7 +18,6 @@ import {Locations} from 'modules/Routes';
 import {PROCESS_INSTANCE_DEPRECATED_QUERY_KEY} from 'modules/queries/processInstance/deprecated/useProcessInstanceDeprecated';
 import {useHasActiveOperations} from 'modules/queries/operations/useHasActiveOperations';
 import {useCancelProcessInstance} from 'modules/mutations/processInstance/useCancelProcessInstance';
-import {useCreateIncidentResolutionBatchOperation} from 'modules/mutations/processInstance/useCreateIncidentResolutionBatchOperation';
 import {operationsStore, type ErrorHandler} from 'modules/stores/operations';
 import {type OperationEntityType} from 'modules/types/operate';
 import {ModificationHelperModal} from './ModificationHelperModal';
@@ -26,6 +25,8 @@ import {getStateLocally} from 'modules/utils/localStorage';
 import {processInstancesStore} from 'modules/stores/processInstances';
 import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
+import {useOperations} from 'modules/queries/operations/useOperations';
+import {ACTIVE_OPERATION_STATES} from 'modules/constants';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -40,6 +41,24 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   ] = useState(false);
 
   const {data: hasActiveOperationLegacy} = useHasActiveOperations();
+  const [isV1ResolveIncidentPending, setIsV1ResolveIncidentPending] =
+    useState(false);
+
+  const {data: operationsData} = useOperations();
+
+  // TODO: Remove this effect and use mutation state instead
+  // https://github.com/camunda/camunda/issues/38411
+  useEffect(() => {
+    if (
+      !operationsData?.some(
+        (operation) =>
+          operation.type === 'RESOLVE_INCIDENT' &&
+          ACTIVE_OPERATION_STATES.includes(operation.state),
+      )
+    ) {
+      setIsV1ResolveIncidentPending(false);
+    }
+  }, [operationsData]);
 
   const {
     mutate: cancelProcessInstance,
@@ -54,20 +73,6 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       });
     },
   });
-
-  const {mutate: resolveIncident, isPending: isResolveIncidentPending} =
-    useCreateIncidentResolutionBatchOperation(
-      processInstance.processInstanceKey,
-      {
-        onError: (error) =>
-          notificationsStore.displayNotification({
-            kind: 'error',
-            title: 'Failed to retry process instance',
-            subtitle: error.message,
-            isDismissable: true,
-          }),
-      },
-    );
 
   const invalidateQueries = () => {
     queryClient.invalidateQueries({
@@ -169,8 +174,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
   ) {
     operations.push({
       type: 'RESOLVE_INCIDENT',
-      onExecute: resolveIncident,
-      disabled: isResolveIncidentPending,
+      onExecute: () => {
+        setIsV1ResolveIncidentPending(true);
+        applyOperation('RESOLVE_INCIDENT');
+      },
+      disabled: isV1ResolveIncidentPending,
     });
   }
 
@@ -202,7 +210,7 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       processInstance.processInstanceKey,
     ) ||
     isCancelProcessInstancePending ||
-    isResolveIncidentPending;
+    isV1ResolveIncidentPending;
 
   return (
     <>
