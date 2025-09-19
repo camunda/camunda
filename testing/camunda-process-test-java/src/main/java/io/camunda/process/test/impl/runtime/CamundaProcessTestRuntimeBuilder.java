@@ -82,6 +82,12 @@ public class CamundaProcessTestRuntimeBuilder {
 
   private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
 
+  private String coverageReportDirectory =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_REPORT_DIRECTORY;
+
+  private List<String> coverageExcludedProcesses =
+      CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_PROCESSES;
+
   // ============ For testing =================
 
   CamundaProcessTestRuntimeBuilder withContainerFactory(final ContainerFactory containerFactory) {
@@ -232,6 +238,18 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withCoverageReportDirectory(
+      final String coverageReportDirectory) {
+    this.coverageReportDirectory = coverageReportDirectory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCoverageExcludedProcesses(
+      final List<String> coverageExcludedProcesses) {
+    this.coverageExcludedProcesses = coverageExcludedProcesses;
+    return this;
+  }
+
   // ============ Build =================
 
   public CamundaProcessTestRuntime build() {
@@ -334,5 +352,13 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public String getCoverageReportDirectory() {
+    return coverageReportDirectory;
+  }
+
+  public List<String> getCoverageExcludedProcesses() {
+    return coverageExcludedProcesses;
   }
 }

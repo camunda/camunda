@@ -42,6 +42,8 @@ public class CamundaProcessTestRuntimeDefaults {
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
   public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8085");
 
+  public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
+
   private static final ContainerRuntimePropertiesUtil PROPERTIES_UTIL =
       ContainerRuntimePropertiesUtil.readProperties();
 
@@ -87,4 +89,9 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
 
   public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
+
+  public static final String COVERAGE_REPORT_DIRECTORY =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageReportDirectory();
+  public static final List<String> COVERAGE_EXCLUDED_PROCESSES =
+      PROPERTIES_UTIL.getCoverageReportProperties().getCoverageExcludedProcesses();
 }
