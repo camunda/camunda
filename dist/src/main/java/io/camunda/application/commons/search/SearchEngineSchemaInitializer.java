@@ -92,22 +92,18 @@ public class SearchEngineSchemaInitializer implements InitializingBean {
         new IndexDescriptors(
             searchEngineConfiguration.connect().getIndexPrefix(),
             searchEngineConfiguration.connect().getTypeEnum().isElasticSearch());
-    final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
-    try {
-      new SchemaManager(
-              clientAdapter.getSearchEngineClient(),
-              indexDescriptors.indices(),
-              indexDescriptors.templates(),
-              searchEngineConfiguration,
-              clientAdapter.objectMapper())
-          .withMetrics(schemaManagerMetrics)
-          .startup();
-    } finally {
-      try {
-        clientAdapter.close();
-      } catch (final IOException e) {
-        LOGGER.debug("Failed to close search client", e);
-      }
+    try (final ClientAdapter clientAdapter = ClientAdapter.of(searchEngineConfiguration.connect());
+        final SchemaManager schemaManager =
+            new SchemaManager(
+                    clientAdapter.getSearchEngineClient(),
+                    indexDescriptors.indices(),
+                    indexDescriptors.templates(),
+                    searchEngineConfiguration,
+                    clientAdapter.objectMapper())
+                .withMetrics(schemaManagerMetrics)) {
+      schemaManager.startup();
+    } catch (final IOException e) {
+      LOGGER.debug("Failed to create schema and/or close search client", e);
     }
   }
 
