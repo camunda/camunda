@@ -92,7 +92,7 @@ jobs:
     with:
       branch: main
       generation: Zeebe SNAPSHOT
-      maxTestDuration: PT4H
+      maxTestDuration: PT2H
       clusterPlan: Production - M
       fault: '"scale-brokers"'
       maxInstanceDuration: 40m
