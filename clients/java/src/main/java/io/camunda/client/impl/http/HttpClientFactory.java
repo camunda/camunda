@@ -25,7 +25,6 @@ import io.camunda.client.impl.util.VersionUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -52,7 +51,7 @@ import org.apache.hc.client5.http.impl.async.HttpAsyncClientBuilder;
 import org.apache.hc.client5.http.impl.async.HttpAsyncClients;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
 import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.nio.AsyncClientConnectionOperator;
+import org.apache.hc.client5.http.nio.AsyncClientConnectionManager;
 import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
 import org.apache.hc.client5.http.ssl.DefaultHostnameVerifier;
 import org.apache.hc.client5.http.ssl.HttpClientHostnameVerifier;
@@ -63,7 +62,6 @@ import org.apache.hc.core5.http.config.CharCodingConfig;
 import org.apache.hc.core5.http.message.BasicHeader;
 import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
 import org.apache.hc.core5.net.URIBuilder;
-import org.apache.hc.core5.pool.PoolConcurrencyPolicy;
 import org.apache.hc.core5.ssl.SSLContexts;
 import org.apache.hc.core5.util.TimeValue;
 import org.apache.hc.core5.util.Timeout;
@@ -137,24 +135,14 @@ public class HttpClientFactory {
             .setHostnameVerifier(hostnameVerifier)
             .build();
 
-    final PoolingAsyncClientConnectionManager connectionManagerOld =
+    final PoolingAsyncClientConnectionManager originalConnectionManager =
         PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
 
-    AsyncClientConnectionOperator connectionOperator = null;
-    try {
-      // Access the private field via the concrete instance's class (as requested)
-      final Field f = connectionManagerOld.getClass().getDeclaredField("connectionOperator");
-      f.setAccessible(true);
-      connectionOperator = (AsyncClientConnectionOperator) f.get(connectionManagerOld);
-      // NOTE: connectionOperator retrieved for potential instrumentation / debugging purposes.
-    } catch (final Exception reflectionError) {
-      throw new IllegalStateException(
-          "Could not access connectionOperator via reflection", reflectionError);
-    }
-
-    final PoolingAsyncClientConnectionManager connectionManager =
-        new CamundaPoolingAsyncClientConnectionManager(
-            connectionOperator, PoolConcurrencyPolicy.STRICT, null, null, false);
+    // See issue
+    // https://github.com/camunda/camunda/issues/34597
+    // https://issues.apache.org/jira/projects/HTTPCLIENT/issues/HTTPCLIENT-2398
+    final AsyncClientConnectionManager connectionManager =
+        new CamundaPoolingAsyncClientConnectionManager(originalConnectionManager);
 
     final HttpAsyncClientBuilder builder =
         HttpAsyncClients.custom()
