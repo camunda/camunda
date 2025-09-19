@@ -25,6 +25,7 @@ import io.camunda.optimize.rest.security.AuthenticationCookieFilter;
 import io.camunda.optimize.rest.security.CustomPreAuthenticatedAuthenticationProvider;
 import io.camunda.optimize.rest.security.oauth.AudienceValidator;
 import io.camunda.optimize.rest.security.oauth.CustomClaimValidator;
+import io.camunda.optimize.rest.security.oauth.RoleValidator;
 import io.camunda.optimize.rest.security.oauth.ScopeValidator;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.security.AuthCookieService;
@@ -36,6 +37,7 @@ import io.camunda.optimize.tomcat.CCSaasRequestAdjustmentFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +59,8 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestRedirectFilter;
 import org.springframework.security.oauth2.core.OAuth2AccessToken;
@@ -65,6 +69,7 @@ import org.springframework.security.oauth2.core.oidc.OidcUserInfo;
 import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtDecoderFactory;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
@@ -82,6 +87,7 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
   public static final String CAMUNDA_CLUSTER_ID_CLAIM_NAME = "https://camunda.com/clusterId";
 
   private static final Logger LOG = LoggerFactory.getLogger(CCSaaSSecurityConfigurerAdapter.class);
+  private static final List<String> ALLOWED_ORG_ROLES = Arrays.asList("admin", "analyst", "owner");
   private final ClientRegistrationRepository clientRegistrationRepository;
   private final OAuth2AuthorizedClientService oAuth2AuthorizedClientService;
 
@@ -220,6 +226,23 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
         configurationService, new AuthorizationRequestCookieValueMapper());
   }
 
+  @Bean
+  public JwtDecoderFactory<ClientRegistration> idTokenDecoderFactory() {
+    final var decoderFactory = new OidcIdTokenDecoderFactory();
+    decoderFactory.setJwtValidatorFactory(clientRegistration -> createIdTokenValidators());
+    return decoderFactory;
+  }
+
+  /** Creates JWT validators specifically for ID token validation during OAuth2 login */
+  @SuppressWarnings("unchecked")
+  private OAuth2TokenValidator<Jwt> createIdTokenValidators() {
+    // Only include role validation for ID tokens
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
+
+    // The role validation uses organization claims which are present in ID tokens
+    return JwtValidators.createDefaultWithValidators(roleValidator);
+  }
+
   @SuppressWarnings("unchecked")
   private JwtDecoder jwtDecoder() {
     final NimbusJwtDecoder jwtDecoder =
@@ -234,9 +257,11 @@ public class CCSaaSSecurityConfigurerAdapter extends AbstractSecurityConfigurerA
                 .getUserAccessTokenAudience()
                 .orElse(""));
     final OAuth2TokenValidator<Jwt> profileValidator = new ScopeValidator("profile");
+    final OAuth2TokenValidator<Jwt> roleValidator = new RoleValidator(ALLOWED_ORG_ROLES);
     // The default validator already contains validation for timestamp and X509 thumbprint
     final OAuth2TokenValidator<Jwt> combinedValidatorWithDefaults =
-        JwtValidators.createDefaultWithValidators(audienceValidator, profileValidator);
+        JwtValidators.createDefaultWithValidators(
+            audienceValidator, profileValidator, roleValidator);
     jwtDecoder.setJwtValidator(combinedValidatorWithDefaults);
     return jwtDecoder;
   }
