@@ -9,7 +9,7 @@ package io.camunda.operate.store.elasticsearch;
 
 import static io.camunda.operate.store.elasticsearch.dao.Query.range;
 import static io.camunda.operate.store.elasticsearch.dao.Query.whereEquals;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.*;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.*;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 
@@ -21,7 +21,7 @@ import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.elasticsearch.dao.Query;
 import io.camunda.operate.store.elasticsearch.dao.UsageMetricDAO;
 import io.camunda.operate.store.elasticsearch.dao.response.AggregationResponse;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import org.slf4j.Logger;
@@ -37,7 +37,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
   public static final String ID_PATTERN = "%s_%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchMetricsStore.class);
 
-  @Autowired private UsageMetricIndex metricIndex;
+  @Autowired private UsageMetricTemplate metricTemplate;
 
   @Autowired private UsageMetricDAO dao;
 
@@ -92,7 +92,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
       throws PersistenceException {
     final UsageMetricsEntity metric =
         createProcessInstanceStartedKey(key, tenantId, partitionId, timestamp);
-    batchRequest.add(metricIndex.getFullQualifiedName(), metric);
+    batchRequest.add(metricTemplate.getFullQualifiedName(), metric);
   }
 
   @Override
@@ -105,7 +105,7 @@ public class ElasticsearchMetricsStore implements MetricsStore {
       throws PersistenceException {
     final UsageMetricsEntity metric =
         createDecisionsInstanceEvaluatedKey(key, tenantId, partitionId, timestamp);
-    batchRequest.add(metricIndex.getFullQualifiedName(), metric);
+    batchRequest.add(metricTemplate.getFullQualifiedName(), metric);
   }
 
   private UsageMetricsEntity createProcessInstanceStartedKey(

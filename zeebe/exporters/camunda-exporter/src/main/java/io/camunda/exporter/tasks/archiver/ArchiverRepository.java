@@ -9,8 +9,8 @@ package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -24,8 +24,8 @@ public interface ArchiverRepository extends AutoCloseable {
   // https://github.com/camunda/camunda/issues/34709
   Map<String, Function<RetentionConfiguration, String>> INDEX_TO_RETENTION_POLICY_FIELD =
       Map.of(
-          UsageMetricIndex.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
-          UsageMetricTUIndex.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
+          UsageMetricTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName,
+          UsageMetricTUTemplate.INDEX_NAME, RetentionConfiguration::getUsageMetricsPolicyName);
 
   CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch();
 

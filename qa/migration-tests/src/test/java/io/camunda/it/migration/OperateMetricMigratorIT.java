@@ -7,7 +7,8 @@
  */
 package io.camunda.it.migration;
 
-import static io.camunda.migration.usagemetric.OperateMetricMigrator.*;
+import static io.camunda.migration.usagemetric.OperateMetricMigrator.EVENT_DECISION_INSTANCE_EVALUATED;
+import static io.camunda.migration.usagemetric.OperateMetricMigrator.EVENT_PROCESS_INSTANCE_STARTED;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.currentMultiDbDatabaseType;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -33,9 +34,9 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -154,7 +155,7 @@ public class OperateMetricMigratorIT {
   @AfterEach
   void afterEach() throws IOException {
     cleanUpIndex(metricIndex.getFullQualifiedName());
-    cleanUpIndex(indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName());
+    cleanUpIndex(indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName());
     cleanUpIndex(migrationRepositoryIndex.getFullQualifiedName());
   }
 
