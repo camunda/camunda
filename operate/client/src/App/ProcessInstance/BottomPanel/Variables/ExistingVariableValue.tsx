@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {validateValueComplete, validateValueValid} from './validators';
+import {
+  validateValueComplete,
+  validateValueNotEmpty,
+  validateValueValid,
+} from './validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -133,7 +137,11 @@ const ExistingVariableValue: React.FC<Props> = observer(
           validate={
             pauseValidation
               ? () => undefined
-              : mergeValidators(validateValueComplete, validateValueValid)
+              : mergeValidators(
+                  validateValueComplete,
+                  validateValueValid,
+                  validateValueNotEmpty,
+                )
           }
           parse={(value) => value}
         >

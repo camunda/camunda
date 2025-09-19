@@ -226,6 +226,14 @@ const validateModifiedValueValid: FieldValidator<string | undefined> = (
   return ERRORS.INVALID_VALUE;
 };
 
+const validateValueNotEmpty = (variableValue = '') => {
+  if (variableValue === '') {
+    return ERRORS.INVALID_VALUE;
+  }
+
+  return;
+};
+
 export {
   validateNameCharacters,
   validateNameComplete,
@@ -238,4 +246,5 @@ export {
   validateModifiedValueValid,
   validateModifiedNameNotDuplicate,
   validateModifiedNameNotDuplicateDeprecated,
+  validateValueNotEmpty,
 };
