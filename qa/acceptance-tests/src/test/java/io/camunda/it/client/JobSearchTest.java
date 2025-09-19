@@ -23,7 +23,6 @@ import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.time.Duration;
-import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -465,7 +464,7 @@ public class JobSearchTest {
     final var result =
         camundaClient
             .newJobSearchRequest()
-            .filter(f -> f.deadline(o -> o.eq(OffsetDateTime.parse(deadline))))
+            .filter(f -> f.deadline(o -> o.eq(deadline)))
             .send()
             .join();
 
@@ -501,7 +500,7 @@ public class JobSearchTest {
     final var result =
         camundaClient
             .newJobSearchRequest()
-            .filter(f -> f.endTime(o -> o.eq(OffsetDateTime.parse(endTime))))
+            .filter(f -> f.endTime(o -> o.eq(endTime)))
             .send()
             .join();
 

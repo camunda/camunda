@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.ElementInstanceState;
 import io.camunda.client.api.search.enums.ElementInstanceType;
+import java.time.OffsetDateTime;
 
 public interface ElementInstance {
 
@@ -39,10 +40,10 @@ public interface ElementInstance {
   String getElementName();
 
   /** start date of element instance */
-  String getStartDate();
+  OffsetDateTime getStartDate();
 
   /** end date of element instance */
-  String getEndDate();
+  OffsetDateTime getEndDate();
 
   /** whether element instance has an incident */
   Boolean getIncident();

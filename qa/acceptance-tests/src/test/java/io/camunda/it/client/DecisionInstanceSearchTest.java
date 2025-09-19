@@ -284,7 +284,7 @@ class DecisionInstanceSearchTest {
     final var result =
         camundaClient
             .newDecisionInstanceSearchRequest()
-            .filter(f -> f.evaluationDate(OffsetDateTime.parse(di.getEvaluationDate())))
+            .filter(f -> f.evaluationDate(di.getEvaluationDate()))
             .send()
             .join();
 
@@ -306,7 +306,7 @@ class DecisionInstanceSearchTest {
             .send()
             .join();
     final var di = allResult.items().getFirst();
-    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
+    final var requestDate = di.getEvaluationDate();
 
     // when
     final var result =
@@ -319,8 +319,8 @@ class DecisionInstanceSearchTest {
     // then
     assertThat(result.items()).hasSize(4);
     assertThat(result.items())
-        .extracting("evaluationDate", String.class)
-        .allMatch(date -> requestDate.isBefore(OffsetDateTime.parse(date)));
+        .extracting("evaluationDate", OffsetDateTime.class)
+        .allMatch(requestDate::isBefore);
     assertThat(result.items())
         .extracting("decisionInstanceKey", Long.class)
         .noneMatch(key -> di.getDecisionInstanceKey() == key);
@@ -338,7 +338,7 @@ class DecisionInstanceSearchTest {
             .send()
             .join();
     final var di = allResult.items().getFirst();
-    final var requestDate = OffsetDateTime.parse(di.getEvaluationDate());
+    final var requestDate = di.getEvaluationDate();
 
     // when
     final var result =
@@ -351,8 +351,8 @@ class DecisionInstanceSearchTest {
     // then
     assertThat(result.items()).hasSize(5);
     assertThat(result.items())
-        .extracting("evaluationDate", String.class)
-        .allMatch(date -> !OffsetDateTime.parse(date).isBefore(requestDate));
+        .extracting("evaluationDate", OffsetDateTime.class)
+        .allMatch(date -> !date.isBefore(requestDate));
     assertThat(result.items())
         .extracting("decisionInstanceKey", Long.class)
         .anyMatch(key -> di.getDecisionInstanceKey() == key);

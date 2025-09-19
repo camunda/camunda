@@ -18,6 +18,7 @@ package io.camunda.process.test.utils;
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.response.Incident;
+import java.time.OffsetDateTime;
 
 public class IncidentBuilder implements Incident {
 
@@ -29,7 +30,7 @@ public class IncidentBuilder implements Incident {
   private String errorMessage;
   private String elementId;
   private Long elementInstanceKey;
-  private String creationTime;
+  private OffsetDateTime creationTime;
   private IncidentState state;
   private Long jobKey;
   private String tenantId;
@@ -75,7 +76,7 @@ public class IncidentBuilder implements Incident {
   }
 
   @Override
-  public String getCreationTime() {
+  public OffsetDateTime getCreationTime() {
     return creationTime;
   }
 
@@ -109,7 +110,7 @@ public class IncidentBuilder implements Incident {
     return this;
   }
 
-  public IncidentBuilder setCreationTime(final String creationTime) {
+  public IncidentBuilder setCreationTime(final OffsetDateTime creationTime) {
     this.creationTime = creationTime;
     return this;
   }

@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
@@ -90,6 +89,7 @@ public class CorrelatedMessageSearchTest {
             .newCorrelatedMessageSearchRequest()
             .filter(
                 f ->
+<<<<<<< HEAD:qa/acceptance-tests/src/test/java/io/camunda/it/client/CorrelatedMessageSearchTest.java
                     f.correlationKey(expectedCorrelatedMessage.getCorrelationKey())
                         .correlationTime(
                             OffsetDateTime.parse(expectedCorrelatedMessage.getCorrelationTime()))
@@ -102,6 +102,22 @@ public class CorrelatedMessageSearchTest {
                         .processInstanceKey(expectedCorrelatedMessage.getProcessInstanceKey())
                         .subscriptionKey(expectedCorrelatedMessage.getSubscriptionKey())
                         .tenantId(expectedCorrelatedMessage.getTenantId()))
+=======
+                    f.correlationKey(expectedCorrelatedMessageSubscription.getCorrelationKey())
+                        .correlationTime(expectedCorrelatedMessageSubscription.getCorrelationTime())
+                        .elementId(expectedCorrelatedMessageSubscription.getElementId())
+                        .elementInstanceKey(
+                            expectedCorrelatedMessageSubscription.getElementInstanceKey())
+                        .messageKey(expectedCorrelatedMessageSubscription.getMessageKey())
+                        .messageName(expectedCorrelatedMessageSubscription.getMessageName())
+                        .partitionId(expectedCorrelatedMessageSubscription.getPartitionId())
+                        .processDefinitionId(
+                            expectedCorrelatedMessageSubscription.getProcessDefinitionId())
+                        .processInstanceKey(
+                            expectedCorrelatedMessageSubscription.getProcessInstanceKey())
+                        .subscriptionKey(expectedCorrelatedMessageSubscription.getSubscriptionKey())
+                        .tenantId(expectedCorrelatedMessageSubscription.getTenantId()))
+>>>>>>> ee4c1e54 (refactor: use OffsetDateTime for date-time response fields in Camunda client):qa/acceptance-tests/src/test/java/io/camunda/it/client/CorrelatedMessageSubscriptionSearchTest.java
             .send()
             .join();
 
@@ -121,6 +137,7 @@ public class CorrelatedMessageSearchTest {
             .newCorrelatedMessageSearchRequest()
             .filter(
                 f ->
+<<<<<<< HEAD:qa/acceptance-tests/src/test/java/io/camunda/it/client/CorrelatedMessageSearchTest.java
                     f.correlationKey(expectedCorrelatedMessage.getCorrelationKey())
                         .correlationTime(
                             OffsetDateTime.parse(expectedCorrelatedMessage.getCorrelationTime()))
@@ -133,6 +150,22 @@ public class CorrelatedMessageSearchTest {
                         .processInstanceKey(expectedCorrelatedMessage.getProcessInstanceKey())
                         .subscriptionKey(expectedCorrelatedMessage.getSubscriptionKey())
                         .tenantId(expectedCorrelatedMessage.getTenantId()))
+=======
+                    f.correlationKey(expectedCorrelatedMessageSubscription.getCorrelationKey())
+                        .correlationTime(expectedCorrelatedMessageSubscription.getCorrelationTime())
+                        .elementId(expectedCorrelatedMessageSubscription.getElementId())
+                        .messageKey(expectedCorrelatedMessageSubscription.getMessageKey())
+                        .messageName(expectedCorrelatedMessageSubscription.getMessageName())
+                        .partitionId(expectedCorrelatedMessageSubscription.getPartitionId())
+                        .processDefinitionId(
+                            expectedCorrelatedMessageSubscription.getProcessDefinitionId())
+                        .processDefinitionKey(
+                            expectedCorrelatedMessageSubscription.getProcessDefinitionKey())
+                        .processInstanceKey(
+                            expectedCorrelatedMessageSubscription.getProcessInstanceKey())
+                        .subscriptionKey(expectedCorrelatedMessageSubscription.getSubscriptionKey())
+                        .tenantId(expectedCorrelatedMessageSubscription.getTenantId()))
+>>>>>>> ee4c1e54 (refactor: use OffsetDateTime for date-time response fields in Camunda client):qa/acceptance-tests/src/test/java/io/camunda/it/client/CorrelatedMessageSubscriptionSearchTest.java
             .send()
             .join();
 

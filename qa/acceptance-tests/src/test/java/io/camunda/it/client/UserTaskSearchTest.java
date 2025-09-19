@@ -549,9 +549,9 @@ class UserTaskSearchTest {
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     final UserTask firstItem = result.items().get(0);
     final UserTask lastItem = result.items().get(7);
-    assertThat(firstItem.getCreationDate()).isLessThan(result.items().get(1).getCreationDate());
+    assertThat(firstItem.getCreationDate()).isBefore(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
-        .isLessThan(result.items().get(2).getCreationDate());
+        .isBefore(result.items().get(2).getCreationDate());
   }
 
   @Test
@@ -562,11 +562,11 @@ class UserTaskSearchTest {
     assertThat(result.items().size()).isEqualTo(8);
 
     assertThat(result.items().get(0).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(1).getCreationDate());
+        .isAfterOrEqualTo(result.items().get(1).getCreationDate());
     assertThat(result.items().get(1).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(2).getCreationDate());
+        .isAfterOrEqualTo(result.items().get(2).getCreationDate());
     assertThat(result.items().get(2).getCreationDate())
-        .isGreaterThanOrEqualTo(result.items().get(3).getCreationDate());
+        .isAfterOrEqualTo(result.items().get(3).getCreationDate());
   }
 
   @Test
@@ -800,7 +800,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
-        OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
+        userTaskList.items().stream().findFirst().get().getCreationDate();
 
     final var result =
         camundaClient
@@ -815,7 +815,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              final var creationDate = item.getCreationDate();
               assertThat(creationDate).isAfter(userTaskCreationDateExample.minusSeconds(1));
             });
   }
@@ -827,7 +827,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
-        OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
+        userTaskList.items().stream().findFirst().get().getCreationDate();
 
     final var result =
         camundaClient
@@ -842,7 +842,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              final var creationDate = item.getCreationDate();
               assertThat(creationDate).isBefore(userTaskCreationDateExample.plusSeconds(1));
             });
   }
@@ -854,7 +854,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
-        OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
+        userTaskList.items().stream().findFirst().get().getCreationDate();
 
     final var result =
         camundaClient
@@ -870,7 +870,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              final var creationDate = item.getCreationDate();
               assertThat(creationDate)
                   .isAfterOrEqualTo(userTaskCreationDateExample.minusSeconds(1));
             });
@@ -883,7 +883,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
-        OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
+        userTaskList.items().stream().findFirst().get().getCreationDate();
 
     final var result =
         camundaClient
@@ -899,7 +899,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              final var creationDate = item.getCreationDate();
               assertThat(creationDate)
                   .isBeforeOrEqualTo(userTaskCreationDateExample.plusSeconds(1));
             });
@@ -912,7 +912,7 @@ class UserTaskSearchTest {
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
 
     final var userTaskCreationDateExample =
-        OffsetDateTime.parse(userTaskList.items().stream().findFirst().get().getCreationDate());
+        userTaskList.items().stream().findFirst().get().getCreationDate();
 
     final var result =
         camundaClient
@@ -927,7 +927,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var creationDate = OffsetDateTime.parse(item.getCreationDate());
+              final var creationDate = item.getCreationDate();
               assertThat(creationDate).isEqualTo(userTaskCreationDateExample);
             });
   }
@@ -944,8 +944,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -962,7 +961,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate)
                   .isAfterOrEqualTo(userTaskCompletionDateExample.minusSeconds(1));
             });
@@ -980,8 +979,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -997,7 +995,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate)
                   .isBeforeOrEqualTo(userTaskCompletionDateExample.plusSeconds(1));
             });
@@ -1015,8 +1013,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -1036,7 +1033,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate)
                   .isBetween(
                       userTaskCompletionDateExample.minusDays(1),
@@ -1056,8 +1053,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -1077,7 +1073,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusDays(1));
               assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusDays(1));
             });
@@ -1131,8 +1127,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -1147,7 +1142,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate).isEqualTo(userTaskCompletionDateExample);
             });
   }
@@ -1164,8 +1159,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -1180,7 +1174,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate).isAfter(userTaskCompletionDateExample.minusSeconds(1));
             });
   }
@@ -1197,8 +1191,7 @@ class UserTaskSearchTest {
             .join();
 
     final var userTaskCompletionDateExample =
-        OffsetDateTime.parse(
-            userTaskListComplete.items().stream().findFirst().get().getCompletionDate());
+        userTaskListComplete.items().stream().findFirst().get().getCompletionDate();
 
     final var result =
         camundaClient
@@ -1213,7 +1206,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var completionDate = OffsetDateTime.parse(item.getCompletionDate());
+              final var completionDate = item.getCompletionDate();
               assertThat(completionDate).isBefore(userTaskCompletionDateExample.plusSeconds(1));
             });
   }
@@ -1250,7 +1243,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              final var dueDate = item.getDueDate();
               assertThat(dueDate).isAfter(now.minusDays(2));
               assertThat(dueDate).isBefore(now.plusDays(2));
             });
@@ -1261,7 +1254,7 @@ class UserTaskSearchTest {
     // when
     final var userTaskList =
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
-    final var dueDateExample = OffsetDateTime.parse(userTaskList.items().get(0).getDueDate());
+    final var dueDateExample = userTaskList.items().get(0).getDueDate();
 
     final var result =
         camundaClient
@@ -1276,7 +1269,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var dueDate = OffsetDateTime.parse(item.getDueDate());
+              final var dueDate = item.getDueDate();
               assertThat(dueDate).isEqualTo(dueDateExample);
             });
   }
@@ -1286,8 +1279,7 @@ class UserTaskSearchTest {
     // when
     final var userTaskList =
         camundaClient.newUserTaskSearchRequest().page(p -> p.limit(1)).send().join();
-    final var followUpDateExample =
-        OffsetDateTime.parse(userTaskList.items().get(0).getFollowUpDate());
+    final var followUpDateExample = userTaskList.items().get(0).getFollowUpDate();
 
     final var result =
         camundaClient
@@ -1302,7 +1294,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              final var followUpDate = item.getFollowUpDate();
               assertThat(followUpDate).isEqualTo(followUpDateExample);
             });
   }
@@ -1324,7 +1316,7 @@ class UserTaskSearchTest {
         .items()
         .forEach(
             item -> {
-              final var followUpDate = OffsetDateTime.parse(item.getFollowUpDate());
+              final var followUpDate = item.getFollowUpDate();
               assertThat(followUpDate).isAfterOrEqualTo(now.minusDays(5));
               assertThat(followUpDate).isBeforeOrEqualTo(now.plusDays(5));
             });

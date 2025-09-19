@@ -18,8 +18,10 @@ package io.camunda.client.jobhandling.parameter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.zeebe.client.api.response.UserTaskProperties;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class CompatActivatedJobParameterResolver implements ParameterResolver {
 
@@ -150,12 +152,16 @@ public class CompatActivatedJobParameterResolver implements ParameterResolver {
 
         @Override
         public String getDueDate() {
-          return job.getUserTask().getDueDate();
+          return Optional.ofNullable(job.getUserTask().getDueDate())
+              .map(OffsetDateTime::toString)
+              .orElse(null);
         }
 
         @Override
         public String getFollowUpDate() {
-          return job.getUserTask().getFollowUpDate();
+          return Optional.ofNullable(job.getUserTask().getFollowUpDate())
+              .map(OffsetDateTime::toString)
+              .orElse(null);
         }
 
         @Override

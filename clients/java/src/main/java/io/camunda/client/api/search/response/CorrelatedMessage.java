@@ -15,11 +15,17 @@
  */
 package io.camunda.client.api.search.response;
 
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/client/api/search/response/CorrelatedMessage.java
 public interface CorrelatedMessage {
+=======
+import java.time.OffsetDateTime;
+
+public interface CorrelatedMessageSubscription {
+>>>>>>> ee4c1e54 (refactor: use OffsetDateTime for date-time response fields in Camunda client):clients/java/src/main/java/io/camunda/client/api/search/response/CorrelatedMessageSubscription.java
 
   String getCorrelationKey();
 
-  String getCorrelationTime();
+  OffsetDateTime getCorrelationTime();
 
   String getElementId();
 

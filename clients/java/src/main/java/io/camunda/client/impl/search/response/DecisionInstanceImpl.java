@@ -25,10 +25,12 @@ import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.impl.response.EvaluatedDecisionInputImpl;
 import io.camunda.client.impl.response.MatchedDecisionRuleImpl;
 import io.camunda.client.impl.util.EnumUtil;
+import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum;
 import io.camunda.client.protocol.rest.DecisionInstanceGetQueryResult;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.protocol.rest.DecisionInstanceStateEnum;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -39,7 +41,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final long decisionInstanceKey;
   private final String decisionInstanceId;
   private final DecisionInstanceState state;
-  private final String evaluationDate;
+  private final OffsetDateTime evaluationDate;
   private final String evaluationFailure;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
@@ -60,7 +62,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         Long.parseLong(item.getDecisionEvaluationKey()),
         item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
-        item.getEvaluationDate(),
+        ParseUtil.parseOffsetDateTimeOrNull(item.getEvaluationDate()),
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
@@ -83,7 +85,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         Long.parseLong(item.getDecisionEvaluationKey()),
         item.getDecisionEvaluationInstanceKey(),
         toDecisionInstanceState(item.getState()),
-        item.getEvaluationDate(),
+        ParseUtil.parseOffsetDateTimeOrNull(item.getEvaluationDate()),
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
@@ -108,7 +110,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final long decisionInstanceKey,
       final String decisionInstanceId,
       final DecisionInstanceState state,
-      final String evaluationDate,
+      final OffsetDateTime evaluationDate,
       final String evaluationFailure,
       final Long processDefinitionKey,
       final Long processInstanceKey,
@@ -202,7 +204,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   }
 
   @Override
-  public String getEvaluationDate() {
+  public OffsetDateTime getEvaluationDate() {
     return evaluationDate;
   }
 

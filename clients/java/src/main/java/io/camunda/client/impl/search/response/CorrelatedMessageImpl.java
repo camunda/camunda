@@ -17,13 +17,18 @@ package io.camunda.client.impl.search.response;
 
 import io.camunda.client.api.search.response.CorrelatedMessage;
 import io.camunda.client.impl.util.ParseUtil;
+<<<<<<< HEAD:clients/java/src/main/java/io/camunda/client/impl/search/response/CorrelatedMessageImpl.java
 import io.camunda.client.protocol.rest.CorrelatedMessageResult;
+=======
+import io.camunda.client.protocol.rest.CorrelatedMessageSubscriptionResult;
+import java.time.OffsetDateTime;
+>>>>>>> ee4c1e54 (refactor: use OffsetDateTime for date-time response fields in Camunda client):clients/java/src/main/java/io/camunda/client/impl/search/response/CorrelatedMessageSubscriptionImpl.java
 import java.util.Objects;
 
 public class CorrelatedMessageImpl implements CorrelatedMessage {
 
   private final String correlationKey;
-  private final String correlationTime;
+  private final OffsetDateTime correlationTime;
   private final String elementId;
   private final Long elementInstanceKey;
   private final Long messageKey;
@@ -37,7 +42,7 @@ public class CorrelatedMessageImpl implements CorrelatedMessage {
 
   public CorrelatedMessageImpl(final CorrelatedMessageResult item) {
     correlationKey = item.getCorrelationKey();
-    correlationTime = item.getCorrelationTime();
+    correlationTime = ParseUtil.parseOffsetDateTimeOrNull(item.getCorrelationTime());
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageKey = ParseUtil.parseLongOrNull(item.getMessageKey());
@@ -56,7 +61,7 @@ public class CorrelatedMessageImpl implements CorrelatedMessage {
   }
 
   @Override
-  public String getCorrelationTime() {
+  public OffsetDateTime getCorrelationTime() {
     return correlationTime;
   }
 
