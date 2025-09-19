@@ -28,7 +28,7 @@ const Incident: React.FC<Props> = ({
   processInstanceId,
   onButtonClick,
 }) => {
-  if (incident === null) {
+  if (!incident || !incidentV2) {
     return null;
   }
 
