@@ -15,6 +15,8 @@
  */
 package io.camunda.client.api.search.response;
 
+import java.time.OffsetDateTime;
+
 public interface Operation {
 
   String getId();
@@ -27,5 +29,5 @@ public interface Operation {
 
   String getErrorMessage();
 
-  String getCompletedDate();
+  OffsetDateTime getCompletedDate();
 }

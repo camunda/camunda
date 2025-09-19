@@ -17,6 +17,7 @@ package io.camunda.process.test.utils;
 
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
+import java.time.OffsetDateTime;
 
 public class MessageSubscriptionBuilder implements MessageSubscription {
 
@@ -26,7 +27,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private Long processInstanceKey;
   private String elementId;
   private Long elementInstanceKey;
-  private String lastUpdatedDate;
+  private OffsetDateTime lastUpdatedDate;
   private String messageName;
   private String correlationKey;
   private String tenantId;
@@ -68,7 +69,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   }
 
   @Override
-  public String getLastUpdatedDate() {
+  public OffsetDateTime getLastUpdatedDate() {
     return lastUpdatedDate;
   }
 
@@ -102,7 +103,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
     return this;
   }
 
-  public MessageSubscriptionBuilder setLastUpdatedDate(final String lastUpdatedDate) {
+  public MessageSubscriptionBuilder setLastUpdatedDate(final OffsetDateTime lastUpdatedDate) {
     this.lastUpdatedDate = lastUpdatedDate;
     return this;
   }

@@ -18,7 +18,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.MessageSubscriptionState;
 import io.camunda.client.api.search.response.MessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
@@ -97,8 +96,7 @@ public class MessageSubscriptionSearchTest {
                         .elementInstanceKey(expectedMessageSubscription.getElementInstanceKey())
                         .messageSubscriptionState(
                             expectedMessageSubscription.getMessageSubscriptionState())
-                        .lastUpdatedDate(
-                            OffsetDateTime.parse(expectedMessageSubscription.getLastUpdatedDate()))
+                        .lastUpdatedDate(expectedMessageSubscription.getLastUpdatedDate())
                         .messageName(expectedMessageSubscription.getMessageName())
                         .correlationKey(expectedMessageSubscription.getCorrelationKey())
                         .tenantId(expectedMessageSubscription.getTenantId()))

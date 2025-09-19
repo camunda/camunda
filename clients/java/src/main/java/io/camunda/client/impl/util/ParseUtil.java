@@ -15,6 +15,8 @@
  */
 package io.camunda.client.impl.util;
 
+import java.time.OffsetDateTime;
+
 public class ParseUtil {
 
   public static Long parseLongOrNull(final String input) {
@@ -27,5 +29,16 @@ public class ParseUtil {
 
   public static String keyToString(final Long input) {
     return input == null ? null : String.valueOf(input);
+  }
+
+  public static OffsetDateTime parseOffsetDateTimeOrNull(final String dateTime) {
+    if (dateTime == null) {
+      return null;
+    }
+    try {
+      return OffsetDateTime.parse(dateTime);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Failed to parse date: " + dateTime, e);
+    }
   }
 }
