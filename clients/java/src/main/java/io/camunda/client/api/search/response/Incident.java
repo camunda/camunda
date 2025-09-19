@@ -17,6 +17,7 @@ package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.IncidentErrorType;
 import io.camunda.client.api.search.enums.IncidentState;
+import java.time.OffsetDateTime;
 
 public interface Incident {
 
@@ -36,7 +37,7 @@ public interface Incident {
 
   Long getElementInstanceKey();
 
-  String getCreationTime();
+  OffsetDateTime getCreationTime();
 
   IncidentState getState();
 

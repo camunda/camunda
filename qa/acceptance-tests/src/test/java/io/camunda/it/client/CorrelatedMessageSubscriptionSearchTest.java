@@ -18,7 +18,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.response.CorrelatedMessageSubscription;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
@@ -93,9 +92,7 @@ public class CorrelatedMessageSubscriptionSearchTest {
             .filter(
                 f ->
                     f.correlationKey(expectedCorrelatedMessageSubscription.getCorrelationKey())
-                        .correlationTime(
-                            OffsetDateTime.parse(
-                                expectedCorrelatedMessageSubscription.getCorrelationTime()))
+                        .correlationTime(expectedCorrelatedMessageSubscription.getCorrelationTime())
                         .elementId(expectedCorrelatedMessageSubscription.getElementId())
                         .elementInstanceKey(
                             expectedCorrelatedMessageSubscription.getElementInstanceKey())
@@ -129,9 +126,7 @@ public class CorrelatedMessageSubscriptionSearchTest {
             .filter(
                 f ->
                     f.correlationKey(expectedCorrelatedMessageSubscription.getCorrelationKey())
-                        .correlationTime(
-                            OffsetDateTime.parse(
-                                expectedCorrelatedMessageSubscription.getCorrelationTime()))
+                        .correlationTime(expectedCorrelatedMessageSubscription.getCorrelationTime())
                         .elementId(expectedCorrelatedMessageSubscription.getElementId())
                         .messageKey(expectedCorrelatedMessageSubscription.getMessageKey())
                         .messageName(expectedCorrelatedMessageSubscription.getMessageName())

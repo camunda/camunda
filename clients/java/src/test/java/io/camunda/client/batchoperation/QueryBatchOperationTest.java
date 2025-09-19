@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.*;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
@@ -33,7 +34,11 @@ public class QueryBatchOperationTest extends ClientRestTest {
     // given
     final String batchOperationKey = "123";
     gatewayService.onBatchOperationRequest(
-        batchOperationKey, Instancio.create(BatchOperationResponse.class));
+        batchOperationKey,
+        Instancio.create(BatchOperationResponse.class)
+            .endDate(OffsetDateTime.now().toString())
+            .startDate(OffsetDateTime.now().toString())
+            .endDate(OffsetDateTime.now().toString()));
 
     // when
     client.newBatchOperationGetRequest(batchOperationKey).send().join();

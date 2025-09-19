@@ -123,13 +123,13 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
               assertThat(item.getProcessInstanceKey()).isNotNull();
 
               assertThat(item.getCreationDate()).isNotNull();
-              final var creationInstant = Instant.parse(item.getCreationDate());
+              final var creationInstant = Instant.from(item.getCreationDate());
               assertThat(creationInstant).isAfter(STARTING_INSTANT);
 
               if (item.getUserTaskKey().equals(USER_TASK_KEYS.get("first"))) {
                 assertThat(item.getState()).isEqualTo(UserTaskState.COMPLETED);
                 assertThat(item.getCompletionDate()).isNotNull();
-                final var completionInstant = Instant.parse(item.getCompletionDate());
+                final var completionInstant = Instant.from(item.getCompletionDate());
                 assertThat(completionInstant).isAfter(creationInstant);
               } else {
                 assertThat(item.getState()).isEqualTo(UserTaskState.CREATED);

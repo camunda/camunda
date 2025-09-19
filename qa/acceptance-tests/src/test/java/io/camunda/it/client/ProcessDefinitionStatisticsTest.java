@@ -31,7 +31,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.lang.reflect.Method;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
@@ -357,7 +356,7 @@ public class ProcessDefinitionStatisticsTest {
         f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
         2);
     final var pi = getProcessInstance(piKey);
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var actual =
@@ -391,7 +390,7 @@ public class ProcessDefinitionStatisticsTest {
         f -> f.processDefinitionKey(processDefinitionKey).state(ProcessInstanceState.COMPLETED),
         2);
     final var pi = getProcessInstance(piKey);
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var actual =
