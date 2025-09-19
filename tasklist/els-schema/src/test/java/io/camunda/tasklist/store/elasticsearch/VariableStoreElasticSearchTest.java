@@ -73,7 +73,7 @@ class VariableStoreElasticSearchTest {
     when(mockedHits.getHits()).thenReturn(new SearchHit[] {});
 
     // When
-    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of("1234567"));
+    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of(1234567L));
 
     // Then
     verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
