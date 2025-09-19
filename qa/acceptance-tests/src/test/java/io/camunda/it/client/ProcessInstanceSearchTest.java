@@ -30,7 +30,6 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.qa.util.multidb.MultiDbTest;
-import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -349,7 +348,7 @@ public class ProcessInstanceSearchTest {
             .join()
             .items()
             .getFirst();
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var result =
@@ -411,7 +410,7 @@ public class ProcessInstanceSearchTest {
             .join()
             .items()
             .getFirst();
-    final var startDate = OffsetDateTime.parse(pi.getStartDate());
+    final var startDate = pi.getStartDate();
 
     // when
     final var result =

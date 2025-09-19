@@ -23,6 +23,7 @@ import io.camunda.client.protocol.rest.*;
 import io.camunda.client.protocol.rest.BatchOperationResponse.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
+import java.time.OffsetDateTime;
 import java.util.*;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,10 @@ public class QueryBatchOperationTest extends ClientRestTest {
         batchOperationKey,
         Instancio.create(BatchOperationResponse.class)
             .state(StateEnum.UNKNOWN_DEFAULT_OPEN_API)
-            .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API));
+            .batchOperationType(BatchOperationTypeEnum.UNKNOWN_DEFAULT_OPEN_API)
+            .endDate(OffsetDateTime.now().toString())
+            .startDate(OffsetDateTime.now().toString())
+            .endDate(OffsetDateTime.now().toString()));
 
     // when
     client.newBatchOperationGetRequest(batchOperationKey).send().join();

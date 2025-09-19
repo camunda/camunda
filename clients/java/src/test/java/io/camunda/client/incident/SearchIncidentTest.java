@@ -29,6 +29,7 @@ import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Objects;
 import org.instancio.Instancio;
@@ -49,7 +50,8 @@ public class SearchIncidentTest extends ClientRestTest {
             .elementInstanceKey("2")
             .processInstanceKey("3")
             .processDefinitionKey("4")
-            .jobKey("5"));
+            .jobKey("5")
+            .creationTime(OffsetDateTime.now().toString()));
 
     // when
     client.newIncidentGetRequest(incidentKey).send().join();

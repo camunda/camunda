@@ -21,6 +21,7 @@ import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.DecisionInstanceResult;
 import io.camunda.client.util.ClientRestTest;
+import java.time.OffsetDateTime;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,8 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
             .decisionDefinitionKey("2")
             .elementInstanceKey("3")
             .processDefinitionKey("4")
-            .processInstanceKey("5"));
+            .processInstanceKey("5")
+            .evaluationDate(OffsetDateTime.now().toString()));
 
     // when
     client.newDecisionInstanceGetRequest(decisionInstanceId).send().join();

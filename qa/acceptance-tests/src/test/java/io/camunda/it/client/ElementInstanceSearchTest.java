@@ -122,7 +122,7 @@ public class ElementInstanceSearchTest {
             .join()
             .items()
             .getFirst();
-    final var startDate = OffsetDateTime.parse(ei.getStartDate());
+    final var startDate = ei.getStartDate();
     // when
     final var result =
         camundaClient
@@ -164,7 +164,7 @@ public class ElementInstanceSearchTest {
             .join()
             .items()
             .getFirst();
-    final var endDate = OffsetDateTime.parse(ei.getEndDate());
+    final var endDate = ei.getEndDate();
     // when
     final var result =
         camundaClient

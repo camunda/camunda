@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskResult;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -37,10 +38,10 @@ public class UserTaskImpl implements UserTask {
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
   private final Long formKey;
-  private final String creationDate;
-  private final String completionDate;
-  private final String followUpDate;
-  private final String dueDate;
+  private final OffsetDateTime creationDate;
+  private final OffsetDateTime completionDate;
+  private final OffsetDateTime followUpDate;
+  private final OffsetDateTime dueDate;
   private final String tenantId;
   private final String externalFormReference;
   private final Integer processDefinitionVersion;
@@ -60,10 +61,10 @@ public class UserTaskImpl implements UserTask {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
     formKey = ParseUtil.parseLongOrNull(item.getFormKey());
-    creationDate = item.getCreationDate();
-    completionDate = item.getCompletionDate();
-    followUpDate = item.getFollowUpDate();
-    dueDate = item.getDueDate();
+    creationDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationDate());
+    completionDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCompletionDate());
+    followUpDate = ParseUtil.parseOffsetDateTimeOrNull(item.getFollowUpDate());
+    dueDate = ParseUtil.parseOffsetDateTimeOrNull(item.getDueDate());
     tenantId = item.getTenantId();
     externalFormReference = item.getExternalFormReference();
     processDefinitionVersion = item.getProcessDefinitionVersion();
@@ -132,22 +133,22 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public String getCreationDate() {
+  public OffsetDateTime getCreationDate() {
     return creationDate;
   }
 
   @Override
-  public String getCompletionDate() {
+  public OffsetDateTime getCompletionDate() {
     return completionDate;
   }
 
   @Override
-  public String getFollowUpDate() {
+  public OffsetDateTime getFollowUpDate() {
     return followUpDate;
   }
 
   @Override
-  public String getDueDate() {
+  public OffsetDateTime getDueDate() {
     return dueDate;
   }
 
