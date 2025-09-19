@@ -97,3 +97,15 @@ jobs:
       fault: '"scale-brokers"'
       maxInstanceDuration: 40m
     secrets: inherit
+
+  e2e-scaling-partitions-brokers:
+    name: Scaling brokers
+    uses: ./.github/workflows/zeebe-e2e-testbench.yaml
+    with:
+      branch: main
+      generation: Zeebe SNAPSHOT
+      maxTestDuration: PT2H
+      clusterPlan: Production - M
+      fault: '"scale-partitions"'
+      maxInstanceDuration: 40m
+    secrets: inherit
