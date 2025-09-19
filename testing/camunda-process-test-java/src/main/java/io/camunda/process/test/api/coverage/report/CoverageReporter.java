@@ -129,10 +129,7 @@ public class CoverageReporter {
             "Process coverage: {1} \n"
                 + "========================\n"
                 + "{2}\n\n"
-                + "See more details: \n"
-                + " - HTML Global coverage: file://{0}/report.html\n"
-                + " - JSON Global coverage report: file://{0}/report.json \n"
-                + " - JSON Coverage report: file://{0}/{1}/report.json\n",
+                + " Coverage report: file://{0}/report.html\n",
             resourceDirectory, suite.getId(), coverageList);
     printStream.accept(message);
   }

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties.AuthMethod;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientCloudProperties;
@@ -56,6 +57,9 @@ public class ContainerRuntimePropertiesUtilTest {
     assertThat(propertiesUtil.getConnectorsDockerImageName())
         .isEqualTo("camunda/connectors-bundle");
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo("SNAPSHOT");
+
+    assertThat(propertiesUtil.getCoverageReportProperties().getCoverageReportDirectory())
+        .isEqualTo("target/coverage-report");
   }
 
   @Test
@@ -403,6 +407,13 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo(URI.create("http://0.0.0.0:8089"));
 
       assertThat(propertiesUtil.isMultiTenancyEnabled()).isTrue();
+
+      final CoverageReportProperties coverageReportProperties =
+          propertiesUtil.getCoverageReportProperties();
+      assertThat(coverageReportProperties.getCoverageReportDirectory())
+          .isEqualTo("custom/coverage-report");
+      assertThat(coverageReportProperties.getCoverageExcludedProcesses())
+          .containsExactlyInAnyOrder("process1", "process2");
     }
   }
 }

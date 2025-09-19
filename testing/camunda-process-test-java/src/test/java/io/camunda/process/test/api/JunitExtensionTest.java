@@ -34,6 +34,7 @@ import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import java.lang.reflect.Field;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -269,7 +270,9 @@ public class JunitExtensionTest {
             .withCamundaEnv(camundaEnvVars)
             .withCamundaEnv("env-3", "test-3")
             .withCamundaExposedPort(100)
-            .withCamundaExposedPort(200);
+            .withCamundaExposedPort(200)
+            .withCoverageReportDirectory("custom/reports")
+            .withCoverageExcludedProcesses("process-1", "process-2");
 
     // when
     extension.beforeAll(extensionContext);
@@ -286,6 +289,10 @@ public class JunitExtensionTest {
 
     verify(camundaRuntimeBuilder).withCamundaExposedPort(100);
     verify(camundaRuntimeBuilder).withCamundaExposedPort(200);
+
+    verify(camundaRuntimeBuilder).withCoverageReportDirectory("custom/reports");
+    verify(camundaRuntimeBuilder)
+        .withCoverageExcludedProcesses(Arrays.asList("process-1", "process-2"));
   }
 
   @Test

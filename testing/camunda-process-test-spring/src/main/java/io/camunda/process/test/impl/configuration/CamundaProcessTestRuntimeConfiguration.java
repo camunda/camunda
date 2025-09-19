@@ -57,6 +57,9 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   @NestedConfigurationProperty private RemoteConfiguration remote = new RemoteConfiguration();
 
+  @NestedConfigurationProperty
+  private CoverageReportConfiguration coverage = new CoverageReportConfiguration();
+
   @Bean
   @Primary
   public CamundaProcessTestRuntimeConfiguration runtimeConfiguration(
@@ -221,5 +224,13 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setMultiTenancyEnabled(final boolean multiTenancyEnabled) {
     this.multiTenancyEnabled = multiTenancyEnabled;
+  }
+
+  public CoverageReportConfiguration getCoverage() {
+    return coverage;
+  }
+
+  public void setCoverage(final CoverageReportConfiguration coverage) {
+    this.coverage = coverage;
   }
 }

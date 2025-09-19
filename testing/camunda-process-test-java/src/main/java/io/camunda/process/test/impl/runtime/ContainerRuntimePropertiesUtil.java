@@ -21,6 +21,7 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,6 +49,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final CamundaContainerRuntimeProperties camundaContainerRuntimeProperties;
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
+  private final CoverageReportProperties coverageReportProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -64,6 +66,7 @@ public final class ContainerRuntimePropertiesUtil {
     camundaContainerRuntimeProperties = new CamundaContainerRuntimeProperties(properties);
     connectorsContainerRuntimeProperties = new ConnectorsContainerRuntimeProperties(properties);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
+    coverageReportProperties = new CoverageReportProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -214,5 +217,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public boolean isMultiTenancyEnabled() {
     return multiTenancyEnabled;
+  }
+
+  public CoverageReportProperties getCoverageReportProperties() {
+    return coverageReportProperties;
   }
 }

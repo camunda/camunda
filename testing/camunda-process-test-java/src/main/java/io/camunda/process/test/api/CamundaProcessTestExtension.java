@@ -36,6 +36,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -159,6 +160,8 @@ public class CamundaProcessTestExtension
         processCoverageBuilder
             .testClass(context.getRequiredTestClass())
             .dataSource(() -> new CamundaDataSource(camundaProcessTestContext.createClient()))
+            .reportDirectory(runtimeBuilder.getCoverageReportDirectory())
+            .excludeProcessDefinitionIds(runtimeBuilder.getCoverageExcludedProcesses())
             .build();
 
     // put in store
@@ -529,28 +532,26 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Specifies process definition keys that should be excluded from coverage analysis. These
-   * processes will not be considered when calculating coverage metrics.
+   * Configures the coverage report to exclude the given processes.
    *
-   * @param processDefinitionIds an array of process definition ids to exclude
+   * @param processDefinitionIds the IDs of the process definitions to exclude
    * @return the extension builder
    */
-  public CamundaProcessTestExtension excludeProcessDefinitionIds(
+  public CamundaProcessTestExtension withCoverageExcludedProcesses(
       final String... processDefinitionIds) {
-    processCoverageBuilder.excludeProcessDefinitionIds(processDefinitionIds);
+    runtimeBuilder.withCoverageExcludedProcesses(Arrays.asList(processDefinitionIds));
     return this;
   }
 
   /**
-   * Specifies the output directory for coverage reports. Coverage reports will be generated and
-   * saved to this directory after test execution.
+   * Configures the output directory for the coverage reports. By default, the directory is {@code
+   * target/coverage-report/}.
    *
-   * @param reportDirectory the directory path where reports should be saved (defaults to
-   *     "target/process-test-coverage/")
+   * @param reportDirectory the directory to save the reports
    * @return the extension builder
    */
   public CamundaProcessTestExtension withCoverageReportDirectory(final String reportDirectory) {
-    processCoverageBuilder.reportDirectory(reportDirectory);
+    runtimeBuilder.withCoverageReportDirectory(reportDirectory);
     return this;
   }
 
