@@ -29,6 +29,7 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -52,7 +53,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -179,11 +179,13 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {UsageMetricTemplate.INDEX_NAME, UsageMetricTUTemplate.INDEX_NAME})
-  @Disabled("https://github.com/camunda/camunda/issues/34709")
-  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+  @ValueSource(classes = {UsageMetricTemplate.class, UsageMetricTUTemplate.class})
+  void shouldSetIndexLifeCycleForUsageMetric(
+      final Class<? extends AbstractTemplateDescriptor> descriptorClass) throws IOException {
     // given
-    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var usageMetricIndex =
+        resourceProvider.getIndexTemplateDescriptor(descriptorClass).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
     testClient.indices().create(r -> r.index(usageMetricIndex));
