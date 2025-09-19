@@ -6,7 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {validateValueComplete, validateValueValid} from './validators';
+import {
+  validateValueComplete,
+  validateValueNotEmpty,
+  validateValueValid,
+} from './validators';
 import {Field, useField, useForm, useFormState} from 'react-final-form';
 import {useEffect, useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
@@ -126,25 +130,6 @@ const ExistingVariableValue: React.FC<Props> = observer(
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
 
-    /* This is a temporary solution until we can properly use the form state submission validation for the modification mode
-     * This should be done together with #38482
-     */
-    const validateValueNotEmptyWithModifications = (variableValue = '') => {
-      const scopeId = getScopeId();
-      const hasModificationForThisVariable =
-        modificationsStore.getLastVariableModification(
-          scopeId,
-          variableName,
-          'EDIT_VARIABLE',
-        );
-
-      if (hasModificationForThisVariable && variableValue === '') {
-        return ERRORS.INVALID_VALUE;
-      }
-
-      return;
-    };
-
     return (
       <Layer>
         <Field
@@ -156,7 +141,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               : mergeValidators(
                   validateValueComplete,
                   validateValueValid,
-                  validateValueNotEmptyWithModifications,
+                  validateValueNotEmpty,
                 )
           }
           parse={(value) => value}
