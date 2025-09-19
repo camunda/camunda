@@ -199,12 +199,15 @@ public final class SortOptionBuilders {
     return fn.apply(messageSubscription()).build();
   }
 
-  public static CorrelatedMessageSort.Builder correlatedMessage() {
-    return new CorrelatedMessageSort.Builder();
+  public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
+    return new CorrelatedMessageSubscriptionSort.Builder();
   }
 
-  public static CorrelatedMessageSort correlatedMessage(
-      final Function<CorrelatedMessageSort.Builder, ObjectBuilder<CorrelatedMessageSort>> fn) {
-    return fn.apply(correlatedMessage()).build();
+  public static CorrelatedMessageSubscriptionSort correlatedMessageSubscription(
+      final Function<
+              CorrelatedMessageSubscriptionSort.Builder,
+              ObjectBuilder<CorrelatedMessageSubscriptionSort>>
+          fn) {
+    return fn.apply(correlatedMessageSubscription()).build();
   }
 }

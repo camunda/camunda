@@ -11,8 +11,8 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriter;
 import io.camunda.exporter.rdbms.cache.RdbmsBatchOperationCacheLoader;
 import io.camunda.exporter.rdbms.cache.RdbmsProcessCacheLoader;
-import io.camunda.exporter.rdbms.handlers.CorrelatedMessageFromMessageStartEventSubscriptionExportHandler;
-import io.camunda.exporter.rdbms.handlers.CorrelatedMessageFromProcessMessageSubscriptionExportHandler;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler;
+import io.camunda.exporter.rdbms.handlers.CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionDefinitionExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionInstanceExportHandler;
 import io.camunda.exporter.rdbms.handlers.DecisionRequirementsExportHandler;
@@ -188,12 +188,12 @@ public class RdbmsExporterWrapper implements Exporter {
         new MessageSubscriptionExportHandler(rdbmsWriter.getMessageSubscriptionWriter()));
     builder.withHandler(
         ValueType.PROCESS_MESSAGE_SUBSCRIPTION,
-        new CorrelatedMessageFromProcessMessageSubscriptionExportHandler(
-            rdbmsWriter.getCorrelatedMessageWriter()));
+        new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
     builder.withHandler(
         ValueType.MESSAGE_START_EVENT_SUBSCRIPTION,
-        new CorrelatedMessageFromMessageStartEventSubscriptionExportHandler(
-            rdbmsWriter.getCorrelatedMessageWriter()));
+        new CorrelatedMessageSubscriptionFromMessageStartEventSubscriptionExportHandler(
+            rdbmsWriter.getCorrelatedMessageSubscriptionWriter()));
   }
 
   private void createBatchOperationHandlers(

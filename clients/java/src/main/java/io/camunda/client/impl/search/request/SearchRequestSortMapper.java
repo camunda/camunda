@@ -540,23 +540,25 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
-  public static List<CorrelatedMessageSearchQuerySortRequest>
-      toCorrelatedMessageSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+  public static List<CorrelatedMessageSubscriptionSearchQuerySortRequest>
+      toCorrelatedMessageSubscriptionSearchQuerySortRequest(
+          final List<SearchRequestSort> requests) {
     return requests.stream()
         .map(
             r -> {
-              final CorrelatedMessageSearchQuerySortRequest request =
-                  new CorrelatedMessageSearchQuerySortRequest();
+              final CorrelatedMessageSubscriptionSearchQuerySortRequest request =
+                  new CorrelatedMessageSubscriptionSearchQuerySortRequest();
               request.setField(
-                  CorrelatedMessageSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+                  CorrelatedMessageSubscriptionSearchQuerySortRequest.FieldEnum.fromValue(
+                      r.getField()));
               request.setOrder(r.getOrder());
               return request;
             })
         .collect(Collectors.toList());
   }
 
-  public static List<SearchRequestSort> fromCorrelatedMessageSearchQuerySortRequest(
-      final List<CorrelatedMessageSearchQuerySortRequest> requests) {
+  public static List<SearchRequestSort> fromCorrelatedMessageSubscriptionSearchQuerySortRequest(
+      final List<CorrelatedMessageSubscriptionSearchQuerySortRequest> requests) {
     return requests.stream()
         .map(r -> createFrom(r.getField(), r.getOrder()))
         .collect(Collectors.toList());

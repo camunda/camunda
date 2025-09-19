@@ -645,9 +645,9 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldExportCorrelatedMessage() {
+  public void shouldExportCorrelatedMessageSubscription() {
     // given
-    final Record<ProcessMessageSubscriptionRecordValue> correlatedMessageRecord =
+    final Record<ProcessMessageSubscriptionRecordValue> correlatedMessageSubscriptionRecord =
         ImmutableRecord.<ProcessMessageSubscriptionRecordValue>builder()
             .from(RecordFixtures.FACTORY.generateRecord(ValueType.PROCESS_MESSAGE_SUBSCRIPTION))
             .withIntent(ProcessMessageSubscriptionIntent.CORRELATED)
@@ -656,16 +656,16 @@ class RdbmsExporterIT {
             .build();
 
     // when
-    exporter.export(correlatedMessageRecord);
+    exporter.export(correlatedMessageSubscriptionRecord);
 
     // then
-    final var correlatedMessage =
+    final var correlatedMessageSubscription =
         rdbmsService
-            .getCorrelatedMessageReader()
+            .getCorrelatedMessageSubscriptionReader()
             .findOne(
-                correlatedMessageRecord.getValue().getMessageKey(),
-                correlatedMessageRecord.getKey());
-    assertThat(correlatedMessage).isNotEmpty();
+                correlatedMessageSubscriptionRecord.getValue().getMessageKey(),
+                correlatedMessageSubscriptionRecord.getKey());
+    assertThat(correlatedMessageSubscription).isNotEmpty();
   }
 
   @Test

@@ -37,7 +37,7 @@ import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
-import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageTemplate;
+import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.EventTemplate;
@@ -134,7 +134,7 @@ public class BackupPriorityConfiguration {
     final List<Prio4Backup> prio4 =
         List.of(
             // CAMUNDA
-            new CorrelatedMessageTemplate(indexPrefix, isElasticsearch),
+            new CorrelatedMessageSubscriptionTemplate(indexPrefix, isElasticsearch),
             // OPERATE
             new DecisionIndex(indexPrefix, isElasticsearch),
             new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
