@@ -43,6 +43,9 @@ public class TestExporterResourceProvider implements ExporterResourceProvider {
       final ObjectMapper objectMapper) {}
 
   @Override
+  public void reset() {}
+
+  @Override
   public Collection<IndexDescriptor> getIndexDescriptors() {
     return indexDescriptors.indices();
   }

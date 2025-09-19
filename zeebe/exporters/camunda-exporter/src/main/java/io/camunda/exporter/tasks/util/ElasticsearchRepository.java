@@ -153,6 +153,6 @@ public class ElasticsearchRepository implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    client._transport().close();
+    client.close();
   }
 }
