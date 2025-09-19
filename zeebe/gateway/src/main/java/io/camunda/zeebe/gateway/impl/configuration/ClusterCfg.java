@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.gateway.impl.configuration;
 
-import static io.camunda.zeebe.gateway.Loggers.GATEWAY_CFG_LOGGER;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
@@ -97,14 +96,6 @@ public final class ClusterCfg {
 
   public ClusterCfg setAdvertisedPort(final int advertisedPort) {
     this.advertisedPort = advertisedPort;
-    return this;
-  }
-
-  @Deprecated(since = "8.1.0", forRemoval = true)
-  public ClusterCfg setContactPoint(final String contactPoint) {
-    GATEWAY_CFG_LOGGER.warn(
-        "Configuring deprecated property 'contactPoint', will use 'initialContactPoints'. Please consider to migrate to 'initialContactPoints' property, which allows to set a list of contact points.");
-    setInitialContactPoints(Collections.singletonList(contactPoint));
     return this;
   }
 

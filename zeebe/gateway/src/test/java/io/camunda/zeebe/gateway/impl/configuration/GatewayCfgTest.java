@@ -229,54 +229,6 @@ public final class GatewayCfgTest {
   }
 
   @Test
-  public void shouldSetInitialContactPointsWhenSetContactPoint() {
-    // given
-    final String contactPoint = "foo-bar:1";
-
-    // when
-    final GatewayCfg gatewayCfg =
-        new GatewayCfg().setCluster(new ClusterCfg().setContactPoint(contactPoint));
-
-    // then
-    assertThat(gatewayCfg.getCluster().getInitialContactPoints()).containsExactly(contactPoint);
-  }
-
-  @Test
-  public void shouldSetInitialContactPointsWhenUseContactPointEnvironmentVariable() {
-    // given
-    final String contactPoint = "broker:789";
-    setEnv("zeebe.gateway.cluster.contactPoint", contactPoint);
-
-    final GatewayCfg expected =
-        new GatewayCfg()
-            .setCluster(new ClusterCfg().setInitialContactPoints(List.of(contactPoint)));
-    expected.init();
-
-    // when
-    final GatewayCfg gatewayCfg = readDefaultConfig();
-
-    // then
-    assertThat(gatewayCfg).isEqualTo(expected);
-  }
-
-  @Test
-  public void shouldSetInitialContactPointsWhenUseContactPointConfig() {
-    // given
-    final String contactPoint = "broker:789";
-    final GatewayCfg expected =
-        new GatewayCfg()
-            .setCluster(new ClusterCfg().setInitialContactPoints(List.of(contactPoint)));
-    expected.init();
-
-    // when
-    final GatewayCfg gatewayCfg =
-        readConfig("/configuration/gateway.deprecated.contactPoint.custom.yaml");
-
-    // then
-    assertThat(gatewayCfg).isEqualTo(expected);
-  }
-
-  @Test
   public void shouldFallbackIfAdvertisedAddressIsNotConfigured() {
     // given
     final var expectedHost = "zeebe";
