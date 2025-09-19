@@ -30,11 +30,11 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -186,7 +186,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {UsageMetricIndex.INDEX_NAME, UsageMetricTUIndex.INDEX_NAME})
+  @ValueSource(strings = {UsageMetricTemplate.INDEX_NAME, UsageMetricTUTemplate.INDEX_NAME})
   @Disabled("https://github.com/camunda/camunda/issues/34709")
   void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
     // given
@@ -688,13 +688,13 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        genericClientSpy, times(16) // number of index templates
+                        genericClientSpy, times(18) // number of index templates
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(16)
+        .hasSize(18)
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -742,7 +742,8 @@ final class OpenSearchArchiverRepositoryIT {
                         json.get(template.getIndexPattern().replace("*", date))
                             .get("index.plugins.index_state_management.policy_id")
                             .asText())
-                    .isEqualTo("camunda-retention-policy");
+                    .isEqualTo(
+                        repository.getRetentionPolicyName(template.getIndexName(), retention));
               });
     }
   }

@@ -12,10 +12,10 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.END_TIME;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_TYPE;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.EVENT_VALUE;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricIndex.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.END_TIME;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.EVENT_TYPE;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.EVENT_VALUE;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.TENANT_ID;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.EDI;
 import static io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType.RPI;
 
@@ -25,7 +25,7 @@ import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.MetricsStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -44,7 +44,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchMetricsStore.class);
   private static final String ID_PATTERN = "%s_%s";
 
-  @Autowired private UsageMetricIndex metricIndex;
+  @Autowired private UsageMetricTemplate metricTemplate;
   @Autowired private RichOpenSearchClient richOpenSearchClient;
 
   private Long searchWithSumAggregation(
@@ -82,7 +82,7 @@ public class OpensearchMetricsStore implements MetricsStore {
     }
 
     final var searchRequestBuilder =
-        searchRequestBuilder(metricIndex.getFullQualifiedName())
+        searchRequestBuilder(metricTemplate.getFullQualifiedName())
             .query(query)
             .aggregations(PROCESS_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
 
@@ -98,7 +98,7 @@ public class OpensearchMetricsStore implements MetricsStore {
     }
 
     final var searchRequestBuilder =
-        searchRequestBuilder(metricIndex.getFullQualifiedName())
+        searchRequestBuilder(metricTemplate.getFullQualifiedName())
             .query(query)
             .aggregations(
                 DECISION_INSTANCES_AGG_NAME, sumAggregation(EVENT_VALUE)._toAggregation());
@@ -116,7 +116,7 @@ public class OpensearchMetricsStore implements MetricsStore {
       throws PersistenceException {
     final UsageMetricsEntity metric =
         createProcessInstanceStartedKey(key, tenantId, partitionId, timestamp);
-    batchRequest.add(metricIndex.getFullQualifiedName(), metric);
+    batchRequest.add(metricTemplate.getFullQualifiedName(), metric);
   }
 
   @Override
@@ -129,7 +129,7 @@ public class OpensearchMetricsStore implements MetricsStore {
       throws PersistenceException {
     final UsageMetricsEntity metric =
         createDecisionsInstanceEvaluatedKey(key, tenantId, partitionId, timestamp);
-    batchRequest.add(metricIndex.getFullQualifiedName(), metric);
+    batchRequest.add(metricTemplate.getFullQualifiedName(), metric);
   }
 
   private UsageMetricsEntity createProcessInstanceStartedKey(

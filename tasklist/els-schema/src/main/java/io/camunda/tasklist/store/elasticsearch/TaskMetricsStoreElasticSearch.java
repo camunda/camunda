@@ -9,16 +9,16 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.AGGREGATION_TERMS_SIZE;
 import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_IGNORE_THROTTLED;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.ASSIGNEE_HASH;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.END_TIME;
-import static io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex.TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.ASSIGNEE_HASH;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.END_TIME;
+import static io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate.TENANT_ID;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
 import io.camunda.tasklist.store.TaskMetricsStore;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.zeebe.util.HashUtil;
@@ -57,7 +57,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   public static final String TU_ID_PATTERN = "%s_%s_%s";
   private static final Logger LOGGER = LoggerFactory.getLogger(TaskMetricsStoreElasticSearch.class);
 
-  @Autowired private UsageMetricTUIndex index;
+  @Autowired private UsageMetricTUTemplate template;
 
   @Autowired
   @Qualifier("tasklistEsClient")
@@ -95,7 +95,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
     final SearchSourceBuilder source =
         SearchSourceBuilder.searchSource().query(boolQuery).aggregation(aggregation);
     final SearchRequest searchRequest =
-        new SearchRequest(index.getFullQualifiedName())
+        new SearchRequest(template.getFullQualifiedName())
             .indicesOptions(LENIENT_EXPAND_OPEN_IGNORE_THROTTLED)
             .source(source);
     try {
@@ -116,7 +116,8 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
 
       return buckets.stream().map(it -> (long) it.getKey()).collect(Collectors.toSet());
     } catch (final IOException e) {
-      LOGGER.error("Error while retrieving assigned users between dates from index: " + index, e);
+      LOGGER.error(
+          "Error while retrieving assigned users between dates from index: " + template, e);
       final String message = "Error while retrieving assigned users between dates";
       throw new TasklistRuntimeException(message);
     }
@@ -125,7 +126,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
   private boolean insert(final UsageMetricsTUEntity entity) {
     try {
       final IndexRequest request =
-          new IndexRequest(index.getFullQualifiedName())
+          new IndexRequest(template.getFullQualifiedName())
               .id(entity.getId())
               .source(objectMapper.writeValueAsString(entity), XContentType.JSON);
 
