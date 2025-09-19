@@ -21,7 +21,7 @@ import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.containers.CamundaContainer;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -170,6 +170,19 @@ public class CamundaProcessTestExtension
     initializeJsonMapper(jsonMapper, zeebeJsonMapper);
   }
 
+  private CamundaManagementClient createManagementClient(
+      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
+    if (runtimeBuilder.isMultiTenancyEnabled()) {
+      return CamundaManagementClient.createAuthenticatedClient(
+          runtime.getCamundaMonitoringApiAddress(),
+          runtime.getCamundaRestApiAddress(),
+          MultiTenancyConfiguration.getBasicAuthCredentials());
+    } else {
+      return CamundaManagementClient.createClient(
+          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
+    }
+  }
+
   private void initializeJsonMapper(
       final JsonMapper jsonMapper, final io.camunda.zeebe.client.api.JsonMapper zeebeJsonMapper) {
 
@@ -177,19 +190,6 @@ public class CamundaProcessTestExtension
       CamundaAssert.setJsonMapper(jsonMapper);
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
-    }
-  }
-
-  private CamundaManagementClient createManagementClient(
-      final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    if (runtimeBuilder.isMultitenancyEnabled()) {
-      return CamundaManagementClient.createAuthenticatedClient(
-          runtime.getCamundaMonitoringApiAddress(),
-          runtime.getCamundaRestApiAddress(),
-          CamundaContainer.MultitenancyConfiguration.getBasicAuthCredentials());
-    } else {
-      return CamundaManagementClient.createClient(
-          runtime.getCamundaMonitoringApiAddress(), runtime.getCamundaRestApiAddress());
     }
   }
 
@@ -555,6 +555,17 @@ public class CamundaProcessTestExtension
   }
 
   /**
+   * Enable or disable multi-tenancy in the runtime. By default, multi-tenancy is disabled.
+   *
+   * @param enabled set {@code true} to enable multi-tenancy
+   * @return the extension builder
+   */
+  public CamundaProcessTestExtension withMultiTenancyEnabled(final boolean enabled) {
+    runtimeBuilder.withMultiTenancyEnabled(enabled);
+    return this;
+  }
+
+  /**
    * Configure the JSON mapper for the client and the assertions.
    *
    * @param jsonMapper the JSON mapper to use
@@ -576,11 +587,6 @@ public class CamundaProcessTestExtension
   public CamundaProcessTestExtension withJsonMapper(
       final io.camunda.zeebe.client.api.JsonMapper jsonMapper) {
     zeebeJsonMapper = jsonMapper;
-    return this;
-  }
-
-  public CamundaProcessTestExtension withMultitenancyEnabled() {
-    runtimeBuilder.withMultitenancyEnabled(true);
     return this;
   }
 

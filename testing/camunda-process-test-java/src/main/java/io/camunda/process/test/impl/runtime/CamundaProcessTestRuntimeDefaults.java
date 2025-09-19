@@ -85,4 +85,6 @@ public class CamundaProcessTestRuntimeDefaults {
 
   public static final CamundaClientBuilderFactory CAMUNDA_CLIENT_BUILDER_FACTORY =
       PROPERTIES_UTIL.getCamundaClientBuilderFactory();
+
+  public static final boolean MULTI_TENANCY_ENABLED = PROPERTIES_UTIL.isMultiTenancyEnabled();
 }

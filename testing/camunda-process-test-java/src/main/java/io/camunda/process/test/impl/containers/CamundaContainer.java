@@ -82,40 +82,40 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
             ContainerRuntimePorts.CAMUNDA_REST_API);
   }
 
-  public CamundaContainer withMultitenancy() {
+  public CamundaContainer withMultiTenancy() {
     withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_ENABLED,
-            MultitenancyConfiguration.MULTITENANCY_ENABLED)
+            MultiTenancyConfiguration.MULTITENANCY_ENABLED)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE,
-            MultitenancyConfiguration.ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE)
+            MultiTenancyConfiguration.ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED,
-            MultitenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED)
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED,
-            MultitenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED)
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_MULTITENANCY_API_ENABLED)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED,
-            MultitenancyConfiguration.CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED)
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API,
-            MultitenancyConfiguration.CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI)
+            MultiTenancyConfiguration.CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_NAME,
-            MultitenancyConfiguration.MULTITENANCY_USER_NAME)
+            MultiTenancyConfiguration.MULTITENANCY_USER_NAME)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_EMAIL,
-            MultitenancyConfiguration.MULTITENANCY_USER_EMAIL)
+            MultiTenancyConfiguration.MULTITENANCY_USER_EMAIL)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_USERNAME,
-            MultitenancyConfiguration.MULTITENANCY_USER_USERNAME)
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_PASSWORD,
-            MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
         .withEnv(
             ContainerRuntimeEnvs.CAMUNDA_ENV_MULTITENANCY_USER_ADMIN_ROLE,
-            MultitenancyConfiguration.MULTITENANCY_USER_ADMIN_ROLE)
+            MultiTenancyConfiguration.MULTITENANCY_USER_ADMIN_ROLE)
         .waitingFor(newBasicAuthWaitStrategy());
 
     return this;
@@ -169,8 +169,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   public static HttpWaitStrategy newBasicAuthBrokerReadyCheck() {
     return newDefaultBrokerReadyCheck()
         .withBasicCredentials(
-            MultitenancyConfiguration.MULTITENANCY_USER_USERNAME,
-            MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD);
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
   }
 
   public static HttpWaitStrategy newDefaultBrokerReadyCheck() {
@@ -184,8 +184,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
   public static HttpWaitStrategy newBasicAuthTopologyReadyCheck() {
     return newDefaultTopologyReadyCheck()
         .withBasicCredentials(
-            MultitenancyConfiguration.MULTITENANCY_USER_USERNAME,
-            MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD);
+            MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+            MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
   }
 
   public static HttpWaitStrategy newDefaultTopologyReadyCheck() {
@@ -269,7 +269,7 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
    * Contains all configuration values required for running a self-managed, multitenancy-enabled
    * Camunda test runtime.
    */
-  public static class MultitenancyConfiguration {
+  public static class MultiTenancyConfiguration {
     public static final String MULTITENANCY_ENABLED = "true";
     public static final String ZEEBE_GATEWAY_SECURITY_AUTHENTICATION_MODE = "basic";
     public static final String CAMUNDA_SECURITY_MULTITENANCY_CHECKS_ENABLED = "true";

@@ -20,7 +20,7 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.containers.CamundaContainer;
-import io.camunda.process.test.impl.containers.CamundaContainer.MultitenancyConfiguration;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ConnectorsContainer;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import io.camunda.process.test.impl.runtime.logging.CamundaLogEntry;
@@ -72,25 +72,26 @@ public class CamundaProcessTestContainerRuntime
   private final CamundaContainer camundaContainer;
   private final ConnectorsContainer connectorsContainer;
 
-  private final boolean isMultitenancyEnabled;
+  private final boolean isMultiTenancyEnabled;
   private final boolean connectorsEnabled;
 
   CamundaProcessTestContainerRuntime(
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
 
-    isMultitenancyEnabled = builder.isMultitenancyEnabled();
+    isMultiTenancyEnabled = builder.isMultiTenancyEnabled();
     connectorsEnabled = builder.isConnectorsEnabled();
 
     network = Network.newNetwork();
     camundaContainer = createCamundaContainer(network, builder);
     connectorsContainer = createConnectorsContainer(network, builder);
 
-    if (isMultitenancyEnabled) {
-      LOGGER.info(
-          "Multitenancy has been enabled. The API is now secured and requires basic "
-              + "authentication. Please see the CamundaContainer.MultitenancyConfiguration and "
-              + "ContainerRuntimeEnvs for more information.");
+    if (isMultiTenancyEnabled) {
+      LOGGER.debug(
+          "Multi-tenancy has been enabled. The API is now secured and requires basic "
+              + "authentication. An admin user is created. [username: '{}', password: '{}']",
+          MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME,
+          MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD);
     }
   }
 
@@ -128,13 +129,13 @@ public class CamundaProcessTestContainerRuntime
                 createContainerJsonLogger(builder.getCamundaLoggerName(), CamundaLogEntry.class))
             .withNetwork(network)
             .withNetworkAliases(NETWORK_ALIAS_CAMUNDA)
-            .withEnv(builder.getCamundaEnvVars())
             .withAccessToHost(true);
 
-    if (isMultitenancyEnabled) {
-      container.withMultitenancy();
+    if (isMultiTenancyEnabled) {
+      container.withMultiTenancy();
     }
 
+    container.withEnv(builder.getCamundaEnvVars());
     builder.getCamundaExposedPorts().forEach(container::addExposedPort);
 
     return container;
@@ -154,13 +155,13 @@ public class CamundaProcessTestContainerRuntime
             .withZeebeGrpcApi(CAMUNDA_GRPC_API)
             .withOperateApi(CAMUNDA_REST_API)
             .withEnv(builder.getConnectorsSecrets())
-            .withEnv(builder.getConnectorsEnvVars())
             .withAccessToHost(true);
 
-    if (isMultitenancyEnabled) {
-      container.withMultitenancy();
+    if (isMultiTenancyEnabled) {
+      container.withMultiTenancy();
     }
 
+    container.withEnv(builder.getConnectorsEnvVars());
     builder.getConnectorsExposedPorts().forEach(container::addExposedPort);
 
     return container;
@@ -221,11 +222,11 @@ public class CamundaProcessTestContainerRuntime
               .restAddress(getCamundaRestApiAddress())
               .grpcAddress(getCamundaGrpcApiAddress());
 
-      if (isMultitenancyEnabled) {
+      if (isMultiTenancyEnabled) {
         client.credentialsProvider(
             CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
-                .username(MultitenancyConfiguration.MULTITENANCY_USER_USERNAME)
-                .password(MultitenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
                 .build());
       }
 
