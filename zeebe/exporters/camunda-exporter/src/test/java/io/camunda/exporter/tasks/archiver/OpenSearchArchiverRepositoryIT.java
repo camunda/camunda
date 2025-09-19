@@ -29,6 +29,7 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -53,7 +54,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -186,11 +186,13 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {UsageMetricTemplate.INDEX_NAME, UsageMetricTUTemplate.INDEX_NAME})
-  @Disabled("https://github.com/camunda/camunda/issues/34709")
-  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+  @ValueSource(classes = {UsageMetricTemplate.class, UsageMetricTUTemplate.class})
+  void shouldSetIndexLifeCycleForUsageMetric(
+      final Class<? extends AbstractTemplateDescriptor> descriptorClass) throws IOException {
     // given
-    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var usageMetricIndex =
+        resourceProvider.getIndexTemplateDescriptor(descriptorClass).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
     testClient.indices().create(r -> r.index(usageMetricIndex));
@@ -227,14 +229,18 @@ final class OpenSearchArchiverRepositoryIT {
         resourceProvider
             .getIndexTemplateDescriptor(BatchOperationTemplate.class)
             .getFullQualifiedName();
-    // FIXME: uncomment once the metrics index rollover is correctly implemented,
-    // https://github.com/camunda/camunda/issues/34709
-    /*
+
+    final var usageMetricIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
+            .getFullQualifiedName();
+    final var usageMetricTUIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
+            .getFullQualifiedName();
+
     final var usageMetricsIndices =
-        List.of(
-            formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
-            formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
-     */
+        List.of(usageMetricIndex + "2024-01-02", usageMetricTUIndex + "2024-01-02");
     final var historicalIndices =
         List.of(processInstanceIndex + "2024-01-02", batchOperationIndex + "2024-01");
     final var untouchedIndices =
@@ -249,6 +255,7 @@ final class OpenSearchArchiverRepositoryIT {
     connectConfiguration.setIndexPrefix(prefix);
     final var repository = createRepository();
     final var indices = new ArrayList<>(historicalIndices);
+    indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
@@ -266,16 +273,12 @@ final class OpenSearchArchiverRepositoryIT {
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     // verify that the usage metrics policy was applied to all usage metric indices
-    // FIXME: uncomment once the metrics index rollover is correctly implemented,
-    // https://github.com/camunda/camunda/issues/34709
-    /*
     for (final var index : usageMetricsIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
           .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
           .isNotNull()
           .isEqualTo("custom-usage-metrics-policy");
     }
-     */
     // verify that the default policy was applied to all other indices
     for (final var index : historicalIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
