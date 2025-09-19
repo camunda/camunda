@@ -256,6 +256,10 @@ jobs:
           --reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set camunda-platform.orchestration.image.registry=gcr.io
+          --set camunda-platform.orchestration.image.repository=zeebe-io/zeebe
+          --set camunda-platform.orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          # Keep this for compatibility with older versions of the benchmark chart
           --set camunda-platform.core.image.registry=gcr.io
           --set camunda-platform.core.image.repository=zeebe-io/zeebe
           --set camunda-platform.core.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
