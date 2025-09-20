@@ -133,13 +133,13 @@ public class BatchOperationWriter {
   public void finishWithErrors(
       final String batchOperationKey,
       final OffsetDateTime endDate,
-      final BatchOperationErrorsDto errors) {
+      final BatchOperationErrorsDto errors,
+      final BatchOperationState batchOperationState) {
     insertErrors(batchOperationKey, errors);
 
     updateCompleted(
         batchOperationKey,
-        new BatchOperationUpdateDto(
-            batchOperationKey, BatchOperationState.PARTIALLY_COMPLETED, endDate));
+        new BatchOperationUpdateDto(batchOperationKey, batchOperationState, endDate));
   }
 
   public void cancel(final String batchOperationKey, final OffsetDateTime endDate) {

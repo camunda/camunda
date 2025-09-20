@@ -223,6 +223,33 @@ public final class BatchOperationMultiPartitionTest {
   }
 
   @Test
+  public void shouldBeFailedWhenAllPartitionsAreFailed() {
+    // given
+    final long batchOperationKey = createDistributedBatchOperation();
+
+    // When
+    // fail all partitions
+    for (int i = 1; i <= PARTITION_COUNT; i++) {
+      engine
+          .batchOperation()
+          .newPartitionLifecycle()
+          .withBatchOperationKey(batchOperationKey)
+          .onPartition(i)
+          .fail();
+    }
+
+    assertThat(
+            RecordingExporter.batchOperationLifecycleRecords()
+                .withBatchOperationKey(batchOperationKey)
+                .withPartitionId(1)
+                .limit(record -> record.getIntent().equals(BatchOperationIntent.FAILED))
+                .collect(Collectors.toList()))
+        .as("Batch operation is reported as FAILED on lead partition")
+        .extracting(Record::getIntent)
+        .contains(BatchOperationIntent.FAILED);
+  }
+
+  @Test
   public void shouldCancelOnAllPartitions() {
     // given
     final long batchOperationKey = createDistributedBatchOperation();
