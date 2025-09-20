@@ -83,6 +83,7 @@ import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingRuleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
@@ -222,6 +223,7 @@ import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignGroupFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignMappingRuleFromGroupCommandImpl;
+import io.camunda.client.impl.command.UnassignMappingRuleFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromClientCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignRoleFromMappingRuleCommandImpl;
@@ -1209,6 +1211,11 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public UnassignClientFromTenantCommandStep1 newUnassignClientFromTenantCommand() {
     return new UnassignClientFromTenantCommandImpl(httpClient);
+  }
+
+  @Override
+  public UnassignMappingRuleFromTenantCommandStep1 newUnassignMappingRuleFromTenantCommand() {
+    return new UnassignMappingRuleFromTenantCommandImpl(httpClient);
   }
 
   @Override
