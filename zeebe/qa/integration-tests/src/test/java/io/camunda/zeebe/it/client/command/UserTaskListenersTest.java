@@ -41,6 +41,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +60,11 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("resource")
 @ZeebeIntegration
 public class UserTaskListenersTest {
+
+  private static final OffsetDateTime TEST_DUE_DATE_TIME =
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+  private static final OffsetDateTime TEST_FOLLOW_UP_DATE_TIME =
+      OffsetDateTime.of(2024, 12, 12, 12, 12, 12, 12, ZoneOffset.of("Z"));
 
   @TestZeebe
   private static final TestStandaloneBroker ZEEBE =
@@ -602,8 +609,8 @@ public class UserTaskListenersTest {
                     r ->
                         r.forUserTask()
                             .correctAssignee("new_assignee")
-                            .correctDueDate("new_due_date")
-                            .correctFollowUpDate("new_follow_up_date")
+                            .correctDueDate(TEST_DUE_DATE_TIME)
+                            .correctFollowUpDate(TEST_FOLLOW_UP_DATE_TIME)
                             .correctCandidateUsers(List.of("new_user_A", "new_user_B"))
                             .correctCandidateGroups(List.of("new_group_C"))
                             .correctPriority(99))
@@ -622,8 +629,8 @@ public class UserTaskListenersTest {
             .setCorrections(
                 new JobResultCorrections()
                     .setAssignee("new_assignee")
-                    .setDueDate("new_due_date")
-                    .setFollowUpDate("new_follow_up_date")
+                    .setDueDate(TEST_DUE_DATE_TIME.toString())
+                    .setFollowUpDate(TEST_FOLLOW_UP_DATE_TIME.toString())
                     .setCandidateUsersList(List.of("new_user_A", "new_user_B"))
                     .setCandidateGroupsList(List.of("new_group_C"))
                     .setPriority(99))
@@ -648,8 +655,8 @@ public class UserTaskListenersTest {
         userTaskKey,
         (userTask) -> {
           assertThat(userTask.getAssignee()).isEqualTo("new_assignee");
-          assertThat(userTask.getDueDate()).isEqualTo("new_due_date");
-          assertThat(userTask.getFollowUpDate()).isEqualTo("new_follow_up_date");
+          assertThat(userTask.getDueDate()).isEqualTo(TEST_DUE_DATE_TIME.toString());
+          assertThat(userTask.getFollowUpDate()).isEqualTo(TEST_FOLLOW_UP_DATE_TIME.toString());
           assertThat(userTask.getCandidateUsersList()).containsExactly("new_user_A", "new_user_B");
           assertThat(userTask.getCandidateGroupsList()).containsExactly("new_group_C");
           assertThat(userTask.getPriority()).isEqualTo(99);
@@ -660,19 +667,19 @@ public class UserTaskListenersTest {
   void shouldUpdateUserTaskWithUpdatingTaskListenerWithPartialCorrections() {
     // given
     final var listenerType = "updating_listener_with_partial_corrections";
-    final var initialDueDate = "2015-01-02T15:35+02:00";
-    final var updatedDueDate = "2016-01-02T15:35+02:00";
-    final var correctedDueDate = "2017-01-02T15:35+02:00";
-    final var initialFollowUpDate = "2020-02-02T15:35+02:00";
-    final var correctedFollowUpDate = "2021-02-02T15:35+02:00";
+    final var initialDueDate = OffsetDateTime.parse("2015-01-02T15:35+02:00");
+    final var updatedDueDate = OffsetDateTime.parse("2016-01-02T15:35+02:00");
+    final var correctedDueDate = OffsetDateTime.parse("2017-01-02T15:35+02:00");
+    final var initialFollowUpDate = OffsetDateTime.parse("2020-02-02T15:35+02:00");
+    final var correctedFollowUpDate = OffsetDateTime.parse("2021-02-02T15:35+02:00");
 
     final var userTaskKey =
         resourcesHelper.createSingleUserTask(
             t ->
                 t.zeebeTaskListener(l -> l.updating().type(listenerType))
                     .zeebeAssignee("initial_assignee")
-                    .zeebeDueDate(initialDueDate)
-                    .zeebeFollowUpDate(initialFollowUpDate)
+                    .zeebeDueDate(initialDueDate.toString())
+                    .zeebeFollowUpDate(initialFollowUpDate.toString())
                     .zeebeCandidateUsers("initial_user_a, initial_user_b")
                     .zeebeCandidateGroups("initial_group_a, initial_group_b")
                     .zeebeTaskPriority("10"));
@@ -724,11 +731,11 @@ public class UserTaskListenersTest {
 
           assertThat(userTask.getDueDate())
               .describedAs("Due date should reflect correction (overriding the update request)")
-              .isEqualTo(correctedDueDate);
+              .isEqualTo(correctedDueDate.toString());
 
           assertThat(userTask.getFollowUpDate())
               .describedAs("Follow-up date should be set based on correction")
-              .isEqualTo(correctedFollowUpDate);
+              .isEqualTo(correctedFollowUpDate.toString());
 
           assertThat(userTask.getCandidateUsersList())
               .describedAs("Candidate users should match corrected values")
@@ -765,8 +772,8 @@ public class UserTaskListenersTest {
                     r ->
                         r.forUserTask()
                             .correctAssignee("Test")
-                            .correctDueDate("due date")
-                            .correctFollowUpDate("follow up date")
+                            .correctDueDate(TEST_DUE_DATE_TIME)
+                            .correctFollowUpDate(TEST_FOLLOW_UP_DATE_TIME)
                             .correctCandidateUsers(Arrays.asList("User A", "User B"))
                             .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
                             .correctPriority(80))
@@ -784,8 +791,8 @@ public class UserTaskListenersTest {
             .setCorrections(
                 new JobResultCorrections()
                     .setAssignee("Test")
-                    .setDueDate("due date")
-                    .setFollowUpDate("follow up date")
+                    .setDueDate(TEST_DUE_DATE_TIME.toString())
+                    .setFollowUpDate(TEST_FOLLOW_UP_DATE_TIME.toString())
                     .setCandidateUsersList(Arrays.asList("User A", "User B"))
                     .setCandidateGroupsList(Arrays.asList("Group A", "Group B"))
                     .setPriority(80))
@@ -811,8 +818,8 @@ public class UserTaskListenersTest {
         userTaskKey,
         (userTask) -> {
           assertThat(userTask.getAssignee()).isEqualTo("Test");
-          assertThat(userTask.getDueDate()).isEqualTo("due date");
-          assertThat(userTask.getFollowUpDate()).isEqualTo("follow up date");
+          assertThat(userTask.getDueDate()).isEqualTo(TEST_DUE_DATE_TIME.toString());
+          assertThat(userTask.getFollowUpDate()).isEqualTo(TEST_FOLLOW_UP_DATE_TIME.toString());
           assertThat(userTask.getCandidateUsersList()).containsExactly("User A", "User B");
           assertThat(userTask.getCandidateGroupsList()).containsExactly("Group A", "Group B");
           assertThat(userTask.getPriority()).isEqualTo(80);
@@ -834,7 +841,7 @@ public class UserTaskListenersTest {
                     r ->
                         r.forUserTask()
                             .correctAssignee("Test")
-                            .correctFollowUpDate("follow up date")
+                            .correctFollowUpDate(TEST_FOLLOW_UP_DATE_TIME)
                             .correctCandidateUsers(Arrays.asList("User A", "User B"))
                             .correctPriority(80))
                 .send()
@@ -851,7 +858,7 @@ public class UserTaskListenersTest {
             .setCorrections(
                 new JobResultCorrections()
                     .setAssignee("Test")
-                    .setFollowUpDate("follow up date")
+                    .setFollowUpDate(TEST_FOLLOW_UP_DATE_TIME.toString())
                     .setCandidateUsersList(Arrays.asList("User A", "User B"))
                     .setPriority(80))
             .setCorrectedAttributes(
@@ -874,7 +881,7 @@ public class UserTaskListenersTest {
         userTaskKey,
         (userTask) -> {
           assertThat(userTask.getAssignee()).isEqualTo("Test");
-          assertThat(userTask.getFollowUpDate()).isEqualTo("follow up date");
+          assertThat(userTask.getFollowUpDate()).isEqualTo(TEST_FOLLOW_UP_DATE_TIME.toString());
           assertThat(userTask.getCandidateUsersList()).containsExactly("User A", "User B");
           assertThat(userTask.getPriority()).isEqualTo(80);
         });

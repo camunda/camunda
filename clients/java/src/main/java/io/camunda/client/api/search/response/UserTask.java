@@ -16,6 +16,7 @@
 package io.camunda.client.api.search.response;
 
 import io.camunda.client.api.search.enums.UserTaskState;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -57,16 +58,16 @@ public interface UserTask {
   Long getFormKey();
 
   /** Creation date of the task */
-  String getCreationDate();
+  OffsetDateTime getCreationDate();
 
   /** Completion date of the task */
-  String getCompletionDate();
+  OffsetDateTime getCompletionDate();
 
   /** Follow-up date of the task */
-  String getFollowUpDate();
+  OffsetDateTime getFollowUpDate();
 
   /** Due date of the task */
-  String getDueDate();
+  OffsetDateTime getDueDate();
 
   /** Tenant identifiers */
   String getTenantId();

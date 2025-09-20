@@ -20,6 +20,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.UserTaskResult;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -132,23 +133,23 @@ public class UserTaskImpl implements UserTask {
   }
 
   @Override
-  public String getCreationDate() {
-    return creationDate;
+  public OffsetDateTime getCreationDate() {
+    return parseOffsetDateTime(creationDate);
   }
 
   @Override
-  public String getCompletionDate() {
-    return completionDate;
+  public OffsetDateTime getCompletionDate() {
+    return parseOffsetDateTime(completionDate);
   }
 
   @Override
-  public String getFollowUpDate() {
-    return followUpDate;
+  public OffsetDateTime getFollowUpDate() {
+    return parseOffsetDateTime(followUpDate);
   }
 
   @Override
-  public String getDueDate() {
-    return dueDate;
+  public OffsetDateTime getDueDate() {
+    return parseOffsetDateTime(dueDate);
   }
 
   @Override
@@ -174,5 +175,16 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Integer getPriority() {
     return priority;
+  }
+
+  private OffsetDateTime parseOffsetDateTime(final String dateTimeString) {
+    if (dateTimeString == null || dateTimeString.isEmpty()) {
+      return null;
+    }
+    try {
+      return OffsetDateTime.parse(dateTimeString);
+    } catch (final Exception e) {
+      throw new IllegalArgumentException("Failed to parse date-time string: " + dateTimeString, e);
+    }
   }
 }

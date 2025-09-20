@@ -28,6 +28,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -571,7 +572,7 @@ public class UserTaskAssertTest {
 
   @Nested
   public class DueDate {
-    private static final String DUE_DATE = "2025-05-01T10:00:00.000Z";
+    private static final String DUE_DATE = "2025-05-01T10:00:00.100Z";
 
     @Test
     public void hasDueDate() {
@@ -587,7 +588,8 @@ public class UserTaskAssertTest {
                           .dueDate(DUE_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasDueDate(OffsetDateTime.parse(DUE_DATE));
     }
 
     @Test
@@ -615,7 +617,8 @@ public class UserTaskAssertTest {
                           .dueDate(DUE_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasDueDate(OffsetDateTime.parse(DUE_DATE));
     }
 
     @Test
@@ -630,19 +633,21 @@ public class UserTaskAssertTest {
                           .name("a")
                           .elementInstanceKey("1")
                           .state(UserTaskStateEnum.CREATED)
-                          .dueDate("2025-04-30T10:00:00.000Z"))));
+                          .dueDate("2025-04-30T10:00:00.100Z"))));
 
       // then
       Assertions.assertThatThrownBy(
-              () -> assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasDueDate(DUE_DATE))
+              () ->
+                  assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+                      .hasDueDate(OffsetDateTime.parse(DUE_DATE)))
           .hasMessage(
-              "Expected [taskName: a] to have due date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have due date '2025-05-01T10:00:00.100Z', but was '2025-04-30T10:00:00.100Z'");
     }
   }
 
   @Nested
   public class CompletionDate {
-    private static final String COMPLETION_DATE = "2025-05-01T10:00:00.000Z";
+    private static final String COMPLETION_DATE = "2025-05-01T10:00:00.100Z";
 
     @Test
     public void hasCompletionDate() {
@@ -658,7 +663,8 @@ public class UserTaskAssertTest {
                           .completionDate(COMPLETION_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasCompletionDate(OffsetDateTime.parse(COMPLETION_DATE));
     }
 
     @Test
@@ -686,7 +692,8 @@ public class UserTaskAssertTest {
                           .completionDate(COMPLETION_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCompletionDate(COMPLETION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasCompletionDate(OffsetDateTime.parse(COMPLETION_DATE));
     }
 
     @Test
@@ -701,21 +708,21 @@ public class UserTaskAssertTest {
                           .name("a")
                           .elementInstanceKey("1")
                           .state(UserTaskStateEnum.CREATED)
-                          .completionDate("2025-04-30T10:00:00.000Z"))));
+                          .completionDate("2025-04-30T10:00:00.100Z"))));
 
       // then
       Assertions.assertThatThrownBy(
               () ->
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
-                      .hasCompletionDate(COMPLETION_DATE))
+                      .hasCompletionDate(OffsetDateTime.parse(COMPLETION_DATE)))
           .hasMessage(
-              "Expected [taskName: a] to have completion date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have completion date '2025-05-01T10:00:00.100Z', but was '2025-04-30T10:00:00.100Z'");
     }
   }
 
   @Nested
   public class FollowUpDate {
-    private static final String FOLLOW_UP_DATE = "2025-05-01T10:00:00.000Z";
+    private static final String FOLLOW_UP_DATE = "2025-05-01T10:00:00.100Z";
 
     @Test
     public void hasFollowUpDate() {
@@ -731,7 +738,8 @@ public class UserTaskAssertTest {
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasFollowUpDate(OffsetDateTime.parse(FOLLOW_UP_DATE));
     }
 
     @Test
@@ -759,7 +767,8 @@ public class UserTaskAssertTest {
                           .followUpDate(FOLLOW_UP_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasFollowUpDate(FOLLOW_UP_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasFollowUpDate(OffsetDateTime.parse(FOLLOW_UP_DATE));
     }
 
     @Test
@@ -774,21 +783,21 @@ public class UserTaskAssertTest {
                           .name("a")
                           .elementInstanceKey("1")
                           .state(UserTaskStateEnum.CREATED)
-                          .followUpDate("2025-04-30T10:00:00.000Z"))));
+                          .followUpDate("2025-04-30T10:00:00.100Z"))));
 
       // then
       Assertions.assertThatThrownBy(
               () ->
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
-                      .hasFollowUpDate(FOLLOW_UP_DATE))
+                      .hasFollowUpDate(OffsetDateTime.parse(FOLLOW_UP_DATE)))
           .hasMessage(
-              "Expected [taskName: a] to have follow-up date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have follow-up date '2025-05-01T10:00:00.100Z', but was '2025-04-30T10:00:00.100Z'");
     }
   }
 
   @Nested
   public class CreationDate {
-    private static final String CREATION_DATE = "2025-05-01T10:00:00.000Z";
+    private static final String CREATION_DATE = "2025-05-01T10:00:00.100Z";
 
     @Test
     public void hasCreationDate() {
@@ -804,7 +813,8 @@ public class UserTaskAssertTest {
                           .creationDate(CREATION_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasCreationDate(OffsetDateTime.parse(CREATION_DATE));
     }
 
     @Test
@@ -832,7 +842,8 @@ public class UserTaskAssertTest {
                           .creationDate(CREATION_DATE))));
 
       // then
-      assertThatUserTask(UserTaskSelectors.byTaskName("a")).hasCreationDate(CREATION_DATE);
+      assertThatUserTask(UserTaskSelectors.byTaskName("a"))
+          .hasCreationDate(OffsetDateTime.parse(CREATION_DATE));
     }
 
     @Test
@@ -847,15 +858,15 @@ public class UserTaskAssertTest {
                           .name("a")
                           .elementInstanceKey("1")
                           .state(UserTaskStateEnum.CREATED)
-                          .creationDate("2025-04-30T10:00:00.000Z"))));
+                          .creationDate("2025-04-30T10:00:00.100Z"))));
 
       // then
       Assertions.assertThatThrownBy(
               () ->
                   assertThatUserTask(UserTaskSelectors.byTaskName("a"))
-                      .hasCreationDate(CREATION_DATE))
+                      .hasCreationDate(OffsetDateTime.parse(CREATION_DATE)))
           .hasMessage(
-              "Expected [taskName: a] to have creation date '2025-05-01T10:00:00.000Z', but was '2025-04-30T10:00:00.000Z'");
+              "Expected [taskName: a] to have creation date '2025-05-01T10:00:00.100Z', but was '2025-04-30T10:00:00.100Z'");
     }
   }
 

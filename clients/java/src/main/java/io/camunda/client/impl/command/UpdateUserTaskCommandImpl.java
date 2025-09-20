@@ -26,6 +26,7 @@ import io.camunda.client.impl.response.UpdateUserTaskResponseImpl;
 import io.camunda.client.protocol.rest.Changeset;
 import io.camunda.client.protocol.rest.UserTaskUpdateRequest;
 import java.time.Duration;
+import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -74,9 +75,9 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   }
 
   @Override
-  public UpdateUserTaskCommandStep1 dueDate(final String dueDate) {
+  public UpdateUserTaskCommandStep1 dueDate(final OffsetDateTime dueDate) {
     ArgumentUtil.ensureNotNull("dueDate", dueDate);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_DUE_DATE, dueDate);
+    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_DUE_DATE, dueDate.toString());
     return this;
   }
 
@@ -87,9 +88,10 @@ public final class UpdateUserTaskCommandImpl implements UpdateUserTaskCommandSte
   }
 
   @Override
-  public UpdateUserTaskCommandStep1 followUpDate(final String followUpDate) {
+  public UpdateUserTaskCommandStep1 followUpDate(final OffsetDateTime followUpDate) {
     ArgumentUtil.ensureNotNull("followUpDate", followUpDate);
-    getChangesetEnsureInitialized().put(Changeset.JSON_PROPERTY_FOLLOW_UP_DATE, followUpDate);
+    getChangesetEnsureInitialized()
+        .put(Changeset.JSON_PROPERTY_FOLLOW_UP_DATE, followUpDate.toString());
     return this;
   }
 
