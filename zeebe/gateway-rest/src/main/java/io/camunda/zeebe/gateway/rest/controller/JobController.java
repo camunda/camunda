@@ -33,11 +33,13 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestMapper.UpdateJobRequest;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryRequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.search.SearchQueryResponseMapper;
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @CamundaRestController
 @RequestMapping("/v2/jobs")
@@ -60,11 +62,10 @@ public class JobController {
   }
 
   @CamundaPostMapping(path = "/activation")
-  public CompletableFuture<ResponseEntity<Object>> activateJobs(
-      @RequestBody final JobActivationRequest activationRequest) {
+  public SseEmitter activateJobs(@RequestBody final JobActivationRequest activationRequest) {
     return RequestMapper.toJobsActivationRequest(
             activationRequest, multiTenancyCfg.isChecksEnabled())
-        .fold(RestErrorMapper::mapProblemToCompletedResponse, this::activateJobs);
+        .fold(err -> errorEmitter(RestErrorMapper.mapProblemToResponse(err)), this::activateJobs);
   }
 
   @CamundaPostMapping(path = "/{jobKey}/failure")
@@ -103,18 +104,31 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
-  private CompletableFuture<ResponseEntity<Object>> activateJobs(
-      final ActivateJobsRequest activationRequest) {
+  private SseEmitter activateJobs(final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
     final var responseObserver = responseObserverProvider.apply(result);
+    final var sseEmitter = new SseEmitter();
+
+    result.whenComplete(
+        (r, e) -> {
+          try {
+            if (e == null) {
+              final JobActivationResult body = (JobActivationResult) r.getBody();
+              sseEmitter.send(body);
+              sseEmitter.complete();
+            } else {
+              sseEmitter.send(mapErrorToResponse(e));
+            }
+          } catch (final IOException ex) {
+            // ignore as the client has possibly closed the connection on both success and error
+            responseObserver.invokeCancelationHandler();
+          }
+        });
+
     jobServices
         .withAuthentication(authenticationProvider.getCamundaAuthentication())
         .activateJobs(activationRequest, responseObserver, responseObserver::setCancelationHandler);
-    return result.handleAsync(
-        (res, ex) -> {
-          responseObserver.invokeCancelationHandler();
-          return res;
-        });
+    return sseEmitter;
   }
 
   private CompletableFuture<ResponseEntity<Object>> failJob(final FailJobRequest failJobRequest) {
@@ -177,5 +191,15 @@ public class JobController {
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
+  }
+
+  private SseEmitter errorEmitter(final Object error) {
+    final var emitter = new SseEmitter();
+    try {
+      emitter.send(error);
+    } catch (final IOException ignored) {
+    }
+    emitter.complete();
+    return emitter;
   }
 }

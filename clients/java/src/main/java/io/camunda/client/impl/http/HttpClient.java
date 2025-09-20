@@ -84,7 +84,7 @@ public final class HttpClient implements AutoCloseable {
 
   @Override
   public void close() throws Exception {
-    client.close(CloseMode.GRACEFUL);
+    client.close(CloseMode.IMMEDIATE);
     try {
       client.awaitShutdown(shutdownTimeout);
     } catch (final InterruptedException e) {

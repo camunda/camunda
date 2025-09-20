@@ -104,10 +104,8 @@ public class LongPollingActivateJobsTest {
     assertThat(response.getJobs()).hasSize(expectedJobsCount);
   }
 
-  // TODO: the REST use case is currently not working, see
-  // https://github.com/camunda/camunda/issues/19883
   @ParameterizedTest
-  @ValueSource(booleans = {false})
+  @ValueSource(booleans = {true, false})
   public void shouldActivateJobForOpenRequest(final boolean useRest, final TestInfo testInfo)
       throws InterruptedException {
     // given
@@ -163,6 +161,7 @@ public class LongPollingActivateJobsTest {
           .jobType(jobType)
           .maxJobsToActivate(5)
           .workerName("closed-" + i)
+          .timeout(Duration.ofMillis(500))
           .send();
 
       Thread.sleep(100);
