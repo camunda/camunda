@@ -31,6 +31,9 @@ public class SecondaryStorage {
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   @NestedConfigurationProperty private Opensearch opensearch = new Opensearch();
 
+  /** Stores the RDBMS configuration, when type is set to 'rdbms'. */
+  private Rdbms rdbms = new Rdbms();
+
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".type",
@@ -58,6 +61,14 @@ public class SecondaryStorage {
 
   public void setOpensearch(final Opensearch opensearch) {
     this.opensearch = opensearch;
+  }
+
+  public Rdbms getRdbms() {
+    return rdbms;
+  }
+
+  public void setRdbms(final Rdbms rdbms) {
+    this.rdbms = rdbms;
   }
 
   public enum SecondaryStorageType {
