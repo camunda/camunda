@@ -907,6 +907,73 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  archunit-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "General / Unit - ArchUnit"
+    needs: [ detect-changes ]
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-16-default
+    env:
+      TEST_OWNER: General
+      TEST_PRODUCT: Camunda
+      TEST_TYPE: Unit
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: archunit-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -B --no-snapshot-updates
+          -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=3
+          -P skipFrontendBuild,extract-flaky-tests
+          -pl :camunda-archunit-tests
+          -am
+          -Dtest='*ArchTest'
+          -Dsurefire.failIfNoSpecifiedTests=false
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "General / Unit - ArchUnit"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_flaky_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
     name: "Docker / Tool / Checks"
@@ -1227,6 +1294,7 @@ jobs:
       checks: read
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - archunit-tests
       - build-platform-frontend
       - client-components
       - commitlint
