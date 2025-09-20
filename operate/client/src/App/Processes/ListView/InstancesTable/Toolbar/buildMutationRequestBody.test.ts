@@ -118,4 +118,61 @@ describe('buildMutationRequestBody', () => {
       },
     });
   });
+
+  it('uses OR combination when both incidents and active are selected', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        activityId: 'taskA',
+        incidents: true,
+        active: true,
+      },
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        elementId: 'taskA',
+        $or: [{hasIncident: true}, {state: {$eq: 'ACTIVE'}}],
+      },
+    });
+  });
+
+  it('uses hasIncident filter when only incidents checkbox is selected', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        activityId: 'taskA',
+        incidents: true,
+        active: false,
+      },
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        elementId: 'taskA',
+        hasIncident: true,
+      },
+    });
+  });
+
+  it('uses state filter when only active checkbox is selected', () => {
+    const body: Body = buildMutationRequestBody({
+      baseFilter: {
+        activityId: 'taskA',
+        incidents: false,
+        active: true,
+      },
+      includeIds: [],
+      excludeIds: [],
+    });
+
+    expect(body).toEqual({
+      filter: {
+        elementId: 'taskA',
+        state: {$eq: 'ACTIVE'},
+      },
+    });
+  });
 });
