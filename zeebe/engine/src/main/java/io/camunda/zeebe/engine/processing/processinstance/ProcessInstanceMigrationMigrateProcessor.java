@@ -13,6 +13,7 @@ import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCI
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
@@ -172,7 +173,8 @@ public class ProcessInstanceMigrationMigrateProcessor
         sourceProcessDefinition, targetProcessDefinition, mappingInstructions, processInstanceKey);
 
     final Map<String, String> mappedElementIds =
-        mapElementIds(mappingInstructions, processInstance, targetProcessDefinition);
+        mapElementIds(
+            mappingInstructions, processInstance, targetProcessDefinition, sourceProcessDefinition);
 
     // avoid stackoverflow using a queue to iterate over the descendants instead of recursion
     final var elementInstances = new ArrayDeque<>(List.of(processInstance));
@@ -214,13 +216,26 @@ public class ProcessInstanceMigrationMigrateProcessor
   private Map<String, String> mapElementIds(
       final List<ProcessInstanceMigrationMappingInstructionValue> mappingInstructions,
       final ElementInstance processInstance,
-      final DeployedProcess targetProcessDefinition) {
+      final DeployedProcess targetProcessDefinition,
+      final DeployedProcess sourceProcessDefinition) {
     final Map<String, String> mappedElementIds =
         mappingInstructions.stream()
             .collect(
                 Collectors.toMap(
                     ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
+
+    mappingInstructions.forEach(
+        instruction -> {
+          final var sourceElement =
+              sourceProcessDefinition.getProcess().getElementById(instruction.getSourceElementId());
+          if (sourceElement.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+            mappedElementIds.put(
+                instruction.getSourceElementId() + "#innerInstance",
+                instruction.getTargetElementId() + "#innerInstance");
+          }
+        });
+
     // users don't provide a mapping instruction for the bpmn process id
     mappedElementIds.put(
         processInstance.getValue().getBpmnProcessId(),
@@ -403,6 +418,24 @@ public class ProcessInstanceMigrationMigrateProcessor
               .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
               .setElementId(targetElementId)
               .setVariables(NIL_VALUE));
+    }
+
+    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+      final var targetAhsp =
+          (ExecutableAdHocSubProcess)
+              targetProcessDefinition
+                  .getProcess()
+                  .getElementById(sourceElementIdToTargetElementId.get(elementId));
+
+      variableRecord
+          .setScopeKey(elementInstance.getKey())
+          .setName(BufferUtil.wrapString("adHocSubProcessElements"))
+          .setValue(targetAhsp.getAdHocActivitiesMetadata())
+          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+          .setProcessDefinitionKey(targetProcessDefinition.getKey())
+          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+          .setTenantId(elementInstance.getValue().getTenantId());
+      stateWriter.appendFollowUpEvent(111L, VariableIntent.UPDATED, variableRecord);
     }
 
     variableState
