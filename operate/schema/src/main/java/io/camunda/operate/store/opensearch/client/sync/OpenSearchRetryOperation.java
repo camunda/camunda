@@ -10,6 +10,7 @@ package io.camunda.operate.store.opensearch.client.sync;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.opensearch.client.OpenSearchFailedShardsException;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -63,6 +64,7 @@ public abstract class OpenSearchRetryOperation extends OpenSearchSyncOperation {
           new RetryPolicy<T>()
               .handle(
                   IOException.class,
+                  UncheckedIOException.class,
                   OpenSearchException.class,
                   OpenSearchFailedShardsException.class)
               .withDelay(Duration.ofSeconds(delayIntervalInSeconds))
