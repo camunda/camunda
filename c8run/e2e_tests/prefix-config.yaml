@@ -5,3 +5,6 @@ camunda:
   tasklist:
     zeebeElasticsearch:
       prefix: "extra-prefix-zeebe-record"
+
+server:
+  port: 8088
