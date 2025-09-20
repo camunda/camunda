@@ -879,4 +879,346 @@ public class ModifyProcessInstanceRejectionTest {
                 modified process instance: '%d'"""
                 .formatted(PROCESS_ID, subProcessKeyTwo));
   }
+
+  @Test
+  public void shouldRejectActivationWhenFlowScopeIsTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .endEvent("sub-end"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("sub-end")
+            .terminateElement(subProcessElementInstance.getKey())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that activation is rejected when flow scope is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            """
+              Expected to modify instance of process '%s' but it contains one or more activate instructions \
+              for elements whose required flow scope instance is also being terminated: element 'sub-end' requires flow scope instance '%s' \
+              which is being terminated. Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope."""
+                .formatted(PROCESS_ID, subProcessElementInstance.getKey()));
+  }
+
+  @Test
+  public void shouldRejectMultipleActivationsWhenFlowScopeIsTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .serviceTask("B", b -> b.zeebeJobType("B"))
+                            .endEvent("sub-end"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("A")
+            .activateElement("B")
+            .terminateElement(subProcessElementInstance.getKey())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs("Expect that multiple activations are rejected when flow scope is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate instructions "
+                    + "for elements whose required flow scope instance is also being terminated: "
+                    + "element 'A' requires flow scope instance '%s' which is being terminated, "
+                    + "element 'B' requires flow scope instance '%s' which is being terminated. "
+                    + "Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.")
+                .formatted(
+                    PROCESS_ID,
+                    subProcessElementInstance.getKey(),
+                    subProcessElementInstance.getKey()));
+  }
+
+  @Test
+  public void shouldRejectOnlyInvalidActivationsWhenFlowScopeIsTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .serviceTask("B", b -> b.zeebeJobType("B"))
+                            .endEvent("sub-end"))
+                .serviceTask("C", c -> c.zeebeJobType("C"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B") // inside terminated scope
+            .activateElement("C") // outside terminated scope
+            .terminateElement(subProcessElementInstance.getKey())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that only invalid activation is rejected when flow scope is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate instructions "
+                    + "for elements whose required flow scope instance is also being terminated: "
+                    + "element 'B' requires flow scope instance '%s' which is being terminated. "
+                    + "Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.")
+                .formatted(PROCESS_ID, subProcessElementInstance.getKey()));
+  }
+
+  @Test
+  public void shouldRejectActivationWithAncestorScopeKeyIfTerminated() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .endEvent("sub-end"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("sub-end", subProcessElementInstance.getKey())
+            .terminateElement(subProcessElementInstance.getKey())
+            .expectRejection()
+            .modify();
+
+    // then
+    assertThat(rejection)
+        .describedAs(
+            "Expect that activation with ancestor scope key is rejected if ancestor is terminated")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate instructions "
+                    + "for elements whose required flow scope instance is also being terminated: "
+                    + "element 'sub-end' requires flow scope instance '%s' which is being terminated. "
+                    + "Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.")
+                .formatted(PROCESS_ID, subProcessElementInstance.getKey()));
+  }
+
+  @Test
+  public void shouldAcceptActivationWithValidAncestorScopeKey() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess(
+                    "subprocess",
+                    sp ->
+                        sp.embeddedSubProcess()
+                            .startEvent()
+                            .serviceTask("A", a -> a.zeebeJobType("A"))
+                            .endEvent("sub-end"))
+                .endEvent()
+                .done())
+        .deploy();
+
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+    final var subProcessElementInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.SUB_PROCESS)
+            .getFirst();
+
+    // when
+    final var event =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("sub-end", processInstanceKey)
+            .terminateElement(subProcessElementInstance.getKey())
+            .modify();
+
+    // then
+    assertThat(event)
+        .describedAs("Expect that activation with valid ancestor scope key is accepted")
+        .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
+        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+  }
+
+  @Test
+  public void shouldRejectActivationInsideTerminatedEventSubProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-subprocess",
+                    esp ->
+                        esp.startEvent()
+                            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                            .serviceTask("B", t -> t.zeebeJobType("B"))
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+    ENGINE.message().withName("msg").withCorrelationKey("1").publish();
+    final var eventSubProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .getFirst();
+    // when
+    final var rejection =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B")
+            .terminateElement(eventSubProcessInstance.getKey())
+            .expectRejection()
+            .modify();
+    // then
+    assertThat(rejection)
+        .describedAs("Expect activation inside terminated event subprocess is rejected")
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
+        .hasRejectionReason(
+            ("Expected to modify instance of process '%s' but it contains one or more activate instructions "
+                    + "for elements whose required flow scope instance is also being terminated: "
+                    + "element 'B' requires flow scope instance '%s' which is being terminated. "
+                    + "Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.")
+                .formatted(PROCESS_ID, eventSubProcessInstance.getKey()));
+  }
+
+  @Test
+  public void shouldAcceptActivationWithValidAncestorScopeKeyInEventSubProcess() {
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .eventSubProcess(
+                    "event-subprocess",
+                    esp ->
+                        esp.startEvent()
+                            .message(m -> m.name("msg").zeebeCorrelationKeyExpression("key"))
+                            .serviceTask("B", t -> t.zeebeJobType("B"))
+                            .endEvent())
+                .startEvent()
+                .userTask("C")
+                .endEvent()
+                .done())
+        .deploy();
+    final var processInstanceKey =
+        ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).withVariable("key", "1").create();
+    ENGINE.message().withName("msg").withCorrelationKey("1").publish();
+    final var eventSubProcessInstance =
+        RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementType(BpmnElementType.EVENT_SUB_PROCESS)
+            .getFirst();
+    // when
+    final var event =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .modification()
+            .activateElement("B", eventSubProcessInstance.getKey())
+            .modify();
+    // then
+    assertThat(event)
+        .describedAs(
+            "Expect activation with valid ancestor scope key in event subprocess is accepted")
+        .hasRecordType(io.camunda.zeebe.protocol.record.RecordType.EVENT)
+        .hasIntent(ProcessInstanceModificationIntent.MODIFIED);
+  }
 }
