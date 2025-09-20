@@ -28,7 +28,7 @@ type Props = {
 const CheckboxGroup: React.FC<Props> = ({dataTestId, groupLabel, items}) => {
   const form = useForm();
   const fieldValues = items.map(({name}) =>
-    Boolean(form.getState().values[name]),
+    Boolean(form.getState().values?.[name]),
   );
   const isChecked = fieldValues.every((value) => value);
   const isIndeterminate = fieldValues.some((value) => value);
