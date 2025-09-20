@@ -23,6 +23,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
@@ -60,6 +61,7 @@ public final class JobWorkerBuilderImpl
   private boolean enableStreaming;
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
+  private JobExceptionHandler jobExceptionHandler;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
@@ -77,6 +79,7 @@ public final class JobWorkerBuilderImpl
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
+    jobExceptionHandler = configuration.getDefaultJobWorkerJobExceptionHandler();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -165,6 +168,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 jobExceptionHandler(final JobExceptionHandler jobExceptionHandler) {
+    this.jobExceptionHandler = jobExceptionHandler;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -173,7 +182,8 @@ public final class JobWorkerBuilderImpl
     ensureGreaterThan("maxJobsActive", maxJobsActive, 0);
 
     final JobStreamer jobStreamer;
-    final JobRunnableFactory jobRunnableFactory = new JobRunnableFactoryImpl(jobClient, handler);
+    final JobRunnableFactory jobRunnableFactory =
+        new JobRunnableFactoryImpl(jobClient, handler, jobExceptionHandler);
     final JobPoller jobPoller =
         new JobPollerImpl(
             jobClient,

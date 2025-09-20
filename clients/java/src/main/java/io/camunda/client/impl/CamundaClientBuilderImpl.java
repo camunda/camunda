@@ -57,6 +57,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.basicauth.BasicAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
@@ -95,6 +96,8 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_JOBS_ACTIVE = 32;
   public static final Duration DEFAULT_JOB_POLL_INTERVAL = Duration.ofMillis(100);
   public static final boolean DEFAULT_STREAM_ENABLED = false;
+  public static final JobExceptionHandler DEFAULT_JOB_EXCEPTION_HANDLER =
+      JobExceptionHandler.createDefault();
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -125,6 +128,7 @@ public final class CamundaClientBuilderImpl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
+  private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
 
   @Override
   public URI getRestAddress() {
@@ -249,6 +253,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public boolean useDefaultRetryPolicy() {
     return useDefaultRetryPolicy;
+  }
+
+  @Override
+  public JobExceptionHandler getDefaultJobWorkerJobExceptionHandler() {
+    return jobExceptionHandler;
   }
 
   @Override
@@ -571,6 +580,13 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder defaultJobWorkerExceptionHandler(
+      final JobExceptionHandler jobExceptionHandler) {
+    this.jobExceptionHandler = jobExceptionHandler;
     return this;
   }
 

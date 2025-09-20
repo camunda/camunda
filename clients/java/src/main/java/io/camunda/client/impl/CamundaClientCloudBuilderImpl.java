@@ -33,6 +33,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
+import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.grpc.ClientInterceptor;
@@ -292,6 +293,13 @@ public class CamundaClientCloudBuilderImpl
   @Override
   public CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     innerBuilder.preferRestOverGrpc(preferRestOverGrpc);
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder defaultJobWorkerExceptionHandler(
+      final JobExceptionHandler jobExceptionHandler) {
+    innerBuilder.defaultJobWorkerExceptionHandler(jobExceptionHandler);
     return this;
   }
 
