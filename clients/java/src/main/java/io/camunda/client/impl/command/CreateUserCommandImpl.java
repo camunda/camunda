@@ -52,8 +52,6 @@ public final class CreateUserCommandImpl implements CreateUserCommandStep1 {
   @Override
   public CamundaFuture<CreateUserResponse> send() {
     ArgumentUtil.ensureNotNull("username", request.getUsername());
-    ArgumentUtil.ensureNotNull("email", request.getEmail());
-    ArgumentUtil.ensureNotNull("name", request.getName());
     ArgumentUtil.ensureNotNull("password", request.getPassword());
     final HttpCamundaFuture<CreateUserResponse> result = new HttpCamundaFuture<>();
     final CreateUserResponseImpl response = new CreateUserResponseImpl();

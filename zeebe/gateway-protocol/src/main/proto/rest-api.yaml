@@ -7793,6 +7793,9 @@ components:
         email:
           description: The email of the user.
           type: "string"
+      required:
+        - username
+        - password
     UserCreateResult:
       type: object
       properties:
