@@ -18,10 +18,19 @@ package io.camunda.zeebe.config;
 public class AppCfg {
 
   private String brokerUrl;
+  private String operateUrl;
   private boolean tls;
   private int monitoringPort;
   private StarterCfg starter;
   private WorkerCfg worker;
+
+  public String getOperateUrl() {
+    return operateUrl;
+  }
+
+  public void setOperateUrl(String operateUrl) {
+    this.operateUrl = operateUrl;
+  }
 
   public String getBrokerUrl() {
     return brokerUrl;
