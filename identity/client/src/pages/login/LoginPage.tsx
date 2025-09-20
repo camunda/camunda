@@ -29,6 +29,7 @@ import {
   Button,
 } from "src/pages/login/styled.ts";
 import { Paths } from "src/components/global/routePaths";
+import { getBaseUrl } from "src/configuration";
 
 interface LoginFormProps {
   onSuccess: () => void;
@@ -170,7 +171,7 @@ export const LoginPage: React.FC = () => {
 
   const redirectUrl = getRedirectUrl(location.search);
   const onSuccess = useCallback(() => {
-    window.location.href = redirectUrl ?? `/identity${Paths.users()}`;
+    window.location.href = redirectUrl ?? getBaseUrl() + Paths.users();
   }, [redirectUrl]);
   const hasProductionLicense = license?.isCommercial;
 
