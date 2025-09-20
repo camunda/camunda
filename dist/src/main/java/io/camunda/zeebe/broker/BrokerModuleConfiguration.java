@@ -99,7 +99,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   public ExporterRepository exporterRepository(
       @Autowired(required = false) final List<ExporterDescriptor> exporterDescriptors) {
     if (exporterDescriptors != null && !exporterDescriptors.isEmpty()) {
-      LOGGER.info("Create ExporterRepository with predefined exporter descriptors.");
+      LOGGER.debug("Create ExporterRepository with predefined exporter descriptors.");
       return new ExporterRepository(exporterDescriptors);
     } else {
       return new ExporterRepository();
