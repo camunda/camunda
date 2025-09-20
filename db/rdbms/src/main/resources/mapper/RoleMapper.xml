@@ -116,6 +116,17 @@ FROM (
           #{resourceId}
         </foreach>
       </if>
+
+      <if test="filter.joinParentId != null">
+        <!-- only used for roleMember search -->
+        AND r.ROLE_ID = #{filter.joinParentId}
+      </if>
+
+      <if test="filter.memberType != null">
+        <!-- only used for roleMember search -->
+        AND rm.ENTITY_TYPE = #{filter.memberType}
+      </if>
+
     </where>
   </sql>
 

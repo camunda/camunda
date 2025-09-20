@@ -43,8 +43,11 @@ public class RoleMemberIT {
 
     RoleFixtures.createAndSaveRandomRoles(rdbmsWriter, b -> b);
     final var role = RoleFixtures.createAndSaveRole(rdbmsWriter, b -> b);
+    final var role2 = RoleFixtures.createAndSaveRole(rdbmsWriter, b -> b);
     addUserToRole(rdbmsWriter, role.roleId(), "user-1");
     addUserToRole(rdbmsWriter, role.roleId(), "user-2");
+    addUserToRole(rdbmsWriter, role2.roleId(), "user-3");
+    addUserToRole(rdbmsWriter, role2.roleId(), "user-4");
 
     final var searchResult =
         reader.search(
