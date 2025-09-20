@@ -114,7 +114,7 @@ public final class DbProcessState implements MutableProcessState {
       final TransactionContext transactionContext,
       final EngineConfiguration config,
       final InstantSource clock) {
-    transformer = BpmnFactory.createTransformer(clock);
+    transformer = BpmnFactory.createTransformer(clock, config);
     processDefinitionKey = new DbLong();
     persistedProcess = new PersistedProcess();
     tenantIdKey = new DbString();

@@ -8,19 +8,28 @@
 package io.camunda.zeebe.engine.processing.deployment.model.transformer;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
+import io.camunda.zeebe.engine.ListenersConfiguration;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.ModelElementTransformer;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.TransformContext;
 import io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.model.bpmn.instance.Process;
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListenerEventType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
+import java.util.Map;
 import java.util.Optional;
 
 public final class ProcessTransformer implements ModelElementTransformer<Process> {
 
   private final ExecutionListenerTransformer executionListenerTransformer =
       new ExecutionListenerTransformer();
+
+  private final ListenersConfiguration listenersConfiguration;
+
+  public ProcessTransformer(final ListenersConfiguration listenersConfiguration) {
+    this.listenersConfiguration = listenersConfiguration;
+  }
 
   @Override
   public Class<Process> getType() {
@@ -45,6 +54,31 @@ public final class ProcessTransformer implements ModelElementTransformer<Process
       final Process element,
       final ExecutableProcess flowNode,
       final ExpressionLanguage expressionLanguage) {
+
+    Optional.ofNullable(listenersConfiguration.execution())
+        .ifPresent(
+            listeners ->
+                listeners.forEach(
+                    l -> {
+                      final var elementTypes = l.elementTypes();
+
+                      if (elementTypes == null
+                          || elementTypes.isEmpty()
+                          || elementTypes.contains(
+                              BpmnElementType.PROCESS.getElementTypeName().get())) {
+                        final var eventType = l.eventType();
+                        final var jobType = l.jobType();
+                        final var jobRetries = l.jobRetries();
+
+                        flowNode.getElementType().getElementTypeName();
+
+                        flowNode.addListener(
+                            ZeebeExecutionListenerEventType.valueOf(eventType),
+                            expressionLanguage.parseExpression(jobType),
+                            expressionLanguage.parseExpression(jobRetries),
+                            Map.of());
+                      }
+                    }));
 
     Optional.ofNullable(element.getSingleExtensionElement(ZeebeExecutionListeners.class))
         .ifPresent(
