@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
@@ -43,12 +44,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
@@ -123,13 +127,78 @@ public class ScaleUpPartitionsTest {
 
   @Test
   void shouldDeployProcessesToNewPartitionsAndStartNewInstances() {
+    // given
     final var desiredPartitionCount = PARTITIONS_COUNT + 1;
     cluster.awaitHealthyTopology();
     // when
-    scaleToPartitions(desiredPartitionCount);
+    executeScaling(desiredPartitionCount);
 
-    awaitScaleUpCompletion(desiredPartitionCount);
+    // then
     createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, desiredPartitionCount);
+  }
+
+  @Test
+  void shouldScaleWhenGlobalStateIsLarge() {
+    // given
+    final var desiredPartitionCount = PARTITIONS_COUNT + 1;
+    cluster.awaitHealthyTopology();
+
+    // A 400KB string that will be part of process definitions
+    final var bigString = "B".repeat(400 * 1024);
+    final var numProcessDefinitions = 100;
+    final var processIds =
+        IntStream.range(0, numProcessDefinitions).mapToObj(i -> "processId-" + i).toList();
+
+    final var processDefinitionId =
+        processIds.stream()
+            .map(
+                id ->
+                    Bpmn.createExecutableProcess(id)
+                        .startEvent()
+                        .serviceTask(
+                            "task",
+                            t -> t.zeebeJobType("jobType").zeebeProperty("longProperty", bigString))
+                        .endEvent()
+                        .done())
+            .toList();
+
+    processDefinitionId.forEach(process -> deployProcessModel(camundaClient, process, false));
+
+    // Create a total of 1000 users in batch of 100
+    for (int b = 0; b < 10; b++) {
+      final var batchId = b;
+      // create users in batches of 10 concurrently
+      final var futures =
+          IntStream.range(0, 100)
+              .mapToObj(i -> createUserWithIdx(i * 100 + batchId))
+              .toList()
+              .toArray(CompletableFuture[]::new);
+      CompletableFuture.allOf(futures).join();
+    }
+
+    // when
+    executeScaling(desiredPartitionCount);
+
+    // then
+    var iteration = 0;
+    for (final var id : processIds) {
+      iteration++;
+      if (iteration % 10 == 0) {
+        createInstanceWithAJobOnAllPartitions(
+            camundaClient, JOB_TYPE, desiredPartitionCount, false, id);
+      }
+    }
+  }
+
+  private CompletableFuture<CreateUserResponse> createUserWithIdx(final int userIdx) {
+    return camundaClient
+        .newCreateUserCommand()
+        .name("User#" + userIdx)
+        .username("User" + userIdx)
+        .password("password" + userIdx)
+        .email("User" + userIdx + "@email.com")
+        .send()
+        .toCompletableFuture();
   }
 
   @ParameterizedTest
@@ -142,8 +211,7 @@ public class ScaleUpPartitionsTest {
     // when
     deployProcessModel(camundaClient, JOB_TYPE, PROCESS_ID);
 
-    scaleToPartitions(desiredPartitionCount);
-    awaitScaleUpCompletion(desiredPartitionCount);
+    executeScaling(desiredPartitionCount);
 
     for (int i = 0; i < 20; i++) {
       createInstanceWithAJobOnAllPartitions(
@@ -192,15 +260,13 @@ public class ScaleUpPartitionsTest {
     cluster.awaitHealthyTopology();
 
     // Scale up to first partition count
-    scaleToPartitions(firstScaleUp);
-    awaitScaleUpCompletion(firstScaleUp);
+    executeScaling(firstScaleUp);
 
     createInstanceWithAJobOnAllPartitions(camundaClient, JOB_TYPE, firstScaleUp, true, PROCESS_ID);
 
     // when
     // Scale up to second partition count
-    scaleToPartitions(secondScaleUp);
-    awaitScaleUpCompletion(secondScaleUp);
+    executeScaling(secondScaleUp);
 
     // then
     createInstanceWithAJobOnAllPartitions(
@@ -297,9 +363,9 @@ public class ScaleUpPartitionsTest {
     backupActuator.take(backupId);
     assertBackupIsCompleted(backupId);
 
-    scaleToPartitions(desiredPartitionCount);
-    awaitScaleUpCompletion(desiredPartitionCount);
+    executeScaling(desiredPartitionCount);
 
+    // then
     restartClusterFromBackup(backupId, PARTITIONS_COUNT);
 
     assertThatRoutingStateMatches(
@@ -377,8 +443,7 @@ public class ScaleUpPartitionsTest {
         variableProvider.supplier(correlationKeyVariable));
 
     // when
-    scaleToPartitions(targetPartitionCount);
-    awaitScaleUpCompletion(targetPartitionCount);
+    executeScaling(targetPartitionCount);
 
     createInstanceOnAllPartitions(
         camundaClient,
@@ -431,8 +496,7 @@ public class ScaleUpPartitionsTest {
         camundaClient, PARTITIONS_COUNT * 5, variableProvider.supplier(correlationKeyVariable));
 
     // when
-    scaleToPartitions(targetPartitionCount);
-    awaitScaleUpCompletion(targetPartitionCount);
+    executeScaling(targetPartitionCount);
 
     // Start instances after scaling by publishing messages
     testCase.startProcessInstances(
@@ -440,6 +504,17 @@ public class ScaleUpPartitionsTest {
 
     // then - verify that message start events work and intermediate messages can be correlated
     correlationKeyProvider.correlateAllMessages(camundaClient, continueMessageName);
+  }
+
+  private void executeScaling(final int desiredPartitionCount) {
+    final var beforeScaling = Instant.now();
+    scaleToPartitions(desiredPartitionCount);
+    awaitScaleUpCompletion(desiredPartitionCount);
+    final var afterScaling = Instant.now();
+    final var scalingTimeMs = afterScaling.toEpochMilli() - beforeScaling.toEpochMilli();
+    LOG.info("Scaling took {}", Duration.ofMillis(scalingTimeMs));
+
+    assertThat(scalingTimeMs).isLessThan(30_000);
   }
 
   public void assertThatRoutingStateMatches(final RoutingState routingState) {

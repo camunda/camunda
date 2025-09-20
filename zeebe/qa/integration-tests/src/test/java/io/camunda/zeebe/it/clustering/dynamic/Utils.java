@@ -14,6 +14,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.PlannedOperationsResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.qa.util.actuator.ClusterActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
@@ -105,15 +106,8 @@ final class Utils {
 
   static long deployProcessModel(
       final CamundaClient camundaClient,
-      final String jobType,
-      final String processId,
+      final BpmnModelInstance process,
       final boolean waitDeployment) {
-    final var process =
-        Bpmn.createExecutableProcess(processId)
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeJobType(jobType))
-            .endEvent()
-            .done();
     final var deploymentKey =
         camundaClient
             .newDeployResourceCommand()
@@ -125,6 +119,20 @@ final class Utils {
       new ZeebeResourcesHelper(camundaClient).waitUntilDeploymentIsDone(deploymentKey);
     }
     return deploymentKey;
+  }
+
+  static long deployProcessModel(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String processId,
+      final boolean waitDeployment) {
+    final var process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", t -> t.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+    return deployProcessModel(camundaClient, process, waitDeployment);
   }
 
   static List<Long> createInstanceWithAJobOnAllPartitions(
