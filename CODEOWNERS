@@ -74,6 +74,9 @@
 /operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
 /operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java    @camunda/core-features
 
+# Workflows
+/.github/workflows/gh-inherit-core-fields.yml            @camunda/core-features
+
 ################
 ## Data Layer ##
 ################
