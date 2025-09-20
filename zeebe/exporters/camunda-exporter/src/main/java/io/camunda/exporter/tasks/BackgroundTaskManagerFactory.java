@@ -143,15 +143,16 @@ public final class BackgroundTaskManagerFactory {
 
   private ReschedulingTask buildIncidentMarkerTask() {
 
+    final var httpClient = HttpClientWrapper.newHttpClient();
     final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(config.getNotifier(), HttpClientWrapper.newHttpClient(), objectMapper);
+        new M2mTokenManager(config.getNotifier(), httpClient, objectMapper);
 
     final IncidentNotifier incidentNotifier =
         new IncidentNotifier(
             m2mTokenManager,
             processCache,
             config.getNotifier(),
-            HttpClientWrapper.newHttpClient(),
+            httpClient,
             executor,
             objectMapper);
 

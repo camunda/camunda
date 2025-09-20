@@ -28,6 +28,7 @@ public final class ReschedulingTask implements RunnableTask {
   private long delayMs;
   private long errorDelayMs;
   private volatile boolean closed = false;
+  private volatile boolean scheduled;
 
   public ReschedulingTask(
       final BackgroundTask task,
@@ -48,6 +49,7 @@ public final class ReschedulingTask implements RunnableTask {
 
   @Override
   public void run() {
+    scheduled = true;
     var result = task.execute();
     // while we could always expect this to return a non-null result, we don't necessarily want to
     // stop, and more importantly, we want to make it transparent that something went wrong
@@ -68,6 +70,10 @@ public final class ReschedulingTask implements RunnableTask {
   @Override
   public void close() {
     closed = true;
+    if (!scheduled) {
+      // if we never scheduled the task, we need to close it ourselves
+      task.close();
+    }
   }
 
   @VisibleForTesting
@@ -108,6 +114,7 @@ public final class ReschedulingTask implements RunnableTask {
       executor.schedule(this, delay, TimeUnit.MILLISECONDS);
     } else {
       logger.info("Task {} was closed, not rescheduling.", task.getClass().getSimpleName());
+      task.close();
     }
   }
 }

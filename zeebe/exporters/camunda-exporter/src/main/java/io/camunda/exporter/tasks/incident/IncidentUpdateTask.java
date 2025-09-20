@@ -34,6 +34,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
+import javax.annotation.WillCloseWhenClosed;
 import org.agrona.LangUtil;
 import org.slf4j.Logger;
 
@@ -53,7 +54,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final boolean ignoreMissingData,
       final int batchSize,
       final ScheduledExecutorService executor,
-      final IncidentNotifier incidentNotifier,
+      @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
       final Logger logger) {
     this(
         metadata,
@@ -73,7 +74,7 @@ public final class IncidentUpdateTask implements BackgroundTask {
       final boolean ignoreMissingData,
       final int batchSize,
       final ScheduledExecutorService executor,
-      final IncidentNotifier incidentNotifier,
+      @WillCloseWhenClosed final IncidentNotifier incidentNotifier,
       final Logger logger,
       final Duration waitForRefreshInterval) {
     this.metadata = metadata;
@@ -98,6 +99,11 @@ public final class IncidentUpdateTask implements BackgroundTask {
   @Override
   public String getCaption() {
     return "Incident update task";
+  }
+
+  @Override
+  public void close() {
+    incidentNotifier.close();
   }
 
   /**
