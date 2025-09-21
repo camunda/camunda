@@ -52,7 +52,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import org.jetbrains.annotations.NotNull;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
@@ -171,7 +170,7 @@ public final class BackgroundTaskManagerFactory {
         logger);
   }
 
-  private @NotNull OpenSearchArchiverRepository createArchiverRepository(
+  private OpenSearchArchiverRepository createArchiverRepository(
       final OpenSearchAsyncClient asyncClient, final OpenSearchGenericClient genericClient) {
     return new OpenSearchArchiverRepository(
         partitionId,
@@ -198,7 +197,7 @@ public final class BackgroundTaskManagerFactory {
         logger);
   }
 
-  private @NotNull ElasticsearchIncidentUpdateRepository createIncidentUpdateRepository(
+  private ElasticsearchIncidentUpdateRepository createIncidentUpdateRepository(
       final ElasticsearchAsyncClient asyncClient) {
     final var listViewTemplate =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
@@ -223,7 +222,7 @@ public final class BackgroundTaskManagerFactory {
         logger);
   }
 
-  private @NotNull ElasticsearchArchiverRepository createArchiverRepository(
+  private ElasticsearchArchiverRepository createArchiverRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchArchiverRepository(
         partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
