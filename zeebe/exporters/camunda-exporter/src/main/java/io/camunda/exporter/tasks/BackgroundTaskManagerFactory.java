@@ -52,6 +52,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import org.jetbrains.annotations.NotNull;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.slf4j.Logger;
 
@@ -98,8 +100,24 @@ public final class BackgroundTaskManagerFactory {
     // initialize all repositories based on connection type to reuse clients
     final var connectionType = ConnectionTypes.from(config.getConnect().getType());
     switch (connectionType) {
-      case ELASTICSEARCH -> initElasticsearchBasedRepositories();
-      case OPENSEARCH -> initOpensearchBasedRepositories();
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
+
+        archiverRepository = createArchiverRepository(asyncClient);
+        incidentRepository = createIncidentUpdateRepository(asyncClient);
+        batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        final var asyncClient = connector.createAsyncClient();
+        final var genericClient =
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
+
+        archiverRepository = createArchiverRepository(asyncClient, genericClient);
+        incidentRepository = createIncidentUpdateRepository(asyncClient);
+        batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+      }
     }
 
     final List<RunnableTask> tasks = buildTasks();
@@ -115,57 +133,22 @@ public final class BackgroundTaskManagerFactory {
         Duration.ofSeconds(5));
   }
 
-  private void initOpensearchBasedRepositories() {
-    final var listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
-    final var flowNodeTemplate =
-        resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
-    final var incidentTemplate =
-        resourceProvider.getIndexTemplateDescriptor(IncidentTemplate.class);
-    final var postImporterTemplate =
-        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+  private OpensearchBatchOperationUpdateRepository createBatchOperationRepository(
+      final OpenSearchAsyncClient asyncClient) {
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     final var batchOperationTemplate =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
-
-    final var connector = new OpensearchConnector(config.getConnect());
-    final var asyncClient = connector.createAsyncClient();
-    final var genericClient =
-        new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
-    archiverRepository =
-        new OpenSearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            asyncClient,
-            genericClient,
-            executor,
-            metrics,
-            logger);
-    incidentRepository =
-        new OpenSearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            asyncClient,
-            executor,
-            logger);
-
-    batchOperationUpdateRepository =
-        new OpensearchBatchOperationUpdateRepository(
-            asyncClient,
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate.getFullQualifiedName(),
-            logger);
+    return new OpensearchBatchOperationUpdateRepository(
+        asyncClient,
+        executor,
+        batchOperationTemplate.getFullQualifiedName(),
+        operationTemplate.getFullQualifiedName(),
+        logger);
   }
 
-  private void initElasticsearchBasedRepositories() {
+  private OpenSearchIncidentUpdateRepository createIncidentUpdateRepository(
+      final OpenSearchAsyncClient asyncClient) {
     final var listViewTemplate =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     final var flowNodeTemplate =
@@ -178,38 +161,75 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     final var batchOperationTemplate =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    return new OpenSearchIncidentUpdateRepository(
+        partitionId,
+        postImporterTemplate.getAlias(),
+        incidentTemplate.getAlias(),
+        listViewTemplate.getAlias(),
+        listViewTemplate.getFullQualifiedName(),
+        flowNodeTemplate.getAlias(),
+        operationTemplate.getAlias(),
+        asyncClient,
+        executor,
+        logger);
+  }
 
-    final var connector = new ElasticsearchConnector(config.getConnect());
-    final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
-    archiverRepository =
-        new ElasticsearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            asyncClient,
-            executor,
-            metrics,
-            logger);
-    incidentRepository =
-        new ElasticsearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            asyncClient,
-            executor,
-            logger);
+  private @NotNull OpenSearchArchiverRepository createArchiverRepository(
+      final OpenSearchAsyncClient asyncClient, final OpenSearchGenericClient genericClient) {
+    return new OpenSearchArchiverRepository(
+        partitionId,
+        config.getHistory(),
+        resourceProvider,
+        asyncClient,
+        genericClient,
+        executor,
+        metrics,
+        logger);
+  }
 
-    batchOperationUpdateRepository =
-        new ElasticsearchBatchOperationUpdateRepository(
-            asyncClient,
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate.getFullQualifiedName(),
-            logger);
+  private ElasticsearchBatchOperationUpdateRepository createBatchOperationRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    final var operationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    return new ElasticsearchBatchOperationUpdateRepository(
+        asyncClient,
+        executor,
+        operationTemplate.getFullQualifiedName(),
+        batchOperationTemplate.getFullQualifiedName(),
+        logger);
+  }
+
+  private @NotNull ElasticsearchIncidentUpdateRepository createIncidentUpdateRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    final var listViewTemplate =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    final var flowNodeTemplate =
+        resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+    final var incidentTemplate =
+        resourceProvider.getIndexTemplateDescriptor(IncidentTemplate.class);
+    final var postImporterTemplate =
+        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+    final var operationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+    return new ElasticsearchIncidentUpdateRepository(
+        partitionId,
+        postImporterTemplate.getAlias(),
+        incidentTemplate.getAlias(),
+        listViewTemplate.getAlias(),
+        listViewTemplate.getFullQualifiedName(),
+        flowNodeTemplate.getAlias(),
+        operationTemplate.getAlias(),
+        asyncClient,
+        executor,
+        logger);
+  }
+
+  private @NotNull ElasticsearchArchiverRepository createArchiverRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    return new ElasticsearchArchiverRepository(
+        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
   }
 
   private List<RunnableTask> buildTasks() {
