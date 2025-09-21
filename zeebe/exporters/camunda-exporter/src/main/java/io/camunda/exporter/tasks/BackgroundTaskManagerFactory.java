@@ -92,9 +92,99 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
-    archiverRepository = buildArchiverRepository();
-    incidentRepository = buildIncidentRepository();
-    batchOperationUpdateRepository = buildBatchOperationUpdateRepository();
+    archiverRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchArchiverRepository(
+            partitionId,
+            config.getHistory(),
+            resourceProvider,
+            connector.createAsyncClient(),
+            executor,
+            metrics,
+            logger);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        final var asyncClient = connector.createAsyncClient();
+        final var genericClient =
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
+        yield new OpenSearchArchiverRepository(
+            partitionId,
+            config.getHistory(),
+            resourceProvider,
+            asyncClient,
+            genericClient,
+            executor,
+            metrics,
+            logger);
+      }
+    };
+    final var listViewTemplate =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
+    final var flowNodeTemplate =
+        resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
+    final var incidentTemplate =
+        resourceProvider.getIndexTemplateDescriptor(IncidentTemplate.class);
+    final var postImporterTemplate =
+        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
+    final var operationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+
+    incidentRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchIncidentUpdateRepository(
+            partitionId,
+            postImporterTemplate.getAlias(),
+            incidentTemplate.getAlias(),
+            listViewTemplate.getAlias(),
+            listViewTemplate.getFullQualifiedName(),
+            flowNodeTemplate.getAlias(),
+            operationTemplate.getAlias(),
+            connector.createAsyncClient(),
+            executor,
+            logger);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        yield new OpenSearchIncidentUpdateRepository(
+            partitionId,
+            postImporterTemplate.getAlias(),
+            incidentTemplate.getAlias(),
+            listViewTemplate.getAlias(),
+            listViewTemplate.getFullQualifiedName(),
+            flowNodeTemplate.getAlias(),
+            operationTemplate.getAlias(),
+            connector.createAsyncClient(),
+            executor,
+            logger);
+      }
+    };
+    final var operationTemplate1 =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
+    final var batchOperationTemplate =
+        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+    batchOperationUpdateRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
+      case ELASTICSEARCH -> {
+        final var connector = new ElasticsearchConnector(config.getConnect());
+        yield new ElasticsearchBatchOperationUpdateRepository(
+            connector.createAsyncClient(),
+            executor,
+            batchOperationTemplate.getFullQualifiedName(),
+            operationTemplate1.getFullQualifiedName(),
+            logger);
+      }
+      case OPENSEARCH -> {
+        final var connector = new OpensearchConnector(config.getConnect());
+        yield new OpensearchBatchOperationUpdateRepository(
+            connector.createAsyncClient(),
+            executor,
+            batchOperationTemplate.getFullQualifiedName(),
+            operationTemplate1.getFullQualifiedName(),
+            logger);
+      }
+    };
 
     final List<RunnableTask> tasks = buildTasks();
 
@@ -235,105 +325,4 @@ public final class BackgroundTaskManagerFactory {
     return executor;
   }
 
-  private ArchiverRepository buildArchiverRepository() {
-    return switch (ConnectionTypes.from(config.getConnect().getType())) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            connector.createAsyncClient(),
-            executor,
-            metrics,
-            logger);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        final var asyncClient = connector.createAsyncClient();
-        final var genericClient =
-            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
-        yield new OpenSearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            asyncClient,
-            genericClient,
-            executor,
-            metrics,
-            logger);
-      }
-    };
-  }
-
-  private IncidentUpdateRepository buildIncidentRepository() {
-    final var listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
-    final var flowNodeTemplate =
-        resourceProvider.getIndexTemplateDescriptor(FlowNodeInstanceTemplate.class);
-    final var incidentTemplate =
-        resourceProvider.getIndexTemplateDescriptor(IncidentTemplate.class);
-    final var postImporterTemplate =
-        resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
-    final var operationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-
-    return switch (ConnectionTypes.from(config.getConnect().getType())) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            connector.createAsyncClient(),
-            executor,
-            logger);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        yield new OpenSearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            connector.createAsyncClient(),
-            executor,
-            logger);
-      }
-    };
-  }
-
-  private BatchOperationUpdateRepository buildBatchOperationUpdateRepository() {
-    final var operationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-    final var batchOperationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
-    return switch (ConnectionTypes.from(config.getConnect().getType())) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchBatchOperationUpdateRepository(
-            connector.createAsyncClient(),
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate.getFullQualifiedName(),
-            logger);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        yield new OpensearchBatchOperationUpdateRepository(
-            connector.createAsyncClient(),
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate.getFullQualifiedName(),
-            logger);
-      }
-    };
-  }
 }
