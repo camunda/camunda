@@ -87,6 +87,7 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
+  private boolean resourcesInitialized = false;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -120,11 +121,16 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     LOG.info("Opening Exporter on partition {}", partitionId);
     this.controller = controller;
-    setupExporterResources();
-    searchEngineClient = clientAdapter.getSearchEngineClient();
-    try (final var schemaManager = createSchemaManager()) {
+    if (!resourcesInitialized) {
+      setupExporterResources();
+      searchEngineClient = clientAdapter.getSearchEngineClient();
+      resourcesInitialized = true;
+    }
 
+    try (final var schemaManager = createSchemaManager()) {
       if (!schemaManager.isSchemaReadyForUse()) {
+        // close resources we opened
+        close();
         throw new IllegalStateException("Schema is not ready for use");
       }
     }
