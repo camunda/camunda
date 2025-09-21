@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks;
 
 import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
+import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
@@ -92,34 +93,7 @@ public final class BackgroundTaskManagerFactory {
 
   public BackgroundTaskManager build() {
     executor = buildExecutor();
-    archiverRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            connector.createAsyncClient(),
-            executor,
-            metrics,
-            logger);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        final var asyncClient = connector.createAsyncClient();
-        final var genericClient =
-            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
-        yield new OpenSearchArchiverRepository(
-            partitionId,
-            config.getHistory(),
-            resourceProvider,
-            asyncClient,
-            genericClient,
-            executor,
-            metrics,
-            logger);
-      }
-    };
+
     final var listViewTemplate =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     final var flowNodeTemplate =
@@ -130,61 +104,80 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-
-    incidentRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            connector.createAsyncClient(),
-            executor,
-            logger);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        yield new OpenSearchIncidentUpdateRepository(
-            partitionId,
-            postImporterTemplate.getAlias(),
-            incidentTemplate.getAlias(),
-            listViewTemplate.getAlias(),
-            listViewTemplate.getFullQualifiedName(),
-            flowNodeTemplate.getAlias(),
-            operationTemplate.getAlias(),
-            connector.createAsyncClient(),
-            executor,
-            logger);
-      }
-    };
-    final var operationTemplate1 =
-        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     final var batchOperationTemplate =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
-    batchOperationUpdateRepository = switch (ConnectionTypes.from(config.getConnect().getType())) {
+
+    switch (ConnectionTypes.from(config.getConnect().getType())) {
       case ELASTICSEARCH -> {
         final var connector = new ElasticsearchConnector(config.getConnect());
-        yield new ElasticsearchBatchOperationUpdateRepository(
-            connector.createAsyncClient(),
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate1.getFullQualifiedName(),
-            logger);
+        final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
+        archiverRepository =
+            new ElasticsearchArchiverRepository(
+                partitionId,
+                config.getHistory(),
+                resourceProvider,
+                asyncClient,
+                executor,
+                metrics,
+                logger);
+        incidentRepository =
+            new ElasticsearchIncidentUpdateRepository(
+                partitionId,
+                postImporterTemplate.getAlias(),
+                incidentTemplate.getAlias(),
+                listViewTemplate.getAlias(),
+                listViewTemplate.getFullQualifiedName(),
+                flowNodeTemplate.getAlias(),
+                operationTemplate.getAlias(),
+                asyncClient,
+                executor,
+                logger);
+
+        batchOperationUpdateRepository =
+            new ElasticsearchBatchOperationUpdateRepository(
+                asyncClient,
+                executor,
+                batchOperationTemplate.getFullQualifiedName(),
+                operationTemplate.getFullQualifiedName(),
+                logger);
       }
       case OPENSEARCH -> {
         final var connector = new OpensearchConnector(config.getConnect());
-        yield new OpensearchBatchOperationUpdateRepository(
-            connector.createAsyncClient(),
-            executor,
-            batchOperationTemplate.getFullQualifiedName(),
-            operationTemplate1.getFullQualifiedName(),
-            logger);
+        final var asyncClient = connector.createAsyncClient();
+        final var genericClient =
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
+        archiverRepository =
+            new OpenSearchArchiverRepository(
+                partitionId,
+                config.getHistory(),
+                resourceProvider,
+                asyncClient,
+                genericClient,
+                executor,
+                metrics,
+                logger);
+        incidentRepository =
+            new OpenSearchIncidentUpdateRepository(
+                partitionId,
+                postImporterTemplate.getAlias(),
+                incidentTemplate.getAlias(),
+                listViewTemplate.getAlias(),
+                listViewTemplate.getFullQualifiedName(),
+                flowNodeTemplate.getAlias(),
+                operationTemplate.getAlias(),
+                asyncClient,
+                executor,
+                logger);
+
+        batchOperationUpdateRepository =
+            new OpensearchBatchOperationUpdateRepository(
+                asyncClient,
+                executor,
+                batchOperationTemplate.getFullQualifiedName(),
+                operationTemplate.getFullQualifiedName(),
+                logger);
       }
-    };
+    }
 
     final List<RunnableTask> tasks = buildTasks();
 
@@ -324,5 +317,4 @@ public final class BackgroundTaskManagerFactory {
 
     return executor;
   }
-
 }
