@@ -40,6 +40,7 @@ import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -88,6 +89,22 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
+  public static List<EventDefinition> getEventDefinitionsForMessageStartEvents(
+      final ModelElementInstance element) {
+    // Only validates that there are no duplicate message names in message definitions that refer to
+    // different messages, other cases are already handled by MessageValidator.
+    final Set<Message> referredMessages = new HashSet<>();
+    return element.getChildElementsByType(StartEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(MessageEventDefinition.class::isInstance)
+        .filter(
+            definition -> {
+              final Message message = ((MessageEventDefinition) definition).getMessage();
+              return referredMessages.add(message);
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<EventDefinition> getEventDefinitionsForLinkCatchEvents(
       final ModelElementInstance element) {
     final List<EventDefinition> definitions =
@@ -125,6 +142,14 @@ public class ModelUtil {
       final ModelElementInstance element, final Consumer<String> errorCollector) {
 
     final List<EventDefinition> definitions = getEventDefinitionsForSignalStartEvents(element);
+
+    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+  }
+
+  public static void verifyNoDuplicateMessageStartEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions = getEventDefinitionsForMessageStartEvents(element);
 
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
