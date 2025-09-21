@@ -78,14 +78,15 @@ public class DevUtilExternalController {
           new ElasticsearchEngineClient(elasticsearchClient, connector.objectMapper());
       elasticsearchClient.indices().delete(r -> r.index(indicesToDelete));
       processCache.clearCache();
-      final var schemaManager =
+      try (final var schemaManager =
           new SchemaManager(
               searchEngineClient,
               indexDescriptors.indices(),
               indexDescriptors.templates(),
               configuration,
-              connector.objectMapper());
-      schemaManager.startup();
+              connector.objectMapper())) {
+        schemaManager.startup();
+      }
     }
     return ResponseEntity.ok().build();
   }
