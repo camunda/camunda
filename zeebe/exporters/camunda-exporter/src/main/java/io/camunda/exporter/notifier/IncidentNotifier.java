@@ -15,6 +15,7 @@ import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -61,6 +62,30 @@ public class IncidentNotifier implements CloseableSilently {
   private final ObjectWriter objectWriter;
 
   public IncidentNotifier(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final IncidentNotifierConfiguration configuration,
+      final Executor executor,
+      final ObjectMapper objectMapper) {
+    this(processCache, configuration, HttpClientWrapper.newHttpClient(), executor, objectMapper);
+  }
+
+  private IncidentNotifier(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final IncidentNotifierConfiguration configuration,
+      @WillCloseWhenClosed final HttpClient httpClient,
+      final Executor executor,
+      final ObjectMapper objectMapper) {
+    this(
+        new M2mTokenManager(configuration, httpClient, objectMapper),
+        processCache,
+        configuration,
+        httpClient,
+        executor,
+        objectMapper);
+  }
+
+  @VisibleForTesting
+  IncidentNotifier(
       final M2mTokenManager m2mTokenManager,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final IncidentNotifierConfiguration configuration,
