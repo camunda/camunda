@@ -122,10 +122,11 @@ public class CamundaExporter implements Exporter {
     this.controller = controller;
     setupExporterResources();
     searchEngineClient = clientAdapter.getSearchEngineClient();
-    final var schemaManager = createSchemaManager();
+    try (final var schemaManager = createSchemaManager()) {
 
-    if (!schemaManager.isSchemaReadyForUse()) {
-      throw new IllegalStateException("Schema is not ready for use");
+      if (!schemaManager.isSchemaReadyForUse()) {
+        throw new IllegalStateException("Schema is not ready for use");
+      }
     }
 
     writer = createBatchWriter();
@@ -230,13 +231,15 @@ public class CamundaExporter implements Exporter {
     try {
       setupExporterResources();
       searchEngineClient = clientAdapter.getSearchEngineClient();
-      final var schemaManager = createSchemaManager();
+      final List<String> emptiedIndices;
+      try (final var schemaManager = createSchemaManager()) {
 
-      // Indices
-      final var emptiedIndices = schemaManager.truncateIndices();
+        // Indices
+        emptiedIndices = schemaManager.truncateIndices();
 
-      // Delete archived indices
-      schemaManager.deleteArchivedIndices();
+        // Delete archived indices
+        schemaManager.deleteArchivedIndices();
+      }
 
       // At this point, several indices still have data, e.g.
       // deployment, tasklist-task, process, operate-event, operate-list-view,
