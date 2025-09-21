@@ -36,7 +36,6 @@ import io.camunda.exporter.tasks.incident.OpenSearchIncidentUpdateRepository;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
@@ -237,12 +236,6 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ArchiverRepository buildArchiverRepository() {
-    final var listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
-    final var batchOperationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
-    final var tasklistImportPositionIndex =
-        resourceProvider.getIndexDescriptor(TasklistImportPositionIndex.class);
     return switch (ConnectionTypes.from(config.getConnect().getType())) {
       case ELASTICSEARCH -> {
         final var connector = new ElasticsearchConnector(config.getConnect());
