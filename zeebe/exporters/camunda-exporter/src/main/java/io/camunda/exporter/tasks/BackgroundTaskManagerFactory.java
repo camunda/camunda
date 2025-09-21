@@ -99,25 +99,22 @@ public final class BackgroundTaskManagerFactory {
 
     // initialize all repositories based on connection type to reuse clients
     final var connectionType = ConnectionTypes.from(config.getConnect().getType());
-    switch (connectionType) {
-      case ELASTICSEARCH -> {
-        final var connector = new ElasticsearchConnector(config.getConnect());
-        final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
+    if (connectionType == ConnectionTypes.OPENSEARCH) {
+      final var connector = new OpensearchConnector(config.getConnect());
+      final var asyncClient = connector.createAsyncClient();
+      final var genericClient =
+          new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
 
-        archiverRepository = createArchiverRepository(asyncClient);
-        incidentRepository = createIncidentUpdateRepository(asyncClient);
-        batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
-      }
-      case OPENSEARCH -> {
-        final var connector = new OpensearchConnector(config.getConnect());
-        final var asyncClient = connector.createAsyncClient();
-        final var genericClient =
-            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions());
+      archiverRepository = createArchiverRepository(asyncClient, genericClient);
+      incidentRepository = createIncidentUpdateRepository(asyncClient);
+      batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+    } else {
+      final var connector = new ElasticsearchConnector(config.getConnect());
+      final ElasticsearchAsyncClient asyncClient = connector.createAsyncClient();
 
-        archiverRepository = createArchiverRepository(asyncClient, genericClient);
-        incidentRepository = createIncidentUpdateRepository(asyncClient);
-        batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
-      }
+      archiverRepository = createArchiverRepository(asyncClient);
+      incidentRepository = createIncidentUpdateRepository(asyncClient);
+      batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
     }
 
     final List<RunnableTask> tasks = buildTasks();
