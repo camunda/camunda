@@ -239,10 +239,6 @@ public final class BackgroundTaskManagerFactory {
   }
 
   private ArchiverRepository buildArchiverRepository() {
-    final var listViewTemplate =
-        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
-    final var batchOperationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
     return switch (ConnectionTypes.from(config.getConnect().getType())) {
       case ELASTICSEARCH -> {
         final var connector = new ElasticsearchConnector(config.getConnect());
