@@ -126,7 +126,11 @@ public class CamundaExporter implements Exporter {
 
       try (final var schemaManager = createSchemaManager()) {
         if (!schemaManager.isSchemaReadyForUse()) {
+<<<<<<< HEAD
           throw new ExporterException("Schema is not ready for use");
+=======
+          throw new IllegalStateException("Schema is not ready for use");
+>>>>>>> 338aa903 (fix: close when schema error)
         }
       }
 
@@ -140,7 +144,12 @@ public class CamundaExporter implements Exporter {
     } catch (final Exception e) {
       searchEngineClient.close();
       close();
+<<<<<<< HEAD
       throw e;
+=======
+      final String errorMessage = "Unexpected exception occurred opening exporter.";
+      throw new ExporterException(errorMessage, e);
+>>>>>>> 338aa903 (fix: close when schema error)
     }
   }
 
