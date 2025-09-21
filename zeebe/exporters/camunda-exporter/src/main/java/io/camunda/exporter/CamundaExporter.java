@@ -87,7 +87,6 @@ public class CamundaExporter implements Exporter {
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
-  private boolean resourcesInitialized = false;
 
   public CamundaExporter() {
     // the metadata will be initialized on open
@@ -121,27 +120,29 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     LOG.info("Opening Exporter on partition {}", partitionId);
     this.controller = controller;
-    if (!resourcesInitialized) {
+
+    try {
       setupExporterResources();
       searchEngineClient = clientAdapter.getSearchEngineClient();
-      resourcesInitialized = true;
-    }
 
-    try (final var schemaManager = createSchemaManager()) {
-      if (!schemaManager.isSchemaReadyForUse()) {
-        // close resources we opened
-        close();
-        throw new IllegalStateException("Schema is not ready for use");
+      try (final var schemaManager = createSchemaManager()) {
+        if (!schemaManager.isSchemaReadyForUse()) {
+          throw new IllegalStateException("Schema is not ready for use");
+        }
       }
+
+      writer = createBatchWriter();
+
+      checkImportersCompletedAndReschedule();
+      controller.readMetadata().ifPresent(metadata::deserialize);
+      taskManager.start();
+
+      LOG.info("Exporter opened");
+    } catch (final Exception e) {
+      close();
+      final String errorMessage = "Unexpected exception occurred opening exporter.";
+      throw new ExporterException(errorMessage, e);
     }
-
-    writer = createBatchWriter();
-
-    checkImportersCompletedAndReschedule();
-    controller.readMetadata().ifPresent(metadata::deserialize);
-    taskManager.start();
-
-    LOG.info("Exporter opened");
   }
 
   @Override
