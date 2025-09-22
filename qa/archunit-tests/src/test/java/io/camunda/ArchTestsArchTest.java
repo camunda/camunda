@@ -21,7 +21,9 @@ import com.tngtech.archunit.lang.syntax.ArchRuleDefinition;
 /**
  * ArchUnit rules related to arch tests themselves.
  *
- * <p>Checks proper naming conventions and placement of arch test classes and fields.
+ * <p>We require arch tests to be named *ArchTest and be located in the qa/archunit-tests module.
+ * Other tests should not be named *ArchTest. This ensures that we can easily identify arch tests by
+ * name when running them in CI.
  */
 @AnalyzeClasses(packages = "io.camunda", importOptions = ImportOption.OnlyIncludeTests.class)
 public final class ArchTestsArchTest {
