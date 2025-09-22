@@ -7926,7 +7926,7 @@ components:
         elementInstanceKey:
           description: The element instance key that received the message.
           allOf:
-            - $ref: "#/components/schemas/BasicStringFilterProperty"
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
         messageKey:
           description: The message key.
           allOf:
