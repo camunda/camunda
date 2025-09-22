@@ -36,40 +36,42 @@ jobs:
         id: image-tag
         run: |
           set -euo pipefail
-          BASE_REF="${{ github.base_ref }}"
-          REF_NAME="${{ github.ref_name }}"
+          EVENT="${{ github.event_name }}"
+            REF_NAME="${{ github.ref_name }}"
+          PR_BASE="${{ github.event.pull_request.base.ref || '' }}"
 
-          # Always use base/target branch when available (PRs). Fallback to ref name (pushes).
-          if [[ -n "$BASE_REF" ]]; then
-            CANDIDATE_BRANCH="$BASE_REF"
-            echo "Using base/target branch: $CANDIDATE_BRANCH"
+          echo "Event: $EVENT"
+          echo "Ref name: $REF_NAME"
+          echo "PR base: $PR_BASE"
+
+          if [[ "$EVENT" == "pull_request" ]]; then
+            CANDIDATE_BRANCH="$PR_BASE"
           else
             CANDIDATE_BRANCH="$REF_NAME"
-            echo "No base branch available; using ref name: $CANDIDATE_BRANCH"
           fi
 
+          RAW_CANDIDATE="$CANDIDATE_BRANCH"
           CANDIDATE_BRANCH="$(echo -n "$CANDIDATE_BRANCH" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
-          # Accept: release-M.m, release-M.m-PRE, release-M.m.p, release-M.m.p-PRE
-          if [[ "$CANDIDATE_BRANCH" =~ ^release-([0-9]+)\.([0-9]+)(?:\.([0-9]+))?(?:-([A-Za-z0-9._-]+))?$ ]]; then
+          echo "Raw candidate: >$RAW_CANDIDATE<"
+          echo "Sanitized candidate: >$CANDIDATE_BRANCH<"
+
+            if [[ "$CANDIDATE_BRANCH" =~ ^release-([0-9]+)\.([0-9]+)\.([0-9]+)(-[A-Za-z0-9]+)?$ ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
             SUFFIX="${BASH_REMATCH[4]}"
-
-            [[ -z "$PATCH" ]] && PATCH=0
-
+            VERSION="$MAJOR.$MINOR.$PATCH${SUFFIX}"
             if { [[ "$MAJOR" -eq 8 && "$MINOR" -ge 8 ]] || [[ "$MAJOR" -gt 8 ]]; }; then
-              IMAGE_TAG="$MAJOR.$MINOR.$PATCH"
-              echo "Extracted base version: $IMAGE_TAG (suffix ignored for image tag: ${SUFFIX:-none})"
+              IMAGE_TAG="$VERSION"
+              echo "Extracted release version: $IMAGE_TAG"
             else
-              echo "Error: Version $MAJOR.$MINOR.$PATCH (< 8.8) unsupported."
+              echo "Error: Version $VERSION is < 8.8 (unsupported)."
               exit 1
             fi
           else
-            echo "ERROR: Branch does not match expected release pattern."
-            echo "Got: $CANDIDATE_BRANCH"
-            echo "Expected: release-X.Y[.Z][-suffix], X.Y >= 8.8"
+            echo "ERROR: Pattern did not match: '$CANDIDATE_BRANCH'"
+            echo "Expected: release-X.Y.Z (>= 8.8) optionally with suffix (e.g. release-8.8.0, release-8.9.1, release-9.0.0, release-9.0.0-rc1)"
             echo "image-tag=SKIPPED" >> "$GITHUB_OUTPUT"
             exit 1
           fi
@@ -109,6 +111,7 @@ jobs:
           sed -i -E "s|image: camunda/camunda:[^[:space:]]*|image: camunda/camunda:$IMAGE_TAG|g" \
             qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
           grep "image: camunda/camunda:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No consolidated image found"
+        working-directory: .
 
       - name: Start Camunda
         if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
