@@ -25,7 +25,6 @@ import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.util.FileUtil;
-import io.camunda.zeebe.util.VersionUtil;
 import io.zeebe.containers.ZeebeContainer;
 import java.io.IOException;
 import java.net.URI;
@@ -45,7 +44,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   private static final String OS_PASSWORD = "yourStrongPassword123!";
   private static final String URL = "http://%s:%d";
   private static final String RPC_URL = "http://%s:%d";
-  private static final String PREVIOUS_VERSION = VersionUtil.getPreviousVersion();
+  private static final String PREVIOUS_VERSION = "8.7-SNAPSHOT";
   private final String databaseUrl;
   private final String indexPrefix;
   private final CamundaVolume volume;
