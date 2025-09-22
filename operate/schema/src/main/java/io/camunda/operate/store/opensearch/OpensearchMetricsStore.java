@@ -9,7 +9,7 @@ package io.camunda.operate.store.opensearch;
 
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.sumAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.and;
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLte;
+import static io.camunda.operate.store.opensearch.dsl.QueryDSL.gteLt;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.term;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.END_TIME;
@@ -76,7 +76,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveProcessInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    var query = and(gteLte(END_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
+    var query = and(gteLt(END_TIME, startTime, endTime), term(EVENT_TYPE, RPI.name()));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
     }
@@ -92,7 +92,7 @@ public class OpensearchMetricsStore implements MetricsStore {
   @Override
   public Long retrieveDecisionInstanceCount(
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
-    var query = and(term(EVENT_TYPE, EDI.name()), gteLte(END_TIME, startTime, endTime));
+    var query = and(term(EVENT_TYPE, EDI.name()), gteLt(END_TIME, startTime, endTime));
     if (tenantId != null) {
       query = and(query, term(TENANT_ID, tenantId));
     }
