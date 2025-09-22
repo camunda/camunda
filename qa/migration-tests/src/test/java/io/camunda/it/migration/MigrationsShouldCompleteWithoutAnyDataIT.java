@@ -21,8 +21,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
-import org.apache.commons.lang3.exception.UncheckedException;
-import org.elasticsearch.core.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -42,22 +40,25 @@ public class MigrationsShouldCompleteWithoutAnyDataIT {
   private static final HttpClient HTTP_CLIENT = HttpClient.newHttpClient();
 
   @Test
-  void allMigrationsHaveRun(final CamundaMigrator migrator) {
-    final var migrationIds = List.of("1", "2");
+  void allMigrationsHaveRun(final CamundaMigrator migrator)
+      throws IOException, InterruptedException {
     final var tasklistMigrationIndex =
         new TasklistMigrationRepositoryIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
     final var operateMigrationIndex =
         new MigrationRepositoryIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
 
-    migrationIds.forEach(
-        id -> {
-          try {
-            assertMigrationStepsExist(tasklistMigrationIndex.getFullQualifiedName(), id);
-            assertMigrationStepsExist(operateMigrationIndex.getFullQualifiedName(), id);
-          } catch (final IOException | InterruptedException e) {
-            throw new UncheckedException(e);
-          }
-        });
+    // Migrations with suffix "1" is the Tasklist Task index Migrations
+    assertMigrationStepsExist(tasklistMigrationIndex.getFullQualifiedName(), "1");
+
+    // Migration with suffix "2" is the Usage Metrics Migration
+    assertMigrationStepsExist(tasklistMigrationIndex.getFullQualifiedName(), "2");
+
+    // Since there is no data available for the process migration it will not be present in the
+    // migration index as no action has been taken. That's the reason the suffix "1" is missing
+    // here.
+
+    // Migration with suffix "2" is the Usage Metrics Migration
+    assertMigrationStepsExist(operateMigrationIndex.getFullQualifiedName(), "2");
   }
 
   private void assertMigrationStepsExist(final String index, final String migrationIdSuffix)
