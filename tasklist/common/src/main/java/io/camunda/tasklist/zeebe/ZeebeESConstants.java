@@ -18,5 +18,6 @@ public interface ZeebeESConstants {
   String VARIABLE_INDEX_NAME = "variable";
   String FORM_INDEX_NAME = "form";
   String USER_TASK_INDEX_NAME = "user-task";
+  String TENANT = "tenant";
   String DEPLOYMENT = "deployment";
 }
