@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {takeSnapshot} from 'testcafe-blink-diff';
+
 import {cleanEntities} from '../setup';
 import config from '../config';
 import * as u from '../utils';
@@ -1400,4 +1402,14 @@ test('hide collapsible section if report has table view', async (t) => {
   await u.selectVisualization(t, 'Table');
 
   await t.expect(e.collapsibleContainer.exists).notOk();
+});
+
+test.meta({type: 'visual'})('variable submenus are positioned correctly', async (t) => {
+  await u.createNewReport(t);
+  await u.selectReportDefinition(t, 'Big variable process');
+  await u.selectView(t, 'Process instance', 'Count');
+  await t.click(e.groupbyDropdown);
+  await t.hover(Common.menuOption('Variable'));
+
+  await takeSnapshot(t);
 });

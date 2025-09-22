@@ -31,3 +31,8 @@ camunda-h2-dbs
 src/**/*.css
 
 .eslintcache
+
+## e2e visual tests
+e2e/screenshots/index.html
+e2e/screenshots/**/actual.png
+e2e/screenshots/**/out.png

@@ -8644,6 +8644,11 @@ get-value@^2.0.3, get-value@^2.0.6:
   resolved "https://registry.yarnpkg.com/get-value/-/get-value-2.0.6.tgz#dc15ca1c672387ca76bd37ac0a395ba2042a2c28"
   integrity sha512-Ln0UQDlxH1BapMu3GPtf7CuYNwRZf2gwCuPqbyG6pB8WfmFpzqcy4xtAaAMUhnNqjMKTiCPZG2oMT3YSx8U2NA==
 
+getopts@^2.2.5:
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/getopts/-/getopts-2.3.0.tgz#71e5593284807e03e2427449d4f6712a268666f4"
+  integrity sha512-5eDf9fuSXwxBL6q5HX+dhDj+dslFGWzU5thZ9kNKUkcPtaPdatmUFKwHFrLb/uf/WpA4BHET+AX3Scl56cAjpA==
+
 getos@^3.2.1:
   version "3.2.1"
   resolved "https://registry.yarnpkg.com/getos/-/getos-3.2.1.tgz#0134d1f4e00eb46144c5a9c0ac4dc087cbb27dc5"
@@ -8723,6 +8728,13 @@ global-modules@^2.0.0:
   integrity sha512-NGbfmJBp9x8IxyJSd1P+otYK8vonoJactOogrVfFRIAEY1ukil8RSKDz2Yo7wh1oihl51l/r6W4epkeKJHqL8A==
   dependencies:
     global-prefix "^3.0.0"
+
+global-or-local@^0.1.7:
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/global-or-local/-/global-or-local-0.1.8.tgz#3076acfa03330ce6f75c3ed417d49b965724d610"
+  integrity sha512-A+yiXfQw0RJk7esBYcE9+7MPWEinI0yJhG3nG4k6bOBwzC7OP1wNeAHxcng176YuZsGE2bwW1O7Hs4jo0IV44g==
+  dependencies:
+    debug "^4.3.2"
 
 global-prefix@^3.0.0:
   version "3.0.0"
@@ -12784,6 +12796,13 @@ pirates@^4.0.1, pirates@^4.0.4:
   resolved "https://registry.yarnpkg.com/pirates/-/pirates-4.0.6.tgz#3018ae32ecfcff6c29ba2267cbf21166ac1f36b9"
   integrity sha512-saLsH7WeYYPiD25LDuLRRY/i+6HaPYr6G1OUlN39otzkSTxKnubR9RTxS3/Kk50s1g2JTgFwWQDQyplC5/SHZg==
 
+pixelmatch@^5.3.0:
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/pixelmatch/-/pixelmatch-5.3.0.tgz#5e5321a7abedfb7962d60dbf345deda87cb9560a"
+  integrity sha512-o8mkY4E/+LNUf6LzX96ht6k6CEDi65k9G2rjMtBe9Oo+VPKSvl+0GKHuH/AlG+GA5LPG/i5hrekkxUc3s2HU+Q==
+  dependencies:
+    pngjs "^6.0.0"
+
 pkg-dir@^4.1.0, pkg-dir@^4.2.0:
   version "4.2.0"
   resolved "https://registry.yarnpkg.com/pkg-dir/-/pkg-dir-4.2.0.tgz#f099133df7ede422e81d1d8448270eeb3e4261f3"
@@ -12807,6 +12826,11 @@ pngjs@^3.3.1:
   version "3.4.0"
   resolved "https://registry.yarnpkg.com/pngjs/-/pngjs-3.4.0.tgz#99ca7d725965fb655814eaf65f38f12bbdbf555f"
   integrity sha512-NCrCHhWmnQklfH4MtJMRjZ2a8c80qXeMlQMv2uVp9ISJMTt562SbGd6n2oq0PaPgKm7Z6pL9E2UlLIhC+SHL3w==
+
+pngjs@^6.0.0:
+  version "6.0.0"
+  resolved "https://registry.yarnpkg.com/pngjs/-/pngjs-6.0.0.tgz#ca9e5d2aa48db0228a52c419c3308e87720da821"
+  integrity sha512-TRzzuFRRmEoSW/p1KVAmiOgPco2Irlah+bGFCeNfJXxxYGwSw7YwAOAcd7X28K/m5bjBWKsC29KyoMfHbypayg==
 
 posix-character-classes@^0.1.0:
   version "0.1.1"
@@ -15826,6 +15850,19 @@ test-exclude@^6.0.0:
     glob "^7.1.4"
     minimatch "^3.0.4"
 
+testcafe-blink-diff@^0.5.8:
+  version "0.5.8"
+  resolved "https://registry.yarnpkg.com/testcafe-blink-diff/-/testcafe-blink-diff-0.5.8.tgz#bb009c6620bf5754613446739372df760b558a38"
+  integrity sha512-kaz8Bwvrh1X3wAVH321Cqf4o/2DFwbNNW8UZBic0n/noClPuLybdw12IBcygQgcIXBy99dmq9JCcImVGzS3Odw==
+  dependencies:
+    glob "^8.0.3"
+    global-or-local "^0.1.7"
+    open "^8.4.0"
+    pixelmatch "^5.3.0"
+    pngjs "^6.0.0"
+    testcafe-browser-tools "^2.0.26"
+    wargs "^0.10.0"
+
 testcafe-browser-provider-browserstack@^1.15.1:
   version "1.15.2"
   resolved "https://registry.yarnpkg.com/testcafe-browser-provider-browserstack/-/testcafe-browser-provider-browserstack-1.15.2.tgz#ab44316af59885c2c7d53ec7ff1085ddb8d05acb"
@@ -15845,7 +15882,7 @@ testcafe-browser-provider-browserstack@^1.15.1:
     sharp "^0.32.4"
     tmp "0.0.31"
 
-testcafe-browser-tools@2.0.26:
+testcafe-browser-tools@2.0.26, testcafe-browser-tools@^2.0.26:
   version "2.0.26"
   resolved "https://registry.yarnpkg.com/testcafe-browser-tools/-/testcafe-browser-tools-2.0.26.tgz#38b5c0c2cd438895de12ee53cae11c64bd33aab9"
   integrity sha512-nTKSJhBzn9BmnOs0xVzXMu8dN2Gu13Ca3x3SJr/zF6ZdKjXO82JlbHu55dt5MFoWjzAQmwlqBkSxPaYicsTgUw==
@@ -16850,6 +16887,13 @@ walker@^1.0.7, walker@~1.0.5:
   integrity sha512-ts/8E8l5b7kY0vlWLewOkDXMmPdLcVV4GmOQLyxuSswIJsweeFZtAsMF7k1Nszz+TYBQrlYRmzOnr398y1JemQ==
   dependencies:
     makeerror "1.0.12"
+
+wargs@^0.10.0:
+  version "0.10.0"
+  resolved "https://registry.yarnpkg.com/wargs/-/wargs-0.10.0.tgz#b697b4ea3297cce7ebd9c49fa156a30bc025a2bd"
+  integrity sha512-WT4yNP5wKxExzIIhLCFzyz1mUPRRoO4/fI9ApF/nO8yt1MOuf+FkQhxmK/tTuiP0kr37zp7D65ZpTohauR3TMA==
+  dependencies:
+    getopts "^2.2.5"
 
 watchpack@^2.4.1:
   version "2.4.2"
