@@ -265,6 +265,35 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
+  void shouldMockJobWorkerWithExampleData() {
+    // Given
+    processTestContext.mockJobWorker("email").thenCompleteWithExampleData();
+
+    final long processDefinitionKey =
+        client
+            .newDeployResourceCommand()
+            .addResourceFromClasspath("mockJobWorker/send-email-with-example.bpmn")
+            .send()
+            .join()
+            .getProcesses()
+            .stream()
+            .findFirst()
+            .get()
+            .getProcessDefinitionKey();
+
+    // When
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+
+    // Then
+    final Map<String, Object> expectedVariables = new HashMap<>();
+    expectedVariables.put("send_status", 200);
+
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
+    assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
+  }
+
+  @Test
   void shouldGiveClearErrorMessageWhenJobIsMissing() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());

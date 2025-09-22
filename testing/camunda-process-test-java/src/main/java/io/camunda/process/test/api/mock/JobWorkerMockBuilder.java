@@ -17,6 +17,7 @@ package io.camunda.process.test.api.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.List;
 import java.util.Map;
 
@@ -39,14 +40,22 @@ public interface JobWorkerMockBuilder {
    *
    * @param variables the variables to include when completing the job.
    */
-  JobWorkerMock thenComplete(Map<String, Object> variables);
+  JobWorkerMock thenComplete(final Map<String, Object> variables);
+
+  /**
+   * Configures the mock worker to complete jobs with the example data provided in the BPMN model.
+   *
+   * @throws RuntimeException if no example data was found
+   * @throws JsonMappingException if the example data isn't valid JSON.
+   */
+  JobWorkerMock thenCompleteWithExampleData();
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code.
    *
    * @param errorCode the error code to throw.
    */
-  JobWorkerMock thenThrowBpmnError(String errorCode);
+  JobWorkerMock thenThrowBpmnError(final String errorCode);
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code and variables.
@@ -54,14 +63,14 @@ public interface JobWorkerMockBuilder {
    * @param errorCode the error code to throw.
    * @param variables the variables to include when throwing the error.
    */
-  JobWorkerMock thenThrowBpmnError(String errorCode, Map<String, Object> variables);
+  JobWorkerMock thenThrowBpmnError(final String errorCode, final Map<String, Object> variables);
 
   /**
    * Configures the mock worker with a custom job handler.
    *
    * @param jobHandler the custom job handler to use for processing jobs.
    */
-  JobWorkerMock withHandler(JobHandler jobHandler);
+  JobWorkerMock withHandler(final JobHandler jobHandler);
 
   /**
    * A JobWorkerMock is used in place of real job workers during camunda process tests. After the
@@ -81,7 +90,7 @@ public interface JobWorkerMockBuilder {
    *         .contains(entry("error_code", "404"));
    * </pre>
    */
-  interface JobWorkerMock {
+  public interface JobWorkerMock {
     /**
      * Gets the number of times the Job Worker was invoked.
      *

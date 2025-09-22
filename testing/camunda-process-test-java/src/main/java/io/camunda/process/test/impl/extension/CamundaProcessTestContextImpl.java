@@ -22,12 +22,15 @@ import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
+import io.camunda.process.test.api.mock.BpmnExampleDataReader;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -171,7 +174,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
-    return new JobWorkerMockBuilderImpl(jobType, client);
+    final CamundaAssertJsonMapper jsonMapper = createJsonMapper();
+    final BpmnExampleDataReader exampleDataReader = new BpmnExampleDataReader(client, jsonMapper);
+
+    return new JobWorkerMockBuilderImpl(jobType, client, exampleDataReader);
   }
 
   @Override
@@ -207,6 +213,36 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void completeJobWithExampleData(final String jobType) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(createClient(), createJsonMapper());
+
+    final Map<String, Object> exampleDataVariables =
+        exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
+
+    LOGGER.debug(
+        "Complete job with variables {} [job-type: '{}', job-key: '{}']",
+        exampleDataVariables,
+        jobType,
+        job.getKey());
+    client.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+  }
+
+  private CamundaAssertJsonMapper createJsonMapper() {
+    if (jsonMapper != null) {
+      return new CamundaAssertJsonMapper(jsonMapper);
+    }
+    if (zeebeJsonMapper != null) {
+      return new CamundaAssertJsonMapper(zeebeJsonMapper);
+    } else {
+      return new CamundaAssertJsonMapper(new CamundaObjectMapper());
+    }
+  }
+
+  @Override
   public void completeJob(final String jobType, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
@@ -231,7 +267,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final ActivatedJob job = getActivatedJob(jobType);
 
     LOGGER.debug(
-        "Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
+        "Mock: Throw BPMN error [job-type: '{}', job-key: '{}'] with error code {} and variables {}",
         errorCode,
         variables,
         jobType,
