@@ -329,7 +329,8 @@ final class OpensearchExporterIT {
         || valueType == ValueType.INCIDENT
         || valueType == ValueType.USER_TASK
         || valueType == ValueType.DEPLOYMENT
-        || valueType == ValueType.JOB) {
+        || valueType == ValueType.JOB
+        || valueType == ValueType.TENANT) {
       final var response = testClient.getExportedDocumentFor(record);
       assertThat(response)
           .extracting(
