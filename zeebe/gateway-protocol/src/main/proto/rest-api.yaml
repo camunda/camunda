@@ -954,7 +954,7 @@ paths:
         - Tenant
       operationId: unassignGroupFromTenant
       summary: Unassign a group from a tenant
-      description: Unassigns a group from a specified tenant. Members of the group (users, clients) will no longer have access to the tenant"s data - except they are assigned directly to the tenant.
+      description: Unassigns a group from a specified tenant. Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -991,7 +991,7 @@ paths:
         - Tenant
       operationId: assignRoleToTenant
       summary: Assign a role to a tenant
-      description: Assigns a role to a specified tenant. Users, Clients or Groups, that have the role assigned, will get access to the tenant"s data and can perform actions according to their authorizations.
+      description: Assigns a role to a specified tenant. Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
       parameters:
         - name: tenantId
           in: path
@@ -1027,7 +1027,7 @@ paths:
         - Tenant
       operationId: unassignRoleFromTenant
       summary: Unassign a role from a tenant
-      description: Unassigns a role from a specified tenant. Users, Clients or Groups, that have the role assigned, will no longer have access to the tenant"s data - unless they are assigned directly to the tenant.
+      description: Unassigns a role from a specified tenant. Users, Clients or Groups, that have the role assigned, will no longer have access to the tenant's data - unless they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -1158,7 +1158,7 @@ paths:
               $ref: "#/components/schemas/UserTaskAssignmentRequest"
       responses:
         "204":
-          description: The user task"s assignment was adjusted.
+          description: The user task's assignment was adjusted.
         "400":
           $ref: "#/components/responses/InvalidData"
         "404":
