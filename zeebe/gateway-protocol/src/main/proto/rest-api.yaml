@@ -10464,8 +10464,7 @@ components:
       additionalProperties: false
       properties:
         decisionDefinitionKey:
-          allOf:
-            - $ref: "#/components/schemas/DecisionDefinitionKey"
+          $ref: "#/components/schemas/DecisionDefinitionKey"
         variables:
           description: The message variables as JSON document.
           additionalProperties: true
@@ -10487,7 +10486,7 @@ components:
         - decisionRequirementsId
         - output
         - failedDecisionDefinitionId
-        - failedMessage
+        - failureMessage
         - decisionDefinitionKey
         - tenantId
         - decisionRequirementsKey
@@ -11393,10 +11392,7 @@ components:
       type: object
       required:
         - afterElementId
-        - type
       properties:
-        type:
-          type: string
         afterElementId:
           description: |
             The ID of the element that, once completed or terminated, will cause the process to be terminated.
