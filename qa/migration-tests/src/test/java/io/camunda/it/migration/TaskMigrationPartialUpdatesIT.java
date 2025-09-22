@@ -57,9 +57,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "os") // https://github.com/camunda/camunda/issues/38520
 @TestMethodOrder(OrderAnnotation.class)
 public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
   private static final Map<Long, TaskData> PI_TASKS = new HashMap<>();
