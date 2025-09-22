@@ -4643,7 +4643,7 @@ paths:
           schema:
             type: string
       responses:
-        "200":
+        "204":
           description: The document was deleted successfully.
         "404":
           description: The document with the given ID was not found.
