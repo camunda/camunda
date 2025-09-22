@@ -168,10 +168,6 @@ public class MigrationITExtension
     migrator.update(envOverrides, exporterArgsOverride, postUpdateProfiles);
     awaitExporterReadiness();
     awaitDemoUserIsPresent();
-
-    /* Ingest an 8.8 Record in order to trigger importers empty batch counting */
-    ingestRecordToTriggerImporters(migrator.getCamundaClient());
-
     awaitImportersFinished();
 
     if (shouldWaitForMigrations()) {
@@ -282,14 +278,6 @@ public class MigrationITExtension
         .pollInterval(Duration.ofSeconds(2))
         .atMost(Duration.ofSeconds(60))
         .untilAsserted(() -> assertThat(migrator.isMigrationCompleted()).isTrue());
-  }
-
-  private void ingestRecordToTriggerImporters(final CamundaClient client) {
-    client
-        .newDeployResourceCommand()
-        .addResourceFromClasspath("process/error-end-event.bpmn")
-        .send()
-        .join();
   }
 
   private boolean areImportersDisabled() {
