@@ -16,14 +16,12 @@ import java.io.File;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  GatewayBasedPropertiesOverride.class,
-  UnifiedConfigurationHelper.class
-})
+@SpringBootTest(classes = {UnifiedConfiguration.class, GatewayBasedPropertiesOverride.class})
+@ActiveProfiles("gateway")
 public class ApiGrpcGatewaySslTest {
   @Nested
   @TestPropertySource(

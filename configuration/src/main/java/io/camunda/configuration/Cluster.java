@@ -7,19 +7,9 @@
  */
 package io.camunda.configuration;
 
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Cluster {
-
-  private static final String PREFIX = "camunda.cluster";
-
-  private static final String LEGACY_NODEID_PROPERTY = "zeebe.broker.cluster.nodeId";
-  private static final String LEGACY_PARTITION_COUNT_PROPERTY =
-      "zeebe.broker.cluster.partitionsCount";
-  private static final String LEGACY_REPLICATION_FACTOR_PROPERTY =
-      "zeebe.broker.cluster.replicationFactor";
-  private static final String LEGACY_SIZE_PROPERTY = "zeebe.broker.cluster.clusterSize";
 
   /** Configuration for the distributed metadata manager in the cluster. */
   @NestedConfigurationProperty private Metadata metadata = new Metadata();
@@ -71,12 +61,7 @@ public class Cluster {
   }
 
   public int getNodeId() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".node-id",
-        nodeId,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_NODEID_PROPERTY));
+    return nodeId;
   }
 
   public void setNodeId(final int nodeId) {
@@ -84,12 +69,7 @@ public class Cluster {
   }
 
   public int getPartitionCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".partition-count",
-        partitionCount,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PARTITION_COUNT_PROPERTY));
+    return partitionCount;
   }
 
   public void setPartitionCount(final int partitionCount) {
@@ -97,12 +77,7 @@ public class Cluster {
   }
 
   public int getReplicationFactor() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".replication-factor",
-        replicationFactor,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_REPLICATION_FACTOR_PROPERTY));
+    return replicationFactor;
   }
 
   public void setReplicationFactor(final int replicationFactor) {
@@ -110,12 +85,7 @@ public class Cluster {
   }
 
   public int getSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".size",
-        size,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_SIZE_PROPERTY));
+    return size;
   }
 
   public void setSize(final int size) {

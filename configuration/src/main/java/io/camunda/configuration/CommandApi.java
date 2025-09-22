@@ -7,20 +7,7 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
-
 public class CommandApi {
-  private static final String PREFIX = "camunda.cluster.network.command-api";
-  private static final Set<String> LEGACY_HOST_PROPERTIES =
-      Set.of("zeebe.broker.network.commandApi.host");
-  private static final Set<String> LEGACY_PORT_PROPERTIES =
-      Set.of("zeebe.broker.network.commandApi.port");
-  private static final Set<String> LEGACY_ADVERTISED_HOST_PROPERTIES =
-      Set.of("zeebe.broker.network.commandApi.advertisedHost");
-  private static final Set<String> LEGACY_ADVERTISED_PORT_PROPERTIES =
-      Set.of("zeebe.broker.network.commandApi.advertisedPort");
-
   /** Overrides the host used for gateway-to-broker communication */
   private String host;
 
@@ -45,12 +32,7 @@ public class CommandApi {
   private Integer advertisedPort;
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".host",
-        host,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_HOST_PROPERTIES);
+    return host;
   }
 
   public void setHost(final String host) {
@@ -58,12 +40,7 @@ public class CommandApi {
   }
 
   public Integer getPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".port",
-        port,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PORT_PROPERTIES);
+    return port;
   }
 
   public void setPort(final Integer port) {
@@ -71,12 +48,7 @@ public class CommandApi {
   }
 
   public String getAdvertisedHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".advertised-host",
-        advertisedHost,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ADVERTISED_HOST_PROPERTIES);
+    return advertisedHost;
   }
 
   public void setAdvertisedHost(final String advertisedHost) {
@@ -84,12 +56,7 @@ public class CommandApi {
   }
 
   public Integer getAdvertisedPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".advertised-port",
-        advertisedPort,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ADVERTISED_PORT_PROPERTIES);
+    return advertisedPort;
   }
 
   public void setAdvertisedPort(final Integer advertisedPort) {

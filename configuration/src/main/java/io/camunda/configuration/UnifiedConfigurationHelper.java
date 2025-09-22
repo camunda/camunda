@@ -25,6 +25,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component("unifiedConfigurationHelper")
+@Deprecated(forRemoval = true)
 public class UnifiedConfigurationHelper {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UnifiedConfigurationHelper.class);

@@ -7,36 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 
 public class S3 {
-  private static final String PREFIX = "camunda.data.backup.s3";
-  private static final Set<String> LEGACY_BUCKETNAME_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.bucketName");
-  private static final Set<String> LEGACY_ENDPOINT_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.endpoint");
-  private static final Set<String> LEGACY_REGION_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.region");
-  private static final Set<String> LEGACY_ACCESS_KEY_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.accessKey");
-  private static final Set<String> LEGACY_SECRET_KEY_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.secretKey");
-  private static final Set<String> LEGACY_API_CALL_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.apiCallTimeout");
-  private static final Set<String> LEGACY_FORCE_PATH_STYLE_ACCESS_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.forcePathStyleAccess");
-  private static final Set<String> LEGACY_COMPRESSION_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.compression");
-  private static final Set<String> LEGACY_MAX_CONCURRENT_CONNECTIONS_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.maxConcurrentConnections");
-  private static final Set<String> LEGACY_CONNECTION_AQUISITION_TIMEOUT_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.connectionAcquisitionTimeout");
-  private static final Set<String> LEGACY_SUPPPORT_LEGACY_MD5_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.supportLegacyMd5");
-  private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.s3.basePath");
 
   /**
    * Name of the bucket where the backup will be stored. The bucket must be already created. The
@@ -118,12 +91,7 @@ public class S3 {
   private String basePath;
 
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".bucket-name",
-        bucketName,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BUCKETNAME_PROPERTIES);
+    return bucketName;
   }
 
   public void setBucketName(final String bucketName) {
@@ -131,12 +99,7 @@ public class S3 {
   }
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".endpoint",
-        endpoint,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENDPOINT_PROPERTIES);
+    return endpoint;
   }
 
   public void setEndpoint(final String endpoint) {
@@ -144,12 +107,7 @@ public class S3 {
   }
 
   public String getRegion() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".region",
-        region,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_REGION_PROPERTIES);
+    return region;
   }
 
   public void setRegion(final String region) {
@@ -157,12 +115,7 @@ public class S3 {
   }
 
   public String getAccessKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".access-key",
-        accessKey,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ACCESS_KEY_PROPERTIES);
+    return accessKey;
   }
 
   public void setAccessKey(final String accessKey) {
@@ -170,12 +123,7 @@ public class S3 {
   }
 
   public String getSecretKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".secret-key",
-        secretKey,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SECRET_KEY_PROPERTIES);
+    return secretKey;
   }
 
   public void setSecretKey(final String secretKey) {
@@ -183,12 +131,7 @@ public class S3 {
   }
 
   public Duration getApiCallTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".api-call-timeout",
-        apiCallTimeout,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_API_CALL_TIMEOUT_PROPERTIES);
+    return apiCallTimeout;
   }
 
   public void setApiCallTimeout(final Duration apiCallTimeout) {
@@ -196,12 +139,7 @@ public class S3 {
   }
 
   public boolean isForcePathStyleAccess() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".force-path-style-access",
-        forcePathStyleAccess,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_FORCE_PATH_STYLE_ACCESS_PROPERTIES);
+    return forcePathStyleAccess;
   }
 
   public void setForcePathStyleAccess(final boolean forcePathStyleAccess) {
@@ -209,12 +147,7 @@ public class S3 {
   }
 
   public String getCompression() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".compression",
-        compression,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_COMPRESSION_PROPERTIES);
+    return compression;
   }
 
   public void setCompression(final String compression) {
@@ -222,12 +155,7 @@ public class S3 {
   }
 
   public int getMaxConcurrentConnections() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-concurrent-connections",
-        maxConcurrentConnections,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MAX_CONCURRENT_CONNECTIONS_PROPERTIES);
+    return maxConcurrentConnections;
   }
 
   public void setMaxConcurrentConnections(final int maxConcurrentConnections) {
@@ -235,12 +163,7 @@ public class S3 {
   }
 
   public Duration getConnectionAcquisitionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".connection-acquisition-timeout",
-        connectionAcquisitionTimeout,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CONNECTION_AQUISITION_TIMEOUT_PROPERTIES);
+    return connectionAcquisitionTimeout;
   }
 
   public void setConnectionAcquisitionTimeout(final Duration connectionAcquisitionTimeout) {
@@ -248,12 +171,7 @@ public class S3 {
   }
 
   public boolean isSupportLegacyMd5() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".support-legacy-md5",
-        supportLegacyMd5,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SUPPPORT_LEGACY_MD5_PROPERTIES);
+    return supportLegacyMd5;
   }
 
   public void setSupportLegacyMd5(final boolean supportLegacyMd5) {
@@ -261,12 +179,7 @@ public class S3 {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".base-path",
-        basePath,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BASEPATH_PROPERTIES);
+    return basePath;
   }
 
   public void setBasePath(final String basePath) {

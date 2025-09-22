@@ -7,41 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
 
 public class Membership {
-  private static final String PREFIX = "camunda.cluster.membership";
-
-  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
-      Map.of(
-          "broadcastUpdates", "zeebe.gateway.cluster.membership.broadcastUpdates",
-          "broadcastDisputes", "zeebe.gateway.cluster.membership.broadcastDisputes",
-          "notifySuspect", "zeebe.gateway.cluster.membership.notifySuspect",
-          "gossipInterval", "zeebe.gateway.cluster.membership.gossipInterval",
-          "gossipFanout", "zeebe.gateway.cluster.membership.gossipFanout",
-          "probeInterval", "zeebe.gateway.cluster.membership.probeInterval",
-          "probeTimeout", "zeebe.gateway.cluster.membership.probeTimeout",
-          "suspectProbes", "zeebe.gateway.cluster.membership.suspectProbes",
-          "failureTimeout", "zeebe.gateway.cluster.membership.failureTimeout",
-          "syncInterval", "zeebe.gateway.cluster.membership.syncInterval");
-
-  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
-      Map.of(
-          "broadcastUpdates", "zeebe.broker.cluster.membership.broadcastUpdates",
-          "broadcastDisputes", "zeebe.broker.cluster.membership.broadcastDisputes",
-          "notifySuspect", "zeebe.broker.cluster.membership.notifySuspect",
-          "gossipInterval", "zeebe.broker.cluster.membership.gossipInterval",
-          "gossipFanout", "zeebe.broker.cluster.membership.gossipFanout",
-          "probeInterval", "zeebe.broker.cluster.membership.probeInterval",
-          "probeTimeout", "zeebe.broker.cluster.membership.probeTimeout",
-          "suspectProbes", "zeebe.broker.cluster.membership.suspectProbes",
-          "failureTimeout", "zeebe.broker.cluster.membership.failureTimeout",
-          "syncInterval", "zeebe.broker.cluster.membership.syncInterval");
-
-  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /**
    * Configure whether to broadcast member updates to all members. If set to false updates will be
@@ -84,12 +52,7 @@ public class Membership {
   private Duration syncInterval = Duration.ofMillis(10_000);
 
   public boolean isBroadcastUpdates() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".broadcast-updates",
-        broadcastUpdates,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("broadcastUpdates")));
+    return broadcastUpdates;
   }
 
   public void setBroadcastUpdates(final boolean broadcastUpdates) {
@@ -97,12 +60,7 @@ public class Membership {
   }
 
   public boolean isBroadcastDisputes() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".broadcast-disputes",
-        broadcastDisputes,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("broadcastDisputes")));
+    return broadcastDisputes;
   }
 
   public void setBroadcastDisputes(final boolean broadcastDisputes) {
@@ -110,12 +68,7 @@ public class Membership {
   }
 
   public boolean isNotifySuspect() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".notify-suspect",
-        notifySuspect,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("notifySuspect")));
+    return notifySuspect;
   }
 
   public void setNotifySuspect(final boolean notifySuspect) {
@@ -123,12 +76,7 @@ public class Membership {
   }
 
   public Duration getGossipInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".gossip-interval",
-        gossipInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("gossipInterval")));
+    return gossipInterval;
   }
 
   public void setGossipInterval(final Duration gossipInterval) {
@@ -136,12 +84,7 @@ public class Membership {
   }
 
   public int getGossipFanout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".gossip-fanout",
-        gossipFanout,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("gossipFanout")));
+    return gossipFanout;
   }
 
   public void setGossipFanout(final int gossipFanout) {
@@ -149,12 +92,7 @@ public class Membership {
   }
 
   public Duration getProbeInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".probe-interval",
-        probeInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("probeInterval")));
+    return probeInterval;
   }
 
   public void setProbeInterval(final Duration probeInterval) {
@@ -162,12 +100,7 @@ public class Membership {
   }
 
   public Duration getProbeTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".probe-timeout",
-        probeTimeout,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("probeTimeout")));
+    return probeTimeout;
   }
 
   public void setProbeTimeout(final Duration probeTimeout) {
@@ -175,12 +108,7 @@ public class Membership {
   }
 
   public int getSuspectProbes() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".suspect-probes",
-        suspectProbes,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("suspectProbes")));
+    return suspectProbes;
   }
 
   public void setSuspectProbes(final int suspectProbes) {
@@ -188,12 +116,7 @@ public class Membership {
   }
 
   public Duration getFailureTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".failure-timeout",
-        failureTimeout,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("failureTimeout")));
+    return failureTimeout;
   }
 
   public void setFailureTimeout(final Duration failureTimeout) {
@@ -201,12 +124,7 @@ public class Membership {
   }
 
   public Duration getSyncInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".sync-interval",
-        syncInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("syncInterval")));
+    return syncInterval;
   }
 
   public void setSyncInterval(final Duration syncInterval) {
@@ -227,18 +145,6 @@ public class Membership {
     copy.failureTimeout = failureTimeout;
     copy.syncInterval = syncInterval;
 
-    return copy;
-  }
-
-  public Membership withBrokerMembershipProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
-    return copy;
-  }
-
-  public Membership withGatewayMembershipProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
     return copy;
   }
 }

@@ -7,21 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 
 public class Executor {
-  private static final String PREFIX = "camunda.api.rest.executor";
-  private static final Set<String> LEGACY_CORE_POOL_SIZE_MULTIPLIER_PROPERTIES =
-      Set.of("camunda.rest.apiExecutor.corePoolSizeMultiplier");
-  private static final Set<String> LEGACY_MAX_POOL_SIZE_MULTIPLIER_PROPERTIES =
-      Set.of("camunda.rest.apiExecutor.maxPoolSizeMultiplier");
-  private static final Set<String> LEGACY_KEEP_ALIVE_SECONDS_PROPERTIES =
-      Set.of("camunda.rest.apiExecutor.keepAliveSeconds");
-  private static final Set<String> LEGACY_KEEP_QUEUE_CAPACITY_PROPERTIES =
-      Set.of("camunda.rest.apiExecutor.queueCapacity");
-
   /**
    * Multiplier applied to the number of available processors to compute the executor's core pool
    * size (minimum number of threads kept alive).
@@ -69,12 +57,7 @@ public class Executor {
   private int queueCapacity = 64;
 
   public int getCorePoolSizeMultiplier() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".core-pool-size-multiplier",
-        corePoolSizeMultiplier,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CORE_POOL_SIZE_MULTIPLIER_PROPERTIES);
+    return corePoolSizeMultiplier;
   }
 
   public void setCorePoolSizeMultiplier(final int corePoolSizeMultiplier) {
@@ -82,12 +65,7 @@ public class Executor {
   }
 
   public int getMaxPoolSizeMultiplier() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-pool-size-multiplier",
-        maxPoolSizeMultiplier,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MAX_POOL_SIZE_MULTIPLIER_PROPERTIES);
+    return maxPoolSizeMultiplier;
   }
 
   public void setMaxPoolSizeMultiplier(final int maxPoolSizeMultiplier) {
@@ -95,14 +73,7 @@ public class Executor {
   }
 
   public Duration getKeepAlive() {
-    final Long currentKeepAliveSeconds =
-        UnifiedConfigurationHelper.validateLegacyConfiguration(
-            PREFIX + ".keep-alive",
-            keepAlive.getSeconds(),
-            Long.class,
-            BackwardsCompatibilityMode.SUPPORTED,
-            LEGACY_KEEP_ALIVE_SECONDS_PROPERTIES);
-    return Duration.ofSeconds(currentKeepAliveSeconds);
+    return keepAlive;
   }
 
   public void setKeepAlive(final Duration keepAlive) {
@@ -110,12 +81,7 @@ public class Executor {
   }
 
   public int getQueueCapacity() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".queue-capacity",
-        queueCapacity,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_KEEP_QUEUE_CAPACITY_PROPERTIES);
+    return queueCapacity;
   }
 
   public void setQueueCapacity(final int queueCapacity) {

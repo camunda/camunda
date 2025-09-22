@@ -9,17 +9,10 @@ package io.camunda.configuration;
 
 import static io.camunda.zeebe.broker.exporter.stream.ExporterDirectorContext.DEFAULT_DISTRIBUTION_INTERVAL;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.Set;
-import org.springframework.core.ResolvableType;
 
 public class Export {
-  private static final String PREFIX = "camunda.data.export";
-  private static final Set<String> LEGACY_DISTRIBUTION_INTERVAL_PROPERTIES =
-      Set.of("zeebe.broker.exporting.distributionInterval");
-  private static final Set<String> LEGACY_SKIP_RECORDS_PROPERTIES =
-      Set.of("zeebe.broker.exporting.skipRecords");
 
   /**
    * Configures the rate at which exporter positions are distributed to the followers. This is
@@ -39,12 +32,7 @@ public class Export {
   private Set<Long> skipRecords = Set.of();
 
   public Duration getDistributionInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".distribution-interval",
-        distributionInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_DISTRIBUTION_INTERVAL_PROPERTIES);
+    return distributionInterval;
   }
 
   public void setDistributionInterval(final Duration distributionInterval) {
@@ -52,12 +40,7 @@ public class Export {
   }
 
   public Set<Long> getSkipRecords() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".skip-records",
-        skipRecords,
-        ResolvableType.forClassWithGenerics(Set.class, Long.class),
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SKIP_RECORDS_PROPERTIES);
+    return skipRecords;
   }
 
   public void setSkipRecords(final Set<Long> skipRecords) {

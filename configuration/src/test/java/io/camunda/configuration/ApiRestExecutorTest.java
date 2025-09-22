@@ -14,14 +14,10 @@ import io.camunda.configuration.beans.GatewayRestProperties;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  GatewayRestPropertiesOverride.class,
-  UnifiedConfigurationHelper.class
-})
+@SpringBootTest(classes = {UnifiedConfiguration.class, GatewayRestPropertiesOverride.class})
 public class ApiRestExecutorTest {
 
   @Nested

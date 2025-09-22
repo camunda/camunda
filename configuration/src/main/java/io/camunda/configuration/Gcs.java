@@ -7,20 +7,7 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
-
 public class Gcs {
-  private static final String PREFIX = "camunda.data.backup.gcs";
-  private static final Set<String> LEGACY_BUCKETNAME_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.bucketName");
-  private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.basePath");
-  private static final Set<String> LEGACY_HOST_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.host");
-  private static final Set<String> LEGACY_AUTH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.gcs.auth");
-
   /**
    * Name of the bucket where the backup will be stored. The bucket must already exist. The bucket
    * must not be shared with other Zeebe clusters unless basePath is also set.
@@ -51,12 +38,7 @@ public class Gcs {
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
   public String getBucketName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".bucket-name",
-        bucketName,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BUCKETNAME_PROPERTIES);
+    return bucketName;
   }
 
   public void setBucketName(final String bucketName) {
@@ -64,12 +46,7 @@ public class Gcs {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".base-path",
-        basePath,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BASEPATH_PROPERTIES);
+    return basePath;
   }
 
   public void setBasePath(final String basePath) {
@@ -77,12 +54,7 @@ public class Gcs {
   }
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".host",
-        host,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_HOST_PROPERTIES);
+    return host;
   }
 
   public void setHost(final String host) {
@@ -90,12 +62,7 @@ public class Gcs {
   }
 
   public GcsBackupStoreAuth getAuth() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".auth",
-        auth,
-        GcsBackupStoreAuth.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_AUTH_PROPERTIES);
+    return auth;
   }
 
   public void setAuth(final GcsBackupStoreAuth auth) {

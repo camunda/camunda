@@ -5,18 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration;
+package io.camunda.configuration.processor;
 
-public class Filesystem {
+import java.util.Set;
 
-  /** Set the base path to store all related backup files in. */
-  private String basePath;
-
-  public String getBasePath() {
-    return basePath;
-  }
-
-  public void setBasePath(final String basePath) {
-    this.basePath = basePath;
-  }
+public record CamundaLegacyPropertiesMapping(
+    String newProperty, Set<Set<LegacyProperty>> legacyProperties) {
+  public record LegacyProperty(String name, Set<String> profiles) {}
 }

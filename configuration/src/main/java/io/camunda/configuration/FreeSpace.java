@@ -7,18 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
 import org.springframework.util.unit.DataSize;
 
 public class FreeSpace {
-  private static final String PREFIX = "camunda.data.primary-storage.disk.free-space";
-
-  private static final Set<String> LEGACY_PROCESSING_PROPERTIES =
-      Set.of("zeebe.broker.data.disk.freeSpace.processing");
-  private static final Set<String> LEGACY_REPLICATION_PROPERTIES =
-      Set.of("zeebe.broker.data.disk.freeSpace.replication");
-
   /**
    * When the free space available is less than this value, this broker rejects all client commands
    * and pause processing.
@@ -35,12 +26,7 @@ public class FreeSpace {
   private DataSize replication = DataSize.ofGigabytes(1);
 
   public DataSize getProcessing() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".processing",
-        processing,
-        DataSize.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_PROCESSING_PROPERTIES);
+    return processing;
   }
 
   public void setProcessing(final DataSize processing) {
@@ -48,12 +34,7 @@ public class FreeSpace {
   }
 
   public DataSize getReplication() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".replication",
-        replication,
-        DataSize.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_REPLICATION_PROPERTIES);
+    return replication;
   }
 
   public void setReplication(final DataSize replication) {
