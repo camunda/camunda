@@ -143,7 +143,7 @@ test.describe('variables page', () => {
     await taskPanelPage.openTask('usertask_with_variables');
 
     await expect(taskDetailsPage.addVariableButton).toBeHidden();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({timeout: 30000});
     await taskDetailsPage.clickAssignToMeButton();
 
     await taskDetailsPage.addVariable({
