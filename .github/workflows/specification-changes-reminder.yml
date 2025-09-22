@@ -1,0 +1,21 @@
+name: Comment on PR when API spec files changed
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'gateway-protocol/src/main/proto/rest-api.yaml'
+      - 'gateway-protocol/src/main/proto/internal/generation-spec.yaml'
+
+jobs:
+  comment-pr:
+    name: Post PR comment for spec changes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment on PR if version updates are potentially missing
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: |
+            :wave: :robot: :thinking: Hello, @${{ github.actor }}! Did you make your changes in all the right places?
+
+            It looks like you changed the API specification files. Please ensure to add the changes in both the `rest-api.yaml` and `generation-spec.yaml` files if applicable.
