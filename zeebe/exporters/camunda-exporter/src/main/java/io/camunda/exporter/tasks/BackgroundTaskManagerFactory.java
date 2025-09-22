@@ -13,7 +13,6 @@ import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.ExporterResourceProvider;
-import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.notifier.IncidentNotifier;
@@ -97,8 +96,7 @@ public final class BackgroundTaskManagerFactory {
     executor = buildExecutor();
 
     // initialize all repositories based on connection type to reuse clients
-    final var connectionType = ConnectionTypes.from(config.getConnect().getType());
-    if (connectionType == ConnectionTypes.OPENSEARCH) {
+    if (config.getConnect().getTypeEnum().isOpenSearch()) {
       final var connector = new OpensearchConnector(config.getConnect());
       final var asyncClient = connector.createAsyncClient();
       final var genericClient =
