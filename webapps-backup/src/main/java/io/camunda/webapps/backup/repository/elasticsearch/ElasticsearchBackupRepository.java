@@ -564,7 +564,7 @@ public class ElasticsearchBackupRepository implements BackupRepository {
             backupId,
             (snapshotTimeout == 0)
                 ? "until completion."
-                : "at most " + snapshotTimeout + " seconds.");
+                : "at most " + (snapshotTimeout * 1000) + " milliseconds.");
         if (isSnapshotFinishedWithinTimeout(
             snapshotRequest.repositoryName(), snapshotRequest.snapshotName())) {
           onSuccess.run();
