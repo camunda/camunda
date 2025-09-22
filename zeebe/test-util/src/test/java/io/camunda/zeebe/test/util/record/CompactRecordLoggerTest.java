@@ -44,7 +44,6 @@ class CompactRecordLoggerTest {
       mode = EnumSource.Mode.EXCLUDE,
       names = {
         "IDENTITY_SETUP",
-        "SCALE",
         "FORM",
         "CHECKPOINT",
       })
