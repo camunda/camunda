@@ -58,9 +58,7 @@ public class ProcessInstanceZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired
-  @Qualifier("tasklistFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   public void processProcessInstanceRecord(final Record record, final BulkRequest bulkRequest)
       throws PersistenceException {

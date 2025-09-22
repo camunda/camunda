@@ -24,7 +24,6 @@ import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 /*
@@ -41,9 +40,7 @@ public class ProcessDefinitionDeletionProcessor {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessDefinitionDeletionProcessor.class);
 
-  @Autowired
-  @Qualifier("tasklistProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 

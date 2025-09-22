@@ -123,7 +123,7 @@ public class ElasticsearchProcessStore implements ProcessStore {
   private final OperateProperties operateProperties;
 
   public ElasticsearchProcessStore(
-      final @Qualifier("operateProcessIndex") ProcessIndex processIndex,
+      final ProcessIndex processIndex,
       final ListViewTemplate listViewTemplate,
       final List<ProcessInstanceDependant> processInstanceDependantTemplates,
       @Qualifier("operateObjectMapper") final ObjectMapper objectMapper,

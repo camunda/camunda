@@ -50,9 +50,7 @@ public class FormStoreOpenSearch implements FormStore {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired
-  @Qualifier("tasklistProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 

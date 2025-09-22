@@ -38,7 +38,6 @@ import org.apache.commons.lang3.concurrent.LazyInitializer;
 import org.apache.commons.lang3.function.FailableSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -54,8 +53,7 @@ public class FlowNodeInstanceZeebeRecordProcessor {
 
   public FlowNodeInstanceZeebeRecordProcessor(
       final FlowNodeStore flowNodeStore,
-      final @Qualifier("operateFlowNodeInstanceTemplate") FlowNodeInstanceTemplate
-              flowNodeInstanceTemplate,
+      final FlowNodeInstanceTemplate flowNodeInstanceTemplate,
       final OperateProperties operateProperties,
       final PartitionHolder partitionHolder,
       final Metrics metrics) {

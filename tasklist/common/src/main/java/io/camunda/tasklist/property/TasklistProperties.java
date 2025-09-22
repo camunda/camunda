@@ -369,12 +369,15 @@ public class TasklistProperties {
     this.documentation = documentation;
   }
 
+  public boolean isElasticsearchDB() {
+    return ELASTIC_SEARCH.equals(database);
+  }
+
   public String getIndexPrefix() {
-    if (database.equals(ELASTIC_SEARCH)) {
-      return elasticsearch.getIndexPrefix();
-    } else if (database.equals(OPEN_SEARCH)) {
-      return openSearch.getIndexPrefix();
-    }
-    return null;
+    return switch (database) {
+      case ELASTIC_SEARCH -> getElasticsearch().getIndexPrefix();
+      case OPEN_SEARCH -> getOpenSearch().getIndexPrefix();
+      default -> null;
+    };
   }
 }

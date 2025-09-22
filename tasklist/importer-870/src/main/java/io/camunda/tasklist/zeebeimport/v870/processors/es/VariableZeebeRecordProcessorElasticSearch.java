@@ -40,9 +40,7 @@ public class VariableZeebeRecordProcessorElasticSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired
-  @Qualifier("tasklistVariableTemplate")
-  private VariableTemplate variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Autowired private TasklistProperties tasklistProperties;
 

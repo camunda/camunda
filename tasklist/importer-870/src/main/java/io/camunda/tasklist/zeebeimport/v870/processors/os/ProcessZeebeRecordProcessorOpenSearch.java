@@ -51,9 +51,7 @@ public class ProcessZeebeRecordProcessorOpenSearch {
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
 
-  @Autowired
-  @Qualifier("tasklistProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private FormIndex formIndex;
 

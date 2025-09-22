@@ -77,7 +77,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateProcessIndex")
+  @Bean
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(
@@ -101,7 +101,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateFlowNodeInstanceTemplate")
+  @Bean
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
@@ -151,9 +151,7 @@ public class IndexTemplateDescriptorsConfigurator {
 
   @Bean
   public TaskTemplate getTaskTemplate(
-      final OperateProperties operateProperties,
-      final DatabaseInfo databaseInfo,
-      final ProcessIndex operateProcessIndex) {
+      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new TaskTemplate(
         operateProperties.getIndexPrefix(databaseInfo.getCurrent()),
         databaseInfo.isElasticsearchDb());
@@ -167,7 +165,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateVariableTemplate")
+  @Bean
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
@@ -191,7 +189,7 @@ public class IndexTemplateDescriptorsConfigurator {
         databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateSnapshotTaskVariableTemplate")
+  @Bean
   public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new SnapshotTaskVariableTemplate(

@@ -58,7 +58,6 @@ import org.opensearch.client.opensearch.indices.GetIndexResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -77,13 +76,9 @@ public class OpensearchTestRuleProvider implements SearchTestRuleProvider {
   @Autowired private SearchEngineConfiguration searchEngineConfiguration;
   @Autowired private ListViewTemplate listViewTemplate;
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private OperationTemplate operationTemplate;
   @Autowired private BatchOperationTemplate batchOperationTemplate;

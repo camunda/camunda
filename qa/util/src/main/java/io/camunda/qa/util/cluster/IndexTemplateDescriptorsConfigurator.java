@@ -84,7 +84,7 @@ public class IndexTemplateDescriptorsConfigurator {
         operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateProcessIndex")
+  @Bean
   public ProcessIndex getProcessIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
@@ -103,7 +103,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new EventTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateFlowNodeInstanceTemplate")
+  @Bean
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new FlowNodeInstanceTemplate(
@@ -151,7 +151,7 @@ public class IndexTemplateDescriptorsConfigurator {
     return new JobTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateVariableTemplate")
+  @Bean
   public VariableTemplate getVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new VariableTemplate(
@@ -195,16 +195,8 @@ public class IndexTemplateDescriptorsConfigurator {
         operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("operateSnapshotTaskVariableTemplate")
-  public SnapshotTaskVariableTemplate getOperateSnapshotTaskVariableTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
-    return new SnapshotTaskVariableTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistSnapshotTaskVariableTemplate")
-  public SnapshotTaskVariableTemplate getTasklistSnapshotTaskVariableTemplate(
+  @Bean
+  public SnapshotTaskVariableTemplate getSnapshotTaskVariableTemplate(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     // Just take the provided DatabaseInfo, no need to distinguish between Tasklist or Operate
     return new SnapshotTaskVariableTemplate(
@@ -218,30 +210,10 @@ public class IndexTemplateDescriptorsConfigurator {
     return new TaskTemplate(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 
-  @Bean("tasklistVariableTemplate")
-  public VariableTemplate getTasklistVariableTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new VariableTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistFlowNodeInstanceTemplate")
-  public FlowNodeInstanceTemplate getTasklistFlowNodeInstanceTemplate(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new FlowNodeInstanceTemplate(
-        operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
   @Bean
   public TasklistImportPositionIndex getTasklistImportPositionIndex(
       final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
     return new TasklistImportPositionIndex(
         operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
-  }
-
-  @Bean("tasklistProcessIndex")
-  public ProcessIndex getTasklistProcessIndex(
-      final OperateProperties operateProperties, final DatabaseInfo databaseInfo) {
-    return new ProcessIndex(operateProperties.getIndexPrefix(), databaseInfo.isElasticsearchDb());
   }
 }
