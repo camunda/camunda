@@ -153,8 +153,6 @@ public final class BackgroundTaskManagerFactory {
         resourceProvider.getIndexTemplateDescriptor(PostImporterQueueTemplate.class);
     final var operationTemplate =
         resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
-    final var batchOperationTemplate =
-        resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
     return new OpenSearchIncidentUpdateRepository(
         partitionId,
         postImporterTemplate.getAlias(),
@@ -190,8 +188,8 @@ public final class BackgroundTaskManagerFactory {
     return new ElasticsearchBatchOperationUpdateRepository(
         asyncClient,
         executor,
-        operationTemplate.getFullQualifiedName(),
         batchOperationTemplate.getFullQualifiedName(),
+        operationTemplate.getFullQualifiedName(),
         logger);
   }
 
