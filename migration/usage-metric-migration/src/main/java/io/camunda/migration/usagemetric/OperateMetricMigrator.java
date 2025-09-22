@@ -24,8 +24,8 @@ import io.camunda.search.filter.Operation;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEventType;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -114,7 +114,7 @@ public class OperateMetricMigrator extends MetricMigrator {
             minEventTime);
     return client.reindex(
         indexDescriptors.get(MetricIndex.class).getFullQualifiedName(),
-        indexDescriptors.get(UsageMetricIndex.class).getFullQualifiedName(),
+        indexDescriptors.get(UsageMetricTemplate.class).getFullQualifiedName(),
         searchQuery,
         SCRIPT);
   }

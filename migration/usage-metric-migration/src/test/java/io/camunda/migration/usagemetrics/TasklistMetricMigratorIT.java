@@ -31,8 +31,8 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.webapps.schema.entities.MetricEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
@@ -73,7 +73,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
       new TasklistMetricIndex(prefix, isElasticsearch),
       new TasklistImportPositionIndex(prefix, isElasticsearch),
       new TasklistMigrationRepositoryIndex(prefix, isElasticsearch),
-      new UsageMetricTUIndex(prefix, isElasticsearch),
+      new UsageMetricTUTemplate(prefix, isElasticsearch),
     };
   }
 
@@ -94,7 +94,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
     runMigration();
 
     awaitRecordsArePresent(
-        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class), 2000);
+        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class), 2000);
 
     // then
     assertDataMigrated();
@@ -118,7 +118,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
     runMigration();
 
     awaitRecordsArePresent(
-        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class), 2000);
+        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class), 2000);
 
     final var firstRunProcessorStep = retrieveProcessorStep();
     assertProcessorStep(firstRunProcessorStep, true);
@@ -154,7 +154,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
     runMigration();
 
     awaitRecordsArePresent(
-        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class), 2000);
+        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class), 2000);
 
     final var firstRunTracker = retrieveProcessorStep();
     assertProcessorStep(firstRunTracker, true);
@@ -193,7 +193,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
     runMigration();
 
     awaitRecordsArePresent(
-        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class), 2000);
+        UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class), 2000);
 
     final var firstRunProcessorStep = retrieveProcessorStep();
     assertProcessorStep(firstRunProcessorStep, true);
@@ -307,7 +307,8 @@ public class TasklistMetricMigratorIT extends MigrationTest {
 
     // then - no data is migrated
     refreshIndices();
-    assertThat(readRecords(UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class)))
+    assertThat(
+            readRecords(UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class)))
         .isEmpty();
   }
 
@@ -429,7 +430,7 @@ public class TasklistMetricMigratorIT extends MigrationTest {
 
   private void assertDataMigrated() throws IOException {
     final var migratedMetrics =
-        readRecords(UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUIndex.class));
+        readRecords(UsageMetricsTUEntity.class, indexFqnForClass(UsageMetricTUTemplate.class));
 
     final var migratedMetricsCountByAssignee =
         migratedMetrics.stream()

@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
+import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
@@ -41,6 +42,8 @@ import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.PostImporterQueueTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.util.error.FatalErrorHandler;
@@ -113,6 +116,7 @@ public final class BackgroundTaskManagerFactory {
 
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
+    tasks.add(buildUsageMetricsArchiverJob());
     if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
       tasks.add(buildProcessInstanceToBeArchivedCountJob());
     }
@@ -196,6 +200,16 @@ public final class BackgroundTaskManagerFactory {
             resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class),
             metrics,
             logger,
+            executor));
+  }
+
+  private ReschedulingTask buildUsageMetricsArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new UsageMetricsArchiverJob(
+            archiverRepository,
+            logger,
+            resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
+            resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
             executor));
   }
 
