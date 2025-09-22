@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Primary;
 @DependsOn("unifiedConfigurationHelper")
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
+  SecondaryStorageType.opensearch,
+  SecondaryStorageType.rdbms
 })
 public class SearchEngineConnectPropertiesOverride {
 
