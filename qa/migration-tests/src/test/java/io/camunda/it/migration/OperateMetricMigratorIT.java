@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -63,6 +64,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
  *   <li>Make sure to not commit the changes when you're done
  * </ul>
  */
+@Disabled(
+    "The test uses the TestStandaloneBroker which starts the UsageMetricsArcherJob and this clashes with the migrator so we disable it for now")
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
