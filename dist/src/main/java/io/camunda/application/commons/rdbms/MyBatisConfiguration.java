@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
@@ -101,18 +102,7 @@ public class MyBatisConfiguration {
     final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
     LOGGER.info("Detected databaseId: {}", databaseId);
 
-    final Properties properties = new Properties();
-    final var file = "db/vendor-properties/" + databaseId + ".properties";
-    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-      if (propertiesInputStream != null) {
-        properties.load(propertiesInputStream);
-      } else {
-        throw new IllegalArgumentException(
-            "No vendor properties found for databaseId " + databaseId);
-      }
-    }
-
-    return new VendorDatabaseProperties(properties);
+    return VendorDatabasePropertiesLoader.load(databaseId);
   }
 
   @Bean

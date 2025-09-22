@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,7 +29,7 @@ public class LiquibaseScriptGenerator {
     final var targetDir = args[0] + "/liquibase";
 
     final var prefix = args.length >= 2 ? args[1] : "";
-    final var databases = Set.of("h2", "mysql", "postgresql", "oracle");
+    final var databases = Set.of("h2", "mariadb", "postgresql", "oracle");
 
     for (final var database : databases) {
       generateLiquibaseScript(
@@ -54,7 +55,10 @@ public class LiquibaseScriptGenerator {
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
-    final var sqlScript = generateSqlScript(databaseType, changesetFile, prefix, 4000);
+    final var properties = VendorDatabasePropertiesLoader.load(databaseType);
+
+    final var sqlScript =
+        generateSqlScript(databaseType, changesetFile, prefix, properties.userCharColumnSize());
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
