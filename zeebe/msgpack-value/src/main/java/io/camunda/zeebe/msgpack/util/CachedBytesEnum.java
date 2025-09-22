@@ -21,16 +21,17 @@ public final class CachedBytesEnum<E extends Enum<E>> {
   private static final ConcurrentMap<Class<?>, CachedBytesEnum<?>> GLOBAL_CACHE =
       new ConcurrentHashMap<>();
 
-  private final Class<E> clazz;
   private final DirectBuffer[] valuesAsBuffers;
+  private final AsciiEnumParser<E> parser;
 
-  private CachedBytesEnum(final Class<?> clazz) {
-    this.clazz = (Class<E>) clazz;
-    valuesAsBuffers = byteRepresentations((Class<E>) clazz);
+  private CachedBytesEnum(final Class<E> clazz) {
+    valuesAsBuffers = byteRepresentations(clazz);
+    parser = new AsciiEnumParser<E>(clazz);
   }
 
   public static <E extends Enum<E>> CachedBytesEnum<E> get(final Class<E> clazz) {
-    return (CachedBytesEnum<E>) GLOBAL_CACHE.computeIfAbsent(clazz, CachedBytesEnum<E>::new);
+    return (CachedBytesEnum<E>)
+        GLOBAL_CACHE.computeIfAbsent(clazz, c -> new CachedBytesEnum<>((Class<E>) c));
   }
 
   public DirectBuffer byteRepr(final E value) {
@@ -38,14 +39,12 @@ public final class CachedBytesEnum<E extends Enum<E>> {
   }
 
   public E getValue(final DirectBuffer buffer) {
-    for (int i = 0; i < valuesAsBuffers.length; i++) {
-      final var bytes = valuesAsBuffers[i];
-      if (BufferUtil.contentsEqual(bytes, buffer)) {
-        return clazz.getEnumConstants()[i];
-      }
+    final var value = parser.parse(buffer, 0, buffer.capacity());
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "No enum cases with string representation of " + BufferUtil.bufferAsString(buffer));
     }
-    throw new IllegalArgumentException(
-        "No enum cases with string representation of " + BufferUtil.bufferAsString(buffer));
+    return value;
   }
 
   static <E extends Enum<E>> DirectBuffer[] byteRepresentations(final Class<E> enumClass) {
