@@ -84,7 +84,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(operateProperties.getElasticsearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(operateProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -98,7 +97,6 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(tasklistProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(tasklistProperties.getElasticsearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
-      assertThat(tasklistProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -141,9 +139,7 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
         "camunda.database.url=http://matching-url:4321",
         "camunda.tasklist.elasticsearch.url=http://matching-url:4321",
-        "camunda.tasklist.zeebeElasticsearch.url=http://matching-url:4321",
         "camunda.operate.elasticsearch.url=http://matching-url:4321",
-        "camunda.operate.zeebeElasticsearch.url=http://matching-url:4321",
         // username
         "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
         "camunda.database.username=" + EXPECTED_USERNAME,
@@ -205,7 +201,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getElasticsearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getElasticsearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
-      assertThat(operateProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
@@ -221,7 +216,6 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getElasticsearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
-      assertThat(tasklistProperties.getZeebeElasticsearch().getUrl()).isEqualTo(expectedUrl);
     }
 
     @Test
