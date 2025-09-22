@@ -9,11 +9,12 @@ package io.camunda.zeebe.msgpack.util;
 
 import org.agrona.DirectBuffer;
 
-public final class AsciiEnumParser<E extends Enum<E>> {
+public final class AsciiTrieEnumParser<E extends Enum<E>> implements EnumParser<E> {
+  private static final int PRINTABLE_ASCII_CHARS = 63;
   private final AsciiTrieNode root;
   private final Class<E> enumClass;
 
-  public AsciiEnumParser(final Class<E> enumClass) {
+  public AsciiTrieEnumParser(final Class<E> enumClass) {
     this.enumClass = enumClass;
     root = new AsciiTrieNode();
     buildTrie();
@@ -26,23 +27,42 @@ public final class AsciiEnumParser<E extends Enum<E>> {
     }
   }
 
+  @Override
   @SuppressWarnings("unchecked")
   public E parse(final DirectBuffer buffer, final int offset, final int length) {
     return (E) root.search(buffer, offset, length);
   }
 
+  @Override
   public E parse(
       final DirectBuffer buffer, final int offset, final int length, final E defaultValue) {
     final E result = parse(buffer, offset, length);
     return result != null ? result : defaultValue;
   }
 
+  /** Map alphanumeric + '_' ASCII char to the index of the array */
+  private static int charToIndex(final char c) {
+    if (c >= 'A' && c <= 'Z') {
+      return c - 'A';
+    }
+    if (c >= 'a' && c <= 'z') {
+      return c - 'a' + 26;
+    }
+    if (c >= '0' && c <= '9') {
+      return c - '0' + 52;
+    }
+    if (c == '_') {
+      return 62;
+    }
+    return -1; // Invalid character
+  }
+
   private static final class AsciiTrieNode {
-    private final AsciiTrieNode[] children; // ASCII characters 0-127
+    private AsciiTrieNode[] children; // printable alphanumeric chars ASCII characters 0-63
     private Enum<?> enumValue;
 
     public AsciiTrieNode() {
-      children = new AsciiTrieNode[128];
+      //      children = new AsciiTrieNode[PRINTABLE_ASCII_CHARS];
       enumValue = null;
     }
 
@@ -50,14 +70,18 @@ public final class AsciiEnumParser<E extends Enum<E>> {
       AsciiTrieNode current = this;
       for (int i = 0; i < key.length(); i++) {
         final char ch = key.charAt(i);
-        if (ch >= 128) {
+        final var index = charToIndex(ch);
+        if (index == -1) {
           throw new IllegalArgumentException("Non-ASCII character: " + ch);
         }
 
-        if (current.children[ch] == null) {
-          current.children[ch] = new AsciiTrieNode();
+        if (current.children == null) {
+          current.children = new AsciiTrieNode[PRINTABLE_ASCII_CHARS];
         }
-        current = current.children[ch];
+        if (current.children[index] == null) {
+          current.children[index] = new AsciiTrieNode();
+        }
+        current = current.children[index];
       }
       current.enumValue = value;
     }
@@ -67,11 +91,12 @@ public final class AsciiEnumParser<E extends Enum<E>> {
 
       for (int i = 0; i < length; i++) {
         final byte b = buffer.getByte(offset + i);
-        if (b < 0 || b >= 128) {
-          return null; // Non-ASCII character
+        final var index = charToIndex((char) b);
+        if (index == -1) {
+          return null; // invalid character
         }
 
-        final AsciiTrieNode next = current.children[b];
+        final AsciiTrieNode next = current.children[index];
         if (next == null) {
           return null; // No match found
         }

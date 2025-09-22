@@ -20,16 +20,16 @@ import org.junit.jupiter.api.Test;
 
 class AsciiEnumParserPropertyTest {
 
-  private AsciiEnumParser<TestEnum> parser;
-  private AsciiEnumParser<SingleEnum> singleParser;
-  private AsciiEnumParser<EmptyLikeEnum> minimalParser;
+  private EnumParser<TestEnum> parser;
+  private EnumParser<SingleEnum> singleParser;
+  private EnumParser<EmptyLikeEnum> minimalParser;
 
   @BeforeEach
   @BeforeProperty
   void setUp() {
-    parser = new AsciiEnumParser<>(TestEnum.class);
-    singleParser = new AsciiEnumParser<>(SingleEnum.class);
-    minimalParser = new AsciiEnumParser<>(EmptyLikeEnum.class);
+    parser = new AsciiSortedStringEnumParser<>(TestEnum.class);
+    singleParser = new AsciiSortedStringEnumParser<>(SingleEnum.class);
+    minimalParser = new AsciiSortedStringEnumParser<>(EmptyLikeEnum.class);
   }
 
   @Property
