@@ -36,58 +36,48 @@ jobs:
         id: image-tag
         run: |
           set -euo pipefail
+          EVENT="${{ github.event_name }}"
+            REF_NAME="${{ github.ref_name }}"
+          PR_BASE="${{ github.event.pull_request.base.ref || '' }}"
 
-          # 1. Try direct base_ref (PR context)
-          BASE_CANDIDATE="${{ github.base_ref }}"
-          REF_NAME="${{ github.ref_name }}"
-          REPO="${{ github.repository }}"
-          OWNER="${{ github.repository_owner }}"
+          echo "Event: $EVENT"
+          echo "Ref name: $REF_NAME"
+          echo "PR base: $PR_BASE"
 
-          echo "Initial base_ref: '${BASE_CANDIDATE}' (empty means non‑PR push)"
-          echo "Ref name: '${REF_NAME}'"
-
-          # 2. If push event (no base_ref), attempt to discover an open PR whose head matches this ref
-          if [[ -z "$BASE_CANDIDATE" ]]; then
-            echo "No base_ref (push event). Attempting PR lookup for head=${OWNER}:${REF_NAME}"
-            API_RESPONSE=$(curl -s -H "Authorization: Bearer ${{ github.token }}" \
-              "https://api.github.com/repos/${REPO}/pulls?head=${OWNER}:${REF_NAME}&state=open&per_page=1")
-            DISCOVERED_BASE=$(printf '%s' "$API_RESPONSE" | grep -Eo '"base":\{[^}]*\}' | grep -Eo '"ref":"[^"]+"' | head -1 | cut -d':' -f2 | tr -d '"')
-            if [[ -n "$DISCOVERED_BASE" ]]; then
-              BASE_CANDIDATE="$DISCOVERED_BASE"
-              echo "Discovered base via open PR: '$BASE_CANDIDATE'"
-            else
-              echo "No open PR found for this branch."
-            fi
+          if [[ "$EVENT" == "pull_request" ]]; then
+            CANDIDATE_BRANCH="$PR_BASE"
+          else
+            CANDIDATE_BRANCH="$REF_NAME"
           fi
 
-          # 3. Final fallback: use the ref name itself
-            if [[ -z "$BASE_CANDIDATE" ]]; then
-            BASE_CANDIDATE="$REF_NAME"
-            echo "Falling back to branch itself as base: '$BASE_CANDIDATE'"
-          fi
+          RAW_CANDIDATE="$CANDIDATE_BRANCH"
+          CANDIDATE_BRANCH="$(echo -n "$CANDIDATE_BRANCH" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
-          # Sanitize
-          BASE_CANDIDATE="$(echo -n "$BASE_CANDIDATE" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-          echo "Using candidate branch for version extraction: $BASE_CANDIDATE"
+          echo "Raw candidate: >$RAW_CANDIDATE<"
+          echo "Sanitized candidate: >$CANDIDATE_BRANCH<"
 
-          # Accept: release-M.m, release-M.m.p, optionally with suffix: -rc1, -hotfix, -workflow, etc.
-          if [[ "$BASE_CANDIDATE" =~ ^release-([0-9]+)\.([0-9]+)(?:\.([0-9]+))?(?:[-.].*)?$ ]]; then
+            if [[ "$CANDIDATE_BRANCH" =~ ^release-([0-9]+)\.([0-9]+)\.([0-9]+)(-[A-Za-z0-9]+)?$ ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
-            [[ -z "$PATCH" ]] && PATCH=0
-            if { [[ "$MAJOR" -eq 8 && "$MINOR" -ge 8 ]] || [[ "$MAJOR" -gt 8 ]] ; }; then
-              IMAGE_TAG="$MAJOR.$MINOR.$PATCH"
-              echo "Extracted version: MAJOR=$MAJOR MINOR=$MINOR PATCH=$PATCH -> IMAGE_TAG=$IMAGE_TAG"
-              echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+            SUFFIX="${BASH_REMATCH[4]}"
+            VERSION="$MAJOR.$MINOR.$PATCH${SUFFIX}"
+            if { [[ "$MAJOR" -eq 8 && "$MINOR" -ge 8 ]] || [[ "$MAJOR" -gt 8 ]]; }; then
+              IMAGE_TAG="$VERSION"
+              echo "Extracted release version: $IMAGE_TAG"
             else
-              echo "Version $MAJOR.$MINOR.$PATCH < 8.8 -> skipping."
-              echo "image-tag=SKIPPED" >> "$GITHUB_OUTPUT"
+              echo "Error: Version $VERSION is < 8.8 (unsupported)."
+              exit 1
             fi
           else
-            echo "Branch '$BASE_CANDIDATE' not a release pattern -> skipping."
+            echo "ERROR: Pattern did not match: '$CANDIDATE_BRANCH'"
+            echo "Expected: release-X.Y.Z (>= 8.8) optionally with suffix (e.g. release-8.8.0, release-8.9.1, release-9.0.0, release-9.0.0-rc1)"
             echo "image-tag=SKIPPED" >> "$GITHUB_OUTPUT"
+            exit 1
           fi
+
+          echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
+          echo "Final image tag: $IMAGE_TAG"
 
       - name: Check release image availability
         id: check-image
@@ -201,12 +191,6 @@ jobs:
         if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-
-      - name: Python setup
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.x"
 
       - name: Run E2E Tests
         if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
