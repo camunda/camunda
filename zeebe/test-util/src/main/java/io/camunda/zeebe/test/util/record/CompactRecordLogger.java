@@ -65,6 +65,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
+import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 import io.camunda.zeebe.protocol.record.value.AuthorizationRecordValue;
@@ -126,6 +127,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -285,6 +287,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(ValueType.SCALE, this::summarizeScale);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1492,6 +1495,41 @@ public class CompactRecordLogger {
     }
     summary.append(")");
     summary.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+
+    return summary.toString();
+  }
+
+  private String summarizeScale(final Record<?> record) {
+    final var value = (ScaleRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    switch (record.getIntent()) {
+      case ScaleIntent.SCALE_UP, ScaleIntent.SCALING_UP ->
+          summary
+              .append("Scale to ")
+              .append(value.getDesiredPartitionCount())
+              .append(" partitions");
+      case ScaleIntent.STATUS -> {} // No information in status request command
+      case ScaleIntent.STATUS_RESPONSE ->
+          summary
+              .append("Partitions: ")
+              .append(value.getRedistributedPartitions())
+              .append(" (")
+              .append(value.getRedistributedPartitions().size())
+              .append("/")
+              .append(value.getDesiredPartitionCount())
+              .append("; ")
+              .append(value.getMessageCorrelationPartitions())
+              .append(" in message correlation)");
+      case ScaleIntent.MARK_PARTITION_BOOTSTRAPPED,
+          ScaleIntent.PARTITION_BOOTSTRAPPED,
+          ScaleIntent.SCALED_UP ->
+          summary
+              .append("Partition: ")
+              .append(value.getRedistributedPartitions().iterator().next());
+      default -> summarizeMiscValue(record);
+    }
 
     return summary.toString();
   }
