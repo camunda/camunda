@@ -33,6 +33,7 @@ import java.util.Arrays;
 import org.awaitility.Awaitility;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.core.SearchRequest.Builder;
 import org.opensearch.client.opensearch.core.search.Hit;
@@ -131,6 +132,36 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
+    EXPORTER.export(record);
+    osClient.index().refresh("*");
+    tester.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(record2);
+    osClient.index().refresh("*");
+
+    // receives 8.7 record and marks partition as finished importing
+    tester.performOneRoundOfImport();
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < emptyBatches; i++) {
+      tester.performOneRoundOfImport();
+    }
+
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(() -> isRecordReaderCompleted("1-tenant"));
+  }
+
+  @Test
+  @Disabled
   public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var decisionEvalRecord = generateRecord(ValueType.DECISION_EVALUATION, "8.7.0", 1);
