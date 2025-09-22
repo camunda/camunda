@@ -1088,6 +1088,7 @@ jobs:
     name: flaky tests summary comment
     if: always() && github.event_name == 'pull_request'
     needs:
+      - archunit-tests
       - docker-checks
       - elasticsearch-integration-tests
       - general-unit-tests
