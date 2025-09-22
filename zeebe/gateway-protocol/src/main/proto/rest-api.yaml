@@ -6072,7 +6072,7 @@ components:
           items:
             $ref: "#/components/schemas/UserTaskStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     VariableValueFilterProperty:
       type: object
       properties:
@@ -6249,19 +6249,16 @@ components:
           type: boolean
         variableKey:
           description: The key for this variable.
-          oneOf:
-            - $ref: "#/components/schemas/VariableKey"
-            - $ref: "#/components/schemas/AdvancedVariableKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/VariableKeyFilterProperty"
         scopeKey:
           description: The key of the scope of this variable.
-          oneOf:
-            - $ref: "#/components/schemas/ScopeKey"
-            - $ref: "#/components/schemas/AdvancedScopeKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ScopeKeyFilterProperty"
         processInstanceKey:
           description: The key of the process instance of this variable.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
     VariableSearchQueryResult:
       description: Variable search query response.
       type: object
@@ -6560,7 +6557,7 @@ components:
         - type: object
           properties:
             $like:
-              $ref: "#/components/schemas/LikeFilterProperty"
+              $ref: "#/components/schemas/LikeFilter"
     AdvancedProcessInstanceStateFilter:
       title: Advanced filter
       description: Advanced ProcessInstanceStateEnum filter.
@@ -6583,7 +6580,7 @@ components:
           items:
             $ref: "#/components/schemas/ProcessInstanceStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     AdvancedElementInstanceStateFilter:
       title: Advanced filter
       description: Advanced ElementInstanceStateEnum filter.
@@ -6606,16 +6603,20 @@ components:
           items:
             $ref: "#/components/schemas/ElementInstanceStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     AdvancedDecisionDefinitionKeyFilter:
       title: Advanced filter
       description: Advanced DecisionDefinitionKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/DecisionDefinitionKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionKey"
         $neq:
-          $ref: "#/components/schemas/DecisionDefinitionKey"
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6629,6 +6630,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DecisionDefinitionKey"
+    DecisionDefinitionKeyFilterProperty:
+      description: DecisionDefinitionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionKey"
+        - $ref: "#/components/schemas/AdvancedDecisionDefinitionKeyFilter"
     AdvancedDateTimeFilter:
       title: Advanced filter
       description: Advanced date-time filter.
@@ -6683,7 +6694,7 @@ components:
           title: Exact match
           description: Matches the value exactly.
         - $ref: "#/components/schemas/AdvancedStringFilter"
-    LikeFilterProperty:
+    LikeFilter:
       type: string
       description: |
         Checks if the property matches the provided like value.
@@ -6729,9 +6740,13 @@ components:
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/ProcessDefinitionKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKey"
         $neq:
-          $ref: "#/components/schemas/ProcessDefinitionKey"
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6745,15 +6760,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessDefinitionKey"
+    ProcessDefinitionKeyFilterProperty:
+      description: ProcessDefinitionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKey"
+        - $ref: "#/components/schemas/AdvancedProcessDefinitionKeyFilter"
     AdvancedProcessInstanceKeyFilter:
       title: Advanced filter
       description: Advanced ProcessInstanceKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/ProcessInstanceKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKey"
         $neq:
-          $ref: "#/components/schemas/ProcessInstanceKey"
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6767,15 +6796,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProcessInstanceKey"
+    ProcessInstanceKeyFilterProperty:
+      description: ProcessInstanceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKey"
+        - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
     AdvancedElementInstanceKeyFilter:
       title: Advanced filter
       description: Advanced ElementInstanceKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/ElementInstanceKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKey"
         $neq:
-          $ref: "#/components/schemas/ElementInstanceKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6789,15 +6832,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ElementInstanceKey"
+    ElementInstanceKeyFilterProperty:
+      description: ElementInstanceKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKey"
+        - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
     AdvancedVariableKeyFilter:
       title: Advanced filter
       description: Advanced VariableKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/VariableKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/VariableKey"
         $neq:
-          $ref: "#/components/schemas/VariableKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/VariableKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6811,15 +6868,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/VariableKey"
+    VariableKeyFilterProperty:
+      description: VariableKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/VariableKey"
+        - $ref: "#/components/schemas/AdvancedVariableKeyFilter"
     AdvancedScopeKeyFilter:
       title: Advanced filter
       description: Advanced ScopeKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/ScopeKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ScopeKey"
         $neq:
-          $ref: "#/components/schemas/ScopeKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/ScopeKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6833,15 +6904,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ScopeKey"
+    ScopeKeyFilterProperty:
+      description: ScopeKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/ScopeKey"
+        - $ref: "#/components/schemas/AdvancedScopeKeyFilter"
     AdvancedMessageSubscriptionKeyFilter:
       title: Advanced filter
       description: Advanced MessageSubscriptionKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/MessageSubscriptionKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
         $neq:
-          $ref: "#/components/schemas/MessageSubscriptionKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6855,15 +6940,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MessageSubscriptionKey"
+    MessageSubscriptionKeyFilterProperty:
+      description: MessageSubscriptionKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/MessageSubscriptionKey"
+        - $ref: "#/components/schemas/AdvancedMessageSubscriptionKeyFilter"
     AdvancedJobKeyFilter:
       title: Advanced filter
       description: Advanced JobKey filter.
       type: object
       properties:
         $eq:
-          $ref: "#/components/schemas/JobKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKey"
         $neq:
-          $ref: "#/components/schemas/JobKey"
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: "#/components/schemas/JobKey"
         $exists:
           description: Checks if the current property exists.
           type: boolean
@@ -6877,6 +6976,16 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/JobKey"
+    JobKeyFilterProperty:
+      description: JobKey property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: "#/components/schemas/JobKey"
+        - $ref: "#/components/schemas/AdvancedJobKeyFilter"
     BaseProcessInstanceFilterFields:
       description: Base process instance search filter.
       type: object
@@ -6907,19 +7016,16 @@ components:
             $ref: "#/components/schemas/VariableValueFilterProperty"
         processInstanceKey:
           description: The key of this process instance.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
         parentProcessInstanceKey:
           description: The parent process instance key.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
         parentElementInstanceKey:
           description: The parent element instance key.
-          oneOf:
-            - $ref: "#/components/schemas/ElementInstanceKey"
-            - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
         batchOperationId:
           description: The batch operation ID.
           allOf:
@@ -7013,9 +7119,8 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
           description: The process definition key.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessDefinitionKey"
-            - $ref: "#/components/schemas/AdvancedProcessDefinitionKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKeyFilterProperty"
     ProcessInstanceFilter:
       description: Process instance search filter.
       allOf:
@@ -7949,7 +8054,7 @@ components:
         messageSubscriptionKey:
           description: The message subscription key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/AdvancedMessageSubscriptionKeyFilter"
+            - $ref: "#/components/schemas/MessageSubscriptionKeyFilterProperty"
         processDefinitionId:
           description: The process definition ID associated with this message subscription.
           allOf:
@@ -7957,7 +8062,7 @@ components:
         processInstanceKey:
           description: The process instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
         elementId:
           description: The element ID associated with this message subscription.
           allOf:
@@ -7965,7 +8070,7 @@ components:
         elementInstanceKey:
           description: The element instance key associated with this message subscription.
           allOf:
-            - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
         messageSubscriptionState:
           description: The message subscription state.
           allOf:
@@ -8026,7 +8131,7 @@ components:
           items:
             $ref: "#/components/schemas/MessageSubscriptionStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     IncidentResult:
       type: object
       properties:
@@ -9944,9 +10049,8 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
         elementInstanceKey:
           description: The element instance key associated with the job.
-          oneOf:
-            - $ref: "#/components/schemas/ElementInstanceKey"
-            - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
         endTime:
           description: When the job ended.
           allOf:
@@ -9968,9 +10072,8 @@ components:
           nullable: true
         jobKey:
           description: The key, a unique identifier for the job.
-          oneOf:
-            - $ref: "#/components/schemas/JobKey"
-            - $ref: "#/components/schemas/AdvancedJobKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/JobKeyFilterProperty"
         kind:
           description: The kind of the job.
           allOf:
@@ -9985,14 +10088,12 @@ components:
             - $ref: "#/components/schemas/StringFilterProperty"
         processDefinitionKey:
           description: The process definition key associated with the job.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessDefinitionKey"
-            - $ref: "#/components/schemas/AdvancedProcessDefinitionKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionKeyFilterProperty"
         processInstanceKey:
           description: The process instance key associated with the job.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
         retries:
           description: The number of retries left.
           allOf:
@@ -10184,7 +10285,7 @@ components:
           items:
             $ref: "#/components/schemas/JobStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     JobKindFilterProperty:
       description: JobKindEnum property with full advanced search capabilities.
       type: object
@@ -10217,7 +10318,7 @@ components:
           items:
             $ref: "#/components/schemas/JobKindEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     JobListenerEventTypeFilterProperty:
       description: JobListenerEventTypeEnum property with full advanced search capabilities.
       type: object
@@ -10250,7 +10351,7 @@ components:
           items:
             $ref: "#/components/schemas/JobListenerEventTypeEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     ProblemDetail:
       description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
@@ -10760,14 +10861,12 @@ components:
           description: The key of the process instance.
         decisionDefinitionKey:
           description: The key of the decision.
-          oneOf:
-            - $ref: "#/components/schemas/DecisionDefinitionKey"
-            - $ref: "#/components/schemas/AdvancedDecisionDefinitionKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/DecisionDefinitionKeyFilterProperty"
         elementInstanceKey:
           description: The key of the element instance this decision instance is linked to.
-          oneOf:
-            - $ref: "#/components/schemas/ElementInstanceKey"
-            - $ref: "#/components/schemas/AdvancedElementInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ElementInstanceKeyFilterProperty"
     DecisionInstanceSearchQueryResult:
       type: object
       allOf:
@@ -11842,7 +11941,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationTypeEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     BatchOperationStateFilterProperty:
       description: BatchOperationStateEnum property with full advanced search capabilities.
       type: object
@@ -11875,7 +11974,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     BatchOperationStateEnum:
       description: The batch operation state.
       type: string
@@ -11932,9 +12031,8 @@ components:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
           description: The process instance key of the processed item.
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceKey"
-            - $ref: "#/components/schemas/AdvancedProcessInstanceKeyFilter"
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceKeyFilterProperty"
         state:
           type: string
           description: The state of the batch operation.
@@ -11972,7 +12070,7 @@ components:
           items:
             $ref: "#/components/schemas/BatchOperationItemStateEnum"
         $like:
-          $ref: "#/components/schemas/LikeFilterProperty"
+          $ref: "#/components/schemas/LikeFilter"
     BatchOperationItemStateEnum:
       description: The state, one of ACTIVE, COMPLETED, TERMINATED.
       type: string
