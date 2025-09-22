@@ -64,7 +64,7 @@ public interface CamundaProcessTestContext {
    * @deprecated used to keep compatibility with the Zeebe client injection
    */
   @Deprecated
-  ZeebeClient createZeebeClient(Consumer<ZeebeClientBuilder> modifier);
+  ZeebeClient createZeebeClient(final Consumer<ZeebeClientBuilder> modifier);
 
   /**
    * @return the URI of Camunda's gRPC API address
@@ -140,6 +140,13 @@ public interface CamundaProcessTestContext {
    * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
    */
   void completeJob(final String jobType);
+
+  /**
+   * Completes a job of the specified type with example data extracted from the BPMN Model.
+   *
+   * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
+   */
+  void completeJobWithExampleData(final String jobType);
 
   /**
    * Completes a job of the specified type and sets the provided variables.
