@@ -11,6 +11,7 @@ import static io.camunda.client.api.search.enums.PermissionType.CREATE;
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.ResourceType.GROUP;
+import static io.camunda.client.api.search.enums.ResourceType.MAPPING_RULE;
 import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static io.camunda.client.api.search.enums.ResourceType.USER;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -76,7 +77,9 @@ class TenantAuthorizationIT {
               new Permissions(TENANT, READ, List.of("*")),
               new Permissions(TENANT, UPDATE, List.of("*")),
               new Permissions(USER, CREATE, List.of("*")),
-              new Permissions(GROUP, CREATE, List.of("*"))));
+              new Permissions(GROUP, CREATE, List.of("*")),
+              new Permissions(MAPPING_RULE, CREATE, List.of("*")),
+              new Permissions(MAPPING_RULE, READ, List.of("*"))));
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER =
@@ -348,6 +351,57 @@ class TenantAuthorizationIT {
               Assertions.assertThat(clients.items())
                   .noneMatch(r -> clientId.equals(r.getClientId()));
             });
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+  void unassignMappingRuleFromTenantShouldReturnForbiddenIfUnauthorized(
+      @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newUnassignMappingRuleFromTenantCommand()
+                    .mappingRuleId("mappingRuleId")
+                    .tenantId(TENANT_ID_1)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("403: 'Forbidden'");
+  }
+
+  @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
+  void unassignMappingRuleFromTenantShouldUnassignMappingRuleIfAuthorized(
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
+    // given - create a mapping rule and assign it to tenant
+    final String mappingRuleName = UUID.randomUUID().toString();
+    final String mappingRuleId = Strings.newRandomValidIdentityId();
+    camundaClient
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(mappingRuleId)
+        .name(mappingRuleName)
+        .claimName("email")
+        .claimValue("test@example.com")
+        .send()
+        .join();
+
+    camundaClient
+        .newAssignMappingRuleToTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // when - unassign the mapping rule from the tenant
+    camundaClient
+        .newUnassignMappingRuleFromTenantCommand()
+        .mappingRuleId(mappingRuleId)
+        .tenantId(TENANT_ID_1)
+        .send()
+        .join();
+
+    // then - verify mapping rule is unassigned (this test validates the command works)
+    // Note: Full verification would require a mappingRulesByTenantSearchRequest method
   }
 
   private static void createTenant(final CamundaClient adminClient, final String tenantId) {

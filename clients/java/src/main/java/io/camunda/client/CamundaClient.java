@@ -72,6 +72,7 @@ import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignGroupFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignMappingRuleFromGroupStep1;
+import io.camunda.client.api.command.UnassignMappingRuleFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromClientCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignRoleFromMappingRuleCommandStep1;
@@ -2290,6 +2291,24 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder to configure and send the unassign client from tenant command
    */
   UnassignClientFromTenantCommandStep1 newUnassignClientFromTenantCommand();
+
+  /**
+   * Command to unassign a mapping rule from a tenant.
+   *
+   * <pre>
+   *
+   * camundaClient
+   *  .newUnassignMappingRuleFromTenantCommand()
+   *  .mappingRuleId("mappingRuleId")
+   *  .tenantId("tenantId")
+   *  .send();
+   * </pre>
+   *
+   * <p>This command is only sent via REST over HTTP, not via gRPC <br>
+   *
+   * @return a builder to configure and send the unassign mapping rule from tenant command
+   */
+  UnassignMappingRuleFromTenantCommandStep1 newUnassignMappingRuleFromTenantCommand();
 
   /**
    * Command to create an authorization
