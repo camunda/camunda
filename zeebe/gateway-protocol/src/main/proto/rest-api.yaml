@@ -213,15 +213,18 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidData"
         "404":
-          description: |
-            The job with the given jobKey is not found. It was completed by another worker, or the process instance itself was canceled.
+          description: >
+            The job with the given jobKey is not found. It was completed by another worker,
+            or the process instance itself was canceled.
           content:
             application/problem+json:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The job with the given key is in the wrong state (i.e: not ACTIVATED or ACTIVATABLE). The job was failed by another worker with retries = 0, and the process is now in an incident state.
+          description: >
+            The job with the given key is in the wrong state (i.e: not ACTIVATED or ACTIVATABLE).
+            The job was failed by another worker with retries = 0, and the process is now in an
+            incident state.
           content:
             application/problem+json:
               schema:
@@ -265,8 +268,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The job with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -309,8 +313,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The job with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -352,8 +357,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The job with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The job with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -369,8 +375,9 @@ paths:
         - Incident
       operationId: resolveIncident
       summary: Resolve incident
-      description: |
-        Marks the incident as resolved; most likely a call to Update job will be necessary to reset the job’s retries, followed by this call.
+      description: >
+        Marks the incident as resolved; most likely a call to Update job will be necessary
+        to reset the job’s retries, followed by this call.
       parameters:
         - name: incidentKey
           in: path
@@ -591,7 +598,9 @@ paths:
         - Tenant
       operationId: unassignUserFromTenant
       summary: Unassign a user from a tenant
-      description: Unassigns the user from the specified tenant. The user can no longer access tenant data.
+      description: |
+        Unassigns the user from the specified tenant.
+        The user can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -745,7 +754,9 @@ paths:
         - Tenant
       operationId: assignClientToTenant
       summary: Assign a client to a tenant
-      description: Assign the client to the specified tenant. The client can then access tenant data and perform authorized actions.
+      description: |
+        Assign the client to the specified tenant.
+        The client can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -781,7 +792,9 @@ paths:
         - Tenant
       operationId: unassignClientFromTenant
       summary: Unassign a client from a tenant
-      description: Unassigns the client from the specified tenant. The client can no longer access tenant data.
+      description: |
+        Unassigns the client from the specified tenant.
+        The client can no longer access tenant data.
       parameters:
         - name: tenantId
           in: path
@@ -889,7 +902,7 @@ paths:
     post:
       tags:
         - Tenant
-      operationId: searchMappingsForTenant
+      operationId: searchMappingRulesForTenant
       summary: Search mapping rules for tenant
       description: Retrieves a filtered and sorted list of MappingRules for a specified tenant.
       parameters:
@@ -918,7 +931,9 @@ paths:
         - Tenant
       operationId: assignGroupToTenant
       summary: Assign a group to a tenant
-      description: Assigns a group to a specified tenant. Group members (users, clients) can then access tenant data and perform authorized actions.
+      description: |
+        Assigns a group to a specified tenant.
+        Group members (users, clients) can then access tenant data and perform authorized actions.
       parameters:
         - name: tenantId
           in: path
@@ -954,7 +969,9 @@ paths:
         - Tenant
       operationId: unassignGroupFromTenant
       summary: Unassign a group from a tenant
-      description: Unassigns a group from a specified tenant. Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
+      description: |
+        Unassigns a group from a specified tenant.
+        Members of the group (users, clients) will no longer have access to the tenant's data - except they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -991,7 +1008,9 @@ paths:
         - Tenant
       operationId: assignRoleToTenant
       summary: Assign a role to a tenant
-      description: Assigns a role to a specified tenant. Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
+      description: |
+        Assigns a role to a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will get access to the tenant's data and can perform actions according to their authorizations.
       parameters:
         - name: tenantId
           in: path
@@ -1027,7 +1046,10 @@ paths:
         - Tenant
       operationId: unassignRoleFromTenant
       summary: Unassign a role from a tenant
-      description: Unassigns a role from a specified tenant. Users, Clients or Groups, that have the role assigned, will no longer have access to the tenant's data - unless they are assigned directly to the tenant.
+      description: |
+        Unassigns a role from a specified tenant.
+        Users, Clients or Groups, that have the role assigned, will no longer have access to the
+        tenant's data - unless they are assigned directly to the tenant.
       parameters:
         - name: tenantId
           in: path
@@ -1125,8 +1147,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The user task with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1168,8 +1191,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The user task with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1248,8 +1272,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The user task with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1279,15 +1304,13 @@ paths:
             $ref: "#/components/schemas/UserTaskKey"
       responses:
         "200":
-          description: |
-            The form is successfully returned.
+          description: The form is successfully returned.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/FormResult"
         "204":
-          description: |
-            The user task was found, but no form is associated with it.
+          description: The user task was found, but no form is associated with it.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -1328,8 +1351,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProblemDetail"
         "409":
-          description: |
-            The user task with the given key is in the wrong state currently. More details are provided in the response body.
+          description: >
+            The user task with the given key is in the wrong state currently.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1355,8 +1379,7 @@ paths:
               $ref: "#/components/schemas/UserTaskSearchQuery"
       responses:
         "200":
-          description: |
-            The user task search result.
+          description: The user task search result.
           content:
             application/json:
               schema:
@@ -1420,8 +1443,7 @@ paths:
               $ref: "#/components/schemas/VariableSearchQuery"
       responses:
         "200":
-          description: |
-            The variable search result.
+          description: The variable search result.
           content:
             application/json:
               schema:
@@ -1452,8 +1474,7 @@ paths:
             $ref: "#/components/schemas/VariableKey"
       responses:
         "200":
-          description: |
-            The variable is successfully returned.
+          description: The variable is successfully returned.
           content:
             application/json:
               schema:
@@ -1494,7 +1515,7 @@ paths:
               $ref: "#/components/schemas/ClockPinRequest"
       responses:
         "204":
-          description: |
+          description: >
             The clock was successfully pinned to the specified time in epoch milliseconds.
         "400":
           $ref: "#/components/responses/InvalidData"
@@ -1540,8 +1561,7 @@ paths:
               $ref: "#/components/schemas/ProcessDefinitionSearchQuery"
       responses:
         "200":
-          description: |
-            The process definition search result.
+          description: The process definition search result.
           content:
             application/json:
               schema:
@@ -1567,13 +1587,14 @@ paths:
         - name: processDefinitionKey
           in: path
           required: true
-          description: The assigned key of the process definition, which acts as a unique identifier for this process definition.
+          description: >
+            The assigned key of the process definition, which acts as a unique identifier for this
+            process definition.
           schema:
             $ref: "#/components/schemas/ProcessDefinitionKey"
       responses:
         "200":
-          description: |
-            The process definition is successfully returned.
+          description: The process definition is successfully returned.
           content:
             application/json:
               schema:
@@ -1585,8 +1606,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The process definition with the given key was not found. More details are provided in the response body.
+          description: >
+            The process definition with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1611,15 +1633,13 @@ paths:
             $ref: "#/components/schemas/ProcessDefinitionKey"
       responses:
         "200":
-          description: |
-            The XML of the process definition is successfully returned.
+          description: The XML of the process definition is successfully returned.
           content:
             text/xml:
               schema:
                 type: string
         "204":
-          description: |
-            The process definition was found but does not have XML.
+          description: The process definition was found but does not have XML.
           content:
             text/plain:
               schema:
@@ -1631,8 +1651,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision with the given key was not found. More details are provided in the response body.
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -1659,15 +1680,13 @@ paths:
             $ref: "#/components/schemas/ProcessDefinitionKey"
       responses:
         "200":
-          description: |
-            The form is successfully returned.
+          description: The form is successfully returned.
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/FormResult"
         "204":
-          description: |
-            The process was found, but no form is associated with it.
+          description: The process was found, but no form is associated with it.
         "400":
           $ref: "#/components/responses/InvalidData"
         "401":
@@ -2009,8 +2028,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/BatchOperationCreatedResult"
         "400":
-          description: |
-            The process instance batch operation failed. More details are provided in the response body.
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2047,8 +2067,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/BatchOperationCreatedResult"
         "400":
-          description: |
-            The process instance batch operation failed. More details are provided in the response body.
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2085,8 +2106,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/BatchOperationCreatedResult"
         "400":
-          description: |
-            The process instance batch operation failed. More details are provided in the response body.
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2125,8 +2147,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/BatchOperationCreatedResult"
         "400":
-          description: |
-            The process instance batch operation failed. More details are provided in the response body.
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2278,8 +2301,7 @@ paths:
               $ref: "#/components/schemas/ElementInstanceSearchQuery"
       responses:
         "200":
-          description: |
-            The element instance search result.
+          description: The element instance search result.
           content:
             application/json:
               schema:
@@ -2310,8 +2332,7 @@ paths:
             $ref: "#/components/schemas/ElementInstanceKey"
       responses:
         "200":
-          description: |
-            The element instance is successfully returned.
+          description: The element instance is successfully returned.
           content:
             application/json:
               schema:
@@ -2323,8 +2344,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The element instance with the given key was not found. More details are provided in the response body.
+          description: >
+            The element instance with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2348,8 +2370,7 @@ paths:
               $ref: "#/components/schemas/DecisionDefinitionSearchQuery"
       responses:
         "200":
-          description: |
-            The decision definition search result.
+          description: The decision definition search result.
           content:
             application/json:
               schema:
@@ -2393,8 +2414,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision with the given key was not found. More details are provided in the response body.
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2419,8 +2441,7 @@ paths:
             $ref: "#/components/schemas/DecisionDefinitionKey"
       responses:
         "200":
-          description: |
-            The XML of the decision definition is successfully returned.
+          description: The XML of the decision definition is successfully returned.
           content:
             text/xml:
               schema:
@@ -2432,8 +2453,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision with the given key was not found. More details are provided in the response body.
+          description: >
+            The decision with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2457,8 +2479,7 @@ paths:
               $ref: "#/components/schemas/DecisionRequirementsSearchQuery"
       responses:
         "200":
-          description: |
-            The decision requirements search result.
+          description: The decision requirements search result.
           content:
             application/json:
               schema:
@@ -2489,8 +2510,7 @@ paths:
             $ref: "#/components/schemas/DecisionRequirementsKey"
       responses:
         "200":
-          description: |
-            The decision requirements is successfully returned.
+          description: The decision requirements is successfully returned.
           content:
             application/json:
               schema:
@@ -2502,8 +2522,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision requirements with the given key was not found. More details are provided in the response body.
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2528,8 +2549,7 @@ paths:
             $ref: "#/components/schemas/DecisionRequirementsKey"
       responses:
         "200":
-          description: |
-            The XML of the decision requirements is successfully returned.
+          description: The XML of the decision requirements is successfully returned.
           content:
             text/xml:
               schema:
@@ -2541,8 +2561,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision requirements with the given key was not found. More details are provided in the response body.
+          description: >
+            The decision requirements with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -2566,8 +2587,7 @@ paths:
               $ref: "#/components/schemas/DecisionInstanceSearchQuery"
       responses:
         "200":
-          description: |
-            The decision instance search result.
+          description: The decision instance search result.
           content:
             application/json:
               schema:
@@ -2597,8 +2617,7 @@ paths:
             $ref: "#/components/schemas/DecisionEvaluationInstanceKey"
       responses:
         "200":
-          description: |
-            The decision instance is successfully returned.
+          description: The decision instance is successfully returned.
           content:
             application/json:
               schema:
@@ -2610,8 +2629,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The decision instance with the given ID was not found. More details are provided in the response body.
+          description: >
+            The decision instance with the given ID was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -3064,7 +3084,9 @@ paths:
         - Role
       operationId: assignRoleToUser
       summary: Assign a role to a user
-      description: Assigns the specified role to the user. The user will inherit the authorizations associated with this role.
+      description: |
+        Assigns the specified role to the user.
+        The user will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3107,9 +3129,9 @@ paths:
         - Role
       operationId: unassignRoleFromUser
       summary: Unassign a role from a user
-      description: |-
+      description: |
         Unassigns a role from a user.
-         The user will no longer inherit the authorizations associated with this role.
+        The user will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3147,9 +3169,9 @@ paths:
         - Role
       operationId: assignRoleToClient
       summary: Assign a role to a client
-      description: |-
+      description: |
         Assigns the specified role to the client.
-         The client will inherit the authorizations associated with this role.
+        The client will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3192,7 +3214,9 @@ paths:
         - Role
       operationId: unassignRoleFromClient
       summary: Unassign a role from a client
-      description: " Unassigns the specified role from the client.  The client will no longer inherit the authorizations associated with this role."
+      description: |
+        Unassigns the specified role from the client.
+        The client will no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3264,7 +3288,9 @@ paths:
         - Role
       operationId: assignRoleToGroup
       summary: Assign a role to a group
-      description: " Assigns the specified role to the group.  Every member of the group (user or client) will inherit the authorizations associated with this role."
+      description: |
+        Assigns the specified role to the group.
+        Every member of the group (user or client) will inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3307,7 +3333,9 @@ paths:
         - Role
       operationId: unassignRoleFromGroup
       summary: Unassign a role from a group
-      description: Unassigns the specified role from the group. All group members (user or client) no longer inherit the authorizations associated with this role.
+      description: |
+        Unassigns the specified role from the group.
+        All group members (user or client) no longer inherit the authorizations associated with this role.
       parameters:
         - name: roleId
           in: path
@@ -3824,7 +3852,9 @@ paths:
         - Group
       operationId: assignUserToGroup
       summary: Assign a user to a group
-      description: Assigns a user to a group, making the user a member of the group. Group members inherit the group authorizations, roles, and tenant assignments.
+      description: |
+        Assigns a user to a group, making the user a member of the group.
+        Group members inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3867,9 +3897,9 @@ paths:
         - Group
       operationId: unassignUserFromGroup
       summary: Unassign a user from a group
-      description: |-
+      description: |
         Unassigns a user from a group.
-         The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+        The user is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
@@ -3907,7 +3937,9 @@ paths:
         - Group
       operationId: assignClientToGroup
       summary: Assign a client to a group
-      description: Assigns a client to a group, making it a member of the group. Members of the group inherit the group authorizations, roles, and tenant assignments.
+      description: |
+        Assigns a client to a group, making it a member of the group.
+        Members of the group inherit the group authorizations, roles, and tenant assignments.
       parameters:
         - name: groupId
           in: path
@@ -3950,9 +3982,9 @@ paths:
         - Group
       operationId: unassignClientFromGroup
       summary: Unassign a client from a group
-      description: |-
+      description: |
         Unassigns a client from a group.
-         The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
+        The client is removed as a group member, with associated authorizations, roles, and tenant assignments no longer applied.
       parameters:
         - name: groupId
           in: path
@@ -4429,8 +4461,9 @@ paths:
         - name: documentId
           in: query
           required: false
-          description: |
-            The ID of the document to upload. If not provided, a new ID will be generated. Specifying an existing ID will result in an error if the document already exists.
+          description: >
+            The ID of the document to upload. If not provided, a new ID will be generated.
+            Specifying an existing ID will result in an error if the document already exists.
           schema:
             type: string
       requestBody:
@@ -4507,7 +4540,9 @@ paths:
                   minItems: 1
                 metadataList:
                   type: array
-                  description: Optional JSON array of metadata object whose index aligns with each file entry. The metadata array must have the same length as the files array.
+                  description: >
+                    Optional JSON array of metadata object whose index aligns with each file entry.
+                    The metadata array must have the same length as the files array.
                   items:
                     $ref: "#/components/schemas/DocumentMetadata"
               required:
@@ -4527,7 +4562,7 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "207":
-          description: |
+          description: >
             Not all documents were uploaded successfully. More details are provided in the response body.
           content:
             application/json:
@@ -4564,7 +4599,7 @@ paths:
           required: true
           schema:
             type: string
-          description: |
+          description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
             If the client fails to provide the correct hash, the request will be rejected.
@@ -4577,8 +4612,7 @@ paths:
                 type: string
                 format: binary
         "404":
-          description: |
-            The document with the given ID was not found.
+          description: The document with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -4602,8 +4636,8 @@ paths:
           description: The ID of the document to delete.
           schema:
             $ref: "#/components/schemas/DocumentId"
-        - name: "storeId"
-          in: "query"
+        - name: storeId
+          in: query
           required: false
           description: The ID of the document store to delete the document from.
           schema:
@@ -4612,8 +4646,7 @@ paths:
         "200":
           description: The document was deleted successfully.
         "404":
-          description: |
-            The document with the given ID was not found.
+          description: The document with the given ID was not found.
           content:
             application/problem+json:
               schema:
@@ -4649,7 +4682,7 @@ paths:
           required: true
           schema:
             type: string
-          description: |
+          description: >
             The hash of the document content that was computed by the document store during upload.
             The hash is part of the document reference that is returned when uploading a document.
             If the client fails to provide the correct hash, the request will be rejected.
@@ -4922,8 +4955,7 @@ paths:
             $ref: "#/components/schemas/IncidentKey"
       responses:
         "200":
-          description: |
-            The incident is successfully returned.
+          description: The incident is successfully returned.
           content:
             application/json:
               schema:
@@ -4935,8 +4967,9 @@ paths:
         "403":
           $ref: "#/components/responses/Forbidden"
         "404":
-          description: |
-            The incident with the given key was not found. More details are provided in the response body.
+          description: >
+            The incident with the given key was not found.
+            More details are provided in the response body.
           content:
             application/problem+json:
               schema:
@@ -4983,8 +5016,7 @@ paths:
             default: false
       responses:
         "200":
-          description: |
-            The usage metrics search result.
+          description: The usage metrics search result.
           content:
             application/json:
               schema:
@@ -5947,8 +5979,9 @@ components:
             - $ref: "#/components/schemas/ElementId"
         name:
           type: string
-          description: |
-            The task name. This only works for data created with 8.8 and onwards. Instances from prior versions don't contain this data and cannot be found.
+          description: >
+            The task name. This only works for data created with 8.8 and onwards.
+            Instances from prior versions don't contain this data and cannot be found.
         candidateGroup:
           description: The candidate group for this user task.
           allOf:
@@ -7309,7 +7342,7 @@ components:
             - $ref: "#/components/schemas/ElementId"
         elementName:
           type: string
-          description: |
+          description: >
             The element name. This only works for data created with 8.8 and onwards.
             Instances from prior versions don't contain this data and cannot be found.
         hasIncident:
@@ -7342,7 +7375,12 @@ components:
           allOf:
             - $ref: "#/components/schemas/DateTimeFilterProperty"
         elementInstanceScopeKey:
-          description: The scope key of this element instance. If provided with a process instance key it will return element instances that are immediate children of the process instance. If provided with an element instance key it will return element instances that are immediate children of the element instance.
+          type: string
+          description: >
+            The scope key of this element instance. If provided with a process instance
+            key it will return element instances that are immediate children of the process
+            instance. If provided with an element instance key it will return element instances that
+            are immediate children of the element instance.
           oneOf:
             - $ref: "#/components/schemas/ElementInstanceKey"
             - $ref: "#/components/schemas/ProcessInstanceKey"
@@ -7783,7 +7821,7 @@ components:
         elementInstanceKey:
           description: The element instance key that received the message.
           allOf:
-            - $ref: "#/components/schemas/ElementInstanceFilter"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         messageKey:
           description: The message key.
           allOf:
@@ -7803,7 +7841,7 @@ components:
         processDefinitionKey:
           description: The process definition key associated with this correlated message subscription.
           allOf:
-            - $ref: "#/components/schemas/BasicStringFilter"
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
         processInstanceKey:
           description: The process instance key associated with this correlated message subscription.
           allOf:
@@ -8108,6 +8146,7 @@ components:
         activeTenants:
           description: The amount of active tenants.
           type: integer
+          format: int64
         tenants:
           description: The usage metrics by tenants. Only available if request `withTenants` query parameter was `true`.
           type: object
@@ -8416,7 +8455,7 @@ components:
           items:
             $ref: "#/components/schemas/MappingRuleSearchQuerySortRequest"
         filter:
-          description: The mapping search filters.
+          description: The mapping rule search filters.
           allOf:
             - $ref: "#/components/schemas/MappingRuleFilter"
     UserFilter:
@@ -9098,7 +9137,7 @@ components:
           description: The value of the claim to map.
         name:
           type: string
-          description: The name of the mapping.
+          description: The name of the mapping rule.
       required:
         - claimName
         - claimValue
@@ -9111,7 +9150,7 @@ components:
       properties:
         mappingRuleId:
           type: string
-          description: The unique ID of the mapping.
+          description: The unique ID of the mapping rule.
       required:
         - mappingRuleId
     MappingRuleUpdateRequest:
@@ -9301,7 +9340,7 @@ components:
           type: object
           nullable: true
         action:
-          description: |
+          description: >
             A custom action value that will be accessible from user task events resulting
             from this endpoint invocation. If not provided, it will default to "complete".
           type: string
@@ -9315,7 +9354,7 @@ components:
           type: string
           nullable: false
         allowOverride:
-          description: |
+          description: >
             By default, the task is reassigned if it was already assigned. Set this to `false`
             to return an error in such cases. The task must then first be unassigned to
             be assigned again. Use this when you have users picking from group task
@@ -9323,7 +9362,7 @@ components:
           type: boolean
           nullable: true
         action:
-          description: |
+          description: >
             A custom action value that will be accessible from user task events resulting
             from this endpoint invocation. If not provided, it will default to "assign".
           type: string
@@ -9335,7 +9374,7 @@ components:
         changeset:
           $ref: "#/components/schemas/Changeset"
         action:
-          description: |
+          description: >
             A custom action value that will be accessible from user task events resulting
             from this endpoint invocation. If not provided, it will default to "update".
           type: string
@@ -9407,7 +9446,7 @@ components:
       additionalProperties: false
       properties:
         type:
-          description: |
+          description: >
             The job type, as defined in the BPMN process (e.g. <zeebe:taskDefinition
             type="payment-service" />).
           type: string
@@ -9417,7 +9456,7 @@ components:
           type: string
           example: worker-324
         timeout:
-          description: |
+          description: >
             A job returned after this call will not be activated by another call until the
             timeout (in ms) has been reached.
           type: integer
@@ -9429,7 +9468,7 @@ components:
           format: int32
           example: 5
         fetchVariable:
-          description: |
+          description: >
             A list of variables to fetch as the job variables; if empty, all visible variables at
             the time of activation for the scope of the job will be returned.
           type: array
@@ -9440,7 +9479,7 @@ components:
           items:
             type: string
         requestTimeout:
-          description: |
+          description: >
             The request will be completed when at least one job is activated or after the
             requestTimeout (in ms). If the requestTimeout = 0, a default timeout is used.
             If the requestTimeout < 0, long polling is disabled and the request is completed
@@ -9625,26 +9664,26 @@ components:
       additionalProperties: false
       properties:
         retries:
-          description: |
+          description: >
             The amount of retries the job should have left
           type: integer
           format: int32
           default: 0
         errorMessage:
-          description: |
+          description: >
             An optional message describing why the job failed. This is particularly useful if a job
             runs out of retries and an incident is raised, as this message can help explain why an
             incident was raised.
           type: string
         retryBackOff:
-          description: |
+          description: >
             The backoff timeout (in ms) for the next retry.
           type: integer
           format: int64
           default: 0
         variables:
           additionalProperties: true
-          description: |
+          description: >
             JSON object that will instantiate the variables at the local scope of the job's
             associated task.
           type: object
@@ -9653,17 +9692,17 @@ components:
       additionalProperties: false
       properties:
         errorCode:
-          description: |
+          description: >
             The error code that will be matched with an error catch event.
           type: string
         errorMessage:
-          description: |
+          description: >
             An error message that provides additional context.
           type: string
           nullable: true
         variables:
           additionalProperties: true
-          description: |
+          description: >
             JSON object that will instantiate the variables at the local scope of the error catch event that catches the thrown error.
           type: object
           nullable: true
@@ -9681,7 +9720,7 @@ components:
         result:
           $ref: "#/components/schemas/JobResult"
     JobResult:
-      description: |
+      description: >
         The result of the completed job as determined by the worker.
       discriminator:
         propertyName: type
@@ -9707,7 +9746,7 @@ components:
       properties:
         denied:
           type: boolean
-          description: |
+          description: >
             Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
             For example, a user task listener can deny the completion of a task by setting this flag to true.
             In this example, the completion of a task is represented by a job that the worker can complete as denied.
@@ -10213,7 +10252,7 @@ components:
         $like:
           $ref: "#/components/schemas/LikeFilterProperty"
     ProblemDetail:
-      description: |
+      description: >
         A Problem detail object as described in [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457).
         There may be additional properties specific to the problem type.
       type: object
@@ -10707,8 +10746,10 @@ components:
         decisionEvaluationKey:
           allOf:
             - $ref: "#/components/schemas/DecisionEvaluationKey"
-          description: |
-            The key of the parent decision evaluation. Note that this is not the identifier of an individual decision instance; the `decisionEvaluationInstanceKey` is the identifier for a decision instance.
+          description: >
+            The key of the parent decision evaluation. Note that this is not the identifier of
+            an individual decision instance; the `decisionEvaluationInstanceKey` is the identifier
+            for a decision instance.
         processDefinitionKey:
           allOf:
             - $ref: "#/components/schemas/ProcessDefinitionKey"
@@ -10845,7 +10886,7 @@ components:
         - name
       properties:
         name:
-          description: |
+          description: >
             The message name as defined in the BPMN process
           type: string
         correlationKey:
@@ -11008,7 +11049,7 @@ components:
           type: integer
           format: int64
           description: The time-to-live of the document link in ms.
-          default: 3600000
+          default: 3600000 # 1 hour
     DocumentLink:
       type: object
       properties:
@@ -12147,7 +12188,7 @@ components:
       pattern: ^(<default>|[A-Za-z0-9_@.+-]+)$
   responses:
     InternalServerError:
-      description: |
+      description: >
         An internal error occurred while processing the request.
       content:
         application/problem+json:
@@ -12176,11 +12217,11 @@ components:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
     ServiceUnavailable:
-      description: |
+      description: >
         The service is currently unavailable. This may happen only on some requests where the system
         creates backpressure to prevent the server's compute resources from being exhausted, avoiding more severe failures.
         Clients are recommended to eventually retry those requests after a backoff period.
-        You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure.
+        You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure .
       content:
         application/problem+json:
           schema:
