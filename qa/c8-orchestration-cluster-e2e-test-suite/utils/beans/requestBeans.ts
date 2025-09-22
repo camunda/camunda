@@ -23,6 +23,42 @@ import {
 import {APIRequestContext} from 'playwright-core';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
+export const jobResponseFields = [
+  'type',
+  'processDefinitionId',
+  'processDefinitionVersion',
+  'elementId',
+  'customHeaders',
+  'worker',
+  'retries',
+  'deadline',
+  'variables',
+  'tenantId',
+  'jobKey',
+  'processInstanceKey',
+  'processDefinitionKey',
+  'elementInstanceKey',
+  'kind',
+  'listenerEventType',
+];
+export const jobSearchPageResponseRequiredFields = ['totalItems'];
+export const jobSearchItemResponseFields = [
+  'customHeaders',
+  'elementId',
+  'elementInstanceKey',
+  'hasFailedWithRetriesLeft',
+  'jobKey',
+  'kind',
+  'listenerEventType',
+  'processDefinitionId',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'retries',
+  'state',
+  'tenantId',
+  'type',
+  'worker',
+];
 export const clusterTopologyResponseFields = [
   'brokers',
   'clusterSize',
