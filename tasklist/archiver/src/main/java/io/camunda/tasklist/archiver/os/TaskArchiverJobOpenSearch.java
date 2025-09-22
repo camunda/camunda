@@ -72,7 +72,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
   }
 
   @Override
-  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(ArchiveBatch archiveBatch) {
+  public CompletableFuture<Map.Entry<String, Integer>> archiveBatch(
+      final ArchiveBatch archiveBatch) {
     final CompletableFuture<Map.Entry<String, Integer>> archiveBatchFuture;
     if (archiveBatch != null) {
       LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
@@ -147,7 +148,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return Either.right(batch);
   }
 
-  private SearchRequest createFinishedTasksSearchRequest(Aggregation agg) {
+  private SearchRequest createFinishedTasksSearchRequest(final Aggregation agg) {
     final List<FieldValue> partitions =
         getPartitionIds().stream().map(m -> FieldValue.of(m)).collect(Collectors.toList());
     final SearchRequest.Builder builder = new SearchRequest.Builder();
@@ -186,7 +187,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return builder.build();
   }
 
-  private Aggregation createFinishedTasksAggregation(String datesAggName, String instancesAggName) {
+  private Aggregation createFinishedTasksAggregation(
+      final String datesAggName, final String instancesAggName) {
 
     final Aggregation dateHistogram =
         new Aggregation.Builder()
@@ -206,9 +208,12 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
                     .bucketSort(
                         bs ->
                             bs.sort(
-                                s ->
-                                    s.field(
-                                        FieldSort.of(f -> f.field("_key").order(SortOrder.Desc)))))
+                                    s ->
+                                        s.field(
+                                            FieldSort.of(
+                                                f -> f.field("_key").order(SortOrder.Desc))))
+                                // we want to get only one bucket at a time
+                                .size(1))
                     .build())
             .aggregations(
                 instancesAggName,
@@ -234,7 +239,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
 
     if (bucket.size() > 0) {
       final Set<Map.Entry<String, DateHistogramBucket>> bucketEntrySet = bucket.entrySet();
-      for (Map.Entry<String, DateHistogramBucket> bucketItem : bucketEntrySet) {
+      for (final Map.Entry<String, DateHistogramBucket> bucketItem : bucketEntrySet) {
         final String finishDate = bucketItem.getKey();
         final HitsMetadata hits =
             bucketItem.getValue().aggregations().get(INSTANCES_AGG).topHits().hits();
