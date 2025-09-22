@@ -24,6 +24,10 @@ import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
 public class BrokerBasedProperties extends BrokerCfg {
 
   public ExporterCfg getCamundaExporter() {
-    return this.getExporters().get("camundaexporter");
+    return getExporters().get("camundaexporter");
+  }
+
+  public ExporterCfg getRdbmsExporter() {
+    return getExporters().get("rdbms");
   }
 }
