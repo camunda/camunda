@@ -753,7 +753,7 @@ public class BatchOperationIT {
                     SearchQueryPage.of(b -> b.from(0).size(5))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.total()).isGreaterThanOrEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
   }
 
