@@ -88,7 +88,7 @@ public class TaskMetricsStoreOpenSearch implements TaskMetricsStore {
                   }
 
                   if (endTime != null) {
-                    r.lte(JsonData.of(endTime));
+                    r.lt(JsonData.of(endTime));
                   }
                   return r;
                 });
