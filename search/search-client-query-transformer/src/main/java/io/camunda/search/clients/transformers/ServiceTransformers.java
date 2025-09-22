@@ -208,8 +208,6 @@ import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscriptionTemplate;
@@ -222,6 +220,8 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.CorrelatedMessageSubscriptionEntity;
 import io.camunda.webapps.schema.entities.JobEntity;
@@ -448,10 +448,10 @@ public final class ServiceTransformers {
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
     mappers.put(
         UsageMetricsFilter.class,
-        new UsageMetricsFilterTransformer(indexDescriptors.get(UsageMetricIndex.class)));
+        new UsageMetricsFilterTransformer(indexDescriptors.get(UsageMetricTemplate.class)));
     mappers.put(
         UsageMetricsTUFilter.class,
-        new UsageMetricsTUFilterTransformer(indexDescriptors.get(UsageMetricTUIndex.class)));
+        new UsageMetricsTUFilterTransformer(indexDescriptors.get(UsageMetricTUTemplate.class)));
     mappers.put(
         ProcessDefinitionStatisticsFilter.class,
         new ProcessDefinitionStatisticsFilterTransformer(

@@ -19,7 +19,7 @@ import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -86,7 +86,7 @@ public final class UsageMetricsQueryTransformerTest extends AbstractTransformerT
                       searchTermQuery -> {
                         assertThat(searchTermQuery)
                             .extracting("field", "value.value")
-                            .containsExactly(UsageMetricIndex.TENANT_ID, "tenant1");
+                            .containsExactly(UsageMetricTemplate.TENANT_ID, "tenant1");
                       });
             });
   }

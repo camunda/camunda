@@ -29,11 +29,12 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -52,7 +53,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -179,11 +179,13 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {UsageMetricIndex.INDEX_NAME, UsageMetricTUIndex.INDEX_NAME})
-  @Disabled("https://github.com/camunda/camunda/issues/34709")
-  void shouldSetIndexLifeCycleForUsageMetric(final String indexName) throws IOException {
+  @ValueSource(classes = {UsageMetricTemplate.class, UsageMetricTUTemplate.class})
+  void shouldSetIndexLifeCycleForUsageMetric(
+      final Class<? extends AbstractTemplateDescriptor> descriptorClass) throws IOException {
     // given
-    final var usageMetricIndex = "app-%s-%s".formatted(indexName, UUID.randomUUID());
+    final var usageMetricIndex =
+        resourceProvider.getIndexTemplateDescriptor(descriptorClass).getFullQualifiedName()
+            + UUID.randomUUID();
     final var repository = createRepository();
 
     testClient.indices().create(r -> r.index(usageMetricIndex));
@@ -572,6 +574,70 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetUsageMetricNextBatch() throws IOException {
+    // given - 3 documents, two older than archive threshold, one recent
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var usageMetricIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
+            .getFullQualifiedName();
+    createUsageMetricIndex(usageMetricIndex);
+    final var documents =
+        List.of(
+            new TestUsageMetric("1", twoHoursAgo),
+            new TestUsageMetric("2", twoHoursAgo),
+            new TestUsageMetric("3", now.toString()));
+    documents.forEach(doc -> index(usageMetricIndex, doc));
+    testClient.indices().refresh(r -> r.index(usageMetricIndex));
+    config.setRolloverBatchSize(5);
+
+    // when
+    final var result = repository.getUsageMetricNextBatch();
+
+    // then
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldGetUsageMetricTUNextBatch() throws IOException {
+    // given - 3 TU documents, two older than archive threshold, one recent
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var usageMetricTUIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
+            .getFullQualifiedName();
+    createUsageMetricTUIndex(usageMetricTUIndex);
+    final var documents =
+        List.of(
+            new TestUsageMetricTU("10", twoHoursAgo),
+            new TestUsageMetricTU("11", twoHoursAgo),
+            new TestUsageMetricTU("12", now.toString()));
+    documents.forEach(doc -> index(usageMetricTUIndex, doc));
+    testClient.indices().refresh(r -> r.index(usageMetricTUIndex));
+    config.setRolloverBatchSize(5);
+
+    // when
+    final var result = repository.getUsageMetricTUNextBatch();
+
+    // then
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("10", "11");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
   void shouldCacheIndicesWhichHaveRetentionPolicyAppliedAndNotReapplyPointlessly() {
     // given
     retention.setEnabled(true);
@@ -642,13 +708,13 @@ final class OpenSearchArchiverRepositoryIT {
         .untilAsserted(
             () ->
                 verify(
-                        genericClientSpy, times(16) // number of index templates
+                        genericClientSpy, times(18) // number of index templates
                         )
                     .executeAsync(captor.capture()));
 
     final var putIndicesSettingsRequests = captor.getAllValues();
     assertThat(putIndicesSettingsRequests)
-        .hasSize(16)
+        .hasSize(18)
         .allSatisfy(
             request -> {
               final var indexPattern =
@@ -696,7 +762,8 @@ final class OpenSearchArchiverRepositoryIT {
                         json.get(template.getIndexPattern().replace("*", date))
                             .get("index.plugins.index_state_management.policy_id")
                             .asText())
-                    .isEqualTo("camunda-retention-policy");
+                    .isEqualTo(
+                        repository.getRetentionPolicyName(template.getIndexName(), retention));
               });
     }
   }
@@ -745,6 +812,50 @@ final class OpenSearchArchiverRepositoryIT {
                 r.index(batchOperationIndex)
                     .mappings(properties)
                     .aliases(batchOperationIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
+  private void createUsageMetricIndex(final String usageMetricIndex) throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endTimeProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        UsageMetricTemplate.ID,
+                        idProp,
+                        UsageMetricTemplate.END_TIME,
+                        endTimeProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(usageMetricIndex)
+                    .mappings(properties)
+                    .aliases(usageMetricIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
+  private void createUsageMetricTUIndex(final String usageMetricTUIndex) throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endTimeProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        UsageMetricTUTemplate.ID,
+                        idProp,
+                        UsageMetricTUTemplate.END_TIME,
+                        endTimeProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(usageMetricTUIndex)
+                    .mappings(properties)
+                    .aliases(usageMetricTUIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
   private <T extends TDocument> void index(final String index, final T document) {
@@ -927,6 +1038,10 @@ final class OpenSearchArchiverRepositoryIT {
 
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
+
+  private record TestUsageMetric(String id, String endTime) implements TDocument {}
+
+  private record TestUsageMetricTU(String id, String endTime) implements TDocument {}
 
   private interface TDocument {
     String id();
