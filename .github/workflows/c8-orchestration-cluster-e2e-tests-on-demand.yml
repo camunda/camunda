@@ -28,12 +28,10 @@ jobs:
           branch_check=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
             https://api.github.com/repos/${{ github.repository }}/branches/$branch_name)
-
           if [[ "$branch_check" != "200" ]]; then
             echo "Error: Branch '$branch_name' does not exist (HTTP $branch_check)."
             exit 1
           fi
-
           echo "Branch '$branch_name' exists."
 
       - uses: actions/checkout@v4
@@ -55,10 +53,11 @@ jobs:
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
   c8-orchestration-cluster-e2e-tests:
+    name: C8 Orchestration Cluster E2E Tests (Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
       fail-fast: false
       matrix:
-        tasklist_mode: [v1, v2]
+        tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
     needs: validate-branch
     runs-on: ubuntu-latest
     steps:
@@ -66,22 +65,11 @@ jobs:
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+          echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
 
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
-
-      - name: Check V2 compatibility
-        run: |
-          base="${{ needs.validate-branch.outputs.base }}"
-          mode="${{ matrix.tasklist_mode }}"
-          echo "Base branch: $base"
-          echo "Tasklist mode: $mode"
-
-          if [[ "$mode" == "v2" && ("$base" == "stable/8.6" || "$base" == "stable/8.7") ]]; then
-            echo "V2 mode not supported on branch $base. Skipping this job."
-            exit 78  # Exit with code 78 to skip the job
-          fi
 
       - name: Set NON_STANDALONE variable
         run: |
@@ -104,9 +92,7 @@ jobs:
               CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
             else
               echo "Starting with default Tasklist V1 mode"
-              export DATABASE=elasticsearch
-            echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
-            DATABASE=elasticsearch docker compose up -d camunda
+              DATABASE=elasticsearch docker compose up -d camunda
             fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
@@ -129,7 +115,6 @@ jobs:
               operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
               identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
             fi
-
             if [[ "$NON_STANDALONE" == "true" ]]; then
               if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
                 echo "Services are ready!"
@@ -143,14 +128,9 @@ jobs:
                 break
               fi
             fi
-
             echo "Waiting for services... ($i/90)"
-            echo "Response from Tasklist: $tasklist_status"
-            echo "Response from Operate: $operate_status"
-            [[ -n "$identity_status" ]] && echo "Response from Identity: $identity_status"
             sleep 10
           done
-
           if [ "$ready" = true ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
@@ -203,7 +183,6 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Python setup
-        if: always()
         uses: actions/setup-python@v5
         with:
           python-version: "3.x"
@@ -221,18 +200,17 @@ jobs:
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
+            TEST_ARGS=(--project=chromium)
           else
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
+            TEST_ARGS=(--project=chromium)
+            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+              TEST_ARGS+=(tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
+            fi
           fi
-
-          if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-            echo "Running focused tests in V2 mode: Tasklist + HTO flows (excluding @v1-only tests)"
-            npm run test -- --project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert "@v1-only"
-          else
-            echo "Running all tests in V1 mode"
-            npm run test -- --project=chromium
-          fi
+          echo "Running tests with args: ${TEST_ARGS[*]}"
+          npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -250,13 +228,13 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (${{ matrix.tasklist_mode }}) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: C8 Orchestration Cluster E2E Test Result (${{ matrix.tasklist_mode }})
+          name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
