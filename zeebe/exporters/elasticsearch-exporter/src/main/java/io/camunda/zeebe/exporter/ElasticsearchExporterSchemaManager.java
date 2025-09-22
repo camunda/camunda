@@ -187,6 +187,9 @@ public class ElasticsearchExporterSchemaManager {
       if (index.runtimeInstruction) {
         createValueIndexTemplate(ValueType.RUNTIME_INSTRUCTION, version);
       }
+      if (index.tenant) {
+        createValueIndexTemplate(ValueType.TENANT, version);
+      }
     }
 
     indexTemplatesCreated.add(version);
