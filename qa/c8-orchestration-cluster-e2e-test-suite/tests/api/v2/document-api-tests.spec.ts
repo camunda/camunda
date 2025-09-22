@@ -76,7 +76,8 @@ test.describe.parallel('Document API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Create Document Invalid Header 415', async ({request}) => {
+  //Skipped due to bug 38510: https://github.com/camunda/camunda/issues/38510
+  test.skip('Create Document Invalid Header 415', async ({request}) => {
     const res = await request.post(buildUrl('/documents'), {
       headers: jsonHeaders(),
       multipart: CREATE_TXT_DOCUMENT_REQUEST(),
@@ -319,7 +320,8 @@ test.describe.parallel('Document API Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  test('Create Multiple Documents Invalid Header 415', async ({request}) => {
+  //Skipped due to bug 38510: https://github.com/camunda/camunda/issues/38510
+  test.skip('Create Multiple Documents Invalid Header 415', async ({request}) => {
     const name = generateUniqueId();
     const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
 

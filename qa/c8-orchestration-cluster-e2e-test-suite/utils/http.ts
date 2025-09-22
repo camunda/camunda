@@ -39,6 +39,10 @@ function has(obj: unknown, prop: string): boolean {
 export function assertRequiredFields(obj: unknown, required: string[]): void {
   expect(obj).toBeTruthy();
   for (const f of required) {
+    if (!has(obj, f)) {
+      console.error('❌ Missing required field:', f);
+      console.error('Full response object:', JSON.stringify(obj, null, 2));
+    }
     expect(has(obj, f)).toBe(true);
     const v = (obj as Record<string, unknown>)[f];
     expect(v).toBeDefined();
