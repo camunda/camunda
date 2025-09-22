@@ -1,0 +1,1880 @@
+[
+  {
+    "newProperty": "camunda.system.actor.idle.max-spins",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.actor.idle.max-spins"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.actor.idle.max-yields",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.actor.idle.max-yields"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.actor.idle.min-park-period",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.actor.idle.min-park-period"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.actor.idle.max-park-period",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.actor.idle.max-park-period"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.snapshot-period",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.snapshot-period"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.endpoint",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.endpoint"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.account-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.account-name"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.account-key",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.account-key"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.connection-string",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.connection-string"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.create-container",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.create-container"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.base-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.base-path"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.address",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.network.host",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.network.host",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.port",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.network.port",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.network.port",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.management-threads",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.threads.management-threads",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.threads.management-threads",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.min-keep-alive-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.network.min-keep-alive-interval",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.network.min-keep-alive-interval",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.host",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.host",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.advertised-host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.advertised-host",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.advertised-host",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.port-offset",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.port-offset",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.port-offset",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.max-message-size",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.max-message-size",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.max-message-size",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.socket-send-buffer",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.socket-send-buffer",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.socket-send-buffer",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.socket-receive-buffer",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.socket-receive-buffer",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.network.socket-receive-buffer",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.heartbeat-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.heartbeat-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.heartbeat-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.heartbeat-interval"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.internal-api.host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.internal-api.host",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.internal-api.port",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.internal-api.port",
+          "profiles": [
+            "broker"
+          ]
+        },
+        {
+          "name": "zeebe.gateway.cluster.port",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.internal-api.advertised-host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.internal-api.advertised-host",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.internal-api.advertised-port",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.internal-api.advertised-port",
+          "profiles": [
+            "broker"
+          ]
+        },
+        {
+          "name": "zeebe.gateway.cluster.advertised-port",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.broadcast-updates",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.broadcast-updates",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.broadcast-updates",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.broadcast-disputes",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.broadcast-disputes",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.broadcast-disputes",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.notify-suspect",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.notify-suspect",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.notify-suspect",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.gossip-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.gossip-interval",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.gossip-interval",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.gossip-fanout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.gossip-fanout",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.gossip-fanout",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.probe-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.probe-interval",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.probe-interval",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.probe-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.probe-timeout",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.probe-timeout",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.suspect-probes",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.suspect-probes",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.suspect-probes",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.failure-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.failure-timeout",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.failure-timeout",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.membership.sync-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.cluster.membership.sync-interval",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.cluster.membership.sync-interval",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.ssl.enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.security.enabled",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.security.enabled",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.ssl.certificate",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.security.certificate-chain-path",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.security.certificate-chain-path",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.ssl.certificate-private-key",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.security.private-key-path",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.security.private-key-path",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.heartbeat-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.heartbeatInterval"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.election-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.election-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.priority-election-enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.raft.enable-priority-election"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.flush-enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.raft.flush.enabled"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.flush-delay",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.raft.flush.delay-time"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.max-appends-per-follower",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.max-appends-per-follower"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.max-append-batch-size",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.max-append-batch-size"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.request-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.request-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.snapshot-request-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.snapshot-request-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.snapshot-chunk-size",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.snapshot-chunk-size"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.configuration-change-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.configuration-change-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.max-quorum-response-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.max-quorum-response-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.min-step-down-failure-count",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.min-step-down-failure-count"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.prefer-snapshot-replication-threshold",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.prefer-snapshot-replication-threshold"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.raft.preallocate-segment-files",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.raft.preallocate-segment-files"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.metadata.sync-delay",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.config-manager.gossip.sync-delay"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.metadata.sync-request-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.config-manager.gossip.sync-request-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.metadata.gossip-fanout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.config-manager.gossip.gossip-fanout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.command-api.host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.command-api.host"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.command-api.port",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.command-api.port"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.command-api.advertised-host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.command-api.advertised-host"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.network.command-api.advertised-port",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.network.command-api.advertised-port"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.process-cache.max-size",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.process-cache.max-size"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.process-cache.expiration-idle",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.process-cache.expiration-idle-millis"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.ssl.key-store.file-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.security.key-store.file-path",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.security.key-store.file-path",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.ssl.key-store.password",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.security.key-store.password",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.security.key-store.password",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.statistics-enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.enable-statistics"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.access-metrics",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.access-metrics"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.memory-limit",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.memory-limit"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.max-open-files",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.max-open-files"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.max-write-buffer-number",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.max-write-buffer-number"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.min-write-buffer-number-to-merge",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.min-write-buffer-number-to-merge"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.io-rate-bytes-per-second",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.io-rate-bytes-per-second"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.sst-partitioning-enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.enable-sst-partitioning"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.repository-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.operate.backup.repository-name",
+          "profiles": [
+            "operate"
+          ]
+        },
+        {
+          "name": "camunda.tasklist.backup.repository-name",
+          "profiles": [
+            "tasklist"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.snapshot-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.operate.backup.snapshot-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.incomplete-check-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.operate.backup.incomplete-check-timeout-in-seconds"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.store",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.store"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.long-polling.enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.long-polling.enabled",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.long-polling.enabled",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.long-polling.timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.long-polling.timeout",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.long-polling.timeout",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.long-polling.probe-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.long-polling.probe-timeout",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.long-polling.probe-timeout",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.long-polling.min-empty-responses",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.gateway.long-polling.min-empty-responses",
+          "profiles": [
+            "gateway",
+            "!broker"
+          ]
+        },
+        {
+          "name": "zeebe.broker.gateway.long-polling.min-empty-responses",
+          "profiles": [
+            "broker"
+          ]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.bucket-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.bucket-name"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.endpoint",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.endpoint"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.region",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.region"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.access-key",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.access-key"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.secret-key",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.secret-key"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.api-call-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.api-call-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.force-path-style-access",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.force-path-style-access"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.compression",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.compression"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.max-concurrent-connections",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.max-concurrent-connections"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.connection-acquisition-timeout",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.connection-acquisition-timeout"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.support-legacy-md5",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.support-legacy-md5"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.s3.base-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.s3.base-path"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.filesystem.base-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.filesystem.base-path"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.node-id",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.node-id"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.partition-count",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.partitions-count"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.replication-factor",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.replication-factor"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.cluster.size",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.cluster.cluster-size"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.filters.*",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.gateway.filters.*",
+          "profiles": ["broker"]
+        },
+        {
+          "name": "zeebe.gateway.filters.*",
+          "profiles": ["gateway","!broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.grpc.interceptors.*",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.gateway.interceptors.*",
+          "profiles": ["broker"]
+        },
+        {
+          "name": "zeebe.gateway.interceptors.*",
+          "profiles": ["gateway","!broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.sas-token.type",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.sas-token.type"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.azure.sas-token.value",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.azure.sas-token.value"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.rocks-db.column-family-options.*",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.rocksdb.column-family-options.*"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.cpu-thread-count",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.threads.cpu-thread-count"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.io-thread-count",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.threads.io-thread-count"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.clock-controlled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.clock.controlled"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.system.upgrade.enable-version-check",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.experimental.version-check-restriction-enabled"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.export.distribution-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.exporting.distribution-interval"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.export.skip-records",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.exporting.skip-records"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.gcs.bucket-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.gcs.bucket-name"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.gcs.base-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.gcs.base-path"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.gcs.host",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.gcs.host"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.backup.gcs.auth",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.backup.gcs.auth"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.directory",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.directory"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.runtime-directory",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.runtime-directory"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.disk.monitoring-enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.disk.enable-monitoring"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.disk.monitoring-interval",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.disk.monitoring-interval"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.disk.free-space.processing",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.disk.free-space.processing"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.disk.free-space.replication",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.disk.free-space.replication"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.log-stream.log-index-density",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.log-index-density"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.primary-storage.log-stream.log-segment-size",
+    "legacyProperties": [
+      [
+        {
+          "name": "zeebe.broker.data.log-segment-size"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.executor.core-pool-size-multiplier",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.api-executor.core-pool-size-multiplier"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.executor.max-pool-size-multiplier",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.api-executor.max-pool-size-multiplier"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.executor.keep-alive",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.api-executor.keep-alive-seconds"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.api.rest.executor.queue-capacity",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.rest.api-executor.queue-capacity"
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.type",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.type",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.database",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.database",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.type",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.url",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.url",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.url",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.url",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.url",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.cluster-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.cluster-name",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.cluster-name",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.cluster-name",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.cluster-name",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.username",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.username",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.username",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.username",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.username",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.password",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.password",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.password",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.password",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.password",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.index-prefix",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.index-prefix",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.index-prefix",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.index-prefix",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.index.index-prefix",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.number-of-shards",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.index.numberOfShards",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.index.number-of-shards",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.url",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.url",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.opensearch.url",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.url",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.url",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.cluster-name",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.cluster-name",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.opensearch.cluster-name",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.cluster-name",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.cluster-name",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.username",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.username",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.opensearch.username",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.username",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.username",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.password",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.password",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.opensearch.password",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.password",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.password",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.index-prefix",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.index-prefix",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.operate.opensearch.index-prefix",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.index-prefix",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.index.index-prefix",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.number-of-shards",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.index.numberOfShards",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.index.number-of-shards",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  }
+]

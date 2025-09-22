@@ -16,7 +16,6 @@ import io.camunda.configuration.Membership;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
-import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -26,41 +25,32 @@ import io.camunda.zeebe.gateway.impl.configuration.NetworkCfg;
 import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@EnableConfigurationProperties(LegacyGatewayBasedProperties.class)
 @Profile("!broker")
-@DependsOn("unifiedConfigurationHelper")
 public class GatewayBasedPropertiesOverride {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(GatewayBasedPropertiesOverride.class);
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacyGatewayBasedProperties legacyGatewayBasedProperties;
 
-  public GatewayBasedPropertiesOverride(
-      final UnifiedConfiguration unifiedConfiguration,
-      final LegacyGatewayBasedProperties legacyGatewayBasedProperties) {
+  public GatewayBasedPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyGatewayBasedProperties = legacyGatewayBasedProperties;
   }
 
   @Bean
   @Primary
   public GatewayBasedProperties gatewayBasedProperties() {
     final GatewayBasedProperties override = new GatewayBasedProperties();
-    BeanUtils.copyProperties(legacyGatewayBasedProperties, override);
 
     // from camunda.cluster.* sections
     populateFromCluster(override);
@@ -72,16 +62,14 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromGrpc(final GatewayBasedProperties override) {
-    final Grpc grpc =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().withGatewayNetworkProperties();
+    final Grpc grpc = unifiedConfiguration.getCamunda().getApi().getGrpc();
 
     final NetworkCfg networkCfg = override.getNetwork();
     networkCfg.setHost(grpc.getAddress());
     networkCfg.setPort(grpc.getPort());
     networkCfg.setMinKeepAliveInterval(grpc.getMinKeepAliveInterval());
 
-    final var ucNetwork =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
+    final var ucNetwork = unifiedConfiguration.getCamunda().getCluster().getNetwork();
     networkCfg.setMaxMessageSize(ucNetwork.getMaxMessageSize());
 
     populateFromSsl(override);
@@ -92,8 +80,7 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromSsl(final GatewayBasedProperties override) {
-    final Ssl ssl =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().withGatewaySslProperties();
+    final Ssl ssl = unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl();
 
     final SecurityCfg securityCfg = override.getSecurity();
     securityCfg.setEnabled(ssl.isEnabled());
@@ -105,13 +92,7 @@ public class GatewayBasedPropertiesOverride {
 
   private void populateFromKeyStore(final GatewayBasedProperties override) {
     final KeyStore keyStore =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getGrpc()
-            .getSsl()
-            .getKeyStore()
-            .withGatewayKeyStoreProperties();
+        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().getKeyStore();
     final KeyStoreCfg keyStoreCfg = override.getSecurity().getKeyStore();
     keyStoreCfg.setFilePath(keyStore.getFilePath());
     keyStoreCfg.setPassword(keyStore.getPassword());
@@ -156,12 +137,7 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromLongPolling(final GatewayBasedProperties override) {
-    final var longPolling =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getLongPolling()
-            .withGatewayLongPollingProperties();
+    final var longPolling = unifiedConfiguration.getCamunda().getApi().getLongPolling();
     final var longPollingCfg = override.getLongPolling();
     longPollingCfg.setEnabled(longPolling.isEnabled());
     longPollingCfg.setTimeout(longPolling.getTimeout());
@@ -177,8 +153,7 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromClusterNetwork(final GatewayBasedProperties override) {
-    final var network =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
+    final var network = unifiedConfiguration.getCamunda().getCluster().getNetwork();
 
     final var gatewayCluster = override.getCluster();
 
@@ -192,22 +167,20 @@ public class GatewayBasedPropertiesOverride {
 
   private String resolveHost() {
     final String internalApiHost =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .getInternalApi()
-            .withGatewayInternalApiProperties()
-            .getHost();
-
-    return internalApiHost != null
-        ? internalApiHost
-        : unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .withGatewayNetworkProperties()
-            .getHost();
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getInternalApi().getHost();
+    final String networkHost =
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getHost();
+    if (Objects.equals(internalApiHost, networkHost)) {
+      return internalApiHost;
+    } else if (internalApiHost == null) {
+      return networkHost;
+    } else if (networkHost == null) {
+      return internalApiHost;
+    } else {
+      LOGGER.warn(
+          "Detected conflicting 'camunda.cluster.network.host' and 'camunda.cluster.network.internal-api.host'. Using 'camunda.cluster.network.internal-api.host'");
+      return internalApiHost;
+    }
   }
 
   private String resolveAdvertisedHost() {
@@ -217,27 +190,16 @@ public class GatewayBasedPropertiesOverride {
             .getCluster()
             .getNetwork()
             .getInternalApi()
-            .withGatewayInternalApiProperties()
             .getAdvertisedHost();
 
     return internalApiAdvertisedHost != null
         ? internalApiAdvertisedHost
-        : unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .withGatewayNetworkProperties()
-            .getAdvertisedHost();
+        : unifiedConfiguration.getCamunda().getCluster().getNetwork().getAdvertisedHost();
   }
 
   private void populateFromInternalApi(final GatewayBasedProperties override) {
     final InternalApi internalApi =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .getInternalApi()
-            .withGatewayInternalApiProperties();
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getInternalApi();
     final ClusterCfg clusterCfg = override.getCluster();
 
     clusterCfg.setPort(internalApi.getPort());
@@ -245,12 +207,7 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromMembership(final GatewayBasedProperties override) {
-    final Membership membership =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getMembership()
-            .withGatewayMembershipProperties();
+    final Membership membership = unifiedConfiguration.getCamunda().getCluster().getMembership();
     final MembershipCfg membershipCfg = override.getCluster().getMembership();
     membershipCfg.setBroadcastUpdates(membership.isBroadcastUpdates());
     membershipCfg.setBroadcastDisputes(membership.isBroadcastDisputes());

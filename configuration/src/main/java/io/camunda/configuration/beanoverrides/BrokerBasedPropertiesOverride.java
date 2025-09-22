@@ -15,6 +15,7 @@ import io.camunda.configuration.Export;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
+import io.camunda.configuration.Grpc;
 import io.camunda.configuration.Interceptor;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
@@ -28,7 +29,6 @@ import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
-import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -58,18 +58,13 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.BeanUtils;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
-@EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
-@DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
@@ -77,20 +72,15 @@ public class BrokerBasedPropertiesOverride {
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
-  public BrokerBasedPropertiesOverride(
-      final UnifiedConfiguration unifiedConfiguration,
-      final LegacyBrokerBasedProperties properties) {
+  public BrokerBasedPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
-    legacyBrokerBasedProperties = properties;
   }
 
   @Bean
   @Primary
   public BrokerBasedProperties brokerBasedProperties() {
     final BrokerBasedProperties override = new BrokerBasedProperties();
-    BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
 
     // from camunda.cluster.* sections
     populateFromCluster(override);
@@ -119,8 +109,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromGrpc(final BrokerBasedProperties override) {
-    final var grpc =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().withBrokerNetworkProperties();
+    final Grpc grpc = unifiedConfiguration.getCamunda().getApi().getGrpc();
 
     final NetworkCfg networkCfg = override.getGateway().getNetwork();
     networkCfg.setHost(grpc.getAddress());
@@ -136,8 +125,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromSsl(final BrokerBasedProperties override) {
-    final Ssl ssl =
-        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().withBrokerSslProperties();
+    final Ssl ssl = unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl();
     final SecurityCfg securityCfg = override.getGateway().getSecurity();
     securityCfg.setEnabled(ssl.isEnabled());
     securityCfg.setCertificateChainPath(ssl.getCertificate());
@@ -148,13 +136,7 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromKeyStore(final BrokerBasedProperties override) {
     final KeyStore keyStore =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getGrpc()
-            .getSsl()
-            .getKeyStore()
-            .withBrokerKeyStoreProperties();
+        unifiedConfiguration.getCamunda().getApi().getGrpc().getSsl().getKeyStore();
     final KeyStoreCfg keyStoreCfg = override.getGateway().getSecurity().getKeyStore();
     keyStoreCfg.setFilePath(keyStore.getFilePath());
     keyStoreCfg.setPassword(keyStore.getPassword());
@@ -196,12 +178,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromLongPolling(final BrokerBasedProperties override) {
-    final var longPolling =
-        unifiedConfiguration
-            .getCamunda()
-            .getApi()
-            .getLongPolling()
-            .withBrokerLongPollingProperties();
+    final var longPolling = unifiedConfiguration.getCamunda().getApi().getLongPolling();
     final var longPollingCfg = override.getGateway().getLongPolling();
     longPollingCfg.setEnabled(longPolling.isEnabled());
     longPollingCfg.setTimeout(longPolling.getTimeout());
@@ -210,12 +187,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromMembership(final BrokerBasedProperties override) {
-    final Membership membership =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getMembership()
-            .withBrokerMembershipProperties();
+    final Membership membership = unifiedConfiguration.getCamunda().getCluster().getMembership();
     final MembershipCfg membershipCfg = override.getCluster().getMembership();
     membershipCfg.setBroadcastUpdates(membership.isBroadcastUpdates());
     membershipCfg.setBroadcastDisputes(membership.isBroadcastDisputes());
@@ -280,8 +252,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromClusterNetwork(final BrokerBasedProperties override) {
-    final var network =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
+    final var network = unifiedConfiguration.getCamunda().getCluster().getNetwork();
 
     final var brokerNetwork = override.getNetwork();
     brokerNetwork.setHost(network.getHost());
@@ -293,8 +264,7 @@ public class BrokerBasedPropertiesOverride {
     brokerNetwork.setHeartbeatTimeout(network.getHeartbeatTimeout());
     brokerNetwork.setHeartbeatInterval(network.getHeartbeatInterval());
 
-    final var ucNetwork =
-        unifiedConfiguration.getCamunda().getCluster().getNetwork().withBrokerNetworkProperties();
+    final var ucNetwork = unifiedConfiguration.getCamunda().getCluster().getNetwork();
     override.getGateway().getNetwork().setMaxMessageSize(ucNetwork.getMaxMessageSize());
 
     populateFromCommandApi(override);
@@ -303,12 +273,7 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateFromInternalApi(final BrokerBasedProperties override) {
     final InternalApi internalApi =
-        unifiedConfiguration
-            .getCamunda()
-            .getCluster()
-            .getNetwork()
-            .getInternalApi()
-            .withBrokerInternalApiProperties();
+        unifiedConfiguration.getCamunda().getCluster().getNetwork().getInternalApi();
 
     final SocketBindingCfg socketBindingCfg = override.getNetwork().getInternalApi();
 
@@ -377,8 +342,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromBackup(final BrokerBasedProperties override) {
-    final Backup backup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withBrokerBackupProperties();
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupStoreCfg backupStoreCfg = override.getData().getBackup();
     backupStoreCfg.setStore(BackupStoreType.valueOf(backup.getStore().name()));
 

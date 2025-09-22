@@ -26,20 +26,20 @@ import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @ActiveProfiles({"broker", "tasklist", "operate"})
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class,
-  TasklistPropertiesOverride.class,
-  OperatePropertiesOverride.class,
-  BrokerBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
-})
+@SpringBootTest(
+    classes = {
+      UnifiedConfiguration.class,
+      TasklistPropertiesOverride.class,
+      OperatePropertiesOverride.class,
+      BrokerBasedPropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
+      SearchEngineIndexPropertiesOverride.class,
+    })
 public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";

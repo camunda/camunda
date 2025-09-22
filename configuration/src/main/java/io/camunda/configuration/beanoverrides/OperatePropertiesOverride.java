@@ -19,37 +19,27 @@ import io.camunda.operate.property.SslProperties;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.springframework.beans.BeanUtils;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(LegacyOperateProperties.class)
 @PropertySource("classpath:operate-version.properties")
-@DependsOn("unifiedConfigurationHelper")
 public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacyOperateProperties legacyOperateProperties;
 
-  public OperatePropertiesOverride(
-      final UnifiedConfiguration unifiedConfiguration,
-      final LegacyOperateProperties legacyOperateProperties) {
+  public OperatePropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyOperateProperties = legacyOperateProperties;
   }
 
   @Bean
   @Primary
   public OperateProperties operateProperties() {
     final OperateProperties override = new OperateProperties();
-    BeanUtils.copyProperties(legacyOperateProperties, override);
 
-    pouplateFromBackup(override);
+    populateFromBackup(override);
 
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
@@ -63,9 +53,8 @@ public class OperatePropertiesOverride {
     return override;
   }
 
-  private void pouplateFromBackup(final OperateProperties override) {
-    final Backup operateBackup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withOperateBackupProperties();
+  private void populateFromBackup(final OperateProperties override) {
+    final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
     backupProperties.setRepositoryName(operateBackup.getRepositoryName());
     backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());

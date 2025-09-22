@@ -11,36 +11,25 @@ import io.camunda.configuration.Executor;
 import io.camunda.configuration.ProcessCache;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayRestProperties;
-import io.camunda.configuration.beans.LegacyGatewayRestProperties;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ApiExecutorConfiguration;
 import io.camunda.zeebe.gateway.rest.config.GatewayRestConfiguration.ProcessCacheConfiguration;
-import org.springframework.beans.BeanUtils;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-@EnableConfigurationProperties(LegacyGatewayRestProperties.class)
-@DependsOn("unifiedConfigurationHelper")
 public class GatewayRestPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
-  private final LegacyGatewayRestProperties legacyGatewayRestProperties;
 
-  public GatewayRestPropertiesOverride(
-      final UnifiedConfiguration unifiedConfiguration,
-      final LegacyGatewayRestProperties legacyGatewayRestProperties) {
+  public GatewayRestPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
     this.unifiedConfiguration = unifiedConfiguration;
-    this.legacyGatewayRestProperties = legacyGatewayRestProperties;
   }
 
   @Bean
   @Primary
   public GatewayRestProperties gatewayRestProperties() {
     final GatewayRestProperties override = new GatewayRestProperties();
-    BeanUtils.copyProperties(legacyGatewayRestProperties, override);
 
     populateFromProcessCache(override);
     populateFromExecutor(override);

@@ -19,10 +19,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
 
   private final ApplicationContextRunner brokerRunner =
       new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              BrokerBasedPropertiesOverride.class)
+          .withUserConfiguration(UnifiedConfiguration.class, BrokerBasedPropertiesOverride.class)
           .withPropertyValues(
               "spring.profiles.active=broker",
               // DB type
@@ -36,10 +33,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
 
   private final ApplicationContextRunner operateRunner =
       new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              OperatePropertiesOverride.class)
+          .withUserConfiguration(UnifiedConfiguration.class, OperatePropertiesOverride.class)
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
@@ -48,10 +42,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
 
   private final ApplicationContextRunner tasklistRunner =
       new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
+          .withUserConfiguration(UnifiedConfiguration.class, TasklistPropertiesOverride.class)
           .withPropertyValues(
               "camunda.database.type=elasticsearch",
               "camunda.operate.database=elasticsearch",
@@ -60,10 +51,7 @@ public class SecondaryStorageFailureWithLegacySchemaTest {
 
   private final ApplicationContextRunner tasklistRunnerWithMismatchingConfigs =
       new ApplicationContextRunner()
-          .withUserConfiguration(
-              UnifiedConfiguration.class,
-              UnifiedConfigurationHelper.class,
-              TasklistPropertiesOverride.class)
+          .withUserConfiguration(UnifiedConfiguration.class, TasklistPropertiesOverride.class)
           .withPropertyValues(
               // type
               "camunda.data.secondary-storage.type=elasticsearch",
