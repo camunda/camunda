@@ -24,15 +24,9 @@ jobs:
       test-enabled: true
       caller-git-ref: main
       extra-values: |
-        zeebe:
+        orchestration:
           image:
-            tag: SNAPSHOT
-        operate:
-          image:
-            tag: SNAPSHOT
-        tasklist:
-          image:
-            tag: SNAPSHOT
+            tag: 8.8-SNAPSHOT
         optimize:
           image:
             tag: 8-SNAPSHOT
