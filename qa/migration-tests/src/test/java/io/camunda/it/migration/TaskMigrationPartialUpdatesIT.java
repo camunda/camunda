@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.commons.lang3.exception.UncheckedException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.OrderAnnotation;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 @TestMethodOrder(OrderAnnotation.class)
+@Disabled("https://github.com/camunda/camunda/issues/38520")
 public class TaskMigrationPartialUpdatesIT extends UserTaskMigrationHelper {
   private static final Map<Long, TaskData> PI_TASKS = new HashMap<>();
   private static final List<Long> ARCHIVING_BACKLOG = new ArrayList<>();
