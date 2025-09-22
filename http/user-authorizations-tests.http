@@ -422,7 +422,7 @@ Accept: application/json
 
 {
   "tenantId": "<default>",
-  "processDefinitionKey": {{PROCESS_DEFINITION_KEY}},
+  "processDefinitionKey": "{{PROCESS_DEFINITION_KEY}}",
   "variables": {}
 }
 
