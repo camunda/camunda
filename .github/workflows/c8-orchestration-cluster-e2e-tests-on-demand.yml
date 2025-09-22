@@ -18,13 +18,10 @@ permissions:
 jobs:
   validate-branch:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    permissions: {}
     outputs:
       base: ${{ steps.detect-base.outputs.base }}
     steps:
       - name: Check if branch exists
-        shell: bash
         run: |
           echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
           branch_name="${{ github.event.inputs.branch }}"
@@ -41,7 +38,6 @@ jobs:
 
       - name: Detect base branch
         id: detect-base
-        shell: bash
         run: |
           branch="${{ github.event.inputs.branch }}"
           echo "Detecting base branch for input branch: $branch"
@@ -56,30 +52,16 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-
   c8-orchestration-cluster-e2e-tests:
     name: C8 Orchestration Cluster E2E Tests (Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
       fail-fast: false
       matrix:
-        # For stable/8.6 & 8.7 => ["v1"]; else ["v1","v2"]
         tasklist_mode: ${{ fromJSON( (needs.validate-branch.outputs.base == 'stable/8.6' || needs.validate-branch.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
     needs: validate-branch
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    permissions: {}
     steps:
       - name: Print input and base branch
-        shell: bash
         run: |
           echo "Input branch: ${{ github.event.inputs.branch }}"
           echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
@@ -87,10 +69,9 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }}
+          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
 
       - name: Set NON_STANDALONE variable
-        shell: bash
         run: |
           base="${{ needs.validate-branch.outputs.base }}"
           if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
@@ -100,7 +81,6 @@ jobs:
           fi
 
       - name: Start Camunda
-        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             echo "Using single services for older branches (8.6/8.7)"
@@ -118,13 +98,11 @@ jobs:
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
-        shell: bash
         run: docker ps -a
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for services to be ready
         id: wait-for-services
-        shell: bash
         run: |
           echo "Checking if services are up..."
           ready=false
@@ -163,7 +141,6 @@ jobs:
 
       - name: Print Docker logs before failing
         if: failure()
-        shell: bash
         run: |
           if [[ "$NON_STANDALONE" == "true" ]]; then
             docker compose logs tasklist
@@ -223,18 +200,17 @@ jobs:
             export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
             export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
             export ZEEBE_REST_ADDRESS="http://localhost:8089"
-            TEST_FILTER="--project=chromium"
+            TEST_ARGS=(--project=chromium)
           else
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
+            TEST_ARGS=(--project=chromium)
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              TEST_FILTER="--project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only'"
-            else
-              TEST_FILTER="--project=chromium"
+              TEST_ARGS+=(tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
             fi
           fi
-          echo "Running tests with filter: $TEST_FILTER"
-          npm run test -- $TEST_FILTER
+          echo "Running tests with args: ${TEST_ARGS[*]}"
+          npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -252,7 +228,7 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (${{ matrix.tasklist_mode }}) - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --title "On Demand C8 Orchestration Cluster Test Run Results - ${{ github.event.inputs.branch }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
