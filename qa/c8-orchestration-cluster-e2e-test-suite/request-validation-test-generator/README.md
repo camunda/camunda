@@ -81,7 +81,7 @@ less generated/COVERAGE.md
 | `--max-type-mismatch` | Cap per-operation type-mismatch                            | `--max-type-mismatch=8`                  |
 | `--only-operations`   | Comma list of operationIds                                 | `--only-operations=createGroup,getGroup` |
 | `--deep`              | Enable full deep coverage set                              | `--deep`                                 |
-| (removed)             | (Multipart adaptation now automatic; flags removed)       | N/A                                       |
+| (removed)             | (Multipart adaptation now automatic; flags removed)        | N/A                                      |
 
 ### Spec Source
 
