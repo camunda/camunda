@@ -39,25 +39,26 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
 
   @Override
   public CompletionStage<Integer> archiveNextBatch() {
-    // Run both batches (usage-metric and usage-metric-tu) sequentially then sum results
-    return repository
-        .getUsageMetricNextBatch()
-        .thenComposeAsync(
-            batch -> archiveBatch(batch, usageMetricTemplateDescriptor, UsageMetricTemplate.ID),
-            executor)
-        .thenComposeAsync(
-            countUsageMetric ->
-                repository
-                    .getUsageMetricTUNextBatch()
-                    .thenComposeAsync(
-                        batchTU ->
-                            archiveBatch(
-                                    batchTU,
-                                    usageMetricTUTemplateDescriptor,
-                                    UsageMetricTUTemplate.ID)
-                                .thenApplyAsync(countTU -> countUsageMetric + countTU, executor),
-                        executor),
-            executor);
+    // Run both batches (usage-metric and usage-metric-tu) in parallel and then sum results
+    final CompletableFuture<Integer> usageMetricBatchFuture =
+        repository
+            .getUsageMetricNextBatch()
+            .thenComposeAsync(
+                batch -> archiveBatch(batch, usageMetricTemplateDescriptor, UsageMetricTemplate.ID),
+                executor)
+            .toCompletableFuture();
+
+    final CompletableFuture<Integer> usageMetricTuBatchFuture =
+        repository
+            .getUsageMetricTUNextBatch()
+            .thenComposeAsync(
+                batch ->
+                    archiveBatch(batch, usageMetricTUTemplateDescriptor, UsageMetricTUTemplate.ID),
+                executor)
+            .toCompletableFuture();
+
+    return usageMetricBatchFuture.thenCombineAsync(
+        usageMetricTuBatchFuture, Integer::sum, executor);
   }
 
   private CompletionStage<Integer> archiveBatch(
