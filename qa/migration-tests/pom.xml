@@ -292,11 +292,6 @@
       <artifactId>camunda-exporter</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.elasticsearch</groupId>
-      <artifactId>elasticsearch-core</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
 
 </project>
