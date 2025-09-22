@@ -24,4 +24,5 @@ public interface ZeebeESConstants {
   String PROCESS_MESSAGE_SUBSCRIPTION_INDEX_NAME = "process-message-subscription";
   String USER_TASK_INDEX_NAME = "user-task";
   String DEPLOYMENT = "deployment";
+  String TENANT = "tenant";
 }
