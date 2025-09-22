@@ -7,7 +7,10 @@
  */
 
 import {Camunda8} from '@camunda8/sdk';
-import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types';
+import {
+  JOB_ACTION_ACKNOWLEDGEMENT,
+  JSONDoc,
+} from '@camunda8/sdk/dist/zeebe/types.js';
 
 const c8 = new Camunda8({
   CAMUNDA_AUTH_STRATEGY: process.env.CAMUNDA_AUTH_STRATEGY as
@@ -44,6 +47,21 @@ const deploy = async (processFilePaths: string[]) => {
   }
 };
 
+const createJobWorker = (type: string) => {
+  return zeebe.createJobWorker({
+    type,
+    jobHandler: async (job) => {
+      console.log(`Processing job of type ${type} with key ${job.jobKey}`);
+      await new Promise((r) => setTimeout(r, 60_000));
+      await job.complete();
+      return JOB_ACTION_ACKNOWLEDGEMENT;
+    },
+    timeout: 10000,
+    maxJobsToActivate: 1,
+    worker: `${type}-job-worker`,
+  });
+};
+
 const createInstances = async (
   processDefinitionId: string,
   processDefinitionVersion: number,
@@ -74,4 +92,15 @@ const createSingleInstance = async (
   });
 };
 
-export {deploy, createInstances, generateManyVariables, createSingleInstance};
+const cancelProcessInstance = async (processInstanceKey: string) => {
+  return zeebe.cancelProcessInstance({processInstanceKey});
+};
+
+export {
+  deploy,
+  createInstances,
+  generateManyVariables,
+  createSingleInstance,
+  createJobWorker,
+  cancelProcessInstance,
+};
