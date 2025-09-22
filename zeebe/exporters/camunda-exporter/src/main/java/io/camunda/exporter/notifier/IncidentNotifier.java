@@ -14,6 +14,8 @@ import io.camunda.exporter.config.ExporterConfiguration.IncidentNotifierConfigur
 import io.camunda.webapps.schema.entities.incident.IncidentEntity;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
+import io.camunda.zeebe.util.CloseableSilently;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -25,12 +27,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import javax.annotation.WillCloseWhenClosed;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Class that sends notifications about the created incidents on configured URL. */
-public class IncidentNotifier {
+public class IncidentNotifier implements CloseableSilently {
 
   protected static final String FIELD_NAME_ALERTS = "alerts";
   protected static final String FIELD_NAME_MESSAGE = "message";
@@ -59,10 +62,34 @@ public class IncidentNotifier {
   private final ObjectWriter objectWriter;
 
   public IncidentNotifier(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final IncidentNotifierConfiguration configuration,
+      final Executor executor,
+      final ObjectMapper objectMapper) {
+    this(processCache, configuration, HttpClient.newHttpClient(), executor, objectMapper);
+  }
+
+  private IncidentNotifier(
+      final ExporterEntityCache<Long, CachedProcessEntity> processCache,
+      final IncidentNotifierConfiguration configuration,
+      @WillCloseWhenClosed final HttpClient httpClient,
+      final Executor executor,
+      final ObjectMapper objectMapper) {
+    this(
+        new M2mTokenManager(configuration, httpClient, objectMapper),
+        processCache,
+        configuration,
+        httpClient,
+        executor,
+        objectMapper);
+  }
+
+  @VisibleForTesting
+  IncidentNotifier(
       final M2mTokenManager m2mTokenManager,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final IncidentNotifierConfiguration configuration,
-      final HttpClient httpClient,
+      @WillCloseWhenClosed final HttpClient httpClient,
       final Executor executor,
       final ObjectMapper objectMapper) {
     this.m2mTokenManager = m2mTokenManager;
@@ -159,5 +186,10 @@ public class IncidentNotifier {
       incidentList.add(incidentFields);
     }
     return objectWriter.writeValueAsString(Map.of(FIELD_NAME_ALERTS, incidentList));
+  }
+
+  @Override
+  public void close() {
+    httpClient.close();
   }
 }

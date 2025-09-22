@@ -349,6 +349,8 @@ public class ExporterConfiguration {
     /** Defines the domain which the user always sees */
     private String auth0Domain;
 
+    private String auth0Protocol = "https";
+
     private String m2mClientId;
 
     private String m2mClientSecret;
@@ -393,6 +395,14 @@ public class ExporterConfiguration {
 
     public void setM2mAudience(final String m2mAudience) {
       this.m2mAudience = m2mAudience;
+    }
+
+    public String getAuth0Protocol() {
+      return auth0Protocol;
+    }
+
+    public void setAuth0Protocol(final String auth0Protocol) {
+      this.auth0Protocol = auth0Protocol;
     }
   }
 
