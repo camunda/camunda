@@ -66,7 +66,7 @@ public class IncidentNotifier implements CloseableSilently {
       final IncidentNotifierConfiguration configuration,
       final Executor executor,
       final ObjectMapper objectMapper) {
-    this(processCache, configuration, HttpClientWrapper.newHttpClient(), executor, objectMapper);
+    this(processCache, configuration, HttpClient.newHttpClient(), executor, objectMapper);
   }
 
   private IncidentNotifier(
