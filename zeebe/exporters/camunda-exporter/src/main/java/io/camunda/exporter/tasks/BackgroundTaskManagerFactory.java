@@ -15,9 +15,7 @@ import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.notifier.HttpClientWrapper;
 import io.camunda.exporter.notifier.IncidentNotifier;
-import io.camunda.exporter.notifier.M2mTokenManager;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
@@ -146,17 +144,8 @@ public final class BackgroundTaskManagerFactory {
 
   private ReschedulingTask buildIncidentMarkerTask() {
 
-    final M2mTokenManager m2mTokenManager =
-        new M2mTokenManager(config.getNotifier(), HttpClientWrapper.newHttpClient(), objectMapper);
-
     final IncidentNotifier incidentNotifier =
-        new IncidentNotifier(
-            m2mTokenManager,
-            processCache,
-            config.getNotifier(),
-            HttpClientWrapper.newHttpClient(),
-            executor,
-            objectMapper);
+        new IncidentNotifier(processCache, config.getNotifier(), executor, objectMapper);
 
     final var postExport = config.getPostExport();
     return new ReschedulingTask(
