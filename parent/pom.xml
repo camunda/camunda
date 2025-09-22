@@ -133,19 +133,11 @@
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.7</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
-<<<<<<< HEAD
     <version.jackson-annotations>2.17.3</version.jackson-annotations>
     <version.swagger-annotations>2.2.36</version.swagger-annotations>
+    <version.swagger-parser>2.1.22</version.swagger-parser>
     <version.checker-qual>3.47.0</version.checker-qual>
     <version.java-jwt>4.4.0</version.java-jwt>
-=======
-    <version.jackson-annotations>2.19.2</version.jackson-annotations>
-    <version.json-path>2.9.0</version.json-path>
-    <version.swagger-annotations>2.2.34</version.swagger-annotations>
-    <version.swagger-parser>2.1.22</version.swagger-parser>
-    <version.checker-qual>3.49.5</version.checker-qual>
-    <version.java-jwt>4.5.0</version.java-jwt>
->>>>>>> 37a2fab5 (deps: Update swagger-parser to 2.1.22)
     <version.reactive-streams>1.0.4</version.reactive-streams>
     <version.postgresql>42.7.7</version.postgresql>
     <version.h2>2.3.232</version.h2>
