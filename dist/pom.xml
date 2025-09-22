@@ -885,9 +885,6 @@
 
             <dependency>io.camunda:tasklist-data-generator</dependency>
 
-            <!-- used as resource but no classes -->
-            <dependency>io.camunda:camunda-db-rdbms-schema</dependency>
-
             <!-- Used to parse PKCS1 certificates -->
             <dependency>org.bouncycastle:bcprov-jdk18on</dependency>
             <dependency>org.bouncycastle:bcpkix-jdk18on</dependency>

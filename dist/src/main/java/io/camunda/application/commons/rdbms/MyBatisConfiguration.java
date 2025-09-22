@@ -8,6 +8,7 @@
 package io.camunda.application.commons.rdbms;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
@@ -67,6 +68,7 @@ public class MyBatisConfiguration {
       matchIfMissing = true)
   public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
+      final VendorDatabaseProperties vendorDatabaseProperties,
       @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
     final String prefix = StringUtils.trimToEmpty(indexPrefix);
     LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
@@ -75,7 +77,12 @@ public class MyBatisConfiguration {
     moduleConfig.setDataSource(dataSource);
     moduleConfig.setDatabaseChangeLogTable(prefix + "DATABASECHANGELOG");
     moduleConfig.setDatabaseChangeLogLockTable(prefix + "DATABASECHANGELOGLOCK");
-    moduleConfig.setParameters(Map.of("prefix", prefix));
+    moduleConfig.setParameters(
+        Map.of(
+            "prefix",
+            prefix,
+            "userCharColumnSize",
+            Integer.toString(vendorDatabaseProperties.userCharColumnSize())));
     // changelog file located in src/main/resources directly in the module
     moduleConfig.setChangeLog("db/changelog/rdbms-exporter/changelog-master.xml");
 
@@ -95,18 +102,7 @@ public class MyBatisConfiguration {
     final var databaseId = databaseIdProvider.getDatabaseId(dataSource);
     LOGGER.info("Detected databaseId: {}", databaseId);
 
-    final Properties properties = new Properties();
-    final var file = "db/vendor-properties/" + databaseId + ".properties";
-    try (final var propertiesInputStream = getClass().getClassLoader().getResourceAsStream(file)) {
-      if (propertiesInputStream != null) {
-        properties.load(propertiesInputStream);
-      } else {
-        throw new IllegalArgumentException(
-            "No vendor properties found for databaseId " + databaseId);
-      }
-    }
-
-    return new VendorDatabaseProperties(properties);
+    return VendorDatabasePropertiesLoader.load(databaseId);
   }
 
   @Bean

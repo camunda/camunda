@@ -21,14 +21,14 @@
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
-      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(200)" />
-      <column name="NAME" type="VARCHAR(200)" />
-      <column name="RESOURCE_NAME" type="VARCHAR(4000)" />
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})" />
+      <column name="NAME" type="VARCHAR(${userCharColumnSize})" />
+      <column name="RESOURCE_NAME" type="VARCHAR(${userCharColumnSize})" />
       <column name="BPMN_XML" type="CLOB" />
-      <column name="TENANT_ID" type="VARCHAR(200)" />
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})" />
       <column name="VERSION" type="SMALLINT" />
-      <column name="VERSION_TAG" type="VARCHAR(200)" />
-      <column name="FORM_ID" type="VARCHAR(200)" />
+      <column name="VERSION_TAG" type="VARCHAR(${userCharColumnSize})" />
+      <column name="FORM_ID" type="VARCHAR(${userCharColumnSize})" />
     </createTable>
 
     <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
@@ -41,15 +41,15 @@
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT">
         <constraints primaryKey="true"/>
       </column>
-      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(200)" />
+      <column name="PROCESS_DEFINITION_ID" type="VARCHAR(${userCharColumnSize})" />
       <column name="PROCESS_DEFINITION_KEY" type="BIGINT" />
       <column name="STATE" type="VARCHAR(20)" />
       <column name="START_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
       <column name="END_DATE" type="TIMESTAMP WITH TIME ZONE(3)" />
-      <column name="TENANT_ID" type="VARCHAR(200)" />
+      <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})" />
       <column name="PARENT_PROCESS_INSTANCE_KEY" type="BIGINT" />
       <column name="PARENT_ELEMENT_INSTANCE_KEY" type="BIGINT" />
-      <column name="ELEMENT_ID" type="VARCHAR(255)" />
+      <column name="ELEMENT_ID" type="VARCHAR(${userCharColumnSize})" />
       <column name="VERSION" type="SMALLINT" />
     </createTable>
 

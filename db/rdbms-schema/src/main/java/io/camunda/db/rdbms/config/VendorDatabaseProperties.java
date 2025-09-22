@@ -29,6 +29,12 @@ public class VendorDatabaseProperties {
    */
   private static final String CHAR_COLUMN_MAX_BYTES = "charColumn.maxBytes";
 
+  /**
+   * Optional property to limit the maximum size of string column in bytes, if required by the
+   * database vendor. If not set, no limit is applied.
+   */
+  private static final String USER_CHAR_COLUMN_SIZE = "userCharColumn.size";
+
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
   private final Properties properties;
@@ -36,6 +42,7 @@ public class VendorDatabaseProperties {
   private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
   private final Integer charColumnMaxBytes;
+  private final int userCharColumnSize;
   private final int errorMessageSize;
 
   public VendorDatabaseProperties(final Properties properties) {
@@ -48,10 +55,15 @@ public class VendorDatabaseProperties {
     variableValuePreviewSize =
         Integer.parseInt(properties.getProperty(VARIABLE_VALUE_PREVIEW_SIZE));
 
+    if (!properties.containsKey(USER_CHAR_COLUMN_SIZE)) {
+      throw new IllegalArgumentException("Property '" + USER_CHAR_COLUMN_SIZE + "' is missing");
+    }
+    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+
     if (!properties.containsKey(ERROR_MESSAGE_SIZE)) {
       throw new IllegalArgumentException("Property '" + ERROR_MESSAGE_SIZE + "' is missing");
     }
-    errorMessageSize = Integer.parseInt(properties.getProperty(ERROR_MESSAGE_SIZE));
+    userCharColumnSize = Integer.parseInt(properties.getProperty(USER_CHAR_COLUMN_SIZE));
 
     if (!properties.containsKey(CHAR_COLUMN_MAX_BYTES)) {
       charColumnMaxBytes = null;
@@ -69,6 +81,10 @@ public class VendorDatabaseProperties {
 
   public int variableValuePreviewSize() {
     return variableValuePreviewSize;
+  }
+
+  public int userCharColumnSize() {
+    return userCharColumnSize;
   }
 
   public int errorMessageSize() {

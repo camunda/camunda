@@ -115,6 +115,17 @@
       <artifactId>instancio-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms-schema</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>com.github.vertical-blank</groupId>
+          <artifactId>sql-formatter</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
   </dependencies>
 
 </project>

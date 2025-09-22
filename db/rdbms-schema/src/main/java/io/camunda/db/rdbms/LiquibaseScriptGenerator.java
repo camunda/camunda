@@ -8,6 +8,7 @@
 package io.camunda.db.rdbms;
 
 import com.github.vertical_blank.sqlformatter.SqlFormatter;
+import io.camunda.db.rdbms.config.VendorDatabasePropertiesLoader;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
@@ -28,7 +29,7 @@ public class LiquibaseScriptGenerator {
     final var targetDir = args[0] + "/liquibase";
 
     final var prefix = args.length >= 2 ? args[1] : "";
-    final var databases = Set.of("h2", "mysql", "postgresql", "oracle");
+    final var databases = Set.of("h2", "mariadb", "postgresql", "oracle");
 
     for (final var database : databases) {
       generateLiquibaseScript(
@@ -54,7 +55,10 @@ public class LiquibaseScriptGenerator {
       final String targetBaseDir,
       final String outputFileName)
       throws Exception {
-    final var sqlScript = generateSqlScript(databaseType, changesetFile, prefix);
+    final var properties = VendorDatabasePropertiesLoader.load(databaseType);
+
+    final var sqlScript =
+        generateSqlScript(databaseType, changesetFile, prefix, properties.userCharColumnSize());
 
     final String basedir = targetBaseDir + "/" + databaseType;
     Files.createDirectories(Paths.get(basedir));
@@ -66,7 +70,10 @@ public class LiquibaseScriptGenerator {
   }
 
   public static String generateSqlScript(
-      final String databaseType, final String changesetFile, final String prefix)
+      final String databaseType,
+      final String changesetFile,
+      final String prefix,
+      final int userCharColumnSize)
       throws LiquibaseException {
 
     final var database = DatabaseFactory.getInstance().getDatabase(databaseType);
@@ -74,6 +81,7 @@ public class LiquibaseScriptGenerator {
     final Liquibase liquibase =
         new Liquibase(changesetFile, new ClassLoaderResourceAccessor(), database);
     liquibase.setChangeLogParameter("prefix", prefix);
+    liquibase.setChangeLogParameter("userCharColumnSize", userCharColumnSize);
 
     final var changelog = liquibase.getDatabaseChangeLog();
 
