@@ -146,6 +146,41 @@ public class OpensearchFinishedImportingIT extends TasklistZeebeIntegrationTest 
   }
 
   @Test
+  public void shouldMarkRecordReadersAsCompletedIfTenantRecordReceived() throws IOException {
+    // given
+    final var record = generateRecord(ValueType.JOB, "8.7.0", 1);
+    EXPORTER.export(record);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    zeebeImporter.performOneRoundOfImport();
+
+    // when
+    final var record2 = generateRecord(ValueType.TENANT, "8.8.0", 1);
+    EXPORTER.export(record2);
+    openSearchClient.indices().refresh(new RefreshRequest.Builder().index("*").build());
+
+    // receives 8.7 record and marks partition as finished importing
+    zeebeImporter.performOneRoundOfImport();
+
+    // then
+    // require multiple checks to avoid race condition. If records are written to zeebe indices and
+    // before a refresh, the record reader pulls the import batch is empty so it then says that the
+    // record reader is done when it is not.
+    for (int i = 0; i < emptyBatches; i++) {
+      zeebeImporter.performOneRoundOfImport();
+    }
+
+    // the import position for
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .until(
+            () -> {
+              zeebeImporter.performOneRoundOfImport();
+              return isRecordReaderIsCompleted("1-tenant");
+            });
+  }
+
+  @Test
   public void shouldMarkMultiplePositionIndexAsCompletedIf880RecordReceived() throws IOException {
     final var processInstanceRecord = generateRecord(ValueType.PROCESS_INSTANCE, "8.7.0", 1);
     final var jobRecord = generateRecord(ValueType.JOB, "8.7.0", 1);
