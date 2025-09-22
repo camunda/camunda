@@ -148,8 +148,6 @@ test.describe('task details page', () => {
       useInnerText: true,
     });
 
-    await page.reload();
-
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled({
       timeout: 60000,
     });

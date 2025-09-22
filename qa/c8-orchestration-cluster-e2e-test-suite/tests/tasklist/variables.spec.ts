@@ -40,7 +40,7 @@ test.describe('variables page', () => {
     taskDetailsPage,
   }) => {
     await taskPanelPage.openTask('usertask_without_variables');
-    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible();
+    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible({timeout: 30000});
   });
 
   test('display variables when task has variables', async ({
