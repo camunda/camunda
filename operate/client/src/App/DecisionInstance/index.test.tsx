@@ -15,6 +15,7 @@ import {
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
+import {invoiceClassification as invoiceClassificationV2} from 'modules/mocks/mockDecisionInstanceV2';
 import {mockDrdData} from 'modules/mocks/mockDrdData';
 import {DecisionInstance} from './';
 import {drdStore} from 'modules/stores/drd';
@@ -22,6 +23,7 @@ import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
+import {mockFetchDecisionInstance as mockFetchDecisionInstanceV2} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -57,6 +59,7 @@ describe('<DecisionInstance />', () => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockFetchDecisionInstanceV2().withSuccess(invoiceClassificationV2);
     mockMe().withSuccess(createUser());
     mockMe().withSuccess(createUser());
   });
@@ -278,6 +281,7 @@ describe('<DecisionInstance />', () => {
 
   it('should display forbidden content', async () => {
     mockFetchDecisionInstance().withServerError(403);
+    mockFetchDecisionInstanceV2().withServerError(403);
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(
