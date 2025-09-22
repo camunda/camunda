@@ -7,9 +7,10 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.webapps.schema.entities.event.EventEntity;
+import io.camunda.webapps.schema.entities.JobEntity;
 import java.util.Optional;
 
-public interface EventReader {
-  Optional<EventEntity> getEventEntityByFlowNodeInstanceId(final String flowNodeInstanceId);
+public interface JobReader {
+  /** Returns the JobEntity for the given flowNodeInstanceId, or Optional.empty() if not found. */
+  Optional<JobEntity> getJobByFlowNodeInstanceId(String flowNodeInstanceId);
 }
