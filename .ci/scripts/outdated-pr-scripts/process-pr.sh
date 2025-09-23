@@ -26,15 +26,25 @@ fi
 
 # Read and process PRs from stdin
 while IFS=' ' read -r pr_number branch_name base_branch repo_owner; do
-  echo "🔍 Processing PR #$pr_number ($branch_name from $repo_owner targeting $base_branch)"
   
+  # Skip forked repositories early
+  if [[ "$repo_owner" != "${GITHUB_REPOSITORY_OWNER}" ]]; then
+    echo "🔀 Skipping forked repository PR #$pr_number from $repo_owner" >&2
+    echo "---"
+    continue
+  fi
+  
+  echo "🔍 Processing PR #$pr_number ($branch_name from $repo_owner targeting $base_branch)"
   commits_behind=$(check_pr_commits "$pr_number" "$branch_name" "$base_branch" "$repo_owner")
   
-  # Check branch staleness
-  latest_commit_date=$(git log origin/"$base_branch"..origin/"$branch_name" --pretty=format:"%ai" | head -1 2>/dev/null || echo "")
-  latest_commit_timestamp=$("$DATE_PROGRAM" -d "$latest_commit_date" +%s 2>/dev/null || echo "0")
-  current_timestamp=$("$DATE_PROGRAM" +%s)
-  latest_age_days=$(( (current_timestamp - latest_commit_timestamp) / 86400 ))
+  # Check branch staleness - only for internal branches that exist
+  latest_age_days=0
+  if [[ "$repo_owner" == "${GITHUB_REPOSITORY_OWNER}" ]] && git rev-parse --verify "origin/$branch_name" >/dev/null 2>&1; then
+    latest_commit_date=$(git log origin/"$base_branch"..origin/"$branch_name" --pretty=format:"%ai" | head -1 2>/dev/null || echo "")
+    latest_commit_timestamp=$("$DATE_PROGRAM" -d "$latest_commit_date" +%s 2>/dev/null || echo "0")
+    current_timestamp=$("$DATE_PROGRAM" +%s)
+    latest_age_days=$(( (current_timestamp - latest_commit_timestamp) / 86400 ))
+  fi
   
   # Only call update function if PR is actually outdated
   reasons=()
