@@ -20,11 +20,15 @@ public abstract class SecondaryStorageDatabase {
 
   /** Password for the database configured as secondary storage. */
   protected String password = "";
+
   /** Prefix to apply to the indexes. */
   protected String indexPrefix = "";
+
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
+
   private Security security = new Security(databaseName());
+
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
 
