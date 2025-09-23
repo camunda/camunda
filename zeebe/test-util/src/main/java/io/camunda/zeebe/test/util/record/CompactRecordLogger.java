@@ -19,6 +19,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT;
 import static io.camunda.zeebe.protocol.record.ValueType.DEPLOYMENT_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ESCALATION;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
+import static io.camunda.zeebe.protocol.record.ValueType.IDENTITY_SETUP;
 import static io.camunda.zeebe.protocol.record.ValueType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.ValueType.MULTI_INSTANCE;
 import static io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE;
@@ -85,6 +86,7 @@ import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.EscalationRecordValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.IdentitySetupRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobKind;
@@ -202,7 +204,8 @@ public class CompactRecordLogger {
           entry(USAGE_METRIC.name(), "USG_MTRC"),
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
           entry(ESCALATION.name(), "ESC"),
-          entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"));
+          entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
+          entry(IDENTITY_SETUP.name(), "ID"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -287,6 +290,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
+    valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
   }
 
@@ -1171,88 +1175,131 @@ public class CompactRecordLogger {
 
   private String summarizeRole(final Record<?> record) {
     final var value = (RoleRecordValue) record.getValue();
+    return summarizeRole(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("Role[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getRoleKey()))
-        .append(", Id=")
-        .append(formatId(value.getRoleId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", Description=")
-        .append(value.getDescription())
-        .append(", EntityId=")
-        .append(formatId(value.getEntityId()))
-        .append("]");
+  private String summarizeRole(final RoleRecordValue value) {
+    final StringJoiner joiner = new StringJoiner(", ", "Role[", "]");
 
-    return builder.toString();
+    if (value.getRoleKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getRoleKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getRoleId())) {
+      joiner.add("Id=" + formatId(value.getRoleId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getDescription())) {
+      joiner.add("Description=" + value.getDescription());
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityId=" + formatId(value.getEntityId()));
+    }
+
+    return joiner.toString();
   }
 
   private String summarizeTenant(final Record<?> record) {
     final var value = (TenantRecordValue) record.getValue();
+    return summarizeTenant(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("Tenant[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getTenantKey()))
-        .append(", Id=")
-        .append(formatId(value.getTenantId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", EntityId=")
-        .append(formatId(value.getEntityId()))
-        .append("]");
+  private String summarizeTenant(final TenantRecordValue value) {
+    final StringJoiner joiner = new StringJoiner(", ", "Tenant[", "]");
 
-    return builder.toString();
+    if (value.getTenantKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getTenantKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getTenantId())) {
+      joiner.add("Id=" + formatId(value.getTenantId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityId=" + formatId(value.getEntityId()));
+    }
+    return joiner.toString();
   }
 
   private String summarizeGroup(final Record<?> record) {
     final var value = (GroupRecordValue) record.getValue();
 
-    final StringBuilder builder = new StringBuilder("Group[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getGroupKey()))
-        .append(", Id=")
-        .append(formatId(value.getGroupId()))
-        .append(", Name=")
-        .append(formatId(value.getName()))
-        .append(", EntityKey=")
-        .append(formatId(value.getEntityId()))
-        .append(", EntityType=")
-        .append(value.getEntityType())
-        .append("]");
+    final StringJoiner joiner = new StringJoiner(", ", "Group[", "]");
 
-    return builder.toString();
+    if (value.getGroupKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getGroupKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getGroupId())) {
+      joiner.add("Id=" + formatId(value.getGroupId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getName())) {
+      joiner.add("Name=" + formatId(value.getName()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityKey=" + formatId(value.getEntityId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getEntityId())) {
+      joiner.add("EntityType=" + value.getEntityType());
+    }
+
+    return joiner.toString();
   }
 
   private String summarizeMappingRule(final Record<?> record) {
     final var value = (MappingRuleRecordValue) record.getValue();
+    return summarizeMappingRule(value);
+  }
 
-    final StringBuilder builder = new StringBuilder("MappingRule[");
-    builder
-        .append("Key=")
-        .append(shortenKey(value.getMappingRuleKey()))
-        .append(", mappingRuleId=")
-        .append(formatId(value.getMappingRuleId()))
-        .append(", claimName=")
-        .append(value.getClaimName())
-        .append(", claimValue=")
-        .append(value.getClaimValue())
-        .append("]");
+  private String summarizeMappingRule(final MappingRuleRecordValue value) {
 
-    return builder.toString();
+    final StringJoiner joiner = new StringJoiner(", ", "MappingRule[", "]");
+
+    if (value.getMappingRuleKey() != -1) {
+      joiner.add("Key=" + shortenKey(value.getMappingRuleKey()));
+    }
+
+    if (StringUtils.isNotBlank(value.getMappingRuleId())) {
+      joiner.add("mappingRuleId=" + formatId(value.getMappingRuleId()));
+    }
+
+    if (StringUtils.isNotBlank(value.getClaimName())) {
+      joiner.add("claimName=" + value.getClaimName());
+    }
+
+    if (StringUtils.isNotBlank(value.getClaimValue())) {
+      joiner.add("claimValue=" + value.getClaimValue());
+    }
+
+    return joiner.toString();
   }
 
   private String summarizeUser(final Record<?> record) {
     final var value = (UserRecordValue) record.getValue();
+    return summarizeUser(value, record.getKey() != value.getUserKey());
+  }
 
+  private String summarizeUser(final UserRecordValue value) {
+    return summarizeUser(value, true);
+  }
+
+  private String summarizeUser(final UserRecordValue value, final boolean includeUserKey) {
     final StringBuilder builder = new StringBuilder();
-    if (record.getKey() != value.getUserKey()) {
+    if (includeUserKey) {
       builder.append(shortenKey(value.getUserKey())).append(" ");
     }
-
     builder
         .append("u=")
         .append(formatId(value.getUsername()))
@@ -1266,7 +1313,10 @@ public class CompactRecordLogger {
 
   private String summarizeAuthorization(final Record<?> record) {
     final var value = (AuthorizationRecordValue) record.getValue();
+    return summarizeAuthorization(value);
+  }
 
+  private String summarizeAuthorization(final AuthorizationRecordValue value) {
     return "%s %s can %s %s %s"
         .formatted(
             value.getOwnerType(),
@@ -1495,6 +1545,78 @@ public class CompactRecordLogger {
     }
     summary.append(")");
     summary.append(summarizeProcessInformation(null, value.getProcessInstanceKey()));
+
+    return summary.toString();
+  }
+
+  private String summarizeIdentitySetup(final Record<?> record) {
+    final var value = (IdentitySetupRecordValue) record.getValue();
+
+    final StringBuilder summary = new StringBuilder();
+
+    if (!value.getRoles().isEmpty()) {
+      summary.append(
+          value.getRoles().stream()
+              .map(this::summarizeRole)
+              .collect(Collectors.joining(", ", "Roles: {", "}")));
+    }
+
+    if (!value.getRoleMembers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getRoleMembers().stream()
+              .map(this::summarizeRole)
+              .collect(Collectors.joining(", ", "Role members: {", "}")));
+    }
+
+    if (!value.getUsers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getUsers().stream()
+              .map(this::summarizeUser)
+              .collect(Collectors.joining(", ", "Users: {", "}")));
+    }
+
+    if (value.getDefaultTenant() != null) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append("Default tenant: ").append(summarizeTenant(value.getDefaultTenant()));
+    }
+
+    if (!value.getTenantMembers().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getTenantMembers().stream()
+              .map(this::summarizeTenant)
+              .collect(Collectors.joining(", ", "Tenant members: {", "}")));
+    }
+
+    if (!value.getMappingRules().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getMappingRules().stream()
+              .map(this::summarizeMappingRule)
+              .collect(Collectors.joining(", ", "Mapping rules: {", "}")));
+    }
+
+    if (!value.getAuthorizations().isEmpty()) {
+      if (!summary.isEmpty()) {
+        summary.append("; ");
+      }
+      summary.append(
+          value.getAuthorizations().stream()
+              .map(this::summarizeAuthorization)
+              .collect(Collectors.joining(", ", "Authorizations: {", "}")));
+    }
 
     return summary.toString();
   }

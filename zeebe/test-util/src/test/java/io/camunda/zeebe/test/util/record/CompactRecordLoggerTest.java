@@ -43,7 +43,6 @@ class CompactRecordLoggerTest {
       // Instead, please add a new value logger to CompactRecordLogger.valueLoggers.
       mode = EnumSource.Mode.EXCLUDE,
       names = {
-        "IDENTITY_SETUP",
         "FORM",
         "CHECKPOINT",
       })
