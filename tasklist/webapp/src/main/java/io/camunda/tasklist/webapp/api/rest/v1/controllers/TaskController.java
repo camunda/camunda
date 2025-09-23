@@ -136,22 +136,9 @@ public class TaskController extends ApiErrorController {
           new TaskByCandidateUserOrGroup();
       taskByCandidateUserOrGroup.setUserName(userName);
 
-      final Set<String> listOfUserGroupIds =
-          userGroupService.getUserGroups().stream().collect(Collectors.toSet());
-      if (listOfUserGroupIds.isEmpty()) {
-        taskByCandidateUserOrGroup.setUserGroups(new String[0]);
-      } else {
-        final var groups =
-            groupServices
-                .withAuthentication(CamundaAuthentication.anonymous())
-                .search(
-                    GroupQuery.of(
-                        groupQuery ->
-                            groupQuery.filter(filter -> filter.groupIds(listOfUserGroupIds))));
-        final var listOfUserGroupNames =
-            groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
-        taskByCandidateUserOrGroup.setUserGroups(listOfUserGroupNames.toArray(String[]::new));
-      }
+      final var setOfUserGroupNames = resolveGroupNames(userGroupService.getUserGroups());
+      taskByCandidateUserOrGroup.setUserGroups(setOfUserGroupNames.toArray(String[]::new));
+
       query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
     }
 
@@ -272,13 +259,13 @@ public class TaskController extends ApiErrorController {
       // this is backwards compatible with previous versions, but in the future this will change
       return true;
     }
-    final List<String> listOfUserGroups = userGroupService.getUserGroups();
+    final Set<String> setOfUserGroups = resolveGroupNames(userGroupService.getUserGroups());
     final var task = taskSupplier.get();
     final boolean allUsersTask =
         task.getCandidateUsers() == null && task.getCandidateGroups() == null;
     final boolean candidateGroupTasks =
         task.getCandidateGroups() != null
-            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), listOfUserGroups);
+            && !Collections.disjoint(Arrays.asList(task.getCandidateGroups()), setOfUserGroups);
     final boolean candidateUserTasks =
         task.getCandidateUsers() != null
             && Arrays.asList(task.getCandidateUsers()).contains(userName);
@@ -540,6 +527,22 @@ public class TaskController extends ApiErrorController {
     variables.forEach(resp -> unsetBigVariableValuesIfNeeded(resp, variableNamesToReturnFullValue));
 
     return ResponseEntity.ok(variables);
+  }
+
+  private Set<String> resolveGroupNames(final List<String> userGroupIds) {
+    // candidate groups use group names instead of group ids
+    // so we need to resolve the group names from the group ids
+    if (userGroupIds.isEmpty()) {
+      return Collections.EMPTY_SET;
+    }
+    final Set<String> setOfUserGroupIds = userGroupIds.stream().collect(Collectors.toSet());
+    final var groups =
+        groupServices
+            .withAuthentication(CamundaAuthentication.anonymous())
+            .search(
+                GroupQuery.of(
+                    groupQuery -> groupQuery.filter(filter -> filter.groupIds(setOfUserGroupIds))));
+    return groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
   }
 
   private LazySupplier<TaskDTO> getTaskSupplier(final String taskId) {
