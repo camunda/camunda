@@ -9,7 +9,6 @@ package io.camunda.configuration.beans;
 
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
-import java.util.List;
 
 // NOTE: This class has been moved away from dist. The reason for this is that as, for now,
 //  we're storing the unified configuration objects and beans in the configuration module,
@@ -25,14 +24,6 @@ import java.util.List;
 public class BrokerBasedProperties extends BrokerCfg {
 
   public ExporterCfg getCamundaExporter() {
-    final List<ExporterCfg> exporters =
-        this.getExporters().values().stream()
-            .filter(e -> e.getClassName().equals("io.camunda.exporter.CamundaExporter"))
-            .toList();
-    if (exporters.isEmpty()) {
-      return null;
-    }
-
-    return exporters.get(0);
+    return this.getExporters().get("camundaexporter");
   }
 }
