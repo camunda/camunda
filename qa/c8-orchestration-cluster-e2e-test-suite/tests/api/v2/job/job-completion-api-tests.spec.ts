@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test} from '@playwright/test';
+import {expect, test} from '@playwright/test';
 import {
   cancelProcessInstance,
   createInstances,
@@ -20,7 +20,8 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 
-test.describe.parallel('Job Completion API Tests', () => {
+// Running the job tests on the same process instance leads to conflicts
+test.describe('Job Completion API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
@@ -49,6 +50,7 @@ test.describe.parallel('Job Completion API Tests', () => {
     });
     await assertStatusCode(activateRes, 200);
     const activateJson = await activateRes.json();
+    expect(activateJson.jobs.length).toBe(1);
     const jobKey = activateJson.jobs[0].jobKey;
 
     const completeRes = await request.post(
@@ -106,6 +108,7 @@ test.describe.parallel('Job Completion API Tests', () => {
     });
     await assertStatusCode(activateRes, 200);
     const activateJson = await activateRes.json();
+    expect(activateJson.jobs.length).toBe(1);
     const jobKey = activateJson.jobs[0].jobKey;
 
     // First completion (should succeed)
