@@ -7,8 +7,7 @@ curl --fail-with-body -L -X POST 'http://localhost:8080/v2/process-instances/sea
         -H 'Accept: application/json' \
         --data-raw '{
   "filter": {
-    "running": true,
-    "active": true
+    "state": "ACTIVE"
   }
 }'
 
