@@ -11,6 +11,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.matching;
+import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
@@ -204,15 +205,16 @@ class OidcPrivateKeyJwtCustomizeAssertionTest {
         1,
         postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
-            .withRequestBody(matching(".*grant_type=authorization_code.*"))
-            .withRequestBody(matching(".*code=test_authorization_code.*"))
-            .withRequestBody(matching(".*client_id=" + CLIENT_ID + ".*"))
-            .withRequestBody(matching(".*resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F.*"))
+            .withRequestBody(containing("grant_type=authorization_code"))
+            .withRequestBody(containing("code=test_authorization_code"))
+            .withRequestBody(containing("client_id=" + CLIENT_ID))
+            .withRequestBody(containing("resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F"))
             .withRequestBody(
-                matching(
-                    ".*client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer.*"))
+                containing(
+                    "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
             // client_assertion=<A JWT>
-            .withRequestBody(matching(".*client_assertion=" + REGEX_JWT + ".*")));
+            .withRequestBody(matching(".*client_assertion=" + REGEX_JWT + ".*"))
+            .withRequestBody(notContaining("client_secret")));
   }
 
   private void verifyClientAssertion() throws ParseException {
