@@ -161,7 +161,7 @@ public class ApiGrpcBrokerPropertiesTest {
         "camunda.api.grpc.address=10.0.0.7",
         "camunda.api.grpc.port=27900",
         "camunda.api.grpc.min-keep-alive-interval=40s",
-        "camunda.api.grpc.max-message-size=40MB",
+        "camunda.cluster.network.max-message-size=40MB",
         "camunda.api.grpc.management-threads=5",
         // legacy gateway configuration
         "zeebe.gateway.network.host=198.0.0.1",
