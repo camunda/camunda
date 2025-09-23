@@ -102,7 +102,7 @@ public class BpmnExampleDataReaderImplTest {
     // when/then
     assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
         .hasMessageContaining(
-            "BPMN Model [process-definition-key: '1', element-id: 'task_send_email'] has no example data for the given element-id");
+            "BPMN Model [processDefinitionKey: '1', elementId: 'task_send_email'] has no example data");
   }
 
   @Test
@@ -114,7 +114,7 @@ public class BpmnExampleDataReaderImplTest {
     // when/then
     assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
         .hasMessageContaining(
-            "BPMN Model [process-definition-key: '1', element-id: 'task_send_email'] failed to parse the example data 'this is not valid json'");
+            "BPMN Model [processDefinitionKey: '1', elementId: 'task_send_email'] failed to parse the example data 'this is not valid json'");
   }
 
   private String bpmnModelWithExampleData() {
