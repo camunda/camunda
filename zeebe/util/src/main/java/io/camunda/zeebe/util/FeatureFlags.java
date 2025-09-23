@@ -55,7 +55,6 @@ public final class FeatureFlags {
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enablePartitionScaling;
-  private boolean enableIdentitySetup;
   private boolean enableMessageBodyOnExpired;
 
   public FeatureFlags(
@@ -65,7 +64,6 @@ public final class FeatureFlags {
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
       final boolean enablePartitionScaling,
-      final boolean enableIdentitySetup,
       final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
@@ -74,7 +72,6 @@ public final class FeatureFlags {
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     this.enablePartitionScaling = enablePartitionScaling;
-    this.enableIdentitySetup = enableIdentitySetup;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
@@ -86,7 +83,6 @@ public final class FeatureFlags {
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
         ENABLE_PARTITION_SCALING,
-        ENABLE_IDENTITY_SETUP,
         ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
@@ -104,7 +100,6 @@ public final class FeatureFlags {
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
         true, /* ENABLE_PARTITION_SCALING */
-        false, /* ENABLE_IDENTITY_SETUP */
         false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
@@ -131,10 +126,6 @@ public final class FeatureFlags {
 
   public boolean enablePartitionScaling() {
     return enablePartitionScaling;
-  }
-
-  public boolean enableIdentitySetup() {
-    return enableIdentitySetup;
   }
 
   public boolean enableMessageBodyOnExpired() {
@@ -164,10 +155,6 @@ public final class FeatureFlags {
 
   public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
     this.enablePartitionScaling = enablePartitionScaling;
-  }
-
-  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
-    this.enableIdentitySetup = enableIdentitySetup;
   }
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
