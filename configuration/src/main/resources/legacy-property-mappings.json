@@ -254,7 +254,7 @@
     "legacyProperties": [
       [
         {
-          "name": "zeebe.gateway.cluster.max-message-size",
+          "name": "zeebe.gateway.network.max-message-size",
           "profiles": [
             "gateway",
             "!broker"
