@@ -1876,5 +1876,173 @@
         }
       ]
     ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.security.enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.enabled",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.enabled",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.security.enabled",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.enabled",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.enabled",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.security.certificate-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.certificatePath",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.ssl.certificate-path",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.ssl.certificate-path",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.certificate-path",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.security.certificate-path",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.certificatePath",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.ssl.certificate-path",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.opensearch.ssl.certificate-path",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.certificate-path",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.security.verify-hostname",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.verify-hostname",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.ssl.verify-hostname",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.ssl.verify-hostname",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.verify-hostname",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.security.verify-hostname",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.verify-hostname",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.ssl.verify-hostname",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.opensearch.ssl.verify-hostname",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.verify-hostname",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.elasticsearch.security.self-signed",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.self-signed",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.elasticsearch.ssl.self-signed",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.elasticsearch.ssl.self-signed",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.self-signed",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
+  },
+  {
+    "newProperty": "camunda.data.secondary-storage.opensearch.security.self-signed",
+    "legacyProperties": [
+      [
+        {
+          "name": "camunda.database.security.self-signed",
+          "profiles": ["gateway","tasklist", "operate"]
+        },
+        {
+          "name": "camunda.tasklist.opensearch.ssl.self-signed",
+          "profiles": ["tasklist"]
+        },
+        {
+          "name": "camunda.operate.opensearch.ssl.self-signed",
+          "profiles": ["operate"]
+        },
+        {
+          "name": "zeebe.broker.exporters.camundaexporter.args.connect.security.self-signed",
+          "profiles": ["broker"]
+        }
+      ]
+    ]
   }
 ]

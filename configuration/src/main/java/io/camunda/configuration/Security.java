@@ -7,9 +7,6 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
-
 public class Security {
 
   private final String databaseName;
@@ -31,12 +28,7 @@ public class Security {
   }
 
   public boolean isEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".enabled",
-        enabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyEnabledProperties());
+    return enabled;
   }
 
   public void setEnabled(final boolean enabled) {
@@ -44,12 +36,7 @@ public class Security {
   }
 
   public String getCertificatePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".certificate-path",
-        certificatePath,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyCertificatePathProperties());
+    return certificatePath;
   }
 
   public void setCertificatePath(final String certificatePath) {
@@ -57,12 +44,7 @@ public class Security {
   }
 
   public boolean isVerifyHostname() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".verify-hostname",
-        verifyHostname,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyVerifyHostnameProperties());
+    return verifyHostname;
   }
 
   public void setVerifyHostname(final boolean verifyHostname) {
@@ -70,49 +52,10 @@ public class Security {
   }
 
   public boolean isSelfSigned() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".self-signed",
-        selfSigned,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacySelfSignedProperties());
+    return selfSigned;
   }
 
   public void setSelfSigned(final boolean selfSigned) {
     this.selfSigned = selfSigned;
-  }
-
-  private String prefix() {
-    return "camunda.data.secondary-storage." + databaseName + ".security";
-  }
-
-  private Set<String> legacyEnabledProperties() {
-    return Set.of(
-        "camunda.database.security.enabled",
-        "zeebe.broker.exporters.camundaexporter.args.connect.security.enabled");
-  }
-
-  private Set<String> legacyCertificatePathProperties() {
-    return Set.of(
-        "camunda.database.security.certificatePath",
-        "camunda.tasklist." + databaseName + ".ssl.certificatePath",
-        "camunda.operate." + databaseName + ".ssl.certificatePath",
-        "zeebe.broker.exporters.camundaexporter.args.connect.security.certificatePath");
-  }
-
-  private Set<String> legacyVerifyHostnameProperties() {
-    return Set.of(
-        "camunda.database.security.verifyHostname",
-        "camunda.tasklist." + databaseName + ".ssl.verifyHostname",
-        "camunda.operate." + databaseName + ".ssl.verifyHostname",
-        "zeebe.broker.exporters.camundaexporter.args.connect.security.verifyHostname");
-  }
-
-  private Set<String> legacySelfSignedProperties() {
-    return Set.of(
-        "camunda.database.security.selfSigned",
-        "camunda.tasklist." + databaseName + ".ssl.selfSigned",
-        "camunda.operate." + databaseName + ".ssl.selfSigned",
-        "zeebe.broker.exporters.camundaexporter.args.connect.security.selfSigned");
   }
 }
