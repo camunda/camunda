@@ -44,7 +44,6 @@ class CompactRecordLoggerTest {
       mode = EnumSource.Mode.EXCLUDE,
       names = {
         "FORM",
-        "CHECKPOINT",
       })
   public void shouldHaveCompactLoggerForValueType(final ValueType valueType) {
     assertThat(compactRecordLogger.getSupportedValueTypes())
