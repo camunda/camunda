@@ -67,7 +67,7 @@ public class BrokerBasedPropertiesOverride {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
-  private static final String CAMUNDA_EXPORTER_NAME = "camundaExporter";
+  private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -412,6 +412,11 @@ public class BrokerBasedPropertiesOverride {
   private void populateCamundaExporter(final BrokerBasedProperties override) {
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    if (!secondaryStorage.getAutoconfigureCamundaExporter()) {
+      LOGGER.debug("Skipping autoconfiguration of the (default) exporter 'camundaexporter'");
+      return;
+    }
 
     final SecondaryStorageDatabase database;
     if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
