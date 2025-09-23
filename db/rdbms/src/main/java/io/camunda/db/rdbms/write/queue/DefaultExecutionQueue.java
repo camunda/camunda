@@ -16,6 +16,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.ibatis.session.ExecutorType;
@@ -27,16 +28,10 @@ import org.slf4j.LoggerFactory;
 public class DefaultExecutionQueue implements ExecutionQueue {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionQueue.class);
-  private static final Set<String> IGNORE_EMPTY_UPDATES =
+  private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
-          "io.camunda.db.rdbms.sql.UserTaskMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateUsers",
-          "io.camunda.db.rdbms.sql.UserTaskMapper.deleteCandidateGroups",
-          "io.camunda.db.rdbms.sql.IncidentMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.DecisionInstanceMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.VariableMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.JobMapper.updateHistoryCleanupDate",
-          "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists");
+          Pattern.compile(".*updateHistoryCleanupDate$"),
+          Pattern.compile("io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists"));
 
   private final SqlSessionFactory sessionFactory;
   private final List<PreFlushListener> preFlushListeners = new ArrayList<>();
@@ -169,7 +164,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       final var batchResult = session.flushStatements();
       for (final BatchResult singleBatchResult : batchResult) {
         if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
-            && !IGNORE_EMPTY_UPDATES.contains(singleBatchResult.getMappedStatement().getId())) {
+            && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
           LOG.error(
               "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} were not executed successfully",
               partitionId,
@@ -256,5 +251,9 @@ public class DefaultExecutionQueue implements ExecutionQueue {
     if (queue.size() >= queueFlushLimit) {
       flush();
     }
+  }
+
+  static boolean shouldIgnoreWhenNoRowsAffected(final String statementId) {
+    return IGNORE_EMPTY_UPDATES.stream().anyMatch(p -> p.matcher(statementId).matches());
   }
 }

@@ -24,6 +24,8 @@ import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mockito;
 
 class DefaultExecutionQueueTest {
@@ -321,5 +323,19 @@ class DefaultExecutionQueueTest {
     verify(session).update(eq("statement4"), any());
     verify(session).update(eq("statement1"), any());
     verify(session).update(eq("statement3"), any());
+  }
+
+  @ParameterizedTest
+  @CsvSource({
+    // statementId, expectedResult
+    "foo.updateHistoryCleanupDate,true",
+    "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
+    "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
+    "some.other.Statement,false"
+  })
+  void shouldIgnoreWhenNoRowsAffectedMatchesPatterns(
+      final String statementId, final boolean expected) {
+    assertThat(DefaultExecutionQueue.shouldIgnoreWhenNoRowsAffected(statementId))
+        .isEqualTo(expected);
   }
 }
