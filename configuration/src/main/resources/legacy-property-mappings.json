@@ -1049,7 +1049,8 @@
     "legacyProperties": [
       [
         {
-          "name": "camunda.operate.backup.incomplete-check-timeout-in-seconds"
+          "name": "camunda.operate.backup.incomplete-check-timeout-in-seconds",
+          "mapper": "secondsToDuration"
         }
       ]
     ]
@@ -1579,7 +1580,8 @@
     "legacyProperties": [
       [
         {
-          "name": "camunda.rest.api-executor.keep-alive-seconds"
+          "name": "camunda.rest.api-executor.keep-alive-seconds",
+          "mapper": "secondsToDuration"
         }
       ]
     ]

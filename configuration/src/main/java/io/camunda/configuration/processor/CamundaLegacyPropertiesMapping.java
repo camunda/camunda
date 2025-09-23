@@ -11,5 +11,5 @@ import java.util.Set;
 
 public record CamundaLegacyPropertiesMapping(
     String newProperty, Set<Set<LegacyProperty>> legacyProperties) {
-  public record LegacyProperty(String name, Set<String> profiles) {}
+  public record LegacyProperty(String name, Set<String> profiles, String mapper) {}
 }
