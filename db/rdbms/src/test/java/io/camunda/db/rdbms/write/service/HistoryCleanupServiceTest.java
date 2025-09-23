@@ -41,6 +41,8 @@ class HistoryCleanupServiceTest {
   private BatchOperationWriter batchOperationWriter;
   private MessageSubscriptionWriter messageSubscriptionWriter;
   private CorrelatedMessageSubscriptionWriter correlatedMessageSubscriptionWriter;
+  private UsageMetricWriter usageMetricWriter;
+  private UsageMetricTUWriter usageMetricTUWriter;
 
   private HistoryCleanupService historyCleanupService;
 
@@ -58,6 +60,8 @@ class HistoryCleanupServiceTest {
     batchOperationWriter = mock(BatchOperationWriter.class);
     messageSubscriptionWriter = mock(MessageSubscriptionWriter.class);
     correlatedMessageSubscriptionWriter = mock(CorrelatedMessageSubscriptionWriter.class);
+    usageMetricWriter = mock(UsageMetricWriter.class);
+    usageMetricTUWriter = mock(UsageMetricTUWriter.class);
 
     when(processInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(flowNodeInstanceWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
@@ -72,10 +76,12 @@ class HistoryCleanupServiceTest {
     when(messageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt())).thenReturn(0);
     when(correlatedMessageSubscriptionWriter.cleanupHistory(anyInt(), any(), anyInt()))
         .thenReturn(0);
+    when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
+    when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(0);
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
-    when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
+    when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(30));
     when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
         .thenReturn(Duration.ofDays(2));
     when(historyConfig.batchOperationMigrateProcessInstanceHistoryTTL())
@@ -86,6 +92,7 @@ class HistoryCleanupServiceTest {
     when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
     when(historyConfig.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
     when(historyConfig.historyCleanupBatchSize()).thenReturn(100);
+    when(historyConfig.usageMetricsTTL()).thenReturn(Duration.ofDays(730));
 
     historyCleanupService =
         new HistoryCleanupService(
@@ -101,7 +108,9 @@ class HistoryCleanupServiceTest {
             batchOperationWriter,
             messageSubscriptionWriter,
             correlatedMessageSubscriptionWriter,
-            mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS));
+            mock(RdbmsWriterMetrics.class, Mockito.RETURNS_DEEP_STUBS),
+            usageMetricWriter,
+            usageMetricTUWriter);
   }
 
   @Test
@@ -139,6 +148,24 @@ class HistoryCleanupServiceTest {
     verify(batchOperationWriter).cleanupHistory(CLEANUP_DATE, 100);
     verify(messageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
     verify(correlatedMessageSubscriptionWriter).cleanupHistory(PARTITION_ID, CLEANUP_DATE, 100);
+  }
+
+  @Test
+  void testFirstCleanupMetricsHistory() {
+    // given
+    when(usageMetricWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(1);
+    when(usageMetricTUWriter.cleanupMetrics(anyInt(), any(), anyInt())).thenReturn(1);
+
+    // when
+    final Duration nextCleanupInterval =
+        historyCleanupService.cleanupUsageMetricsHistory(PARTITION_ID, CLEANUP_DATE);
+
+    // then
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofDays(30));
+    verify(usageMetricWriter)
+        .cleanupMetrics(PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), 100);
+    verify(usageMetricTUWriter)
+        .cleanupMetrics(PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), 100);
   }
 
   @Test
@@ -235,6 +262,6 @@ class HistoryCleanupServiceTest {
         .isEqualTo(Duration.ofDays(5));
 
     assertThat(historyCleanupService.resolveBatchOperationTTL(BatchOperationType.ADD_VARIABLE))
-        .isEqualTo(Duration.ofDays(90)); // default history TTL
+        .isEqualTo(Duration.ofDays(30)); // default history TTL
   }
 }
