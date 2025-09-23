@@ -82,7 +82,7 @@ final class StandaloneBackupManagerIT {
       new TestStandaloneSchemaManager()
           .withProperty("camunda.data.secondary-storage.elasticsearch.username", ADMIN_USER)
           .withProperty("camunda.data.secondary-storage.elasticsearch.password", ADMIN_PASSWORD)
-          .withProperty("camunda.database.retention.enabled", "true");
+          .withProperty("camunda.data.secondary-storage.retention.enabled", true);
 
   // Configure the Camunda single application with restricted access to the Elasticsearch
   @TestZeebe(autoStart = false)
