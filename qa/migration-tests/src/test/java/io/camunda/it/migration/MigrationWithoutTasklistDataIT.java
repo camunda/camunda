@@ -14,8 +14,8 @@ import io.camunda.it.migration.util.CamundaMigrator;
 import io.camunda.it.migration.util.MigrationITExtension;
 import io.camunda.it.migration.util.MigrationTestUtils;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsEntity;
 import io.camunda.webapps.schema.entities.metrics.UsageMetricsTUEntity;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -71,7 +71,7 @@ public class MigrationWithoutTasklistDataIT {
                       .search(
                           req ->
                               req.size(100)
-                                  .index(migrator.indexFor(UsageMetricIndex.class).getAlias()),
+                                  .index(migrator.indexFor(UsageMetricTemplate.class).getAlias()),
                           UsageMetricsEntity.class);
               AssertionsForInterfaceTypes.assertThat(metrics.hits()).isNotEmpty();
               assertThat(metrics.hits().size()).isGreaterThanOrEqualTo(PROCESS_INSTANCE_COUNT);
@@ -81,7 +81,8 @@ public class MigrationWithoutTasklistDataIT {
         migrator
             .getSearchClient()
             .search(
-                req -> req.size(100).index(migrator.indexFor(UsageMetricTUIndex.class).getAlias()),
+                req ->
+                    req.size(100).index(migrator.indexFor(UsageMetricTUTemplate.class).getAlias()),
                 UsageMetricsTUEntity.class);
 
     AssertionsForInterfaceTypes.assertThat(metrics.hits()).isEmpty();

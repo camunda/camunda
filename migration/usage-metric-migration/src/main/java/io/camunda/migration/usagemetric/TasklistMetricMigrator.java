@@ -27,8 +27,8 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
-import io.camunda.webapps.schema.descriptors.index.UsageMetricTUIndex;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -99,7 +99,7 @@ public class TasklistMetricMigrator extends MetricMigrator {
       final Map<String, Long> hashedAssignees = hashAssignees(assignees);
       return client.reindex(
           indexDescriptors.get(TasklistMetricIndex.class).getFullQualifiedName(),
-          indexDescriptors.get(UsageMetricTUIndex.class).getFullQualifiedName(),
+          indexDescriptors.get(UsageMetricTUTemplate.class).getFullQualifiedName(),
           eventDateQuery(minEventTime),
           SCRIPT,
           Map.of(PARAMS_KEY, hashedAssignees));
