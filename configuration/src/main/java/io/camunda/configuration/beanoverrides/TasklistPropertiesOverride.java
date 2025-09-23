@@ -9,16 +9,21 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.Backup;
+import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.SslProperties;
 import io.camunda.tasklist.property.TasklistProperties;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -33,6 +38,7 @@ import org.springframework.context.annotation.PropertySource;
 @DependsOn("unifiedConfigurationHelper")
 public class TasklistPropertiesOverride {
 
+  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistPropertiesOverride.class);
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyTasklistProperties legacyTasklistProperties;
 
@@ -49,7 +55,7 @@ public class TasklistPropertiesOverride {
     final TasklistProperties override = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, override);
 
-    pouplateFromBackup(override);
+    populateFromBackup(override);
 
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
@@ -63,7 +69,7 @@ public class TasklistPropertiesOverride {
     return override;
   }
 
-  private void pouplateFromBackup(final TasklistProperties override) {
+  private void populateFromBackup(final TasklistProperties override) {
     final Backup backup =
         unifiedConfiguration.getCamunda().getData().getBackup().withTasklistBackupProperties();
     final BackupProperties backupProperties = override.getBackup();
@@ -83,6 +89,12 @@ public class TasklistPropertiesOverride {
         database.getElasticsearch().getSecurity(),
         override.getElasticsearch()::getSsl,
         override.getElasticsearch()::setSsl);
+
+    populateFromInterceptorPlugins(
+        database.getElasticsearch().getInterceptorPlugins(),
+        override.getElasticsearch()::getInterceptorPlugins,
+        override.getElasticsearch()::setInterceptorPlugins,
+        override.getDatabase());
   }
 
   private void populateFromOpensearch(
@@ -98,6 +110,12 @@ public class TasklistPropertiesOverride {
         database.getOpensearch().getSecurity(),
         override.getOpenSearch()::getSsl,
         override.getOpenSearch()::setSsl);
+
+    populateFromInterceptorPlugins(
+        database.getOpensearch().getInterceptorPlugins(),
+        override.getOpenSearch()::getInterceptorPlugins,
+        override.getOpenSearch()::setInterceptorPlugins,
+        override.getDatabase());
   }
 
   private void populateFromSecurity(
@@ -109,5 +127,29 @@ public class TasklistPropertiesOverride {
     sslProps.setVerifyHostname(security.isVerifyHostname());
     sslProps.setSelfSigned(security.isSelfSigned());
     setSsl.accept(sslProps);
+  }
+
+  private void populateFromInterceptorPlugins(
+      final List<InterceptorPlugin> interceptorPlugins,
+      final Supplier<List<PluginConfiguration>> getPluginConfiguration,
+      final Consumer<List<PluginConfiguration>> setPluginConfiguration,
+      final String databaseType) {
+
+    // Log common interceptor plugins warning instead of using UnifiedConfigurationHelper logging.
+    if (getPluginConfiguration.get() != null) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.data.secondary-storage."
+                  + databaseType.toLowerCase()
+                  + ".interceptor-plugins",
+              "camunda.tasklist." + databaseType.toLowerCase() + ".interceptorPlugins");
+      LOGGER.warn(warningMessage);
+    }
+
+    if (!interceptorPlugins.isEmpty()) {
+      setPluginConfiguration.accept(
+          interceptorPlugins.stream().map(InterceptorPlugin::toPluginConfiguration).toList());
+    }
   }
 }

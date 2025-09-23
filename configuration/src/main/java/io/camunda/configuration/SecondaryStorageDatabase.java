@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 public abstract class SecondaryStorageDatabase {
@@ -31,6 +33,9 @@ public abstract class SecondaryStorageDatabase {
 
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
+
+  /** Sets the interceptors */
+  private final List<InterceptorPlugin> interceptorPlugins = new ArrayList<>();
 
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -118,6 +123,12 @@ public abstract class SecondaryStorageDatabase {
     this.numberOfShards = numberOfShards;
   }
 
+  public List<InterceptorPlugin> getInterceptorPlugins() {
+    return interceptorPlugins;
+  }
+
+  public void setInterceptorPlugins(final List<InterceptorPlugin> interceptorPlugins) {}
+
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -174,4 +185,8 @@ public abstract class SecondaryStorageDatabase {
   }
 
   protected abstract String databaseName();
+
+  public String getDatabaseName() {
+    return databaseName();
+  }
 }
