@@ -70,8 +70,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
@@ -102,11 +100,8 @@ final class OpenSearchArchiverRepositoryIT {
   private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
-  void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
-    testClient.indices().delete(deleteRequest);
-
-    // delete all policies created during the tests
+  void afterEach() {
+    deleteTestIndices();
     deleteAllTestPolicies();
   }
 
@@ -207,15 +202,15 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "test"})
+  @ValueSource(booleans = {true, false})
   @DisabledIfSystemProperty(
       named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
-  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final boolean withPrefix) throws IOException {
     // given
-    final var indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    final var prefix = withPrefix ? indexPrefix : "";
+    resourceProvider = new TestExporterResourceProvider(prefix, true);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
@@ -993,6 +988,42 @@ final class OpenSearchArchiverRepositoryIT {
               AwsSdk2TransportOptions.builder()
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));
+    }
+  }
+
+  private void deleteTestIndices() {
+    // Delete only indices that were created by this test class. Criteria:
+    //  - start with dynamic indexPrefix (runtime & historical indices created via templates)
+    //  - start with zeebeIndexPrefix (simulated existing zeebe indices used in tests)
+    //  - start with ARCHIVER_IDX_PREFIX (ad‑hoc indices for generic operations tests)
+    final var indicesToDelete = new ArrayList<String>();
+    try {
+      indicesToDelete.addAll(
+          testClient
+              .indices()
+              .get(
+                  g ->
+                      g.index(indexPrefix + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
+                          .ignoreUnavailable(true)
+                          .allowNoIndices(true))
+              .result()
+              .keySet());
+    } catch (final Exception e) {
+      LOGGER.error("Error during retrieving indices", e);
+    }
+
+    if (indicesToDelete.isEmpty()) {
+      LOGGER.debug("No indices found to delete");
+      return;
+    }
+
+    for (final var index : indicesToDelete) {
+      try {
+        testClient.indices().delete(d -> d.index(index).ignoreUnavailable(true));
+        LOGGER.debug("Deleted test index: {}", index);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to delete index {}: {}", index, e.getMessage());
+      }
     }
   }
 
