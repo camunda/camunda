@@ -19,6 +19,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {activateJobToObtainAValidJobKey} from '../../../../utils/requestHelpers';
 
 test.describe('Job Error API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -41,19 +42,8 @@ test.describe('Job Error API Tests', () => {
   });
 
   test('Throw Error for Job - success', async ({request}) => {
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'someTask',
-        timeout: 10000,
-        maxJobsToActivate: 1,
-      },
-    });
-    await assertStatusCode(activateRes, 200);
-    const activateJson = await activateRes.json();
-    const jobKey = activateJson.jobs[0].jobKey;
+    const jobKey = await activateJobToObtainAValidJobKey(request, 'someTask');
 
-    // WHEN
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
       headers: jsonHeaders(),
       data: {
@@ -62,14 +52,12 @@ test.describe('Job Error API Tests', () => {
       },
     });
 
-    // THEN
     await assertStatusCode(errorRes, 204);
   });
 
   test('Throw Error for Job - not found', async ({request}) => {
-    const jobKey = 2251799813738612; // Assuming this job key does not exist
+    const jobKey = 2251799813738612;
 
-    // Now throw error for the job (use error API)
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
       headers: jsonHeaders(),
       data: {
@@ -77,7 +65,6 @@ test.describe('Job Error API Tests', () => {
         errorMessage: 'Simulated error',
       },
     });
-    console.log(errorRes);
     await assertNotFoundRequest(
       errorRes,
       `Command 'THROW_ERROR' rejected with code 'NOT_FOUND': Expected to throw an error for job with key '2251799813738612', but no such job was found`,
@@ -85,9 +72,8 @@ test.describe('Job Error API Tests', () => {
   });
 
   test('Throw Error for Job - invalid request', async ({request}) => {
-    const jobKey = 2251799813738612; // Assuming this job key does not exist
+    const jobKey = 2251799813738612;
 
-    // Now throw error for the job with invalid payload (wrong types)
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
       headers: jsonHeaders(),
       data: {
@@ -95,44 +81,44 @@ test.describe('Job Error API Tests', () => {
         errorMessage: 2, // wrong type
       },
     });
-    console.log(errorRes);
     await assertBadRequest(errorRes, '');
   });
 
   test('Throw Error for Job - conflict 409', async ({request}) => {
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'finalTask',
-        timeout: 1000,
-        maxJobsToActivate: 1,
-      },
-    });
-    expect(activateRes.status()).toBe(200);
-    const activateJson = await activateRes.json();
-    const jobKey = activateJson.jobs[0].jobKey;
+    const localState: Record<string, unknown> = {};
 
-    // Now throw error for the job (first time)
-    const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
-      headers: jsonHeaders(),
-      data: {
-        errorCode: 'SIMULATED',
-        errorMessage: 'Simulated failure',
-      },
+    await test.step('Activate job to obtain a valid job key', async () => {
+      localState['jobKey'] = await activateJobToObtainAValidJobKey(
+        request,
+        'finalTask',
+      );
     });
-    expect(errorRes.status()).toBe(204);
 
-    // Now throw error again for the same job (should conflict)
-    const errorAgainRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/error`),
-      {
+    await test.step('Throw error for the job (first time) and expect 204', async () => {
+      const jobKey = localState['jobKey'] as number;
+      const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
         headers: jsonHeaders(),
         data: {
           errorCode: 'SIMULATED',
           errorMessage: 'Simulated failure',
         },
-      },
-    );
-    expect(errorAgainRes.status()).toBe(409);
+      });
+      await assertStatusCode(errorRes, 204);
+    });
+
+    await test.step('Throw error again for the same job (should conflict 409)', async () => {
+      const jobKey = localState['jobKey'] as number;
+      const errorAgainRes = await request.post(
+        buildUrl(`/jobs/${jobKey}/error`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            errorCode: 'SIMULATED',
+            errorMessage: 'Simulated failure',
+          },
+        },
+      );
+      expect(errorAgainRes.status()).toBe(409);
+    });
   });
 });

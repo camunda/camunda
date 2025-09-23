@@ -52,11 +52,11 @@ export function assertRequiredFields(obj: unknown, required: string[]): void {
 export async function assertStatusCode(
   response: APIResponse,
   expectedStatusCode: number,
-  logmessage: string = 'Unexpected status code:',
+  logMessage: string = 'Unexpected status code:',
 ) {
   if (response.status() !== expectedStatusCode) {
     const body = await response.text().catch(() => '<no-body>');
-    console.error(logmessage, response.status(), body);
+    console.error(logMessage, response.status(), body);
   }
   expect(response.status()).toBe(expectedStatusCode);
 }

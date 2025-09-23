@@ -22,6 +22,7 @@ import {
 import {
   assertEqualsForKeys,
   assertRequiredFields,
+  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from './http';
@@ -685,4 +686,22 @@ export function roleDescriptionFromState(
   nth: number = 1,
 ): string {
   return state[`roleDescription${state[group]}${nth}`] as string;
+}
+
+export async function activateJobToObtainAValidJobKey(
+  request: APIRequestContext,
+  jobType: string,
+): Promise<number> {
+  const activateRes = await request.post(buildUrl('/jobs/activation'), {
+    headers: jsonHeaders(),
+    data: {
+      type: jobType,
+      timeout: 10000,
+      maxJobsToActivate: 1,
+    },
+  });
+  await assertStatusCode(activateRes, 200);
+  const activateJson = await activateRes.json();
+  expect(activateJson.jobs.length).toBe(1);
+  return activateJson.jobs[0].jobKey;
 }

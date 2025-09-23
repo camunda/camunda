@@ -19,6 +19,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {activateJobToObtainAValidJobKey} from '../../../../utils/requestHelpers';
 
 test.describe('Job Fail API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -41,18 +42,10 @@ test.describe('Job Fail API Tests', () => {
   });
 
   test('Fail Job - success', async ({request}) => {
-    // First activate a job to get a valid job key
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'anotherTask',
-        timeout: 10000,
-        maxJobsToActivate: 1,
-      },
-    });
-    await assertStatusCode(activateRes, 200);
-    const activateJson = await activateRes.json();
-    const jobKey = activateJson.jobs[0].jobKey;
+    const jobKey = await activateJobToObtainAValidJobKey(
+      request,
+      'anotherTask',
+    );
 
     // Now fail the job
     const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
@@ -67,9 +60,8 @@ test.describe('Job Fail API Tests', () => {
   });
 
   test('Fail Job - Job not found', async ({request}) => {
-    const jobKey = 2251799813738612; // Assuming this job key does not exist
+    const jobKey = 2251799813738612;
 
-    // Now fail the job
     const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
       headers: jsonHeaders(),
       data: {
@@ -77,7 +69,6 @@ test.describe('Job Fail API Tests', () => {
         errorMessage: 'Simulated failure',
       },
     });
-    console.log(failRes);
     await assertNotFoundRequest(
       failRes,
       `Command 'FAIL' rejected with code 'NOT_FOUND': Expected to fail job with key '${jobKey}', but no such job was found`,
@@ -85,9 +76,8 @@ test.describe('Job Fail API Tests', () => {
   });
 
   test('Fail Job - invalid request', async ({request}) => {
-    const jobKey = 2251799813738612; // Assuming this job key does not exist
+    const jobKey = 2251799813738612;
 
-    // Now fail the job
     const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
       headers: jsonHeaders(),
       data: {
@@ -95,45 +85,44 @@ test.describe('Job Fail API Tests', () => {
         errorMessage: 2, // wrong type
       },
     });
-    console.log(failRes);
     await assertBadRequest(failRes, '');
   });
 
   test('Fail Job - 409', async ({request}) => {
-    // First activate a job to get a valid job key
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'finalTask',
-        timeout: 1_000,
-        maxJobsToActivate: 1,
-      },
+    const localState: Record<string, unknown> = {};
+    await test.step('First activate a job', async () => {
+      localState['jobKey'] = await activateJobToObtainAValidJobKey(
+        request,
+        'finalTask',
+      );
     });
-    await assertStatusCode(activateRes, 200);
-    const json = await activateRes.json();
-    const jobKey = json.jobs[0].jobKey;
 
-    // Now throw error for the job (first time)
-    const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
-      headers: jsonHeaders(),
-      data: {
-        retries: 0,
-        errorMessage: 'Simulated failure',
-      },
-    });
-    await assertStatusCode(failRes, 204);
-
-    // Now fail again the job
-    const failAgainRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/failure`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          retries: 0,
-          errorMessage: 'Simulated failure',
+    await test.step('fail the job for the first time', async () => {
+      const failRes = await request.post(
+        buildUrl(`/jobs/${localState['jobKey']}/failure`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
         },
-      },
-    );
-    await assertStatusCode(failAgainRes, 409);
+      );
+      await assertStatusCode(failRes, 204);
+    });
+
+    await test.step('fail the job for the second time', async () => {
+      const failAgainRes = await request.post(
+        buildUrl(`/jobs/${localState['jobKey']}/failure`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
+        },
+      );
+      await assertStatusCode(failAgainRes, 409);
+    });
   });
 });

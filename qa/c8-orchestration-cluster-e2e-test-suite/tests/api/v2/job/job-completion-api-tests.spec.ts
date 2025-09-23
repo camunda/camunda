@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, test} from '@playwright/test';
+import {test} from '@playwright/test';
 import {
   cancelProcessInstance,
   createInstances,
@@ -19,6 +19,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {activateJobToObtainAValidJobKey} from '../../../../utils/requestHelpers';
 
 // Running the job tests on the same process instance leads to conflicts
 test.describe('Job Completion API Tests', () => {
@@ -40,18 +41,10 @@ test.describe('Job Completion API Tests', () => {
   });
 
   test('Complete Job - success', async ({request}) => {
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'jobApiTaskType',
-        timeout: 10000,
-        maxJobsToActivate: 1,
-      },
-    });
-    await assertStatusCode(activateRes, 200);
-    const activateJson = await activateRes.json();
-    expect(activateJson.jobs.length).toBe(1);
-    const jobKey = activateJson.jobs[0].jobKey;
+    const jobKey = await activateJobToObtainAValidJobKey(
+      request,
+      'jobApiTaskType',
+    );
 
     const completeRes = await request.post(
       buildUrl(`/jobs/${jobKey}/completion`),
@@ -67,71 +60,70 @@ test.describe('Job Completion API Tests', () => {
   test('Complete Job - not found', async ({request}) => {
     const jobKey = 2251799813738612; // Assuming this job key does not exist
 
-    const completeRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/completion`),
-      {
-        headers: jsonHeaders(),
-        data: {},
-      },
-    );
-    await assertNotFoundRequest(
-      completeRes,
-      `Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '${jobKey}', but no such job was found`,
-    );
+    await test.step('Send complete request for non-existing job', async () => {
+      const completeRes = await request.post(
+        buildUrl(`/jobs/${jobKey}/completion`),
+        {
+          headers: jsonHeaders(),
+          data: {},
+        },
+      );
+      await assertNotFoundRequest(
+        completeRes,
+        `Command 'COMPLETE' rejected with code 'NOT_FOUND': Expected to complete job with key '${jobKey}', but no such job was found`,
+      );
+    });
   });
 
   test('Complete Job - invalid request', async ({request}) => {
-    const jobKey = 2251799813738612; // Assuming this job key does not exist
+    const jobKey = 2251799813738612;
 
-    // Send an invalid payload to provoke a bad request
-    const completeRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/completion`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          unexpectedField: 123,
+    await test.step('Send invalid payload to provoke a bad request', async () => {
+      const completeRes = await request.post(
+        buildUrl(`/jobs/${jobKey}/completion`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            unexpectedField: 123,
+          },
         },
-      },
-    );
-    await assertBadRequest(completeRes, '');
+      );
+      await assertBadRequest(completeRes, '');
+    });
   });
 
   test('Complete Job - conflict 409', async ({request}) => {
-    // Activate to obtain jobKey
-    const activateRes = await request.post(buildUrl('/jobs/activation'), {
-      headers: jsonHeaders(),
-      data: {
-        type: 'jobApiTaskType',
-        timeout: 10000,
-        maxJobsToActivate: 1,
-      },
+    const localState: Record<string, unknown> = {};
+    await test.step('Activate a job to obtain a valid job key', async () => {
+      localState['jobKey'] = await activateJobToObtainAValidJobKey(
+        request,
+        'jobApiTaskType',
+      );
     });
-    await assertStatusCode(activateRes, 200);
-    const activateJson = await activateRes.json();
-    expect(activateJson.jobs.length).toBe(1);
-    const jobKey = activateJson.jobs[0].jobKey;
 
-    // First completion (should succeed)
-    const completeRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/failure`),
-      {
-        headers: jsonHeaders(),
-        data: {
-          retries: 0,
-          errorMessage: 'Simulated failure',
+    await test.step('First completion (should succeed)', async () => {
+      const completeRes = await request.post(
+        buildUrl(`/jobs/${localState['jobKey']}/failure`),
+        {
+          headers: jsonHeaders(),
+          data: {
+            retries: 0,
+            errorMessage: 'Simulated failure',
+          },
         },
-      },
-    );
-    await assertStatusCode(completeRes, 204);
+      );
+      await assertStatusCode(completeRes, 204);
+    });
 
-    // Second completion for the same job should conflict
-    const completeAgainRes = await request.post(
-      buildUrl(`/jobs/${jobKey}/completion`),
-      {
-        headers: jsonHeaders(),
-        data: {},
-      },
-    );
-    await assertStatusCode(completeAgainRes, 409);
+    await test.step('Second completion (should conflict)', async () => {
+      const completeAgainRes = await request.post(
+        buildUrl(`/jobs/${localState['jobKey']}/completion`),
+        {
+          headers: jsonHeaders(),
+          data: {},
+        },
+      );
+      await assertStatusCode(completeAgainRes, 409);
+    });
   });
 });
