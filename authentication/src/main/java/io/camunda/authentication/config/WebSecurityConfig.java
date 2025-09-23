@@ -847,7 +847,10 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, oidcProviderRepository)))
-                        .tokenEndpoint(tokenEndpointCustomizer);
+                        .tokenEndpoint(tokenEndpointCustomizer)
+                        .failureHandler(
+                            (httpServletRequest, httpServletResponse, exception) ->
+                                httpServletResponse.sendRedirect("/"));
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
