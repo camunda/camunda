@@ -700,9 +700,17 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
+    public AssertionJwkProvider assertionJwkProvider(
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository) {
-      return new OidcTokenEndpointCustomizer(oidcAuthenticationConfigurationRepository);
+      return new AssertionJwkProvider(oidcAuthenticationConfigurationRepository);
+    }
+
+    @Bean
+    public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
+        final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
+        final AssertionJwkProvider assertionJwkProvider) {
+      return new OidcTokenEndpointCustomizer(
+          oidcAuthenticationConfigurationRepository, assertionJwkProvider);
     }
 
     @Bean
