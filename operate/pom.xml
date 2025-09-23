@@ -11,7 +11,7 @@
   <parent>
     <groupId>org.springframework.boot</groupId>
     <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.3.13</version>
+    <version>3.4.9</version>
     <relativePath />
   </parent>
 
@@ -62,10 +62,6 @@
     <skipSurefire>false</skipSurefire>
     <failsafeForkCount>${env.LIMITS_CPU}</failsafeForkCount>
 
-    <!-- Version overrides from spring-boot parent pom, these should be re-reviewed anytime spring boot version is updated -->
-    <snakeyaml.version>2.2</snakeyaml.version>
-    <commons-lang3.version>3.18.0</commons-lang3.version>
-
     <!-- Library versions not provided by spring boot -->
     <version.zeebe>8.5.24</version.zeebe>
     <version.camunda>7.20.0</version.camunda>
@@ -96,7 +92,7 @@
     <version.elasticsearch>8.9.2</version.elasticsearch>
     <!-- the lucene version must be coupled with version.elasticsearch7 -->
     <version.lucene>8.11.3</version.lucene>
-    <version.error-prone>2.25.0</version.error-prone>
+    <version.error-prone>2.27.1</version.error-prone>
     <version.guava>33.0.0-jre</version.guava>
     <version.android-json>0.0.20131108.vaadin1</version.android-json>
     <version.hdr-histogram>2.1.12</version.hdr-histogram>
@@ -133,7 +129,6 @@
 
   <dependencyManagement>
     <dependencies>
-
 
       <!-- Operate Modules -->
       <dependency>
@@ -373,6 +368,13 @@
         <artifactId>parsson</artifactId>
         <version>${version.parsson}</version>
       </dependency>
+
+      <dependency>
+        <groupId>com.google.errorprone</groupId>
+        <artifactId>error_prone_annotations</artifactId>
+        <version>${version.error-prone}</version>
+      </dependency>
+
 
 
       <!-- Opensearch  -->
