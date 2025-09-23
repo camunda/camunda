@@ -102,7 +102,7 @@ public class BpmnExampleDataReaderImpl implements BpmnExampleDataReader {
                 () -> {
                   final String errorMessage =
                       String.format(
-                          "%s has no example data for the given element-id. Example data must have the "
+                          "%s has no example data. Example data must have the "
                               + "attribute name '%s' or else it won't be recognized.",
                           failureMessagePrefix, EXAMPLE_DATA_ATTRIBUTE_NAME);
                   return new BpmnExampleDataReadException(errorMessage);
