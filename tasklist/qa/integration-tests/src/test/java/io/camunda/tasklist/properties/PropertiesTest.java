@@ -12,27 +12,22 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
-import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.util.apps.nobeans.TestApplicationWithNoBeans;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ExtendWith(SpringExtension.class)
 @SpringBootTest(
     classes = {
       TestApplicationWithNoBeans.class,
       TasklistPropertiesOverride.class,
-      UnifiedConfiguration.class,
-      UnifiedConfigurationHelper.class
+      UnifiedConfiguration.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
-@ActiveProfiles("test-properties")
+@ActiveProfiles({"test-properties"})
 public class PropertiesTest {
 
   @Autowired private TasklistProperties tasklistProperties;
