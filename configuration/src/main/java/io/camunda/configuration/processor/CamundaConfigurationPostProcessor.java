@@ -30,16 +30,8 @@ import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.env.PropertySource;
 
 public class CamundaConfigurationPostProcessor implements EnvironmentPostProcessor {
-  private static final Set<ValueMapper> VALUE_MAPPERS =
-      Set.of(
-          new ValueMapper(
-              "camunda.operate.backup.incomplete-check-timeout-in-seconds",
-              "camunda.data.backup.incomplete-check-timeout",
-              s -> Duration.ofSeconds(Long.parseLong((String) s))),
-          new ValueMapper(
-              "camunda.rest.api-executor.keep-alive-seconds",
-              "camunda.api.rest.executor.keep-alive",
-              s -> Duration.ofSeconds(Long.parseLong((String) s))));
+  private static final Map<String, Function<Object, Object>> MAPPER_FUNCTIONS =
+      Map.of("secondsToDuration", s -> Duration.ofSeconds(Long.parseLong((String) s)));
   private final DeferredLog log;
 
   public CamundaConfigurationPostProcessor(final DeferredLogFactory deferredLogFactory) {
@@ -72,29 +64,23 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
       final String sourceName,
       final Map<String, Object> properties,
       final ConfigurableEnvironment environment) {
-    log.info(
+    log.debug(
         String.format(
             "Mapping property '%s' to '%s'", sourceName, String.join("', '", properties.keySet())));
-    final Map<String, Object> collect =
-        properties.entrySet().stream()
-            .map(e -> Map.entry(e.getKey(), findMapper(sourceName, e.getKey()).apply(e.getValue())))
-            .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     final Properties prop = new Properties();
-    prop.putAll(collect);
+    prop.putAll(properties);
     final PropertySource<?> propertySource = new PropertiesPropertySource(sourceName, prop);
     environment.getPropertySources().addFirst(propertySource);
   }
 
-  private Function<Object, Object> findMapper(
-      final String sourcePropertyName, final String targetPropertyName) {
-    return VALUE_MAPPERS.stream()
-        .filter(
-            valueMapper ->
-                valueMapper.sourcePropertyName().equals(sourcePropertyName)
-                    && valueMapper.targetPropertyName().equals(targetPropertyName))
-        .findFirst()
-        .map(ValueMapper::mapper)
-        .orElse(s -> s);
+  private Function<Object, Object> findMapper(final String mapperName) {
+    if (mapperName == null) {
+      return o -> o;
+    }
+    if (MAPPER_FUNCTIONS.containsKey(mapperName)) {
+      return MAPPER_FUNCTIONS.get(mapperName);
+    }
+    throw new UnifiedConfigurationException("Unknown mapper: " + mapperName);
   }
 
   private Stream<MappedPropertySource> detectPropertyValue(
@@ -122,22 +108,25 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
         throw new UnifiedConfigurationException(
             "The legacy properties " + validPropertyNames + " do not have matching values");
       }
-      final Set<String> legacyPropertiesWithValue =
-          findPropertiesWithValue(
-              validPropertyNames.stream().map(LegacyProperty::name).collect(Collectors.toSet()),
-              environment);
+      final Set<LegacyProperty> legacyPropertiesWithValue =
+          findPropertiesWithValue(validPropertyNames, environment);
       if (!legacyPropertiesWithValue.isEmpty()) {
         log.warn(
             String.format(
                 "Legacy properties %s found, setting to '%s'. Please update your setup to use the latest property",
-                legacyPropertiesWithValue, property.newProperty()));
-        return Stream.of(
-            new MappedPropertySource(
-                legacyPropertiesWithValue.iterator().next(),
-                Map.of(
-                    property.newProperty(),
-                    Objects.requireNonNull(
-                        environment.getProperty(legacyPropertiesWithValue.iterator().next())))));
+                legacyPropertiesWithValue.stream().map(LegacyProperty::name).toList(),
+                property.newProperty()));
+        return legacyPropertiesWithValue.stream()
+            .map(
+                legacyProperty ->
+                    new MappedPropertySource(
+                        legacyProperty.name(),
+                        Map.of(
+                            property.newProperty(),
+                            findMapper(legacyProperty.mapper())
+                                .apply(
+                                    Objects.requireNonNull(
+                                        environment.getProperty(legacyProperty.name()))))));
       }
     }
     log.debug(String.format("No property found for '%s'", property.newProperty()));
@@ -148,7 +137,7 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
       final ConfigurableEnvironment environment,
       final CamundaLegacyPropertiesMapping property,
       final Set<String> profiles) {
-    log.info(String.format("Processing Wildcard properties for '%s'", property.newProperty()));
+    log.debug(String.format("Processing Wildcard properties for '%s'", property.newProperty()));
     final Map<String, String> normalizedPropertyNames =
         environment.getPropertySources().stream()
             .filter(propertySource -> propertySource instanceof EnumerablePropertySource<?>)
@@ -188,7 +177,10 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
                                       normalize(
                                           composeNewPropertyName(p, np, property.newProperty()),
                                           true),
-                                      environment.getProperty(normalizedPropertyNames.get(np))))
+                                      findMapper(p.mapper())
+                                          .apply(
+                                              environment.getProperty(
+                                                  normalizedPropertyNames.get(np)))))
                           .collect(Collectors.toMap(Entry::getKey, Entry::getValue))));
     }
     return Stream.of();
@@ -208,7 +200,7 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
     final String newComposedPropertyName =
         normalizedPropertyName.replace(
             legacyPropertyNameWithoutWildcard, newPropertyNameWithoutWildcard);
-    log.info(
+    log.debug(
         String.format(
             "Transforming legacy property '%s' to '%s'",
             normalizedPropertyName, newComposedPropertyName));
@@ -250,9 +242,11 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
     }
   }
 
-  private Set<String> findPropertiesWithValue(
-      final Set<String> propertyNames, final ConfigurableEnvironment environment) {
-    return propertyNames.stream().filter(environment::containsProperty).collect(Collectors.toSet());
+  private Set<LegacyProperty> findPropertiesWithValue(
+      final Set<LegacyProperty> propertyNames, final ConfigurableEnvironment environment) {
+    return propertyNames.stream()
+        .filter(legacyProperty -> environment.containsProperty(legacyProperty.name()))
+        .collect(Collectors.toSet());
   }
 
   private boolean haveMatchingValues(
@@ -266,7 +260,4 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
   }
 
   private record MappedPropertySource(String sourceName, Map<String, Object> properties) {}
-
-  private record ValueMapper(
-      String sourcePropertyName, String targetPropertyName, Function<Object, Object> mapper) {}
 }
