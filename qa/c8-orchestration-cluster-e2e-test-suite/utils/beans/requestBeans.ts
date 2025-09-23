@@ -38,11 +38,7 @@ export const brokerResponseFields = [
   'partitions',
   'version',
 ];
-<<<<<<< HEAD
 export const partitionsResponseFields = ['partitionId', 'role', 'health'];
-=======
-export const partionsResponseFields = ['partitionId', 'role', 'health'];
->>>>>>> d3ce8df2 (test: implemented test cases for the cluster api endpoints)
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',

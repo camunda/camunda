@@ -9,21 +9,14 @@
 import {expect, test} from '@playwright/test';
 import {
   assertRequiredFields,
-<<<<<<< HEAD
   assertUnauthorizedRequest,
-=======
->>>>>>> d3ce8df2 (test: implemented test cases for the cluster api endpoints)
   buildUrl,
   defaultHeaders,
 } from '../../../utils/http';
 import {
   brokerResponseFields,
   clusterTopologyResponseFields,
-<<<<<<< HEAD
   partitionsResponseFields,
-=======
-  partionsResponseFields,
->>>>>>> d3ce8df2 (test: implemented test cases for the cluster api endpoints)
 } from '../../../utils/beans/requestBeans';
 
 test.describe('Cluster API Tests', () => {
@@ -39,27 +32,13 @@ test.describe('Cluster API Tests', () => {
     expect(result.brokers[0].partitions).toHaveLength(1);
     assertRequiredFields(
       result.brokers[0].partitions[0],
-<<<<<<< HEAD
       partitionsResponseFields,
-=======
-      partionsResponseFields,
->>>>>>> d3ce8df2 (test: implemented test cases for the cluster api endpoints)
     );
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {
     const res = await request.get(buildUrl('/topology'));
-<<<<<<< HEAD
     await assertUnauthorizedRequest(res);
-=======
-    expect(res.status()).toBe(401);
-    const result = await res.json();
-    expect(result.title).toBe('Unauthorized');
-    expect(result.detail).toBe(
-      'An Authentication object was not found in the SecurityContext',
-    );
-    expect(result.instance).toBe('/v2/topology');
->>>>>>> d3ce8df2 (test: implemented test cases for the cluster api endpoints)
   });
 
   test('Get Cluster Status', async ({request}) => {
