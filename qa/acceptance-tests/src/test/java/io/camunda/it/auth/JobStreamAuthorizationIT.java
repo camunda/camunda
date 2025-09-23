@@ -7,21 +7,15 @@
  */
 package io.camunda.it.auth;
 
-import static io.camunda.client.api.search.enums.PermissionType.CANCEL_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.CREATE;
-import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
-import static io.camunda.client.api.search.enums.PermissionType.UPDATE;
 import static io.camunda.client.api.search.enums.PermissionType.UPDATE_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
-import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
-import static io.camunda.client.api.search.enums.ResourceType.TENANT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.client.api.search.enums.JobState;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -54,53 +48,44 @@ public class JobStreamAuthorizationIT {
           .withAuthorizationsEnabled()
           .withAuthenticatedAccess();
 
+  private static CamundaClient adminClient;
+
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String PROCESS_ID_1 = "service_tasks_v1";
   private static final String PROCESS_ID_2 = "service_tasks_v2";
   private static final String JOB_TYPE = "taskA";
+  private static final String USER1_USERNAME = "user1";
+  private static final String USER2_USERNAME = "user2";
 
   private static final Set<Long> STARTED_PROCESS_INSTANCES = new HashSet<>();
 
   @UserDefinition
-  private static final TestUser ADMIN_USER =
-      new TestUser(
-          "admin",
-          "password",
-          List.of(
-              new Permissions(TENANT, CREATE, List.of("*")),
-              new Permissions(TENANT, UPDATE, List.of("*")),
-              new Permissions(RESOURCE, CREATE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, CANCEL_PROCESS_INSTANCE, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_DEFINITION, List.of("*")),
-              new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
-
-  @UserDefinition
-  private static final TestUser USER1_USER = new TestUser("user1", "password", List.of());
+  private static final TestUser USER1_USER =
+      new TestUser(USER1_USERNAME, USER1_USERNAME, List.of());
 
   @UserDefinition
   private static final TestUser USER2_USER =
       new TestUser(
-          "user2",
-          "password",
+          USER2_USERNAME,
+          USER2_USERNAME,
           List.of(
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of(PROCESS_ID_2)),
               new Permissions(PROCESS_DEFINITION, UPDATE_PROCESS_INSTANCE, List.of(PROCESS_ID_2))));
 
   @BeforeAll
-  static void setUp(@Authenticated("admin") final CamundaClient adminClient) {
+  static void setUp() {
     createTenant(adminClient, TENANT_A);
     createTenant(adminClient, TENANT_B);
 
-    assignUserToTenant(adminClient, "admin", TENANT_A);
-    assignUserToTenant(adminClient, "admin", TENANT_B);
+    assignUserToTenant(adminClient, "demo", TENANT_A);
+    assignUserToTenant(adminClient, "demo", TENANT_B);
     // user1 is only assigned to tenantA, but isn't authorized to handle any resources
-    assignUserToTenant(adminClient, "user1", TENANT_A);
+    assignUserToTenant(adminClient, USER1_USERNAME, TENANT_A);
     // user2 is assigned to tenantA AND tenant B BUT is authorized to handle only PROCESS_2 on
     // tenantB
-    assignUserToTenant(adminClient, "user2", TENANT_A);
-    assignUserToTenant(adminClient, "user2", TENANT_B);
+    assignUserToTenant(adminClient, USER2_USERNAME, TENANT_A);
+    assignUserToTenant(adminClient, USER2_USERNAME, TENANT_B);
 
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
@@ -115,7 +100,7 @@ public class JobStreamAuthorizationIT {
   }
 
   @AfterEach
-  void cleanUp(@Authenticated("admin") final CamundaClient adminClient) {
+  void cleanUp() {
     // cancel all process instances to ensure no jobs are left in the system
     STARTED_PROCESS_INSTANCES.forEach(
         processInstanceKey -> cancelProcessInstance(adminClient, processInstanceKey));
@@ -125,8 +110,7 @@ public class JobStreamAuthorizationIT {
   @Disabled("We don't have a broker mechanism to reject unauthorized job streams yet")
   @Test
   public void shouldNotOpenStreamWhenNotAssignedToAllTenants(
-      @Authenticated("admin") final CamundaClient adminClient,
-      @Authenticated("user1") final CamundaClient camundaClient) {
+      @Authenticated(USER1_USERNAME) final CamundaClient camundaClient) {
     // given
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
@@ -143,19 +127,19 @@ public class JobStreamAuthorizationIT {
     assertThatThrownBy(() -> command.send().cancel(true))
         // then
         .hasMessageContaining(
-            "Expected to find authorizations for all tenants, but found only for tenants: [tenantA]");
+            "Expected to find authorizations for all tenants, but found only for tenants: [%s]"
+                .formatted(TENANT_A));
   }
 
   @Test
   public void shouldReceiveNoJobsWhenNotAuthorized(
-      @Authenticated("admin") final CamundaClient adminClient,
-      @Authenticated("user1") final CamundaClient camundaClient) {
+      @Authenticated(USER1_USERNAME) final CamundaClient user1Client) {
     // given
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
-        camundaClient
+        user1Client
             .newStreamJobsCommand()
             .jobType(JOB_TYPE)
             .consumer(job -> jobCollector.add(job))
@@ -167,7 +151,7 @@ public class JobStreamAuthorizationIT {
     try {
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_A);
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_B);
-      waitForJobsBeingExported(adminClient, 2, PROCESS_ID_1);
+      waitForJobsBeingExported(adminClient, 2, JobState.CREATED, PROCESS_ID_1);
 
       // then
       // expect that  the camunda client of user1 receives no job
@@ -180,17 +164,21 @@ public class JobStreamAuthorizationIT {
 
   @Test
   public void shouldReceiveOnlyAuthorizedJobs(
-      @Authenticated("admin") final CamundaClient adminClient,
-      @Authenticated("user2") final CamundaClient camundaClient) {
+      @Authenticated(USER2_USERNAME) final CamundaClient user2Client) {
     // given
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
     // and a job stream created by the user1 client, with their authorizations
     final var stream =
-        camundaClient
+        user2Client
             .newStreamJobsCommand()
             .jobType(JOB_TYPE)
-            .consumer(job -> jobCollector.add(job))
+            .consumer(
+                job -> {
+                  user2Client.newCompleteCommand(job).send().join();
+                  jobCollector.add(job);
+                  STARTED_PROCESS_INSTANCES.remove(job.getProcessInstanceKey());
+                })
             .tenantIds(TENANT_A, TENANT_B)
             .send();
 
@@ -200,10 +188,11 @@ public class JobStreamAuthorizationIT {
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_A);
       startProcessInstance(adminClient, PROCESS_ID_1, TENANT_B);
       startProcessInstance(adminClient, PROCESS_ID_2, TENANT_B);
-      waitForJobsBeingExported(adminClient, 3, PROCESS_ID_1, PROCESS_ID_2);
 
       // then
-      // expect that  the camunda client of user2 receives one job
+      // expect that only one job is completed
+      waitForJobsBeingExported(adminClient, 1, JobState.COMPLETED, PROCESS_ID_1, PROCESS_ID_2);
+      // expect that  the camunda client of user2 receives and completes that one job
       assertThat(jobCollector).hasSize(1);
       assertThat(jobCollector.iterator().next().getTenantId()).isEqualTo(TENANT_B);
     } finally {
@@ -263,7 +252,10 @@ public class JobStreamAuthorizationIT {
   }
 
   private static void waitForJobsBeingExported(
-      final CamundaClient camundaClient, final int expectedJobs, final String... resourceIds) {
+      final CamundaClient camundaClient,
+      final int expectedJobs,
+      final JobState state,
+      final String... resourceIds) {
     Awaitility.await("should receive data from secondary storage")
         .atMost(Duration.ofMinutes(1))
         .ignoreExceptions() // Ignore exceptions and continue retrying
@@ -272,7 +264,9 @@ public class JobStreamAuthorizationIT {
               assertThat(
                       camundaClient
                           .newJobSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(resourceIds)))
+                          .filter(
+                              filter ->
+                                  filter.processDefinitionId(fn -> fn.in(resourceIds)).state(state))
                           .send()
                           .join()
                           .items())
