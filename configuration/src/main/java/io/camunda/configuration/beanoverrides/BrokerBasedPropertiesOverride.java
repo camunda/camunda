@@ -29,6 +29,7 @@ import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
+import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigManagerCfg;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
@@ -58,12 +59,14 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 
 @Configuration
+@EnableConfigurationProperties(LegacyBrokerBasedProperties.class)
 @Profile(value = {"broker", "restore"})
 public class BrokerBasedPropertiesOverride {
 
@@ -72,9 +75,13 @@ public class BrokerBasedPropertiesOverride {
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
 
   private final UnifiedConfiguration unifiedConfiguration;
+  private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
-  public BrokerBasedPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
+  public BrokerBasedPropertiesOverride(
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyBrokerBasedProperties legacyBrokerBasedProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
+    this.legacyBrokerBasedProperties = legacyBrokerBasedProperties;
   }
 
   @Bean
@@ -474,6 +481,7 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
+    override.setExporters(legacyBrokerBasedProperties.getExporters());
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
