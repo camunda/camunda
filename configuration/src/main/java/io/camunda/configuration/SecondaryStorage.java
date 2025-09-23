@@ -21,6 +21,15 @@ public class SecondaryStorage {
           "camunda.tasklist.database",
           "zeebe.broker.exporters.camundaexporter.args.connect.type");
 
+  /**
+   * When enabled, the default exporter camundaexporter is automatically configured using the
+   * secondary-storage properties. Manual configuration of camundaexporter is not necessary. If
+   * disabled, camundaexporter will not be configured automatically, but can still be enabled
+   * through manual configuration if required. Manual configuration of camundaexporter is generally
+   * not recommended, and can result in unexpected behavior if not configured correctly.
+   */
+  private boolean autoconfigureCamundaExporter = true;
+
   /** Determines the type of the secondary storage database. */
   private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
 
@@ -29,6 +38,14 @@ public class SecondaryStorage {
 
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   private Opensearch opensearch = new Opensearch();
+
+  public boolean getAutoconfigureCamundaExporter() {
+    return autoconfigureCamundaExporter;
+  }
+
+  public void setAutoconfigureCamundaExporter(final boolean autoconfigureCamundaExporter) {
+    this.autoconfigureCamundaExporter = autoconfigureCamundaExporter;
+  }
 
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
