@@ -39,11 +39,11 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   SearchEngineConnectPropertiesOverride.class,
 })
 public class SecondaryStorageRdbmsTest {
-  public static final String EXPECTED_FLUSH_INTERVAL = "PT0.5S";
-  public static final int EXPECTED_QUEUE_SIZE = 1000;
-  private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
-  private static final String EXPECTED_USERNAME = "testUsername";
-  private static final String EXPECTED_PASSWORD = "testPassword";
+  public static final String FLUSH_INTERVAL = "PT0.5S";
+  public static final int QUEUE_SIZE = 1000;
+  private static final String INDEX_PREFIX = "sample-index-prefix";
+  private static final String USERNAME = "testUsername";
+  private static final String PASSWORD = "testPassword";
 
   private static final String DEFAULT_HISTORY_TTL = "PT1M";
   private static final String DEFAULT_BATCH_OPERATION_HISTORY_TTL = "PT168H"; // 7 days
@@ -58,16 +58,19 @@ public class SecondaryStorageRdbmsTest {
   private static final String MAX_HISTORY_CLEANUP_INTERVAL = "PT1H";
   private static final int HISTORY_CLEANUP_BATCH_SIZE = 1000;
 
+  private static final int MAX_PROCESS_CACHE_SIZE = 4711;
+  private static final int MAX_BATCH_OPERATIONS_CACHE_SIZE = 4711;
+
   @Nested
   @TestPropertySource(
       properties = {
         "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.secondary-storage.rdbms.url=http://expected-url:4321",
-        "camunda.data.secondary-storage.rdbms.username=" + EXPECTED_USERNAME,
-        "camunda.data.secondary-storage.rdbms.password=" + EXPECTED_PASSWORD,
-        "camunda.data.secondary-storage.rdbms.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "camunda.data.secondary-storage.rdbms.flushInterval=" + EXPECTED_FLUSH_INTERVAL,
-        "camunda.data.secondary-storage.rdbms.queueSize=" + EXPECTED_QUEUE_SIZE,
+        "camunda.data.secondary-storage.rdbms.username=" + USERNAME,
+        "camunda.data.secondary-storage.rdbms.password=" + PASSWORD,
+        "camunda.data.secondary-storage.rdbms.index-prefix=" + INDEX_PREFIX,
+        "camunda.data.secondary-storage.rdbms.flushInterval=" + FLUSH_INTERVAL,
+        "camunda.data.secondary-storage.rdbms.queueSize=" + QUEUE_SIZE,
         "camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL=" + DEFAULT_HISTORY_TTL,
         "camunda.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL="
             + DEFAULT_BATCH_OPERATION_HISTORY_TTL,
@@ -85,6 +88,11 @@ public class SecondaryStorageRdbmsTest {
             + MAX_HISTORY_CLEANUP_INTERVAL,
         "camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize="
             + HISTORY_CLEANUP_BATCH_SIZE,
+        "camunda.data.secondary-storage.rdbms.processCache.maxSize=" + MAX_PROCESS_CACHE_SIZE,
+        "camunda.data.secondary-storage.rdbms.batchOperationCache.maxSize="
+            + MAX_BATCH_OPERATIONS_CACHE_SIZE,
+        "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=true",
+        "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -115,8 +123,8 @@ public class SecondaryStorageRdbmsTest {
           UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(args);
 
       assertThat(exporterConfiguration.getFlushInterval())
-          .isEqualTo(Duration.parse(EXPECTED_FLUSH_INTERVAL));
-      assertThat(exporterConfiguration.getQueueSize()).isEqualTo(EXPECTED_QUEUE_SIZE);
+          .isEqualTo(Duration.parse(FLUSH_INTERVAL));
+      assertThat(exporterConfiguration.getQueueSize()).isEqualTo(QUEUE_SIZE);
       assertThat(exporterConfiguration.getHistory().getDefaultHistoryTTL())
           .isEqualTo(Duration.parse(DEFAULT_HISTORY_TTL));
       assertThat(exporterConfiguration.getHistory().getDefaultHistoryTTL())
@@ -142,13 +150,27 @@ public class SecondaryStorageRdbmsTest {
           .isEqualTo(Duration.parse(MAX_HISTORY_CLEANUP_INTERVAL));
       assertThat(exporterConfiguration.getHistory().getHistoryCleanupBatchSize())
           .isEqualTo(HISTORY_CLEANUP_BATCH_SIZE);
+
+      if (exporterConfiguration.getProcessCache() != null) {
+        assertThat(exporterConfiguration.getProcessCache().getMaxSize())
+            .isEqualTo(MAX_PROCESS_CACHE_SIZE);
+      }
+
+      if (exporterConfiguration.getBatchOperationCache() != null) {
+        assertThat(exporterConfiguration.getBatchOperationCache().getMaxSize())
+            .isEqualTo(MAX_BATCH_OPERATIONS_CACHE_SIZE);
+      }
+
+      assertThat(exporterConfiguration.isExportBatchOperationItemsOnCreation()).isTrue();
+
+      assertThat(exporterConfiguration.getBatchOperationItemInsertBlockSize()).isEqualTo(1234);
     }
 
     @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getTypeEnum()).isEqualTo(DatabaseType.RDBMS);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
-      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(INDEX_PREFIX);
     }
   }
 
@@ -167,9 +189,9 @@ public class SecondaryStorageRdbmsTest {
 
     @Test
     void testSecondaryStorageExporterCanWorkWithoutArgs() {
-      final ExporterCfg camundaExporter = brokerBasedProperties.getRdbmsExporter();
-      assertThat(camundaExporter).isNotNull();
-      final Map<String, Object> args = camundaExporter.getArgs();
+      final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
+      assertThat(exporter).isNotNull();
+      final Map<String, Object> args = exporter.getArgs();
       assertThat(args).isNull();
     }
   }
