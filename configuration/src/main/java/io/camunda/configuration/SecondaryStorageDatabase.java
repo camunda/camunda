@@ -13,22 +13,18 @@ import java.util.Set;
 public abstract class SecondaryStorageDatabase {
 
   /** Endpoint for the database configured as secondary storage. */
-  private String url = "http://localhost:9200";
-
-  /** Name of the cluster */
-  private String clusterName = databaseName().toLowerCase();
-
-  private Security security = new Security(databaseName());
+  protected String url = "http://localhost:9200";
 
   /** Username for the database configured as secondary storage. */
-  private String username = "";
+  protected String username = "";
 
   /** Password for the database configured as secondary storage. */
-  private String password = "";
-
+  protected String password = "";
   /** Prefix to apply to the indexes. */
-  private String indexPrefix = "";
-
+  protected String indexPrefix = "";
+  /** Name of the cluster */
+  private String clusterName = databaseName().toLowerCase();
+  private Security security = new Security(databaseName());
   /** How many shards Elasticsearch uses for all Tasklist indices. */
   private int numberOfShards = 1;
 
