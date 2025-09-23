@@ -10,6 +10,26 @@ package io.camunda.configuration;
 public class Rdbms extends SecondaryStorageDatabase {
 
   @Override
+  public String getUrl() {
+    return url;
+  }
+
+  @Override
+  public String getUsername() {
+    return username;
+  }
+
+  @Override
+  public String getPassword() {
+    return password;
+  }
+
+  @Override
+  public String getIndexPrefix() {
+    return indexPrefix;
+  }
+
+  @Override
   protected String databaseName() {
     return "rdbms";
   }
