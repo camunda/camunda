@@ -105,7 +105,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.electionTimeout=20s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=10s",
+        "zeebe.broker.cluster.raft.flush.delayTime=10s",
         "zeebe.broker.experimental.maxAppendsPerFollower=8",
         "zeebe.broker.experimental.maxAppendBatchSize=96",
         "zeebe.broker.experimental.raft.requestTimeout=10s",
