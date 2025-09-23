@@ -254,7 +254,6 @@ test.describe('Identity User Flows', () => {
     operateHomePage,
     tasklistHeader,
   }) => {
-    test.slow();
     const testData = createTestData({
       group: true,
       user: true,
