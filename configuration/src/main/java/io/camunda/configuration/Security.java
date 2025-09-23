@@ -9,8 +9,6 @@ package io.camunda.configuration;
 
 public class Security {
 
-  private final String databaseName;
-
   /** Enable security */
   private boolean enabled = false;
 
@@ -22,10 +20,6 @@ public class Security {
 
   /** Certificate was self-signed */
   private boolean selfSigned = false;
-
-  public Security(final String databaseName) {
-    this.databaseName = databaseName.toLowerCase();
-  }
 
   public boolean isEnabled() {
     return enabled;

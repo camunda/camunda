@@ -18,7 +18,7 @@ public abstract class SecondaryStorageDatabase {
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
-  @NestedConfigurationProperty private Security security = new Security(databaseName());
+  @NestedConfigurationProperty private Security security = new Security();
 
   @NestedConfigurationProperty private History history = new History(databaseName());
 
