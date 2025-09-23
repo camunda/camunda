@@ -163,7 +163,7 @@ public class CreateAuthorizationTest {
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.NOT_FOUND)
         .hasRejectionReason(
-            "Expected to create or update authorization with ownerId '%s', but a mapping rule with this ID does not exist."
+            "Expected to create or update authorization with ownerId or resourceId '%s', but a mapping rule with this ID does not exist."
                 .formatted(nonexistentMappingId));
   }
 }
