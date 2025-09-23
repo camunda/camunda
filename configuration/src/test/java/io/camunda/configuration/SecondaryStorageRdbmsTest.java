@@ -76,7 +76,7 @@ public class SecondaryStorageRdbmsTest {
     }
 
     @Test
-    void testCamundaDataSecondaryStorageCamundaExporterProperties() {
+    void testCamundaDataSecondaryStorageRdbmsExporterProperties() {
       final ExporterCfg camundaExporter = brokerBasedProperties.getRdbmsExporter();
       assertThat(camundaExporter).isNotNull();
       final Map<String, Object> args = camundaExporter.getArgs();
@@ -104,20 +104,12 @@ public class SecondaryStorageRdbmsTest {
         "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter"
       })
   class ExporterTestWithoutArgs {
-    final OperateProperties operateProperties;
-    final TasklistProperties tasklistProperties;
     final BrokerBasedProperties brokerBasedProperties;
-    final SearchEngineConnectProperties searchEngineConnectProperties;
 
     ExporterTestWithoutArgs(
-        @Autowired final OperateProperties operateProperties,
-        @Autowired final TasklistProperties tasklistProperties,
         @Autowired final BrokerBasedProperties brokerBasedProperties,
         @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
-      this.operateProperties = operateProperties;
-      this.tasklistProperties = tasklistProperties;
       this.brokerBasedProperties = brokerBasedProperties;
-      this.searchEngineConnectProperties = searchEngineConnectProperties;
     }
 
     @Test
