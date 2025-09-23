@@ -53,7 +53,6 @@ public final class FeatureFlags {
   private boolean enableMessageTTLCheckerAsync;
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
-  private boolean enableIdentitySetup;
   private boolean enableMessageBodyOnExpired;
 
   public FeatureFlags(
@@ -62,7 +61,6 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final boolean enableIdentitySetup,
       final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
@@ -70,7 +68,6 @@ public final class FeatureFlags {
     this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
-    this.enableIdentitySetup = enableIdentitySetup;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
@@ -81,7 +78,6 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_IDENTITY_SETUP,
         ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
@@ -98,7 +94,6 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        false, /* ENABLE_IDENTITY_SETUP */
         false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
@@ -121,10 +116,6 @@ public final class FeatureFlags {
 
   public boolean enableStraightThroughProcessingLoopDetector() {
     return enableStraightThroughProcessingLoopDetector;
-  }
-
-  public boolean enableIdentitySetup() {
-    return enableIdentitySetup;
   }
 
   public boolean enableMessageBodyOnExpired() {
@@ -150,10 +141,6 @@ public final class FeatureFlags {
   public void setEnableStraightThroughProcessingLoopDetector(
       final boolean enableStraightThroughProcessingLoopDetector) {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
-  }
-
-  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
-    this.enableIdentitySetup = enableIdentitySetup;
   }
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
