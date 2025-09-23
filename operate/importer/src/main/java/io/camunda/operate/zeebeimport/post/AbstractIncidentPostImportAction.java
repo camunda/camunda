@@ -9,6 +9,7 @@ package io.camunda.operate.zeebeimport.post;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 
+import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -17,6 +18,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import io.micrometer.core.instrument.Gauge;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -42,12 +44,32 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
   @Autowired protected OperateProperties operateProperties;
 
   @Autowired protected ImportPositionHolder importPositionHolder;
+
+  @Autowired protected Metrics metrics;
+
   protected ImportPositionEntity lastProcessedPosition;
   private final BackoffIdleStrategy errorStrategy;
+  private volatile long lastKnownQueueSize = 0;
 
   public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
     errorStrategy = new BackoffIdleStrategy(BACKOFF, 1.2f, 10_000);
+  }
+
+  protected void initializeMetrics() {
+    if (metrics != null) {
+      final var metricDoc = PostImporterMetricsDoc.PostImporterQueueSize.NAME;
+      final var description = PostImporterMetricsDoc.PostImporterQueueSize.DESCRIPTION;
+
+      Gauge.builder(metricDoc, () -> lastKnownQueueSize)
+          .description(description)
+          .tag(Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
+          .register(metrics.getMeterRegistry());
+    }
+  }
+
+  protected void updateQueueSizeMetric(final long queueSize) {
+    lastKnownQueueSize = queueSize;
   }
 
   @Override
