@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       monorepo_release:
-        description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1)"
+        description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1, 8.8.0-alpha8)"
         required: true
         type: string
 
@@ -30,9 +30,9 @@ jobs:
           echo "Release version: $release_version"
           echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
 
-          # Validate version format (x.y.z)
-          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Error: Invalid release version format. Expected format: x.y.z (e.g., 8.8.0)"
+          # Validate version format (x.y.z or x.y.z-suffix)
+          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Error: Invalid release version format. Expected format: x.y.z or x.y.z-suffix (e.g., 8.8.0, 8.8.0-alpha8)"
             exit 1
           fi
 
