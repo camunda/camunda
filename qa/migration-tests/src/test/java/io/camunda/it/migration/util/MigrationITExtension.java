@@ -65,6 +65,7 @@ public class MigrationITExtension
   private BiConsumer<DatabaseType, CamundaMigrator> beforeUpgradeConsumer = null;
   private Consumer<Map<String, Object>> exporterArgsOverride = null;
   private Profile[] postUpdateProfiles;
+  private boolean authenticationEnabled = true;
 
   public MigrationITExtension() {
     final String property = System.getProperty(PROP_CAMUNDA_IT_DATABASE_TYPE);
@@ -146,6 +147,11 @@ public class MigrationITExtension
     return this;
   }
 
+  public MigrationITExtension withAuthenticationDisabled() {
+    authenticationEnabled = false;
+    return this;
+  }
+
   public String getDatabaseUrl() {
     return databaseUrl;
   }
@@ -165,9 +171,8 @@ public class MigrationITExtension
     if (beforeUpgradeConsumer != null && !areImportersDisabled()) {
       awaitImportersFlushed();
     }
-    migrator.update(envOverrides, exporterArgsOverride, postUpdateProfiles);
+    migrator.update(envOverrides, exporterArgsOverride, authenticationEnabled, postUpdateProfiles);
     awaitExporterReadiness();
-    awaitDemoUserIsPresent();
     awaitImportersFinished();
 
     if (shouldWaitForMigrations()) {
@@ -181,13 +186,6 @@ public class MigrationITExtension
         && (List.of(postUpdateProfiles).contains(Profile.PROCESS_MIGRATION)
             || List.of(postUpdateProfiles).contains(Profile.USAGE_METRIC_MIGRATION)
             || List.of(postUpdateProfiles).contains(Profile.TASK_MIGRATION));
-  }
-
-  private void awaitDemoUserIsPresent() {
-    Awaitility.await("Await Demo user is present")
-        .timeout(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofSeconds(1))
-        .until(() -> migrationDatabaseChecks.checkDemoUserIsPresent());
   }
 
   private boolean isNestedClass(final Class<?> currentClass) {
