@@ -15,6 +15,13 @@ public class Rdbms extends SecondaryStorageDatabase {
 
   private History history;
 
+  private Cache processCache;
+
+  private Cache batchOperationCache;
+
+  private boolean exportBatchOperationItemsOnCreation;
+  private int batchOperationItemInsertBlockSize;
+
   @Override
   public String getUrl() {
     return url;
@@ -62,6 +69,39 @@ public class Rdbms extends SecondaryStorageDatabase {
 
   public void setHistory(final History history) {
     this.history = history;
+  }
+
+  public Cache getProcessCache() {
+    return processCache;
+  }
+
+  public void setProcessCache(final Cache processCache) {
+    this.processCache = processCache;
+  }
+
+  public Cache getBatchOperationCache() {
+    return batchOperationCache;
+  }
+
+  public void setBatchOperationCache(final Cache batchOperationCache) {
+    this.batchOperationCache = batchOperationCache;
+  }
+
+  public boolean isExportBatchOperationItemsOnCreation() {
+    return exportBatchOperationItemsOnCreation;
+  }
+
+  public void setExportBatchOperationItemsOnCreation(
+      final boolean exportBatchOperationItemsOnCreation) {
+    this.exportBatchOperationItemsOnCreation = exportBatchOperationItemsOnCreation;
+  }
+
+  public int getBatchOperationItemInsertBlockSize() {
+    return batchOperationItemInsertBlockSize;
+  }
+
+  public void setBatchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
+    this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
   }
 
   public static class History {
@@ -152,6 +192,18 @@ public class Rdbms extends SecondaryStorageDatabase {
 
     public void setDefaultHistoryTTL(final String defaultHistoryTTL) {
       this.defaultHistoryTTL = defaultHistoryTTL;
+    }
+  }
+
+  public static class Cache {
+    private int maxSize;
+
+    public int getMaxSize() {
+      return maxSize;
+    }
+
+    public void setMaxSize(final int maxSize) {
+      this.maxSize = maxSize;
     }
   }
 }
