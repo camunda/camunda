@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
@@ -43,13 +44,13 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final SecurityConfiguration securityConfig;
-  private final FeatureFlags featureFlags;
+  private final boolean enableIdentitySetup;
   private final PasswordEncoder passwordEncoder;
 
   public IdentitySetupInitializer(
-      final SecurityConfiguration securityConfig, final FeatureFlags featureFlags) {
+      final SecurityConfiguration securityConfig, final boolean enableIdentitySetup) {
     this.securityConfig = securityConfig;
-    this.featureFlags = featureFlags;
+    this.enableIdentitySetup = enableIdentitySetup;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -57,7 +58,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // We can disable identity setup by disabling the feature flag. This is useful to prevent
     // interference in our engine tests, as this setup will write "unexpected" commands/events
-    if (!featureFlags.enableIdentitySetup()) {
+    if (!enableIdentitySetup) {
       return;
     }
 

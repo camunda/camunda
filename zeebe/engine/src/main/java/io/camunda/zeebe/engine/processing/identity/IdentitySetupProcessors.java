@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.processing.identity;
 
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.user.IdentitySetupInitializer;
@@ -22,12 +23,12 @@ public final class IdentitySetupProcessors {
       final TypedRecordProcessors typedRecordProcessors,
       final Writers writers,
       final SecurityConfiguration securityConfig,
-      final FeatureFlags featureFlags) {
+      final EngineConfiguration config) {
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,
             IdentitySetupIntent.INITIALIZE,
             new IdentitySetupInitializeProcessor(writers, keyGenerator))
-        .withListener(new IdentitySetupInitializer(securityConfig, featureFlags));
+        .withListener(new IdentitySetupInitializer(securityConfig, config.isEnableIdentitySetup()));
   }
 }

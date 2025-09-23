@@ -48,6 +48,7 @@ public final class EngineConfiguration {
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
+  public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -81,6 +82,8 @@ public final class EngineConfiguration {
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+
+  private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -296,6 +299,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
     this.commandDistributionPaused = commandDistributionPaused;
+    return this;
+  }
+
+  public boolean isEnableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public EngineConfiguration setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
     return this;
   }
 }
