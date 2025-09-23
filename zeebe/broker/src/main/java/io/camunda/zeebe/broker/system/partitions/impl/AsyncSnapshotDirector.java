@@ -220,7 +220,17 @@ public final class AsyncSnapshotDirector extends Actor
               } else {
                 inProgressSnapshot.lowerBoundSnapshotPosition =
                     position == StreamProcessor.UNSET_POSITION ? 0L : position;
+<<<<<<< HEAD
                 snapshot(inProgressSnapshot).onComplete(snapshotFuture);
+=======
+                if (inProgressSnapshot.lowerBoundSnapshotPosition == 0 && !forceSnapshot) {
+                  LOG.debug(
+                      "We will skip taking this snapshot, because we haven't processed anything yet.");
+                  snapshotFuture.complete(null);
+                  return;
+                }
+                snapshot(inProgressSnapshot, forceSnapshot).onComplete(snapshotFuture);
+>>>>>>> fe677f01 (fix: skip snapshot when nothing processed and not forced)
               }
             });
 
