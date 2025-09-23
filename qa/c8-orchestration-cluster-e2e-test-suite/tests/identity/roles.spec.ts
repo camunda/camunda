@@ -77,7 +77,6 @@ test.describe('Roles functionalities', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
   test.skip('User inherits permissions through role assignment', async ({
     page,
     identityRolesPage,
@@ -192,7 +191,6 @@ test.describe('Roles functionalities', () => {
     });
   });
 
-  // Skipped due to bug #38094: https://github.com/camunda/camunda/issues/38094
   test.skip('As an Admin user I can unassign user from a role', async ({
     page,
     identityRolesPage,
