@@ -107,6 +107,7 @@ public class OpensearchExporterConfiguration {
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
       case ASYNC_REQUEST -> index.asyncRequest;
       case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
+      case TENANT -> index.tenant;
       default -> false;
     };
   }
@@ -128,6 +129,7 @@ public class OpensearchExporterConfiguration {
       case PROCESS_INSTANCE -> index.processInstance;
       case USER_TASK -> index.userTask;
       case JOB -> index.job;
+      case TENANT -> index.tenant;
       default -> false;
     };
   }
@@ -201,7 +203,7 @@ public class OpensearchExporterConfiguration {
     public boolean compensationSubscription = true;
     public boolean messageCorrelation = true;
     public boolean user = true;
-
+    public boolean tenant = true;
     public boolean authorization = true;
 
     public boolean runtimeInstruction = true;
@@ -330,6 +332,8 @@ public class OpensearchExporterConfiguration {
           + messageCorrelation
           + ", user="
           + user
+          + ", tenant="
+          + tenant
           + ", authorization="
           + authorization
           + ", asyncRequest="
