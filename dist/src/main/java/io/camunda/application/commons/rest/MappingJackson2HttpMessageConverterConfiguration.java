@@ -8,10 +8,11 @@
 package io.camunda.application.commons.rest;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.gateway.rest.ConditionalOnRestGatewayEnabled;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Lazy;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
@@ -27,18 +28,20 @@ public class MappingJackson2HttpMessageConverterConfiguration {
 
   @Bean
   @Order(1)
+  @ConditionalOnRestGatewayEnabled
   public MappingJackson2HttpMessageConverter gatewayRestMappingJackson2HttpMessageConverter(
-      @Lazy @Qualifier("gatewayRestObjectMapper") final ObjectMapper objectMapper) {
+      @Qualifier("gatewayRestObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
-        new PackageSpecificJackson2HttpMessageConverter("io.camunda.zeebe");
+        new PackageSpecificJackson2HttpMessageConverter("io.camunda.zeebe.gateway.protocol.rest");
     messageConverter.setObjectMapper(objectMapper);
     return messageConverter;
   }
 
   @Bean
   @Order(2)
+  @Profile("operate")
   public MappingJackson2HttpMessageConverter operateV1MappingJackson2HttpMessageConverter(
-      @Lazy @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
         new PackageSpecificJackson2HttpMessageConverter("io.camunda.operate");
     messageConverter.setObjectMapper(objectMapper);
@@ -47,8 +50,9 @@ public class MappingJackson2HttpMessageConverterConfiguration {
 
   @Bean
   @Order(3)
+  @Profile("tasklist")
   public MappingJackson2HttpMessageConverter tasklistV1MappingJackson2HttpMessageConverter(
-      @Lazy @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper) {
+      @Qualifier("tasklistObjectMapper") final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
         new PackageSpecificJackson2HttpMessageConverter("io.camunda.tasklist");
     messageConverter.setObjectMapper(objectMapper);
