@@ -24,24 +24,25 @@ test.describe.parallel('Job Completion API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
-    await deploy(['./resources/processWithThreeParallelTasks.bpmn']);
-    const processInstance = await createInstances(
-      'processWithThreeParallelTasks',
-      1,
-      1,
-    );
+    await deploy(['./resources/job_api_process.bpmn']);
+  });
+
+  test.beforeEach(async () => {
+    const processInstance = await createInstances('jobApiProcess', 1, 1);
     state['processInstanceKey'] = processInstance[0].processInstanceKey;
   });
 
-  test.afterAll(async () => {
-    await cancelProcessInstance(state['processInstanceKey'] as string);
+  test.afterEach(async () => {
+    if (!state['completed']) {
+      await cancelProcessInstance(state['processInstanceKey'] as string);
+    }
   });
 
   test('Complete Job - success', async ({request}) => {
     const activateRes = await request.post(buildUrl('/jobs/activation'), {
       headers: jsonHeaders(),
       data: {
-        type: 'anotherTask',
+        type: 'jobApiTaskType',
         timeout: 10000,
         maxJobsToActivate: 1,
       },
@@ -50,7 +51,6 @@ test.describe.parallel('Job Completion API Tests', () => {
     const activateJson = await activateRes.json();
     const jobKey = activateJson.jobs[0].jobKey;
 
-    // Complete the job
     const completeRes = await request.post(
       buildUrl(`/jobs/${jobKey}/completion`),
       {
@@ -59,6 +59,7 @@ test.describe.parallel('Job Completion API Tests', () => {
       },
     );
     await assertStatusCode(completeRes, 204);
+    state['completed'] = true;
   });
 
   test('Complete Job - not found', async ({request}) => {
@@ -98,8 +99,8 @@ test.describe.parallel('Job Completion API Tests', () => {
     const activateRes = await request.post(buildUrl('/jobs/activation'), {
       headers: jsonHeaders(),
       data: {
-        type: 'finalTask',
-        timeout: 1000,
+        type: 'jobApiTaskType',
+        timeout: 10000,
         maxJobsToActivate: 1,
       },
     });
