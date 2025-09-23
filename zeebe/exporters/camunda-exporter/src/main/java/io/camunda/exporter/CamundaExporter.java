@@ -120,22 +120,28 @@ public class CamundaExporter implements Exporter {
   public void open(final Controller controller) {
     LOG.info("Opening Exporter on partition {}", partitionId);
     this.controller = controller;
-    setupExporterResources();
-    searchEngineClient = clientAdapter.getSearchEngineClient();
-    try (final var schemaManager = createSchemaManager()) {
+    try {
+      setupExporterResources();
+      searchEngineClient = clientAdapter.getSearchEngineClient();
 
-      if (!schemaManager.isSchemaReadyForUse()) {
-        throw new IllegalStateException("Schema is not ready for use");
+      try (final var schemaManager = createSchemaManager()) {
+        if (!schemaManager.isSchemaReadyForUse()) {
+          throw new ExporterException("Schema is not ready for use");
+        }
       }
+
+      writer = createBatchWriter();
+
+      checkImportersCompletedAndReschedule();
+      controller.readMetadata().ifPresent(metadata::deserialize);
+      taskManager.start();
+
+      LOG.info("Exporter opened");
+    } catch (final Exception e) {
+      searchEngineClient.close();
+      close();
+      throw e;
     }
-
-    writer = createBatchWriter();
-
-    checkImportersCompletedAndReschedule();
-    controller.readMetadata().ifPresent(metadata::deserialize);
-    taskManager.start();
-
-    LOG.info("Exporter opened");
   }
 
   @Override

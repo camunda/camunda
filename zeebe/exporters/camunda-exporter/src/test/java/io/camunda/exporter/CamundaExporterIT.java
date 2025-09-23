@@ -23,6 +23,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -428,6 +429,57 @@ final class CamundaExporterIT {
       assertThat(clientAdapter.get(entityId, handler.getIndexName(), handler.getEntityType()))
           .isNull();
     }
+  }
+
+  @TestTemplate
+  void shouldFailToOpenWhenSchemaMissingThenOpenAfterSchemaCreationAndExport(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // Do not create schema yet
+    final var exporter = spy(new CamundaExporter());
+    final var context = getContextFromConfig(config);
+    exporter.configure(context);
+
+    // Reset the spy interactions to only capture interactions during open
+    reset(exporter);
+
+    // First open should fail because schema is not yet created
+    final var firstController = new ExporterTestController();
+    assertThatThrownBy(() -> exporter.open(firstController))
+        .isInstanceOf(ExporterException.class)
+        .hasMessage("Schema is not ready for use");
+
+    // Exporter should have closed its resources in the failure path
+    verify(exporter, times(1)).close();
+
+    // Create schema now
+    createSchemas(config);
+
+    // Second open succeeds
+    final var secondController = new ExporterTestController();
+    assertThatNoException().isThrownBy(() -> exporter.open(secondController));
+
+    // Export a record
+    final var record =
+        factory.generateRecord(
+            ValueType.USER,
+            r -> r.withBrokerVersion("8.8.0").withTimestamp(System.currentTimeMillis()),
+            UserIntent.CREATED);
+    exporter.export(record);
+
+    // Position updated
+    assertThat(secondController.getPosition()).isEqualTo(record.getPosition());
+
+    // Entity written to search engine
+    final var handler =
+        getHandlers(config).stream()
+            .filter(h -> h.getHandledValueType().equals(record.getValueType()))
+            .filter(h -> h.handlesRecord(record))
+            .findFirst()
+            .orElseThrow();
+    final var recordId = handler.generateIds(record).getFirst();
+    assertThat(clientAdapter.get(recordId, handler.getIndexName(), handler.getEntityType()))
+        .isNotNull();
   }
 
   @SuppressWarnings("unchecked")
