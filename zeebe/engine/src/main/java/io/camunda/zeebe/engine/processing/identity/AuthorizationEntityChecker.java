@@ -55,6 +55,7 @@ public class AuthorizationEntityChecker {
                   RejectionType.NOT_FOUND,
                   GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
         }
+        break;
       case MAPPING_RULE:
         if (mappingRuleState.get(record.getOwnerId()).isEmpty()) {
           return Either.left(
@@ -62,6 +63,7 @@ public class AuthorizationEntityChecker {
                   RejectionType.NOT_FOUND,
                   MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
         }
+        break;
       case ROLE:
         if (roleState.getRole(record.getOwnerId()).isEmpty()) {
           return Either.left(
@@ -69,6 +71,7 @@ public class AuthorizationEntityChecker {
                   RejectionType.NOT_FOUND,
                   ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
         }
+        break;
       case USER:
         if (localUserEnabled && userState.getUser(record.getOwnerId()).isEmpty()) {
           return Either.left(
@@ -76,6 +79,9 @@ public class AuthorizationEntityChecker {
                   RejectionType.NOT_FOUND,
                   USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getOwnerId())));
         }
+        break;
+      default:
+        break;
     }
     if (!record.getResourceId().equals("*")) {
       switch (record.getResourceType()) {
@@ -86,6 +92,7 @@ public class AuthorizationEntityChecker {
                     RejectionType.NOT_FOUND,
                     GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
           }
+          break;
         case MAPPING_RULE:
           if (mappingRuleState.get(record.getResourceId()).isEmpty()) {
             return Either.left(
@@ -93,6 +100,7 @@ public class AuthorizationEntityChecker {
                     RejectionType.NOT_FOUND,
                     MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
           }
+          break;
         case ROLE:
           if (roleState.getRole(record.getResourceId()).isEmpty()) {
             return Either.left(
@@ -100,6 +108,7 @@ public class AuthorizationEntityChecker {
                     RejectionType.NOT_FOUND,
                     ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
           }
+          break;
         case USER:
           if (localUserEnabled && userState.getUser(record.getResourceId()).isEmpty()) {
             return Either.left(
@@ -107,6 +116,9 @@ public class AuthorizationEntityChecker {
                     RejectionType.NOT_FOUND,
                     USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(record.getResourceId())));
           }
+          break;
+        default:
+          break;
       }
     }
     return Either.right(record);
