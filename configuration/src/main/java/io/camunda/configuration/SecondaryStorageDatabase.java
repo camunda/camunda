@@ -15,7 +15,7 @@ public abstract class SecondaryStorageDatabase {
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
-  private Security security = new Security(databaseName());
+  private Security security = new Security();
 
   /** Username for the database configured as secondary storage. */
   private String username = "";
