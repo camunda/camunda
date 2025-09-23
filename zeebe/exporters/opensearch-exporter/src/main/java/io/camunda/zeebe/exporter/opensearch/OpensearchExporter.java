@@ -372,6 +372,9 @@ public class OpensearchExporter implements Exporter {
       if (index.runtimeInstruction) {
         createValueIndexTemplate(ValueType.RUNTIME_INSTRUCTION, version);
       }
+      if (index.tenant) {
+        createValueIndexTemplate(ValueType.TENANT, version);
+      }
     }
 
     indexTemplatesCreated.add(version);

@@ -35,6 +35,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
+import org.elasticsearch.core.List;
 import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
 import org.testcontainers.utility.DockerImageName;
@@ -132,6 +133,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
   public CamundaMigrator update(
       final Map<String, String> envOverrides,
       final Consumer<Map<String, Object>> exporterArgsOverride,
+      final boolean authenticationEnabled,
       final Profile... profiles) {
     camundaContainer.close();
     extractVolume();
@@ -140,8 +142,6 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
         new TestCamundaApplication()
             .withApplicationEventListener(
                 "migration-completed-event-listener", migrationCompletedEventListener)
-            .withBasicAuth()
-            .withAuthenticatedAccess()
             .withBrokerConfig(
                 cfg -> {
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
@@ -150,6 +150,21 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withProperty("camunda.operate.importer-enabled", "true")
             .withProperty("camunda.tasklist.importer-enabled", "true")
             .withWorkingDirectory(zeebeDataPath.resolve("usr/local/zeebe"));
+
+    if (!authenticationEnabled) {
+      camunda
+          .withMultiTenancyDisabled()
+          .withAuthorizationsDisabled()
+          .withUnauthenticatedAccess()
+          .withSecurityConfig(
+              cfg -> {
+                cfg.getInitialization().setMappingRules(List.of());
+                cfg.getInitialization().setUsers(List.of());
+                cfg.getInitialization().setDefaultRoles(Map.of());
+              });
+    } else {
+      camunda.withBasicAuth().withAuthenticatedAccess();
+    }
 
     if (profiles != null && profiles.length > 0) {
       camunda.withAdditionalProfiles(profiles);

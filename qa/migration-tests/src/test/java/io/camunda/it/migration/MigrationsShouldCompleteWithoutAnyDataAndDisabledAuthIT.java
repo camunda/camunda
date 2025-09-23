@@ -29,11 +29,12 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @Tag("multi-db-test")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class MigrationsShouldCompleteWithoutAnyDataIT {
+public class MigrationsShouldCompleteWithoutAnyDataAndDisabledAuthIT {
 
   @RegisterExtension
   private static final MigrationITExtension PROVIDER =
       new MigrationITExtension()
+          .withAuthenticationDisabled()
           .withPostUpdateAdditionalProfiles(
               Profile.PROCESS_MIGRATION, Profile.USAGE_METRIC_MIGRATION, Profile.TASK_MIGRATION);
 

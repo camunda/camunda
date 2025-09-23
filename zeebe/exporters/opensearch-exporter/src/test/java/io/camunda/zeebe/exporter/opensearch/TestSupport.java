@@ -74,6 +74,7 @@ final class TestSupport {
       case ASYNC_REQUEST -> config.asyncRequest = value;
       case USAGE_METRIC -> config.usageMetrics = value;
       case RUNTIME_INSTRUCTION -> config.runtimeInstruction = value;
+      case TENANT -> config.tenant = value;
       default ->
           throw new IllegalArgumentException(
               "No known indexing configuration option for value type " + valueType);
@@ -116,7 +117,6 @@ final class TestSupport {
             ValueType.AUTHORIZATION,
             ValueType.USER,
             ValueType.ROLE,
-            ValueType.TENANT,
             ValueType.GROUP,
             ValueType.MAPPING_RULE,
             ValueType.IDENTITY_SETUP,

@@ -13,11 +13,12 @@ public enum ImportValueType {
   PROCESS(ZeebeESConstants.PROCESS_INDEX_NAME),
   VARIABLE(ZeebeESConstants.VARIABLE_INDEX_NAME),
   FORM(ZeebeESConstants.FORM_INDEX_NAME),
-  USER_TASK(ZeebeESConstants.USER_TASK_INDEX_NAME);
+  USER_TASK(ZeebeESConstants.USER_TASK_INDEX_NAME),
+  TENANT(ZeebeESConstants.TENANT);
 
   private final String aliasTemplate;
 
-  ImportValueType(String aliasTemplate) {
+  ImportValueType(final String aliasTemplate) {
     this.aliasTemplate = aliasTemplate;
   }
 
@@ -25,11 +26,11 @@ public enum ImportValueType {
     return aliasTemplate;
   }
 
-  public String getIndicesPattern(String prefix) {
+  public String getIndicesPattern(final String prefix) {
     return String.format("%s*%s*", prefix, aliasTemplate);
   }
 
-  public String getAliasName(String prefix) {
+  public String getAliasName(final String prefix) {
     return String.format("%s-%s", prefix, aliasTemplate);
   }
 }
