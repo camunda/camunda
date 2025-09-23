@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.util.record;
 import static io.camunda.zeebe.protocol.record.ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.CHECKPOINT;
 import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
@@ -129,6 +130,7 @@ import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRec
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.protocol.record.value.scaling.ScaleRecordValue;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -205,7 +207,8 @@ public class CompactRecordLogger {
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
           entry(ESCALATION.name(), "ESC"),
           entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"),
-          entry(IDENTITY_SETUP.name(), "ID"));
+          entry(IDENTITY_SETUP.name(), "ID"),
+          entry(CHECKPOINT.name(), "CHK"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -292,6 +295,7 @@ public class CompactRecordLogger {
     valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
     valueLoggers.put(ValueType.IDENTITY_SETUP, this::summarizeIdentitySetup);
     valueLoggers.put(ValueType.SCALE, this::summarizeScale);
+    valueLoggers.put(ValueType.CHECKPOINT, this::summarizeCheckpoint);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -1684,6 +1688,12 @@ public class CompactRecordLogger {
     }
 
     return summary.toString();
+  }
+
+  private String summarizeCheckpoint(final Record<?> record) {
+    final var value = (CheckpointRecordValue) record.getValue();
+    return "checkpoint %s @ #%s"
+        .formatted(value.getCheckpointId(), formatPosition(value.getCheckpointPosition()));
   }
 
   private String formatPinnedTime(final long time) {
