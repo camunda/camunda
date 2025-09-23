@@ -13,6 +13,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.reader.EventReader;
+import io.camunda.operate.webapp.reader.JobReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.UserTaskReader;
 import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
@@ -22,6 +23,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.JobFlowNodeInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.ServiceTaskInstanceMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.UserTaskInstanceMetadataDto;
+import io.camunda.webapps.schema.entities.JobEntity;
 import io.camunda.webapps.schema.entities.event.EventEntity;
 import io.camunda.webapps.schema.entities.event.EventMetadataEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
@@ -46,6 +48,7 @@ class FlowNodeInstanceMetadataBuilderTest {
   @Mock private DecisionInstanceReader decisionInstanceReader;
   @Mock private EventReader eventReader;
   @Mock private UserTaskReader userTaskReader;
+  @Mock private JobReader elasticsearchJobReader;
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
 
@@ -53,7 +56,11 @@ class FlowNodeInstanceMetadataBuilderTest {
   void setUp() {
     builder =
         new FlowNodeInstanceMetadataBuilder(
-            listViewReader, decisionInstanceReader, eventReader, userTaskReader);
+            listViewReader,
+            decisionInstanceReader,
+            eventReader,
+            userTaskReader,
+            elasticsearchJobReader);
     assertThat(builder).isNotNull();
     startDate = OffsetDateTime.now();
     endDate = startDate.plusHours(5);
@@ -72,16 +79,16 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
-            new EventEntity()
-                .setId("eventId")
-                .setMetadata(
-                    new EventMetadataEntity()
-                        .setMessageName("Last order")
-                        .setCorrelationKey("23-05")));
+            Optional.of(
+                new EventEntity()
+                    .setMetadata(
+                        new EventMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
     final var metadata = builder.buildFrom(flowNodeInstance);
     assertThat(metadata).isInstanceOf(FlowNodeInstanceMetadataDto.class);
     assertStandardValues(metadata);
-    assertThat(metadata.getEventId()).isEqualTo("eventId");
+    assertThat(metadata.getEventId()).isEqualTo("2_1");
     assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.INCLUSIVE_GATEWAY);
   }
 
@@ -104,12 +111,12 @@ class FlowNodeInstanceMetadataBuilderTest {
                 .setFormKey(String.valueOf(5L)));
     when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
-            new EventEntity()
-                .setId("eventId")
-                .setMetadata(
-                    new EventMetadataEntity()
-                        .setMessageName("Last order")
-                        .setCorrelationKey("23-05")));
+            Optional.of(
+                new EventEntity()
+                    .setMetadata(
+                        new EventMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
         .thenReturn(userTask);
     when(userTaskReader.getUserTaskVariables(userTask.get().getKey()))
@@ -130,7 +137,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     assertThat(metadata.getFollowUpDate()).isEqualTo(followUpDate);
     assertThat(metadata.getTenantId()).isEqualTo("<default>");
     assertThat(metadata.getFormKey()).isEqualTo(5L);
-    assertThat(metadata.getEventId()).isEqualTo("eventId");
+    assertThat(metadata.getEventId()).isEqualTo("2_1");
     assertThat(metadata.getChangedAttributes()).isNull();
     assertThat(metadata.getExternalReference()).isNull();
     assertThat(metadata.getUserTaskKey()).isEqualTo(42L);
@@ -143,12 +150,12 @@ class FlowNodeInstanceMetadataBuilderTest {
     final var userTask = Optional.of(new TaskEntity().setKey(42L));
     when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
         .thenReturn(
-            new EventEntity()
-                .setId("eventId")
-                .setMetadata(
-                    new EventMetadataEntity()
-                        .setMessageName("Last order")
-                        .setCorrelationKey("23-05")));
+            Optional.of(
+                new EventEntity()
+                    .setMetadata(
+                        new EventMetadataEntity()
+                            .setMessageName("Last order")
+                            .setCorrelationKey("23-05"))));
     when(userTaskReader.getUserTaskByFlowNodeInstanceKey(flowNodeInstance.getKey()))
         .thenReturn(userTask);
     final var metadata = (UserTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
@@ -164,34 +171,11 @@ class FlowNodeInstanceMetadataBuilderTest {
 
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
+    setEventValues(flowNodeInstance);
 
     final var metadata = (ServiceTaskInstanceMetadataDto) builder.buildFrom(flowNodeInstance);
     assertStandardValues(metadata);
     assertJobMetadata(metadata, jobDeadline);
-  }
-
-  private void setJobValues(
-      final OffsetDateTime jobDeadline, final FlowNodeInstanceEntity flowNodeInstance) {
-    final EventMetadataEntity eventMetadata =
-        new EventMetadataEntity()
-            .setJobCustomHeaders(Map.of("header", "value"))
-            .setJobDeadline(jobDeadline)
-            .setJobRetries(5)
-            .setJobType("manual")
-            .setJobWorker("Moe")
-            .setMessageName("Last order")
-            .setCorrelationKey("23-05");
-    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
-        .thenReturn(new EventEntity().setId("eventId").setMetadata(eventMetadata));
-  }
-
-  private static void assertJobMetadata(
-      final JobFlowNodeInstanceMetadataDto metadata, final OffsetDateTime jobDeadline) {
-    assertThat(metadata.getJobCustomHeaders()).isEqualTo(Map.of("header", "value"));
-    assertThat(metadata.getJobDeadline()).isEqualTo(jobDeadline);
-    assertThat(metadata.getJobRetries()).isEqualTo(5);
-    assertThat(metadata.getJobType()).isEqualTo("manual");
-    assertThat(metadata.getJobWorker()).isEqualTo("Moe");
   }
 
   @Test
@@ -200,6 +184,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
+    setEventValues(flowNodeInstance);
     when(listViewReader.getCalledProcessInstanceIdAndNameByFlowNodeInstanceId(
             flowNodeInstance.getId()))
         .thenReturn(Tuple.of("calledProcessInstanceId", "calledProcessDefinitionName"));
@@ -210,7 +195,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     assertThat(metadata.getCalledProcessInstanceId()).isEqualTo("calledProcessInstanceId");
     assertThat(metadata.getCalledProcessDefinitionName()).isEqualTo("calledProcessDefinitionName");
     assertJobMetadata(metadata, jobDeadline);
-    assertThat(metadata.getEventId()).isEqualTo("eventId");
+    assertThat(metadata.getEventId()).isEqualTo("2_1");
     assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.CALL_ACTIVITY);
   }
 
@@ -221,6 +206,7 @@ class FlowNodeInstanceMetadataBuilderTest {
     fillStandardValues(flowNodeInstance);
     final var jobDeadline = OffsetDateTime.now();
     setJobValues(jobDeadline, flowNodeInstance);
+    setEventValues(flowNodeInstance);
 
     when(decisionInstanceReader.getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
             flowNodeInstance.getId()))
@@ -236,14 +222,47 @@ class FlowNodeInstanceMetadataBuilderTest {
     assertThat(metadata.getJobRetries()).isEqualTo(5);
     assertThat(metadata.getJobType()).isEqualTo("manual");
     assertThat(metadata.getJobWorker()).isEqualTo("Moe");
-    assertThat(metadata.getEventId()).isEqualTo("eventId");
+    assertThat(metadata.getEventId()).isEqualTo("2_1");
     assertThat(metadata.getMessageName()).isEqualTo("Last order");
     assertThat(metadata.getCorrelationKey()).isEqualTo("23-05");
     assertThat(metadata.getFlowNodeType()).isEqualTo(FlowNodeType.BUSINESS_RULE_TASK);
   }
 
+  private static void assertJobMetadata(
+      final JobFlowNodeInstanceMetadataDto metadata, final OffsetDateTime jobDeadline) {
+    assertThat(metadata.getJobCustomHeaders()).isEqualTo(Map.of("header", "value"));
+    assertThat(metadata.getJobDeadline()).isEqualTo(jobDeadline);
+    assertThat(metadata.getJobRetries()).isEqualTo(5);
+    assertThat(metadata.getJobType()).isEqualTo("manual");
+    assertThat(metadata.getJobWorker()).isEqualTo("Moe");
+  }
+
+  private void setEventValues(final FlowNodeInstanceEntity flowNodeInstance) {
+    final var eventMetadata =
+        new EventMetadataEntity().setCorrelationKey("23-05").setMessageName("Last order");
+    final var event = new EventEntity().setMetadata(eventMetadata);
+    when(eventReader.getEventEntityByFlowNodeInstanceId(flowNodeInstance.getId()))
+        .thenReturn(Optional.of(event));
+  }
+
+  private void setJobValues(
+      final OffsetDateTime jobDeadline, final FlowNodeInstanceEntity flowNodeInstance) {
+    final JobEntity job =
+        new JobEntity()
+            .setCustomHeaders(Map.of("header", "value"))
+            .setDeadline(jobDeadline)
+            .setRetries(5)
+            .setType("manual")
+            .setWorker("Moe");
+
+    when(elasticsearchJobReader.getJobByFlowNodeInstanceId(flowNodeInstance.getId()))
+        .thenReturn(Optional.of(job));
+  }
+
   private void fillStandardValues(final FlowNodeInstanceEntity flowNodeInstance) {
     flowNodeInstance
+        .setKey(1L)
+        .setProcessInstanceKey(2L)
         .setFlowNodeId("flowNodeId")
         .setId("id")
         .setStartDate(startDate)
