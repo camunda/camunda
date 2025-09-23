@@ -7,17 +7,16 @@
  */
 package io.camunda.zeebe.msgpack.util;
 
-import org.agrona.DirectBuffer;
+import net.jqwik.api.lifecycle.BeforeProperty;
+import org.junit.jupiter.api.BeforeEach;
 
-public interface EnumParser<E extends Enum<E>> {
-  E parse(final DirectBuffer buffer, final int offset, final int length);
-
-  default E parse(
-      final DirectBuffer buffer, final int offset, final int length, final E defaultValue) {
-    final var value = parse(buffer, offset, length);
-    if (value == null) {
-      return defaultValue;
-    }
-    return value;
+class SimpleEnumParserPropertyTest extends AbstractEnumParserPropertyTest {
+  @Override
+  @BeforeEach
+  @BeforeProperty
+  void setUp() {
+    parser = new SimpleEnumParser<>(TestEnum.class);
+    singleParser = new SimpleEnumParser<>(SingleEnum.class);
+    minimalParser = new SimpleEnumParser<>(EmptyLikeEnum.class);
   }
 }

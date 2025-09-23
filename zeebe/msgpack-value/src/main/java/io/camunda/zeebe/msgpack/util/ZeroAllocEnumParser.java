@@ -8,23 +8,28 @@
 package io.camunda.zeebe.msgpack.util;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Zero-allocation enum parser using a DirectBufferView as the map key.
  *
  * @param <E> the enum type
  */
-public class ZeroAllocEnumParser<E extends Enum<E>> {
-  private final HashMap<DirectBufferView, E> lookup;
+public class ZeroAllocEnumParser<E extends Enum<E>> implements EnumParser<E> {
+  private final Map<DirectBufferView, E> lookup;
   // Thread-local view for parse() to avoid allocation
   private final ThreadLocal<DirectBufferView> threadView =
       ThreadLocal.withInitial(DirectBufferView::new);
 
   public ZeroAllocEnumParser(final Class<E> enumClass) {
-    lookup = new HashMap<>();
+    final int constantsCount = (int) Arrays.stream(enumClass.getEnumConstants()).count();
+    lookup = constantsCount > 16 ? new HashMap<>() : new TreeMap<>();
     for (final E e : enumClass.getEnumConstants()) {
       final byte[] bytes = e.name().getBytes(StandardCharsets.US_ASCII);
       final DirectBufferView key = new DirectBufferView();
@@ -33,6 +38,7 @@ public class ZeroAllocEnumParser<E extends Enum<E>> {
     }
   }
 
+  @Override
   public E parse(final DirectBuffer buffer, final int offset, final int length) {
     final DirectBufferView view = threadView.get();
     view.wrap(buffer, offset, length);
@@ -40,7 +46,7 @@ public class ZeroAllocEnumParser<E extends Enum<E>> {
   }
 
   /** A view of a DirectBuffer region for use as a map key. Does not allocate or copy data. */
-  private static final class DirectBufferView {
+  private static final class DirectBufferView implements Comparable<DirectBufferView> {
     private DirectBuffer buffer;
 
     public DirectBufferView() {}
@@ -57,10 +63,18 @@ public class ZeroAllocEnumParser<E extends Enum<E>> {
     public int hashCode() {
       final int length = buffer.capacity();
       int h = 1;
-      for (int i = 0; i < length / 4; i++) {
-        h = 31 * h + buffer.getInt(i * 4);
+      int i = 0;
+      // Vectorized: process 8 bytes at a time
+      for (; i < (length & ~7); i += 8) {
+        final long l = buffer.getLong(i);
+        h = 31 * h + Long.hashCode(l);
       }
-      for (int i = length - length % 4; i < length; i++) {
+      // Vectorized: process 4 bytes at a time
+      for (; i < (length & ~3); i += 4) {
+        h = 31 * h + buffer.getInt(i);
+      }
+      // Process remaining bytes
+      for (; i < length; i++) {
         h = 31 * h + buffer.getByte(i);
       }
       return h;
@@ -71,10 +85,9 @@ public class ZeroAllocEnumParser<E extends Enum<E>> {
       if (this == obj) {
         return true;
       }
-      if (!(obj instanceof DirectBufferView)) {
+      if (!(obj instanceof final DirectBufferView other)) {
         return false;
       }
-      final DirectBufferView other = (DirectBufferView) obj;
       return buffer.compareTo(other.buffer) == 0;
     }
 

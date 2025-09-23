@@ -33,13 +33,6 @@ public final class AsciiTrieEnumParser<E extends Enum<E>> implements EnumParser<
     return (E) root.search(buffer, offset, length);
   }
 
-  @Override
-  public E parse(
-      final DirectBuffer buffer, final int offset, final int length, final E defaultValue) {
-    final E result = parse(buffer, offset, length);
-    return result != null ? result : defaultValue;
-  }
-
   /** Map alphanumeric + '_' ASCII char to the index of the array */
   private static int charToIndex(final char c) {
     if (c >= 'A' && c <= 'Z') {

@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.msgpack.perf;
 
-import io.camunda.zeebe.msgpack.util.AsciiSortedStringEnumParser;
 import io.camunda.zeebe.msgpack.util.EnumParser;
+import io.camunda.zeebe.msgpack.util.TrieEnumParser;
 import io.camunda.zeebe.msgpack.util.ZeroAllocEnumParser;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
@@ -34,9 +34,9 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 public class EnumParserBenchmark {
 
   // Parsers
-  private EnumParser<SmallEnum> smallOptimizedParser;
-  private EnumParser<MediumEnum> mediumOptimizedParser;
-  private EnumParser<LargeEnum> largeOptimizedParser;
+  private EnumParser<SmallEnum> smallTrieParser;
+  private EnumParser<MediumEnum> mediumTrieParser;
+  private EnumParser<LargeEnum> largeTrieParser;
   // Simple parsers (old implementation)
   private SimpleEnumParser<SmallEnum> smallSimpleParser;
   private SimpleEnumParser<MediumEnum> mediumSimpleParser;
@@ -45,10 +45,15 @@ public class EnumParserBenchmark {
   private ZeroAllocEnumParser<SmallEnum> smallZeroAllocParser;
   private ZeroAllocEnumParser<MediumEnum> mediumZeroAllocParser;
   private ZeroAllocEnumParser<LargeEnum> largeZeroAllocParser;
+  // Parsers for LargeEnumNoPrefix
+  private EnumParser<LargeEnumNoPrefix> largeNoPrefixTrieParser;
+  private SimpleEnumParser<LargeEnumNoPrefix> largeNoPrefixSimpleParser;
+  private ZeroAllocEnumParser<LargeEnumNoPrefix> largeNoPrefixZeroAllocParser;
   // Test data
   private DirectBuffer[] smallEnumBuffers;
   private DirectBuffer[] mediumEnumBuffers;
   private DirectBuffer[] largeEnumBuffers;
+  private DirectBuffer[] largeNoPrefixBuffers;
   private DirectBuffer[] invalidBuffers;
   // Random index for test data selection
   private int currentIndex = 0;
@@ -56,9 +61,9 @@ public class EnumParserBenchmark {
   @Setup
   public void setup() {
     // Initialize optimized parsers
-    smallOptimizedParser = new AsciiSortedStringEnumParser<>(SmallEnum.class);
-    mediumOptimizedParser = new AsciiSortedStringEnumParser<>(MediumEnum.class);
-    largeOptimizedParser = new AsciiSortedStringEnumParser<>(LargeEnum.class);
+    smallTrieParser = new TrieEnumParser<>(SmallEnum.class);
+    mediumTrieParser = new TrieEnumParser<>(MediumEnum.class);
+    largeTrieParser = new TrieEnumParser<>(LargeEnum.class);
 
     // Initialize simple parsers
     smallSimpleParser = new SimpleEnumParser<>(SmallEnum.class);
@@ -69,6 +74,11 @@ public class EnumParserBenchmark {
     smallZeroAllocParser = new ZeroAllocEnumParser<>(SmallEnum.class);
     mediumZeroAllocParser = new ZeroAllocEnumParser<>(MediumEnum.class);
     largeZeroAllocParser = new ZeroAllocEnumParser<>(LargeEnum.class);
+
+    // Initialize LargeEnumNoPrefix parsers
+    largeNoPrefixTrieParser = new TrieEnumParser<>(LargeEnumNoPrefix.class);
+    largeNoPrefixSimpleParser = new SimpleEnumParser<>(LargeEnumNoPrefix.class);
+    largeNoPrefixZeroAllocParser = new ZeroAllocEnumParser<>(LargeEnumNoPrefix.class);
 
     // Prepare test data
     setupTestBuffers();
@@ -99,6 +109,14 @@ public class EnumParserBenchmark {
       largeEnumBuffers[i] = new UnsafeBuffer(bytes);
     }
 
+    // LargeEnumNoPrefix buffers
+    final LargeEnumNoPrefix[] largeNoPrefixValues = LargeEnumNoPrefix.values();
+    largeNoPrefixBuffers = new DirectBuffer[largeNoPrefixValues.length];
+    for (int i = 0; i < largeNoPrefixValues.length; i++) {
+      final byte[] bytes = largeNoPrefixValues[i].name().getBytes(StandardCharsets.US_ASCII);
+      largeNoPrefixBuffers[i] = new UnsafeBuffer(bytes);
+    }
+
     // Invalid enum buffers
     final String[] invalidNames = {
       "INVALID", "NOT_FOUND", "WRONG_NAME", "FAKE_ENUM", "DOES_NOT_EXIST"
@@ -112,10 +130,10 @@ public class EnumParserBenchmark {
 
   // Small enum benchmarks
   @Benchmark
-  public void smallEnumOptimized(final org.openjdk.jmh.infra.Blackhole blackhole) {
+  public void smallEnumTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
     final DirectBuffer buffer = smallEnumBuffers[currentIndex % smallEnumBuffers.length];
     currentIndex++;
-    final SmallEnum result = smallOptimizedParser.parse(buffer, 0, buffer.capacity());
+    final SmallEnum result = smallTrieParser.parse(buffer, 0, buffer.capacity());
     blackhole.consume(result);
   }
 
@@ -137,10 +155,10 @@ public class EnumParserBenchmark {
 
   // Medium enum benchmarks
   @Benchmark
-  public void mediumEnumOptimized(final org.openjdk.jmh.infra.Blackhole blackhole) {
+  public void mediumEnumTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
     final DirectBuffer buffer = mediumEnumBuffers[currentIndex % mediumEnumBuffers.length];
     currentIndex++;
-    final MediumEnum result = mediumOptimizedParser.parse(buffer, 0, buffer.capacity());
+    final MediumEnum result = mediumTrieParser.parse(buffer, 0, buffer.capacity());
     blackhole.consume(result);
   }
 
@@ -162,10 +180,10 @@ public class EnumParserBenchmark {
 
   // Large enum benchmarks
   @Benchmark
-  public void largeEnumOptimized(final org.openjdk.jmh.infra.Blackhole blackhole) {
+  public void largeEnumTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
     final DirectBuffer buffer = largeEnumBuffers[currentIndex % largeEnumBuffers.length];
     currentIndex++;
-    final LargeEnum result = largeOptimizedParser.parse(buffer, 0, buffer.capacity());
+    final LargeEnum result = largeTrieParser.parse(buffer, 0, buffer.capacity());
     blackhole.consume(result);
   }
 
@@ -185,12 +203,38 @@ public class EnumParserBenchmark {
     blackhole.consume(result);
   }
 
+  // LargeEnumNoPrefix benchmarks
+  @Benchmark
+  public void largeEnumNoPrefixTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
+    final DirectBuffer buffer = largeNoPrefixBuffers[currentIndex % largeNoPrefixBuffers.length];
+    currentIndex++;
+    final LargeEnumNoPrefix result = largeNoPrefixTrieParser.parse(buffer, 0, buffer.capacity());
+    blackhole.consume(result);
+  }
+
+  @Benchmark
+  public void largeEnumNoPrefixSimple(final org.openjdk.jmh.infra.Blackhole blackhole) {
+    final DirectBuffer buffer = largeNoPrefixBuffers[currentIndex % largeNoPrefixBuffers.length];
+    currentIndex++;
+    final LargeEnumNoPrefix result = largeNoPrefixSimpleParser.parse(buffer, 0, buffer.capacity());
+    blackhole.consume(result);
+  }
+
+  @Benchmark
+  public void largeEnumNoPrefixZeroAlloc(final org.openjdk.jmh.infra.Blackhole blackhole) {
+    final DirectBuffer buffer = largeNoPrefixBuffers[currentIndex % largeNoPrefixBuffers.length];
+    currentIndex++;
+    final LargeEnumNoPrefix result =
+        largeNoPrefixZeroAllocParser.parse(buffer, 0, buffer.capacity());
+    blackhole.consume(result);
+  }
+
   //  // Invalid enum benchmarks (worst case for simple parser)
   //  @Benchmark
-  //  public void invalidEnumOptimized(final org.openjdk.jmh.infra.Blackhole blackhole) {
+  //  public void invalidEnumTrie(final org.openjdk.jmh.infra.Blackhole blackhole) {
   //    final DirectBuffer buffer = invalidBuffers[currentIndex % invalidBuffers.length];
   //    currentIndex++;
-  //    final SmallEnum result = smallOptimizedParser.parse(buffer, 0, buffer.capacity());
+  //    final SmallEnum result = smallTrieParser.parse(buffer, 0, buffer.capacity());
   //    blackhole.consume(result);
   //  }
   //
@@ -212,7 +256,7 @@ public class EnumParserBenchmark {
 
   // Benchmarks with offset (to test real-world scenarios)
   //  @Benchmark
-  //  public void mediumEnumOptimizedWithOffset(org.openjdk.jmh.infra.Blackhole blackhole) {
+  //  public void mediumEnumTrieWithOffset(org.openjdk.jmh.infra.Blackhole blackhole) {
   //    final DirectBuffer buffer = mediumEnumBuffers[currentIndex % mediumEnumBuffers.length];
   //    currentIndex++;
   //    // Simulate parsing from middle of buffer
@@ -226,7 +270,7 @@ public class EnumParserBenchmark {
   //    System.arraycopy(originalBytes, 0, combinedBytes, prefixBytes.length, originalBytes.length);
   //
   //    final DirectBuffer combinedBuffer = new UnsafeBuffer(combinedBytes);
-  //    MediumEnum result = mediumOptimizedParser.parse(combinedBuffer, prefixBytes.length,
+  //    MediumEnum result = mediumTrieParser.parse(combinedBuffer, prefixBytes.length,
   // originalBytes.length);
   //    blackhole.consume(result);
   //  }
@@ -345,6 +389,48 @@ public class EnumParserBenchmark {
     VALUE_028,
     VALUE_029,
     VALUE_030,
+    LONG_ENUM_NAME_WITH_MANY_UNDERSCORES_AND_NUMBERS_123,
+    ANOTHER_VERY_LONG_ENUM_NAME_FOR_TESTING_PERFORMANCE,
+    SHORT_A,
+    SHORT_B,
+    SHORT_C,
+    SHORT_D,
+    SHORT_E
+  }
+
+  enum LargeEnumNoPrefix {
+    ALPHA,
+    BETA,
+    GAMMA,
+    DELTA,
+    EPSILON,
+    ZETA,
+    THETA,
+    IOTA,
+    KAPPA,
+    LAMBDA,
+    MU,
+    NU,
+    XI,
+    OMICRON,
+    PI,
+    RHO,
+    SIGMA,
+    TAU,
+    UPSILON,
+    OMEGA,
+    FOOBAR,
+    BARFOO,
+    RANDOM1,
+    RANDOM2,
+    RANDOM3,
+    RANDOM4,
+    RANDOM5,
+    RANDOM6,
+    RANDOM7,
+    RANDOM8,
+    RANDOM9,
+    RANDOM10,
     LONG_ENUM_NAME_WITH_MANY_UNDERSCORES_AND_NUMBERS_123,
     ANOTHER_VERY_LONG_ENUM_NAME_FOR_TESTING_PERFORMANCE,
     SHORT_A,
