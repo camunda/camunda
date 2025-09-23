@@ -17,10 +17,12 @@ import io.camunda.client.api.response.CreateRoleResponse;
 import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
+import io.camunda.client.api.search.response.Authorization;
 import io.camunda.client.api.search.response.Client;
 import io.camunda.client.api.search.response.Role;
 import io.camunda.client.api.search.response.RoleGroup;
 import io.camunda.client.api.search.response.SearchResponse;
+import io.camunda.client.impl.search.filter.AuthorizationFilterImpl;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -83,12 +86,7 @@ class RoleAuthorizationIT {
 
   @UserDefinition
   private static final TestUser RESTRICTED_USER_WITH_READ_PERMISSION =
-      new TestUser(
-          RESTRICTED_WITH_READ,
-          DEFAULT_PASSWORD,
-          List.of(
-              new Permissions(
-                  ResourceType.ROLE, PermissionType.READ, List.of(ROLE_ID_1, ROLE_ID_2))));
+      new TestUser(RESTRICTED_WITH_READ, DEFAULT_PASSWORD, Collections.emptyList());
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -103,6 +101,43 @@ class RoleAuthorizationIT {
               final var roleSearchResponse = adminClient.newRolesSearchRequest().send().join();
               assertThat(roleSearchResponse.items().stream().map(Role::getRoleId).toList())
                   .containsAll(Arrays.asList(ADMIN, ROLE_ID_1, ROLE_ID_2));
+            });
+
+    List.of(ROLE_ID_1, ROLE_ID_2)
+        .forEach(
+            role ->
+                adminClient
+                    .newCreateAuthorizationCommand()
+                    .ownerId(RESTRICTED_WITH_READ)
+                    .ownerType(OwnerType.USER)
+                    .resourceId(role)
+                    .resourceType(ResourceType.ROLE)
+                    .permissionTypes(PermissionType.READ)
+                    .send()
+                    .join());
+    waitForAuthorizationsCreated(adminClient);
+  }
+
+  private static void waitForAuthorizationsCreated(final CamundaClient adminClient) {
+    Awaitility.await("should create authorizations and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authzSearchResponse =
+                  adminClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          new AuthorizationFilterImpl()
+                              .ownerId(RESTRICTED_WITH_READ)
+                              .resourceType(ResourceType.ROLE))
+                      .send()
+                      .join();
+              assertThat(
+                      authzSearchResponse.items().stream()
+                          .map(Authorization::getResourceId)
+                          .toList())
+                  .containsAll(Arrays.asList(ROLE_ID_1, ROLE_ID_2));
             });
   }
 
