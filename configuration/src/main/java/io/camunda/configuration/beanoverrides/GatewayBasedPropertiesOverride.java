@@ -16,6 +16,7 @@ import io.camunda.configuration.Membership;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
+import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.FilterCfg;
 import io.camunda.zeebe.gateway.impl.configuration.InterceptorCfg;
@@ -29,6 +30,8 @@ import java.util.Objects;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -36,22 +39,27 @@ import org.springframework.context.annotation.Profile;
 
 @Configuration
 @Profile("!broker")
+@EnableConfigurationProperties(LegacyGatewayBasedProperties.class)
 public class GatewayBasedPropertiesOverride {
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(GatewayBasedPropertiesOverride.class);
 
   private final UnifiedConfiguration unifiedConfiguration;
+  private final LegacyGatewayBasedProperties legacyGatewayBasedProperties;
 
-  public GatewayBasedPropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
+  public GatewayBasedPropertiesOverride(
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyGatewayBasedProperties legacyGatewayBasedProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
+    this.legacyGatewayBasedProperties = legacyGatewayBasedProperties;
   }
 
   @Bean
   @Primary
   public GatewayBasedProperties gatewayBasedProperties() {
     final GatewayBasedProperties override = new GatewayBasedProperties();
-
+    BeanUtils.copyProperties(legacyGatewayBasedProperties, override);
     // from camunda.cluster.* sections
     populateFromCluster(override);
     populateFromGrpc(override);

@@ -11,9 +11,12 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beans.LegacySearchEngineIndexProperties;
 import io.camunda.configuration.beans.SearchEngineIndexProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -23,20 +26,24 @@ import org.springframework.context.annotation.Primary;
   SecondaryStorageType.elasticsearch,
   SecondaryStorageType.opensearch
 })
+@EnableConfigurationProperties(LegacySearchEngineIndexProperties.class)
 public class SearchEngineIndexPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
+  private final LegacySearchEngineIndexProperties legacySearchEngineIndexProperties;
 
   public SearchEngineIndexPropertiesOverride(
-      @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      @Autowired final UnifiedConfiguration unifiedConfiguration,
+      @Autowired final LegacySearchEngineIndexProperties legacySearchEngineIndexProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
+    this.legacySearchEngineIndexProperties = legacySearchEngineIndexProperties;
   }
 
   @Bean
   @Primary
   public SearchEngineIndexProperties searchEngineIndexProperties() {
     final SearchEngineIndexProperties override = new SearchEngineIndexProperties();
-
+    BeanUtils.copyProperties(legacySearchEngineIndexProperties, override);
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 

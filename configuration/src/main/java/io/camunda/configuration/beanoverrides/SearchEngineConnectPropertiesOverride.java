@@ -12,9 +12,12 @@ import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -24,20 +27,24 @@ import org.springframework.context.annotation.Primary;
   SecondaryStorageType.elasticsearch,
   SecondaryStorageType.opensearch
 })
+@EnableConfigurationProperties(LegacySearchEngineConnectProperties.class)
 public class SearchEngineConnectPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
+  private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
   public SearchEngineConnectPropertiesOverride(
-      @Autowired final UnifiedConfiguration unifiedConfiguration) {
+      @Autowired final UnifiedConfiguration unifiedConfiguration,
+      @Autowired final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
+    this.legacySearchEngineConnectProperties = legacySearchEngineConnectProperties;
   }
 
   @Bean
   @Primary
   public SearchEngineConnectProperties searchEngineConnectProperties() {
     final SearchEngineConnectProperties override = new SearchEngineConnectProperties();
-
+    BeanUtils.copyProperties(legacySearchEngineConnectProperties, override);
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 

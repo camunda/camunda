@@ -59,6 +59,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -88,7 +89,7 @@ public class BrokerBasedPropertiesOverride {
   @Primary
   public BrokerBasedProperties brokerBasedProperties() {
     final BrokerBasedProperties override = new BrokerBasedProperties();
-
+    BeanUtils.copyProperties(legacyBrokerBasedProperties, override);
     // from camunda.cluster.* sections
     populateFromCluster(override);
 
@@ -481,7 +482,6 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
-    override.setExporters(legacyBrokerBasedProperties.getExporters());
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 

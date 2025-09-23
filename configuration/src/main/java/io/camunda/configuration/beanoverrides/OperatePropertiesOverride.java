@@ -19,6 +19,8 @@ import io.camunda.operate.property.SslProperties;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.springframework.beans.BeanUtils;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -26,19 +28,24 @@ import org.springframework.context.annotation.PropertySource;
 
 @Configuration
 @PropertySource("classpath:operate-version.properties")
+@EnableConfigurationProperties(LegacyOperateProperties.class)
 public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
+  private final LegacyOperateProperties legacyOperateProperties;
 
-  public OperatePropertiesOverride(final UnifiedConfiguration unifiedConfiguration) {
+  public OperatePropertiesOverride(
+      final UnifiedConfiguration unifiedConfiguration,
+      final LegacyOperateProperties legacyOperateProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
+    this.legacyOperateProperties = legacyOperateProperties;
   }
 
   @Bean
   @Primary
   public OperateProperties operateProperties() {
     final OperateProperties override = new OperateProperties();
-
+    BeanUtils.copyProperties(legacyOperateProperties, override);
     populateFromBackup(override);
 
     final SecondaryStorage database =
