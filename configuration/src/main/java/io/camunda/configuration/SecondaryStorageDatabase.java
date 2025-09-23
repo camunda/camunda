@@ -54,9 +54,5 @@ public abstract class SecondaryStorageDatabase<T> {
 
   public abstract void setHistory(final T history);
 
-  private String prefix() {
-    return "camunda.data.secondary-storage." + databaseName().toLowerCase();
-  }
-
-  protected abstract String databaseName();
+  public abstract String databaseName();
 }

@@ -8,6 +8,7 @@
 package io.camunda.configuration.beanoverrides;
 
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
+import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageDatabase;
@@ -16,6 +17,10 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
+import java.util.Collections;
+import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,6 +39,8 @@ import org.springframework.context.annotation.Primary;
 })
 public class SearchEngineConnectPropertiesOverride {
 
+  private static final Logger LOGGER =
+      LoggerFactory.getLogger(SearchEngineConnectPropertiesOverride.class);
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacySearchEngineConnectProperties legacySearchEngineConnectProperties;
 
@@ -85,6 +92,7 @@ public class SearchEngineConnectPropertiesOverride {
     override.setUrl(database.getUrl());
 
     populateFromSecurity(override);
+    populateFromInterceptorPlugins(override);
 
     override.setUsername(database.getUsername());
     override.setPassword(database.getPassword());
@@ -112,6 +120,39 @@ public class SearchEngineConnectPropertiesOverride {
       case ELASTICSEARCH -> secondaryStorage.getElasticsearch().getSecurity();
       case OPENSEARCH -> secondaryStorage.getOpensearch().getSecurity();
       default -> null;
+    };
+  }
+
+  private void populateFromInterceptorPlugins(final SearchEngineConnectProperties override) {
+    final List<InterceptorPlugin> interceptorPlugins = resolveInterceptorPlugin(override);
+
+    // Log common interceptor plugins warning instead of using UnifiedConfigurationHelper logging.
+    if (override.getInterceptorPlugins() != null) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.data.secondary-storage."
+                  + override.getTypeEnum().toString().toLowerCase()
+                  + ".interceptor-plugins",
+              "camunda.database.interceptorPlugins");
+      LOGGER.warn(warningMessage);
+    }
+
+    if (!interceptorPlugins.isEmpty()) {
+      override.setInterceptorPlugins(
+          interceptorPlugins.stream().map(InterceptorPlugin::toPluginConfiguration).toList());
+    }
+  }
+
+  private List<InterceptorPlugin> resolveInterceptorPlugin(
+      final SearchEngineConnectProperties override) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    return switch (override.getTypeEnum()) {
+      case ELASTICSEARCH -> secondaryStorage.getElasticsearch().getInterceptorPlugins();
+      case OPENSEARCH -> secondaryStorage.getOpensearch().getInterceptorPlugins();
+      default -> Collections.emptyList();
     };
   }
 }

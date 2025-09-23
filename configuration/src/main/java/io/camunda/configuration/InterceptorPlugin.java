@@ -7,10 +7,12 @@
  */
 package io.camunda.configuration;
 
-public class Elasticsearch extends DocumentBasedSecondaryStorageDatabase {
+import io.camunda.search.connect.plugin.PluginConfiguration;
+import java.nio.file.Path;
 
-  @Override
-  public String databaseName() {
-    return "elasticsearch";
+public class InterceptorPlugin extends BaseExternalCodeConfiguration {
+
+  public PluginConfiguration toPluginConfiguration() {
+    return new PluginConfiguration(getId(), getClassName(), Path.of(getJarPath()));
   }
 }
