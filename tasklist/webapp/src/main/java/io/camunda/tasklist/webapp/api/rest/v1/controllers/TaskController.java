@@ -10,7 +10,10 @@ package io.camunda.tasklist.webapp.api.rest.v1.controllers;
 import static io.camunda.tasklist.webapp.mapper.TaskMapper.TASK_DESCRIPTION;
 import static java.util.Objects.requireNonNullElse;
 
+import io.camunda.search.query.GroupQuery;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
+import io.camunda.service.GroupServices;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.queries.TaskByCandidateUserOrGroup;
 import io.camunda.tasklist.util.LazySupplier;
@@ -82,6 +85,7 @@ public class TaskController extends ApiErrorController {
   @Autowired private TaskMapper taskMapper;
   @Autowired private CamundaAuthenticationProvider authenticationProvider;
   @Autowired private UserGroupService userGroupService;
+  @Autowired private GroupServices groupServices;
   @Autowired private TasklistProperties tasklistProperties;
   @Autowired private TasklistPermissionServices permissionServices;
 
@@ -128,11 +132,26 @@ public class TaskController extends ApiErrorController {
         // this is backwards compatible with previous versions, but in the future this will change
         && userName != null
         && !userName.isEmpty()) {
-      final List<String> listOfUserGroups = userGroupService.getUserGroups();
       final TaskByCandidateUserOrGroup taskByCandidateUserOrGroup =
           new TaskByCandidateUserOrGroup();
-      taskByCandidateUserOrGroup.setUserGroups(listOfUserGroups.toArray(String[]::new));
       taskByCandidateUserOrGroup.setUserName(userName);
+
+      final Set<String> listOfUserGroupIds =
+          userGroupService.getUserGroups().stream().collect(Collectors.toSet());
+      if (listOfUserGroupIds.isEmpty()) {
+        taskByCandidateUserOrGroup.setUserGroups(new String[0]);
+      } else {
+        final var groups =
+            groupServices
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .search(
+                    GroupQuery.of(
+                        groupQuery ->
+                            groupQuery.filter(filter -> filter.groupIds(listOfUserGroupIds))));
+        final var listOfUserGroupNames =
+            groups.items().stream().map(g -> g.name()).collect(Collectors.toSet());
+        taskByCandidateUserOrGroup.setUserGroups(listOfUserGroupNames.toArray(String[]::new));
+      }
       query.setTaskByCandidateUserOrGroup(taskByCandidateUserOrGroup);
     }
 
