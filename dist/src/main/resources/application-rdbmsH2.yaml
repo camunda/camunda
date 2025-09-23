@@ -73,15 +73,6 @@ zeebe:
     exporters:
       rdbms:
         className: io.camunda.exporter.rdbms.RdbmsExporter
-        args:
-          flushInterval: PT0.5S
-          queueSize: 1000
-          usageMetricsCleanup: PT1D
-          usageMetricsTTL: PT730D
-      #elasticsearch:
-      #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-      #  args:
-      #    url: http://localhost:9200
 
 camunda:
   data:
@@ -91,6 +82,8 @@ camunda:
         url: jdbc:h2:mem:camunda
         username: sa
         password:
+        flushInterval: PT0.5S
+        queueSize: 1000
   # Operate configuration properties
   operate:
     # Set operate username and password.

@@ -45,6 +45,19 @@ public class SecondaryStorageRdbmsTest {
   private static final String EXPECTED_USERNAME = "testUsername";
   private static final String EXPECTED_PASSWORD = "testPassword";
 
+  private static final String DEFAULT_HISTORY_TTL = "PT1M";
+  private static final String DEFAULT_BATCH_OPERATION_HISTORY_TTL = "PT168H"; // 7 days
+  private static final String BATCH_OPERATION_CANCEL_PROCESS_INSTANCE_HISTORY_TTL =
+      "PT24H"; // 1 day
+  private static final String BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE_HISTORY_TTL =
+      "PT240H"; // 10 days
+  private static final String BATCH_OPERATION_MODIFY_PROCESS_INSTANCE_HISTORY_TTL =
+      "PT168H"; // 7 days
+  private static final String BATCH_OPERATION_RESOLVE_INCIDENT_HISTORY_TTL = "PT120H"; // 5 days
+  private static final String MIN_HISTORY_CLEANUP_INTERVAL = "PT1S";
+  private static final String MAX_HISTORY_CLEANUP_INTERVAL = "PT1H";
+  private static final int HISTORY_CLEANUP_BATCH_SIZE = 1000;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -53,10 +66,25 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.rdbms.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.rdbms.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "zeebe.broker.exporters.rdbms.class-name=io.camunda.exporter.rdbms.RdbmsExporter",
-        "zeebe.broker.exporters.rdbms.args.url=http://expected-url:4321",
-        "zeebe.broker.exporters.rdbms.args.flushInterval=" + EXPECTED_FLUSH_INTERVAL,
-        "zeebe.broker.exporters.rdbms.args.queueSize=" + EXPECTED_QUEUE_SIZE,
+        "camunda.data.secondary-storage.rdbms.flushInterval=" + EXPECTED_FLUSH_INTERVAL,
+        "camunda.data.secondary-storage.rdbms.queueSize=" + EXPECTED_QUEUE_SIZE,
+        "camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL=" + DEFAULT_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL="
+            + DEFAULT_BATCH_OPERATION_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.batchOperationCancelProcessInstanceHistoryTTL="
+            + BATCH_OPERATION_CANCEL_PROCESS_INSTANCE_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.batchOperationMigrateProcessInstanceHistoryTTL="
+            + BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.batchOperationModifyProcessInstanceHistoryTTL="
+            + BATCH_OPERATION_MODIFY_PROCESS_INSTANCE_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.batchOperationResolveIncidentHistoryTTL="
+            + BATCH_OPERATION_RESOLVE_INCIDENT_HISTORY_TTL,
+        "camunda.data.secondary-storage.rdbms.history.minHistoryCleanupInterval="
+            + MIN_HISTORY_CLEANUP_INTERVAL,
+        "camunda.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval="
+            + MAX_HISTORY_CLEANUP_INTERVAL,
+        "camunda.data.secondary-storage.rdbms.history.historyCleanupBatchSize="
+            + HISTORY_CLEANUP_BATCH_SIZE,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -77,16 +105,43 @@ public class SecondaryStorageRdbmsTest {
 
     @Test
     void testCamundaDataSecondaryStorageRdbmsExporterProperties() {
-      final ExporterCfg camundaExporter = brokerBasedProperties.getRdbmsExporter();
-      assertThat(camundaExporter).isNotNull();
-      final Map<String, Object> args = camundaExporter.getArgs();
+      final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
+      assertThat(exporter).isNotNull();
+
+      final Map<String, Object> args = exporter.getArgs();
       assertThat(args).isNotNull();
 
       final ExporterConfiguration exporterConfiguration =
           UnifiedConfigurationHelper.argsToRdbmsExporterConfiguration(args);
+
       assertThat(exporterConfiguration.getFlushInterval())
           .isEqualTo(Duration.parse(EXPECTED_FLUSH_INTERVAL));
       assertThat(exporterConfiguration.getQueueSize()).isEqualTo(EXPECTED_QUEUE_SIZE);
+      assertThat(exporterConfiguration.getHistory().getDefaultHistoryTTL())
+          .isEqualTo(Duration.parse(DEFAULT_HISTORY_TTL));
+      assertThat(exporterConfiguration.getHistory().getDefaultHistoryTTL())
+          .isEqualTo(Duration.parse(DEFAULT_HISTORY_TTL));
+      assertThat(exporterConfiguration.getHistory().getDefaultBatchOperationHistoryTTL())
+          .isEqualTo(Duration.parse(DEFAULT_BATCH_OPERATION_HISTORY_TTL));
+      assertThat(
+              exporterConfiguration.getHistory().getBatchOperationCancelProcessInstanceHistoryTTL())
+          .isEqualTo(Duration.parse(BATCH_OPERATION_CANCEL_PROCESS_INSTANCE_HISTORY_TTL));
+      assertThat(
+              exporterConfiguration
+                  .getHistory()
+                  .getBatchOperationMigrateProcessInstanceHistoryTTL())
+          .isEqualTo(Duration.parse(BATCH_OPERATION_MIGRATE_PROCESS_INSTANCE_HISTORY_TTL));
+      assertThat(
+              exporterConfiguration.getHistory().getBatchOperationModifyProcessInstanceHistoryTTL())
+          .isEqualTo(Duration.parse(BATCH_OPERATION_MODIFY_PROCESS_INSTANCE_HISTORY_TTL));
+      assertThat(exporterConfiguration.getHistory().getBatchOperationResolveIncidentHistoryTTL())
+          .isEqualTo(Duration.parse(BATCH_OPERATION_RESOLVE_INCIDENT_HISTORY_TTL));
+      assertThat(exporterConfiguration.getHistory().getMinHistoryCleanupInterval())
+          .isEqualTo(Duration.parse(MIN_HISTORY_CLEANUP_INTERVAL));
+      assertThat(exporterConfiguration.getHistory().getMaxHistoryCleanupInterval())
+          .isEqualTo(Duration.parse(MAX_HISTORY_CLEANUP_INTERVAL));
+      assertThat(exporterConfiguration.getHistory().getHistoryCleanupBatchSize())
+          .isEqualTo(HISTORY_CLEANUP_BATCH_SIZE);
     }
 
     @Test
@@ -106,9 +161,7 @@ public class SecondaryStorageRdbmsTest {
   class ExporterTestWithoutArgs {
     final BrokerBasedProperties brokerBasedProperties;
 
-    ExporterTestWithoutArgs(
-        @Autowired final BrokerBasedProperties brokerBasedProperties,
-        @Autowired final SearchEngineConnectProperties searchEngineConnectProperties) {
+    ExporterTestWithoutArgs(@Autowired final BrokerBasedProperties brokerBasedProperties) {
       this.brokerBasedProperties = brokerBasedProperties;
     }
 
