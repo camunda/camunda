@@ -128,7 +128,12 @@ public final class EngineRule extends ExternalResource {
   private ArrayList<TestInterPartitionCommandSender> interPartitionCommandSenders;
   private Consumer<SecurityConfiguration> securityConfigModifier =
       cfg -> cfg.getAuthorizations().setEnabled(false);
-  private Consumer<EngineConfiguration> engineConfigModifier = cfg -> {};
+  private Consumer<EngineConfiguration> engineConfigModifier =
+      cfg -> {
+        // identity setup is disabled by default so we can have deterministic writes
+        // if you need it enabled, use #withIdentitySetup
+        cfg.setEnableIdentitySetup(false);
+      };
   private SearchClientsProxy searchClientsProxy;
   private BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private Optional<RoutingState> initialRoutingState = Optional.empty();
@@ -199,7 +204,7 @@ public final class EngineRule extends ExternalResource {
 
   public EngineRule withIdentitySetup() {
     awaitIdentitySetup = true;
-    withFeatureFlags(ff -> ff.setEnableIdentitySetup(true));
+    withEngineConfig(c -> c.setEnableIdentitySetup(true));
     return this;
   }
 
