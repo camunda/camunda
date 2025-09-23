@@ -78,7 +78,9 @@ const DecisionInstance: React.FC = observer(() => {
       <DecisionInstanceContainer>
         <InstanceDetail
           header={<Header decisionEvaluationInstanceKey={decisionInstanceId} />}
-          topPanel={<DecisionPanel />}
+          topPanel={
+            <DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />
+          }
           bottomPanel={<VariablesPanel />}
           type="decision"
           rightPanel={
