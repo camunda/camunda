@@ -208,4 +208,17 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableMessageBodyOnExpired()).isFalse();
   }
+
+  @Test
+  void shouldAlwaysUseDefaultForIdentitySetupAndNotBeUserConfigurable() {
+    // given - try to set enableIdentitySetup via environment (should have no effect)
+    environment.put("zeebe.broker.experimental.features.enableIdentitySetup", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlags = cfg.getExperimental().getFeatures().toFeatureFlags();
+
+    // then - should always use the default value regardless of user configuration
+    assertThat(featureFlags.enableIdentitySetup()).isTrue(); // Default is true
+  }
 }
