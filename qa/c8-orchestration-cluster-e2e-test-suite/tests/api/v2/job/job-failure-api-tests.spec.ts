@@ -20,11 +20,14 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 
-test.describe.parallel('Job Fail API Tests', () => {
+test.describe('Job Fail API Tests', () => {
   const state: Record<string, unknown> = {};
 
   test.beforeAll(async () => {
     await deploy(['./resources/processWithThreeParallelTasks.bpmn']);
+  });
+
+  test.beforeEach(async () => {
     const processInstance = await createInstances(
       'processWithThreeParallelTasks',
       1,
@@ -33,7 +36,7 @@ test.describe.parallel('Job Fail API Tests', () => {
     state['processInstanceKey'] = processInstance[0].processInstanceKey;
   });
 
-  test.afterAll(async () => {
+  test.afterEach(async () => {
     await cancelProcessInstance(state['processInstanceKey'] as string);
   });
 

@@ -64,7 +64,6 @@ test.describe.parallel('Job API Tests', () => {
       retries: 3,
       variables: state['variables'],
       tenantId: state['tenantId'],
-      processInstanceKey: state['processInstanceKey'] as string,
       processDefinitionKey: state['processDefinitionKey'] as string,
       kind: 'BPMN_ELEMENT',
       listenerEventType: 'UNSPECIFIED',
@@ -92,7 +91,8 @@ test.describe.parallel('Job API Tests', () => {
       (field) =>
         field !== 'deadline' &&
         field !== 'jobKey' &&
-        field !== 'elementInstanceKey',
+        field !== 'elementInstanceKey' &&
+        field !== 'processInstanceKey',
     );
   }
 

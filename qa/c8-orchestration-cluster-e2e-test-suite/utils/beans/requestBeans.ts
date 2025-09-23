@@ -44,7 +44,6 @@ export const jobResponseFields = [
 export const jobSearchPageResponseRequiredFields = ['totalItems'];
 export const jobSearchItemResponseFields = [
   'customHeaders',
-  'elementId',
   'elementInstanceKey',
   'hasFailedWithRetriesLeft',
   'jobKey',
