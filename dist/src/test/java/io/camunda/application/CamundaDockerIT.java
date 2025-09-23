@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.dockerjava.api.command.CreateContainerCmd;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -109,6 +110,54 @@ public class CamundaDockerIT {
           OBJECT_MAPPER.readTree(EntityUtils.toString(healthCheckResponse.getEntity()));
 
       assertThat(actualJson).isEqualTo(expectedJson);
+    }
+  }
+
+  // Regression for https://github.com/camunda/camunda/issues/38487
+  @Test
+  public void testStartStandaloneBrokerWithoutRestAPI() throws Exception {
+    // given
+    // create and start Elasticsearch container
+    final ElasticsearchContainer elasticsearchContainer =
+        createContainer(this::createElasticsearchContainer);
+    elasticsearchContainer.start();
+
+    // create camunda container with only StandaloneBroker app
+    final var standaloneBrokerContainer =
+        new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+            .withCreateContainerCmdModifier(
+                (final CreateContainerCmd cmd) ->
+                    cmd.withEntrypoint("/usr/local/camunda/bin/broker"))
+            .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+            .withNetwork(Network.SHARED)
+            .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
+            .waitingFor(
+                new HttpWaitStrategy()
+                    .forPort(MANAGEMENT_PORT)
+                    .forPath("/actuator/health")
+                    .withReadTimeout(Duration.ofSeconds(120)))
+            .withStartupTimeout(Duration.ofSeconds(300))
+            // Unified Configuration
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
+            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
+            // disable the REST API
+            .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false");
+
+    // when - then the container should start without errors
+    startContainer(createContainer(() -> standaloneBrokerContainer));
+
+    try (final CloseableHttpResponse healthCheckResponse =
+        HttpClients.createDefault()
+            .execute(
+                new HttpGet(
+                    String.format(
+                        "http://%s:%d%s",
+                        standaloneBrokerContainer.getHost(),
+                        standaloneBrokerContainer.getMappedPort(MANAGEMENT_PORT),
+                        "/actuator/cluster")))) {
+
+      // then - the status codershould be 200 OK (instead of a 500 error as reported in #38487)
+      assertThat(healthCheckResponse.getCode()).isEqualTo(200);
     }
   }
 
