@@ -2,13 +2,12 @@
 
 printf "\nTest: Operate process instance api\n"
 
-curl -f -L -X POST 'http://localhost:8080/v2/process-instances/search' \
+curl --fail-with-body -L -X POST 'http://localhost:8080/v2/process-instances/search' \
         -H 'Content-Type: application/json' \
         -H 'Accept: application/json' \
         --data-raw '{
   "filter": {
-    "running": true,
-    "active": true
+    "state": "ACTIVE"
   }
 }'
 
@@ -20,7 +19,7 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 
 printf "\nTest: Tasklist user task\n"
-curl -f -L -X POST 'http://localhost:8080/v2/user-tasks/search' \
+curl --fail-with-body -L -X POST 'http://localhost:8080/v2/user-tasks/search' \
         -H 'Content-Type: application/json' \
         -H 'Accept: application/json' \
         --data-raw '{}'
