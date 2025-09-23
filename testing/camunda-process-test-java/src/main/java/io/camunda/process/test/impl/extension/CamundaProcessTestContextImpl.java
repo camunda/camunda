@@ -28,10 +28,10 @@ import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
-import io.camunda.process.test.api.mock.BpmnExampleDataReader;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReaderImpl;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -175,7 +175,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
     final CamundaAssertJsonMapper jsonMapper = createJsonMapper();
-    final BpmnExampleDataReader exampleDataReader = new BpmnExampleDataReader(client, jsonMapper);
+    final BpmnExampleDataReaderImpl exampleDataReader =
+        new BpmnExampleDataReaderImpl(client, jsonMapper);
 
     return new JobWorkerMockBuilderImpl(jobType, client, exampleDataReader);
   }
@@ -217,29 +218,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
 
-    final BpmnExampleDataReader exampleDataReader =
-        new BpmnExampleDataReader(createClient(), createJsonMapper());
+    final BpmnExampleDataReaderImpl exampleDataReader =
+        new BpmnExampleDataReaderImpl(client, createJsonMapper());
 
     final Map<String, Object> exampleDataVariables =
         exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
 
     LOGGER.debug(
-        "Complete job with variables {} [job-type: '{}', job-key: '{}']",
-        exampleDataVariables,
+        "Mock: Complete job [jobType: '{}', jobKey: '{}'] with example data {}",
         jobType,
-        job.getKey());
+        job.getKey(),
+        exampleDataVariables);
     client.newCompleteCommand(job).variables(exampleDataVariables).send().join();
-  }
-
-  private CamundaAssertJsonMapper createJsonMapper() {
-    if (jsonMapper != null) {
-      return new CamundaAssertJsonMapper(jsonMapper);
-    }
-    if (zeebeJsonMapper != null) {
-      return new CamundaAssertJsonMapper(zeebeJsonMapper);
-    } else {
-      return new CamundaAssertJsonMapper(new CamundaObjectMapper());
-    }
   }
 
   @Override
@@ -248,10 +238,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final ActivatedJob job = getActivatedJob(jobType);
 
     LOGGER.debug(
-        "Complete job with variables {} [job-type: '{}', job-key: '{}']",
-        variables,
+        "Mock: Complete job [jobType: '{}', jobKey: '{}'] with variables {}",
         jobType,
-        job.getKey());
+        job.getKey(),
+        variables);
     client.newCompleteCommand(job).variables(variables).send().join();
   }
 
@@ -267,11 +257,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final ActivatedJob job = getActivatedJob(jobType);
 
     LOGGER.debug(
-        "Mock: Throw BPMN error [job-type: '{}', job-key: '{}'] with error code {} and variables {}",
-        errorCode,
-        variables,
+        "Mock: Throw BPMN error [jobType: '{}', jobKey: '{}'] with error code {} and variables {}",
         jobType,
-        job.getKey());
+        job.getKey(),
+        errorCode,
+        variables);
+
     client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
   }
 
@@ -294,33 +285,45 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
-
-    awaitBehavior.untilAsserted(
-        () -> {
-          final Optional<UserTask> userTask =
-              client
-                  .newUserTaskSearchRequest()
-                  .filter(userTaskSelector::applyFilter)
-                  .send()
-                  .join()
-                  .items()
-                  .stream()
-                  .filter(userTaskSelector::test)
-                  .findFirst();
-
-          userTask.map(UserTask::getUserTaskKey).ifPresent(userTaskKey::set);
-
-          assertThat(userTask)
-              .withFailMessage(
-                  "Expected to complete user task [%s] but no user task is available.",
-                  userTaskSelector.describe())
-              .isPresent();
-        });
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
 
     LOGGER.debug(
-        "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
-    client.newCompleteUserTaskCommand(userTaskKey.get()).variables(variables).send().join();
+        "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+        userTaskSelector.describe(),
+        userTask.getUserTaskKey(),
+        variables);
+
+    client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).variables(variables).send().join();
+  }
+
+  @Override
+  public void completeUserTaskWithExampleData(final String elementId) {
+    completeUserTaskWithExampleData(UserTaskSelectors.byElementId(elementId));
+  }
+
+  @Override
+  public void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector) {
+    final CamundaClient client = createClient();
+    final BpmnExampleDataReaderImpl exampleDataReader =
+        new BpmnExampleDataReaderImpl(client, createJsonMapper());
+
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
+
+    final Map<String, Object> exampleDataVariables =
+        exampleDataReader.readExampleData(
+            userTask.getProcessDefinitionKey(), userTask.getElementId());
+
+    LOGGER.debug(
+        "Mock: Complete user task [{}, userTaskKey: '{}'] with example data {} ",
+        userTaskSelector.describe(),
+        userTask.getUserTaskKey(),
+        exampleDataVariables);
+
+    client
+        .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+        .variables(exampleDataVariables)
+        .send()
+        .join();
   }
 
   @Override
@@ -349,7 +352,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     literalExpression.setText(text);
     decision.addChildElement(literalExpression);
 
-    LOGGER.debug("Mock: Deploy a DMN '{}' with decision output {}", decisionId, decisionOutput);
+    LOGGER.debug(
+        "Mock: Deploy a DMN [decisionId: '{}'] with decision output {}",
+        decisionId,
+        decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
     client
@@ -358,6 +364,34 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
         .send()
         .join();
+  }
+
+  private UserTask awaitUserTask(
+      final UserTaskSelector userTaskSelector, final CamundaClient client) {
+
+    final AtomicReference<UserTask> userTask = new AtomicReference<>();
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Optional<UserTask> maybeUserTask =
+              client
+                  .newUserTaskSearchRequest()
+                  .filter(userTaskSelector::applyFilter)
+                  .send()
+                  .join()
+                  .items()
+                  .stream()
+                  .filter(userTaskSelector::test)
+                  .findFirst();
+
+          assertThat(maybeUserTask)
+              .withFailMessage(
+                  "Expected to complete user task [%s] but no user task is available.",
+                  userTaskSelector.describe())
+              .isPresent();
+
+          userTask.set(maybeUserTask.get());
+        });
+    return userTask.get();
   }
 
   private ActivatedJob getActivatedJob(final String jobType) {
@@ -387,5 +421,15 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         });
 
     return activatedJob.get();
+  }
+
+  private CamundaAssertJsonMapper createJsonMapper() {
+    if (jsonMapper != null) {
+      return new CamundaAssertJsonMapper(jsonMapper);
+    } else if (zeebeJsonMapper != null) {
+      return new CamundaAssertJsonMapper(zeebeJsonMapper);
+    } else {
+      return new CamundaAssertJsonMapper(new CamundaObjectMapper());
+    }
   }
 }

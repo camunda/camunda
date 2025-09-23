@@ -17,6 +17,7 @@ package io.camunda.process.test.api.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.process.test.api.mock.BpmnExampleDataReader.BpmnExampleDataReadException;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import java.util.List;
 import java.util.Map;
@@ -43,9 +44,10 @@ public interface JobWorkerMockBuilder {
   JobWorkerMock thenComplete(final Map<String, Object> variables);
 
   /**
-   * Configures the mock worker to complete jobs with the example data provided in the BPMN model.
+   * Configures the mock worker to complete jobs variables extracted from the BPMN model's example
+   * data.
    *
-   * @throws RuntimeException if no example data was found
+   * @throws BpmnExampleDataReadException if no example data was found
    * @throws JsonMappingException if the example data isn't valid JSON.
    */
   JobWorkerMock thenCompleteWithExampleData();
@@ -90,7 +92,7 @@ public interface JobWorkerMockBuilder {
    *         .contains(entry("error_code", "404"));
    * </pre>
    */
-  public interface JobWorkerMock {
+  interface JobWorkerMock {
     /**
      * Gets the number of times the Job Worker was invoked.
      *

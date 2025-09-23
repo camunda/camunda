@@ -36,7 +36,7 @@ public class JobWorkerMockImpl implements JobWorkerMock {
     final JobHandler loggingJobHandler =
         (jobClient, job) -> {
           LOGGER.debug(
-              "Mock: Pass job to custom handler [job-type: '{}', job-key: '{}']",
+              "Mock: Pass job to custom handler [jobType: '{}', jobKey: '{}']",
               jobType,
               job.getKey());
 
@@ -51,7 +51,7 @@ public class JobWorkerMockImpl implements JobWorkerMock {
           } catch (final AssertionError e) {
             final String failureMessage =
                 String.format(
-                    "JobWorkerMock [job-type: %s, job-key: %s] has failed assertions and will be terminated.",
+                    "JobWorkerMock [jobType: %s, jobKey: %s] has failed assertions and will be terminated.",
                     jobType, job.getKey());
             System.err.println(failureMessage);
             e.printStackTrace();

@@ -18,7 +18,6 @@ package io.camunda.process.test.impl.mock;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.process.test.api.mock.BpmnExampleDataReader;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,21 +34,21 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   private final String jobType;
   private final CamundaClient client;
-  private final BpmnExampleDataReader exampleDataReader;
+  private final BpmnExampleDataReaderImpl exampleDataReader;
 
   private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
 
   public JobWorkerMockBuilderImpl(
       final String jobType,
       final CamundaClient client,
-      final BpmnExampleDataReader exampleDataReader) {
+      final BpmnExampleDataReaderImpl exampleDataReader) {
 
     this.jobType = jobType;
     this.client = client;
     this.exampleDataReader = exampleDataReader;
-    this.logMessagePrefix =
+    logMessagePrefix =
         (action, job) ->
-            String.format("Mock: %s [job-type: %s, job-key: %s]", action, jobType, job.getKey());
+            String.format("Mock: %s [jobType: %s, jobKey: %s]", action, jobType, job.getKey());
   }
 
   @Override

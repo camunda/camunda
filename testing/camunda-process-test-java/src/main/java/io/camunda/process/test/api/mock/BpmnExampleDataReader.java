@@ -15,98 +15,21 @@
  */
 package io.camunda.process.test.api.mock;
 
-import io.camunda.client.CamundaClient;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
-import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
-import java.io.ByteArrayInputStream;
-import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-import org.awaitility.Awaitility;
-import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
-public class BpmnExampleDataReader {
+/** Reads a BPMN model and extracts variables from an element's example data. */
+public interface BpmnExampleDataReader {
 
-  private static final String EXAMPLE_DATA_ATTRIBUTE_NAME = "camundaModeler:exampleOutputJson";
+  /**
+   * Transforms an element's example data into a variable map.
+   *
+   * @param processDefinitionKey the BPMN model's definition key
+   * @param elementId the id of the element containing the example data
+   * @return a map containing the example data
+   */
+  Map<String, Object> readExampleData(final long processDefinitionKey, final String elementId);
 
-  private final CamundaClient client;
-  private final CamundaAssertJsonMapper jsonMapper;
-
-  public BpmnExampleDataReader(
-      final CamundaClient client, final CamundaAssertJsonMapper jsonMapper) {
-
-    this.client = client;
-    this.jsonMapper = jsonMapper;
-  }
-
-  public Map<String, Object> readExampleData(
-      final long processDefinitionKey, final String elementId) {
-
-    final String failureMessage =
-        String.format(
-            "BPMN Model [process-definition-key: '%s', element-id: '%s']",
-            processDefinitionKey, elementId);
-
-    final ModelElementInstance elementModelInstance =
-        buildModelInstance(failureMessage, processDefinitionKey).getModelElementById(elementId);
-
-    return extractVariablesFromExampleData(failureMessage, elementModelInstance);
-  }
-
-  private BpmnModelInstance buildModelInstance(
-      final String failureMessagePrefix, final long processDefinitionKey) {
-
-    final AtomicReference<BpmnModelInstance> modelInstance = new AtomicReference<>();
-
-    try {
-      Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
-          .ignoreExceptions()
-          .until(
-              () -> {
-                final String bpmnXml =
-                    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join();
-
-                modelInstance.set(
-                    Bpmn.readModelFromStream(new ByteArrayInputStream(bpmnXml.getBytes())));
-                return true;
-              });
-
-    } catch (final Throwable t) {
-      final String errorMessage =
-          String.format("%s failed to parse the BPMN model", failureMessagePrefix);
-      throw new BpmnExampleDataReadException(errorMessage, t);
-    }
-
-    return modelInstance.get();
-  }
-
-  private Map<String, Object> extractVariablesFromExampleData(
-      final String failureMessagePrefix, final ModelElementInstance exampleDataParentElement) {
-
-    final ZeebeProperty examplePropertyNode =
-        exampleDataParentElement
-            .getModelInstance()
-            .getModelElementsByType(ZeebeProperty.class)
-            .stream()
-            .filter(property -> EXAMPLE_DATA_ATTRIBUTE_NAME.equalsIgnoreCase(property.getName()))
-            .findFirst()
-            .orElseThrow(
-                () -> {
-                  final String errorMessage =
-                      String.format(
-                          "%s has no example data for the given element-id. Example data must have the "
-                              + "attribute name '%s' or else it won't be recognized.",
-                          failureMessagePrefix, EXAMPLE_DATA_ATTRIBUTE_NAME);
-                  return new BpmnExampleDataReadException(errorMessage);
-                });
-
-    return jsonMapper.fromJsonAsMap(examplePropertyNode.getValue());
-  }
-
-  static class BpmnExampleDataReadException extends RuntimeException {
+  class BpmnExampleDataReadException extends RuntimeException {
 
     public BpmnExampleDataReadException(final String message) {
       super(message);

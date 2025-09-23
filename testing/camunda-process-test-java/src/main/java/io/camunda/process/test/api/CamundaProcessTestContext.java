@@ -18,7 +18,9 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import io.camunda.process.test.api.mock.BpmnExampleDataReader.BpmnExampleDataReadException;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -142,9 +144,12 @@ public interface CamundaProcessTestContext {
   void completeJob(final String jobType);
 
   /**
-   * Completes a job of the specified type with example data extracted from the BPMN Model.
+   * Completes a job of the specified type with variables extracted from the BPMN model's example
+   * data.
    *
    * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
+   * @throws BpmnExampleDataReadException if no example data was found
+   * @throws JsonMappingException if the example data isn't valid JSON.
    */
   void completeJobWithExampleData(final String jobType);
 
@@ -206,6 +211,26 @@ public interface CamundaProcessTestContext {
    */
   void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
+
+  /**
+   * Completes a user task with the given BPMN element ID with variables extracted from the BPMN
+   * model's example data.
+   *
+   * @param elementId the elementId of the user task and its associated example data
+   * @throws BpmnExampleDataReadException if no example data was found
+   * @throws JsonMappingException if the example data isn't valid JSON.
+   */
+  void completeUserTaskWithExampleData(final String elementId);
+
+  /**
+   * Completes a user task that matches the specified selector with variables extracted from the
+   * BPMN model's example data
+   *
+   * @param userTaskSelector the selector to identify the user task to complete
+   * @throws BpmnExampleDataReadException if no example data was found
+   * @throws JsonMappingException if the example data isn't valid JSON.
+   */
+  void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
 
   /**
    * Mocks a DMN decision with the specified decision ID and sets the provided variables.

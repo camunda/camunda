@@ -270,16 +270,7 @@ public class CamundaProcessTestContextIT {
     processTestContext.mockJobWorker("email").thenCompleteWithExampleData();
 
     final long processDefinitionKey =
-        client
-            .newDeployResourceCommand()
-            .addResourceFromClasspath("mockJobWorker/send-email-with-example.bpmn")
-            .send()
-            .join()
-            .getProcesses()
-            .stream()
-            .findFirst()
-            .get()
-            .getProcessDefinitionKey();
+        deployProcessModel("mockJobWorker/send-email-with-example.bpmn");
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -372,6 +363,24 @@ public class CamundaProcessTestContextIT {
     // Then
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
+    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldCompleteUserTaskWithExampleData() {
+    // Given
+    final long processDefinitionKey =
+        deployProcessModel("mockJobWorker/user-task-with-example.bpmn");
+    final ProcessInstanceEvent processInstanceEvent =
+        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    final Map<String, Object> variables = new HashMap<>();
+    variables.put("email_output", "Lorem ipsum");
+
+    // When
+    processTestContext.completeUserTaskWithExampleData("user_task_write_email");
+
+    // Then
+    assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
   }
 
@@ -866,6 +875,12 @@ public class CamundaProcessTestContextIT {
             .addProcessModel(processModel, "test-process.bpmn")
             .send()
             .join();
+    return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
+  }
+
+  private long deployProcessModel(final String resourceName) {
+    final DeploymentEvent deploymentEvent =
+        client.newDeployResourceCommand().addResourceFromClasspath(resourceName).send().join();
     return deploymentEvent.getProcesses().stream().findFirst().get().getProcessDefinitionKey();
   }
 
