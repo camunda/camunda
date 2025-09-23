@@ -11,19 +11,18 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
-import io.camunda.configuration.DocumentBasedHistory;
 import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.PrimaryStorage;
 import io.camunda.configuration.Rdbms;
-import io.camunda.configuration.RdbmsHistory;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
@@ -80,6 +79,7 @@ public class BrokerBasedPropertiesOverride {
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
   private static final String RDBMS_EXPORTER_NAME = "rdbms";
+  private static final String CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB = "connect.interceptorPlugins";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -570,6 +570,9 @@ public class BrokerBasedPropertiesOverride {
       setArg(args, "connect.security.verifyHostname", database.getSecurity().isVerifyHostname());
       setArg(args, "connect.security.selfSigned", database.getSecurity().isSelfSigned());
     }
+
+    populateInterceptorPlugins(database, args);
+
     setArg(args, "connect.username", database.getUsername());
     setArg(args, "connect.password", database.getPassword());
 
@@ -577,9 +580,7 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
 
     setArg(
-        args,
-        "history.processInstanceEnabled",
-        ((DocumentBasedHistory) database.getHistory()).isProcessInstanceEnabled());
+        args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -608,7 +609,7 @@ public class BrokerBasedPropertiesOverride {
     setArgIfNotNull(args, "flushInterval", database.getFlushInterval());
 
     if (database.getHistory() != null) {
-      final var history = (RdbmsHistory) database.getHistory();
+      final var history = database.getHistory();
 
       setArgIfNotNull(args, "history.defaultHistoryTTL", history.getDefaultHistoryTTL());
       setArgIfNotNull(
@@ -664,6 +665,36 @@ public class BrokerBasedPropertiesOverride {
       final Map<String, Object> args, final String breadcrumb, final Object value) {
     if (value != null) {
       setArg(args, breadcrumb, value);
+    }
+  }
+
+  private void populateInterceptorPlugins(
+      final DocumentBasedSecondaryStorageDatabase database, final Map<String, Object> args) {
+
+    final Map<Object, String> connectMap = (Map<Object, String>) args.get("connect");
+    if (connectMap != null && connectMap.containsKey("interceptorPlugins")) {
+      final String warningMessage =
+          String.format(
+              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+              "camunda.data.secondary-storage." + database.databaseName() + ".interceptor-plugins",
+              "zeebe.broker.exporters.camundaexporter.args.connect.interceptorPlugins");
+      LOGGER.warn(warningMessage);
+    }
+
+    for (int i = 0; i < database.getInterceptorPlugins().size(); i++) {
+      final InterceptorPlugin interceptorPlugin = database.getInterceptorPlugins().get(i);
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.id", i),
+          interceptorPlugin.getId());
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.className", i),
+          interceptorPlugin.getClassName());
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREADCRUMB + ".%s.jarPath", i),
+          interceptorPlugin.getJarPath());
     }
   }
 

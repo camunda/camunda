@@ -8,6 +8,8 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -24,6 +26,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   private int numberOfShards = 1;
 
   @NestedConfigurationProperty private Security security = new Security(databaseName());
+
+  /** Sets the interceptor plugins */
+  private List<InterceptorPlugin> interceptorPlugins = new ArrayList<>();
 
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
@@ -67,9 +72,6 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
   }
-
-  @Override
-  protected abstract String databaseName();
 
   public Security getSecurity() {
     return security;
@@ -116,6 +118,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
 
   public void setNumberOfShards(final int numberOfShards) {
     this.numberOfShards = numberOfShards;
+  }
+
+  public List<InterceptorPlugin> getInterceptorPlugins() {
+    return interceptorPlugins;
+  }
+
+  public void setInterceptorPlugins(final List<InterceptorPlugin> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
   }
 
   private String prefix() {
