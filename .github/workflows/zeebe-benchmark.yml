@@ -314,6 +314,9 @@ jobs:
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
           ${{ inputs.benchmark-load }}
+      - name: Label namespace
+        run: >
+            kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
       - name: Summarize deployment
         if: success()
         run: |
