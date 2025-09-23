@@ -10,7 +10,6 @@ package io.camunda.authentication;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.containing;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
-import static com.github.tomakehurst.wiremock.client.WireMock.matching;
 import static com.github.tomakehurst.wiremock.client.WireMock.notContaining;
 import static com.github.tomakehurst.wiremock.client.WireMock.post;
 import static com.github.tomakehurst.wiremock.client.WireMock.postRequestedFor;
@@ -20,19 +19,14 @@ import static com.github.tomakehurst.wiremock.client.WireMock.verify;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.github.tomakehurst.wiremock.client.BasicCredentials;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
-import com.nimbusds.jose.JWSAlgorithm;
-import com.nimbusds.jose.util.Base64URL;
-import com.nimbusds.jwt.SignedJWT;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
-import java.text.ParseException;
-import java.time.Instant;
-import java.util.Arrays;
 import java.util.Objects;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -52,34 +46,10 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
 import org.springframework.web.util.UriComponentsBuilder;
 
 /**
- * Test for OIDC authentication flow using private_key_jwt client authentication.
+ * Test for OIDC authentication flow using client_secret_basic client authentication.
  *
  * <p>Tests the Spring Security OIDC authorization code flow from IdP perspective where the client
- * authenticates to the token endpoint using a JWT signed with a private key.
- *
- * <p>The test verifies the correct JWT format and claims in client assertion adhering to the <a
- * href="https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication">OIDC
- * specification</a>,<a
- * href="https://www.keycloak.org/securing-apps/authz-client#_client_authentication_with_signed_jwt">
- * Keycloak documentation</a>, and <a
- * href="https://learn.microsoft.com/en-us/entra/identity-platform/certificate-credentials">MS Entra
- * documentation</a> <hr>
- *
- * <p>Header expectations by IdP set as default:
- *
- * <ul>
- *   <li>Keycloak: either NO <code>kid</code> or public key SPKI SHA-256 as <code>kid</code>. We
- *       default to setting a <code>kid</code> for unambiguous key selection and easier
- *       auditing/logging.
- *   <li>MS Entra: expect one of: <code>x5t</code> certificate SHA-1 thumbprint, <code>x5t#S256
- *       </code> certificate SHA-256 thumbprint, or <code>kid</code> that is the certificate SHA-1
- *       thumbprint. As the <code>x5t#S256</code> is explicitly defined in <a
- *       href="https://datatracker.ietf.org/doc/html/rfc7517#section-4.9">RFC7517</a>, we use it as
- *       the default for broad interoperability. With this header parameter set, Entra will ignore
- *       the <code>kid</code>.
- *   <li>Other: some providers have different requirements for the <code>kid</code>, which is then
- *       customizable using configuration properties. Outside of scope for this test.
- * </ul>
+ * authenticates to the token endpoint using a client secret.
  */
 @SuppressWarnings({"SpringBootApplicationProperties", "WrongPropertyKeyValueDelimiter"})
 @AutoConfigureMockMvc
@@ -92,21 +62,20 @@ import org.springframework.web.util.UriComponentsBuilder;
     properties = {
       "camunda.security.authentication.unprotected-api=false",
       "camunda.security.authentication.method=oidc",
-      "camunda.security.authentication.oidc.client-id=" + OidcPrivateKeyJwtKeycloakTest.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-id="
+          + OidcClientSecretBasicKeycloakTest.CLIENT_ID,
+      "camunda.security.authentication.oidc.client-secret="
+          + OidcClientSecretBasicKeycloakTest.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
       "camunda.security.authentication.oidc.clientAuthenticationMethod="
-          + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_PRIVATE_KEY_JWT,
-      "camunda.security.authentication.oidc.assertion.keystore.path= ${user.dir}/src/test/resources/keystore.p12",
-      "camunda.security.authentication.oidc.assertion.keystore.password=password",
-      "camunda.security.authentication.oidc.assertion.keystore.keyAlias=camunda-standalone",
-      "camunda.security.authentication.oidc.assertion.keystore.keyPassword=password",
+          + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC,
       "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       "logging.level.io.camunda.authentication.config=DEBUG"
       // essential for debugging the flow
       //      "logging.level.org.springframework.security=TRACE",
     })
 @ActiveProfiles("consolidated-auth")
-class OidcPrivateKeyJwtKeycloakTest {
+class OidcClientSecretBasicKeycloakTest {
 
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -117,16 +86,12 @@ class OidcPrivateKeyJwtKeycloakTest {
           .build();
 
   static final String CLIENT_ID = "camunda-client";
+  static final String CLIENT_SECRET = "camunda-client-secret";
   static final String REALM = "camunda-test";
   static final String ENDPOINT_WELL_KNOWN_JWKS = "/realms/" + REALM + "/.well-known/jwks.json";
   static final String ENDPOINT_WELL_KNOWN_OIDC =
       "/realms/" + REALM + "/.well-known/openid-configuration";
   static final String ENDPOINT_TOKEN = "/realms/" + REALM + "/oauth/token";
-  static final String EXPECTED_KEY_ID = "opaYc1PqzH6XYGbL3KF4BK1rkNRS4IuMAfh3qPZILHo";
-  static final Base64URL EXPECTED_X5T_S256 =
-      Base64URL.from("gCC_MwKDLUCxMYUlm95bDX8ol6nNHhCohhudSkJAJhQ");
-  static final String REGEX_JWT = "[A-Za-z0-9-_=]+\\.[A-Za-z0-9-_=]+\\.?[A-Za-z0-9-_.+/=]*";
-  final String expectedTokenEndpointUrl = "http://localhost:" + wireMock.getPort() + ENDPOINT_TOKEN;
   @Autowired MockMvcTester mockMvcTester;
 
   @DynamicPropertySource
@@ -156,8 +121,7 @@ class OidcPrivateKeyJwtKeycloakTest {
   }
 
   @Test
-  public void shouldSendClientAssertionToTokenEndpointDuringAuthCodeExchange()
-      throws ParseException {
+  public void shouldSendClientAssertionToTokenEndpointDuringAuthCodeExchange() {
     stubIdpEndpoints();
 
     // with an established session, we notify Spring Security we want to authenticate
@@ -170,10 +134,8 @@ class OidcPrivateKeyJwtKeycloakTest {
     mockAuthenticatedRedirectFromIdp(session, state);
 
     // then the IdP receives the authorization code
-    // with the Spring Security client authenticating using private_key_jwt
-    // in the form of a client id and client assertion
+    // with the Spring Security client authenticating using client_secret_basic
     verifyRequestStructure();
-    verifyClientAssertion();
   }
 
   private static void stubIdpEndpoints() {
@@ -227,56 +189,14 @@ class OidcPrivateKeyJwtKeycloakTest {
         1,
         postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
+            .withBasicAuth(new BasicCredentials(CLIENT_ID, CLIENT_SECRET))
             .withRequestBody(containing("grant_type=authorization_code"))
             .withRequestBody(containing("code=test_authorization_code"))
-            .withRequestBody(containing("client_id=" + CLIENT_ID))
             .withRequestBody(
                 containing(
                     "resource=https%3A%2F%2Fapi.example.com%2Fapp1%2F&resource=https%3A%2F%2Fapi.example.com%2Fapp2%2F"))
-            .withRequestBody(
-                containing(
-                    "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
-            // client_assertion=<A JWT>
-            .withRequestBody(matching(".*client_assertion=" + REGEX_JWT + ".*"))
-            .withRequestBody(notContaining("client_secret")));
-  }
-
-  private void verifyClientAssertion() throws ParseException {
-    final var clientAssertion = getClientAssertionFromLastRequest();
-    final var jwt = SignedJWT.parse(clientAssertion);
-
-    assertThat(jwt.getHeader().getAlgorithm()).isEqualTo(JWSAlgorithm.RS256);
-    assertThat(jwt.getHeader().getKeyID()).isEqualTo(EXPECTED_KEY_ID); // public key SHA-256
-    assertThat(jwt.getHeader().getX509CertSHA256Thumbprint()).isEqualTo(EXPECTED_X5T_S256);
-
-    // Keycloak requirements and OIDC specification match
-    // https://openid.net/specs/openid-connect-core-1_0.html#ClientAuthentication
-    final var payload = jwt.getPayload().toJSONObject();
-    final var now = Instant.now().getEpochSecond();
-    assertThat(payload)
-        .containsEntry("iss", CLIENT_ID)
-        .containsEntry("sub", CLIENT_ID)
-        .containsEntry("aud", expectedTokenEndpointUrl)
-        .containsKey("jti")
-        .hasEntrySatisfying(
-            "iat",
-            iat -> assertThat(now).as("issued in the past").isGreaterThanOrEqualTo((Long) iat))
-        .hasEntrySatisfying(
-            "exp", exp -> assertThat(now).as("expires in the future").isLessThan((Long) exp));
-
-    assertThat(jwt.getSignature()).isNotNull(); // null would mean no signature exists
-  }
-
-  private String getClientAssertionFromLastRequest() {
-    final var tokenEvents = wireMock.findAll(postRequestedFor(urlEqualTo(ENDPOINT_TOKEN)));
-    assertThat(tokenEvents).hasSize(1);
-
-    final var exchangeEvent = tokenEvents.getFirst();
-    return Arrays.stream(exchangeEvent.getBodyAsString().split("&"))
-        .filter(field -> field.startsWith("client_assertion="))
-        .map(field -> field.split("=")[1])
-        .findFirst()
-        .orElseThrow();
+            .withRequestBody(notContaining("client_assertion_type"))
+            .withRequestBody(notContaining("client_assertion")));
   }
 
   private static String wellKnownResponse() {
