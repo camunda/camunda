@@ -182,7 +182,7 @@ public class OpenSearchQueryHelper {
         and(
             term(ACTIVITY_STATE, FlowNodeState.ACTIVE.name()),
             term(ACTIVITY_ID, activityId),
-            exists(ERROR_MSG));
+            term(INCIDENT, true));
 
     return QueryDSL.hasChildQuery(ACTIVITIES_JOIN_RELATION, query);
   }
