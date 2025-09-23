@@ -76,6 +76,7 @@ zeebe:
         args:
           flushInterval: PT0.5S
           queueSize: 1000
+          usageMetricsTTL: PT730D
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:
