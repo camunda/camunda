@@ -10,7 +10,10 @@ import {Page, Locator, expect} from '@playwright/test';
 import {relativizePath, Paths} from 'utils/relativizePath';
 import {sleep} from 'utils/sleep';
 import {defaultAssertionOptions} from '../utils/constants';
-import {waitForItemInList} from '../utils/waitForItemInList';
+import {
+  findLocatorInPaginatedList,
+  waitForItemInList,
+} from '../utils/waitForItemInList';
 
 export class IdentityGroupsPage {
   private page: Page;
@@ -191,6 +194,7 @@ export class IdentityGroupsPage {
   }
 
   async clickGroupId(groupName: string) {
+    await findLocatorInPaginatedList(this.page, this.groupCell(groupName));
     await this.selectGroupRow(groupName).click();
   }
 
