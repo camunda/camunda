@@ -58,5 +58,6 @@ public class IndexSchemaValidatorElasticSearch implements IndexSchemaValidator, 
   @Override
   public void close() {
     searchEngineClient.close();
+    schemaManager.close();
   }
 }
