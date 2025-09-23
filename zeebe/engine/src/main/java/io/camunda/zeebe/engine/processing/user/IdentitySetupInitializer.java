@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationScope.WILDCARD
 
 import io.camunda.security.configuration.InitializationConfiguration;
 import io.camunda.security.configuration.SecurityConfiguration;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;

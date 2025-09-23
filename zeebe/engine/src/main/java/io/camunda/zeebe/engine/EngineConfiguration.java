@@ -48,6 +48,12 @@ public final class EngineConfiguration {
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
+<<<<<<< HEAD
+=======
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
+      Duration.ofMinutes(5);
+>>>>>>> 537e683d (refactor: migrate enableIdentitSetup as engine config)
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
@@ -82,6 +88,8 @@ public final class EngineConfiguration {
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+
+  private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
 
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
 
@@ -299,6 +307,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setCommandDistributionPaused(final boolean commandDistributionPaused) {
     this.commandDistributionPaused = commandDistributionPaused;
+    return this;
+  }
+
+  public boolean isEnableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public EngineConfiguration setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
     return this;
   }
 
