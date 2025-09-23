@@ -256,7 +256,7 @@ public class SecondaryStorageElasticsearchTest {
       properties = {
         "camunda.data.secondary-storage.type=elasticsearch",
         "camunda.data.secondary-storage.elasticsearch.url=http://matching-url:4321",
-        "zeebe.broker.exporters.camunda.class-name=io.camunda.exporter.CamundaExporter"
+        "zeebe.broker.exporters.camundaexporter.class-name=io.camunda.exporter.CamundaExporter"
       })
   class ExporterTestWithoutArgs {
     final OperateProperties operateProperties;
@@ -283,6 +283,54 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(camundaExporter).isNotNull();
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.autoconfigure-camunda-exporter=false",
+        "camunda.data.secondary-storage.elasticsearch.url=http://unwanted-url:4321",
+      })
+  class ExporterAutoconfigurationDisabled {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    ExporterAutoconfigurationDisabled(
+        @Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testExporterAutoconfigurationDisabled() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNull();
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.secondary-storage.autoconfigure-camunda-exporter=true",
+        "camunda.data.secondary-storage.elasticsearch.url=http://wanted-url:4321",
+      })
+  class ExporterAutoconfigurationEnabled {
+    final BrokerBasedProperties brokerBasedProperties;
+
+    ExporterAutoconfigurationEnabled(@Autowired final BrokerBasedProperties brokerBasedProperties) {
+      this.brokerBasedProperties = brokerBasedProperties;
+    }
+
+    @Test
+    void testExporterAutoconfigurationEnabled() {
+      final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
+      assertThat(camundaExporter).isNotNull();
+
+      final Map<String, Object> args = camundaExporter.getArgs();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://wanted-url:4321");
     }
   }
 }
