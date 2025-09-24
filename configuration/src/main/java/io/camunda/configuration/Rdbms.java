@@ -7,13 +7,16 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
+import io.camunda.exporter.rdbms.ExporterConfiguration;
+
 public class Rdbms extends SecondaryStorageDatabase {
 
   /** The interval at which the exporters execution queue is flushed. */
-  private String flushInterval;
+  private String flushInterval = ExporterConfiguration.DEFAULT_FLUSH_INTERVAL.toString();
 
   /** The maximum size of the exporters execution queue before it is flushed to the database. */
-  private Integer queueSize;
+  private Integer queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
 
   /** History cleanup configuration. */
   private History history;
@@ -31,14 +34,16 @@ public class Rdbms extends SecondaryStorageDatabase {
    * created, but it may lead to a delay in the creation of the batch operation if there are many
    * items to create.
    */
-  private boolean exportBatchOperationItemsOnCreation;
+  private boolean exportBatchOperationItemsOnCreation =
+      RdbmsWriterConfig.DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
 
   /**
    * The number of batch operation items to insert in a single batched SQL when creating the items
    * for a batch operation. This is only relevant when exportBatchOperationItemsOnCreation is set to
    * true.
    */
-  private int batchOperationItemInsertBlockSize;
+  private int batchOperationItemInsertBlockSize =
+      RdbmsWriterConfig.DEFAULT_BATCH_OPERATION_ITEM_INSERT_BLOCK_SIZE;
 
   @Override
   public String getUrl() {

@@ -629,19 +629,22 @@ public class BrokerBasedPropertiesOverride {
           database.getHistory().getHistoryCleanupBatchSize());
       setArg(args, "history.usageMetricsCleanup", database.getHistory().getUsageMetricsCleanup());
       setArg(args, "history.usageMetricsTTL", database.getHistory().getUsageMetricsTTL());
-
-      setArg(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
-      setArg(args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
-
-      setArg(
-          args,
-          "exportBatchOperationItemsOnCreation",
-          database.isExportBatchOperationItemsOnCreation());
-      setArg(
-          args,
-          "batchOperationItemInsertBlockSize",
-          database.getBatchOperationItemInsertBlockSize());
     }
+
+    if (database.getProcessCache() != null) {
+      setArg(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
+    }
+
+    if (database.getBatchOperationCache() != null) {
+      setArg(args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
+    }
+
+    setArg(
+        args,
+        "exportBatchOperationItemsOnCreation",
+        database.isExportBatchOperationItemsOnCreation());
+    setArg(
+        args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
   }
 
   @SuppressWarnings("unchecked")
