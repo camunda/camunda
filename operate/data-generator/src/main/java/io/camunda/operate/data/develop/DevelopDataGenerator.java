@@ -116,11 +116,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task1", null);
 
-    final long rootCauseDecisionInstance1 = startRootCauseDecisionProcess();
-    doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance1);
-
-    final long rootCauseDecisionInstance2 = startRootCauseDecisionProcess();
-    doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance2);
+    final long rootCauseDecisionInstance = ZeebeTestUtil.startProcessInstance(
+        true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
+    doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance);
   }
 
   @Override
@@ -386,9 +384,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
                 true, client, getTenant(TENANT_A), "executionListeners", null));
 
         // Root cause decision process
-        processInstanceKeys.add(startRootCauseDecisionProcess());
-        processInstanceKeys.add(startRootCauseDecisionProcess());
-        processInstanceKeys.add(startRootCauseDecisionProcess());
+        processInstanceKeys.add(
+            ZeebeTestUtil.startProcessInstance(
+                true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null));
 
         // reverted in Zeebe https://github.com/camunda/camunda/issues/13640
         //        processInstanceKeys.add(ZeebeTestUtil.startProcessInstance(true, client,
@@ -694,10 +692,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         .open();
   }
 
-  private long startRootCauseDecisionProcess() {
-    return ZeebeTestUtil.startProcessInstance(
-        true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
-  }
 
   private void createBigProcess(final int loopCardinality, final int numberOfClients) {
     final ObjectMapper objectMapper = new ObjectMapper();

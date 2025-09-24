@@ -27,26 +27,26 @@
     </decisionTable>
   </decision>
   <decision id="decision-a" name="DecisionA">
-    <informationRequirement id="InformationRequirement_A_requires_B">
-      <requiredDecision href="#decision-b" />
-    </informationRequirement>
-    <decisionTable id="DecisionTable_A">
-      <input id="Input_A" label="From DecisionB">
-        <inputExpression id="InputExpression_A" typeRef="string">
-          <text>DecisionB</text>
-        </inputExpression>
-      </input>
-      <output id="Output_A" name="Result" typeRef="string"/>
-      <rule id="Rule_A_1">
-        <inputEntry id="InputEntry_A_1">
-          <text>"passed"</text>
-        </inputEntry>
-        <outputEntry id="OutputEntry_A_1">
-          <text>if random() &lt; 0.3 then assert(0,1) else "final"</text>
-        </outputEntry>
-      </rule>
-    </decisionTable>
-  </decision>
+      <informationRequirement id="InformationRequirement_A_requires_B">
+        <requiredDecision href="#decision-b"/>
+      </informationRequirement>
+      <decisionTable id="DecisionTable_A">
+        <input id="Input_A" label="From DecisionB">
+          <inputExpression id="InputExpression_A" typeRef="string">
+            <text>DecisionB</text>
+          </inputExpression>
+        </input>
+        <output id="Output_A" name="Result" typeRef="string"/>
+        <rule id="Rule_A_1">
+          <inputEntry id="InputEntry_A_1">
+            <text>"passed"</text>
+          </inputEntry>
+          <outputEntry id="OutputEntry_A_1">
+            <text>"final"</text>
+          </outputEntry>
+        </rule>
+      </decisionTable>
+    </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram>
       <dmndi:DMNShape dmnElementRef="decision-b">
