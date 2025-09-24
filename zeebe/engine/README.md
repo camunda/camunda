@@ -72,7 +72,88 @@ the journey of a command record begins, once it enters the engine domain.
 
 - TODO: example feature
 
-### Engine Do's and Don'ts
+### Do's and Don'ts
+
+#### The stream processor is single threaded
+
+- Only one command is processed at a time.
+- **Don't** block the thread unnecessarily.
+- **Do** take small steps by breaking up the processing into smaller chunks by appending follow-up commands.
+
+#### State changes should be reflected on the log stream
+
+- This allows events to be replayed on restart to rebuild the state.
+- **Don't** change state from a processor.
+- **Don't** use a mutable state class from a processor.
+- **Do** only produce state changes from an event applier.
+- **Do** avoid changing state of an unrelated entity in another entity's event applier. In some cases this is fine, but not in all. For example, `Incident:CREATED` also disables a job.
+- **Do** consider whether the state change should be visible on the logstream. For example, extract `Job:DISABLED` from `Incident:CREATED`  to highlight the change on the logstream.
+- Keep documentation up to date
+- **Do** update config templates when adding new configuration options.
+
+#### We prefer composition over inheritance
+
+- **Do** create behavior classes to reuse code.
+- **Don't** use subclasses for code reuse.
+
+#### Processors do not have access to the secondary storage
+
+- **Do** access the immutable state from a processor.
+- **Do** access the secondary storage from a scheduled task.
+
+#### Event appliers are not allowed to be changed after having been released
+
+- Events must be applied in the same way on replay as when they were initially appended.
+- **Don't** change the event applier implementation.
+- **Do** register a new version of an event applier.
+- **Don't** change code in methods called by event appliers, like state class implementations.
+- It's fine to change it while unreleased. No need to register a new version in this case.
+- Not all data in a command value can be trusted. It may be out of date by the time it's processed. 
+- **Don't** trust data in a command's `RecordValue` as up to date.
+- **Do** gain an understanding which command data is the requested change, e.g. Assign to `assignee`.
+- **Do** read the latest entity data from the state.
+- **Do** use the state data to decide whether the request is possible.
+- **Do** use the state data as the basis for modifications.
+
+#### Construction of records is expensive
+
+- **Do** reuse and modify them for performance.
+- **Do** use `wrap` to quickly pass data from one object to another.
+- **Do** use `copyFrom` if you need a deep copy for more safety.
+
+#### Record values are data objects that are often reused across different records of the same value type
+
+- **Do** use a different value type when only a subset of properties are relevant to a specific intent. But if you need to, please document the properties in the record that are only provided on specific intents.
+
+#### State classes provide references that may be modified without your knowledge
+
+- **Do** use the `Supplier` parameter to create safe copies directly if needed. Comes at the cost of performance.
+
+#### The state and rejection writers do not take care of writing a response to the request
+
+- The command may belong to a request that's awaiting a response.
+- **Do** use the response writer to send a response.
+
+#### Side-effects are not guaranteed to be executed
+
+- Side-effects are executed before the next command is picked up, but if execution fails or if failover occurs the side-effect may not be executed.
+- **Don't** do things that must happen in a side-effect.
+- **Do** use side-effects for things like updating caches or sending responses.
+
+#### Changes to transformers may result in differences during replay
+
+- Transformers are not versioned like event appliers.
+- **Do** be careful about changing existing transformers.
+
+#### Scheduled tasks can flood the logstream
+
+- The stream processor may not be fast enough to process all the commands appended by a scheduled task.
+- **Do** yield the thread after some time
+- **Do** yield the thread after some number of actions taken, e.g. commands appended.
+
+#### The `RecordingExporter` keeps the stream open unless short-circuited
+
+- **Do** short-circuit the `RecordingExporter`  using `.limit`, `.getFirst` , `.exists`.
 
 ### Testing guidelines
 
