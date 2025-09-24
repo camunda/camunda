@@ -8,9 +8,14 @@
 package io.camunda.configuration.processor;
 
 import io.camunda.configuration.UnifiedConfigurationException;
+import io.camunda.configuration.processor.CamundaConfigurationPostProcessor.MappedPropertySource.Fail;
+import io.camunda.configuration.processor.CamundaConfigurationPostProcessor.MappedPropertySource.Success;
 import io.camunda.configuration.processor.CamundaLegacyPropertiesMapping.LegacyProperty;
-import java.time.Duration;
+import io.camunda.configuration.processor.CamundaLegacyPropertiesMapping.LegacyProperty.Mapper;
+import io.camunda.configuration.processor.CamundaLegacyPropertiesMapping.Mode;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -30,8 +35,6 @@ import org.springframework.core.env.PropertiesPropertySource;
 import org.springframework.core.env.PropertySource;
 
 public class CamundaConfigurationPostProcessor implements EnvironmentPostProcessor {
-  private static final Map<String, Function<Object, Object>> MAPPER_FUNCTIONS =
-      Map.of("secondsToDuration", s -> Duration.ofSeconds(Long.parseLong((String) s)));
   private final DeferredLog log;
 
   public CamundaConfigurationPostProcessor(final DeferredLogFactory deferredLogFactory) {
@@ -50,14 +53,49 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
     log.debug(String.format("Detected profiles: %s", profiles));
     final List<CamundaLegacyPropertiesMapping> mappings =
         CamundaLegacyPropertiesMappingLoader.load();
-    mappings.stream()
-        .flatMap(mapping -> detectPropertyValue(environment, mapping, profiles))
+    final Collection<MappedPropertySource> mappedPropertySources =
+        mappings.stream()
+            .flatMap(mapping -> detectPropertyValue(environment, mapping, profiles))
+            .map(MappedPropertySource.class::cast)
+            .collect(
+                Collectors.toMap(
+                    MappedPropertySource::sourceName,
+                    m -> m,
+                    (m1, m2) -> {
+                      if (m1 instanceof Fail) {
+                        return m2;
+                      }
+                      final Success m1Success = (Success) m1;
+                      if (m2 instanceof Fail) {
+                        return m1;
+                      }
+                      final Success m2Success = (Success) m2;
+                      final Map<String, Object> combinedProperties = new HashMap<>();
+                      combinedProperties.putAll(m1Success.properties());
+                      combinedProperties.putAll(m2Success.properties());
+                      return new Success(m1.sourceName(), combinedProperties);
+                    }))
+            .values();
+    final Set<Fail> fails =
+        mappedPropertySources.stream()
+            .filter(Fail.class::isInstance)
+            .map(Fail.class::cast)
+            .collect(Collectors.toSet());
+    if (!fails.isEmpty()) {
+      throw new UnifiedConfigurationException(
+          String.format(
+              "The following issues have been detected:%s",
+              fails.stream()
+                  .map(Fail::errorMessage)
+                  .map(errorMessage -> "\n   - " + errorMessage)
+                  .collect(Collectors.joining())));
+    }
+    mappedPropertySources.stream()
+        .filter(Success.class::isInstance)
+        .map(Success.class::cast)
         .forEach(
-            mappedPropertySource ->
-                addMapPropertySourceFirst(
-                    mappedPropertySource.sourceName(),
-                    mappedPropertySource.properties(),
-                    environment));
+            success ->
+                addMapPropertySourceFirst(success.sourceName(), success.properties(), environment));
   }
 
   private void addMapPropertySourceFirst(
@@ -73,20 +111,18 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
     environment.getPropertySources().addFirst(propertySource);
   }
 
-  private Function<Object, Object> findMapper(final String mapperName) {
-    if (mapperName == null) {
+  private Function<Object, Object> findMapperFunction(final Mapper mapper) {
+    if (mapper == null) {
       return o -> o;
     }
-    if (MAPPER_FUNCTIONS.containsKey(mapperName)) {
-      return MAPPER_FUNCTIONS.get(mapperName);
-    }
-    throw new UnifiedConfigurationException("Unknown mapper: " + mapperName);
+    return mapper.getMapper();
   }
 
-  private Stream<MappedPropertySource> detectPropertyValue(
+  private Stream<? extends MappedPropertySource> detectPropertyValue(
       final ConfigurableEnvironment environment,
       final CamundaLegacyPropertiesMapping property,
       final Set<String> profiles) {
+    final Mode mode = property.mode() != null ? property.mode() : Mode.supported;
     if (property.newProperty().endsWith("*")) {
       return detectWildcardProperties(environment, property, profiles);
     }
@@ -94,36 +130,67 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
       log.debug(
           String.format(
               "Property '%s' found, not looking up legacy properties", property.newProperty()));
-      return Stream.of();
+      if (mode == Mode.supported) {
+        return Stream.of();
+      }
     }
     final Set<Set<LegacyProperty>> appliedLegacyProperties =
         getAppliedLegacyProperties(property, profiles);
-    if (property.newProperty().endsWith("*")) {
-      return detectWildcardProperties(environment, property, profiles);
-    }
     for (final Set<LegacyProperty> validPropertyNames : appliedLegacyProperties) {
       if (!haveMatchingValues(
           validPropertyNames.stream().map(LegacyProperty::name).collect(Collectors.toSet()),
+          property.newProperty(),
+          mode,
           environment)) {
-        throw new UnifiedConfigurationException(
-            "The legacy properties " + validPropertyNames + " do not have matching values");
+        final Set<String> validPropertyNameSet =
+            validPropertyNames.stream().map(LegacyProperty::name).collect(Collectors.toSet());
+        final String errorMessage =
+            switch (mode) {
+              case supportedOnlyIfValuesMatch ->
+                  String.format(
+                      "Ambiguous configuration. The properties '%s' and the new property '%s' have conflicting values",
+                      String.join(", ", validPropertyNameSet), property.newProperty());
+              default ->
+                  String.format(
+                      "Ambiguous configuration. The properties '%s' have conflicting values",
+                      String.join(", ", validPropertyNameSet));
+            };
+        return findPropertiesWithValue(validPropertyNames, environment).stream()
+            .map(legacyProperty -> new Fail(legacyProperty.name(), errorMessage));
       }
       final Set<LegacyProperty> legacyPropertiesWithValue =
           findPropertiesWithValue(validPropertyNames, environment);
       if (!legacyPropertiesWithValue.isEmpty()) {
+        if (mode == Mode.notSupported) {
+          final String errorMessage =
+              String.format(
+                  "The following legacy configuration properties are no longer supported and must be removed in favor of '%s': %s",
+                  property.newProperty(),
+                  String.join(
+                      ", ",
+                      legacyPropertiesWithValue.stream()
+                          .map(LegacyProperty::name)
+                          .collect(Collectors.toSet())));
+          return legacyPropertiesWithValue.stream()
+              .map(legacyProperty -> new Fail(legacyProperty.name(), errorMessage));
+        }
         log.warn(
             String.format(
-                "Legacy properties %s found, setting to '%s'. Please update your setup to use the latest property",
-                legacyPropertiesWithValue.stream().map(LegacyProperty::name).toList(),
-                property.newProperty()));
+                "The following legacy configuration properties should be removed in favor of '%s': %s",
+                property.newProperty(),
+                String.join(
+                    ", ",
+                    legacyPropertiesWithValue.stream()
+                        .map(LegacyProperty::name)
+                        .collect(Collectors.toSet()))));
         return legacyPropertiesWithValue.stream()
             .map(
                 legacyProperty ->
-                    new MappedPropertySource(
+                    new Success(
                         legacyProperty.name(),
                         Map.of(
                             property.newProperty(),
-                            findMapper(legacyProperty.mapper())
+                            findMapperFunction(legacyProperty.mapper())
                                 .apply(
                                     Objects.requireNonNull(
                                         environment.getProperty(legacyProperty.name()))))));
@@ -155,7 +222,7 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
                       .anyMatch(npn -> npn.startsWith(normalize(composePrefix(p.name()), false))))
           .map(
               p ->
-                  new MappedPropertySource(
+                  new Success(
                       p.name(),
                       normalizedPropertyNames.keySet().stream()
                           .filter(np -> np.startsWith(normalize(composePrefix(p.name()), false)))
@@ -177,7 +244,7 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
                                       normalize(
                                           composeNewPropertyName(p, np, property.newProperty()),
                                           true),
-                                      findMapper(p.mapper())
+                                      findMapperFunction(p.mapper())
                                           .apply(
                                               environment.getProperty(
                                                   normalizedPropertyNames.get(np)))))
@@ -250,14 +317,28 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
   }
 
   private boolean haveMatchingValues(
-      final Set<String> propertyNames, final ConfigurableEnvironment environment) {
-    return propertyNames.stream()
+      final Set<String> propertyNames,
+      final String newProperty,
+      final Mode mode,
+      final ConfigurableEnvironment environment) {
+    final Set<String> values =
+        propertyNames.stream()
             .map(environment::getProperty)
             .filter(Objects::nonNull)
-            .collect(Collectors.toSet())
-            .size()
-        <= 1;
+            .collect(Collectors.toSet());
+    if (mode == Mode.supportedOnlyIfValuesMatch) {
+      final String newValue = environment.getProperty(newProperty);
+      values.add(newValue);
+    }
+    return values.size() <= 1;
   }
 
-  private record MappedPropertySource(String sourceName, Map<String, Object> properties) {}
+  sealed interface MappedPropertySource {
+    String sourceName();
+
+    record Fail(String sourceName, String errorMessage) implements MappedPropertySource {}
+
+    record Success(String sourceName, Map<String, Object> properties)
+        implements MappedPropertySource {}
+  }
 }
