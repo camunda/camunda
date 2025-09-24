@@ -91,6 +91,33 @@ test.describe('Current user', () => {
 });
 ```
 
+## Multiple endpoints in one describe
+
+If a single `describe` contains tests hitting different endpoints (so a static `routePath` fixture isn't suitable) you have three options:
+
+1. Split into nested `describe` blocks, each with its own `test.use({ routePath, routeMethod, routeStatus })`.
+2. Set `routePath` dynamically at test level with `test.use({...})` as the first line of the test (Playwright applies it for that test only).
+3. Use the ad‑hoc helper `expectResponseShapeFor({ path, method, status }, body, testInfo)` which bypasses the fixture and performs a one‑off lookup + validation.
+
+Example using the helper:
+```ts
+import {routeTest as test, expectResponseShapeFor} from './utils/route-test';
+
+test('mixed endpoints example', async ({request}, testInfo) => {
+  const searchRes = await request.post('/groups/search', { data: { filter: { name: 'abc' }}});
+  const searchJson = await searchRes.json();
+  expectResponseShapeFor({ path: '/groups/search', method: 'POST', status: '200' }, searchJson, testInfo);
+
+  const getRes = await request.get('/groups/123');
+  const getJson = await getRes.json();
+  expectResponseShapeFor({ path: '/groups/{groupId}', method: 'GET', status: '200' }, getJson, testInfo);
+});
+```
+
+Trade‑offs:
+* Fixture approach (options 1/2) gives you `routeCtx` automatically.
+* Helper approach (option 3) is concise for sporadic validations and still records bodies / deep presence.
+
 ## Selecting a specific response variant
 
 If multiple responses share a path (different methods / statuses) you can narrow:

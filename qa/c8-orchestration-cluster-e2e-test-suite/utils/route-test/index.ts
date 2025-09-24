@@ -17,7 +17,7 @@
  *   - summarize-recordings.ts (offline analysis tool)
  */
 
-import {test as base, expect} from '@playwright/test';
+import {test as base, expect, TestInfo} from '@playwright/test';
 import {pickRoute} from './responses';
 import {recordBody} from './recorder';
 import {validateResponseShape} from './validator';
@@ -75,4 +75,42 @@ export const routeTest = base.extend<{
 });
 
 export {expect};
+/**
+ * Convenience helper for scenarios where a single describe block exercises
+ * multiple distinct endpoints and you don't want to restructure into nested
+ * describe() groups just to re-bind fixtures. This bypasses the `routePath`
+ * fixture and performs an ad-hoc pick + validate.
+ *
+ * Usage inside a test:
+ *   test('mixed endpoints', async ({request}, testInfo) => {
+ *     const res = await request.post('/groups/search');
+ *     const body = await res.json();
+ *     expectResponseShapeFor({ path: '/groups/search', method: 'POST', status: '200' }, body, testInfo);
+ *
+ *     const res2 = await request.get('/groups/123');
+ *     const body2 = await res2.json();
+ *     expectResponseShapeFor({ path: '/groups/{groupId}', method: 'GET', status: '200' }, body2, testInfo);
+ *   });
+ */
+export function expectResponseShapeFor(
+  spec: {path: string; method?: string; status?: string},
+  body: unknown,
+  testInfo?: TestInfo,
+) {
+  const routeCtx = pickRoute(spec.path, spec.method, spec.status);
+  let titleChain: string | undefined;
+  if (testInfo) {
+    interface MaybeTitlePath {titlePath?: () => string[]; title?: string}
+    const castInfo = testInfo as unknown as MaybeTitlePath;
+    if (typeof castInfo.titlePath === 'function') {
+      try {
+        const arr = castInfo.titlePath();
+        if (Array.isArray(arr)) titleChain = arr.join(' > ');
+      } catch {/* ignore */}
+    }
+    if (!titleChain && typeof castInfo.title === 'string') titleChain = castInfo.title;
+  }
+  recordBody({routeCtx, body, testTitle: titleChain});
+  validateResponseShape(routeCtx, body);
+}
 // End of thin orchestrator
