@@ -168,7 +168,7 @@ public class JobStreamAuthorizationIT {
     // given
     // a job set for collecting jobs in the client
     final var jobCollector = new HashSet<ActivatedJob>();
-    // and a job stream created by the user1 client, with their authorizations
+    // and a job stream created by the user2 client, with their authorizations
     final var stream =
         user2Client
             .newStreamJobsCommand()
