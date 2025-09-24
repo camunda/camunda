@@ -87,11 +87,11 @@ camunda:
         queueSize: 1000
         history:
           defaultHistoryTTL: PT1M
-          defaultBatchOperationHistoryTTL: PT7D
-          batchOperationCancelProcessInstanceHistoryTTL: PT1D
-          batchOperationMigrateProcessInstanceHistoryTTL: PT10D
-          batchOperationModifyProcessInstanceHistoryTTL: PT7D
-          batchOperationResolveIncidentHistoryTTL: PT5D
+          defaultBatchOperationHistoryTTL: PT168H
+          batchOperationCancelProcessInstanceHistoryTTL: PT24H
+          batchOperationMigrateProcessInstanceHistoryTTL: PT240H
+          batchOperationModifyProcessInstanceHistoryTTL: PT168H
+          batchOperationResolveIncidentHistoryTTL: PT120H
           minHistoryCleanupInterval: PT1S
           maxHistoryCleanupInterval: PT1H
           historyCleanupBatchSize: 1000
