@@ -12,109 +12,120 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.configuration.beanoverrides.OperatePropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
-import org.junit.jupiter.api.Disabled;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
+import org.springframework.boot.test.context.assertj.AssertableApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.mock.env.MockEnvironment;
 
-@Disabled
 public class SecondaryStorageFailureWithLegacySchemaTest {
 
-  private final ApplicationContextRunner brokerRunner =
-      new ApplicationContextRunner()
-          .withUserConfiguration(UnifiedConfiguration.class, BrokerBasedPropertiesOverride.class)
-          .withPropertyValues(
-              "spring.profiles.active=broker",
-              // DB type
-              "camunda.database.type=opensearch",
-              "camunda.operate.database=opensearch",
-              "camunda.tasklist.database=opensearch",
-              // DB url
-              "camunda.database.url=http://url-for-exporter:4321",
-              "camunda.tasklist.opensearch.url=http://url-for-exporter:4321",
-              "camunda.operate.opensearch.url=http://url-for-exporter:4321");
-
-  private final ApplicationContextRunner operateRunner =
-      new ApplicationContextRunner()
-          .withUserConfiguration(UnifiedConfiguration.class, OperatePropertiesOverride.class)
-          .withPropertyValues(
-              "camunda.database.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.database.url=http://some-legacy-url:/1234");
-
-  private final ApplicationContextRunner tasklistRunner =
-      new ApplicationContextRunner()
-          .withUserConfiguration(UnifiedConfiguration.class, TasklistPropertiesOverride.class)
-          .withPropertyValues(
-              "camunda.database.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              "camunda.database.url=http://some-legacy-url:/1234");
-
-  private final ApplicationContextRunner tasklistRunnerWithMismatchingConfigs =
-      new ApplicationContextRunner()
-          .withUserConfiguration(UnifiedConfiguration.class, TasklistPropertiesOverride.class)
-          .withPropertyValues(
-              // type
-              "camunda.data.secondary-storage.type=elasticsearch",
-              "camunda.database.type=elasticsearch",
-              "camunda.operate.database=elasticsearch",
-              "camunda.tasklist.database=elasticsearch",
-              // url
-              "camunda.data.secondary-storage.elasticsearch.url=http://new-mismatching-url:4321",
-              "camunda.database.url=http://legacy-mismatching-url:4321",
-              "camunda.tasklist.elasticsearch.url=http://legacy-mismatching-url:4321",
-              "camunda.operate.elasticsearch.url=http://legacy-mismatching-url:4321");
+  private static Supplier<ConfigurableApplicationContext> contextSupplier(
+      final List<Class<?>> primarySources,
+      final List<String> profiles,
+      final Map<String, String> properties) {
+    return () -> {
+      final SpringApplication springApplication =
+          new SpringApplication(primarySources.toArray(new Class<?>[0]));
+      springApplication.setWebApplicationType(WebApplicationType.NONE);
+      springApplication.setAdditionalProfiles(profiles.toArray(new String[0]));
+      final MockEnvironment environment = new MockEnvironment();
+      properties.forEach(environment::setProperty);
+      springApplication.setEnvironment(environment);
+      return springApplication.run();
+    };
+  }
 
   @Test
   void testBrokerShouldFailWhenUsingLegacyDatabaseProperties() {
-    brokerRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
+    final AssertableApplicationContext context =
+        AssertableApplicationContext.get(
+            contextSupplier(
+                List.of(UnifiedConfiguration.class, BrokerBasedPropertiesOverride.class),
+                List.of("broker"),
+                Map.ofEntries(
+                    Map.entry("camunda.database.type", "opensearch"),
+                    Map.entry("camunda.operate.database", "opensearch"),
+                    Map.entry("camunda.tasklist.database", "opensearch"),
+                    Map.entry("camunda.database.url", "http://url-for-exporter:4321"),
+                    Map.entry("camunda.tasklist.opensearch.url", "http://url-for-exporter:4321"),
+                    Map.entry("camunda.operate.opensearch.url", "http://url-for-exporter:4321"))));
+    assertThat(context).hasFailed();
+    assertThat(context.getStartupFailure())
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("Ambiguous configuration")
+        .hasMessageContaining("conflicting");
   }
 
   @Test
   void testOperateShouldFailWhenUsingLegacyDatabaseProperties() {
-    operateRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
+    final AssertableApplicationContext context =
+        AssertableApplicationContext.get(
+            contextSupplier(
+                List.of(UnifiedConfiguration.class, OperatePropertiesOverride.class),
+                List.of("operate"),
+                Map.ofEntries(
+                    Map.entry("camunda.database.type", "elasticsearch"),
+                    Map.entry("camunda.operate.database", "elasticsearch"),
+                    Map.entry("camunda.tasklist.database", "elasticsearch"),
+                    Map.entry("camunda.database.url", "http://some-legacy-url:/1234"))));
+    assertThat(context).hasFailed();
+    assertThat(context.getStartupFailure())
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("Ambiguous configuration")
+        .hasMessageContaining("conflicting");
   }
 
   @Test
-  void testTasklistshouldFailWhenUsingLegacyDatabaseProperties() {
-    tasklistRunner.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
+  void testTasklistShouldFailWhenUsingLegacyDatabaseProperties() {
+    final AssertableApplicationContext context =
+        AssertableApplicationContext.get(
+            contextSupplier(
+                List.of(UnifiedConfiguration.class, TasklistPropertiesOverride.class),
+                List.of("tasklist"),
+                Map.ofEntries(
+                    Map.entry("camunda.database.type", "elasticsearch"),
+                    Map.entry("camunda.operate.database", "elasticsearch"),
+                    Map.entry("camunda.tasklist.database", "elasticsearch"),
+                    Map.entry("camunda.database.url", "http://some-legacy-url:/1234"))));
+    assertThat(context).hasFailed();
+    assertThat(context.getStartupFailure())
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("Ambiguous configuration")
+        .hasMessageContaining("conflicting");
   }
 
   @Test
-  void testTasklistshouldFailWhenUsingLegacyDatabasePropertiesDontMatchNewProperties() {
-    tasklistRunnerWithMismatchingConfigs.run(
-        context -> {
-          assertThat(context).hasFailed();
-          assertThat(context.getStartupFailure())
-              .hasRootCauseInstanceOf(UnifiedConfigurationException.class)
-              .rootCause()
-              .hasMessageContaining("Ambiguous configuration")
-              .hasMessageContaining("conflicts");
-        });
+  void testTasklistShouldFailWhenUsingLegacyDatabasePropertiesDontMatchNewProperties() {
+    final AssertableApplicationContext context =
+        AssertableApplicationContext.get(
+            contextSupplier(
+                List.of(TasklistPropertiesOverride.class, UnifiedConfiguration.class),
+                List.of("operate", "tasklist", "broker", "gateway"),
+                Map.ofEntries(
+                    // type
+                    Map.entry("camunda.data.secondary-storage.type", "elasticsearch"),
+                    Map.entry("camunda.database.type", "elasticsearch"),
+                    Map.entry("camunda.operate.database", "elasticsearch"),
+                    Map.entry("camunda.tasklist.database", "elasticsearch"),
+                    // url
+                    Map.entry(
+                        "camunda.data.secondary-storage.elasticsearch.url",
+                        "http://new-mismatching-url:4321"),
+                    Map.entry("camunda.database.url", "http://legacy-mismatching-url:4321"),
+                    Map.entry(
+                        "camunda.tasklist.elasticsearch.url", "http://legacy-mismatching-url:4321"),
+                    Map.entry(
+                        "camunda.operate.elasticsearch.url",
+                        "http://legacy-mismatching-url:4321"))));
+    assertThat(context).hasFailed();
+    assertThat(context.getStartupFailure())
+        .isInstanceOf(UnifiedConfigurationException.class)
+        .hasMessageContaining("Ambiguous configuration")
+        .hasMessageContaining("conflicting");
   }
 }
