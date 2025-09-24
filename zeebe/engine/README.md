@@ -21,9 +21,11 @@ For this reason, records in the stream are split into commands, events, and reje
 - **Events** are the result of processing commands, e.g. a process instance was created or a job was completed.
 - **Rejections** are indications that a command could not be processed.
 
-During **command** processing, the engine may append events and follow-up commands to the stream.
-State changes are applied when processing **events** from the stream.
+The engine operates in two modes: processing and replay.
 
+- In **processing** mode, the engine processes **commands** and **events**. During command processing, the engine
+  may append events, rejections, and follow-up commands to the stream.
+- In **replay** mode, the engine processes only **events** from the stream to reconstruct its state.
 To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
 
 ## Basic module structure
