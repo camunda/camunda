@@ -25,6 +25,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -145,10 +146,15 @@ public final class EventAppliers implements EventApplier {
     registerIdentitySetupAppliers();
     registerAsyncRequestAppliers(state);
     registerUsageMetricsAppliers(state);
-
     registerMultiInstanceAppliers(state);
-
+    registerClusterVariableEventAppliers(state);
     return this;
+  }
+
+  private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
+    register(ClusterVariableIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(ClusterVariableIntent.UPDATED, NOOP_EVENT_APPLIER);
+    register(ClusterVariableIntent.DELETED, NOOP_EVENT_APPLIER);
   }
 
   private void registerMultiInstanceAppliers(final MutableProcessingState state) {
