@@ -592,8 +592,6 @@ public class BrokerBasedPropertiesOverride {
         exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
     setArg(args, "queueSize", database.getQueueSize());
     setArg(args, "flushInterval", database.getFlushInterval());
-    setArg(args, "usageMetricsCleanup", database.getUsageMetricsCleanup());
-    setArg(args, "usageMetricsTTL", database.getUsageMetricsTTL());
 
     if (database.getHistory() != null) {
       setArg(args, "history.defaultHistoryTTL", database.getHistory().getDefaultHistoryTTL());
@@ -629,6 +627,8 @@ public class BrokerBasedPropertiesOverride {
           args,
           "history.historyCleanupBatchSize",
           database.getHistory().getHistoryCleanupBatchSize());
+      setArg(args, "history.usageMetricsCleanup", database.getHistory().getUsageMetricsCleanup());
+      setArg(args, "history.usageMetricsTTL", database.getHistory().getUsageMetricsTTL());
 
       setArg(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
       setArg(args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
