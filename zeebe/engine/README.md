@@ -1,6 +1,11 @@
 # The Zeebe Workflow Engine
 
-## Introduction
+The workflow engine is the core component of Zeebe. It is responsible for executing process
+instances, managing state, and ensuring the correct execution of BPMN processes, as well as the
+evaluation of decision instances.
+
+This README will provide an overview of the engine's architecture, key components, and guidelines
+for contributing to its development.
 
 ## High-level engine architecture
 
