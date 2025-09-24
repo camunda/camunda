@@ -26,17 +26,51 @@ State changes are applied when processing **events** from the stream.
 
 To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
 
+## Basic module structure
+
+At the root of the `zeebe/engine` module, you will find the `Engine` class where you can map the
+high-level engine architecture concepts you were introduced to in the section above.
+
+There is also the `EngineConfiguration` class which is used to configure the engine. It allows you
+to adjust the behavior of the engine through various parameters such as cache sizes, timeouts, and
+other settings.
+
+The following are the main packages that make up the engine's core functionality.
+
+### `processing` package
+
+The `processing` package is where the core processing logic of the engine resides. This is where
+the journey of a command record begins, once it enters the engine domain.
+
+- Browse the `EngineProcessor` and `BpmnProcessor` classes to understand how the engine processes
+  different types of records.
+- Processor classes output results through various classes in the `streamprocessor/writers` package.
+  A processor may use a `stateWriter` to modify the state, a `responseWriter` to send a response back
+  to the client, or a `rejectionWriter` to reject a command. It can also add new command records to
+  itself using a `commandWriter`.
+- Shared logic used by multiple `Processor` classes is contained withing `Behavior` classes. As an
+  example, have a look at the `BpmnJobActivationBehavior` class to see how job activation is handled.
+- In the `EngineProcessor` and `BpmnProcessor` classes, you may notice `Checker` classes. These are
+  usually "listener"-type classes that react to the changes of the Engine modes (i.e. `processing`,
+  `replay`), and perform actions accordingly. For example, the `JobTimeoutChecker` checks for jobs
+  that have timed out when the engine is in `processing` mode, and writes a `JobTimedOut` command
+  using a `commandWriter`.
+
+### `state` package
+
+// TODO: add state package description
+
+### `metrics` package
+
+// TODO: add metrics package description
+
 ## How do I implement a new feature?
-
-### Basic module structure
-
-- Processors
-- Appliers
-- State classes
 
 [Developer handpook](../../docs/zeebe/developer_handbook.md)
 
 - TODO: example feature
+
+### Engine Do's and Don'ts
 
 ### Testing guidelines
 
