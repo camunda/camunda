@@ -16,6 +16,9 @@
 package io.camunda.client.impl.http;
 
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import org.apache.hc.core5.http.ContentType;
 import org.apache.hc.core5.http.HttpResponse;
 import org.apache.hc.core5.http.message.BasicHttpResponse;
@@ -36,14 +39,29 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 final class ApiResponseConsumer<T>
     extends AbstractAsyncResponseConsumer<ApiResponse<T>, ApiEntity<T>> {
 
-  ApiResponseConsumer(final AsyncEntityConsumer<ApiEntity<T>> entityConsumer) {
+  private final Tracer tracer;
+  private final Span rootSpan;
+
+  ApiResponseConsumer(
+      final AsyncEntityConsumer<ApiEntity<T>> entityConsumer,
+      final Tracer tracer,
+      final Span span) {
     super(entityConsumer);
+    this.tracer = tracer;
+    rootSpan = span;
   }
 
   @Override
   protected ApiResponse<T> buildResult(
       final HttpResponse response, final ApiEntity<T> entity, final ContentType contentType) {
-    return new ApiResponse<>(response.getCode(), entity);
+    final Span span =
+        tracer
+            .spanBuilder("buildApiResponse")
+            .setParent(Context.current().with(rootSpan))
+            .startSpan();
+    final ApiResponse<T> apiResponse = new ApiResponse<>(response.getCode(), entity);
+    span.end();
+    return apiResponse;
   }
 
   @Override

@@ -24,6 +24,15 @@
   </properties>
 
   <dependencies>
+    <!-- https://mvnrepository.com/artifact/io.opentelemetry.instrumentation/opentelemetry-spring-boot-starter -->
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-spring-boot-starter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
+    </dependency>
 
     <!-- required to guarantee the protocol is processed earlier during the build -->
     <dependency>
@@ -449,6 +458,8 @@
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.xmlunit:xmlunit-core</dependency>
+            <!-- Used for Opentelemetry-->
+            <dependency>io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

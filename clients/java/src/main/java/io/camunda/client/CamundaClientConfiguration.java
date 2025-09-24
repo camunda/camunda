@@ -191,4 +191,6 @@ public interface CamundaClientConfiguration {
    * @see CamundaClientBuilder#maxHttpConnections(int)
    */
   int getMaxHttpConnections();
+
+  String getOpenTelemetryEndpoint();
 }

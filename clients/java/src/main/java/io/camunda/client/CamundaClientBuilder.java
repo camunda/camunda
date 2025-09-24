@@ -303,6 +303,8 @@ public interface CamundaClientBuilder {
    */
   CamundaClientBuilder defaultJobWorkerExceptionHandler(JobExceptionHandler jobExceptionHandler);
 
+  CamundaClientBuilder openTelemetryEndpoint(String openTelemetryEndpoint);
+
   /**
    * @return a new {@link CamundaClient} with the provided configuration options.
    */

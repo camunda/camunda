@@ -17,6 +17,7 @@ package io.camunda.client.impl.http;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -25,6 +26,8 @@ import io.camunda.client.impl.http.ApiEntity.Error;
 import io.camunda.client.impl.http.ApiEntity.Response;
 import io.camunda.client.impl.http.ApiEntity.Unknown;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -43,7 +46,8 @@ class ApiEntityConsumerTest {
     final String jsonResponse = "{\"name\":\"test\",\"value\":123}";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with the correct content type
@@ -104,7 +108,8 @@ class ApiEntityConsumerTest {
         "{\"type\":\"about:blank\",\"title\":\"Something went wrong\",\"status\":400,\"detail\":\"Invalid request\",\"instance\":\"/v1/entity/123\"}";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
     final ApiEntityConsumer<ProblemDetail> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, ProblemDetail.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, ProblemDetail.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with content type application/problem+json
@@ -131,7 +136,8 @@ class ApiEntityConsumerTest {
     final String textXmlResponse = "<xml/>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -152,7 +158,8 @@ class ApiEntityConsumerTest {
         "<xml>Thís ís á UTF-8 text wíth specíal cháracters: €, ñ, ö, 测试</xml>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -174,7 +181,8 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes(StandardCharsets.UTF_8));
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes(StandardCharsets.UTF_8));
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with a supported content type (application/json)
@@ -200,7 +208,8 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes());
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with a supported content type (text/xml)
@@ -225,7 +234,8 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer1 = ByteBuffer.wrap(part1.getBytes());
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with an unsupported content type
@@ -248,7 +258,8 @@ class ApiEntityConsumerTest {
     final String plain = "Just some plain text.";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(plain.getBytes());
     final ApiEntityConsumer<String> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, String.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with an unsupported content type
@@ -268,7 +279,8 @@ class ApiEntityConsumerTest {
     final String unsupportedData = "<unexpected/>";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
-        new ApiEntityConsumer<>(JSON_MAPPER, TestEntity.class, 2048);
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with a supported content type
@@ -288,7 +300,9 @@ class ApiEntityConsumerTest {
   void testVoidTypeWithApplicationJson() throws IOException {
     // given
 
-    final ApiEntityConsumer<Void> consumer = new ApiEntityConsumer<>(JSON_MAPPER, Void.class, 2048);
+    final ApiEntityConsumer<Void> consumer =
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, Void.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with application/json content type
@@ -306,7 +320,9 @@ class ApiEntityConsumerTest {
     final String problemDetailResponse =
         "{\"type\":\"about:blank\",\"title\":\"Something went wrong\",\"status\":400,\"detail\":\"Invalid request\",\"instance\":\"/v1/entity/123\"}";
     final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
-    final ApiEntityConsumer<Void> consumer = new ApiEntityConsumer<>(JSON_MAPPER, Void.class, 2048);
+    final ApiEntityConsumer<Void> consumer =
+        new ApiEntityConsumer<>(
+            JSON_MAPPER, Void.class, 2048, mock(Tracer.class), mock(Span.class));
 
     // when
     // Start the stream with application/problem+json content type

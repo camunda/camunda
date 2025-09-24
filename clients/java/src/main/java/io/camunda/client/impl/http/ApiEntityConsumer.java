@@ -19,6 +19,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -53,17 +56,31 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   private final ObjectMapper json;
   private final Class<T> type;
   private final int chunkSize;
+  private final Tracer tracer;
+  private final Span rootSpan;
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
-  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int chunkSize) {
+  ApiEntityConsumer(
+      final ObjectMapper json,
+      final Class<T> type,
+      final int chunkSize,
+      final Tracer tracer,
+      final Span span) {
     this.json = json;
     this.type = type;
     this.chunkSize = chunkSize;
+    this.tracer = tracer;
+    rootSpan = span;
   }
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
+    final Span span =
+        tracer
+            .spanBuilder("ApiEntityConsumer.streamStart")
+            .setParent(Context.current().with(rootSpan))
+            .startSpan();
     if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
     } else if (Void.class.equals(type)) {
@@ -76,11 +93,19 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
               && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
       entityConsumer = new RawApiEntityConsumer<>(isResponse, chunkSize);
     }
+    span.end();
   }
 
   @Override
   protected ApiEntity<T> generateContent() throws IOException {
-    return entityConsumer.generateContent();
+    final Span span =
+        tracer
+            .spanBuilder("ApiEntityConsumer.generateContent")
+            .setParent(Context.current().with(rootSpan))
+            .startSpan();
+    final ApiEntity<T> tApiEntity = entityConsumer.generateContent();
+    span.end();
+    return tApiEntity;
   }
 
   @Override
@@ -90,13 +115,25 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected void data(final ByteBuffer src, final boolean endOfStream) throws IOException {
+    final Span span =
+        tracer
+            .spanBuilder("ApiEntityConsumer.data")
+            .setParent(Context.current().with(rootSpan))
+            .startSpan();
     entityConsumer.consumeData(src, endOfStream);
+    span.end();
   }
 
   @Override
   public void releaseResources() {
+    final Span span =
+        tracer
+            .spanBuilder("ApiEntityConsumer.releaseResources")
+            .setParent(Context.current().with(rootSpan))
+            .startSpan();
     if (entityConsumer != null) {
       entityConsumer.releaseResources();
     }
+    span.end();
   }
 }

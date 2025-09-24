@@ -43,6 +43,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OPENTELEMETRY_EXPORTER;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
@@ -102,6 +103,7 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_HTTP_CONNECTIONS = 100;
   public static final JobExceptionHandler DEFAULT_JOB_EXCEPTION_HANDLER =
       JobExceptionHandler.createDefault();
+  public static final String DEFAULT_OPENTELEMETRY_ENDPOINT = "http://localhost:4317";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -136,6 +138,7 @@ public final class CamundaClientBuilderImpl
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
+  private String openTelemetryEndpoint = DEFAULT_OPENTELEMETRY_ENDPOINT;
 
   @Override
   public URI getRestAddress() {
@@ -297,6 +300,11 @@ public final class CamundaClientBuilderImpl
     return maxHttpConnections;
   }
 
+  @Override
+  public String getOpenTelemetryEndpoint() {
+    return openTelemetryEndpoint;
+  }
+
   private void gatewayAddress(final String gatewayAddress) {
     // we apply the legacy behaviour here, the plaintext parameter can still be changed as the
     // plaintext is checked AFTER the gateway address
@@ -449,6 +457,9 @@ public final class CamundaClientBuilderImpl
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY,
         LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY);
+
+    BuilderUtils.applyPropertyValueIfNotNull(
+        properties, this::openTelemetryEndpoint, OPENTELEMETRY_EXPORTER);
 
     return this;
   }
@@ -631,6 +642,12 @@ public final class CamundaClientBuilderImpl
   @Override
   public CamundaClientBuilder preferRestOverGrpc(final boolean preferRestOverGrpc) {
     this.preferRestOverGrpc = preferRestOverGrpc;
+    return this;
+  }
+
+  @Override
+  public CamundaClientBuilder openTelemetryEndpoint(final String openTelemetryEndpoint) {
+    this.openTelemetryEndpoint = openTelemetryEndpoint;
     return this;
   }
 

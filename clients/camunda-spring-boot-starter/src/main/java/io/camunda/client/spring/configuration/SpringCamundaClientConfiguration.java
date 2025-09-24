@@ -225,6 +225,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
+  public String getOpenTelemetryEndpoint() {
+    return "";
+  }
+
+  @Override
   public String toString() {
     return "SpringCamundaClientConfiguration{"
         + "camundaClientProperties="
