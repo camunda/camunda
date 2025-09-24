@@ -32,7 +32,7 @@ public class RdbmsPurger {
           "FLOW_NODE_INSTANCE",
           "FORM",
           "GROUP_MEMBER",
-          "GROUPS",
+          "GROUPS_",
           "INCIDENT",
           "JOB",
           "MAPPING_RULES",

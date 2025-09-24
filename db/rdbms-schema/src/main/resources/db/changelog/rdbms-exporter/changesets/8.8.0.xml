@@ -65,7 +65,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -99,7 +99,7 @@
       <column name="TENANT_ID"/>
     </createIndex>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -133,7 +133,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -199,7 +199,7 @@
       indexName="${prefix}IDX_CANDIDATE_GROUP_USER_TASK_KEY">
       <column name="USER_TASK_KEY"/>
     </createIndex>
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -229,7 +229,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -300,7 +300,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -369,7 +369,7 @@
       </column>
       <column name="FORM_ID" type="VARCHAR(${userCharColumnSize})"/>
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
-      <column name="SCHEMA" type="CLOB"/>
+      <column name="SCHEMA_XML" type="CLOB"/>
       <column name="VERSION" type="BIGINT"/>
       <column name="IS_DELETED" type="BOOLEAN"/>
     </createTable>
@@ -438,7 +438,7 @@
   </changeSet>
 
   <changeSet id="create_group_table" author="camunda">
-    <createTable tableName="${prefix}GROUPS">
+    <createTable tableName="${prefix}GROUPS_">
       <column name="GROUP_ID" type="VARCHAR(${userCharColumnSize})">
         <constraints primaryKey="true"/>
       </column>
@@ -552,7 +552,7 @@
       <column name="PARTITION_ID"/>
     </createIndex>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -588,7 +588,7 @@
 
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -614,7 +614,7 @@
       <column name="PROCESS_INSTANCE_KEY"/>
     </createIndex>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -658,7 +658,7 @@
       <column name="END_TIME"/>
     </createIndex>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -693,7 +693,7 @@
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
@@ -721,7 +721,7 @@
       <column name="TENANT_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
-    <modifySql dbms="mariadb">
+    <modifySql dbms="mariadb,mysql">
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
     </modifySql>
   </changeSet>
