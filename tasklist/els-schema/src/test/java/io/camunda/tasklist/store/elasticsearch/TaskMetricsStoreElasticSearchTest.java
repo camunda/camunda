@@ -161,7 +161,7 @@ public class TaskMetricsStoreElasticSearchTest {
   private SearchRequest buildSearchRequest(
       final OffsetDateTime now, final OffsetDateTime oneHourBefore) {
     final BoolQueryBuilder rangeQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(oneHourBefore).lte(now));
+        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(oneHourBefore).lt(now));
     final TermsAggregationBuilder aggregation =
         AggregationBuilders.terms(ASSIGNEE).field(ASSIGNEE_HASH).size(AGGREGATION_TERMS_SIZE);
 
