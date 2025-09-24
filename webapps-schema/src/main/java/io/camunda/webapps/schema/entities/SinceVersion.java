@@ -16,4 +16,6 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SinceVersion {
   String value();
+
+  boolean nullable() default false;
 }
