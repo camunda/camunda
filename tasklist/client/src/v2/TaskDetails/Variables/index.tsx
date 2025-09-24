@@ -297,6 +297,7 @@ const Variables: React.FC<Props> = ({
                 <JSONEditorModal
                   isOpen={isJsonEditorModalOpen}
                   title={t('jsonEditorEditVariableTitle')}
+                  readOnly={state === 'COMPLETED'}
                   onClose={() => {
                     setEditingVariable(undefined);
                   }}
