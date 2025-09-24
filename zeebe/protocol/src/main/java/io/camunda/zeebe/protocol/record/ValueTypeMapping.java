@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
@@ -79,6 +80,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -320,6 +322,9 @@ public final class ValueTypeMapping {
     mapping.put(
         ValueType.RUNTIME_INSTRUCTION,
         new Mapping<>(RuntimeInstructionRecordValue.class, RuntimeInstructionIntent.class));
+    mapping.put(
+        ValueType.CLUSTER_VARIABLE,
+        new Mapping<>(ClusterVariableRecordValue.class, ClusterVariableIntent.class));
     return mapping;
   }
 
