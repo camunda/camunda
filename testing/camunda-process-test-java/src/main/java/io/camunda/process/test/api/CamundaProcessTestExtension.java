@@ -23,6 +23,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -99,6 +100,7 @@ public class CamundaProcessTestExtension
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
+  private final TestDeploymentService testDeploymentService;
   private final ProcessCoverageBuilder processCoverageBuilder;
   private ProcessCoverage processCoverage;
 
@@ -118,6 +120,7 @@ public class CamundaProcessTestExtension
     runtimeBuilder = containerRuntimeBuilder;
     this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
+    testDeploymentService = new TestDeploymentService();
   }
 
   /**
@@ -223,6 +226,12 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // deploy resources if present
+    testDeploymentService.deployTestResources(
+        context.getRequiredTestMethod(),
+        context.getRequiredTestClass(),
+        camundaProcessTestContext.createClient());
   }
 
   private <T> void injectField(
