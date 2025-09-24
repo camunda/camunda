@@ -43,7 +43,6 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,13 +54,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.ListUtils;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -88,8 +83,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
-  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
-  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -111,17 +104,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
-  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
-
-  @PostConstruct
-  void scheduleUpdateTermsCount() {
-    Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
-  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -130,7 +116,8 @@ public class VariableStoreElasticSearch implements VariableStore {
       final Set<String> fieldNames) {
 
     final List<List<String>> flowNodeInstanceIdsChunks =
-        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
+        ListUtils.partition(
+            flowNodeInstanceIds, tasklistProperties.getElasticsearch().getMaxTermsCount());
 
     final List<VariableEntity> variableEntities = new ArrayList<>();
     flowNodeInstanceIdsChunks.forEach(
@@ -334,27 +321,6 @@ public class VariableStoreElasticSearch implements VariableStore {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public void refreshMaxTermsCount() {
-    final GetSettingsResponse response;
-    try {
-      response =
-          esClient
-              .indices()
-              .getSettings(
-                  new GetSettingsRequest()
-                      .indices(variableIndex.getFullQualifiedName())
-                      .includeDefaults(true)
-                      .names(MAX_TERMS_COUNT_SETTING),
-                  RequestOptions.DEFAULT);
-      maxTermsCount =
-          Integer.parseInt(
-              response.getSetting(variableIndex.getFullQualifiedName(), MAX_TERMS_COUNT_SETTING));
-    } catch (final IOException | NumberFormatException e) {
-      LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
 
