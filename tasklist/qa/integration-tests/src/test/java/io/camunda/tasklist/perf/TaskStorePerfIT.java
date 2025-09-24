@@ -149,7 +149,7 @@ class TaskStorePerfIT extends TasklistIntegrationTest {
         Arguments.of(2, 1000, 500),
         Arguments.of(2, 3000, 1000),
         Arguments.of(1, 10_000, 2000),
-        Arguments.of(1, 30_000, 10000));
+        Arguments.of(1, 30_000, 6000));
   }
 
   private void assertWithRetry(final int maxAttempts, final Runnable assertion)
