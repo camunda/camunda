@@ -15,8 +15,6 @@ import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AV
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
-import static org.skyscreamer.jsonassert.JSONAssert.assertEquals;
-import static org.skyscreamer.jsonassert.JSONCompareMode.LENIENT;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
@@ -126,7 +124,7 @@ class DecisionInstanceSearchTest {
 
   @Test
   public void shouldRetrieveDecisionInstanceByDecisionDefinitionKey(
-      final CamundaClient camundaClient) throws Exception {
+      final CamundaClient camundaClient) {
     // when
     final long decisionDefinitionKey =
         EVALUATED_DECISIONS
@@ -146,34 +144,27 @@ class DecisionInstanceSearchTest {
 
     // then
     assertThat(result.items().size()).isEqualTo(1);
-    final String expected =
-        """
-            {
-               "decisionInstanceKey": %d,
-               "decisionInstanceId": "%s",
-               "state": "EVALUATED",
-               "evaluationFailure": null,
-               "processDefinitionKey": -1,
-               "processInstanceKey": -1,
-               "elementInstanceKey": -1,
-               "decisionDefinitionId": "decision_1",
-               "decisionDefinitionName": "Loan Eligibility",
-               "decisionDefinitionVersion": 1,
-               "decisionDefinitionType": "DECISION_TABLE",
-               "tenantId": "<default>",
-               "evaluatedInputs": null,
-               "matchedRules": null,
-               "result": "\\"Eligible\\"",
-               "decisionDefinitionKey": %d
-             }"""
-            .formatted(decisionInstanceKey, decisionInstanceId, decisionDefinitionKey);
-    assertEquals(
-        expected,
-        result.singleItem().toJson(),
-        LENIENT); // lenient since we cannot assert the evaluationDate
-    assertThat(result.singleItem().getEvaluationDate()).isNotNull();
-    assertThat(result.singleItem().getEvaluatedInputs()).isNull();
-    assertThat(result.singleItem().getMatchedRules()).isNull();
+    final var decisionInstance = result.singleItem();
+
+    assertThat(decisionInstance.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(decisionInstance.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(decisionInstance.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(decisionInstance.getEvaluationFailure()).isNull();
+    assertThat(decisionInstance.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(decisionInstance.getDecisionDefinitionId()).isEqualTo("decision_1");
+    assertThat(decisionInstance.getDecisionDefinitionName()).isEqualTo("Loan Eligibility");
+    assertThat(decisionInstance.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(decisionInstance.getDecisionDefinitionType())
+        .isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(decisionInstance.getTenantId()).isEqualTo("<default>");
+    assertThat(decisionInstance.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(decisionInstance.getResult()).isEqualTo("\"Eligible\"");
+    assertThat(decisionInstance.getEvaluationDate()).isNotNull();
+    // evaluated inputs and matched rules are not included in search results, only in get by id
+    assertThat(decisionInstance.getEvaluatedInputs()).isNull();
+    assertThat(decisionInstance.getMatchedRules()).isNull();
   }
 
   @Test
@@ -415,7 +406,7 @@ class DecisionInstanceSearchTest {
   }
 
   @Test
-  void shouldGetDecisionInstance() throws Exception {
+  void shouldGetDecisionInstance() {
     // when
     final long decisionInstanceKey =
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_2).getDecisionInstanceKey();
@@ -430,53 +421,42 @@ class DecisionInstanceSearchTest {
         camundaClient.newDecisionInstanceGetRequest(decisionInstanceId).send().join();
 
     // then
-    final String expected =
-        """
-            {
-                 "decisionInstanceKey": %d,
-                 "decisionInstanceId": "%s",
-                 "state": "EVALUATED",
-                 "evaluationFailure": null,
-                 "processDefinitionKey": -1,
-                 "processInstanceKey": -1,
-                 "elementInstanceKey": -1,
-                 "decisionDefinitionId": "invoiceClassification",
-                 "decisionDefinitionName": "Invoice Classification",
-                 "decisionDefinitionVersion": 1,
-                 "decisionDefinitionType": "DECISION_TABLE",
-                 "tenantId": "<default>",
-                 "evaluatedInputs": [
-                     {
-                         "inputId": "clause1",
-                         "inputName": "Invoice Amount",
-                         "inputValue": "100"
-                     },
-                     {
-                         "inputId": "InputClause_15qmk0v",
-                         "inputName": "Invoice Category",
-                         "inputValue": "\\"Misc\\""
-                     }
-                 ],
-                 "matchedRules": [
-                     {
-                         "ruleId": "DecisionRule_1of5a87",
-                         "ruleIndex": 1,
-                         "evaluatedOutputs": [
-                             {
-                                 "outputId": "clause3",
-                                 "outputName": "Classification",
-                                 "outputValue": "\\"day-to-day expense\\""
-                             }
-                         ]
-                     }
-                 ],
-                 "result": "\\"day-to-day expense\\"",
-                 "decisionDefinitionKey": %d
-             }"""
-            .formatted(decisionInstanceKey, decisionInstanceId, decisionDefinitionKey);
-    assertEquals(
-        expected, result.toJson(), LENIENT); // lenient since we cannot assert the evaluationDate
+    assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(result.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(result.getEvaluationFailure()).isNull();
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(result.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(result.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(result.getDecisionDefinitionId()).isEqualTo("invoiceClassification");
+    assertThat(result.getDecisionDefinitionName()).isEqualTo("Invoice Classification");
+    assertThat(result.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(result.getDecisionDefinitionType()).isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(result.getTenantId()).isEqualTo("<default>");
+    assertThat(result.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(result.getResult()).isEqualTo("\"day-to-day expense\"");
     assertThat(result.getEvaluationDate()).isNotNull();
+
+    // Assert evaluated inputs
+    assertThat(result.getEvaluatedInputs()).hasSize(2);
+    assertThat(result.getEvaluatedInputs().get(0).getInputId()).isEqualTo("clause1");
+    assertThat(result.getEvaluatedInputs().get(0).getInputName()).isEqualTo("Invoice Amount");
+    assertThat(result.getEvaluatedInputs().get(0).getInputValue()).isEqualTo("100");
+    assertThat(result.getEvaluatedInputs().get(1).getInputId()).isEqualTo("InputClause_15qmk0v");
+    assertThat(result.getEvaluatedInputs().get(1).getInputName()).isEqualTo("Invoice Category");
+    assertThat(result.getEvaluatedInputs().get(1).getInputValue()).isEqualTo("\"Misc\"");
+
+    // Assert matched rules
+    assertThat(result.getMatchedRules()).hasSize(1);
+    assertThat(result.getMatchedRules().get(0).getRuleId()).isEqualTo("DecisionRule_1of5a87");
+    assertThat(result.getMatchedRules().get(0).getRuleIndex()).isEqualTo(1);
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs()).hasSize(1);
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputId())
+        .isEqualTo("clause3");
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputName())
+        .isEqualTo("Classification");
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputValue())
+        .isEqualTo("\"day-to-day expense\"");
   }
 
   @Test
