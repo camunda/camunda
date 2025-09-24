@@ -78,6 +78,8 @@
               <dependency>org.springframework.boot:spring-boot-test</dependency>
               <dependency>org.springframework:spring-beans</dependency>
               <dependency>org.springframework:spring-context</dependency>
+              <dependency>org.wiremock:wiremock</dependency>
+              <dependency>org.testcontainers:testcontainers</dependency>
             </ignoredUsedUndeclaredDependencies>
             <ignoredNonTestScopedDependencies>
               <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
