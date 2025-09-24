@@ -17,26 +17,70 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
+import io.camunda.qa.util.auth.TestUser;
+import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
+import java.util.stream.Stream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class AuthorizationIntegrationTest {
 
+  private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String GROUP_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String USER_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String MAPPING_RULE_ID_1 = Strings.newRandomValidIdentityId();
+
+  @UserDefinition
+  private static final TestUser USER_1 = new TestUser(USER_ID_1, "password", List.of());
+
   private static CamundaClient camundaClient;
 
-  @Test
-  void shouldCreateAndGetAuthorizationByAuthorizationKey() {
+  @BeforeAll
+  public static void setup() {
+    camundaClient
+        .newCreateRoleCommand()
+        .roleId(ROLE_ID_1)
+        .name(ROLE_ID_1)
+        .description(ROLE_ID_1 + " description")
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateMappingRuleCommand()
+        .mappingRuleId(MAPPING_RULE_ID_1)
+        .claimName(MAPPING_RULE_ID_1 + "-cn")
+        .claimValue(MAPPING_RULE_ID_1 + "-cv")
+        .name(MAPPING_RULE_ID_1)
+        .send()
+        .join();
+
+    camundaClient
+        .newCreateGroupCommand()
+        .groupId(GROUP_ID_1)
+        .name(GROUP_ID_1)
+        .description(GROUP_ID_1 + " description")
+        .send()
+        .join();
+  }
+
+  @ParameterizedTest
+  @MethodSource("getValidAuthorizationRequest")
+  void shouldCreateAndGetAuthorizationByAuthorizationKey(
+      final OwnerType ownerType,
+      final ResourceType resourceType,
+      final String ownerId,
+      final String resourceId) {
     // given
-    final var ownerId = Strings.newRandomValidIdentityId();
-    final var resourceId = Strings.newRandomValidIdentityId();
-    final OwnerType ownerType = OwnerType.USER;
-    final ResourceType resourceType = ResourceType.RESOURCE;
     final PermissionType permissionType = PermissionType.CREATE;
 
     // when
@@ -69,6 +113,96 @@ public class AuthorizationIntegrationTest {
               assertThat(retrievedAuthorization.getPermissionTypes())
                   .isEqualTo(List.of(permissionType));
             });
+  }
+
+  @ParameterizedTest
+  @MethodSource("getValidAuthorizationRequest")
+  void shouldUpdateValidAuthorizationByAuthorizationKey(
+      final OwnerType ownerType,
+      final ResourceType resourceType,
+      final String ownerId,
+      final String resourceId) {
+    // given
+    final PermissionType permissionType = PermissionType.CREATE;
+
+    // when
+    final CreateAuthorizationResponse authorization =
+        camundaClient
+            .newCreateAuthorizationCommand()
+            .ownerId(ownerId)
+            .ownerType(ownerType)
+            .resourceId(resourceId)
+            .resourceType(ResourceType.AUTHORIZATION)
+            .permissionTypes(permissionType)
+            .send()
+            .join();
+    final long authorizationKey = authorization.getAuthorizationKey();
+    assertThat(authorizationKey).isGreaterThan(0);
+
+    // then
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final Authorization retrievedAuthorization =
+                  camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
+              assertThat(retrievedAuthorization).isNotNull();
+              assertThat(retrievedAuthorization.getResourceType())
+                  .isEqualTo(ResourceType.AUTHORIZATION);
+              camundaClient
+                  .newUpdateAuthorizationCommand(authorizationKey)
+                  .ownerId(ownerId)
+                  .ownerType(ownerType)
+                  .resourceId(resourceId)
+                  .resourceType(resourceType)
+                  .permissionTypes(permissionType)
+                  .send()
+                  .join();
+            });
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final Authorization retrievedAuthorization =
+                  camundaClient.newAuthorizationGetRequest(authorizationKey).send().join();
+              assertThat(retrievedAuthorization.getAuthorizationKey())
+                  .isEqualTo(String.valueOf(authorizationKey));
+              assertThat(retrievedAuthorization.getResourceId()).isEqualTo(resourceId);
+              assertThat(retrievedAuthorization.getResourceType()).isEqualTo(resourceType);
+              assertThat(retrievedAuthorization.getOwnerId()).isEqualTo(ownerId);
+              assertThat(retrievedAuthorization.getOwnerType()).isEqualTo(ownerType);
+              assertThat(retrievedAuthorization.getPermissionTypes())
+                  .isEqualTo(List.of(permissionType));
+            });
+  }
+
+  // TODO: with https://github.com/camunda/camunda/issues/38527 flag for LOCAL_USER_ENABLED and
+  // LOCAL_GROUP_ENABLED should be considered
+  @ParameterizedTest
+  @MethodSource("getInvalidAuthorizationCreateRequest")
+  void shouldRejectAuthorizationsWithNotFoundOwnerAndResource(
+      final OwnerType ownerType,
+      final ResourceType resourceType,
+      final String ownerId,
+      final String resourceId,
+      final String message) {
+    // given
+    final PermissionType permissionType = PermissionType.CREATE;
+
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newCreateAuthorizationCommand()
+                    .ownerId(ownerId)
+                    .ownerType(ownerType)
+                    .resourceId(resourceId)
+                    .resourceType(resourceType)
+                    .permissionTypes(permissionType)
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(message);
   }
 
   @Test
@@ -222,5 +356,81 @@ public class AuthorizationIntegrationTest {
             .send()
             .join();
     assertThat(searchResponse.items()).isEmpty();
+  }
+
+  public static Stream<Arguments> getValidAuthorizationRequest() {
+    return Stream.of(
+        Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "resource1"),
+        Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "*"),
+        Arguments.of(
+            OwnerType.USER, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "resource1"),
+        Arguments.of(
+            OwnerType.USER, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
+        Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "resource1"),
+        Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "*"),
+        Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "resource1"),
+        Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "*"),
+        Arguments.of(
+            OwnerType.GROUP,
+            ResourceType.RESOURCE,
+            Strings.newRandomValidIdentityId(),
+            "resource1"),
+        Arguments.of(
+            OwnerType.GROUP, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
+        Arguments.of(
+            OwnerType.CLIENT, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
+        Arguments.of(
+            OwnerType.CLIENT,
+            ResourceType.RESOURCE,
+            Strings.newRandomValidIdentityId(),
+            "resource1"),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "resource1"),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "*"),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, USER_ID_1),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, "*"),
+        Arguments.of(
+            OwnerType.MAPPING_RULE,
+            ResourceType.USER,
+            MAPPING_RULE_ID_1,
+            Strings.newRandomValidIdentityId()),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, ROLE_ID_1),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, "*"),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, GROUP_ID_1),
+        Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, "*"),
+        Arguments.of(
+            OwnerType.MAPPING_RULE,
+            ResourceType.GROUP,
+            MAPPING_RULE_ID_1,
+            Strings.newRandomValidIdentityId()),
+        Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, MAPPING_RULE_ID_1),
+        Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, "*"));
+  }
+
+  public static Stream<Arguments> getInvalidAuthorizationCreateRequest() {
+    return Stream.of(
+        Arguments.of(
+            OwnerType.MAPPING_RULE,
+            ResourceType.RESOURCE,
+            Strings.newRandomValidIdentityId(),
+            "*",
+            "a mapping rule with this ID does not exist"),
+        Arguments.of(
+            OwnerType.MAPPING_RULE,
+            ResourceType.ROLE,
+            MAPPING_RULE_ID_1,
+            Strings.newRandomValidIdentityId(),
+            "a role with this ID does not exist"),
+        Arguments.of(
+            OwnerType.USER,
+            ResourceType.MAPPING_RULE,
+            USER_ID_1,
+            Strings.newRandomValidIdentityId(),
+            "a mapping rule with this ID does not exist"),
+        Arguments.of(
+            OwnerType.ROLE,
+            ResourceType.RESOURCE,
+            Strings.newRandomValidIdentityId(),
+            "*",
+            "a role with this ID does not exist"));
   }
 }

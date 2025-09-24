@@ -118,29 +118,6 @@ class RoleAuthorizationIT {
     waitForAuthorizationsCreated(adminClient);
   }
 
-  private static void waitForAuthorizationsCreated(final CamundaClient adminClient) {
-    Awaitility.await("should create authorizations and import in ES")
-        .atMost(AWAIT_TIMEOUT)
-        .ignoreExceptions()
-        .untilAsserted(
-            () -> {
-              final var authzSearchResponse =
-                  adminClient
-                      .newAuthorizationSearchRequest()
-                      .filter(
-                          new AuthorizationFilterImpl()
-                              .ownerId(RESTRICTED_WITH_READ)
-                              .resourceType(ResourceType.ROLE))
-                      .send()
-                      .join();
-              assertThat(
-                      authzSearchResponse.items().stream()
-                          .map(Authorization::getResourceId)
-                          .toList())
-                  .containsAll(Arrays.asList(ROLE_ID_1, ROLE_ID_2));
-            });
-  }
-
   @Test
   void shouldCreateRoleAndGetRoleByIdIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
@@ -812,6 +789,29 @@ class RoleAuthorizationIT {
 
     // then
     assertThat(roles.items()).isEmpty();
+  }
+
+  private static void waitForAuthorizationsCreated(final CamundaClient adminClient) {
+    Awaitility.await("should create authorizations and import in ES")
+        .atMost(AWAIT_TIMEOUT)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var authzSearchResponse =
+                  adminClient
+                      .newAuthorizationSearchRequest()
+                      .filter(
+                          new AuthorizationFilterImpl()
+                              .ownerId(RESTRICTED_WITH_READ)
+                              .resourceType(ResourceType.ROLE))
+                      .send()
+                      .join();
+              assertThat(
+                      authzSearchResponse.items().stream()
+                          .map(Authorization::getResourceId)
+                          .toList())
+                  .containsAll(Arrays.asList(ROLE_ID_1, ROLE_ID_2));
+            });
   }
 
   private static void createRole(
