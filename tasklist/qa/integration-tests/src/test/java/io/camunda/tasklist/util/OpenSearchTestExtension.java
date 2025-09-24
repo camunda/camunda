@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.store.opensearch.VariableStoreOpenSearch.MAX_TERMS_COUNT_SETTING;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -46,9 +45,6 @@ import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.IndexOperation;
 import org.opensearch.client.opensearch.core.reindex.Source;
 import org.opensearch.client.opensearch.indices.GetIndexResponse;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
-import org.opensearch.client.opensearch.indices.IndexSettings;
-import org.opensearch.client.opensearch.indices.PutIndicesSettingsRequest;
 import org.opensearch.client.opensearch.nodes.Stats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -126,35 +122,6 @@ public class OpenSearchTestExtension
         .getOpenSearch()
         .setIndexPrefix(TasklistOpenSearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
-  }
-
-  @Override
-  public void setIndexMaxTermsCount(final String indexName, final int maxTermsCount)
-      throws IOException {
-
-    osClient
-        .indices()
-        .putSettings(
-            PutIndicesSettingsRequest.of(
-                f ->
-                    f.index(indexName)
-                        .settings(IndexSettings.of(s -> s.maxTermsCount(maxTermsCount)))));
-  }
-
-  @Override
-  public int getIndexMaxTermsCount(final String indexName) throws IOException {
-    return osClient
-        .indices()
-        .getSettings(
-            new GetIndicesSettingsRequest.Builder()
-                .index(indexName)
-                .includeDefaults(true)
-                .name(MAX_TERMS_COUNT_SETTING)
-                .build())
-        .get(indexName)
-        .settings()
-        .index()
-        .maxTermsCount();
   }
 
   @Override
