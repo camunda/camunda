@@ -33,6 +33,17 @@ services:
     ports:
       - "3306:3306"
 
+  mysql:
+    image: mysql:8.4
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: camunda
+      MYSQL_USER: camunda
+      MYSQL_PASSWORD: demo
+    ports:
+      - "3306:3306"
+
       # Name of the Docker Compose service
   oracle:
     # Docker Hub image (feel free to change the tag "latest" to any other available one)
