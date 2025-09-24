@@ -15,6 +15,7 @@
 
   <properties>
     <version.java>17</version.java>
+    <version.wiremock-spring-boot>3.10.6</version.wiremock-spring-boot>
   </properties>
 
   <dependencies>
@@ -47,6 +48,13 @@
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
+      <version>${version.wiremock-spring-boot}</version>
       <scope>test</scope>
     </dependency>
 
