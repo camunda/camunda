@@ -23,6 +23,7 @@ jobs:
       camunda-helm-dir: camunda-platform-8.8
       test-enabled: true
       caller-git-ref: main
+      values-digest: true
       extra-values: |
         zeebe:
           image:
