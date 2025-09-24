@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.Resource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.grpc.stub.StreamObserver;
+import io.opentelemetry.api.trace.Span;
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -65,6 +66,7 @@ public final class DeployResourceCommandImpl
   private final DeployResourceRequest.Builder requestBuilder = DeployResourceRequest.newBuilder();
   private final GatewayStub asyncStub;
   private final Predicate<StatusCode> retryPredicate;
+  private Span span;
   private Duration requestTimeout;
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
@@ -78,10 +80,12 @@ public final class DeployResourceCommandImpl
       final Predicate<StatusCode> retryPredicate,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc,
-      final JsonMapper jsonMapper) {
+      final JsonMapper jsonMapper,
+      final Span span) {
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
+    this.span = span;
     tenantId(config.getDefaultTenantId());
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
@@ -247,6 +251,8 @@ public final class DeployResourceCommandImpl
 
   private CamundaFuture<DeploymentEvent> sendRestRequest() {
     final HttpCamundaFuture<DeploymentEvent> result = new HttpCamundaFuture<>();
+    span.addEvent("Sending deployment request via REST");
+    span.setAttribute("TestAttribute", "TestValue");
     httpClient.postMultipart(
         "/deployments",
         multipartEntityBuilder,
@@ -254,6 +260,7 @@ public final class DeployResourceCommandImpl
         DeploymentResult.class,
         DeploymentEventImpl::new,
         result);
+    result.whenComplete((r, t) -> span.end());
     return result;
   }
 

@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
+import io.opentelemetry.api.trace.Span;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -458,6 +459,8 @@ public final class HttpClient implements AutoCloseable {
     if (!applyCredentials(requestBuilder, result)) {
       return null;
     }
+
+    requestBuilder.addHeader("X-Span-Id", Span.current().getSpanContext().getSpanId());
 
     return requestBuilder.build();
   }
