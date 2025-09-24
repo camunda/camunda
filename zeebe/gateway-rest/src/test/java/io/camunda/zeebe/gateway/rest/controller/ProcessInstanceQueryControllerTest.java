@@ -36,7 +36,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.json.JSONException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -171,7 +170,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           expected,
           new String(Objects.requireNonNull(actualBytes), StandardCharsets.UTF_8),
           JSONCompareMode.NON_EXTENSIBLE);
-    } catch (final JSONException e) {
+    } catch (final Exception e) {
       throw new AssertionError(e);
     }
   }
