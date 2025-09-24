@@ -116,10 +116,10 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
     sendMessages("messageTask1", "{\"messageVar\": \"someValue\"\n}", 1, String.valueOf(orderId));
     completeTask(instanceKey, "task1", null);
 
-    long rootCauseDecisionInstance1 = startRootCauseDecisionProcess();
+    final long rootCauseDecisionInstance1 = startRootCauseDecisionProcess();
     doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance1);
 
-    long rootCauseDecisionInstance2 = startRootCauseDecisionProcess();
+    final long rootCauseDecisionInstance2 = startRootCauseDecisionProcess();
     doNotTouchProcessInstanceKeys.add(rootCauseDecisionInstance2);
   }
 
@@ -695,10 +695,9 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
   }
 
   private long startRootCauseDecisionProcess() {
-      return ZeebeTestUtil.startProcessInstance(
-          true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
-    }
-
+    return ZeebeTestUtil.startProcessInstance(
+        true, client, getTenant(TENANT_A), "Process_rootCauseDecision", null);
+  }
 
   private void createBigProcess(final int loopCardinality, final int numberOfClients) {
     final ObjectMapper objectMapper = new ObjectMapper();
