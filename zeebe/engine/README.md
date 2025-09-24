@@ -60,7 +60,28 @@ the journey of a command record begins, once it enters the engine domain.
 
 ### `state` package
 
-// TODO: add state package description
+The `state` package contains the state model of the engine. This is the next stop after a command
+record is processed by a processor class. Processor classes use the `stateWriter` to output event
+records. These event records are then applied to the various Zeebe `State` classes using `Applier`
+classes, both contained withing this package.
+
+You can find all the applier classes listed in the `EventAppliers` class. `EventApplier` classes
+extract the data from the event record and pass it to a `State` class. One example is the
+`UserCreatedApplier` class, which passes the user information from a `User` event record to the
+`UserState` class. It is important to not that if the behavior of an `EventApplier` class is changed,
+a follow-up version of that `EventApplier` class must be created to ensure that the engine can
+correctly apply the event record in the future.
+
+The various `State` classes are instantiated in the `ProcessingDbState` class, which is used by
+the `EngineProcessor` and `BpmnProcessor` classes to access the state of the engine, as well as the
+`EventApplier` classes to apply event records to the state.
+
+However, the `Processor` classes may only access the read-only interfaces of the `State` classes,
+while the `EventApplier` classes should use the `MutableState` interfaces of a State implementation.
+This is to ensure that the state is only modified by event records, and not by processor classes. As
+an example, consider that in the `UserCreateProcessor` class, the `UserState` interface is used to
+access the read-only `DbUserState` methods, but the `UserCreatedApplier` class uses the
+`MutableUserState` interface to access the `DbUserState` methods that modify the state.
 
 ### `metrics` package
 
