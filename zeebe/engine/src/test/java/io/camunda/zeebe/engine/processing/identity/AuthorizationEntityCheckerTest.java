@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity;
 
+import static io.camunda.zeebe.engine.processing.identity.AuthorizationEntityChecker.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -80,24 +81,36 @@ class AuthorizationEntityCheckerTest {
       final boolean localGroupEnabled) {
 
     // given
-    final AuthorizationRecord record = new AuthorizationRecord();
-    record.setOwnerType(ownerType);
-    record.setOwnerId(ownerId);
-    record.setResourceType(resourceType);
-    record.setResourceId(resourceId);
+    final AuthorizationRecord record =
+        createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
     when(command.getAuthorizations())
         .thenReturn(
             Map.of(
-                "LOCAL_USER_ENABLED", localUserEnabled,
-                "LOCAL_GROUP_ENABLED", localGroupEnabled));
+                IS_CAMUNDA_USERS_ENABLED,
+                localUserEnabled,
+                IS_CAMUNDA_GROUPS_ENABLED,
+                localGroupEnabled));
     // when
     final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
 
     // then
     assertThat(result.isRight()).isTrue();
     assertThat(result.get()).isEqualTo(record);
+  }
+
+  private static AuthorizationRecord createAuthorizationRecord(
+      final AuthorizationOwnerType ownerType,
+      final String ownerId,
+      final AuthorizationResourceType resourceType,
+      final String resourceId) {
+    final AuthorizationRecord record = new AuthorizationRecord();
+    record.setOwnerType(ownerType);
+    record.setOwnerId(ownerId);
+    record.setResourceType(resourceType);
+    record.setResourceId(resourceId);
+    return record;
   }
 
   @ParameterizedTest
@@ -113,18 +126,17 @@ class AuthorizationEntityCheckerTest {
       final String expectedErrorMessage) {
 
     // given
-    final AuthorizationRecord record = new AuthorizationRecord();
-    record.setOwnerType(ownerType);
-    record.setOwnerId(ownerId);
-    record.setResourceType(resourceType);
-    record.setResourceId(resourceId);
+    final AuthorizationRecord record =
+        createAuthorizationRecord(ownerType, ownerId, resourceType, resourceId);
 
     when(command.getValue()).thenReturn(record);
     when(command.getAuthorizations())
         .thenReturn(
             Map.of(
-                "LOCAL_USER_ENABLED", localUserEnabled,
-                "LOCAL_GROUP_ENABLED", localGroupEnabled));
+                IS_CAMUNDA_USERS_ENABLED,
+                localUserEnabled,
+                IS_CAMUNDA_GROUPS_ENABLED,
+                localGroupEnabled));
 
     // when
     final Either<Rejection, AuthorizationRecord> result = checker.ownerAndResourceExists(command);
@@ -222,8 +234,7 @@ class AuthorizationEntityCheckerTest {
             "role1",
             true,
             false,
-            AuthorizationEntityChecker.USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentUser")),
+            USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentUser")),
         Arguments.of(
             "Group owner does not exist - local group enabled",
             AuthorizationOwnerType.GROUP,
@@ -232,8 +243,7 @@ class AuthorizationEntityCheckerTest {
             "user1",
             false,
             true,
-            AuthorizationEntityChecker.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentGroup")),
+            GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentGroup")),
         Arguments.of(
             "Mapping rule owner does not exist",
             AuthorizationOwnerType.MAPPING_RULE,
@@ -242,8 +252,7 @@ class AuthorizationEntityCheckerTest {
             "role1",
             false,
             false,
-            AuthorizationEntityChecker.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentMapping")),
+            MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentMapping")),
         Arguments.of(
             "Role owner does not exist",
             AuthorizationOwnerType.ROLE,
@@ -252,8 +261,7 @@ class AuthorizationEntityCheckerTest {
             "mapping1",
             false,
             false,
-            AuthorizationEntityChecker.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentRole")),
+            ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentRole")),
 
         // Resource validation failures
         Arguments.of(
@@ -264,8 +272,7 @@ class AuthorizationEntityCheckerTest {
             "nonExistentUser",
             true,
             false,
-            AuthorizationEntityChecker.USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentUser")),
+            USER_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentUser")),
         Arguments.of(
             "Group resource does not exist - local group enabled",
             AuthorizationOwnerType.USER,
@@ -274,8 +281,7 @@ class AuthorizationEntityCheckerTest {
             "nonExistentGroup",
             false,
             true,
-            AuthorizationEntityChecker.GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentGroup")),
+            GROUP_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentGroup")),
         Arguments.of(
             "Mapping rule resource does not exist",
             AuthorizationOwnerType.ROLE,
@@ -284,8 +290,7 @@ class AuthorizationEntityCheckerTest {
             "nonExistentMapping",
             false,
             false,
-            AuthorizationEntityChecker.MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentMapping")),
+            MAPPING_RULE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentMapping")),
         Arguments.of(
             "Role resource does not exist",
             AuthorizationOwnerType.USER,
@@ -294,7 +299,6 @@ class AuthorizationEntityCheckerTest {
             "nonExistentRole",
             false,
             false,
-            AuthorizationEntityChecker.ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted(
-                "nonExistentRole")));
+            ROLE_DOES_NOT_EXIST_ERROR_MESSAGE.formatted("nonExistentRole")));
   }
 }
