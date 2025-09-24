@@ -11,7 +11,7 @@ check_pr_commits() {
   
   # Validate branch exists before attempting git log
   if ! git rev-parse --verify "origin/$branch_name" >/dev/null 2>&1; then
-    echo "⚠️  Branch origin/$branch_name does not exist (likely from forked repository)" >&2
+    echo "⚠️  Branch origin/$branch_name does not exist (likely from forked repository)"
     echo "0"
     return
   fi
@@ -19,7 +19,6 @@ check_pr_commits() {
   # Get commits and filter renovate
   local commits_behind
   commits_behind=$(git log origin/"$branch_name"..origin/"$base_branch" --pretty=format:"%an|%ae" --no-merges 2>/dev/null | grep -v -E 'renovate\[bot\]|mend\[bot\]' | wc -l)
-  
-  echo "🔧 Found $commits_behind non-renovate and non-mend commits behind $base_branch" >&2
+
   echo "$commits_behind"
 }

@@ -18,18 +18,18 @@ update_outdated_pr() {
   existing_comment_body=$(echo "$pr_data" | jq -r '.comments[] | select(.body | contains("🚨") and (contains("last updated") or contains("commits behind"))) | .body' | head -1 || true)
   
   if [[ "$dry_run" == "true" ]]; then
-    echo "🔍 DRY-RUN: Would add 'outdated-branch' label and comment to PR #$pr_number" >&2
+    echo "🔍 DRY-RUN: Would add 'outdated-branch' label and comment to PR #$pr_number"
     return 0
   fi
   
   # Check and add label if needed
   if [ -z "$existing_labels" ]; then
-    echo "🏷️  Adding outdated-branch label..." >&2
+    echo "🏷️  Adding outdated-branch label..."
     if ! gh pr edit "$pr_number" --add-label "outdated-branch"; then
       echo "❌ Failed to add label" >&2
     fi
   else
-    echo "ℹ️  PR already has outdated-branch label" >&2
+    echo "ℹ️  PR already has outdated-branch label"
   fi
   
   # Check and add/update comment
@@ -58,22 +58,22 @@ EOF
   if [[ -n "$existing_comment_id" && "$existing_comment_id" != "null" ]]; then
     # Update existing comment if content changed
     if [[ "$existing_comment_body" != "$comment_body" ]]; then
-      echo "💬 Updating existing comment with new conditions... (Comment ID: $existing_comment_id)" >&2
+      echo "💬 Updating existing comment with new conditions... (Comment ID: $existing_comment_id)"
       if gh api /repos/"$GITHUB_REPOSITORY"/issues/comments/"$existing_comment_id" -X PATCH -f body="$comment_body" >/dev/null 2>&1; then
-        echo "✅ Successfully updated comment" >&2
+        echo "✅ Successfully updated comment"
       else
-        echo "❌ Failed to update PR comment" >&2
+        echo "❌ Failed to update PR comment"
       fi
     else
-      echo "ℹ️  Comment is already up-to-date" >&2
+      echo "ℹ️  Comment is already up-to-date"
     fi
   else
     # Create new comment since PR is outdated and no comment exists
-    echo "💬 Adding new comment about outdated branch..." >&2
+    echo "💬 Adding new comment about outdated branch..."
     if ! gh pr comment "$pr_number" --body "$comment_body"; then
       echo "❌ Failed to add comment" >&2
     fi
   fi
   
-  echo "🔧 Updated PR #$pr_number (labeled + commented)" >&2
+  echo "🔧 Updated PR #$pr_number (labeled + commented)"
 }

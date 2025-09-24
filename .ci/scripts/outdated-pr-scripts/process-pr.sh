@@ -29,13 +29,18 @@ while IFS=' ' read -r pr_number branch_name base_branch repo_owner; do
   
   # Skip forked repositories early
   if [[ "$repo_owner" != "${GITHUB_REPOSITORY_OWNER}" ]]; then
-    echo "🔀 Skipping forked repository PR #$pr_number from $repo_owner" >&2
+    echo "🔀 Skipping forked repository PR #$pr_number from $repo_owner"
     echo "---"
     continue
   fi
   
   echo "🔍 Processing PR #$pr_number ($branch_name from $repo_owner targeting $base_branch)"
-  commits_behind=$(check_pr_commits "$pr_number" "$branch_name" "$base_branch" "$repo_owner")
+  
+  # Check commits behind (function will show diagnostic messages)
+  commits_behind=$(check_pr_commits "$pr_number" "$branch_name" "$base_branch" "$repo_owner" | tail -1)
+  
+  # Analysis summary
+  echo "📋 Branch analysis: $branch_name is $commits_behind commits behind $base_branch"
   
   # Check branch staleness - only for internal branches that exist
   latest_age_days=0
@@ -53,10 +58,10 @@ while IFS=' ' read -r pr_number branch_name base_branch repo_owner; do
 
   if [[ ${#reasons[@]} -gt 0 ]]; then
     reason=$(IFS=" and "; echo "${reasons[*]}")
-    echo "🚨 PR #$pr_number is outdated: $reason" >&2
+    echo "🚨 PR #$pr_number is outdated: $reason"
     update_outdated_pr "$pr_number" "$commits_behind" "$base_branch" "$COMMIT_THRESHOLD" "$latest_age_days" "$STALE_DAYS_THRESHOLD" "$DRY_RUN"
   else
-    echo "✅ PR #$pr_number is up-to-date" >&2
+    echo "✅ PR #$pr_number is up-to-date"
   fi
   
   echo "---"
