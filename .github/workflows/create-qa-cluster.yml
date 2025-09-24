@@ -1,0 +1,71 @@
+# owner: @camunda/monorepo-devops-team
+# Description:
+# This workflow creates a QA test cluster based on the versions of the release branch.
+# It fetches the latest Elasticsearch version from the parent pom.xml and checks for the corresponding Optimize
+# As Optimize is not build with the Zeebe, Operate Tasklist etc, it checks the Docker Hub for the latest version.
+# The workflow can be triggered manually and requires the release branch as input.
+name: Create QA Cluster
+on:
+  workflow_dispatch:
+    inputs:
+      releaseBranch:
+        description: 'Whether to run the release tests'
+        required: true
+        type: string
+
+permissions: {}
+jobs:
+  get-component-versions:
+    name: Get Component Version
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    outputs:
+      elasticVersion: ${{ steps.set-elastic-version.outputs.elasticVersion }}
+      optimizeVersion: ${{ steps.set-optimize-version.outputs.optimizeVersion }}
+    steps:
+        - name: Get Elastic img version
+          id: set-elastic-version
+          shell: bash
+          run: |
+            set -euo pipefail
+            # Download the raw pom.xml file from the specified branch
+            latestVersion=$(curl -s "https://raw.githubusercontent.com/camunda/camunda/${{ inputs.releaseBranch }}/parent/pom.xml" | awk -F'[<>]' '/<version\.elasticsearch>/ {print $3}')
+            if [[ -z "${latestVersion}" ]]; then
+              echo "::error::Could not find Elasticsearch version in the pom.xml file."
+              exit 1
+            fi
+
+            echo "Found Elasticsearch version: ${latestVersion}"
+            echo "elasticVersion=${latestVersion}" >> "${GITHUB_OUTPUT}"
+
+        - name: Get Optimize img version
+          id: set-optimize-version
+          shell: bash
+          run: |
+            set -euo pipefail
+
+            # Call the docker hub api to check if SNAPSHOT is available for the release branch
+            majorMinor=$(echo "${{ inputs.releaseBranch }}" | sed -E 's/[^0-9]*([0-9]+\.[0-9]+).*/\1/')
+            snapshotTag="${majorMinor}-SNAPSHOT"
+
+            if curl -s "https://hub.docker.com/v2/repositories/camunda/optimize/tags/${snapshotTag}/" | grep -q '"name":"'"${snapshotTag}"'"'; then
+              echo "Found Optimize version: ${snapshotTag}"
+              echo "optimizeVersion=${snapshotTag}" >> "${GITHUB_OUTPUT}"
+            else
+              echo "::warning::Could not find Optimize version for ${snapshotTag} in Docker Hub, using latest"
+              echo "optimizeVersion=latest" >> "${GITHUB_OUTPUT}"
+            fi
+        - name: Output Versions
+          run: |
+            echo "Elastic Version: ${{ steps.set-elastic-version.outputs.elasticVersion }}"
+            echo "Optimize Version: ${{ steps.set-optimize-version.outputs.optimizeVersion }}"
+
+        - name: Create Generation for release 8.7 or under
+          id: create-generation-8_7-or-under
+          shell: bash
+          run: |
+            set -euo pipefail
+
+            
+
+    
