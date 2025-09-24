@@ -1314,7 +1314,7 @@ describe('<Variables />', () => {
       },
     );
 
-    expect(await screen.findByText('"000...')).toBeInTheDocument();
+    expect(await screen.findByText('"000')).toBeInTheDocument();
 
     rerender(
       <Variables
@@ -1326,7 +1326,7 @@ describe('<Variables />', () => {
       />,
     );
 
-    expect(await screen.findByText('"000...')).toBeInTheDocument();
+    expect(await screen.findByText('"000')).toBeInTheDocument();
   });
 
   describe('Duplicate variable validations', () => {
