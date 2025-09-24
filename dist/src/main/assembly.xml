@@ -34,6 +34,12 @@
       <lineEnding>keep</lineEnding>
       <outputDirectory>/</outputDirectory>
     </file>
+    <file>
+      <source>${maven.multiModuleProjectDirectory}/dist/src/main/resources/log4j2.xml</source>
+      <filtered>true</filtered>
+      <lineEnding>keep</lineEnding>
+      <outputDirectory>/config</outputDirectory>
+    </file>
   </files>
 
 </assembly>
