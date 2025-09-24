@@ -126,7 +126,8 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
     if (property.newProperty().endsWith("*")) {
       return detectWildcardProperties(environment, property, profiles);
     }
-    if (environment.containsProperty(property.newProperty())) {
+    final boolean newPropertyPresent = environment.containsProperty(property.newProperty());
+    if (newPropertyPresent) {
       log.debug(
           String.format(
               "Property '%s' found, not looking up legacy properties", property.newProperty()));
@@ -145,16 +146,13 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
         final Set<String> validPropertyNameSet =
             validPropertyNames.stream().map(LegacyProperty::name).collect(Collectors.toSet());
         final String errorMessage =
-            switch (mode) {
-              case supportedOnlyIfValuesMatch ->
-                  String.format(
-                      "Ambiguous configuration. The properties '%s' and the new property '%s' have conflicting values",
-                      String.join(", ", validPropertyNameSet), property.newProperty());
-              default ->
-                  String.format(
-                      "Ambiguous configuration. The properties '%s' have conflicting values",
-                      String.join(", ", validPropertyNameSet));
-            };
+            mode == Mode.supportedOnlyIfValuesMatch
+                ? String.format(
+                    "Ambiguous configuration. The properties '%s' and the new property '%s' have conflicting values",
+                    String.join(", ", validPropertyNameSet), property.newProperty())
+                : String.format(
+                    "Ambiguous configuration. The properties '%s' have conflicting values",
+                    String.join(", ", validPropertyNameSet));
         return findPropertiesWithValue(validPropertyNames, environment).stream()
             .map(legacyProperty -> new Fail(legacyProperty.name(), errorMessage));
       }
@@ -183,6 +181,9 @@ public class CamundaConfigurationPostProcessor implements EnvironmentPostProcess
                     legacyPropertiesWithValue.stream()
                         .map(LegacyProperty::name)
                         .collect(Collectors.toSet()))));
+        if (newPropertyPresent) {
+          return Stream.of();
+        }
         return legacyPropertiesWithValue.stream()
             .map(
                 legacyProperty ->
