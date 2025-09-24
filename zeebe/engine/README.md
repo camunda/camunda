@@ -85,7 +85,8 @@ access the read-only `DbUserState` methods, but the `UserCreatedApplier` class u
 
 ### `metrics` package
 
-// TODO: add metrics package description
+The `metrics` package contains the classes used by the engine to collect processing-related metrics.
+When adding a new feature, consider if it would be useful to add new metrics to monitor its behavior.
 
 ## How do I implement a new feature?
 
