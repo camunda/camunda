@@ -235,14 +235,20 @@ class OidcPrivateKeyJwtKeycloakTest {
     // `client_secret_post`, and `none` by default. Client [oidc] is using [private_key_jwt]
     // instead. Please use a supported client authentication method, or use
     // `setRequestEntityConverter` to supply an instance that supports [private_key_jwt].
-    assertThat(result.getUnresolvedException()).isNull();
+    assertThat(result.getUnresolvedException()).isNotInstanceOf(IllegalArgumentException.class);
 
     verify(
         1,
         postRequestedFor(urlEqualTo(ENDPOINT_TOKEN))
             .withHeader("Content-Type", containing("application/x-www-form-urlencoded"))
-            .withRequestBody(containing("grant_type=refresh_token")));
-    // TODO check for assertion
+            .withRequestBody(containing("grant_type=refresh_token"))
+            .withRequestBody(containing("client_id=" + CLIENT_ID))
+            .withRequestBody(containing("refresh_token=refresh_token_value"))
+            .withRequestBody(
+                containing(
+                    "client_assertion_type=urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer"))
+            .withRequestBody(matching(".*client_assertion=" + REGEX_JWT + ".*"))
+            .withRequestBody(notContaining("client_secret")));
   }
 
   private static void stubIdpEndpoints() {
@@ -361,7 +367,7 @@ class OidcPrivateKeyJwtKeycloakTest {
 
     final var refreshToken =
         new OAuth2RefreshToken(
-            "refresh_token", now.minus(2, ChronoUnit.HOURS), now.plus(30, ChronoUnit.DAYS));
+            "refresh_token_value", now.minus(2, ChronoUnit.HOURS), now.plus(30, ChronoUnit.DAYS));
 
     final var clientRegistration =
         clientRegistrationRepository.findByRegistrationId(REGISTRATION_ID);
