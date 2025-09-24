@@ -27,6 +27,8 @@ public class AuthorizationEntityChecker {
       "Expected to create or update authorization with ownerId or resourceId '%s', but a user with this ID does not exist.";
   public static final String GROUP_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a group with this ID does not exist.";
+  public static final String IS_CAMUNDA_USERS_ENABLED = "IS_CAMUNDA_USERS_ENABLED";
+  public static final String IS_CAMUNDA_GROUPS_ENABLED = "IS_CAMUNDA_GROUPS_ENABLED";
 
   private final UserState userState;
   private final MappingRuleState mappingRuleState;
@@ -44,9 +46,9 @@ public class AuthorizationEntityChecker {
       final TypedRecord<AuthorizationRecord> command) {
     final var record = command.getValue();
     final boolean localUserEnabled =
-        (boolean) command.getAuthorizations().getOrDefault("LOCAL_USER_ENABLED", false);
+        (boolean) command.getAuthorizations().getOrDefault(IS_CAMUNDA_USERS_ENABLED, false);
     final boolean localGroupEnabled =
-        (boolean) command.getAuthorizations().getOrDefault("LOCAL_GROUP_ENABLED", false);
+        (boolean) command.getAuthorizations().getOrDefault(IS_CAMUNDA_GROUPS_ENABLED, false);
     switch (record.getOwnerType()) {
       case GROUP:
         if (localGroupEnabled && groupState.get(record.getOwnerId()).isEmpty()) {
