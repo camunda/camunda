@@ -9,17 +9,35 @@ package io.camunda.configuration;
 
 public class Rdbms extends SecondaryStorageDatabase {
 
+  /** The interval at which the exporters execution queue is flushed. */
   private String flushInterval;
 
+  /** The maximum size of the exporters execution queue before it is flushed to the database. */
   private Integer queueSize;
 
+  /** History cleanup configuration. */
   private History history;
 
+  /** Process definition cache configuration. Defines the size of the process definition cache. */
   private Cache processCache;
 
+  /** Batch operation cache configuration. Defines the size of the batch operation cache. */
   private Cache batchOperationCache;
 
+  /**
+   * If true, batch operation items are exported to the database when the batch operation is created
+   * (status = ACTIVE). If false, the items are created on demand when they have been processed.
+   * When set to true, this ensures that the items are available when the batch operation is
+   * created, but it may lead to a delay in the creation of the batch operation if there are many
+   * items to create.
+   */
   private boolean exportBatchOperationItemsOnCreation;
+
+  /**
+   * The number of batch operation items to insert in a single batched SQL when creating the items
+   * for a batch operation. This is only relevant when exportBatchOperationItemsOnCreation is set to
+   * true.
+   */
   private int batchOperationItemInsertBlockSize;
 
   @Override
@@ -105,14 +123,53 @@ public class Rdbms extends SecondaryStorageDatabase {
   }
 
   public static class History {
+
+    /**
+     * The default time to live for all camunda entities that support history time to live.
+     * Specified in Java Duration format.
+     */
     private String defaultHistoryTTL;
+
+    /** The default time to live for all batch operations. Specified in Java Duration format. */
     private String defaultBatchOperationHistoryTTL;
+
+    /**
+     * The default time to live for cancel process instance batch operations. Specified in Java
+     * Duration format.
+     */
     private String batchOperationCancelProcessInstanceHistoryTTL;
+
+    /**
+     * The default time to live for migrate process instance batch operations. Specified in Java
+     * Duration format.
+     */
     private String batchOperationMigrateProcessInstanceHistoryTTL;
+
+    /**
+     * The default time to live for modify process instance batch operations. Specified in Java
+     * Duration format.
+     */
     private String batchOperationModifyProcessInstanceHistoryTTL;
+
+    /**
+     * The default time to live for resolve incident batch operations. Specified in Java Duration
+     * format.
+     */
     private String batchOperationResolveIncidentHistoryTTL;
+
+    /**
+     * The min interval between two history cleanup runs. This will be reached when the system is
+     * constantly finding data to clean up. Specified in Java Duration format.
+     */
     private String minHistoryCleanupInterval;
+
+    /**
+     * The max interval between two history cleanup runs. This will be reached when the system is
+     * constantly finding no data to clean up. Specified in Java Duration format.
+     */
     private String maxHistoryCleanupInterval;
+
+    /** The number of history records to delete in one batch. */
     private String historyCleanupBatchSize;
 
     public String getHistoryCleanupBatchSize() {
@@ -196,6 +253,11 @@ public class Rdbms extends SecondaryStorageDatabase {
   }
 
   public static class Cache {
+
+    /**
+     * The maximum number of entries the cache may contain. When the size of the cache exceeds this,
+     * the oldest entries are removed.
+     */
     private int maxSize;
 
     public int getMaxSize() {
