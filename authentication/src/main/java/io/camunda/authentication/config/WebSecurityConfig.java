@@ -80,10 +80,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClientManager;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProvider;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientProviderBuilder;
+import org.springframework.security.oauth2.client.endpoint.NimbusJwtClientAuthenticationParametersConverter;
+import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGrantRequest;
+import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizedClientRepository;
@@ -712,6 +718,33 @@ public class WebSecurityConfig {
         final AssertionJwkProvider assertionJwkProvider) {
       return new OidcTokenEndpointCustomizer(
           oidcAuthenticationConfigurationRepository, assertionJwkProvider);
+    }
+
+    @Bean
+    public OAuth2AuthorizedClientManager authorizedClientManager(
+        final ClientRegistrationRepository registrations,
+        final OAuth2AuthorizedClientRepository authorizedClientRepository,
+        final AssertionJwkProvider assertionJwkProvider) {
+
+      final var manager =
+          new DefaultOAuth2AuthorizedClientManager(registrations, authorizedClientRepository);
+
+      // we build a refresh token flow client manually to add support for private_key_jwt
+      final var refreshClient = new RestClientRefreshTokenTokenResponseClient();
+      final var assertionConverter =
+          new NimbusJwtClientAuthenticationParametersConverter<OAuth2RefreshTokenGrantRequest>(
+              registration -> assertionJwkProvider.createJwk(registration.getRegistrationId()));
+      refreshClient.addParametersConverter(assertionConverter);
+
+      final OAuth2AuthorizedClientProvider provider =
+          OAuth2AuthorizedClientProviderBuilder.builder()
+              .authorizationCode()
+              .refreshToken(c -> c.accessTokenResponseClient(refreshClient))
+              .clientCredentials()
+              .build();
+
+      manager.setAuthorizedClientProvider(provider);
+      return manager;
     }
 
     @Bean

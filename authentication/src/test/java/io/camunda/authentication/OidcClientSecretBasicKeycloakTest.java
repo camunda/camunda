@@ -26,7 +26,6 @@ import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.authentication.config.controllers.TestApiController;
-import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -84,8 +83,6 @@ import org.springframework.web.util.UriComponentsBuilder;
       "camunda.security.authentication.oidc.client-secret="
           + OidcClientSecretBasicKeycloakTest.CLIENT_SECRET,
       "camunda.security.authentication.oidc.redirect-uri=http://localhost/sso-callback",
-      "camunda.security.authentication.oidc.clientAuthenticationMethod="
-          + OidcAuthenticationConfiguration.CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC,
       "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       "logging.level.io.camunda.authentication.config=DEBUG"
       // essential for debugging the flow
