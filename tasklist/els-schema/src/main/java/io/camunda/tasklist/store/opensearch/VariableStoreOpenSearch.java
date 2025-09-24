@@ -34,7 +34,6 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,8 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.ListUtils;
@@ -63,8 +60,6 @@ import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsRequest;
-import org.opensearch.client.opensearch.indices.GetIndicesSettingsResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,8 +70,6 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(OpenSearchCondition.class)
 public class VariableStoreOpenSearch implements VariableStore {
-  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
-  public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreOpenSearch.class);
 
   @Autowired
@@ -98,13 +91,6 @@ public class VariableStoreOpenSearch implements VariableStore {
   private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
-  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
-
-  @PostConstruct
-  void scheduleUpdateTermsCount() {
-    Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
-  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -113,7 +99,8 @@ public class VariableStoreOpenSearch implements VariableStore {
       final Set<String> fieldNames) {
 
     final List<List<String>> flowNodeInstanceIdsChunks =
-        ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
+        ListUtils.partition(
+            flowNodeInstanceIds, tasklistProperties.getOpenSearch().getMaxTermsCount());
 
     final List<VariableEntity> variableEntities = new ArrayList<>();
     flowNodeInstanceIdsChunks.forEach(
@@ -369,26 +356,6 @@ public class VariableStoreOpenSearch implements VariableStore {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public void refreshMaxTermsCount() {
-    final GetIndicesSettingsResponse response;
-    try {
-      response =
-          osClient
-              .indices()
-              .getSettings(
-                  new GetIndicesSettingsRequest.Builder()
-                      .index(variableIndex.getFullQualifiedName())
-                      .includeDefaults(true)
-                      .name(MAX_TERMS_COUNT_SETTING)
-                      .build());
-      maxTermsCount =
-          response.get(variableIndex.getFullQualifiedName()).settings().index().maxTermsCount();
-    } catch (final IOException e) {
-      LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
 
