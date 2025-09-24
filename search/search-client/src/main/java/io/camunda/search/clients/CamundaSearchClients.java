@@ -320,9 +320,9 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public UserEntity getUser(final String id) {
-    return doGetWithReader(readers.userReader(), id)
-        .orElseThrow(() -> entityByIdNotFoundException("User", id));
+  public UserEntity getUser(final String username) {
+    return doGetWithReader(readers.userReader(), username)
+        .orElseThrow(() -> entityByUsernameNotFoundException(username));
   }
 
   @Override
@@ -448,7 +448,16 @@ public class CamundaSearchClients implements SearchClientsProxy {
 
   protected CamundaSearchException entityByIdNotFoundException(
       final String entityType, final String id) {
+    return entityByIdNotFoundException(entityType, "id", id);
+  }
+
+  protected CamundaSearchException entityByUsernameNotFoundException(final String id) {
+    return entityByIdNotFoundException("User", "username", id);
+  }
+
+  private CamundaSearchException entityByIdNotFoundException(
+      final String entityType, final String idType, final String id) {
     return new CamundaSearchException(
-        ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, id), Reason.NOT_FOUND);
+        ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, idType, id), Reason.NOT_FOUND);
   }
 }
