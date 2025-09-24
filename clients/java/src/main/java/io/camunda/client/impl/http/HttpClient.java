@@ -19,9 +19,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.OpenTelemetrySdkConfig;
 import io.camunda.client.api.command.ClientException;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
+import io.opentelemetry.context.Context;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -471,7 +473,12 @@ public final class HttpClient implements AutoCloseable {
       return null;
     }
 
-    requestBuilder.addHeader("X-Span-Id", span.getSpanContext().getSpanId());
+    GlobalOpenTelemetry.getPropagators()
+        .getTextMapPropagator()
+        .inject(
+            Context.current().with(span),
+            requestBuilder,
+            (carrier, key, value) -> carrier.addHeader(key, value));
 
     return requestBuilder.build();
   }

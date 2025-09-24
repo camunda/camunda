@@ -20,6 +20,7 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
+import io.opentelemetry.api.trace.Tracer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;
@@ -37,20 +38,27 @@ public class ResourceController {
   private final ResourceServices resourceServices;
   private final MultiTenancyConfiguration multiTenancyCfg;
   private final CamundaAuthenticationProvider authenticationProvider;
+  private final Tracer tracer;
 
   public ResourceController(
       final ResourceServices resourceServices,
       final MultiTenancyConfiguration multiTenancyCfg,
-      final CamundaAuthenticationProvider authenticationProvider) {
+      final CamundaAuthenticationProvider authenticationProvider,
+      final Tracer tracer) {
     this.resourceServices = resourceServices;
     this.multiTenancyCfg = multiTenancyCfg;
     this.authenticationProvider = authenticationProvider;
+    this.tracer = tracer;
   }
 
   @CamundaPostMapping(path = "/deployments", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
   public CompletableFuture<ResponseEntity<Object>> deployResources(
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
+
+    //    SpanContext.create()
+    //
+    // tracer.spanBuilder("/deployments").setParent(Context.current().with(ContextKey)).startSpan();
 
     return RequestMapper.toDeployResourceRequest(
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
