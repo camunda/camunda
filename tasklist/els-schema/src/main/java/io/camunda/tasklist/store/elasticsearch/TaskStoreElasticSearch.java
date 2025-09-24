@@ -9,6 +9,10 @@ package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+<<<<<<< HEAD
+=======
+import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
 import static io.camunda.tasklist.util.ElasticsearchUtil.joinWithAnd;
@@ -304,6 +308,38 @@ public class TaskStoreElasticSearch implements TaskStore {
         asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
+<<<<<<< HEAD
+=======
+  private List<TaskEntity> getActiveTasksByProcessInstanceIds(
+      final List<String> processInstanceIds) {
+    try {
+      // the number of process instance ids may be large and exceed #DEFAULT_MAX_TERMS_COUNT, so
+      // we need to chunk them
+      return scrollInChunks(
+          processInstanceIds,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
+          TaskEntity.class,
+          objectMapper,
+          esClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  private SearchRequest buildSearchCreatedTasksByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    return createSearchRequest(taskTemplate)
+        .source(
+            searchSource()
+                .query(
+                    boolQuery()
+                        .must(termsQuery(TaskTemplate.PROCESS_INSTANCE_ID, processInstanceIds))
+                        .must(termQuery(TaskTemplate.STATE, TaskState.CREATED)))
+                .size(tasklistProperties.getElasticsearch().getBatchSize()));
+  }
+
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
   private SearchHit[] getTasksRawResponse(final List<String> ids) throws IOException {
 
     final QueryBuilder query = termsQuery(TaskTemplate.KEY, ids);

@@ -7,7 +7,11 @@
  */
 package io.camunda.tasklist.util;
 
+<<<<<<< HEAD
 import static io.camunda.tasklist.store.elasticsearch.VariableStoreElasticSearch.MAX_TERMS_COUNT_SETTING;
+=======
+import static io.camunda.tasklist.util.ElasticsearchUtil.LENIENT_EXPAND_OPEN_FORBID_NO_INDICES_IGNORE_THROTTLED;
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -25,13 +29,30 @@ import java.util.Optional;
 import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
+<<<<<<< HEAD
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
+=======
+import org.elasticsearch.action.bulk.BulkRequest;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
+<<<<<<< HEAD
 import org.elasticsearch.common.settings.Settings;
+=======
+import org.elasticsearch.client.indices.CreateIndexRequest;
+import org.elasticsearch.client.indices.GetComposableIndexTemplateRequest;
+import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.client.indices.GetIndexResponse;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.DeleteByQueryRequest;
+import org.elasticsearch.index.reindex.ReindexRequest;
+import org.elasticsearch.xcontent.XContentType;
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -109,32 +130,6 @@ public class ElasticsearchTestExtension
         .connect()
         .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
-  }
-
-  @Override
-  public void setIndexMaxTermsCount(final String indexName, final int maxTermsCount)
-      throws IOException {
-    esClient
-        .indices()
-        .putSettings(
-            new UpdateSettingsRequest()
-                .indices(indexName)
-                .settings(Settings.builder().put(MAX_TERMS_COUNT_SETTING, maxTermsCount).build()),
-            RequestOptions.DEFAULT);
-  }
-
-  @Override
-  public int getIndexMaxTermsCount(final String indexName) throws IOException {
-    return Integer.parseInt(
-        esClient
-            .indices()
-            .getSettings(
-                new GetSettingsRequest()
-                    .indices(indexName)
-                    .includeDefaults(true)
-                    .names(MAX_TERMS_COUNT_SETTING),
-                RequestOptions.DEFAULT)
-            .getSetting(indexName, MAX_TERMS_COUNT_SETTING));
   }
 
   @Override

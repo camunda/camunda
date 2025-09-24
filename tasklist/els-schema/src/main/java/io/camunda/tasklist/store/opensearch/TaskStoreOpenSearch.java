@@ -9,6 +9,10 @@ package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
+<<<<<<< HEAD
+=======
+import static io.camunda.tasklist.util.OpenSearchUtil.QueryType.ALL;
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
 import static java.util.stream.Collectors.toList;
@@ -284,6 +288,51 @@ public class TaskStoreOpenSearch implements TaskStore {
         asMap(TaskTemplate.FORM_ID, formBpmnId, TaskTemplate.FORM_VERSION, formVersion));
   }
 
+<<<<<<< HEAD
+=======
+  private List<TaskEntity> getActiveTasksByProcessInstanceIds(
+      final List<String> processInstanceIds) {
+    try {
+      // the number of process instance ids may be large, so we need to chunk them
+      return scrollInChunks(
+          processInstanceIds,
+          tasklistProperties.getOpenSearch().getMaxTermsCount(),
+          this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
+          TaskEntity.class,
+          osClient);
+    } catch (final IOException e) {
+      throw new TasklistRuntimeException(e.getMessage(), e);
+    }
+  }
+
+  private Builder buildSearchCreatedTasksByProcessInstanceIdsRequest(
+      final List<String> processInstanceIds) {
+    return createSearchRequest(taskTemplate)
+        .query(
+            q ->
+                q.bool(
+                    b ->
+                        b.must(
+                                m ->
+                                    m.terms(
+                                        t ->
+                                            t.field(PROCESS_INSTANCE_ID)
+                                                .terms(
+                                                    terms ->
+                                                        terms.value(
+                                                            processInstanceIds.stream()
+                                                                .map(FieldValue::of)
+                                                                .toList()))))
+                            .must(
+                                m ->
+                                    m.term(
+                                        t ->
+                                            t.field(STATE)
+                                                .value(FieldValue.of(TaskState.CREATED.name()))))))
+        .size(tasklistProperties.getOpenSearch().getBatchSize());
+  }
+
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
   /**
    * In case of searchAfterOrEqual and searchBeforeOrEqual add additional task either at the
    * beginning of the list, or at the end, to conform with "orEqual" part.

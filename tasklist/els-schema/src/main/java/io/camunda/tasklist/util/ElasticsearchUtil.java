@@ -374,7 +374,30 @@ public abstract class ElasticsearchUtil {
     return entity;
   }
 
+<<<<<<< HEAD
   public static <T> List<T> scroll(
+=======
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to Elasticsearch
+   */
+  public static <T extends TasklistEntity> List<T> scrollInChunks(
+      final List<String> list,
+      final int chunkSize,
+      final Function<List<String>, SearchRequest> chunkToSearchRequest,
+      final Class<T> clazz,
+      final ObjectMapper objectMapper,
+      final RestHighLevelClient esClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(list, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequest.apply(chunk), clazz, objectMapper, esClient));
+    }
+    return result;
+  }
+
+  public static <T extends TasklistEntity> List<T> scroll(
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
       final SearchRequest searchRequest,
       final Class<T> clazz,
       final ObjectMapper objectMapper,

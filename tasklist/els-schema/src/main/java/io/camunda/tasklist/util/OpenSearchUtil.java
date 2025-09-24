@@ -428,7 +428,29 @@ public abstract class OpenSearchUtil {
     return builder;
   }
 
+<<<<<<< HEAD
   public static <T> List<T> scroll(
+=======
+  /**
+   * Helper method to scroll in chunks. This is useful when you have a large number of ids and want
+   * to avoid sending them all at once to OpenSearch
+   */
+  public static <T extends TasklistEntity> List<T> scrollInChunks(
+      final List<String> ids,
+      final int chunkSize,
+      final Function<List<String>, SearchRequest.Builder> chunkToSearchRequestBuilder,
+      final Class<T> clazz,
+      final OpenSearchClient osClient)
+      throws IOException {
+    final var result = new ArrayList<T>();
+    for (final var chunk : ListUtils.partition(ids, chunkSize)) {
+      result.addAll(scroll(chunkToSearchRequestBuilder.apply(chunk), clazz, osClient));
+    }
+    return result;
+  }
+
+  public static <T extends TasklistEntity> List<T> scroll(
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
       final SearchRequest.Builder searchRequest,
       final Class<T> clazz,
       final OpenSearchClient osClient)

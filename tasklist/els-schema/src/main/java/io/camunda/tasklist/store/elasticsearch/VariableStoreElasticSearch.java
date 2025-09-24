@@ -8,7 +8,10 @@
 package io.camunda.tasklist.store.elasticsearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.isNotEmpty;
+<<<<<<< HEAD
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
+=======
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import static io.camunda.tasklist.util.ElasticsearchUtil.UPDATE_RETRY_COUNT;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.ElasticsearchUtil.fromSearchHit;
@@ -35,6 +38,7 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.store.VariableStore;
 import io.camunda.tasklist.tenant.TenantAwareElasticsearchClient;
 import io.camunda.tasklist.util.ElasticsearchUtil;
+<<<<<<< HEAD
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.SnapshotTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
@@ -44,6 +48,8 @@ import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.webapps.schema.entities.usertask.SnapshotTaskVariableEntity;
 import jakarta.annotation.PostConstruct;
+=======
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -55,13 +61,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
+<<<<<<< HEAD
 import java.util.stream.Collectors;
 import org.apache.commons.collections4.ListUtils;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.admin.indices.settings.get.GetSettingsResponse;
+=======
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.search.ClearScrollRequest;
 import org.elasticsearch.action.search.SearchRequest;
@@ -69,7 +76,6 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.search.SearchScrollRequest;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.core.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -88,8 +94,11 @@ import org.springframework.stereotype.Component;
 @Component
 @Conditional(ElasticSearchCondition.class)
 public class VariableStoreElasticSearch implements VariableStore {
+<<<<<<< HEAD
   public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
   public static final String MAX_TERMS_COUNT_SETTING = "index.max_terms_count";
+=======
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
   private static final Logger LOGGER = LoggerFactory.getLogger(VariableStoreElasticSearch.class);
 
   @Autowired
@@ -105,17 +114,10 @@ public class VariableStoreElasticSearch implements VariableStore {
   @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
-  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")
   private ObjectMapper objectMapper;
-
-  @PostConstruct
-  void scheduleUpdateTermsCount() {
-    Executors.newSingleThreadScheduledExecutor()
-        .scheduleAtFixedRate(this::refreshMaxTermsCount, 30, 1800, TimeUnit.SECONDS);
-  }
 
   @Override
   public List<VariableEntity> getVariablesByFlowNodeInstanceIds(
@@ -123,6 +125,7 @@ public class VariableStoreElasticSearch implements VariableStore {
       final List<String> varNames,
       final Set<String> fieldNames) {
 
+<<<<<<< HEAD
     final List<List<String>> flowNodeInstanceIdsChunks =
         ListUtils.partition(flowNodeInstanceIds, maxTermsCount);
 
@@ -153,6 +156,21 @@ public class VariableStoreElasticSearch implements VariableStore {
         });
 
     return variableEntities;
+=======
+    try {
+      return scrollInChunks(
+          flowNodeInstanceIds,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
+          chunk -> buildSearchVariablesByScopeFNIsAndVarNamesRequest(chunk, varNames, fieldNames),
+          VariableEntity.class,
+          objectMapper,
+          esClient);
+    } catch (final IOException e) {
+      final String message =
+          String.format("Exception occurred, while obtaining all variables: %s", e.getMessage());
+      throw new TasklistRuntimeException(message, e);
+    }
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
   }
 
   @Override
@@ -267,7 +285,17 @@ public class VariableStoreElasticSearch implements VariableStore {
                     .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC)
                     .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
+<<<<<<< HEAD
       return scroll(searchRequest, FlowNodeInstanceEntity.class, objectMapper, esClient);
+=======
+      return scrollInChunks(
+          processInstanceIds,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
+          this::buildSearchFNIByProcessInstanceIdsRequest,
+          FlowNodeInstanceEntity.class,
+          objectMapper,
+          esClient);
+>>>>>>> 944c7323 (perf: reduce the max terms count to 10_000)
     } catch (final IOException e) {
       final String message =
           String.format("Exception occurred, while obtaining all flow nodes: %s", e.getMessage());
@@ -328,27 +356,6 @@ public class VariableStoreElasticSearch implements VariableStore {
       final String message =
           String.format("Exception occurred, while obtaining task variable: %s", e.getMessage());
       throw new TasklistRuntimeException(message, e);
-    }
-  }
-
-  @Override
-  public void refreshMaxTermsCount() {
-    final GetSettingsResponse response;
-    try {
-      response =
-          esClient
-              .indices()
-              .getSettings(
-                  new GetSettingsRequest()
-                      .indices(variableIndex.getFullQualifiedName())
-                      .includeDefaults(true)
-                      .names(MAX_TERMS_COUNT_SETTING),
-                  RequestOptions.DEFAULT);
-      maxTermsCount =
-          Integer.parseInt(
-              response.getSetting(variableIndex.getFullQualifiedName(), MAX_TERMS_COUNT_SETTING));
-    } catch (final IOException | NumberFormatException e) {
-      LOGGER.warn("Failed to update max_terms_count setting", e);
     }
   }
 
