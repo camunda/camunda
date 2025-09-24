@@ -53,4 +53,27 @@ describe('<ViewFullVariableButton />', () => {
     ).toBeInTheDocument();
     vi.useRealTimers();
   });
+
+  it('should use provided value when no onClick is provided', async () => {
+    const mockVariableName = 'test-variable';
+    const mockValue = '{"key": "value"}';
+
+    const {user} = render(
+      <ViewFullVariableButton
+        variableName={mockVariableName}
+        value={mockValue}
+      />,
+    );
+
+    await user.click(
+      screen.getByRole('button', {
+        name: /view full value of test-variable/i,
+      }),
+    );
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(
+      screen.getByRole('heading', {name: `Full value of ${mockVariableName}`}),
+    ).toBeInTheDocument();
+  });
 });
