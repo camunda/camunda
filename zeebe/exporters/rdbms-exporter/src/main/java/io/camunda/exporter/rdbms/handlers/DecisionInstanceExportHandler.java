@@ -102,6 +102,7 @@ public class DecisionInstanceExportHandler
         .evaluationFailure(
             state == DecisionInstanceState.FAILED ? value.getEvaluationFailureMessage() : null)
         .partitionId(record.getPartitionId())
+        .tenantId(value.getTenantId())
         .build();
   }
 
