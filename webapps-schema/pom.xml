@@ -68,7 +68,6 @@
     <dependency>
       <groupId>org.reflections</groupId>
       <artifactId>reflections</artifactId>
-      <version>0.10.2</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -77,5 +76,30 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>com.github.siom79.japicmp</groupId>
+        <artifactId>japicmp-maven-plugin</artifactId>
+        <version>0.23.1</version>
+        <configuration>
+          <parameter>
+            <accessModifier>private</accessModifier>
+            <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
+          </parameter>
+          <skip>true</skip>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>cmp</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
 
 </project>
