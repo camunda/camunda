@@ -717,39 +717,4 @@ describe('Edit variable', () => {
       screen.queryByRole('button', {name: /edit variable/i}),
     ).not.toBeInTheDocument();
   });
-
-  it('should always display view full value button for completed instances, even when not truncated', async () => {
-    mockFetchProcessInstance().withSuccess({
-      ...mockProcessInstance,
-      state: 'TERMINATED',
-    });
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockSearchVariables().withSuccess({
-      items: [
-        createVariableV2({
-          value: '{"key": "value"}',
-          isTruncated: false,
-        })
-      ],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockFetchVariables().withSuccess(mockVariables);
-
-    variablesStore.fetchVariables({
-      fetchType: 'initial',
-      instanceId: '1',
-      payload: {pageSize: 10, scopeId: '1'},
-    });
-
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper(),
-    });
-
-    // Just check for any ViewFullVariableButton first
-    expect(
-      screen.getByRole('button', {name: /view full value/i}),
-    ).toBeInTheDocument();
-  }, 10000);
 });

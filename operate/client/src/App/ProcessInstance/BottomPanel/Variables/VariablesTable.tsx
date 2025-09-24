@@ -54,14 +54,15 @@ const VariablesTable: React.FC<Props> = ({
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
     isVariableModificationAllowed;
 
-  const createFetchFullVariableHandler = (variableKey: string) => async (): Promise<string | null> => {
-    try {
-      const {response} = await getVariable(variableKey);
-      return response?.value ?? null;
-    } catch {
-      return null;
-    }
-  };
+  const createFetchFullVariableHandler =
+    (variableKey: string) => async (): Promise<string | null> => {
+      try {
+        const {response} = await getVariable(variableKey);
+        return response?.value ?? null;
+      } catch {
+        return null;
+      }
+    };
 
   const rows =
     variablesData?.pages?.flatMap((page) =>
@@ -105,9 +106,13 @@ const VariablesTable: React.FC<Props> = ({
 
                   if (!isProcessInstanceRunning) {
                     return (
-                      <ViewFullVariableButton 
-                        variableName={name} 
-                        onClick={isTruncated ? createFetchFullVariableHandler(variableKey) : undefined}
+                      <ViewFullVariableButton
+                        variableName={name}
+                        onClick={
+                          isTruncated
+                            ? createFetchFullVariableHandler(variableKey)
+                            : undefined
+                        }
                         value={!isTruncated ? value : undefined}
                       />
                     );
@@ -125,9 +130,11 @@ const VariablesTable: React.FC<Props> = ({
                       }}
                       fallback={
                         isTruncated ? (
-                          <ViewFullVariableButton 
-                            variableName={name} 
-                            onClick={createFetchFullVariableHandler(variableKey)}
+                          <ViewFullVariableButton
+                            variableName={name}
+                            onClick={createFetchFullVariableHandler(
+                              variableKey,
+                            )}
                           />
                         ) : null
                       }

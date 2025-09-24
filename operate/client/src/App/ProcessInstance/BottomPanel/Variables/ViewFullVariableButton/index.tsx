@@ -18,7 +18,11 @@ type Props = {
   value?: string;
 };
 
-const ViewFullVariableButton: React.FC<Props> = ({onClick, variableName, value}) => {
+const ViewFullVariableButton: React.FC<Props> = ({
+  onClick,
+  variableName,
+  value,
+}) => {
   const [isLoading, setIsLoading] = useState(false);
   const [variableValue, setVariableValue] = useState<null | string>(null);
 
@@ -35,7 +39,7 @@ const ViewFullVariableButton: React.FC<Props> = ({onClick, variableName, value})
           tooltipPosition="left"
           onClick={async () => {
             setIsLoading(true);
-            const result = onClick ? await onClick() : value ?? null;
+            const result = onClick ? await onClick() : (value ?? null);
             setVariableValue(result ?? null);
             setIsLoading(false);
           }}
