@@ -12,7 +12,9 @@ import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForElementInstances;
 import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceIsEnded;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
@@ -457,6 +459,18 @@ class DecisionInstanceSearchTest {
         .isEqualTo("Classification");
     assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputValue())
         .isEqualTo("\"day-to-day expense\"");
+  }
+
+  @Test
+  void shouldReturnNotFoundOnGetWhenIdDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () -> camundaClient.newDecisionInstanceGetRequest("someDecisionInstance").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(
+                "Decision Instance", "id", "someDecisionInstance"));
   }
 
   @Test

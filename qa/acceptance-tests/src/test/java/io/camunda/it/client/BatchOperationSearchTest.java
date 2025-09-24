@@ -14,11 +14,14 @@ import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForProcessInstanceToBeTerminated;
 import static io.camunda.it.util.TestHelper.waitForScopedActiveProcessInstances;
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static java.util.Collections.emptyMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.BatchOperationItemState;
 import io.camunda.client.api.search.enums.BatchOperationState;
 import io.camunda.client.api.search.enums.BatchOperationType;
@@ -146,6 +149,17 @@ public class BatchOperationSearchTest {
     // then
     assertItems(items1, ACTIVE_PROCESS_INSTANCES_1);
     assertItems(items2, ACTIVE_PROCESS_INSTANCES_2);
+  }
+
+  @Test
+  void shouldReturnNotFoundOnGetWhenIdDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () -> camundaClient.newBatchOperationGetRequest("someBatchOperation").send().join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'")
+        .hasMessageContaining(
+            ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("Batch Operation", "id", "someBatchOperation"));
   }
 
   @Test
