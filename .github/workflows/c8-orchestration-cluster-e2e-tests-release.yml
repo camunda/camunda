@@ -1,165 +1,196 @@
-# description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate) for release validation
-# test location: /qa/c8-orchestration-cluster-e2e-test-suite
+# description: Runs End to End tests on the C8 Orchestration Cluster (ie, Tasklist, Operate) during monoRepo releases
 # type: CI
 # owner: @camunda/qa-engineering
 ---
-name: C8 Orchestration Cluster E2E Tests - Release Validation
+name: C8 Orchestration Cluster E2E Tests Release
 
 on:
-  push:
-    branches:
-      - "release**"
-  pull_request:
-    branches:
-      - "release**"
+  workflow_dispatch:
+    inputs:
+      monorepo_release:
+        description: "Enter the monorepo release version (e.g., 8.8.0, 8.8.1, 8.8.0-alpha8)"
+        required: true
+        type: string
 
-permissions: {}
+permissions:
+  contents: read
 
 jobs:
-  release-e2e-tests:
-    name: Release E2E Tests (Tasklist ${{ matrix.tasklist_mode }} mode)
-    strategy:
-      fail-fast: false
-      matrix:
-        tasklist_mode: [v1, v2]
+  validate-release:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    permissions: {}
-    defaults:
-      run:
-        shell: bash
+    outputs:
+      release_version: ${{ steps.get-release.outputs.release_version }}
+      base: ${{ steps.detect-base.outputs.base }}
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Determine Image Tag
-        id: image-tag
+      - name: Get release version
+        id: get-release
         run: |
-          set -euo pipefail
-          EVENT="${{ github.event_name }}"
-            REF_NAME="${{ github.ref_name }}"
-          PR_BASE="${{ github.event.pull_request.base.ref || '' }}"
+          release_version="${{ github.event.inputs.monorepo_release }}"
 
-          echo "Event: $EVENT"
-          echo "Ref name: $REF_NAME"
-          echo "PR base: $PR_BASE"
+          echo "Release version: $release_version"
+          echo "release_version=$release_version" >> "$GITHUB_OUTPUT"
 
-          if [[ "$EVENT" == "pull_request" ]]; then
-            CANDIDATE_BRANCH="$PR_BASE"
-          else
-            CANDIDATE_BRANCH="$REF_NAME"
-          fi
-
-          RAW_CANDIDATE="$CANDIDATE_BRANCH"
-          CANDIDATE_BRANCH="$(echo -n "$CANDIDATE_BRANCH" | tr -d '\r' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-
-          echo "Raw candidate: >$RAW_CANDIDATE<"
-          echo "Sanitized candidate: >$CANDIDATE_BRANCH<"
-
-            if [[ "$CANDIDATE_BRANCH" =~ ^release-([0-9]+)\.([0-9]+)\.([0-9]+)(-[A-Za-z0-9]+)?$ ]]; then
-            MAJOR="${BASH_REMATCH[1]}"
-            MINOR="${BASH_REMATCH[2]}"
-            PATCH="${BASH_REMATCH[3]}"
-            SUFFIX="${BASH_REMATCH[4]}"
-            VERSION="$MAJOR.$MINOR.$PATCH${SUFFIX}"
-            if { [[ "$MAJOR" -eq 8 && "$MINOR" -ge 8 ]] || [[ "$MAJOR" -gt 8 ]]; }; then
-              IMAGE_TAG="$VERSION"
-              echo "Extracted release version: $IMAGE_TAG"
-            else
-              echo "Error: Version $VERSION is < 8.8 (unsupported)."
-              exit 1
-            fi
-          else
-            echo "ERROR: Pattern did not match: '$CANDIDATE_BRANCH'"
-            echo "Expected: release-X.Y.Z (>= 8.8) optionally with suffix (e.g. release-8.8.0, release-8.9.1, release-9.0.0, release-9.0.0-rc1)"
-            echo "image-tag=SKIPPED" >> "$GITHUB_OUTPUT"
+          # Validate version format (x.y.z or x.y.z-suffix)
+          if [[ ! "$release_version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-.*)?$ ]]; then
+            echo "Error: Invalid release version format. Expected format: x.y.z or x.y.z-suffix (e.g., 8.8.0, 8.8.0-alpha8)"
             exit 1
           fi
 
-          echo "image-tag=$IMAGE_TAG" >> "$GITHUB_OUTPUT"
-          echo "Final image tag: $IMAGE_TAG"
+      - uses: actions/checkout@v4
 
-      - name: Check release image availability
-        id: check-image
+      - name: Detect base branch
+        id: detect-base
         run: |
-          set -euo pipefail
-          TAG="${{ steps.image-tag.outputs.image-tag }}"
-          if [[ -z "$TAG" || "$TAG" == "SKIPPED" ]]; then
-            echo "No valid image tag (value: '$TAG')."
-            echo "available=false" >> "$GITHUB_OUTPUT"
-            exit 0
-          fi
-          echo "Inspecting docker manifest for camunda/camunda:$TAG"
-          if docker manifest inspect "camunda/camunda:$TAG" >/dev/null 2>&1; then
-            echo "Image exists."
-            echo "available=true" >> "$GITHUB_OUTPUT"
+          release_version="${{ steps.get-release.outputs.release_version }}"
+          echo "Detecting base branch for release version: $release_version"
+
+          # Extract major.minor version
+          major_minor=$(echo "$release_version" | cut -d. -f1-2)
+
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 main
+
+          # Determine base branch based on version
+          if [[ "$major_minor" == "8.6" ]]; then
+            base="stable/8.6"
+          elif [[ "$major_minor" == "8.7" ]]; then
+            base="stable/8.7"
+          elif [[ "$major_minor" == "8.8" ]]; then
+            base="stable/8.8"
           else
-            echo "Image camunda/camunda:$TAG not yet published. Skipping job steps."
-            echo "available=false" >> "$GITHUB_OUTPUT"
+            base="main"
           fi
 
-      - name: Skip notice (image not yet published)
-        if: steps.check-image.outputs.available != 'true'
-        run: |
-          echo "Skipping Tasklist ${{ matrix.tasklist_mode }} mode: image camunda/camunda:${{ steps.image-tag.outputs.image-tag }} not available."
+          echo "Detected base branch: $base"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
 
-      - name: Update Docker Compose with Release Image
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
+  c8-orchestration-cluster-e2e-tests:
+    name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
+    strategy:
+      fail-fast: false
+      matrix:
+        tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
+    needs: validate-release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print release info
         run: |
-          IMAGE_TAG="${{ steps.image-tag.outputs.image-tag }}"
-          echo "Updating docker-compose for $IMAGE_TAG"
-          sed -i -E "s|image: camunda/camunda:[^[:space:]]*|image: camunda/camunda:$IMAGE_TAG|g" \
-            qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml
-          grep "image: camunda/camunda:" qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml || echo "No consolidated image found"
-        working-directory: .
+          echo "Release version: ${{ needs.validate-release.outputs.release_version }}"
+          echo "Base branch: ${{ needs.validate-release.outputs.base }}"
+          echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-release.outputs.base }}
+
+      - name: Update docker-compose with release version
+        run: |
+          release_version="${{ needs.validate-release.outputs.release_version }}"
+          base="${{ needs.validate-release.outputs.base }}"
+          compose_file="qa/c8-orchestration-cluster-e2e-test-suite/config/docker-compose.yml"
+
+          echo "Updating docker images to version: $release_version for base: $base"
+
+          if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
+            echo "Updating separate service images (zeebe, tasklist, operate)"
+            # Update zeebe image
+            sed -i.bak "s|image: camunda/zeebe:.*|image: camunda/zeebe:$release_version|g" "$compose_file"
+            # Update tasklist image  
+            sed -i.bak2 "s|image: camunda/tasklist:.*|image: camunda/tasklist:$release_version|g" "$compose_file"
+            # Update operate image
+            sed -i.bak3 "s|image: camunda/operate:.*|image: camunda/operate:$release_version|g" "$compose_file"
+            
+            echo "Updated docker-compose.yml with separate services:"
+            grep -E "image: camunda/(zeebe|tasklist|operate):" "$compose_file"
+          else
+            echo "Updating unified camunda service image"
+            # Replace the camunda image tag in docker-compose.yml
+            sed -i.bak "s|image: camunda/camunda:.*|image: camunda/camunda:$release_version|g" "$compose_file"
+            
+            echo "Updated docker-compose.yml with unified service:"
+            grep "image: camunda/camunda:" "$compose_file"
+          fi
+
+      - name: Set NON_STANDALONE variable
+        run: |
+          base="${{ needs.validate-release.outputs.base }}"
+          if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
+            echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
+          else
+            echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
 
       - name: Start Camunda
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         run: |
-          echo "Starting Camunda with image tag: ${{ steps.image-tag.outputs.image-tag }}"
-          echo "Tasklist mode: ${{ matrix.tasklist_mode }}"
-          if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-            echo "Tasklist V2 enabled"
-            CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            echo "Using separate services for older branches (8.6/8.7)"
+            DATABASE=elasticsearch docker compose up -d zeebe operate tasklist
           else
-            echo "Tasklist V1 mode"
-            DATABASE=elasticsearch docker compose up -d camunda
+            echo "Using standalone camunda container"
+            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+              echo "Starting with Tasklist V2 mode enabled"
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
+            else
+              echo "Starting with default Tasklist V1 mode"
+              DATABASE=elasticsearch docker compose up -d camunda
+            fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: List running Docker containers
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         run: docker ps -a
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
       - name: Wait for services to be ready
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         id: wait-for-services
         run: |
-          echo "Waiting for services..."
+          echo "Checking if services are up..."
           ready=false
           for i in {1..90}; do
-            tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo Failed)
-            operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo Failed)
-            identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo Failed)
-            if [[ "$tasklist_status" != Failed && "$operate_status" != Failed && "$identity_status" != Failed ]]; then
-              echo "All services ready."
-              ready=true
-              break
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
             fi
-            echo "Attempt $i/90 still waiting..."
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+            echo "Waiting for services... ($i/90)"
             sleep 10
           done
-          if [[ "$ready" == true ]]; then
+          if [ "$ready" = true ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "Timeout waiting for services."
+            echo "Services failed to start in time."
             exit 1
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            docker compose logs zeebe
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
       - name: Setup Node.js
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -167,14 +198,13 @@ jobs:
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
       - name: Clean install dependencies
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
+        shell: bash
         run: |
           rm -rf node_modules package-lock.json
           npm install
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Import Secrets
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
         id: secrets
         uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
         with:
@@ -182,44 +212,54 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false
+          exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
 
       - name: Install Playwright Browsers
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
+        shell: bash
         run: npx playwright install --with-deps chromium
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - name: Run E2E Tests
-        if: steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
+      - name: Python setup
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Run tests
+        shell: bash
         env:
           LOCAL_TEST: "false"
           CAMUNDA_AUTH_STRATEGY: "BASIC"
           CAMUNDA_BASIC_AUTH_USERNAME: "demo"
           CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
-          CORE_APPLICATION_URL: "http://localhost:8080"
-          ZEEBE_REST_ADDRESS: "http://localhost:8080"
-          RELEASE_VERSION: ${{ steps.image-tag.outputs.image-tag }}
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: |
-          echo "Running E2E tests for $RELEASE_VERSION (Tasklist ${{ matrix.tasklist_mode }} mode)"
-          if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-            TEST_ARGS=(--project=chromium tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
-          else
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
             TEST_ARGS=(--project=chromium)
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+            TEST_ARGS=(--project=chromium)
+            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
+              TEST_ARGS+=(tests/tasklist/ tests/common-flows/hto-user-flows.spec.ts --grep-invert '@v1-only')
+            fi
           fi
-          echo "Args: ${TEST_ARGS[*]}"
+          echo "Running tests with args: ${TEST_ARGS[*]}"
           npm run test -- "${TEST_ARGS[@]}"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
-        if: always() && steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
+        if: always()
+        shell: bash
         env:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli
@@ -228,31 +268,13 @@ jobs:
             --username "$TESTRAIL_USERNAME" \
             --key "$TESTRAIL_KEY" \
             parse_junit --suite-id 17050 \
-            --title "${{ steps.image-tag.outputs.image-tag }}-Release OC test (Tasklist ${{ matrix.tasklist_mode }} mode)" \
+            --title "Release C8 Orchestration Cluster Test Run Results - v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode) - $(date '+%Y-%m-%d %H:%M:%S')" \
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - name: Upload test results
-        if: always() && steps.image-tag.outcome == 'success' && steps.check-image.outputs.available == 'true'
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
+        if: failure()
         with:
-          name: ${{ steps.image-tag.outputs.image-tag }}-Release OC test (Tasklist ${{ matrix.tasklist_mode }} mode)
+          name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
-
-      - name: Print Docker logs before failing
-        if: failure() && steps.check-image.outputs.available == 'true'
-        run: |
-          echo "=== Camunda logs ==="
-          docker compose logs camunda || true
-        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
-
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
