@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.OpenTelemetrySdkConfig;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateAdHocSubProcessActivitiesCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
@@ -314,9 +313,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
-import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -341,8 +337,6 @@ public final class CamundaClientImpl implements CamundaClient {
   private final JobClient jobClient;
   private final CredentialsProvider credentialsProvider;
   private final HttpClient httpClient;
-  private final OpenTelemetry openTelemetry;
-  private final Tracer deploymentTracer;
 
   public CamundaClientImpl(final CamundaClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
@@ -400,8 +394,6 @@ public final class CamundaClientImpl implements CamundaClient {
     }
     jobClient = newJobClient();
     this.httpClient.start();
-    openTelemetry = OpenTelemetrySdkConfig.create();
-    deploymentTracer = openTelemetry.getTracer("DeploymentTracer");
   }
 
   private static HttpClient buildHttpClient(final CamundaClientConfiguration config) {
@@ -574,15 +566,13 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public DeployResourceCommandStep1 newDeployResourceCommand() {
-    final Span span = deploymentTracer.spanBuilder("DeploymentSpan").startSpan();
     return new DeployResourceCommandImpl(
         asyncStub,
         config,
         credentialsProvider::shouldRetryRequest,
         httpClient,
         config.preferRestOverGrpc(),
-        jsonMapper,
-        span);
+        jsonMapper);
   }
 
   @Override

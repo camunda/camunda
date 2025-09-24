@@ -17,8 +17,11 @@ package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.client.OpenTelemetrySdkConfig;
 import io.camunda.client.api.command.ClientException;
+import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
+import io.opentelemetry.api.trace.Tracer;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -61,6 +64,8 @@ public final class HttpClient implements AutoCloseable {
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
+  private final OpenTelemetry openTelemetry;
+  private final Tracer tracer;
 
   public HttpClient(
       final CloseableHttpAsyncClient client,
@@ -77,6 +82,8 @@ public final class HttpClient implements AutoCloseable {
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
+    openTelemetry = OpenTelemetrySdkConfig.create();
+    tracer = openTelemetry.getTracer("CamundaClientTracer");
   }
 
   public void start() {
@@ -383,6 +390,9 @@ public final class HttpClient implements AutoCloseable {
       final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer,
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
+    final Span span =
+        tracer.spanBuilder(path).setAttribute("method", httpMethod.toString()).startSpan();
+    result.whenComplete((resp, throwable) -> span.end());
     final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
     // Create retry action to re-execute the same request
     final Runnable retryAction =
@@ -405,7 +415,7 @@ public final class HttpClient implements AutoCloseable {
         };
 
     final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path));
+        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
     if (request == null) {
       return;
     }
@@ -445,7 +455,8 @@ public final class HttpClient implements AutoCloseable {
       final Map<String, String> queryParams,
       final Object body,
       final HttpCamundaFuture<RespT> result,
-      final URI target) {
+      final URI target,
+      final Span span) {
 
     final SimpleRequestBuilder requestBuilder =
         SimpleRequestBuilder.create(httpMethod).setUri(target);
@@ -460,7 +471,7 @@ public final class HttpClient implements AutoCloseable {
       return null;
     }
 
-    requestBuilder.addHeader("X-Span-Id", Span.current().getSpanContext().getSpanId());
+    requestBuilder.addHeader("X-Span-Id", span.getSpanContext().getSpanId());
 
     return requestBuilder.build();
   }
