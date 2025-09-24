@@ -119,9 +119,16 @@ To illustrate how to implement a new feature in the engine, let's consider the f
 
 ### Testing guidelines
 
+The `zeebe-worklow-engine` module contains various types of tests to ensure the quality of the
+engine code is maintained. Have a look at the following classes.
+
+- JUnit4 `EngineRule` class
+- JUnit5 `ProcessingStateExtension` class
+
 ### Follow-up tasks
 
-- Zeebe QA, Camunda QA, clients...
+- Zeebe QA, clients...
+- Consider adding acceptance tests in the [Camunda QA module](../../qa/README.md) module.
 
 ## Do's and Don'ts
 
