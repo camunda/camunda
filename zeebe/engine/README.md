@@ -92,7 +92,30 @@ When adding a new feature, consider if it would be useful to add new metrics to 
 
 [Developer handpook](../../docs/zeebe/developer_handbook.md)
 
-- TODO: example feature
+### Example feature
+
+To illustrate how to implement a new feature in the engine, let's consider the following example.
+
+**Feature Description**: Camunda has introduced a user management system that allows managing users and their roles within the orchestration cluster. The engine needs to support a new command to create a user.
+
+**Steps to Implement the Feature**:
+
+1. **Decide whether you need a new record and value type**.
+   Records are defined in the [Zeebe protocol](../protocol) and implemented in the ['zeebe-protocol-impl'](../protocol-impl) module.
+   In this case, we do need a new record [`UserRecord`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/value/UserRecordValue.java).
+   Follow [this guide](../../docs/zeebe/developer_handbook.md#how-to-create-a-new-record) on creating a new record.
+
+2. **Introduce new state if needed**. Consider whether you need to add a new state type or if you can add new data to an existing state type.
+   In this case, we need a new state type [`UserState`](src/main/java/io/camunda/zeebe/engine/state/immutable/UserState.java) to persist users.
+   Start by defining immutable & mutable versions of the interface, then implement them in a single class, e.g. [`DbUserState`](src/main/java/io/camunda/zeebe/engine/state/user/DbUserState.java).
+   You might need to break down your state class into multiple objects depending on the complexity.
+   Add your new state to [`ProcessingState`](src/main/java/io/camunda/zeebe/engine/state/immutable/ProcessingState.java).
+
+3. **Add a new Intent**.
+
+4. **Add a new Processor**.
+
+5. **Add a new EventApplier**.
 
 ### Testing guidelines
 
@@ -136,7 +159,7 @@ When adding a new feature, consider if it would be useful to add new metrics to 
 - **Do** register a new version of an event applier.
 - **Don't** change code in methods called by event appliers, like state class implementations.
 - It's fine to change it while unreleased. No need to register a new version in this case.
-- Not all data in a command value can be trusted. It may be out of date by the time it's processed. 
+- Not all data in a command value can be trusted. It may be out of date by the time it's processed.
 - **Don't** trust data in a command's `RecordValue` as up to date.
 - **Do** gain an understanding which command data is the requested change, e.g. Assign to `assignee`.
 - **Do** read the latest entity data from the state.
