@@ -111,11 +111,17 @@ To illustrate how to implement a new feature in the engine, let's consider the f
    You might need to break down your state class into multiple objects depending on the complexity.
    Add your new state to [`ProcessingState`](src/main/java/io/camunda/zeebe/engine/state/immutable/ProcessingState.java).
 
-3. **Add a new Intent**.
+3. **Add a new Intent**. You normally need to introduce a new intent when you introduce a new value type.
+   In this case, we need a new intent [`UserIntent`](../protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/UserIntent.java).
 
-4. **Add a new Processor**.
+4. **Add a new Processor**. You need to add a new processor to handle the new command.
+   In this case, we need a new processor [`UserCreateProcessor`](src/main/java/io/camunda/zeebe/engine/processing/user/UserCreateProcessor.java) to handle the `CREATE` command.
+   Register your new processor in [`EngineProcessors`](src/main/java/io/camunda/zeebe/engine/processing/EngineProcessors.java).
 
 5. **Add a new EventApplier**.
+    You need to add a new event applier to apply the new event to the state.
+    In this case, we need a new event applier [`UserCreatedApplier`](src/main/java/io/camunda/zeebe/engine/state/appliers/UserCreatedApplier.java) to apply the `CREATED` event.
+    Register your new event applier in [`EventAppliers`](src/main/java/io/camunda/zeebe/engine/state/appliers/EventAppliers.java).
 
 ### Testing guidelines
 
