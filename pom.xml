@@ -43,6 +43,7 @@
     <module>security</module>
     <module>migration</module>
     <module>configuration</module>
+    <module>debug-cli</module>
   </modules>
 
   <scm>
