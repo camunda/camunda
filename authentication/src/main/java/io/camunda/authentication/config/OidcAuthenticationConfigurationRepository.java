@@ -17,7 +17,7 @@ import java.util.Optional;
 
 public class OidcAuthenticationConfigurationRepository {
 
-  private static final String REGISTRATION_ID = "oidc";
+  public static final String REGISTRATION_ID = "oidc";
   private final Map<String, OidcAuthenticationConfiguration> providers;
 
   public OidcAuthenticationConfigurationRepository(

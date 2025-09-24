@@ -26,17 +26,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
 @SuppressWarnings("DataFlowIssue")
-class OidcTokenEndpointCustomizerTest {
+class AssertionJwkProviderTest {
 
   @Test
   void testGenerateDefaultKid() throws Exception {
     final var mockRepository = Mockito.mock(OidcAuthenticationConfigurationRepository.class);
-    final var customizer = new OidcTokenEndpointCustomizer(mockRepository);
+    final var assertionJwkProvider = new AssertionJwkProvider(mockRepository);
     final var keystorePath =
-        OidcTokenEndpointCustomizerTest.class
-            .getClassLoader()
-            .getResource("keystore.p12")
-            .getPath();
+        AssertionJwkProviderTest.class.getClassLoader().getResource("keystore.p12").getPath();
     final var keystoreConfig =
         KeystoreConfiguration.builder()
             .path(keystorePath)
@@ -49,11 +46,11 @@ class OidcTokenEndpointCustomizerTest {
     final var cert = keystoreConfig.loadKeystore().getCertificate(keystoreConfig.getKeyAlias());
 
     final Method generateKid =
-        OidcTokenEndpointCustomizer.class.getDeclaredMethod(
+        AssertionJwkProvider.class.getDeclaredMethod(
             "generateKid", Certificate.class, AssertionConfiguration.class);
     generateKid.setAccessible(true);
 
-    final var kid = (String) generateKid.invoke(customizer, cert, config);
+    final var kid = (String) generateKid.invoke(assertionJwkProvider, cert, config);
     Assertions.assertThat(kid).isEqualTo("opaYc1PqzH6XYGbL3KF4BK1rkNRS4IuMAfh3qPZILHo");
   }
 
@@ -67,12 +64,9 @@ class OidcTokenEndpointCustomizerTest {
       final String expectedKid)
       throws Exception {
     final var mockRepository = Mockito.mock(OidcAuthenticationConfigurationRepository.class);
-    final var customizer = new OidcTokenEndpointCustomizer(mockRepository);
+    final var assertionJwkProvider = new AssertionJwkProvider(mockRepository);
     final var keystorePath =
-        OidcTokenEndpointCustomizerTest.class
-            .getClassLoader()
-            .getResource("keystore.p12")
-            .getPath();
+        AssertionJwkProviderTest.class.getClassLoader().getResource("keystore.p12").getPath();
     final var keystoreConfig =
         KeystoreConfiguration.builder()
             .path(keystorePath)
@@ -91,11 +85,11 @@ class OidcTokenEndpointCustomizerTest {
     final var cert = keystoreConfig.loadKeystore().getCertificate(keystoreConfig.getKeyAlias());
 
     final Method generateKid =
-        OidcTokenEndpointCustomizer.class.getDeclaredMethod(
+        AssertionJwkProvider.class.getDeclaredMethod(
             "generateKid", Certificate.class, AssertionConfiguration.class);
     generateKid.setAccessible(true);
 
-    final var kid = (String) generateKid.invoke(customizer, cert, config);
+    final var kid = (String) generateKid.invoke(assertionJwkProvider, cert, config);
     Assertions.assertThat(kid).isEqualTo(expectedKid);
   }
 
