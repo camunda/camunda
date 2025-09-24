@@ -73,6 +73,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -280,6 +281,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
+    valueLoggers.put(ValueType.CLUSTER_VARIABLE, this::summarizeClusterVariable);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -918,6 +920,12 @@ public class CompactRecordLogger {
             shortenKey(value.getScopeKey()),
             formatVariables(value),
             formatTenant(value));
+  }
+
+  private String summarizeClusterVariable(final Record<?> record) {
+    final var value = (ClusterVariableRecordValue) record.getValue();
+    return "%s->%s for <tenant [%s]>"
+        .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {
