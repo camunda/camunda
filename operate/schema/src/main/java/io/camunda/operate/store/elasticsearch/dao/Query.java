@@ -28,7 +28,7 @@ public class Query {
     return instance;
   }
 
-  public static Query range(String field, Object gte, Object lte) {
+  public static Query range(String field, Object gte, Object lt) {
     final Query instance = new Query();
 
     RangeQueryBuilder rangeQueryBuilder = QueryBuilders.rangeQuery(field);
@@ -36,8 +36,8 @@ public class Query {
       rangeQueryBuilder = rangeQueryBuilder.gte(gte);
     }
 
-    if (lte != null) {
-      rangeQueryBuilder = rangeQueryBuilder.lte(lte);
+    if (lt != null) {
+      rangeQueryBuilder = rangeQueryBuilder.lt(lt);
     }
 
     instance.queryBuilder = rangeQueryBuilder;

@@ -83,7 +83,7 @@ public class TaskMetricsStoreElasticSearch implements TaskMetricsStore {
       final OffsetDateTime startTime, final OffsetDateTime endTime, final String tenantId) {
 
     final BoolQueryBuilder boolQuery =
-        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(startTime).lte(endTime));
+        boolQuery().must(QueryBuilders.rangeQuery(END_TIME).gte(startTime).lt(endTime));
 
     if (tenantId != null) {
       boolQuery.must(QueryBuilders.termQuery(TENANT_ID, tenantId));
