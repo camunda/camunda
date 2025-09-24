@@ -288,6 +288,11 @@
         <artifactId>zeebe-broker</artifactId>
         <version>${project.version}</version>
       </dependency>
+      <dependency>
+        <groupId>io.camunda</groupId>
+        <artifactId>debug-cli</artifactId>
+        <version>${project.version}</version>
+      </dependency>
 
       <dependency>
         <groupId>io.camunda</groupId>

@@ -78,6 +78,10 @@
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-broker</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>debug-cli</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.camunda</groupId>
@@ -789,6 +793,10 @@
             <program>
               <id>broker</id>
               <mainClass>io.camunda.application.StandaloneBroker</mainClass>
+            </program>
+            <program>
+             <id>debug</id>
+              <mainClass>io.camunda.debug.cli.Main</mainClass>
             </program>
             <program>
               <id>gateway</id>
