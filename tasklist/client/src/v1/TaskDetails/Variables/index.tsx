@@ -290,7 +290,12 @@ const Variables: React.FC<Props> = ({
               <Suspense>
                 <JSONEditorModal
                   isOpen={isJsonEditorModalOpen}
-                  title={t('jsonEditorEditVariableTitle')}
+                  title={t(
+                    taskState === 'COMPLETED' || assignee === null
+                      ? 'jsonEditorViewVariableTitle'
+                      : 'jsonEditorEditVariableTitle',
+                  )}
+                  readOnly={taskState === 'COMPLETED' || assignee === null}
                   onClose={() => {
                     setEditingVariable(undefined);
                   }}
