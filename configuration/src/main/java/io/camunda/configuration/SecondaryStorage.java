@@ -19,6 +19,7 @@ public class SecondaryStorage {
    * not recommended, and can result in unexpected behavior if not configured correctly.
    */
   private boolean autoconfigureCamundaExporter = true;
+
   /** Determines the type of the secondary storage database. */
   private SecondaryStorage.SecondaryStorageType type = SecondaryStorageType.elasticsearch;
 
