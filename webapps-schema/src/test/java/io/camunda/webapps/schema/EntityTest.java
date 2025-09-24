@@ -57,7 +57,9 @@ public class EntityTest {
     final Field[] fields = entityClass.getDeclaredFields();
 
     for (final Field field : fields) {
-      if (field.isAnnotationPresent(SinceVersion.class)) {
+      if (field.isAnnotationPresent(SinceVersion.class)
+          && !field.getAnnotation(SinceVersion.class).nullable()) {
+
         Assertions.assertThat(hasValidDefault(field))
             .withFailMessage(
                 "Field '%s' in class '%s' introduced in version '%s' must have a default value",
