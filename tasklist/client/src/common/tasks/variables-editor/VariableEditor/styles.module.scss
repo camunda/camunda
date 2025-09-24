@@ -22,7 +22,7 @@
 }
 
 .valueCell {
-  overflow-y: hidden;
+  overflow-y: visible;
   word-break: break-all;
   height: min(100px, min-content);
   position: relative;
@@ -79,6 +79,16 @@
 
 // Ensure the cell name has proper containment for error messages
 .cellName {
+  overflow: visible !important;
+  
+  // Create a stacking context for error messages
+  :global(.cds--text-input__field-wrapper) {
+    position: relative;
+  }
+}
+
+// Ensure value cells can show error messages
+.valueCell {
   overflow: visible !important;
   
   // Create a stacking context for error messages
