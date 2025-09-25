@@ -31,6 +31,11 @@
     </dependency>
 
     <dependency>
+      <groupId>io.opentelemetry</groupId>
+      <artifactId>opentelemetry-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
@@ -498,6 +503,8 @@
             <dependency>org.xmlunit:xmlunit-core</dependency>
             <!-- Used for OpenAPI generation -->
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+            <dependency>io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter</dependency>
+            <dependency>io.opentelemetry.instrumentation:opentelemetry-zipkin-spring-boot-starter<</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
