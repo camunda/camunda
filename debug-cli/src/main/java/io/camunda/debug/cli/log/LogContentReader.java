@@ -7,6 +7,8 @@
  */
 package io.camunda.debug.cli.log;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
 import io.atomix.raft.storage.log.RaftLogReader;
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
@@ -22,6 +24,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 // Minimal stub for LogContentReader to allow LogPrintCommand to compile
 public class LogContentReader implements Iterator<PersistedRecord> {
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private final RaftLogReader reader;
   private Predicate<PersistedRecord> isInLimit = r -> true;
   private Predicate<ApplicationRecord> applicationRecordFilter = null;
@@ -113,68 +116,21 @@ public class LogContentReader implements Iterator<PersistedRecord> {
                     loggedEvent.getValueBuffer(),
                     loggedEvent.getValueOffset(),
                     loggedEvent.getValueLength()));
+        // Convert valueJson to a generic JsonNode
+        JsonNode valueNode = null;
+        try {
+          valueNode = OBJECT_MAPPER.readTree(valueJson);
+        } catch (final Exception e) {
+          // fallback: keep valueNode as null
+        }
         // Parse piRelatedValue if possible from valueJson
         ProcessInstanceRelatedValue piRelatedValue = null;
         try {
           // Try to extract processInstanceKey and bpmnElementType from valueJson
           if (valueJson.contains("processInstanceKey")) {
-            // Simple extraction without a full JSON parser for performance and dependency reasons
-            Long processInstanceKey = null;
-            String bpmnElementType = null;
-            Long processDefinitionKey = null;
-            int idx = valueJson.indexOf("processInstanceKey");
-            if (idx != -1) {
-              final int colon = valueJson.indexOf(':', idx);
-              final int comma = valueJson.indexOf(',', colon);
-              if (colon != -1) {
-                final String keyStr =
-                    valueJson
-                        .substring(colon + 1, comma != -1 ? comma : valueJson.length())
-                        .replaceAll("[^0-9]", "")
-                        .trim();
-                if (!keyStr.isEmpty()) {
-                  processInstanceKey = Long.parseLong(keyStr);
-                }
-              }
-            }
-            idx = valueJson.indexOf("bpmnElementType");
-            if (idx != -1) {
-              final int colon = valueJson.indexOf(':', idx);
-              final int comma = valueJson.indexOf(',', colon);
-              if (colon != -1) {
-                final String typeStr =
-                    valueJson
-                        .substring(colon + 1, comma != -1 ? comma : valueJson.length())
-                        .replaceAll("[\"{}]", "")
-                        .trim();
-                if (!typeStr.isEmpty()) {
-                  bpmnElementType = typeStr;
-                }
-              }
-            }
-            idx = valueJson.indexOf("processDefinitionKey");
-            if (idx != -1) {
-              final int colon = valueJson.indexOf(':', idx);
-              final int comma = valueJson.indexOf(',', colon);
-              if (colon != -1) {
-                final String keyStr =
-                    valueJson
-                        .substring(colon + 1, comma != -1 ? comma : valueJson.length())
-                        .replaceAll("[^0-9]", "")
-                        .trim();
-                if (!keyStr.isEmpty()) {
-                  processDefinitionKey = Long.parseLong(keyStr);
-                }
-              }
-            }
-            if (processInstanceKey != null
-                || bpmnElementType != null
-                || processDefinitionKey != null) {
-              piRelatedValue =
-                  new ProcessInstanceRelatedValue(
-                      processInstanceKey, bpmnElementType, processDefinitionKey);
-            }
+            piRelatedValue = extractPIRelatedValue(valueJson);
           }
+
         } catch (final Exception e) {
           // Ignore parse errors, leave piRelatedValue as null
         }
@@ -196,7 +152,7 @@ public class LogContentReader implements Iterator<PersistedRecord> {
                 metadata.getBrokerVersion() != null ? metadata.getBrokerVersion().toString() : null,
                 metadata.getRecordVersion(),
                 null,
-                valueJson,
+                valueNode, // pass the generic JSON value
                 piRelatedValue);
         appRecord.entries.add(record);
         offset += loggedEvent.getLength();
@@ -237,5 +193,80 @@ public class LogContentReader implements Iterator<PersistedRecord> {
                 .map(Record::piRelatedValue)
                 .filter(pi -> pi != null && pi.processInstanceKey != null)
                 .anyMatch(pi -> instanceKey == pi.processInstanceKey);
+  }
+
+  private ProcessInstanceRelatedValue extractPIRelatedValue(final String valueJson) {
+    // Simple extraction without a full JSON parser for performance and dependency reasons
+    final Long processInstanceKey = extractProcessInstanceKey(valueJson);
+    if (processInstanceKey == null) {
+      return null;
+    }
+    final String bpmnElementType = extractBpmnElementType(valueJson);
+    if (bpmnElementType == null) {
+      return null;
+    }
+    final Long processDefinitionKey = extractProcessDefinitionKey(valueJson);
+    if (processDefinitionKey == null) {
+      return null;
+    }
+    return new ProcessInstanceRelatedValue(
+        processInstanceKey, bpmnElementType, processDefinitionKey);
+  }
+
+  private Long extractProcessInstanceKey(final String valueJson) {
+    final int idx = valueJson.indexOf("processInstanceKey");
+    if (idx != -1) {
+      final int colon = valueJson.indexOf(':', idx);
+      final int comma = valueJson.indexOf(',', colon);
+      if (colon != -1) {
+        final String keyStr =
+            valueJson
+                .substring(colon + 1, comma != -1 ? comma : valueJson.length())
+                .replaceAll("[^0-9]", "")
+                .trim();
+        if (!keyStr.isEmpty()) {
+          return Long.parseLong(keyStr);
+        }
+      }
+    }
+    return null;
+  }
+
+  private String extractBpmnElementType(final String valueJson) {
+    final var idx = valueJson.indexOf("bpmnElementType");
+    if (idx != -1) {
+      final int colon = valueJson.indexOf(':', idx);
+      final int comma = valueJson.indexOf(',', colon);
+      if (colon != -1) {
+        final String typeStr =
+            valueJson
+                .substring(colon + 1, comma != -1 ? comma : valueJson.length())
+                .replaceAll("[\"{}]", "")
+                .trim();
+        if (!typeStr.isEmpty()) {
+          return typeStr;
+        }
+      }
+    }
+    return null;
+  }
+
+  private Long extractProcessDefinitionKey(final String valueJson) {
+    final var idx = valueJson.indexOf("processDefinitionKey");
+    if (idx != -1) {
+      final int colon = valueJson.indexOf(':', idx);
+      final int comma = valueJson.indexOf(',', colon);
+      if (colon != -1) {
+        final String keyStr =
+            valueJson
+                .substring(colon + 1, comma != -1 ? comma : valueJson.length())
+                .replaceAll("[^0-9]", "")
+                .trim();
+        if (!keyStr.isEmpty()) {
+          return Long.parseLong(keyStr);
+        }
+      }
+    }
+    return null;
   }
 }

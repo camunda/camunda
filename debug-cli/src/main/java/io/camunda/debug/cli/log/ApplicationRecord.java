@@ -1,3 +1,10 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
 package io.camunda.debug.cli.log;
 
 import java.util.ArrayList;
@@ -44,13 +51,23 @@ public class ApplicationRecord implements PersistedRecord {
 
   @Override
   public String toString() {
-    return String.format(
-        "{\"index\":%d, \"term\":%d,\"highestPosition\":%d,\"lowestPosition\":%d,\"entries\":[%s]}",
-        index, term, highestPosition, lowestPosition, entriesAsJson());
-  }
+    final var sb = new StringBuilder(128);
 
-  public String entriesAsJson() {
-    return String.join(",", entries.stream().map(Record::toString).toArray(String[]::new));
+    sb.append(
+        String.format(
+            "{\"index\":%d, \"term\":%d,\"highestPosition\":%d,\"lowestPosition\":%d,\"entries\":[",
+            index, term, highestPosition, lowestPosition));
+    var isFirst = true;
+    for (final Record r : entries) {
+      if (!isFirst) {
+        sb.append(',');
+        sb.append(System.lineSeparator());
+      }
+      isFirst = false;
+      sb.append(r.toString());
+    }
+    sb.append("]}");
+    return sb.toString();
   }
 
   public String entryAsColumn(final Record record) {
