@@ -108,6 +108,7 @@ public class ElasticsearchExporterConfiguration {
       case AD_HOC_SUB_PROCESS_INSTRUCTION -> index.adHocSubProcessInstruction;
       case ASYNC_REQUEST -> index.asyncRequest;
       case RUNTIME_INSTRUCTION -> index.runtimeInstruction;
+      case CLUSTER_VARIABLE -> index.clusterVariable;
       default -> false;
     };
   }
@@ -225,6 +226,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean asyncRequest = false;
 
     public boolean usageMetrics = false;
+    public boolean clusterVariable = true;
 
     // index settings
     private Integer numberOfShards = null;
