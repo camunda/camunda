@@ -8,7 +8,6 @@
 package io.camunda.application.commons.rest;
 
 import java.lang.reflect.Type;
-import java.util.Optional;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 
@@ -22,10 +21,7 @@ public class PackageSpecificJackson2HttpMessageConverter
 
   @Override
   public boolean canRead(final Type type, final Class<?> contextClass, final MediaType mediaType) {
-    if (Optional.ofNullable(contextClass)
-        .map(Class::getPackage)
-        .map(p -> p.getName().startsWith(basePackage))
-        .orElse(false)) {
+    if (type.getTypeName().startsWith(basePackage)) {
       return super.canRead(type, contextClass, mediaType);
     }
     return false;
