@@ -19,7 +19,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.migration.DbMigratorImpl;
+import io.camunda.zeebe.engine.common.state.migration.MigrationTask;
+import io.camunda.zeebe.engine.common.state.migration.MigrationTaskContextImpl;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.stream.impl.ClusterContextImpl;
 import java.util.ArrayList;
 import java.util.List;

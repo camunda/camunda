@@ -9,9 +9,9 @@ package io.camunda.zeebe.engine.state.authorization;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMembershipState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.function.BiConsumer;

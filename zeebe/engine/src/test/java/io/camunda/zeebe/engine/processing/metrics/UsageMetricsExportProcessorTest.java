@@ -7,17 +7,18 @@
  */
 package io.camunda.zeebe.engine.processing.metrics;
 
-import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
+import static io.camunda.zeebe.engine.common.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
-import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
+import io.camunda.zeebe.engine.common.processing.metrics.UsageMetricsExportProcessor;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.metrics.PersistedUsageMetrics;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;

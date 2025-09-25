@@ -17,13 +17,14 @@ import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbForeignKey.MatchType;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbString;
-import io.camunda.zeebe.engine.processing.deployment.model.BpmnFactory;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
-import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
-import io.camunda.zeebe.engine.state.deployment.Digest;
-import io.camunda.zeebe.engine.state.deployment.PersistedProcess;
+import io.camunda.zeebe.engine.common.processing.deployment.model.BpmnFactory;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.common.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.common.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.common.state.deployment.Digest;
+import io.camunda.zeebe.engine.common.state.deployment.PersistedProcess;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessState;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
@@ -48,7 +49,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 /**
- * This is a copy of {@link io.camunda.zeebe.engine.state.immutable.ProcessState} from 8.2.13. It is
+ * This is a copy of {@link ProcessState} from 8.2.13. It is
  * used to test the migration of the process state to 8.3.0.
  */
 public final class LegacyProcessState {

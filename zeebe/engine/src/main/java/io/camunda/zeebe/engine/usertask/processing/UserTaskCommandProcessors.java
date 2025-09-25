@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.usertask.processing;
 
-import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
-import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.common.processing.AsyncRequestBehavior;
+import io.camunda.zeebe.engine.common.processing.bpmn.behavior.BpmnBehaviors;
+import io.camunda.zeebe.engine.common.processing.common.EventHandle;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.usertask.processing.processors.UserTaskAssignProcessor;
 import io.camunda.zeebe.engine.usertask.processing.processors.UserTaskCancelProcessor;
 import io.camunda.zeebe.engine.usertask.processing.processors.UserTaskClaimProcessor;

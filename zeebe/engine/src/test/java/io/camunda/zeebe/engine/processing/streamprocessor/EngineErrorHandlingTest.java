@@ -16,11 +16,13 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessor;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
-import io.camunda.zeebe.engine.state.instance.TimerInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.instance.TimerInstance;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.RecordStream;
 import io.camunda.zeebe.engine.util.Records;

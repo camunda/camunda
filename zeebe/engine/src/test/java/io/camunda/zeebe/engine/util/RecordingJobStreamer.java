@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import java.util.ArrayList;

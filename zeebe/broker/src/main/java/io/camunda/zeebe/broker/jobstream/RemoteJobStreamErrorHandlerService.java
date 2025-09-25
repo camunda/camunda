@@ -8,7 +8,7 @@
 package io.camunda.zeebe.broker.jobstream;
 
 import io.camunda.zeebe.broker.PartitionListener;
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.common.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.scheduler.Actor;

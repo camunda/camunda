@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.util;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.FollowUpEventMetadata;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedEventWriter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -17,7 +18,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * An event writer which simply records follow up events in a thread-safe way. Can be passed to a
- * {@link io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter} for easy unit
+ * {@link StateWriter} for easy unit
  * testing of behaviors and processors.
  */
 public final class RecordingTypedEventWriter implements TypedEventWriter {

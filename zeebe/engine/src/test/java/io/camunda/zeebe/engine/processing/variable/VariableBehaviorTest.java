@@ -9,10 +9,11 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.immutable.VariableState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
+import io.camunda.zeebe.engine.common.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.common.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.common.state.immutable.VariableState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableVariableState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter;
 import io.camunda.zeebe.engine.util.RecordingTypedEventWriter.RecordedEvent;

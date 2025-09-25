@@ -12,10 +12,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
-import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
-import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.common.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.common.state.migration.MigrationTaskContextImpl;
+import io.camunda.zeebe.engine.common.state.migration.to_8_7.DbDistributionMigrationState8dot7;
+import io.camunda.zeebe.engine.common.state.migration.to_8_7.IdempotentCommandDistributionMigration;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;

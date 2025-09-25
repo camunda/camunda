@@ -14,7 +14,7 @@ import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.Protocol;

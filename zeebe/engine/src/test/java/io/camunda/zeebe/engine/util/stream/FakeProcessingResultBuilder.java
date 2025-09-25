@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.stream;
 
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -28,7 +29,7 @@ import java.util.List;
 /**
  * This processing result builder can be used in unit tests. It allows to capture the records and
  * the post commit tasks appended to it. Typically, used in combination with {@link
- * io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers} to tests behavior classes.
+ * Writers} to tests behavior classes.
  *
  * @param <V> the type of the record value expected to be appended to this builder. This can be used
  *     to reduce the need for casting in tests if you know that only a specific value type is

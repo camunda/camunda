@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.activity.listeners.execution;
 
-import static io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor.ERROR_REJECTION_MESSAGE;
+import static io.camunda.zeebe.engine.job.processing.JobThrowErrorProcessor.ERROR_REJECTION_MESSAGE;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static java.util.Map.entry;

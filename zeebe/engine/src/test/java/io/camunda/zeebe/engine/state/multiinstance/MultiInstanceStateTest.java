@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.state.multiinstance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMultiInstanceState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.List;
 import java.util.Optional;

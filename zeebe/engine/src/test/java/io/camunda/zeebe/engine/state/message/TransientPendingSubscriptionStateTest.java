@@ -10,7 +10,8 @@ package io.camunda.zeebe.engine.state.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
+import io.camunda.zeebe.engine.common.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

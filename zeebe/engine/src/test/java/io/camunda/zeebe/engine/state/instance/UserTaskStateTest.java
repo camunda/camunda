@@ -11,8 +11,8 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;

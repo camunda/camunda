@@ -16,8 +16,9 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProvider.Item;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationPageProcessor;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;

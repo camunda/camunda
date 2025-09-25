@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.timer;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.engine.common.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

@@ -11,8 +11,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.broker.system.configuration.QueryApiCfg;
-import io.camunda.zeebe.engine.state.QueryService;
-import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
+import io.camunda.zeebe.engine.common.state.QueryService;
+import io.camunda.zeebe.engine.common.state.QueryService.ClosedServiceException;
 import io.camunda.zeebe.protocol.impl.encoding.ErrorResponse;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.ExecuteQueryResponse;

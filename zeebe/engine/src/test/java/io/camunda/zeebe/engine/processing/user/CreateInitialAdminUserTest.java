@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.user;
 
-import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
-import static io.camunda.zeebe.engine.processing.user.UserCreateInitialAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.common.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_HAS_USERS_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.common.processing.user.UserCreateInitialAdminProcessor.ADMIN_ROLE_NOT_FOUND_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.common.processing.user.UserCreateInitialAdminProcessor.USER_ALREADY_EXISTS_ERROR_MESSAGE;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;

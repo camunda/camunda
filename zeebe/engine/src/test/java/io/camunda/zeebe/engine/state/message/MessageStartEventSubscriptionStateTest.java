@@ -12,7 +12,8 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import io.camunda.zeebe.engine.state.mutable.MutableMessageStartEventSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.MessageStartEventSubscription;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;

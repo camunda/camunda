@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.migration;
 
-import static io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.check;
+import static io.camunda.zeebe.engine.common.state.migration.VersionCompatibilityCheck.check;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible.UseOfPreReleaseVersion;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import io.camunda.zeebe.engine.common.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.engine.common.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.engine.common.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible.UseOfPreReleaseVersion;
+import io.camunda.zeebe.engine.common.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;

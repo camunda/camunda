@@ -16,11 +16,12 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.metrics.DistributionMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.immutable.DistributionState;
-import io.camunda.zeebe.engine.state.routing.RoutingInfo;
+import io.camunda.zeebe.engine.common.metrics.DistributionMetrics;
+import io.camunda.zeebe.engine.common.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.common.state.immutable.DistributionState;
+import io.camunda.zeebe.engine.common.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;

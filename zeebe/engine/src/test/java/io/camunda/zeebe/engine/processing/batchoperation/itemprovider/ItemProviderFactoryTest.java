@@ -13,8 +13,11 @@ import static org.mockito.Mockito.*;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.filter.ProcessInstanceFilter;
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.common.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.IncidentItemProvider;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ProcessInstanceItemProvider;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import org.junit.jupiter.api.Test;
 

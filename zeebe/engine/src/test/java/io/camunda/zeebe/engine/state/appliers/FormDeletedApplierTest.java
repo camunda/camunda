@@ -10,10 +10,13 @@ package io.camunda.zeebe.engine.state.appliers;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.deployment.PersistedForm;
-import io.camunda.zeebe.engine.state.mutable.MutableFormState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.TypedEventApplier;
+import io.camunda.zeebe.engine.common.state.appliers.FormCreatedV1Applier;
+import io.camunda.zeebe.engine.common.state.appliers.FormCreatedV2Applier;
+import io.camunda.zeebe.engine.common.state.appliers.FormDeletedApplier;
+import io.camunda.zeebe.engine.common.state.deployment.PersistedForm;
+import io.camunda.zeebe.engine.common.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;

@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.usertask.state.applier.UserTaskCancelingV2Applier;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.usertask.applier.UserTaskCancelingV2Applier;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.usertask.state.instance.UserTaskIntermediateStateValue;

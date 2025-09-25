@@ -14,8 +14,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
+import io.camunda.zeebe.engine.common.processing.message.command.SubscriptionCommandSender;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.appliers.EventAppliers;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;

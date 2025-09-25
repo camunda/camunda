@@ -13,10 +13,10 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.state.immutable.FormState.FormIdentifier;
-import io.camunda.zeebe.engine.state.immutable.FormState.PersistedFormVisitor;
-import io.camunda.zeebe.engine.state.mutable.MutableFormState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.immutable.FormState.FormIdentifier;
+import io.camunda.zeebe.engine.common.state.immutable.FormState.PersistedFormVisitor;
+import io.camunda.zeebe.engine.common.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;

@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.job;
 import static io.camunda.zeebe.protocol.record.intent.JobIntent.TIMED_OUT;
 
 import io.camunda.zeebe.engine.EngineConfiguration;
-import io.camunda.zeebe.engine.processing.streamprocessor.JobStreamer;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.JobStreamer;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

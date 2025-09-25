@@ -12,11 +12,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.message.MessageSubscription;
-import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.message.MessageSubscription;
+import io.camunda.zeebe.engine.common.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;

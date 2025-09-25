@@ -12,8 +12,10 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
-import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.instance.EventScopeInstance;
+import io.camunda.zeebe.engine.common.state.instance.EventTrigger;
+import io.camunda.zeebe.engine.common.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.Collection;
 import java.util.Collections;

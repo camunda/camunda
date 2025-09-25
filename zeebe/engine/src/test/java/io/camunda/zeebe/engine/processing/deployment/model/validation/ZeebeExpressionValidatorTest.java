@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.impl.StaticExpression;
+import io.camunda.zeebe.engine.common.processing.deployment.model.validation.ZeebeExpressionValidator;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

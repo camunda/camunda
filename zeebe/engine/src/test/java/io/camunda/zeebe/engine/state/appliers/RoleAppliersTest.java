@@ -9,12 +9,15 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
-import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserState;
+import io.camunda.zeebe.engine.common.state.appliers.RoleDeletedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.RoleEntityAddedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.RoleEntityRemovedApplier;
+import io.camunda.zeebe.engine.common.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.common.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMembershipState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableRoleState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;

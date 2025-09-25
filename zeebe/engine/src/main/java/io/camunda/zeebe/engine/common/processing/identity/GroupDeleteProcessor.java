@@ -1,0 +1,156 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.common.processing.identity;
+
+import io.camunda.zeebe.engine.common.processing.distribution.CommandDistributionBehavior;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.DistributedTypedRecordProcessor;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.common.state.distribution.DistributionQueue;
+import io.camunda.zeebe.engine.common.state.immutable.AuthorizationState;
+import io.camunda.zeebe.engine.common.state.immutable.GroupState;
+import io.camunda.zeebe.engine.common.state.immutable.MembershipState;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.stream.api.records.TypedRecord;
+import io.camunda.zeebe.stream.api.state.KeyGenerator;
+
+public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<GroupRecord> {
+
+  private static final String GROUP_NOT_FOUND_ERROR_MESSAGE =
+      "Expected to delete group with ID '%s', but a group with this ID does not exist.";
+  private final GroupState groupState;
+  private final AuthorizationState authorizationState;
+  private final MembershipState membershipState;
+  private final AuthorizationCheckBehavior authCheckBehavior;
+  private final KeyGenerator keyGenerator;
+  private final StateWriter stateWriter;
+  private final TypedRejectionWriter rejectionWriter;
+  private final TypedResponseWriter responseWriter;
+  private final CommandDistributionBehavior commandDistributionBehavior;
+
+  public GroupDeleteProcessor(
+      final ProcessingState processingState,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final KeyGenerator keyGenerator,
+      final Writers writers,
+      final CommandDistributionBehavior commandDistributionBehavior) {
+    groupState = processingState.getGroupState();
+    authorizationState = processingState.getAuthorizationState();
+    membershipState = processingState.getMembershipState();
+    this.authCheckBehavior = authCheckBehavior;
+    this.keyGenerator = keyGenerator;
+    stateWriter = writers.state();
+    rejectionWriter = writers.rejection();
+    responseWriter = writers.response();
+    this.commandDistributionBehavior = commandDistributionBehavior;
+  }
+
+  @Override
+  public void processNewCommand(final TypedRecord<GroupRecord> command) {
+    final var record = command.getValue();
+    final var groupId = record.getGroupId();
+    final var authorizationRequest =
+        new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
+            .addResourceId(groupId);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    if (isAuthorized.isLeft()) {
+      final var rejection = isAuthorized.getLeft();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    final var persistedRecord = groupState.get(groupId);
+    if (persistedRecord.isEmpty()) {
+      final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(groupId);
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    final var persistedGroup = persistedRecord.get();
+    final var groupKey = persistedGroup.getGroupKey();
+    record.setGroupKey(groupKey);
+
+    removeAssignedEntities(record);
+    deleteAuthorizations(record);
+
+    stateWriter.appendFollowUpEvent(groupKey, GroupIntent.DELETED, record);
+    responseWriter.writeEventOnCommand(groupKey, GroupIntent.DELETED, record, command);
+
+    final long distributionKey = keyGenerator.nextKey();
+    commandDistributionBehavior
+        .withKey(distributionKey)
+        .inQueue(DistributionQueue.IDENTITY.getQueueId())
+        .distribute(command);
+  }
+
+  @Override
+  public void processDistributedCommand(final TypedRecord<GroupRecord> command) {
+    final var record = command.getValue();
+    groupState
+        .get(record.getGroupId())
+        .ifPresentOrElse(
+            group -> {
+              removeAssignedEntities(command.getValue());
+              deleteAuthorizations(command.getValue());
+              stateWriter.appendFollowUpEvent(command.getKey(), GroupIntent.DELETED, record);
+            },
+            () -> {
+              final var errorMessage = GROUP_NOT_FOUND_ERROR_MESSAGE.formatted(record.getGroupId());
+              rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+            });
+
+    commandDistributionBehavior.acknowledgeCommand(command);
+  }
+
+  private void removeAssignedEntities(final GroupRecord record) {
+    final var groupId = record.getGroupId();
+    membershipState.forEachMember(
+        RelationType.GROUP,
+        groupId,
+        (entityType, entityId) -> {
+          stateWriter.appendFollowUpEvent(
+              record.getGroupKey(),
+              GroupIntent.ENTITY_REMOVED,
+              new GroupRecord()
+                  .setGroupId(groupId)
+                  .setEntityType(entityType)
+                  .setEntityId(entityId));
+        });
+  }
+
+  private void deleteAuthorizations(final GroupRecord record) {
+    final var groupId = record.getGroupId();
+    final var authorizationKeysForGroup =
+        authorizationState.getAuthorizationKeysForOwner(AuthorizationOwnerType.GROUP, groupId);
+
+    authorizationKeysForGroup.forEach(
+        authorizationKey -> {
+          final var authorization =
+              new AuthorizationRecord()
+                  .setAuthorizationKey(authorizationKey)
+                  .setResourceMatcher(AuthorizationResourceMatcher.UNSPECIFIED);
+          stateWriter.appendFollowUpEvent(
+              authorizationKey, AuthorizationIntent.DELETED, authorization);
+        });
+  }
+}

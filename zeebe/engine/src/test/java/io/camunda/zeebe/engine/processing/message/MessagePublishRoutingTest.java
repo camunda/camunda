@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.scaling.InMemoryRoutingState;
-import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.common.state.immutable.RoutingState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.RejectionType;

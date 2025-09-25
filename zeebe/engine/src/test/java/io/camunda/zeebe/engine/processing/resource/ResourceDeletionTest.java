@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.resource;
 
-import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
+import static io.camunda.zeebe.engine.common.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.Assertions.tuple;

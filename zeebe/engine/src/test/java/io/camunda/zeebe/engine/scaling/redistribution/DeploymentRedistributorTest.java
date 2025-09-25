@@ -13,12 +13,12 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentDistributionCommandSender;
-import io.camunda.zeebe.engine.processing.deployment.distribute.DeploymentRedistributor;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
-import io.camunda.zeebe.engine.state.routing.RoutingInfo;
-import io.camunda.zeebe.engine.state.routing.RoutingInfo.StaticRoutingInfo;
+import io.camunda.zeebe.engine.common.processing.deployment.distribute.DeploymentDistributionCommandSender;
+import io.camunda.zeebe.engine.common.processing.deployment.distribute.DeploymentRedistributor;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableRoutingState;
+import io.camunda.zeebe.engine.common.state.routing.RoutingInfo;
+import io.camunda.zeebe.engine.common.state.routing.RoutingInfo.StaticRoutingInfo;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;

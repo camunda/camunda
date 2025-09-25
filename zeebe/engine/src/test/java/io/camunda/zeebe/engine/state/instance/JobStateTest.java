@@ -11,11 +11,11 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.engine.state.immutable.JobState;
-import io.camunda.zeebe.engine.state.immutable.JobState.DeadlineIndex;
-import io.camunda.zeebe.engine.state.immutable.JobState.State;
-import io.camunda.zeebe.engine.state.mutable.MutableJobState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.job.state.immutable.JobState;
+import io.camunda.zeebe.engine.job.state.immutable.JobState.DeadlineIndex;
+import io.camunda.zeebe.engine.job.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.common.state.mutable.MutableJobState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;

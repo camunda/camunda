@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.message;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
-import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.ProcessMessageSubscription;
+import io.camunda.zeebe.engine.common.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.TransientPendingSubscriptionState.PendingSubscription;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateRule;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;

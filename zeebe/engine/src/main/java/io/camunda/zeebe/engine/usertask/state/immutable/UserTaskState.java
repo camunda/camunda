@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.usertask.state.immutable;
 
-import io.camunda.zeebe.engine.processing.identity.AuthorizedTenants;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizedTenants;
 import io.camunda.zeebe.engine.usertask.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.Optional;

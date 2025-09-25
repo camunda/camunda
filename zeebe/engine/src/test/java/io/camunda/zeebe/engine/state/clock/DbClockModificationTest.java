@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.clock;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.common.state.clock.DbClockModification;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock.Modification;
 import java.time.Duration;
 import java.time.Instant;

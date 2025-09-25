@@ -11,10 +11,12 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCallActivity;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.common.processing.common.CallActivityIndexProvider;
+import io.camunda.zeebe.engine.common.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.common.processing.common.ElementTreePathBuilder.ElementTreePathProperties;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableCallActivity;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableFlowElement;
+import io.camunda.zeebe.engine.common.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;

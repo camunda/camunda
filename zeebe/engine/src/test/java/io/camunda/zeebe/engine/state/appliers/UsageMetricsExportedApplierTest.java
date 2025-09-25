@@ -7,12 +7,13 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import static io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
+import static io.camunda.zeebe.engine.common.state.metrics.PersistedUsageMetrics.TIME_NOT_SET;
 import static io.camunda.zeebe.util.HashUtil.getStringHashValue;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
+import io.camunda.zeebe.engine.common.state.appliers.UsageMetricsExportedApplier;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;

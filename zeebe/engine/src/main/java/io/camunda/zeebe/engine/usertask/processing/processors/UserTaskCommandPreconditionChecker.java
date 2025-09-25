@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
-import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
+import io.camunda.zeebe.engine.common.processing.Rejection;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;

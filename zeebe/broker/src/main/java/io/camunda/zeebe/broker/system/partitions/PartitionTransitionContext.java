@@ -27,8 +27,8 @@ import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandRecei
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.db.SnapshotCopy;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.common.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;

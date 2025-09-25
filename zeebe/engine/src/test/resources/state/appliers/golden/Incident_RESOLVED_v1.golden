@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.processing.job.JobThrowErrorProcessor;
+import io.camunda.zeebe.engine.job.processing.JobThrowErrorProcessor;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.immutable.JobState.State;
+import io.camunda.zeebe.engine.job.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;

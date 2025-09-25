@@ -7,23 +7,23 @@
  */
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
-import io.camunda.zeebe.engine.HandlesIntent;
-import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
-import io.camunda.zeebe.engine.processing.Rejection;
-import io.camunda.zeebe.engine.processing.common.EventHandle;
-import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.common.processing.AsyncRequestBehavior;
+import io.camunda.zeebe.engine.common.processing.Rejection;
+import io.camunda.zeebe.engine.common.processing.common.EventHandle;
+import io.camunda.zeebe.engine.common.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedResponseWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.immutable.AsyncRequestState;
+import io.camunda.zeebe.engine.common.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.common.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;

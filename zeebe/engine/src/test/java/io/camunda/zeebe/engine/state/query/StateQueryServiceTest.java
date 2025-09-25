@@ -12,8 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.QueryService.ClosedServiceException;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.QueryService.ClosedServiceException;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.query.StateQueryService;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.Records;
 import io.camunda.zeebe.protocol.Protocol;

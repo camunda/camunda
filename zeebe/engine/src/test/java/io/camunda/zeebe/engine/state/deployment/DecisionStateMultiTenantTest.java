@@ -12,8 +12,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.deployment.DeployedDrg;
+import io.camunda.zeebe.engine.common.state.deployment.PersistedDecision;
+import io.camunda.zeebe.engine.common.state.mutable.MutableDecisionState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;

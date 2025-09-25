@@ -12,7 +12,7 @@ import static java.util.Objects.requireNonNull;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
-import io.camunda.zeebe.engine.state.processing.DbBannedInstanceState;
+import io.camunda.zeebe.engine.common.state.processing.DbBannedInstanceState;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControlLimits;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;

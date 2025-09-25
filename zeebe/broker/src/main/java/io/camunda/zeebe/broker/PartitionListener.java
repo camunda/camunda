@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker;
 
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.common.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 

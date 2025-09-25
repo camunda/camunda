@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.multiinstance;
 
-import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceBatchActivateProcessor.PARENT_NOT_FOUND_ERROR_MESSAGE;
+import static io.camunda.zeebe.engine.common.processing.processinstance.ProcessInstanceBatchActivateProcessor.PARENT_NOT_FOUND_ERROR_MESSAGE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;

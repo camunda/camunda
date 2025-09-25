@@ -10,10 +10,11 @@ package io.camunda.zeebe.engine.state.appliers;
 import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.instance.ElementInstance;
-import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.appliers.ProcessInstanceSequenceFlowDeletedApplier;
+import io.camunda.zeebe.engine.common.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.common.state.mutable.MutableElementInstanceState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

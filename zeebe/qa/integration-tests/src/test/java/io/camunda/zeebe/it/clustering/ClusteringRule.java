@@ -53,7 +53,7 @@ import io.camunda.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminService;
 import io.camunda.zeebe.broker.system.management.PartitionStatus;
 import io.camunda.zeebe.dynamic.config.GatewayClusterConfigurationService;
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.common.state.QueryService;
 import io.camunda.zeebe.gateway.Gateway;
 import io.camunda.zeebe.gateway.JobStreamComponent;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;

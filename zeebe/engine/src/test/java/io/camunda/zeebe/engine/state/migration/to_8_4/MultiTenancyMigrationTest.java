@@ -11,10 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.migration.MigrationTaskContextImpl;
-import io.camunda.zeebe.engine.state.migration.to_8_4.legacy.LegacySignalSubscriptionState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.signal.DbSignalSubscriptionState;
+import io.camunda.zeebe.engine.common.state.migration.MigrationTaskContextImpl;
+import io.camunda.zeebe.engine.common.state.migration.to_8_4.MultiTenancySignalSubscriptionStateMigration;
+import io.camunda.zeebe.engine.common.state.migration.to_8_4.legacy.LegacySignalSubscriptionState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.signal.DbSignalSubscriptionState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;

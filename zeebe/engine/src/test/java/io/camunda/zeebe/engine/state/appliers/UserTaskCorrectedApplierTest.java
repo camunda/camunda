@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
-import io.camunda.zeebe.engine.usertask.state.applier.UserTaskCorrectedApplier;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUserTaskState;
+import io.camunda.zeebe.engine.usertask.applier.UserTaskCorrectedApplier;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;

@@ -14,7 +14,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
-import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
+import io.camunda.zeebe.engine.common.state.metrics.DbUsageMetricState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;

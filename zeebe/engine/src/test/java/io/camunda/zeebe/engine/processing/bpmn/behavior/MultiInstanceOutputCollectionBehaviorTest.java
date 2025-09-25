@@ -18,10 +18,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
-import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableLoopCharacteristics;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.common.processing.bpmn.BpmnElementContext;
+import io.camunda.zeebe.engine.common.processing.bpmn.behavior.BpmnStateBehavior;
+import io.camunda.zeebe.engine.common.processing.bpmn.behavior.MultiInstanceOutputCollectionBehavior;
+import io.camunda.zeebe.engine.common.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableLoopCharacteristics;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.util.Either;

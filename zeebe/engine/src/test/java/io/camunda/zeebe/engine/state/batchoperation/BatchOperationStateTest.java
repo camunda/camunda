@@ -7,16 +7,16 @@
  */
 package io.camunda.zeebe.engine.state.batchoperation;
 
-import static io.camunda.zeebe.engine.state.batchoperation.DbBatchOperationState.MAX_DB_CHUNK_SIZE;
+import static io.camunda.zeebe.engine.common.state.batchoperation.DbBatchOperationState.MAX_DB_CHUNK_SIZE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
-import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
+import io.camunda.zeebe.engine.common.state.mutable.MutableBatchOperationState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;

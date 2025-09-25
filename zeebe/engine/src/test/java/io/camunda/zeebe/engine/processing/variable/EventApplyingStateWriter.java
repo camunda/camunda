@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedEventWriter;
-import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.FollowUpEventMetadata;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedEventWriter;
+import io.camunda.zeebe.engine.common.state.EventApplier;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;

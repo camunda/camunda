@@ -11,8 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.zeebe.db.ZeebeDbInconsistentException;
-import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.message.RequestData;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMessageCorrelationState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

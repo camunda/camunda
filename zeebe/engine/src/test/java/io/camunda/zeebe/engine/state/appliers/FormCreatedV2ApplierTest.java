@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.TypedEventApplier;
-import io.camunda.zeebe.engine.state.mutable.MutableFormState;
+import io.camunda.zeebe.engine.common.state.TypedEventApplier;
+import io.camunda.zeebe.engine.common.state.appliers.FormCreatedV2Applier;
+import io.camunda.zeebe.engine.common.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.test.util.Strings;

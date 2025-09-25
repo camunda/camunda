@@ -17,11 +17,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
-import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker.YieldingDecorator;
-import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
-import io.camunda.zeebe.engine.state.immutable.TimerInstanceState.TimerVisitor;
-import io.camunda.zeebe.engine.state.instance.TimerInstance;
+import io.camunda.zeebe.engine.common.processing.timer.DueDateTimerChecker.TriggerTimersSideEffect;
+import io.camunda.zeebe.engine.common.processing.timer.DueDateTimerChecker.YieldingDecorator;
+import io.camunda.zeebe.engine.common.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.common.state.immutable.TimerInstanceState.TimerVisitor;
+import io.camunda.zeebe.engine.common.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;

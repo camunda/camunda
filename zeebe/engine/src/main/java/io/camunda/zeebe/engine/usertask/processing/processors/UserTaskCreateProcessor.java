@@ -7,24 +7,26 @@
  */
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
-import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContextImpl;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnJobBehavior;
-import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
-import io.camunda.zeebe.engine.state.immutable.ProcessState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.common.processing.ExcludeAuthorizationCheck;
+import io.camunda.zeebe.engine.common.processing.bpmn.BpmnElementContextImpl;
+import io.camunda.zeebe.engine.common.processing.bpmn.behavior.BpmnJobBehavior;
+import io.camunda.zeebe.engine.common.processing.bpmn.behavior.BpmnUserTaskBehavior;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessState;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(userTask = UserTaskIntent.CREATE)
 public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;

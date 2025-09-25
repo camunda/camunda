@@ -7,7 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.common.processing.deployment.model.transformer.zeebe.ExecutionListenerTransformer;
 import io.camunda.zeebe.engine.util.FakeExpressionLanguage;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.instance.BaseElement;

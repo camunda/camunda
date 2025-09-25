@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
-import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.CREATED;
-import static io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.SUSPENDED;
+import static io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.CREATED;
+import static io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation.BatchOperationStatus.SUSPENDED;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,14 +21,17 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
-import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProviderFactory;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationException;
-import io.camunda.zeebe.engine.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.common.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProvider;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProvider.Item;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
+import io.camunda.zeebe.engine.common.processing.batchoperation.itemprovider.ItemProviderFactory;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationCommandAppender;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationInitializer;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationInitializer.BatchOperationInitializationException;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationPageProcessor;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.BatchOperationPageProcessor.PageProcessingResult;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation;
 import io.camunda.zeebe.protocol.record.value.BatchOperationErrorType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;

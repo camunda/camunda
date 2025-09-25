@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
+import io.camunda.zeebe.engine.common.state.deployment.PersistedForm;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;

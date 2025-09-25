@@ -13,7 +13,7 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.response.PublishMessageResponse;
 import io.camunda.zeebe.broker.PartitionListener;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
-import io.camunda.zeebe.engine.state.QueryService;
+import io.camunda.zeebe.engine.common.state.QueryService;
 import io.camunda.zeebe.it.util.GrpcClientRule;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.future.ActorFuture;

@@ -7,8 +7,9 @@
  */
 package io.camunda.zeebe.engine.processing.deployment.model.transformer.zeebe;
 
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
-import io.camunda.zeebe.engine.processing.deployment.model.element.LinkedResource;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.LinkedResource;
+import io.camunda.zeebe.engine.common.processing.deployment.model.transformer.zeebe.LinkedResourcesTransformer;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResource;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeLinkedResources;

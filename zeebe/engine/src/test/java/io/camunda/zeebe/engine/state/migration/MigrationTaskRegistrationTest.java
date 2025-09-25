@@ -15,6 +15,8 @@ import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.junit.AnalyzeClasses;
 import com.tngtech.archunit.junit.ArchTest;
 import com.tngtech.archunit.lang.ArchRule;
+import io.camunda.zeebe.engine.common.state.migration.DbMigratorImpl;
+import io.camunda.zeebe.engine.common.state.migration.MigrationTask;
 
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.state.migration",

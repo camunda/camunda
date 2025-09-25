@@ -9,14 +9,15 @@ package io.camunda.zeebe.engine.processing.batchoperation;
 
 import static org.mockito.Mockito.*;
 
-import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
-import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.engine.common.metrics.BatchOperationMetrics;
+import io.camunda.zeebe.engine.common.processing.batchoperation.BatchOperationResumeProcessor;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.FollowUpEventMetadata;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedCommandWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.common.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.common.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationExecutionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;

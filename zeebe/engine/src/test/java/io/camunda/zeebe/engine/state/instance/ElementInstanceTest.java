@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.instance;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.common.state.instance.ElementInstance;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import org.junit.jupiter.api.Test;
 

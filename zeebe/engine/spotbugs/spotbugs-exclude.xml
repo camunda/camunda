@@ -12,7 +12,7 @@
 <!--    <Bug pattern="AT_NONATOMIC_OPERATIONS_ON_SHARED_VARIABLE"/>-->
 <!--  </Match>-->
   <Match>
-    <Class name="io.camunda.zeebe.engine.processing.scheduled.DueDateChecker"/>
+    <Class name="io.camunda.zeebe.engine.common.processing.scheduled.DueDateChecker"/>
     <Bug pattern="AT_STALE_THREAD_WRITE_OF_PRIMITIVE"/>
   </Match>
 </FindBugsFilter>

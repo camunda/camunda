@@ -8,10 +8,10 @@
 package io.camunda.zeebe.engine.util;
 
 import io.camunda.zeebe.db.ZeebeDbFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorContext;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessorFactory;
-import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessorContext;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessorFactory;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.TypedRecordProcessors;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.TestStreams.FluentLogWriter;
 import io.camunda.zeebe.engine.util.client.CommandWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;

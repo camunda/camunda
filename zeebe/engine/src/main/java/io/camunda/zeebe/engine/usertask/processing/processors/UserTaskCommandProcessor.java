@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
-import io.camunda.zeebe.engine.processing.Rejection;
+import io.camunda.zeebe.engine.common.processing.Rejection;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;

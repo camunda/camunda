@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.scaling;
 
-import io.camunda.zeebe.engine.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.common.state.immutable.RoutingState;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;

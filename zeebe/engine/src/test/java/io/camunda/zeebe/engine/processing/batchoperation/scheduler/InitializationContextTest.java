@@ -9,8 +9,9 @@ package io.camunda.zeebe.engine.processing.batchoperation.scheduler;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation;
-import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
+import io.camunda.zeebe.engine.common.processing.batchoperation.scheduler.InitializationContext;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation;
+import io.camunda.zeebe.engine.common.state.batchoperation.PersistedBatchOperation.BatchOperationStatus;
 import org.junit.jupiter.api.Test;
 
 class InitializationContextTest {

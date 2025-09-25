@@ -1,0 +1,122 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+package io.camunda.zeebe.engine.common.state;
+
+import io.camunda.zeebe.db.TransactionContext;
+import io.camunda.zeebe.db.ZeebeDb;
+import io.camunda.zeebe.engine.common.state.batchoperation.DbBatchOperationState;
+import io.camunda.zeebe.engine.common.state.deployment.DbDeploymentState;
+import io.camunda.zeebe.engine.common.state.distribution.DbDistributionState;
+import io.camunda.zeebe.engine.common.state.immutable.BatchOperationState;
+import io.camunda.zeebe.engine.common.state.immutable.DeploymentState;
+import io.camunda.zeebe.engine.common.state.immutable.DistributionState;
+import io.camunda.zeebe.engine.job.state.immutable.JobState;
+import io.camunda.zeebe.engine.common.state.immutable.MessageState;
+import io.camunda.zeebe.engine.common.state.immutable.PendingMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.immutable.PendingProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.immutable.ScheduledTaskState;
+import io.camunda.zeebe.engine.common.state.immutable.TimerInstanceState;
+import io.camunda.zeebe.engine.job.state.instance.DbJobState;
+import io.camunda.zeebe.engine.common.state.instance.DbTimerInstanceState;
+import io.camunda.zeebe.engine.common.state.instance.DbUserTaskState;
+import io.camunda.zeebe.engine.common.state.message.DbMessageState;
+import io.camunda.zeebe.engine.common.state.message.DbMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.DbProcessMessageSubscriptionState;
+import io.camunda.zeebe.engine.common.state.message.TransientPendingSubscriptionState;
+import io.camunda.zeebe.engine.common.state.routing.DbRoutingState;
+import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState;
+import io.camunda.zeebe.protocol.ZbColumnFamilies;
+import java.time.InstantSource;
+
+/** Contains read-only state that can be accessed safely by scheduled tasks. */
+public final class ScheduledTaskDbState implements ScheduledTaskState {
+
+  private final DistributionState distributionState;
+  private final MessageState messageState;
+  private final TimerInstanceState timerInstanceState;
+  private final JobState jobState;
+  private final DeploymentState deploymentState;
+  private final PendingMessageSubscriptionState pendingMessageSubscriptionState;
+  private final PendingProcessMessageSubscriptionState pendingProcessMessageSubscriptionState;
+  private final UserTaskState userTaskState;
+  private final BatchOperationState batchOperationState;
+  private final DbRoutingState routingState;
+
+  public ScheduledTaskDbState(
+      final ZeebeDb<ZbColumnFamilies> zeebeDb,
+      final TransactionContext transactionContext,
+      final int partitionId,
+      final TransientPendingSubscriptionState transientMessageSubscriptionState,
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final InstantSource clock) {
+    distributionState = new DbDistributionState(zeebeDb, transactionContext);
+    messageState = new DbMessageState(zeebeDb, transactionContext, partitionId);
+    timerInstanceState = new DbTimerInstanceState(zeebeDb, transactionContext);
+    jobState = new DbJobState(zeebeDb, transactionContext);
+    deploymentState = new DbDeploymentState(zeebeDb, transactionContext);
+    pendingMessageSubscriptionState =
+        new DbMessageSubscriptionState(
+            zeebeDb, transactionContext, transientMessageSubscriptionState, clock);
+    pendingProcessMessageSubscriptionState =
+        new DbProcessMessageSubscriptionState(
+            zeebeDb, transactionContext, transientProcessMessageSubscriptionState, clock);
+    userTaskState = new DbUserTaskState(zeebeDb, transactionContext);
+    batchOperationState = new DbBatchOperationState(zeebeDb, transactionContext);
+    routingState = new DbRoutingState(zeebeDb, transactionContext);
+  }
+
+  @Override
+  public DistributionState getDistributionState() {
+    return distributionState;
+  }
+
+  @Override
+  public MessageState getMessageState() {
+    return messageState;
+  }
+
+  @Override
+  public TimerInstanceState getTimerState() {
+    return timerInstanceState;
+  }
+
+  @Override
+  public JobState getJobState() {
+    return jobState;
+  }
+
+  @Override
+  public DeploymentState getDeploymentState() {
+    return deploymentState;
+  }
+
+  @Override
+  public PendingMessageSubscriptionState getPendingMessageSubscriptionState() {
+    return pendingMessageSubscriptionState;
+  }
+
+  @Override
+  public PendingProcessMessageSubscriptionState getPendingProcessMessageSubscriptionState() {
+    return pendingProcessMessageSubscriptionState;
+  }
+
+  @Override
+  public UserTaskState getUserTaskState() {
+    return userTaskState;
+  }
+
+  @Override
+  public BatchOperationState getBatchOperationState() {
+    return batchOperationState;
+  }
+
+  @Override
+  public DbRoutingState getRoutingState() {
+    return routingState;
+  }
+}

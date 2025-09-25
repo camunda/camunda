@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.compensation;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.common.state.compensation.CompensationSubscription;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;

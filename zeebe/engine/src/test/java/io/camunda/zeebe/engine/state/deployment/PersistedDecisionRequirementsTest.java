@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.state.deployment;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.common.state.deployment.PersistedDecisionRequirements;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;

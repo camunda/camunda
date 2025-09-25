@@ -11,12 +11,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
-import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableJobWorkerTask;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableProcess;
-import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
-import io.camunda.zeebe.engine.processing.deployment.model.element.TaskListener;
-import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
+import io.camunda.zeebe.engine.common.processing.bpmn.clock.ZeebeFeelEngineClock;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableJobWorkerTask;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableProcess;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.common.processing.deployment.model.element.TaskListener;
+import io.camunda.zeebe.engine.common.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.TaskListenerBuilder;

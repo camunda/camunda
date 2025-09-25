@@ -18,10 +18,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
-import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejectionWriter;
-import io.camunda.zeebe.engine.state.immutable.MessageState;
-import io.camunda.zeebe.engine.state.message.StoredMessage;
+import io.camunda.zeebe.engine.common.processing.message.MessageBatchExpireProcessor;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.StateWriter;
+import io.camunda.zeebe.engine.common.processing.streamprocessor.writers.TypedRejectionWriter;
+import io.camunda.zeebe.engine.common.state.immutable.MessageState;
+import io.camunda.zeebe.engine.common.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;

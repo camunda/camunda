@@ -9,8 +9,8 @@ package io.camunda.zeebe.engine.state.routing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.immutable.RoutingState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.immutable.RoutingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import java.util.Set;
 import org.junit.jupiter.api.Test;

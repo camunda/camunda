@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.state.migration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.db.impl.DbLong;
+import io.camunda.zeebe.engine.common.state.migration.MemoryBoundedColumnIteration;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.io.File;

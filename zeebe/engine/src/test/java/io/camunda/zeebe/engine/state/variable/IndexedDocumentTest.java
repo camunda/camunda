@@ -9,6 +9,9 @@ package io.camunda.zeebe.engine.state.variable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.engine.common.state.variable.DocumentEntry;
+import io.camunda.zeebe.engine.common.state.variable.DocumentEntryIterator;
+import io.camunda.zeebe.engine.common.state.variable.IndexedDocument;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.util.buffer.BufferUtil;

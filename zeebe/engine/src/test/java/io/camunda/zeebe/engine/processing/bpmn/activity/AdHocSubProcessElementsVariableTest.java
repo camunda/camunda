@@ -12,8 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata;
-import io.camunda.zeebe.engine.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
+import io.camunda.zeebe.engine.common.processing.adhocsubprocess.AdHocActivityMetadata;
+import io.camunda.zeebe.engine.common.processing.adhocsubprocess.AdHocActivityMetadata.AdHocActivityParameter;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

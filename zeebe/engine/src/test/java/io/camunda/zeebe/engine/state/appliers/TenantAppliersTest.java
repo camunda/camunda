@@ -9,14 +9,19 @@ package io.camunda.zeebe.engine.state.appliers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationType;
-import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
-import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
-import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
-import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
-import io.camunda.zeebe.engine.state.mutable.MutableTenantState;
-import io.camunda.zeebe.engine.state.mutable.MutableUserState;
+import io.camunda.zeebe.engine.common.state.appliers.TenantCreatedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.TenantDeletedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.TenantEntityAddedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.TenantEntityRemovedApplier;
+import io.camunda.zeebe.engine.common.state.appliers.UserCreatedApplier;
+import io.camunda.zeebe.engine.common.state.authorization.DbMembershipState.RelationType;
+import io.camunda.zeebe.engine.common.state.mutable.MutableAuthorizationState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableGroupState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMappingRuleState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableMembershipState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableTenantState;
+import io.camunda.zeebe.engine.common.state.mutable.MutableUserState;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.MappingRuleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
