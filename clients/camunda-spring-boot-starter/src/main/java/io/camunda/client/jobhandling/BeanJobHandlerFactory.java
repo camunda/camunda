@@ -17,6 +17,7 @@ package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.worker.JobHandler;
+import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
@@ -24,7 +25,6 @@ import io.camunda.client.jobhandling.result.ResultProcessor;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessorStrategy.ResultProcessorStrategyContext;
 import io.camunda.client.metrics.MetricsRecorder;
-import io.camunda.client.spring.bean.MethodInfo;
 import java.util.List;
 
 public class BeanJobHandlerFactory implements JobHandlerFactory {
