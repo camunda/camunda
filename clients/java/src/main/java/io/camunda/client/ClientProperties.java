@@ -152,5 +152,7 @@ public final class ClientProperties {
    */
   public static final String USE_DEFAULT_RETRY_POLICY = "camunda.client.useDefaultRetryPolicy";
 
+  public static final String OPENTELEMETRY_ENDPOINT = "camunda.client.opentelemetry.endpoint";
+
   private ClientProperties() {}
 }

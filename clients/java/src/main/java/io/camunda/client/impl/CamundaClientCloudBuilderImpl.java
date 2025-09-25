@@ -296,6 +296,11 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder openTelemetryEndpoint(final String openTelemetryEndpoint) {
+    return null;
+  }
+
+  @Override
   public CamundaClient build() {
     innerBuilder.grpcAddress(determineGrpcAddress());
     innerBuilder.restAddress(determineRestAddress());

@@ -27,12 +27,12 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.semconv.ServiceAttributes;
 
 public class OpenTelemetrySdkConfig {
-  public static OpenTelemetry create() {
+  public static OpenTelemetry create(final String exporter) {
     final Resource resource =
         Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, "client-java"));
 
     final ZipkinSpanExporter zipkinSpanExporter =
-        ZipkinSpanExporter.builder().setEndpoint("http://localhost:9411/api/v2/spans").build();
+        ZipkinSpanExporter.builder().setEndpoint(exporter).build();
 
     final SdkTracerProvider sdkTracerProvider =
         SdkTracerProvider.builder()

@@ -97,7 +97,8 @@ public class HttpClientFactory {
         defaultRequestConfig,
         config.getMaxMessageSize(),
         TimeValue.ofSeconds(15),
-        credentialsProvider);
+        credentialsProvider,
+        config.getOpenTelemetryEndpoint());
   }
 
   private URI buildGatewayAddress() {

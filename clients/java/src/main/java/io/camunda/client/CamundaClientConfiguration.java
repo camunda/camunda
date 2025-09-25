@@ -156,4 +156,6 @@ public interface CamundaClientConfiguration {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
+
+  String getOpenTelemetryEndpoint();
 }

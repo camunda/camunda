@@ -76,7 +76,8 @@ public final class HttpClient implements AutoCloseable {
       final RequestConfig defaultRequestConfig,
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
-      final CredentialsProvider credentialsProvider) {
+      final CredentialsProvider credentialsProvider,
+      final String opentelemetryExporter) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
@@ -84,7 +85,7 @@ public final class HttpClient implements AutoCloseable {
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
-    openTelemetry = OpenTelemetrySdkConfig.create();
+    openTelemetry = OpenTelemetrySdkConfig.create(opentelemetryExporter);
     tracer = openTelemetry.getTracer("CamundaClientTracer");
   }
 

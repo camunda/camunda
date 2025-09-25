@@ -65,5 +65,7 @@ public final class CamundaClientEnvironmentVariables {
 
   public static final String BASIC_AUTH_ENV_PASSWORD = "CAMUNDA_BASIC_AUTH_PASSWORD";
 
+  public static final String OPENTELEMETRY_EXPORTER = "CAMUNDA_CLIENT_OPENTELEMETRY_EXPORTER";
+
   private CamundaClientEnvironmentVariables() {}
 }
