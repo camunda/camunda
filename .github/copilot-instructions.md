@@ -79,3 +79,11 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 - Always create composite actions in `.github/actions` subdirectories named in kebab case
 - Always create a `README.md` for composite actions describing purpose, inputs, outputs and example usage
 
+## Finding Documentation
+
+- Always check whether documentation exists for the module you are working on
+- If documentation exists in the module, read it before making changes to the code
+- Check README.md and other markdown files in the directory to find documentation
+- If you work on the workflow engine, check the engine [README](/zeebe/engine/README.md)
+- Further documentation and development guidelines can be found in the `docs/` directory
+
