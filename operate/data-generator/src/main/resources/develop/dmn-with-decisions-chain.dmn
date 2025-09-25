@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_root_cause_drd" name="Root Cause Decision DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.31.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.7.0">
+  <decision id="decision-c" name="DecisionC">
+    <literalExpression id="LiteralExpression_C">
+      <text>assert(0,1)</text>
+    </literalExpression>
+  </decision>
+  <decision id="decision-b" name="DecisionB">
+    <informationRequirement id="InformationRequirement_B_requires_C">
+      <requiredDecision href="#decision-c" />
+    </informationRequirement>
+    <decisionTable id="DecisionTable_B">
+      <input id="Input_B" label="From DecisionC">
+        <inputExpression id="InputExpression_B" typeRef="string">
+          <text>DecisionC</text>
+        </inputExpression>
+      </input>
+      <output id="Output_B" name="Result" typeRef="string" />
+      <rule id="Rule_B_1">
+        <inputEntry id="InputEntry_B_1">
+          <text>"ok"</text>
+        </inputEntry>
+        <outputEntry id="OutputEntry_B_1">
+          <text>"passed"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="decision-a" name="DecisionA">
+      <informationRequirement id="InformationRequirement_A_requires_B">
+        <requiredDecision href="#decision-b"/>
+      </informationRequirement>
+      <decisionTable id="DecisionTable_A">
+        <input id="Input_A" label="From DecisionB">
+          <inputExpression id="InputExpression_A" typeRef="string">
+            <text>DecisionB</text>
+          </inputExpression>
+        </input>
+        <output id="Output_A" name="Result" typeRef="string"/>
+        <rule id="Rule_A_1">
+          <inputEntry id="InputEntry_A_1">
+            <text>"passed"</text>
+          </inputEntry>
+          <outputEntry id="OutputEntry_A_1">
+            <text>"final"</text>
+          </outputEntry>
+        </rule>
+      </decisionTable>
+    </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="decision-b">
+        <dc:Bounds height="80" width="180" x="340" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape dmnElementRef="decision-c">
+        <dc:Bounds height="80" width="180" x="120" y="100" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge dmnElementRef="InformationRequirement_A_requires_B">
+        <di:waypoint x="520" y="140" />
+        <di:waypoint x="540" y="140" />
+        <di:waypoint x="560" y="140" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNEdge dmnElementRef="InformationRequirement_B_requires_C">
+        <di:waypoint x="300" y="140" />
+        <di:waypoint x="340" y="140" />
+      </dmndi:DMNEdge>
+      <dmndi:DMNShape id="DMNShape_1d0zc3a" dmnElementRef="decision-a">
+        <dc:Bounds height="80" width="180" x="560" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
