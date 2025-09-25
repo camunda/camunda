@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.coverage.report;
+package io.camunda.process.test.impl.coverage.report;
 
 import static java.util.Optional.ofNullable;
 
-import io.camunda.process.test.api.coverage.core.CoverageCollector;
-import io.camunda.process.test.api.coverage.core.CoverageCreator;
-import io.camunda.process.test.api.coverage.model.Coverage;
-import io.camunda.process.test.api.coverage.model.Model;
-import io.camunda.process.test.api.coverage.model.Suite;
+import io.camunda.process.test.impl.coverage.core.CoverageCollector;
+import io.camunda.process.test.impl.coverage.core.CoverageCreator;
+import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.Model;
+import io.camunda.process.test.impl.coverage.model.Suite;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
