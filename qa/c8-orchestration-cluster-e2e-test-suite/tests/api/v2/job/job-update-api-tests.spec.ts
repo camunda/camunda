@@ -8,38 +8,24 @@
 
 import {test} from '@playwright/test';
 import {
-  cancelProcessInstance,
-  createInstances,
-  deploy,
-} from '../../../../utils/zeebeClient';
-import {
   assertBadRequest,
   assertNotFoundRequest,
   assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {activateJobToObtainAValidJobKey} from '../../../../utils/requestHelpers';
+import {
+  activateJobToObtainAValidJobKey,
+  setupProcessInstanceTests,
+} from '../../../../utils/requestHelpers';
 
 test.describe('Job Update API Tests', () => {
-  const state: Record<string, unknown> = {};
-
-  test.beforeAll(async () => {
-    await deploy(['./resources/processWithThreeParallelTasks.bpmn']);
-  });
-
-  test.beforeEach(async () => {
-    const processInstance = await createInstances(
-      'processWithThreeParallelTasks',
-      1,
-      1,
-    );
-    state['processInstanceKey'] = processInstance[0].processInstanceKey;
-  });
-
-  test.afterEach(async () => {
-    await cancelProcessInstance(state['processInstanceKey'] as string);
-  });
+  const {beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
+    'processWithThreeParallelTasks',
+  );
+  test.beforeAll(beforeAll);
+  test.beforeEach(beforeEach);
+  test.afterEach(afterEach);
 
   test('Update Job - success', async ({request}) => {
     const jobKey = await activateJobToObtainAValidJobKey(request, 'someTask');
