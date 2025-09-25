@@ -33,12 +33,12 @@ test.describe.parallel('License API Tests', () => {
     expect(res.status()).toBe(200);
     const json = await res.json();
     assertRequiredFields(json, licenseRequiredFields);
-    console.log('license', json);
-    const check = validateResponseShape(
+
+    validateResponseShape(
       {path: '/license', method: 'GET', status: '200'},
       json,
     );
-    console.log('********check', check);
+
     expect(json.validLicense).toBeFalsy();
     expect(json.licenseType).toBe('unknown');
     expect(json.isCommercial).toBeFalsy();

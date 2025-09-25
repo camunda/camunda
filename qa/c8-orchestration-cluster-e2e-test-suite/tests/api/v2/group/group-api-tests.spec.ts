@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {expect, test} from '@playwright/test';
+import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
