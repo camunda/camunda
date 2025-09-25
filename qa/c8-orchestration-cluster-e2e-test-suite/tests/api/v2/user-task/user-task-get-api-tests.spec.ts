@@ -1,0 +1,73 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {test} from '@playwright/test';
+import {
+  findUserTask,
+  setupProcessInstanceTests,
+} from '../../../../utils/requestHelpers';
+import {
+  assertNotFoundRequest,
+  assertStatusCode,
+  assertUnauthorizedRequest,
+  buildUrl,
+  jsonHeaders,
+} from '../../../../utils/http';
+
+/* eslint-disable playwright/expect-expect */
+test.describe.parallel('Get User Task Tests', () => {
+  const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
+    'usertask_with_variables',
+  );
+  test.beforeAll(beforeAll);
+  test.beforeEach(beforeEach);
+  test.afterEach(afterEach);
+
+  test('Get user task - success', async ({request}) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
+      headers: jsonHeaders(),
+    });
+    await assertStatusCode(res, 200);
+  });
+
+  test('Get user task - not found', async ({request}) => {
+    const unknownUserTaskKey = '2251799813694876';
+    const res = await request.get(
+      buildUrl(`/user-tasks/${unknownUserTaskKey}`),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    await assertNotFoundRequest(
+      res,
+      `User Task with key '${unknownUserTaskKey}' not found`,
+    );
+  });
+
+  test('Get user task - unauthorized', async ({request}) => {
+    const userTaskKey = await findUserTask(
+      request,
+      state['processInstanceKey'] as string,
+      'CREATED',
+    );
+    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
+      // No auth headers
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    await assertUnauthorizedRequest(res);
+  });
+
+  // TODO: Evaluate if a test for 403 Forbidden is necessary here
+});
