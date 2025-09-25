@@ -13,20 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.coverage.report;
+package io.camunda.process.test.impl.coverage.report;
 
-import io.camunda.process.test.api.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.Model;
+import io.camunda.process.test.impl.coverage.model.Run;
 import java.util.Collection;
 
-public class AggregatedSuiteInfo {
+public class SuiteCoverageReport {
+
   private final String id;
   private final String name;
+  private final Collection<Run> runs;
+  private final Collection<Model> models;
   private final Collection<Coverage> coverages;
 
-  public AggregatedSuiteInfo(
-      final String id, final String name, final Collection<Coverage> coverages) {
-    this.id = id;
-    this.name = name;
+  public SuiteCoverageReport(
+      final String suiteId,
+      final String suiteName,
+      final Collection<Run> runs,
+      final Collection<Model> models,
+      final Collection<Coverage> coverages) {
+    id = suiteId;
+    name = suiteName;
+    this.runs = runs;
+    this.models = models;
     this.coverages = coverages;
   }
 
@@ -36,6 +47,14 @@ public class AggregatedSuiteInfo {
 
   public String getName() {
     return name;
+  }
+
+  public Collection<Run> getRuns() {
+    return runs;
+  }
+
+  public Collection<Model> getModels() {
+    return models;
   }
 
   public Collection<Coverage> getCoverages() {
