@@ -10,7 +10,6 @@ package io.camunda.tasklist.store.elasticsearch;
 import static io.camunda.tasklist.schema.indices.ProcessInstanceDependant.PROCESS_INSTANCE_ID;
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.ElasticsearchUtil.DEFAULT_MAX_TERMS_COUNT;
 import static io.camunda.tasklist.util.ElasticsearchUtil.QueryType.ALL;
 import static io.camunda.tasklist.util.ElasticsearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.ElasticsearchUtil.createSearchRequest;
@@ -292,7 +291,7 @@ public class TaskStoreElasticSearch implements TaskStore {
       // we need to chunk them
       return scrollInChunks(
           processInstanceIds,
-          DEFAULT_MAX_TERMS_COUNT,
+          tasklistProperties.getElasticsearch().getMaxTermsCount(),
           this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class,
           objectMapper,
