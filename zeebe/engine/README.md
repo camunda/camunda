@@ -54,6 +54,22 @@ There are three sources of commands.
 - Command processors can request next steps by appending commands, e.g. flow to the next element in the process after completing a task.
 - Scheduled tasks that run periodically inside the engine can append commands, e.g. to remove a message from the buffer after its TTL has expired.
 
+### Relation to other components
+
+The workflow engine is build on top of the `protocol` and `stream-platform` modules.
+
+The `procotol` module defines the available records.
+This includes their schema as well as the available value types which specify the data schema of records of that particular type.
+For example, records of the value type `JOB` contain data specific to jobs.
+
+The `stream-platform` module offers the replicated logstream.
+It instructs the engine to process commands and replay events.
+The stream platform can keep multiple engines, one for each partition (a shard of the data).
+The stream platform provides access to the state that the engine can modify.
+This access is split into two parts.
+- a processing state which is modifable, which is used during processing and replay.
+- a scheduled task state which is immutable, which is used by the scheduled tasks.
+
 ## Basic module structure
 
 At the root of the `zeebe/engine` module, you will find the `Engine` class where you can map the
