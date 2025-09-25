@@ -165,50 +165,59 @@ processed by the test engine until the failure. This is provided by the [`Compac
 and is very useful for debugging test failures. You can also get this output by adding an
 `assert false` statement at the end of your test.
 
-The `CompactRecordLogger` output always provides a detailed legend of the abbreviations used, as
-well as the deployed BPMN processes and decomposed keys for easier debugging. Here is an example of
-a failure output from a test that:
+Here is an example of a failure output from a test that:
 1. Deploys a simple process with a service task
 2. Creates a process instance of that process
 3. And updates a job that was created for the service task.
 
-```
-INFO  io.camunda.zeebe.test - Test failed, following records were exported:
-INFO  io.camunda.zeebe.test - Compact log representation:
---------
+The `CompactRecordLogger` output always provides a detailed legend of the abbreviations used:
+<details>
+
 	['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position] K[key] - [summary of value]
 	P9K999 - key; #999 - record position; "ID" element/process id; @"elementid"/[P9K999] - element with ID and key
 	Keys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
 	Long IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
 	Headers defined in 'Protocol' are abbreviated (e.g. 'io.camunda.zeebe:userTaskKey:2251799813685253' -> 'uTK:K005').
---------
-C USG_MTRC  EXPORT     #01-> -1  -1 NONE:ACTIVE start[-1] end[-1] reset[-1] (no metricValues)
-E USG_MTRC  EXPORTED   #02->#01 K01 NONE:ACTIVE start[-1] end[-1] reset[T08:33:10.737] (no metricValues)
-C DPLY      CREATE     #03-> -1  -1
-E PROC      CREATED    #04->#03 K03 process.bpmn -> "process" (version:1)
-E DPLY      CREATED    #05->#03 K02 process.bpmn
-C CREA      CREATE     #06-> -1  -1 new <process "process"> (default start)  (no vars)
-C PI        ACTIVATE   #07->#06 K04 PROCESS "process" in <process "process"[K04]>
-E CREA      CREATED    #08->#06 K05 new <process "process"> (default start)  (no vars)
-E PI        ACTIVATING #09->#06 K04 PROCESS "process" in <process "process"[K04]> EI:[K04] PD:[K03]
-E PI        ACTIVATED  #10->#06 K04 PROCESS "process" in <process "process"[K04]>
-C PI        ACTIVATE   #11->#06  -1 START_EVENT "start" in <process "process"[K04]>
-E PI        ACTIVATING #12->#06 K06 START_EVENT "start" in <process "process"[K04]> EI:[K04->K06] PD:[K03]
-E PI        ACTIVATED  #13->#06 K06 START_EVENT "start" in <process "process"[K04]>
-C PI        COMPLETE   #14->#06 K06 START_EVENT "start" in <process "process"[K04]>
-E PI        COMPLETING #15->#06 K06 START_EVENT "start" in <process "process"[K04]>
-E PI        COMPLETED  #16->#06 K06 START_EVENT "start" in <process "process"[K04]>
-E PI        SQ_FLW_TKN #17->#06 K07 SEQUENCE_FLOW "sequenc..e88de26" in <process "process"[K04]>
-C PI        ACTIVATE   #18->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
-E PI        ACTIVATING #19->#06 K08 SERVICE_TASK "task" in <process "process"[K04]> EI:[K04->K08] PD:[K03]
-E JOB       CREATED    #20->#06 K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
-E PI        ACTIVATED  #21->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
-C JOB_BATCH ACTIVATE   #22-> -1  -1 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" max: 10
-E JOB_BATCH ACTIVATED  #23->#22 K10 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" 1/10
-                K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
-C JOB       UPDATE     #24-> -1 K09  5 retries, (no vars)
-E JOB       UPDATED    #25->#24 K09 "id-7..d76e" @"task"[K08] 5 retries, (no vars)
+</details>
 
+It will provide an abbreviated log of all the records that were processed until the failure:
+<details>
+
+```
+  C USG_MTRC  EXPORT     #01-> -1  -1 NONE:ACTIVE start[-1] end[-1] reset[-1] (no metricValues)
+  E USG_MTRC  EXPORTED   #02->#01 K01 NONE:ACTIVE start[-1] end[-1] reset[T08:33:10.737] (no metricValues)
+  C DPLY      CREATE     #03-> -1  -1
+  E PROC      CREATED    #04->#03 K03 process.bpmn -> "process" (version:1)
+  E DPLY      CREATED    #05->#03 K02 process.bpmn
+  C CREA      CREATE     #06-> -1  -1 new <process "process"> (default start)  (no vars)
+  C PI        ACTIVATE   #07->#06 K04 PROCESS "process" in <process "process"[K04]>
+  E CREA      CREATED    #08->#06 K05 new <process "process"> (default start)  (no vars)
+  E PI        ACTIVATING #09->#06 K04 PROCESS "process" in <process "process"[K04]> EI:[K04] PD:[K03]
+  E PI        ACTIVATED  #10->#06 K04 PROCESS "process" in <process "process"[K04]>
+  C PI        ACTIVATE   #11->#06  -1 START_EVENT "start" in <process "process"[K04]>
+  E PI        ACTIVATING #12->#06 K06 START_EVENT "start" in <process "process"[K04]> EI:[K04->K06] PD:[K03]
+  E PI        ACTIVATED  #13->#06 K06 START_EVENT "start" in <process "process"[K04]>
+  C PI        COMPLETE   #14->#06 K06 START_EVENT "start" in <process "process"[K04]>
+  E PI        COMPLETING #15->#06 K06 START_EVENT "start" in <process "process"[K04]>
+  E PI        COMPLETED  #16->#06 K06 START_EVENT "start" in <process "process"[K04]>
+  E PI        SQ_FLW_TKN #17->#06 K07 SEQUENCE_FLOW "sequenc..e88de26" in <process "process"[K04]>
+  C PI        ACTIVATE   #18->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
+  E PI        ACTIVATING #19->#06 K08 SERVICE_TASK "task" in <process "process"[K04]> EI:[K04->K08] PD:[K03]
+  E JOB       CREATED    #20->#06 K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
+  E PI        ACTIVATED  #21->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
+  C JOB_BATCH ACTIVATE   #22-> -1  -1 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" max: 10
+  E JOB_BATCH ACTIVATED  #23->#22 K10 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" 1/10
+                  K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
+  C JOB       UPDATE     #24-> -1 K09  5 retries, (no vars)
+  E JOB       UPDATED    #25->#24 K09 "id-7..d76e" @"task"[K08] 5 retries, (no vars)
+```
+
+</details>
+
+And it will also provide the full XML of the deployed process for reference:
+<details>
+
+```
 -------------- Deployed Processes ----------------------
 process.bpmn -> "process" (version:1)[K03] ------
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
@@ -252,8 +261,14 @@ process.bpmn -> "process" (version:1)[K03] ------
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </definitions>
+```
 
+</details>
 
+And finally, it will provide a breakdown of the keys used in the test for easier debugging:
+<details>
+
+```
 --------------- Decomposed keys (for debugging) -----------------
  -1 <-> -1
 K01 <-> 2251799813685249
@@ -267,6 +282,8 @@ K08 <-> 2251799813685256
 K09 <-> 2251799813685257
 K10 <-> 2251799813685258
 ```
+
+</details>
 
 ### Follow-up tasks
 
