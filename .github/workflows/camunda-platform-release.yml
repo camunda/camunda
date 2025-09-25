@@ -256,7 +256,8 @@ jobs:
     needs: release
     name: Github Release
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # Minor releases take more time since a lot of issues are included in the changelog
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
