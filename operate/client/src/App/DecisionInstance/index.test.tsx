@@ -261,6 +261,7 @@ describe('<DecisionInstance />', () => {
     mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
+    mockFetchDecisionInstanceV2().withSuccess(invoiceClassificationV2);
 
     render(<DecisionInstance />, {wrapper: Wrapper});
 
