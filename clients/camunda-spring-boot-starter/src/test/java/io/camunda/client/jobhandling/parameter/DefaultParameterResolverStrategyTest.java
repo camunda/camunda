@@ -28,7 +28,6 @@ import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.jobhandling.DocumentContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy.ParameterResolverStrategyContext;
-import io.camunda.client.spring.bean.ParameterInfo;
 import io.camunda.zeebe.client.ZeebeClient;
 import java.util.List;
 import org.junit.jupiter.api.Test;
