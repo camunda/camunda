@@ -270,6 +270,11 @@
       <scope>provided</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.opentelemetry.instrumentation</groupId>
+      <artifactId>opentelemetry-zipkin-spring-boot-starter</artifactId>
+    </dependency>
+
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>

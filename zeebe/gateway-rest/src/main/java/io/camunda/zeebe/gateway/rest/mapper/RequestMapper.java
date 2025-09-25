@@ -600,12 +600,12 @@ public class RequestMapper {
   public static <BrokerResponseT> CompletableFuture<ResponseEntity<Object>> executeServiceMethod(
       final Supplier<CompletableFuture<BrokerResponseT>> method,
       final Function<BrokerResponseT, ResponseEntity<Object>> result) {
-    final var span = Span.current();
+//    final var span = Span.current();
     return method
         .get()
         .handleAsync(
             (response, error) -> {
-              span.addEvent("Service method completed").end();
+//              span.addEvent("Service method completed").end();
               return RestErrorMapper.getResponse(error).orElseGet(() -> result.apply(response));
             });
   }

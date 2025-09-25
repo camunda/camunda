@@ -308,6 +308,13 @@
         <version>2.20.1</version>
       </dependency>
 
+      <!-- https://mvnrepository.com/artifact/io.opentelemetry.instrumentation/opentelemetry-zipkin-spring-boot-starter -->
+      <dependency>
+        <groupId>io.opentelemetry.instrumentation</groupId>
+        <artifactId>opentelemetry-zipkin-spring-boot-starter</artifactId>
+        <version>2.20.1-alpha</version>
+      </dependency>
+
         <dependency>
           <groupId>io.opentelemetry.instrumentation</groupId>
           <artifactId>opentelemetry-instrumentation-bom</artifactId>
