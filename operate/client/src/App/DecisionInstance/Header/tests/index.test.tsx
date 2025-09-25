@@ -44,7 +44,10 @@ describe('<Header />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     render(
-      <Header decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID} />,
+      <Header
+        decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID}
+        onChangeDrdPanelState={() => void 0}
+      />,
       {wrapper: Wrapper},
     );
 
@@ -59,7 +62,10 @@ describe('<Header />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
 
     render(
-      <Header decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID} />,
+      <Header
+        decisionEvaluationInstanceKey={MOCK_DECISION_INSTANCE_ID}
+        onChangeDrdPanelState={() => void 0}
+      />,
       {wrapper: Wrapper},
     );
 
