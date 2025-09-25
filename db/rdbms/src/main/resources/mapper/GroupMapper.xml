@@ -12,7 +12,7 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.GroupDbQuery">
     SELECT COUNT(*)
-    FROM ${prefix}GROUPS_ g
+    FROM ${prefix}GROUP_ g
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
@@ -33,7 +33,7 @@ SELECT
     g.GROUP_ID,
     g.NAME,
     g.DESCRIPTION
-    FROM ${prefix}GROUPS_ g
+    FROM ${prefix}GROUP_ g
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -50,7 +50,7 @@ SELECT
   <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery">
     SELECT COUNT(*)
     FROM ${prefix}GROUP_MEMBER gm
-    JOIN ${prefix}GROUPS_ g ON g.GROUP_ID = gm.GROUP_ID
+    JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
   </select>
 
@@ -65,7 +65,7 @@ SELECT
     gm.ENTITY_ID,
     gm.ENTITY_TYPE
     FROM ${prefix}GROUP_MEMBER gm
-    JOIN ${prefix}GROUPS_ g ON g.GROUP_ID = gm.GROUP_ID
+    JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
@@ -160,12 +160,12 @@ SELECT
   </resultMap>
 
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    INSERT INTO ${prefix}GROUPS_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION)
+    INSERT INTO ${prefix}GROUP_ (GROUP_KEY, GROUP_ID, NAME, DESCRIPTION)
     VALUES (#{groupKey}, #{groupId}, #{name}, #{description})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GroupDbModel">
-    UPDATE ${prefix}GROUPS_ SET
+    UPDATE ${prefix}GROUP_ SET
                     NAME = #{name},
                     DESCRIPTION = #{description}
     WHERE GROUP_ID = #{groupId}
@@ -173,7 +173,7 @@ SELECT
 
   <delete id="delete" parameterType="java.lang.String">
     DELETE
-    FROM ${prefix}GROUPS_
+    FROM ${prefix}GROUP_
     WHERE GROUP_ID = #{groupId}
   </delete>
 
