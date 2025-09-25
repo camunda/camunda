@@ -9,8 +9,6 @@ package io.camunda.zeebe.engine.intent;
 
 import io.camunda.zeebe.engine.intent.management.CheckpointEngineIntent;
 import io.camunda.zeebe.engine.intent.scaling.ScaleEngineIntent;
-import io.camunda.zeebe.engine.state.appliers.EventAppliers;
-import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Arrays;
 import java.util.Collection;
@@ -77,8 +75,6 @@ public interface EngineIntent {
   String name();
 
   io.camunda.zeebe.protocol.record.intent.Intent protocolIntent();
-
-  void registerEventAppliers(EventAppliers eventAppliers, MutableProcessingState state);
 
   /**
    * @return true if this intent is used as an event, i.e. it's not a command or command rejection.

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
+import io.camunda.zeebe.engine.HandlesIntent;
 import io.camunda.zeebe.engine.intent.UserTaskEngineIntent;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
+@HandlesIntent(userTask = UserTaskIntent.COMPLETE)
 public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "complete";
