@@ -20,7 +20,6 @@ import io.camunda.zeebe.gateway.rest.mapper.RequestMapper;
 import io.camunda.zeebe.gateway.rest.mapper.ResponseMapper;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
-import io.opentelemetry.api.trace.Span;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.springframework.http.MediaType;

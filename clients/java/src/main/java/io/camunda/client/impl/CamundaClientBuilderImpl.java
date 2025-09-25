@@ -26,7 +26,6 @@ import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
 import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
-import static io.camunda.client.ClientProperties.OPENTELEMETRY_ENDPOINT;
 import static io.camunda.client.ClientProperties.OVERRIDE_AUTHORITY;
 import static io.camunda.client.ClientProperties.PREFER_REST_OVER_GRPC;
 import static io.camunda.client.ClientProperties.REST_ADDRESS;
@@ -414,9 +413,7 @@ public final class CamundaClientBuilderImpl
         LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY);
 
     BuilderUtils.applyPropertyValueIfNotNull(
-        properties,
-        this::openTelemetryEndpoint,
-        OPENTELEMETRY_EXPORTER);
+        properties, this::openTelemetryEndpoint, OPENTELEMETRY_EXPORTER);
 
     return this;
   }

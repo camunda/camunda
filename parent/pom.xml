@@ -296,7 +296,6 @@
         <version>1.49.0-alpha</version>
       </dependency>
 
-
       <dependency>
         <groupId>io.opentelemetry.instrumentation</groupId>
         <artifactId>opentelemetry-instrumentation-bom</artifactId>

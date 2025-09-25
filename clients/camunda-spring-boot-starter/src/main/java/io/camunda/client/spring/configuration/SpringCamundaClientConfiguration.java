@@ -185,6 +185,11 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
     return camundaClientProperties.getPreferRestOverGrpc();
   }
 
+  @Override
+  public String getOpenTelemetryEndpoint() {
+    return "";
+  }
+
   private String composeGatewayAddress() {
     final URI gatewayUrl = getGrpcAddress();
     final int port = gatewayUrl.getPort();
