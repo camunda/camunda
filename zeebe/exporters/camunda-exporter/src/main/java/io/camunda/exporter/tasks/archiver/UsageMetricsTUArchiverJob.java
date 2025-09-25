@@ -8,18 +8,18 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class BatchOperationArchiverJob extends ArchiverJob {
+public class UsageMetricsTUArchiverJob extends ArchiverJob {
 
-  private final BatchOperationTemplate batchOperationTemplate;
+  private final UsageMetricTUTemplate usageMetricTUTemplate;
 
-  public BatchOperationArchiverJob(
+  public UsageMetricsTUArchiverJob(
       final ArchiverRepository repository,
-      final BatchOperationTemplate batchOperationTemplate,
+      final UsageMetricTUTemplate usageMetricTUTemplate,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor) {
@@ -28,28 +28,28 @@ public class BatchOperationArchiverJob extends ArchiverJob {
         metrics,
         logger,
         executor,
-        metrics::recordBatchOperationsArchiving,
-        metrics::recordBatchOperationsArchived);
-    this.batchOperationTemplate = batchOperationTemplate;
+        metrics::recordUsageMetricsTUArchiving,
+        metrics::recordUsageMetricsTUArchived);
+    this.usageMetricTUTemplate = usageMetricTUTemplate;
   }
 
   @Override
   String getJobName() {
-    return BatchOperationTemplate.INDEX_NAME;
+    return UsageMetricTUTemplate.INDEX_NAME;
   }
 
   @Override
   CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
-    return repository.getBatchOperationsNextBatch();
+    return repository.getUsageMetricTUNextBatch();
   }
 
   @Override
   String getSourceIndexName() {
-    return batchOperationTemplate.getFullQualifiedName();
+    return usageMetricTUTemplate.getFullQualifiedName();
   }
 
   @Override
   String getIdFieldName() {
-    return BatchOperationTemplate.ID;
+    return UsageMetricTUTemplate.ID;
   }
 }

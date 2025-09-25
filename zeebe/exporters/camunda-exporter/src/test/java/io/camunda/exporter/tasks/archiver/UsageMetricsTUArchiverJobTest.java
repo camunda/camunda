@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
-import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.concurrent.Executor;
@@ -21,19 +21,18 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class UsageMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
-
-  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricsArchiverJobTest.class);
+final class UsageMetricsTUArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
+  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricsTUArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
 
   private final TestRepository repository = new TestRepository();
-  private final UsageMetricTemplate usageMetricTemplate = new UsageMetricTemplate("", true);
+  private final UsageMetricTUTemplate usageMetricTUTemplate = new UsageMetricTUTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
-  private final UsageMetricsArchiverJob job =
-      new UsageMetricsArchiverJob(repository, usageMetricTemplate, metrics, LOGGER, executor);
+  private final UsageMetricsTUArchiverJob job =
+      new UsageMetricsTUArchiverJob(repository, usageMetricTUTemplate, metrics, LOGGER, executor);
 
   @BeforeEach
   void setUp() {
@@ -58,11 +57,11 @@ final class UsageMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAbstr
 
   @Override
   String getJobMetricName() {
-    return "zeebe.camunda.exporter.archiver.usage.metrics";
+    return "zeebe.camunda.exporter.archiver.usage.metrics.tu";
   }
 
   @Test
-  void shouldMoveUsageMetric() {
+  void shouldMoveUsageMetricTaskUsers() {
     // when
     final int count = job.execute().toCompletableFuture().join();
 
@@ -75,9 +74,9 @@ final class UsageMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAbstr
     assertThat(repository.moves)
         .containsExactly(
             new DocumentMove(
-                usageMetricTemplate.getFullQualifiedName(),
-                usageMetricTemplate.getFullQualifiedName() + "2024-01-01",
-                UsageMetricTemplate.ID,
+                usageMetricTUTemplate.getFullQualifiedName(),
+                usageMetricTUTemplate.getFullQualifiedName() + "2024-01-01",
+                UsageMetricTUTemplate.ID,
                 List.of("1", "2", "3"),
                 executor));
   }

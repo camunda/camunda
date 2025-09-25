@@ -13,90 +13,72 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class BatchOperationArchiverJobTest {
+final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
   private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+
   private final TestRepository repository = new TestRepository();
   private final BatchOperationTemplate batchOperationTemplate =
       new BatchOperationTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
+
   private final BatchOperationArchiverJob job =
       new BatchOperationArchiverJob(repository, batchOperationTemplate, metrics, LOGGER, executor);
 
-  @Test
-  void shouldReturnZeroIfNoBatchGiven() {
-    // given - when
-    final var result = job.archiveNextBatch();
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
-    assertThat(repository.moves).isEmpty();
+  @BeforeEach
+  void setUp() {
+    // given
+    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
   }
 
-  @Test
-  void shouldReturnZeroIfNoBatchIdsGiven() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+  @AfterEach
+  void cleanUp() {
+    meterRegistry.clear();
+  }
 
-    // when
-    final var result = job.archiveNextBatch();
+  @Override
+  ArchiverJob getArchiverJob() {
+    return job;
+  }
 
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
-    assertThat(repository.moves).isEmpty();
+  @Override
+  SimpleMeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
+  @Override
+  String getJobMetricName() {
+    return "zeebe.camunda.exporter.archiver.batch.operations";
   }
 
   @Test
   void shouldMoveBatchOperations() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
     // when
-    final var result = job.archiveNextBatch();
+    final int count = job.execute().toCompletableFuture().join();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
+    assertThat(count).isEqualTo(3); // batch has 3 ids
+    assertArchivingCounts(count); // asserted as 3 above
+    assertArchiverTimer(1);
+
+    // then should move
     assertThat(repository.moves)
-        .contains(
+        .containsExactly(
             new DocumentMove(
                 batchOperationTemplate.getFullQualifiedName(),
                 batchOperationTemplate.getFullQualifiedName() + "2024-01-01",
                 BatchOperationTemplate.ID,
                 List.of("1", "2", "3"),
                 executor));
-  }
-
-  @Test
-  void shouldRecordBatchOperationsIncrease() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
-    // when
-    final var count =
-        job.archiveNextBatch().toCompletableFuture().join()
-            + job.archiveNextBatch().toCompletableFuture().join();
-
-    // then
-    assertThat(
-            meterRegistry
-                .counter("zeebe.camunda.exporter.archiver.batch.operations", "state", "archiving")
-                .count())
-        .isEqualTo(6)
-        .isEqualTo(count);
-    assertThat(
-            meterRegistry
-                .counter("zeebe.camunda.exporter.archiver.batch.operations", "state", "archived")
-                .count())
-        .isEqualTo(6)
-        .isEqualTo(count);
   }
 }
