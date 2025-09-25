@@ -12,46 +12,53 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
-  test('searchCorrelatedMessageSubscriptions - Additional prop __unexpectedField', async ({
+test.describe('Variables Validation API Tests', () => {
+  test('getVariable - Path param variableKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/variables/{variableKey}', {variableKey: 'a'}),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchVariables - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchCorrelatedMessageSubscriptions - Body wrong top-level type', async ({
-    request,
-  }) => {
+  test('searchVariables - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchCorrelatedMessageSubscriptions - Enum violation sort.0.field (#1)', async ({
+  test('searchVariables - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -59,25 +66,22 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'correlationKey_INVALID',
+            value: 'value_INVALID',
           },
         },
       },
     };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchCorrelatedMessageSubscriptions - Enum violation sort.0.field (#2)', async ({
+  test('searchVariables - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -85,51 +89,22 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'CORRELATIONKEY',
+            value: 'VALUE',
           },
         },
       },
     };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchCorrelatedMessageSubscriptions - Enum violation sort.0.field (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'correlationkey',
-          },
-        },
-      },
-    };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchCorrelatedMessageSubscriptions - Enum violation sort.0.order (#1)', async ({
+  test('searchVariables - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -142,20 +117,17 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         },
       },
     };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchCorrelatedMessageSubscriptions - Enum violation sort.0.order (#2)', async ({
+  test('searchVariables - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -168,13 +140,10 @@ test.describe('Correlatedmessagesubscriptions Validation API Tests', () => {
         },
       },
     };
-    const res = await request.post(
-      buildUrl('/correlated-message-subscriptions/search', undefined),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl('/variables/search', undefined), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}

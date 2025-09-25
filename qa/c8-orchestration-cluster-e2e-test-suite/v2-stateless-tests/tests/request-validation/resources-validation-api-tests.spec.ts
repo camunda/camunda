@@ -12,17 +12,18 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Batchoperationitems Validation API Tests', () => {
-  test('searchBatchOperationItems - Additional prop __unexpectedField', async ({
+test.describe('Resources Validation API Tests', () => {
+  test('deleteResource - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
+      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -34,12 +35,10 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Body wrong top-level type', async ({
-    request,
-  }) => {
+  test('deleteResource - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -51,21 +50,14 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Enum violation sort.0.field (#1)', async ({
+  test('deleteResource - Param operationReference wrong type (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'batchOperationKey_INVALID',
-          },
-        },
-      },
+      operationReference: 'not-a-number',
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -77,21 +69,14 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Enum violation sort.0.field (#2)', async ({
+  test('deleteResource - Param operationReference wrong type (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'BATCHOPERATIONKEY',
-          },
-        },
-      },
+      operationReference: true,
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -103,21 +88,14 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Enum violation sort.0.field (#3)', async ({
+  test('deleteResource - Constraint violation operationReference (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'batchoperationkey',
-          },
-        },
-      },
+      operationReference: 0.99999,
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -129,21 +107,14 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Enum violation sort.0.order (#1)', async ({
+  test('deleteResource - Constraint violation operationReference (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      sort: {
-        '0': {
-          order: {
-            __invalidEnum: true,
-            value: 'ASC_INVALID',
-          },
-        },
-      },
+      operationReference: 0,
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -155,21 +126,14 @@ test.describe('Batchoperationitems Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperationItems - Enum violation sort.0.order (#2)', async ({
+  test('deleteResource - Constraint violation operationReference (#3)', async ({
     request,
   }) => {
     const requestBody = {
-      sort: {
-        '0': {
-          order: {
-            __invalidEnum: true,
-            value: 'asc',
-          },
-        },
-      },
+      operationReference: -99,
     };
     const res = await request.post(
-      buildUrl('/batch-operation-items/search', undefined),
+      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
       {
         headers: jsonHeaders(),
         data: requestBody,

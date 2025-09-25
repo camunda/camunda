@@ -12,19 +12,21 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Signals Validation API Tests', () => {
-  test('broadcastSignal - Additional prop __unexpectedField', async ({
+test.describe('Deployments Validation API Tests', () => {
+  test('createDeployment - Additional prop __unexpectedField', async ({
     request,
   }) => {
-    const requestBody = {
-      signalName: 'x',
+    const formData = new FormData();
+    const multipartFields: Record<string, string> = {
+      resources: '["x"]',
       __unexpectedField: 'x',
     };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
+    for (const [k, v] of Object.entries(multipartFields)) formData.append(k, v);
+    const res = await request.post(buildUrl('/deployments', undefined), {
+      headers: {},
+      multipart: formData,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -32,11 +34,13 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Body wrong top-level type', async ({request}) => {
-    const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
+  test('createDeployment - Body wrong top-level type', async ({request}) => {
+    const formData = new FormData();
+    const multipartFields: Record<string, string> = {};
+    for (const [k, v] of Object.entries(multipartFields)) formData.append(k, v);
+    const res = await request.post(buildUrl('/deployments', undefined), {
+      headers: {},
+      multipart: formData,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -44,15 +48,15 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Param signalName wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      signalName: 123,
+  test('createDeployment - Param resources.0 wrong type', async ({request}) => {
+    const formData = new FormData();
+    const multipartFields: Record<string, string> = {
+      resources: '[123]',
     };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
+    for (const [k, v] of Object.entries(multipartFields)) formData.append(k, v);
+    const res = await request.post(buildUrl('/deployments', undefined), {
+      headers: {},
+      multipart: formData,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -60,15 +64,13 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Param signalName wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      signalName: true,
-    };
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
+  test('createDeployment - Missing body', async ({request}) => {
+    const formData = new FormData();
+    const multipartFields: Record<string, string> = {};
+    for (const [k, v] of Object.entries(multipartFields)) formData.append(k, v);
+    const res = await request.post(buildUrl('/deployments', undefined), {
+      headers: {},
+      multipart: formData,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
@@ -76,21 +78,13 @@ test.describe('Signals Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('broadcastSignal - Missing signalName', async ({request}) => {
-    const requestBody = {};
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('broadcastSignal - Missing body', async ({request}) => {
-    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
-      headers: jsonHeaders(),
+  test('createDeployment - Missing resources', async ({request}) => {
+    const formData = new FormData();
+    const multipartFields: Record<string, string> = {};
+    for (const [k, v] of Object.entries(multipartFields)) formData.append(k, v);
+    const res = await request.post(buildUrl('/deployments', undefined), {
+      headers: {},
+      multipart: formData,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {

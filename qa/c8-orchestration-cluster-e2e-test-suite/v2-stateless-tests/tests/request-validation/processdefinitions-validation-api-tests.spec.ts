@@ -12,14 +12,16 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Incidents Validation API Tests', () => {
-  test('getIncident - Path param incidentKey pattern violation', async ({
+test.describe('Processdefinitions Validation API Tests', () => {
+  test('getProcessDefinition - Path param processDefinitionKey pattern violation', async ({
     request,
   }) => {
     const res = await request.get(
-      buildUrl('/incidents/{incidentKey}', {incidentKey: 'a'}),
+      buildUrl('/process-definitions/{processDefinitionKey}', {
+        processDefinitionKey: 'a',
+      }),
       {
         headers: jsonHeaders(),
       },
@@ -30,264 +32,189 @@ test.describe('Incidents Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('resolveIncident - Additional prop __unexpectedField', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: 1,
-      __unexpectedField: 'x',
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Body wrong top-level type', async ({request}) => {
-    const requestBody: string[] = [];
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Param operationReference wrong type (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: 'not-a-number',
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Param operationReference wrong type (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: true,
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: 'x'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Constraint violation operationReference (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: 0.99999,
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: '1'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Constraint violation operationReference (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: 0,
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: '1'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Constraint violation operationReference (#3)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      operationReference: -99,
-    };
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: '1'}),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('resolveIncident - Path param incidentKey pattern violation', async ({
-    request,
-  }) => {
-    const res = await request.post(
-      buildUrl('/incidents/{incidentKey}/resolution', {incidentKey: 'a'}),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchIncidents - Additional prop __unexpectedField', async ({
+  test('getProcessDefinitionStatistics - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Body wrong top-level type', async ({request}) => {
+  test('getProcessDefinitionStatistics - Body wrong top-level type', async ({
+    request,
+  }) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation filter.errorType (#1)', async ({
+  test('getProcessDefinitionStatistics - Path param processDefinitionKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.post(
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'a'},
+      ),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getProcessDefinitionStatistics - uniqueItems violation filter.$or.0.tags', async ({
     request,
   }) => {
     const requestBody = {
       filter: {
-        errorType: {
-          __invalidEnum: true,
-          value: 'UNSPECIFIED_INVALID',
+        $or: {
+          '0': {
+            tags: [1, 1, 1],
+          },
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation filter.errorType (#2)', async ({
+  test('getProcessDefinitionStatistics - uniqueItems violation filter.tags', async ({
     request,
   }) => {
     const requestBody = {
       filter: {
-        errorType: {
-          __invalidEnum: true,
-          value: 'unspecified',
-        },
+        tags: [1, 1, 1],
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl(
+        '/process-definitions/{processDefinitionKey}/statistics/element-instances',
+        {processDefinitionKey: 'x'},
+      ),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation filter.state (#1)', async ({
+  test('getProcessDefinitionXML - Path param processDefinitionKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/xml', {
+        processDefinitionKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getStartProcessForm - Path param processDefinitionKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/process-definitions/{processDefinitionKey}/form', {
+        processDefinitionKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchProcessDefinitions - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
-      filter: {
-        state: {
-          __invalidEnum: true,
-          value: 'ACTIVE_INVALID',
-        },
-      },
+      __unexpectedField: 'x',
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation filter.state (#2)', async ({
+  test('searchProcessDefinitions - Body wrong top-level type', async ({
     request,
   }) => {
-    const requestBody = {
-      filter: {
-        state: {
-          __invalidEnum: true,
-          value: 'active',
-        },
+    const requestBody: string[] = [];
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
       },
-    };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation sort.0.field (#1)', async ({
+  test('searchProcessDefinitions - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -295,22 +222,25 @@ test.describe('Incidents Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'incidentKey_INVALID',
+            value: 'processDefinitionKey_INVALID',
           },
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation sort.0.field (#2)', async ({
+  test('searchProcessDefinitions - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -318,22 +248,25 @@ test.describe('Incidents Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'INCIDENTKEY',
+            value: 'PROCESSDEFINITIONKEY',
           },
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation sort.0.field (#3)', async ({
+  test('searchProcessDefinitions - Enum violation sort.0.field (#3)', async ({
     request,
   }) => {
     const requestBody = {
@@ -341,22 +274,25 @@ test.describe('Incidents Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'incidentkey',
+            value: 'processdefinitionkey',
           },
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation sort.0.order (#1)', async ({
+  test('searchProcessDefinitions - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -369,17 +305,20 @@ test.describe('Incidents Validation API Tests', () => {
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchIncidents - Enum violation sort.0.order (#2)', async ({
+  test('searchProcessDefinitions - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -392,10 +331,13 @@ test.describe('Incidents Validation API Tests', () => {
         },
       },
     };
-    const res = await request.post(buildUrl('/incidents/search', undefined), {
-      headers: jsonHeaders(),
-      data: requestBody,
-    });
+    const res = await request.post(
+      buildUrl('/process-definitions/search', undefined),
+      {
+        headers: jsonHeaders(),
+        data: requestBody,
+      },
+    );
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
     //     try { console.error(await res.text()); } catch {}

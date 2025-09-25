@@ -12,17 +12,51 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Batchoperations Validation API Tests', () => {
-  test('searchBatchOperations - Additional prop __unexpectedField', async ({
+test.describe('Decisionrequirements Validation API Tests', () => {
+  test('getDecisionRequirements - Path param decisionRequirementsKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/decision-requirements/{decisionRequirementsKey}', {
+        decisionRequirementsKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('getDecisionRequirementsXML - Path param decisionRequirementsKey pattern violation', async ({
+    request,
+  }) => {
+    const res = await request.get(
+      buildUrl('/decision-requirements/{decisionRequirementsKey}/xml', {
+        decisionRequirementsKey: 'a',
+      }),
+      {
+        headers: jsonHeaders(),
+      },
+    );
+    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
+    //   if (res.status() !== 400) {
+    //     try { console.error(await res.text()); } catch {}
+    //   }
+    expect(res.status()).toBe(400);
+  });
+  test('searchDecisionRequirements - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -34,12 +68,12 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Body wrong top-level type', async ({
+  test('searchDecisionRequirements - Body wrong top-level type', async ({
     request,
   }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -51,7 +85,7 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Enum violation sort.0.field (#1)', async ({
+  test('searchDecisionRequirements - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -59,13 +93,13 @@ test.describe('Batchoperations Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'batchOperationKey_INVALID',
+            value: 'decisionRequirementsKey_INVALID',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -77,7 +111,7 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Enum violation sort.0.field (#2)', async ({
+  test('searchDecisionRequirements - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -85,13 +119,13 @@ test.describe('Batchoperations Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'BATCHOPERATIONKEY',
+            value: 'DECISIONREQUIREMENTSKEY',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -103,7 +137,7 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Enum violation sort.0.field (#3)', async ({
+  test('searchDecisionRequirements - Enum violation sort.0.field (#3)', async ({
     request,
   }) => {
     const requestBody = {
@@ -111,13 +145,13 @@ test.describe('Batchoperations Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'batchoperationkey',
+            value: 'decisionrequirementskey',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -129,7 +163,7 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Enum violation sort.0.order (#1)', async ({
+  test('searchDecisionRequirements - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -143,7 +177,7 @@ test.describe('Batchoperations Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -155,7 +189,7 @@ test.describe('Batchoperations Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchBatchOperations - Enum violation sort.0.order (#2)', async ({
+  test('searchDecisionRequirements - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -169,7 +203,7 @@ test.describe('Batchoperations Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/batch-operations/search', undefined),
+      buildUrl('/decision-requirements/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,

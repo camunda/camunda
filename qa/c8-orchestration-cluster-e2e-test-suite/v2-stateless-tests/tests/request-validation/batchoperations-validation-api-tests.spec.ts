@@ -12,17 +12,17 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Messagesubscriptions Validation API Tests', () => {
-  test('searchMessageSubscriptions - Additional prop __unexpectedField', async ({
+test.describe('Batchoperations Validation API Tests', () => {
+  test('searchBatchOperations - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -34,12 +34,12 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Body wrong top-level type', async ({
+  test('searchBatchOperations - Body wrong top-level type', async ({
     request,
   }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -51,7 +51,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Enum violation sort.0.field (#1)', async ({
+  test('searchBatchOperations - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -59,13 +59,13 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'messageSubscriptionKey_INVALID',
+            value: 'batchOperationKey_INVALID',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -77,7 +77,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Enum violation sort.0.field (#2)', async ({
+  test('searchBatchOperations - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -85,13 +85,13 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'MESSAGESUBSCRIPTIONKEY',
+            value: 'BATCHOPERATIONKEY',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -103,7 +103,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Enum violation sort.0.field (#3)', async ({
+  test('searchBatchOperations - Enum violation sort.0.field (#3)', async ({
     request,
   }) => {
     const requestBody = {
@@ -111,13 +111,13 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
         '0': {
           field: {
             __invalidEnum: true,
-            value: 'messagesubscriptionkey',
+            value: 'batchoperationkey',
           },
         },
       },
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -129,7 +129,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Enum violation sort.0.order (#1)', async ({
+  test('searchBatchOperations - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
@@ -143,7 +143,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -155,7 +155,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchMessageSubscriptions - Enum violation sort.0.order (#2)', async ({
+  test('searchBatchOperations - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
@@ -169,7 +169,7 @@ test.describe('Messagesubscriptions Validation API Tests', () => {
       },
     };
     const res = await request.post(
-      buildUrl('/message-subscriptions/search', undefined),
+      buildUrl('/batch-operations/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,

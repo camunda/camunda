@@ -12,7 +12,7 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
 test.describe('Setup Validation API Tests', () => {
   test('createAdminUser - Additional prop __unexpectedField', async ({
