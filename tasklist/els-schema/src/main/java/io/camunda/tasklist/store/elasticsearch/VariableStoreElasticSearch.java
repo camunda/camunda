@@ -146,7 +146,7 @@ public class VariableStoreElasticSearch implements VariableStore {
           applyFetchSourceForVariableIndex(searchSourceBuilder, fieldNames);
 
           final SearchRequest searchRequest =
-              new SearchRequest(variableIndex.getAlias()).source(searchSourceBuilder);
+              new SearchRequest(variableIndex.getFullQualifiedName()).source(searchSourceBuilder);
           try {
             variableEntities.addAll(
                 scroll(searchRequest, VariableEntity.class, objectMapper, esClient));
