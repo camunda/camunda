@@ -46,8 +46,10 @@ jobs:
             if [[ "$PR_BASE_REF" =~ $RELEASE_REGEX ]]; then
               if [[ "$GITHUB_EVENT_ACTION" == "closed" && "$PR_MERGED" == "true" ]]; then
                 VALID="true"
-              elif [[ "$GITHUB_EVENT_ACTION" == "labeled" && "$PR_LABEL" == "backport/release" ]]; then
-                VALID="true"
+              fi
+            elif [[ "$PR_BASE_REF" == "main" ]]; then
+              if [[ "$GITHUB_EVENT_ACTION" == "labeled" && ("$PR_LABEL" =~ ^backport\ release-[0-9]+\.[0-9]+\.[0-9]+) ]]; then
+              VALID="true"
               fi
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
@@ -182,7 +184,7 @@ jobs:
       - name: Send Slack notification
         id: slack-notification
         uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
-        continue-on-error: true  # Don't fail the workflow if Slack is down
+        continue-on-error: true # Don't fail the workflow if Slack is down
         with:
           webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
           webhook-type: incoming-webhook
