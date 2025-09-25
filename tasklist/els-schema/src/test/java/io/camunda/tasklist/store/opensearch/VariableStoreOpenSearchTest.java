@@ -101,6 +101,7 @@ class VariableStoreOpenSearchTest {
     assertThat(filters.getLast().terms().field()).isEqualTo(VariableTemplate.NAME);
     assertThat(filters.getLast().terms().terms().value().stream().map(FieldValue::_get))
         .isEqualTo(varNames);
+    assertThat(capturedSearchRequest.size()).isEqualTo(200);
     assertThat(result).isEmpty();
   }
 }

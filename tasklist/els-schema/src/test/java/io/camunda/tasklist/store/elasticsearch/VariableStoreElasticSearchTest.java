@@ -141,6 +141,6 @@ class VariableStoreElasticSearchTest {
     assertThat(queryAsString)
         .isEqualTo(
             """
-           {"query":{"constant_score":{"filter":{"bool":{"must":[{"terms":{"scopeKey":["flowNodeId1"],"boost":1.0}},{"terms":{"name":["varName1","varName2"],"boost":1.0}}],"adjust_pure_negative":true,"boost":1.0}},"boost":1.0}}}""");
+           {"size":200,"query":{"constant_score":{"filter":{"bool":{"must":[{"terms":{"scopeKey":["flowNodeId1"],"boost":1.0}},{"terms":{"name":["varName1","varName2"],"boost":1.0}}],"adjust_pure_negative":true,"boost":1.0}},"boost":1.0}}}""");
   }
 }
