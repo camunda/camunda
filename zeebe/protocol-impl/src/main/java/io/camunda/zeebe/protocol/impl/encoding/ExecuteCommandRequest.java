@@ -142,7 +142,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     key = bodyDecoder.key();
     operationReference = bodyDecoder.operationReference();
     valueType = bodyDecoder.valueType();
-    intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
+    intent = Intent.fromProtocolValue(valueType, bodyDecoder.engineIntent());
 
     offset += bodyDecoder.sbeBlockLength();
 
@@ -195,7 +195,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .key(key)
         .operationReference(operationReference)
         .valueType(valueType)
-        .intent(intent.value())
+        .engineIntent(intent.value())
         .putValue(value, 0, value.capacity())
         .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
   }
