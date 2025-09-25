@@ -12,15 +12,17 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Clock Validation API Tests', () => {
-  test('pinClock - Additional prop __unexpectedField', async ({request}) => {
+test.describe('Signals Validation API Tests', () => {
+  test('broadcastSignal - Additional prop __unexpectedField', async ({
+    request,
+  }) => {
     const requestBody = {
-      timestamp: 1,
+      signalName: 'x',
       __unexpectedField: 'x',
     };
-    const res = await request.put(buildUrl('/clock', undefined), {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -30,9 +32,9 @@ test.describe('Clock Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('pinClock - Body wrong top-level type', async ({request}) => {
+  test('broadcastSignal - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.put(buildUrl('/clock', undefined), {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -42,11 +44,13 @@ test.describe('Clock Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('pinClock - Param timestamp wrong type (#1)', async ({request}) => {
+  test('broadcastSignal - Param signalName wrong type (#1)', async ({
+    request,
+  }) => {
     const requestBody = {
-      timestamp: 'not-a-number',
+      signalName: 123,
     };
-    const res = await request.put(buildUrl('/clock', undefined), {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -56,11 +60,13 @@ test.describe('Clock Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('pinClock - Param timestamp wrong type (#2)', async ({request}) => {
+  test('broadcastSignal - Param signalName wrong type (#2)', async ({
+    request,
+  }) => {
     const requestBody = {
-      timestamp: true,
+      signalName: true,
     };
-    const res = await request.put(buildUrl('/clock', undefined), {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -70,9 +76,9 @@ test.describe('Clock Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('pinClock - Missing timestamp', async ({request}) => {
+  test('broadcastSignal - Missing signalName', async ({request}) => {
     const requestBody = {};
-    const res = await request.put(buildUrl('/clock', undefined), {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -82,8 +88,8 @@ test.describe('Clock Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('pinClock - Missing body', async ({request}) => {
-    const res = await request.put(buildUrl('/clock', undefined), {
+  test('broadcastSignal - Missing body', async ({request}) => {
+    const res = await request.post(buildUrl('/signals/broadcast', undefined), {
       headers: jsonHeaders(),
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
