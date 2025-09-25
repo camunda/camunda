@@ -34,6 +34,7 @@ class ExporterConfigurationTest {
     historyConfiguration.setDefaultBatchOperationHistoryTTL(Duration.ofMillis(-1000));
     historyConfiguration.setMinHistoryCleanupInterval(Duration.ofMillis(-1000));
     historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofMillis(-2000));
+    historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-2000));
     historyConfiguration.setUsageMetricsTTL(Duration.ofMillis(-2000));
     historyConfiguration.setHistoryCleanupBatchSize(-1000);
     historyConfiguration.setBatchOperationCancelProcessInstanceHistoryTTL(Duration.ofMillis(-1000));
@@ -62,6 +63,7 @@ class ExporterConfigurationTest {
         .hasMessageContaining("batchOperationResolveIncidentHistoryTTL must be")
         .hasMessageContaining("minHistoryCleanupInterval must be")
         .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration")
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration")
         .hasMessageContaining("usageMetricsTTL must be a positive duration")
         .hasMessageContaining(
             "maxHistoryCleanupInterval must be greater than minHistoryCleanupInterval")
@@ -204,7 +206,20 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  public void shouldFailWithNegativeUsageMetricsMinimumAge() {
+  public void shouldFailWithNegativeUsageMetricsCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeUsageMetricsTTL() {
     final ExporterConfiguration.HistoryConfiguration historyConfiguration =
         new ExporterConfiguration.HistoryConfiguration();
     final ExporterConfiguration configuration = new ExporterConfiguration();
@@ -230,7 +245,20 @@ class ExporterConfigurationTest {
   }
 
   @Test
-  public void shouldFailWithZeroUsageMetricsMinimumAge() {
+  public void shouldFailWithZeroUsageMetricsCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setUsageMetricsCleanup(Duration.ZERO);
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("usageMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithZeroUsageMetricsTTL() {
     final ExporterConfiguration.HistoryConfiguration historyConfiguration =
         new ExporterConfiguration.HistoryConfiguration();
     final ExporterConfiguration configuration = new ExporterConfiguration();
