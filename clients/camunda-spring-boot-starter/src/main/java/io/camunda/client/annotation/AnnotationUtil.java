@@ -27,27 +27,10 @@ import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
-import io.camunda.spring.client.annotation.value.DeploymentValue;
-import io.camunda.spring.client.annotation.value.DocumentValue;
-import io.camunda.spring.client.annotation.value.DocumentValue.ParameterType;
-import io.camunda.spring.client.annotation.value.JobWorkerValue;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.spring.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.spring.client.annotation.value.VariableValue;
-import io.camunda.spring.client.bean.BeanInfo;
-import io.camunda.spring.client.bean.ClassInfo;
-import io.camunda.spring.client.bean.MethodInfo;
-import io.camunda.spring.client.bean.ParameterInfo;
-import io.camunda.spring.client.jobhandling.DocumentContext;
-import java.lang.reflect.Field;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.bean.ParameterInfo;
 import io.camunda.client.jobhandling.DocumentContext;
-import io.camunda.client.spring.bean.BeanInfo;
-import io.camunda.client.spring.bean.ClassInfo;
-import io.camunda.client.spring.bean.MethodInfo;
-import io.camunda.client.spring.bean.ParameterInfo;
 import java.lang.reflect.Field;
 import io.camunda.client.jobhandling.parameter.KeyTargetType;
 import java.lang.annotation.Annotation;
@@ -170,7 +153,7 @@ public class AnnotationUtil {
       final JobWorkerValue.Name name =
           "".equals(annotation.name())
               ? new JobWorkerValue.Name(
-                  methodInfo.getBeanName() + "#" + methodInfo.getMethodName(),
+                  methodInfo.getBeanInfo().getBeanName() + "#" + methodInfo.getMethodName(),
                   FieldSource.GENERATED_FROM_METHOD_INFO)
               : new JobWorkerValue.Name(annotation.name(), FieldSource.FROM_ANNOTATION);
       final JobWorkerValue.Type type =
@@ -219,8 +202,8 @@ public class AnnotationUtil {
     return methodInfo.getParameters().stream()
         .anyMatch(
             p ->
-                p.getParameterInfo().getType().isAssignableFrom(ActivatedJob.class)
-                    || p.getParameterInfo()
+                p.getParameter().getType().isAssignableFrom(ActivatedJob.class)
+                    || p.getParameter()
                         .getType()
                         .isAssignableFrom(io.camunda.zeebe.client.api.response.ActivatedJob.class));
   }
@@ -231,7 +214,7 @@ public class AnnotationUtil {
     parameters.forEach(
         pi ->
             ReflectionUtils.doWithFields(
-                pi.getParameterInfo().getType(), f -> result.add(extractFieldName(f))));
+                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
     result.addAll(
         getVariableParameters(methodInfo).stream()
             .map(AnnotationUtil::getVariableValue)
@@ -261,7 +244,7 @@ public class AnnotationUtil {
       final JobWorkerValue.Name name =
           "".equals(annotation.name())
               ? new JobWorkerValue.Name(
-                  methodInfo.getBeanName() + "#" + methodInfo.getMethodName(),
+                  methodInfo.getBeanInfo().getBeanName() + "#" + methodInfo.getMethodName(),
                   FieldSource.GENERATED_FROM_METHOD_INFO)
               : new JobWorkerValue.Name(annotation.name(), FieldSource.FROM_ANNOTATION);
       final JobWorkerValue.Type type =
