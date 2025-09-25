@@ -30,7 +30,6 @@ import org.opensearch.client.opensearch.core.bulk.UpdateOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -55,9 +54,7 @@ public class ProcessInstanceZeebeRecordProcessorOpenSearch {
     FLOW_NODE_STATES.add(ELEMENT_ACTIVATING.name());
   }
 
-  @Autowired
-  @Qualifier("tasklistFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   public void processProcessInstanceRecord(
       final Record record, final List<BulkOperation> operations) throws PersistenceException {

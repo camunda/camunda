@@ -50,9 +50,7 @@ public class UserTaskZeebeRecordProcessorElasticSearch {
 
   @Autowired private UserTaskRecordToVariableEntityMapper userTaskRecordToVariableEntityMapper;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate variableIndex;
+  @Autowired private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 

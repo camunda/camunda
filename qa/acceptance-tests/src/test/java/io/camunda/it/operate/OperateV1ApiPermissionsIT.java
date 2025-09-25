@@ -28,7 +28,6 @@ import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.application.Profile;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Decision;
 import io.camunda.qa.util.auth.GroupDefinition;
@@ -64,7 +63,6 @@ public class OperateV1ApiPermissionsIT {
       new TestCamundaApplication()
           .withAuthorizationsEnabled()
           .withBasicAuth()
-          .withAdditionalProfile(Profile.OPERATE)
           .withProperty("camunda.tasklist.webappEnabled", "false");
 
   // endpoint urls
@@ -539,11 +537,9 @@ public class OperateV1ApiPermissionsIT {
 
   private static Stream<Arguments> deleteRequestParameters() {
     return Stream.of(
-        /* depends on fix for https://github.com/camunda/camunda/issues/36067
         Arguments.of(AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(ROLE_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
         Arguments.of(GROUP_AUTHORIZED_USERNAME, HttpStatus.OK.value()),
-        */
         Arguments.of(UNAUTHORIZED_USERNAME, HttpStatus.FORBIDDEN.value()));
   }
 }

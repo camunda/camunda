@@ -24,7 +24,6 @@ import java.util.Optional;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +38,7 @@ public class OpensearchUserTaskReader extends OpensearchAbstractReader implement
 
   public OpensearchUserTaskReader(
       final TaskTemplate taskTemplate,
-      @Qualifier("operateSnapshotTaskVariableTemplate")
-          final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
+      final SnapshotTaskVariableTemplate snapshotTaskVariableTemplate) {
     this.taskTemplate = taskTemplate;
     this.snapshotTaskVariableTemplate = snapshotTaskVariableTemplate;
   }

@@ -102,9 +102,7 @@ public class TaskStoreElasticSearch implements TaskStore {
 
   @Autowired private VariableStore variableStoreElasticSearch;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired
   @Qualifier("tasklistObjectMapper")

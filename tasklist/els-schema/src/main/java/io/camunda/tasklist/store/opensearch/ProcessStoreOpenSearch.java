@@ -64,9 +64,7 @@ public class ProcessStoreOpenSearch implements ProcessStore {
   private static final String MAX_VERSION_DOCUMENTS_AGG_NAME = "max_version_docs";
   private static final String STARTED_BY_FORM_FILTERED_DOCS = "started_by_form_docs";
 
-  @Autowired
-  @Qualifier("tasklistProcessIndex")
-  private ProcessIndex processIndex;
+  @Autowired private ProcessIndex processIndex;
 
   @Autowired private TenantAwareOpenSearchClient tenantAwareClient;
 

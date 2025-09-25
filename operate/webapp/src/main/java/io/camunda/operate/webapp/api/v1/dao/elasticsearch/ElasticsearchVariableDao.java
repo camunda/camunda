@@ -30,7 +30,6 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -38,9 +37,7 @@ import org.springframework.stereotype.Component;
 @Component("ElasticsearchVariableDaoV1")
 public class ElasticsearchVariableDao extends ElasticsearchDao<Variable> implements VariableDao {
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
   @Override
   protected void buildFiltering(

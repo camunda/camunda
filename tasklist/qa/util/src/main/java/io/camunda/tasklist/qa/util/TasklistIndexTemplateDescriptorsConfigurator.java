@@ -79,7 +79,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistSnapshotTaskVariableTemplate")
+  @Bean
   public SnapshotTaskVariableTemplate snapshotTaskVariableTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
@@ -105,8 +105,8 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistVariableTemplate")
-  public VariableTemplate tasklistVariableTemplate(
+  @Bean
+  public VariableTemplate variableTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
     return new VariableTemplate(
@@ -118,7 +118,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistFlowNodeInstanceTemplate")
+  @Bean
   public FlowNodeInstanceTemplate flowNodeInstanceTemplate(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
@@ -144,7 +144,7 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
     };
   }
 
-  @Bean("tasklistProcessIndex")
+  @Bean
   public ProcessIndex processIndex(
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {

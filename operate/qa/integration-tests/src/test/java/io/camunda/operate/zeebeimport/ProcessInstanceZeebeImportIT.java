@@ -46,7 +46,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MvcResult;
 
 public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
@@ -61,9 +60,7 @@ public class ProcessInstanceZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private TestSearchRepository testSearchRepository;
 
-  @Autowired
-  @Qualifier("operateVariableTemplate")
-  private VariableTemplate variableTemplate;
+  @Autowired private VariableTemplate variableTemplate;
 
   @Test
   public void testProcessInstanceCreated() {

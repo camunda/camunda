@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(properties = DatabaseCondition.DATABASE_PROPERTY + "=opensearch")
@@ -40,9 +39,7 @@ public class OpensearchBatchRequestIT extends OpensearchOperateAbstractIT {
   private static SchemaWithExporter schemaExporterHelper;
   @Autowired RichOpenSearchClient richOpenSearchClient;
 
-  @Autowired
-  @Qualifier("operateProcessIndex")
-  ProcessIndex processIndex;
+  @Autowired ProcessIndex processIndex;
 
   @BeforeClass
   public static void beforeClass() {

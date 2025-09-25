@@ -47,9 +47,7 @@ public class UserTaskZeebeRecordProcessorOpenSearch {
 
   @Autowired private TaskTemplate taskTemplate;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate variableIndex;
+  @Autowired private SnapshotTaskVariableTemplate variableIndex;
 
   @Autowired private UserTaskRecordToTaskEntityMapper userTaskRecordToTaskEntityMapper;
 

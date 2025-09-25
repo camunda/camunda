@@ -20,7 +20,6 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 
 public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
 
@@ -28,9 +27,7 @@ public class FlowNodeStatisticsDaoIT extends OperateSearchAbstractIT {
   private static final Long PROCESS_DEFINITION_KEY = 2251799813685249L;
   @Autowired private FlowNodeStatisticsDao dao;
 
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
   @Override
   public void runAdditionalBeforeAllSetup() throws Exception {

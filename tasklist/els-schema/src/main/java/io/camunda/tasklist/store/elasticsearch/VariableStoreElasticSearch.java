@@ -98,17 +98,11 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Autowired private TenantAwareElasticsearchClient tenantAwareClient;
 
-  @Autowired
-  @Qualifier("tasklistVariableTemplate")
-  private VariableTemplate variableIndex;
+  @Autowired private VariableTemplate variableIndex;
 
-  @Autowired
-  @Qualifier("tasklistFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceIndex;
+  @Autowired private FlowNodeInstanceTemplate flowNodeInstanceIndex;
 
-  @Autowired
-  @Qualifier("tasklistSnapshotTaskVariableTemplate")
-  private SnapshotTaskVariableTemplate taskVariableTemplate;
+  @Autowired private SnapshotTaskVariableTemplate taskVariableTemplate;
 
   @Autowired private TasklistProperties tasklistProperties;
   private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;

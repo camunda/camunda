@@ -44,7 +44,6 @@ import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.zeebeimport.ZeebeImporter;
-import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.entities.event.EventType;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -204,10 +203,6 @@ public class OperateTester {
   @Autowired
   @Qualifier("userTasksAreCreated")
   private Predicate<Object[]> userTasksAreCreated;
-
-  @Autowired
-  @Qualifier("operateFlowNodeInstanceTemplate")
-  private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
   @Autowired private OperationReader operationReader;
 
