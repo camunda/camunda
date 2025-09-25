@@ -24,67 +24,67 @@ import {
   useIsRootNodeSelected,
 } from 'modules/hooks/flowNodeSelection';
 
-const VariablesForm: React.FC<
-  FormRenderProps<VariableFormValues, Partial<VariableFormValues>>
-> = observer(({handleSubmit, form, values}) => {
-  const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
-  const hasPendingCancelOrMoveModification =
-    useHasPendingCancelOrMoveModification();
-  const isPlaceholderSelected = useIsPlaceholderSelected();
-  const isRootNodeSelected = useIsRootNodeSelected();
-  const hasEmptyNewVariable = (values: VariableFormValues) =>
-    values.newVariables?.some(
-      (variable) =>
-        variable === undefined ||
-        variable.name === undefined ||
-        variable.value === undefined,
-    );
+const VariablesForm: React.FC<FormRenderProps<VariableFormValues>> = observer(
+  ({handleSubmit, form, values}) => {
+    const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
+    const hasPendingCancelOrMoveModification =
+      useHasPendingCancelOrMoveModification();
+    const isPlaceholderSelected = useIsPlaceholderSelected();
+    const isRootNodeSelected = useIsRootNodeSelected();
+    const hasEmptyNewVariable = (values?: VariableFormValues) =>
+      values?.newVariables?.some(
+        (variable) =>
+          variable === undefined ||
+          variable.name === undefined ||
+          variable.value === undefined,
+      );
 
-  const {isModificationModeEnabled} = modificationsStore;
+    const {isModificationModeEnabled} = modificationsStore;
 
-  const isVariableModificationAllowed = computed(() => {
-    if (
-      !isModificationModeEnabled ||
-      flowNodeSelectionStore.state.selection === null
-    ) {
-      return false;
-    }
+    const isVariableModificationAllowed = computed(() => {
+      if (
+        !isModificationModeEnabled ||
+        flowNodeSelectionStore.state.selection === null
+      ) {
+        return false;
+      }
 
-    if (isRootNodeSelected) {
-      return !willAllFlowNodesBeCanceled;
-    }
+      if (isRootNodeSelected) {
+        return !willAllFlowNodesBeCanceled;
+      }
+
+      return (
+        isPlaceholderSelected ||
+        (flowNodeMetaDataStore.isSelectedInstanceRunning &&
+          !hasPendingCancelOrMoveModification)
+      );
+    });
 
     return (
-      isPlaceholderSelected ||
-      (flowNodeMetaDataStore.isSelectedInstanceRunning &&
-        !hasPendingCancelOrMoveModification)
+      <Form onSubmit={handleSubmit}>
+        {isVariableModificationAllowed.get() && (
+          <AddVariableButton
+            onClick={() => {
+              form.mutators.push?.('newVariables', {
+                id: generateUniqueID(),
+              });
+            }}
+            disabled={
+              form.getState().submitting ||
+              form.getState().hasValidationErrors ||
+              form.getState().validating ||
+              hasEmptyNewVariable(values)
+            }
+          />
+        )}
+        <VariablesContainer>
+          <Variables
+            isVariableModificationAllowed={isVariableModificationAllowed.get()}
+          />
+        </VariablesContainer>
+      </Form>
     );
-  });
-
-  return (
-    <Form onSubmit={handleSubmit}>
-      {isVariableModificationAllowed.get() && (
-        <AddVariableButton
-          onClick={() => {
-            form.mutators.push?.('newVariables', {
-              id: generateUniqueID(),
-            });
-          }}
-          disabled={
-            form.getState().submitting ||
-            form.getState().hasValidationErrors ||
-            form.getState().validating ||
-            hasEmptyNewVariable(values)
-          }
-        />
-      )}
-      <VariablesContainer>
-        <Variables
-          isVariableModificationAllowed={isVariableModificationAllowed.get()}
-        />
-      </VariablesContainer>
-    </Form>
-  );
-});
+  },
+);
 
 export {VariablesForm};
