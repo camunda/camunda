@@ -45,15 +45,27 @@ export function assertRequiredFields(obj: unknown, required: string[]): void {
   }
 }
 
+export async function assertStatusCode(
+  response: APIResponse,
+  expectedStatusCode: number,
+  logMessage: string = 'Unexpected status code:',
+) {
+  if (response.status() !== expectedStatusCode) {
+    const body = await response.text().catch(() => '<no-body>');
+    console.error(logMessage, response.status(), body);
+  }
+  expect(response.status()).toBe(expectedStatusCode);
+}
+
 export async function assertUnauthorizedRequest(response: APIResponse) {
-  expect(response.status()).toBe(401);
+  await assertStatusCode(response, 401);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('Unauthorized');
 }
 
 export async function assertUnsupportedMediaTypeRequest(response: APIResponse) {
-  expect(response.status()).toBe(415);
+  await assertStatusCode(response, 415);
   const json = await response.json();
   assertRequiredFields(json, ['error']);
   expect(json.error).toContain('Unsupported Media Type');
@@ -64,7 +76,7 @@ export async function assertBadRequest(
   detail: string | RegExp,
   title = 'Bad Request',
 ) {
-  expect(response.status()).toBe(400);
+  await assertStatusCode(response, 400);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe(title);
@@ -80,7 +92,7 @@ export async function assertPaginatedRequest(
     itemsLengthEqualTo?: number;
   },
 ) {
-  expect(response.status()).toBe(200);
+  await assertStatusCode(response, 200);
   const json = await response.json();
   assertRequiredFields(json, paginatedResponseFields);
   if (options.totalItemGreaterThan !== undefined) {
@@ -105,7 +117,7 @@ export async function assertForbiddenRequest(
   response: APIResponse,
   detail: string,
 ) {
-  expect(response.status()).toBe(403);
+  await assertStatusCode(response, 403);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('FORBIDDEN');
@@ -113,7 +125,7 @@ export async function assertForbiddenRequest(
 }
 
 export async function assertConflictRequest(response: APIResponse) {
-  expect(response.status()).toBe(409);
+  await assertStatusCode(response, 409);
   const json = await response.json();
   assertRequiredFields(json, ['title']);
   expect(json['title']).toContain('ALREADY_EXISTS');
@@ -123,7 +135,7 @@ export async function assertNotFoundRequest(
   response: APIResponse,
   detail: string,
 ) {
-  expect(response.status()).toBe(404);
+  await assertStatusCode(response, 404);
   const json = await response.json();
   assertRequiredFields(json, ['detail', 'title']);
   expect(json.title).toBe('NOT_FOUND');
