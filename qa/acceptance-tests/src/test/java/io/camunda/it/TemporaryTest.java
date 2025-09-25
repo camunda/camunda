@@ -24,12 +24,17 @@ public class TemporaryTest {
             .preferRestOverGrpc(true)
             .build();
 
-    client
-        .newDeployResourceCommand()
-        .addProcessModel(
-            Bpmn.createExecutableProcess("process").startEvent().endEvent().done(), "process.bpmn")
-        .send()
-        .join();
+    for (int i = 0; i < 1; i++) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(
+              Bpmn.createExecutableProcess("process").startEvent().endEvent().done(),
+              "process.bpmn")
+          .send()
+          .join();
+    }
+
+    client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
     Thread.sleep(5000);
   }
 }

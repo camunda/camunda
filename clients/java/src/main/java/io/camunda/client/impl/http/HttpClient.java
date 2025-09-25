@@ -416,16 +416,31 @@ public final class HttpClient implements AutoCloseable {
               apiCallback.get());
         };
 
+    final Span buildRequestSpan =
+        tracer.spanBuilder("buildRequest").setParent(Context.current().with(span)).startSpan();
     final SimpleHttpRequest request =
         buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
     if (request == null) {
       return;
     }
+    buildRequestSpan.end();
+    final Span setConfigSpan =
+        tracer.spanBuilder("setConfigSpan").setParent(Context.current().with(span)).startSpan();
     request.setConfig(requestConfig);
+    setConfigSpan.end();
 
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer = createEntityConsumer(responseType);
+    final Span createEntityConsumerSpan =
+        tracer
+            .spanBuilder("createEntityConsumerSpan")
+            .setParent(Context.current().with(span))
+            .startSpan();
+    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+        createEntityConsumer(responseType, tracer, span);
+    createEntityConsumerSpan.end();
 
     if (apiCallback.get() == null) {
+      final Span setCallbackSpan =
+          tracer.spanBuilder("setCallbackSpan").setParent(Context.current().with(span)).startSpan();
       apiCallback.set(
           new ApiCallback<>(
               result,
@@ -433,23 +448,31 @@ public final class HttpClient implements AutoCloseable {
               successPredicate,
               credentialsProvider::shouldRetryRequest,
               retryAction,
-              maxRetries));
+              maxRetries,
+              tracer,
+              span));
+      setCallbackSpan.end();
     }
 
+    final Span transportFutureSpan =
+        tracer
+            .spanBuilder("transportFutureSpan")
+            .setParent(Context.current().with(span))
+            .startSpan();
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(entityConsumer),
+            new ApiResponseConsumer<>(entityConsumer, tracer, span),
             apiCallback.get()));
-    result.whenComplete((r, t) -> span.end());
+    transportFutureSpan.end();
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
-      final Class<HttpT> responseType) {
+      final Class<HttpT> responseType, final Tracer tracer, final Span span) {
     if (responseType == InputStream.class) {
       return new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
     } else {
-      return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
+      return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize, tracer, span);
     }
   }
 
