@@ -39,8 +39,9 @@ public class RaftMetadataCommandTest {
     final var filePath = Path.of(resourceUrl.getPath());
 
     // when
-    final int exitCode = commandLine.execute("raft-metadata", "-v", "-f", filePath.toString());
+    final int exitCode = commandLine.execute("raft", "-v", "-f", filePath.toString(), "metadata");
 
+    System.out.println(err);
     // then
     assertThat(exitCode).isZero();
     final String output = out.toString();

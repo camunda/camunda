@@ -21,19 +21,21 @@ import picocli.CommandLine.Spec;
 import uk.co.real_logic.sbe.ir.IrDecoder;
 import uk.co.real_logic.sbe.json.JsonPrinter;
 
-@Command(name = "raft-metadata", description = "Print raft metadata files")
+@Command(name = "raft", description = "Print raft metadata files")
 public class RaftMetadataCommand extends CommonOptions implements Callable<Integer> {
 
   @Spec CommandSpec spec;
 
   @Option(
       names = {"-f", "--file"},
-      description = "Path of the raft metadata file",
+      description = "Path of the file",
       required = true)
   private Path file;
 
-  @Override
-  public Integer call() throws Exception {
+  @Command(
+      name = "metadata",
+      description = "Print content of raft metastore (raft-partition-*.meta)")
+  public int metadata() throws Exception {
     spec.commandLine().getOut().println(convertToJson());
     return 0;
   }
@@ -71,5 +73,10 @@ public class RaftMetadataCommand extends CommonOptions implements Callable<Integ
       new JsonPrinter(ir).print(output, metadataWithoutVersion, 0);
       return output.toString();
     }
+  }
+
+  @Override
+  public Integer call() throws Exception {
+    return 0;
   }
 }
