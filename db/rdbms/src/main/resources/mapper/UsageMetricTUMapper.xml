@@ -90,6 +90,16 @@
   <delete flushCache="true"
     id="cleanupMetrics"
     statementType="PREPARED"
+    databaseId="mssql">
+    DELETE TOP(#{limit})
+    FROM ${prefix}USAGE_METRIC_TU
+    WHERE PARTITION_ID = #{partitionId}
+      AND END_TIME &lt; #{cleanupDate}
+  </delete>
+
+  <delete flushCache="true"
+    id="cleanupMetrics"
+    statementType="PREPARED"
     databaseId="oracle">
     DELETE
     FROM ${prefix}USAGE_METRIC_TU

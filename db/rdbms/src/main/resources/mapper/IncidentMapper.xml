@@ -194,7 +194,7 @@
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.IncidentDbModel">
-    UPDATE INCIDENT
+    UPDATE ${prefix}INCIDENT
     SET FLOW_NODE_INSTANCE_KEY = #{flowNodeInstanceKey},
         FLOW_NODE_ID           = #{flowNodeId},
         PROCESS_INSTANCE_KEY   = #{processInstanceKey},
@@ -213,7 +213,7 @@
   </update>
 
   <update id="updateState" parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto">
-    UPDATE ${prefix}INCIDENT i
+    UPDATE ${prefix}INCIDENT
     SET STATE         = #{state},
         ERROR_MESSAGE = #{errorMessage},
         ERROR_MESSAGE_HASH = #{errorMessageHash}
