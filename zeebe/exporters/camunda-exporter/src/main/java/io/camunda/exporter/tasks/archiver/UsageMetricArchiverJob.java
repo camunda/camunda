@@ -13,11 +13,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class UsageMetricsArchiverJob extends ArchiverJob {
+public class UsageMetricArchiverJob extends ArchiverJob {
 
   private final UsageMetricTemplate usageMetricTemplate;
 
-  public UsageMetricsArchiverJob(
+  public UsageMetricArchiverJob(
       final ArchiverRepository repository,
       final UsageMetricTemplate usageMetricTemplate,
       final CamundaExporterMetrics exporterMetrics,
@@ -39,8 +39,8 @@ public class UsageMetricsArchiverJob extends ArchiverJob {
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
-    return repository.getUsageMetricNextBatch();
+  public CompletableFuture<ArchiveBatch> getNextBatch() {
+    return getArchiverRepository().getUsageMetricNextBatch();
   }
 
   @Override

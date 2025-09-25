@@ -16,13 +16,13 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class ProcessInstancesArchiverJob extends ArchiverJob {
+public class ProcessInstanceArchiverJob extends ArchiverJob {
 
   private final ListViewTemplate processInstanceTemplate;
   private final List<ProcessInstanceDependant> processInstanceDependants;
   private final Executor executor;
 
-  public ProcessInstancesArchiverJob(
+  public ProcessInstanceArchiverJob(
       final ArchiverRepository repository,
       final ListViewTemplate processInstanceTemplate,
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -50,8 +50,8 @@ public class ProcessInstancesArchiverJob extends ArchiverJob {
   }
 
   @Override
-  CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
-    return repository.getProcessInstancesNextBatch();
+  CompletableFuture<ArchiveBatch> getNextBatch() {
+    return getArchiverRepository().getProcessInstancesNextBatch();
   }
 
   @Override

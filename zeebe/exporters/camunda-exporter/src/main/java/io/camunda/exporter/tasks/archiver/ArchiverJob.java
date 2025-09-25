@@ -53,11 +53,10 @@ public abstract class ArchiverJob implements BackgroundTask {
   /**
    * Fetches the next batch of records to be archived
    *
-   * @param repository the job's archiver repository
    * @return a future completed with the next batch to be archived, or null/empty if there is
    *     nothing to archive
    */
-  abstract CompletableFuture<ArchiveBatch> getNextBatch(ArchiverRepository repository);
+  abstract CompletableFuture<ArchiveBatch> getNextBatch();
 
   /**
    * The source index name from which to archive records
@@ -77,7 +76,7 @@ public abstract class ArchiverJob implements BackgroundTask {
   public CompletionStage<Integer> execute() {
     final var timer = Timer.start();
 
-    return getNextBatch(archiverRepository)
+    return getNextBatch()
         .thenComposeAsync(this::archiveBatch, executor)
         // we schedule gathering timer metrics after the archiveBatch future - to correctly
         // measure the time it takes all in all, including searching, reindexing, deletion
@@ -94,6 +93,10 @@ public abstract class ArchiverJob implements BackgroundTask {
   @Override
   public String toString() {
     return String.format("%s archiver job", getJobName());
+  }
+
+  protected ArchiverRepository getArchiverRepository() {
+    return archiverRepository;
   }
 
   protected CompletionStage<Integer> archiveBatch(final ArchiveBatch batch) {
