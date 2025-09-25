@@ -119,6 +119,20 @@
 
   <insert id="upsertItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
+    databaseId="mysql">
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    VALUES (#{batchOperationKey},
+    #{itemKey},
+    #{processInstanceKey},
+    #{processedDate},
+    #{state})
+    ON DUPLICATE KEY UPDATE
+    STATE = #{state}, PROCESSED_DATE = #{processedDate}, ERROR_MESSAGE = #{errorMessage}
+  </insert>
+
+  <insert id="upsertItem"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="oracle">
     MERGE INTO ${prefix}BATCH_OPERATION_ITEM target
     USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,

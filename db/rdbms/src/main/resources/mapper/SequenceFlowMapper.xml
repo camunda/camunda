@@ -103,6 +103,25 @@
   </insert>
 
   <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mysql">
+    INSERT INTO ${prefix}SEQUENCE_FLOW (FLOW_NODE_ID,
+                                        PROCESS_INSTANCE_KEY,
+                                        PROCESS_DEFINITION_KEY,
+                                        PROCESS_DEFINITION_ID,
+                                        TENANT_ID,
+                                        PARTITION_ID,
+                                        HISTORY_CLEANUP_DATE)
+    VALUES (#{flowNodeId},
+            #{processInstanceKey},
+            #{processDefinitionKey},
+            #{processDefinitionId},
+            #{tenantId},
+            #{partitionId},
+            #{historyCleanupDate, jdbcType=TIMESTAMP})
+    ON DUPLICATE KEY UPDATE FLOW_NODE_ID = FLOW_NODE_ID -- this will not trigger an update
+  </insert>
+
+  <insert id="createIfNotExists"
     parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="h2">
     MERGE INTO ${prefix}SEQUENCE_FLOW sf
       USING dual

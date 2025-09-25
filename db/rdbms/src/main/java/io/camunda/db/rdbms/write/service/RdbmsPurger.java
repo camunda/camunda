@@ -32,7 +32,7 @@ public class RdbmsPurger {
           "FLOW_NODE_INSTANCE",
           "FORM",
           "GROUP_MEMBER",
-          "GROUPS",
+          "GROUP_",
           "INCIDENT",
           "JOB",
           "MAPPING_RULES",
@@ -47,7 +47,7 @@ public class RdbmsPurger {
           "USAGE_METRIC",
           "USAGE_METRIC_TU",
           "USER_TASK",
-          "USERS",
+          "USER_",
           "VARIABLE");
 
   private final PurgeMapper purgeMapper;

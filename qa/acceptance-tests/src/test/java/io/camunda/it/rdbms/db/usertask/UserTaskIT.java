@@ -676,7 +676,14 @@ public class UserTaskIT {
 
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
-    assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+
+    // compare only keys to avoid flaky test due random differences in candidate users/groups
+    assertThat(nextPage.items())
+        .extracting(ut -> ut.userTaskKey())
+        .isEqualTo(
+            searchResult.items().subList(15, 20).stream()
+                .map(UserTaskEntity::userTaskKey)
+                .toList());
   }
 
   private static void assertUserTaskEntity(

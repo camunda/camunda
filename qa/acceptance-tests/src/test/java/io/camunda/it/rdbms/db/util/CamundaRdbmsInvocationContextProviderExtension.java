@@ -21,6 +21,7 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.oracle.OracleContainer;
 
@@ -48,6 +49,13 @@ public class CamundaRdbmsInvocationContextProviderExtension
               .withRdbms()
               .withDatabaseContainer(
                   new MariaDBContainer<>("mariadb:11.4")
+                      .withUsername("camunda")
+                      .withPassword("camunda")),
+          "camundaWithMySQL",
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new MySQLContainer<>("mysql:8.4")
                       .withUsername("camunda")
                       .withPassword("camunda")),
           "camundaWithOracleDB",

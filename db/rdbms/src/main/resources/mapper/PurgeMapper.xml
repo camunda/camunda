@@ -17,6 +17,14 @@
     SET FOREIGN_KEY_CHECKS = 1
   </update>
 
+  <update id="disableForeignKeyChecks" databaseId="mysql">
+    SET FOREIGN_KEY_CHECKS = 0
+  </update>
+
+  <update id="enableForeignKeyChecks" databaseId="mysql">
+    SET FOREIGN_KEY_CHECKS = 1
+  </update>
+
   <update id="disableForeignKeyChecks" databaseId="h2">
     SET REFERENTIAL_INTEGRITY FALSE
     </update>
