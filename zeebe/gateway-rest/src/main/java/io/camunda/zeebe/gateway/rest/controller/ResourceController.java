@@ -52,7 +52,6 @@ public class ResourceController {
   public CompletableFuture<ResponseEntity<Object>> deployResources(
       @RequestPart("resources") final List<MultipartFile> resources,
       @RequestPart(value = "tenantId", required = false) final String tenantId) {
-    final var span = Span.current();
     return RequestMapper.toDeployResourceRequest(
             resources, tenantId, multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::deployResources);

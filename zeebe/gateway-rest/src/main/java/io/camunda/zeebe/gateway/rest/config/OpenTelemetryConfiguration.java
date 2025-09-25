@@ -18,18 +18,18 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class OpenTelemetryConfiguration {
-  @Bean
-  public TextMapPropagator textMapPropagator() {
-    return W3CTraceContextPropagator.getInstance();
-  }
-
-  @Bean
-  public SpanExporter loggingSpanExporter() {
-    return LoggingSpanExporter.create();
-  }
-
-  @Bean
-  public SpanProcessor loggingSpanProcessor(final SpanExporter loggingSpanExporter) {
-    return SimpleSpanProcessor.create(loggingSpanExporter);
-  }
+//  @Bean
+//  public TextMapPropagator textMapPropagator() {
+//    return W3CTraceContextPropagator.getInstance();
+//  }
+//
+//  @Bean
+//  public SpanExporter loggingSpanExporter() {
+//    return LoggingSpanExporter.create();
+//  }
+//
+//  @Bean
+//  public SpanProcessor loggingSpanProcessor(final SpanExporter loggingSpanExporter) {
+//    return SimpleSpanProcessor.create(loggingSpanExporter);
+//  }
 }
