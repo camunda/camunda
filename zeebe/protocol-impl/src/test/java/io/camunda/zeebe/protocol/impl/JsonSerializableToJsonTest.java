@@ -82,7 +82,7 @@ import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.engineIntent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -174,7 +174,7 @@ final class JsonSerializableToJsonTest {
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
 
               recordMetadata
-                  .engineIntent(engineIntent)
+                  .intent(engineIntent)
                   .protocolVersion(protocolVersion)
                   .brokerVersion(brokerVersion)
                   .recordVersion(10)
