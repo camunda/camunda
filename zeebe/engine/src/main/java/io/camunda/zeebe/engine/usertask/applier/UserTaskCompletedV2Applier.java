@@ -13,8 +13,10 @@ import io.camunda.zeebe.engine.common.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.common.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.common.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
+@HandlesIntent(userTask = UserTaskIntent.COMPLETED)
 public final class UserTaskCompletedV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
