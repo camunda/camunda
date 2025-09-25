@@ -833,6 +833,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     clusterVariable: true
         #     adHocSubProcessInstruction: true
         #
         #   retention:
@@ -917,6 +918,7 @@
         #     userTask: true
         #     variable: true
         #     variableDocument: true
+        #     clusterVariable: true
         #     adHocSubProcessInstruction: true
 
       # Camunda Exporter ----------
