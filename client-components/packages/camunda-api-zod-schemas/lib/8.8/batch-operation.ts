@@ -14,6 +14,9 @@ const batchOperationTypeSchema = z.enum([
 	'RESOLVE_INCIDENT',
 	'MIGRATE_PROCESS_INSTANCE',
 	'MODIFY_PROCESS_INSTANCE',
+	'DELETE_DECISION_DEFINITION',
+	'DELETE_PROCESS_DEFINITION',
+	'DELETE_PROCESS_INSTANCE',
 ]);
 type BatchOperationType = z.infer<typeof batchOperationTypeSchema>;
 

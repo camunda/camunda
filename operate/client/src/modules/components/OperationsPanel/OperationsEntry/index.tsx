@@ -27,15 +27,7 @@ import type {
 
 type OperationLabelType = 'Retry' | 'Cancel' | 'Modify' | 'Migrate' | 'Delete';
 
-type ExtendedOperationLabelType =
-  | BatchOperationType
-  | 'DELETE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_DEFINITION'
-  | 'DELETE_DECISION_DEFINITION';
-
-const TYPE_LABELS: Readonly<
-  Record<ExtendedOperationLabelType, OperationLabelType>
-> = {
+const TYPE_LABELS: Readonly<Record<BatchOperationType, OperationLabelType>> = {
   RESOLVE_INCIDENT: 'Retry',
   CANCEL_PROCESS_INSTANCE: 'Cancel',
   MODIFY_PROCESS_INSTANCE: 'Modify',
@@ -45,12 +37,8 @@ const TYPE_LABELS: Readonly<
   DELETE_DECISION_DEFINITION: 'Delete',
 };
 
-type ExtendedBatchOperation = Omit<BatchOperation, 'batchOperationType'> & {
-  batchOperationType: ExtendedOperationLabelType;
-};
-
 type Props = {
-  operation: ExtendedBatchOperation;
+  operation: BatchOperation;
 };
 
 const OperationsEntry: React.FC<Props> = ({operation}) => {
@@ -76,19 +64,21 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
     <Container data-testid="operations-entry">
       <Header>
         <Title>{label}</Title>
-        {label === 'Cancel' && (
+        {batchOperationType === 'CANCEL_PROCESS_INSTANCE' && (
           <Error size={16} data-testid="operation-cancel-icon" />
         )}
-        {label === 'Retry' && (
+        {batchOperationType === 'RESOLVE_INCIDENT' && (
           <RetryFailed size={16} data-testid="operation-retry-icon" />
         )}
-        {label === 'Modify' && (
+        {batchOperationType === 'MODIFY_PROCESS_INSTANCE' && (
           <Tools size={16} data-testid="operation-modify-icon" />
         )}
-        {label === 'Migrate' && (
+        {batchOperationType === 'MIGRATE_PROCESS_INSTANCE' && (
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
-        {label === 'Delete' && (
+        {(batchOperationType === 'DELETE_PROCESS_INSTANCE' ||
+          batchOperationType === 'DELETE_PROCESS_DEFINITION' ||
+          batchOperationType === 'DELETE_DECISION_DEFINITION') && (
           <TrashCan size={16} data-testid="operation-delete-icon" />
         )}
       </Header>

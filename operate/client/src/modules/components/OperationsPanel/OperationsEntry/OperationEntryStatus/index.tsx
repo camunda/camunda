@@ -16,22 +16,15 @@ import {Stack} from '@carbon/react';
 import {PartiallyCompleted} from './PartiallyCompleted';
 import {Failed} from './Failed';
 
-// Extended type to handle legacy operation types
-type ExtendedBatchOperationType =
-  | BatchOperationType
-  | 'DELETE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_DEFINITION'
-  | 'DELETE_DECISION_DEFINITION';
-
 type Props = {
-  type: ExtendedBatchOperationType;
+  type: BatchOperationType;
   failedCount?: number;
   completedCount?: number;
   state: BatchOperationState;
 };
 
 const getSuccessMessage = (
-  type: ExtendedBatchOperationType,
+  type: BatchOperationType,
   completedCount: number,
 ): string => {
   if (type === 'RESOLVE_INCIDENT') {
@@ -42,7 +35,7 @@ const getSuccessMessage = (
 };
 
 const getFailureMessage = (
-  type: ExtendedBatchOperationType,
+  type: BatchOperationType,
   failedCount: number,
   completedCount: number,
 ): string => {
