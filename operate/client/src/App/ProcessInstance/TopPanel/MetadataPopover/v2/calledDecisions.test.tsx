@@ -95,24 +95,6 @@ const mockIncident = {
   tenantId: '<default>',
 };
 
-const mockDecisionInstance = {
-  decisionEvaluationInstanceKey: '750893257230984',
-  decisionEvaluationKey: '750893257230984',
-  decisionDefinitionName: 'Take decision',
-  decisionDefinitionId: 'decision-1',
-  decisionDefinitionKey: '123',
-  decisionDefinitionVersion: 1,
-  decisionDefinitionType: 'DECISION_TABLE' as const,
-  processDefinitionKey: '2',
-  processInstanceKey: PROCESS_INSTANCE_ID,
-  elementInstanceKey: '2251799813699889',
-  state: 'EVALUATED' as const,
-  evaluationDate: '2018-12-12T22:00:00.000+0000',
-  evaluationFailure: '',
-  tenantId: '<default>',
-  result: '',
-};
-
 vi.mock('date-fns', async () => {
   const actual = await vi.importActual('date-fns');
   return {
@@ -305,9 +287,6 @@ describe('MetadataPopover', () => {
     );
 
     const {user} = renderPopover();
-
-    console.log('mockDecisionInstance', mockDecisionInstance);
-
     expect(
       await screen.findByText(labels.calledDecisionInstance),
     ).toBeInTheDocument();
@@ -320,15 +299,15 @@ describe('MetadataPopover', () => {
 
     await user.click(
       screen.getByText(
-        `${mockDecisionInstance!.decisionDefinitionName} - ${
-          mockDecisionInstance!.decisionEvaluationKey
+        `${calledDecisionInstanceMetadata!.decisionDefinitionName} - ${
+          calledDecisionInstanceMetadata!.decisionEvaluationKey
         }`,
       ),
     );
 
     await waitFor(() =>
       expect(screen.getByTestId('pathname')).toHaveTextContent(
-        `/decisions/${mockDecisionInstance!.decisionEvaluationKey}`,
+        `/decisions/${calledDecisionInstanceMetadata!.decisionEvaluationKey}`,
       ),
     );
 
@@ -445,7 +424,7 @@ describe('MetadataPopover', () => {
     );
 
     const mockUnevaluatedDecisionInstance = {
-      ...mockDecisionInstance,
+      ...calledDecisionInstanceMetadata,
       decisionEvaluationInstanceKey: '',
       decisionEvaluationKey: '',
       state: 'UNSPECIFIED' as const,
