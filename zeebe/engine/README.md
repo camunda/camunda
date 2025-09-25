@@ -34,6 +34,12 @@ The engine operates in two modes: processing and replay.
   Events are applied deterministically and in the order that they were added to the logstream.
   To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
 
+There are three sources of commands.
+
+- Clients can request changes by sending commands, e.g. create a new process instance.
+- Command processors can request next steps by appending commands, e.g. flow to the next element in the process after completing a task.
+- Scheduled tasks that run periodically inside the engine can append commands, e.g. to remove a message from the buffer after its TTL has expired.
+
 ## Basic module structure
 
 At the root of the `zeebe/engine` module, you will find the `Engine` class where you can map the
