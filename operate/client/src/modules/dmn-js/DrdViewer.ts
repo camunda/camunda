@@ -10,40 +10,60 @@ import {type Event} from 'dmn-js-shared/lib/base/Manager';
 import isEqual from 'lodash/isEqual';
 import {DECISION_STATE} from 'modules/bpmn-js/badgePositions';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
-import {drdDataStore} from 'modules/stores/drdData';
 import {OutlineModule} from './modules/Outline';
 import {Viewer} from './Viewer';
 import {drdRendererColors} from './styled';
-import type {DecisionInstanceEntityState} from 'modules/types/operate';
-
-type DecisionStates = {
-  decisionId: string;
-  state: DecisionInstanceEntityState;
-}[];
+import type {DrdData} from 'modules/queries/decisionInstances/useDrdData';
+import type {
+  DecisionStateOverlayActions,
+  DecisionStateOverlay,
+} from 'modules/queries/decisionInstances/useDrdStateOverlay';
 
 class DrdViewer {
   #xml: string | null = null;
-  #selectableDecisions: string[] = [];
-  #selectedDecision: string | null = null;
+  #drdData: DrdData | null = null;
+  #currentDecisionEvaluationInstanceKey: string = '';
   #viewer: Viewer | null = null;
-  #onDecisionSelection?: (decisionId: string) => void;
-  #decisionStates: DecisionStates = [];
+  #onDecisionSelection: (decisionEvaluationInstanceKey: string) => void;
 
-  constructor(onDecisionSelection?: (decisionId: string) => void) {
+  constructor(
+    onDecisionSelection: (decisionEvaluationInstanceKey: string) => void,
+  ) {
     this.#onDecisionSelection = onDecisionSelection;
   }
 
   #handleDecisionSelection = (event: Event) => {
-    this.#onDecisionSelection?.(event.element.id);
+    const decision = this.#drdData?.[event.element.id];
+    if (decision) {
+      this.#onDecisionSelection(decision.decisionEvaluationInstanceKey);
+    }
+  };
+
+  #getSelectedDecision = (drdData: DrdData | null): string | null => {
+    if (drdData === null) {
+      return null;
+    }
+
+    return (
+      Object.values(drdData).find((data) => {
+        return (
+          data.decisionEvaluationInstanceKey ===
+          this.#currentDecisionEvaluationInstanceKey
+        );
+      })?.decisionDefinitionId ?? null
+    );
   };
 
   render = async (
+    currentDecisionEvaluationInstanceKey: string,
     container: HTMLElement,
+    drdData: DrdData,
     xml: string,
-    selectableDecisions: string[],
-    selectedDecision: string | null,
-    decisionStates: DecisionStates,
+    overlayActions: DecisionStateOverlayActions,
   ) => {
+    this.#currentDecisionEvaluationInstanceKey =
+      currentDecisionEvaluationInstanceKey;
+
     if (this.#viewer === null) {
       this.#viewer = new Viewer('drd', {
         container,
@@ -78,60 +98,74 @@ class DrdViewer {
       canvas.zoom('fit-viewport', 'auto');
     }
 
-    if (!isEqual(this.#selectableDecisions, selectableDecisions)) {
-      const activeViewer = this.#viewer.getActiveViewer();
-      const canvas = activeViewer!.get('canvas');
+    const prevSelectableDecisions =
+      this.#drdData === null ? [] : Object.keys(this.#drdData);
+    const selectableDecisions = Object.keys(drdData);
 
-      this.#selectableDecisions.forEach((decisionId) => {
-        canvas.removeMarker(decisionId, 'ope-selectable');
-      });
+    if (!isEqual(prevSelectableDecisions, selectableDecisions)) {
+      const activeViewer = this.#viewer.getActiveViewer()!;
+      const canvas = activeViewer.get('canvas');
 
-      selectableDecisions.forEach((decisionId) => {
-        canvas?.addMarker(decisionId, 'ope-selectable');
-      });
+      for (const decisionDefinitionId of prevSelectableDecisions) {
+        canvas.removeMarker(decisionDefinitionId, 'ope-selectable');
+      }
 
-      this.#selectableDecisions = selectableDecisions;
+      for (const decisionDefinitionId of selectableDecisions) {
+        canvas.addMarker(decisionDefinitionId, 'ope-selectable');
+      }
     }
 
-    if (this.#selectedDecision !== selectedDecision) {
-      const activeViewer = this.#viewer.getActiveViewer();
-      const canvas = activeViewer!.get('canvas');
+    const prevSelectedDecision = this.#drdData
+      ? this.#getSelectedDecision(this.#drdData)
+      : null;
+    const selectedDecision = this.#getSelectedDecision(drdData);
 
-      if (this.#selectedDecision !== null) {
-        canvas.removeMarker(this.#selectedDecision, 'ope-selected');
+    if (prevSelectedDecision !== selectedDecision) {
+      const activeViewer = this.#viewer.getActiveViewer()!;
+      const canvas = activeViewer.get('canvas');
+
+      if (prevSelectedDecision !== null) {
+        canvas.removeMarker(prevSelectedDecision, 'ope-selected');
       }
 
       if (selectedDecision !== null) {
         canvas.addMarker(selectedDecision, 'ope-selected');
       }
-
-      this.#selectedDecision = selectedDecision;
     }
 
-    if (!isEqual(this.#decisionStates, decisionStates)) {
-      const activeViewer = this.#viewer.getActiveViewer();
-      const overlays = activeViewer!.get('overlays');
+    const prevDecisionStates = this.#drdData
+      ? Object.values(this.#drdData)
+      : null;
+    const decisionStates = Object.values(drdData);
 
-      overlays.remove({type: 'decisionState'});
-      drdDataStore.clearDecisionStateOverlays();
+    if (!isEqual(prevDecisionStates, decisionStates)) {
+      const activeViewer = this.#viewer.getActiveViewer()!;
+      const overlaysModule = activeViewer.get('overlays');
 
-      decisionStates.forEach(({decisionId, state}) => {
-        const container = document.createElement('div');
+      overlaysModule.remove({type: 'decisionState'});
 
-        overlays.add(decisionId, 'decisionState', {
-          position: DECISION_STATE,
-          html: container,
-        });
+      const nextOverlays = decisionStates.map<DecisionStateOverlay>(
+        ({decisionDefinitionId, state}) => {
+          const container = document.createElement('div');
+          overlaysModule.add(decisionDefinitionId, 'decisionState', {
+            position: DECISION_STATE,
+            html: container,
+          });
 
-        drdDataStore.addDecisionStateOverlay({decisionId, state, container});
-      });
+          return {decisionDefinitionId, state, container};
+        },
+      );
 
-      this.#decisionStates = decisionStates;
+      overlayActions.replaceOverlays(nextOverlays);
     }
+
+    // Lastly, cache the new DRD data for change detection on next render
+    this.#drdData = drdData;
   };
 
   reset = () => {
     this.#xml = null;
+    this.#drdData = null;
     this.#viewer?.destroy();
     this.#viewer = null;
   };

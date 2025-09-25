@@ -6,9 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {drdStore} from 'modules/stores/drd';
 import {useLayoutEffect, useRef} from 'react';
 import {Container, Handle, Panel} from './styled';
+import {
+  getDrdPanelWidth,
+  persistDrdPanelWidth,
+} from 'modules/queries/decisionInstances/useDrdPanelState';
 
 const minWidth = 540;
 const maxWidthRatio = 3 / 5;
@@ -36,10 +39,9 @@ const DrdPanel: React.FC<Props> = ({children}) => {
   };
 
   useLayoutEffect(() => {
-    const {panelWidth} = drdStore.state;
-
-    if (panelWidth !== null) {
-      setPanelWidth(panelWidth);
+    const initialWidth = getDrdPanelWidth();
+    if (initialWidth !== null) {
+      setPanelWidth(initialWidth);
     }
 
     const handleResize = (event: MouseEvent) => {
@@ -79,7 +81,7 @@ const DrdPanel: React.FC<Props> = ({children}) => {
       const width = containerRef.current?.clientWidth;
 
       if (width !== undefined) {
-        drdStore.setPanelWidth(width);
+        persistDrdPanelWidth(width);
       }
     };
 

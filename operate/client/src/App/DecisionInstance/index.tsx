@@ -7,11 +7,8 @@
  */
 
 import {useEffect} from 'react';
-import {observer} from 'mobx-react';
 import {useParams} from 'react-router-dom';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {drdDataStore} from 'modules/stores/drdData';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
 import {InstanceDetail} from '../Layout/InstanceDetail';
@@ -20,28 +17,16 @@ import {Header} from './Header';
 import {VariablesPanel} from './VariablesPanel';
 import {Forbidden} from 'modules/components/Forbidden';
 import {DrdPanel} from './DrdPanel';
-import {drdStore} from 'modules/stores/drd';
 import {DecisionInstanceContainer} from './styled';
 import {Drd} from './Drd';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
+import {useDrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 
-const DecisionInstance: React.FC = observer(() => {
+const DecisionInstance: React.FC = () => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
+  const [drdPanelState, setDrdPanelState] = useDrdPanelState();
   const {data, error, isFetchedAfterMount} =
     useDecisionInstance(decisionInstanceId);
-
-  useEffect(() => {
-    drdDataStore.init();
-
-    return () => {
-      decisionInstanceDetailsStore.reset();
-      drdDataStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    decisionInstanceDetailsStore.fetchDecisionInstance(decisionInstanceId);
-  }, [decisionInstanceId]);
 
   useEffect(() => {
     if (
@@ -68,8 +53,16 @@ const DecisionInstance: React.FC = observer(() => {
     return <Forbidden />;
   }
 
-  if (drdStore.state.panelState === 'maximized') {
-    return <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />;
+  if (drdPanelState === 'maximized') {
+    return (
+      <Drd
+        decisionEvaluationInstanceKey={decisionInstanceId}
+        decisionEvaluationKey={data?.decisionEvaluationKey}
+        decisionDefinitionKey={data?.decisionDefinitionKey}
+        drdPanelState={drdPanelState}
+        onChangeDrdPanelState={setDrdPanelState}
+      />
+    );
   }
 
   return (
@@ -77,7 +70,12 @@ const DecisionInstance: React.FC = observer(() => {
       <VisuallyHiddenH1>Operate Decision Instance</VisuallyHiddenH1>
       <DecisionInstanceContainer>
         <InstanceDetail
-          header={<Header decisionEvaluationInstanceKey={decisionInstanceId} />}
+          header={
+            <Header
+              decisionEvaluationInstanceKey={decisionInstanceId}
+              onChangeDrdPanelState={setDrdPanelState}
+            />
+          }
           topPanel={
             <DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />
           }
@@ -89,9 +87,15 @@ const DecisionInstance: React.FC = observer(() => {
           }
           type="decision"
           rightPanel={
-            drdStore.state.panelState === 'minimized' ? (
+            drdPanelState === 'minimized' ? (
               <DrdPanel>
-                <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />
+                <Drd
+                  decisionEvaluationInstanceKey={decisionInstanceId}
+                  decisionEvaluationKey={data?.decisionEvaluationKey}
+                  decisionDefinitionKey={data?.decisionDefinitionKey}
+                  drdPanelState={drdPanelState}
+                  onChangeDrdPanelState={setDrdPanelState}
+                />
               </DrdPanel>
             ) : null
           }
@@ -99,6 +103,6 @@ const DecisionInstance: React.FC = observer(() => {
       </DecisionInstanceContainer>
     </>
   );
-});
+};
 
 export {DecisionInstance};
