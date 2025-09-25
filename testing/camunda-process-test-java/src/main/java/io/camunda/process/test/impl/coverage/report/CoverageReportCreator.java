@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.coverage.report;
+package io.camunda.process.test.impl.coverage.report;
 
-import io.camunda.process.test.api.coverage.core.CoverageCreator;
-import io.camunda.process.test.api.coverage.model.Coverage;
-import io.camunda.process.test.api.coverage.model.Model;
-import io.camunda.process.test.api.coverage.model.Suite;
+import io.camunda.process.test.impl.coverage.core.CoverageCreator;
+import io.camunda.process.test.impl.coverage.model.Coverage;
+import io.camunda.process.test.impl.coverage.model.Model;
+import io.camunda.process.test.impl.coverage.model.Suite;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
