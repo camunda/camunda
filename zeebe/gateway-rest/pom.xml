@@ -29,7 +29,6 @@
       <groupId>io.opentelemetry.instrumentation</groupId>
       <artifactId>opentelemetry-spring-boot-starter</artifactId>
     </dependency>
-
     <dependency>
       <groupId>io.opentelemetry</groupId>
       <artifactId>opentelemetry-api</artifactId>
@@ -275,11 +274,6 @@
       <scope>provided</scope>
     </dependency>
 
-    <dependency>
-      <groupId>io.opentelemetry.instrumentation</groupId>
-      <artifactId>opentelemetry-zipkin-spring-boot-starter</artifactId>
-    </dependency>
-
     <!-- test dependencies -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -503,8 +497,8 @@
             <dependency>org.xmlunit:xmlunit-core</dependency>
             <!-- Used for OpenAPI generation -->
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
+            <!-- Used for Opentelemetry-->
             <dependency>io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter</dependency>
-            <dependency>io.opentelemetry.instrumentation:opentelemetry-zipkin-spring-boot-starter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>

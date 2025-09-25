@@ -19,7 +19,7 @@ import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
 import io.opentelemetry.context.propagation.ContextPropagators;
-import io.opentelemetry.exporter.zipkin.ZipkinSpanExporter;
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter;
 import io.opentelemetry.sdk.OpenTelemetrySdk;
 import io.opentelemetry.sdk.resources.Resource;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
@@ -31,13 +31,15 @@ public class OpenTelemetrySdkConfig {
     final Resource resource =
         Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, "client-java"));
 
-    final ZipkinSpanExporter zipkinSpanExporter =
-        ZipkinSpanExporter.builder().setEndpoint(exporter).build();
+    final OtlpGrpcSpanExporter otlpExporter =
+        OtlpGrpcSpanExporter.builder()
+            .setEndpoint(exporter) // Set your OTLP endpoint here
+            .build();
 
     final SdkTracerProvider sdkTracerProvider =
         SdkTracerProvider.builder()
             .setResource(resource)
-            .addSpanProcessor(BatchSpanProcessor.builder(zipkinSpanExporter).build())
+            .addSpanProcessor(BatchSpanProcessor.builder(otlpExporter).build())
             .build();
 
     return OpenTelemetrySdk.builder()
