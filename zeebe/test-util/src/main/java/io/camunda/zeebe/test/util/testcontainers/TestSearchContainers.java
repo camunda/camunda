@@ -58,7 +58,23 @@ public final class TestSearchContainers {
    * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
    */
   public static ElasticsearchContainer createDefeaultElasticsearchContainer() {
-    return new ElasticsearchContainer(ELASTIC_IMAGE)
+    return createElasticsearchContainer(ELASTIC_IMAGE);
+  }
+
+  /**
+   * Returns an Elasticsearch container pointing at the same version as the {@link
+   * org.elasticsearch.client.RestClient}.
+   *
+   * <p>The container is configured to use 512m of heap and 512m of direct memory. This is required
+   * because Elasticsearch 7.x, by default, will grab all the RAM available otherwise.
+   *
+   * <p>Additionally, security is explicitly disabled to avoid having tons of warning printed out.
+   *
+   * @param elasticImage name of the elasticsearch docker image to use
+   */
+  public static ElasticsearchContainer createElasticsearchContainer(
+      final DockerImageName elasticImage) {
+    return new ElasticsearchContainer(elasticImage)
         // use JVM option files to avoid overwriting default options set by the ES container class
         .withClasspathResourceMapping(
             "elasticsearch-fast-startup.options",

@@ -10,6 +10,7 @@ package io.camunda.application;
 import static io.camunda.webapps.schema.SupportedVersions.SUPPORTED_ELASTICSEARCH_VERSION;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +24,7 @@ import org.testcontainers.containers.Network;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractCamundaDockerIT {
 
@@ -73,10 +75,10 @@ public abstract class AbstractCamundaDockerIT {
   }
 
   protected ElasticsearchContainer createElasticsearchContainer() {
-    return new ElasticsearchContainer(ELASTICSEARCH_DOCKER_IMAGE)
+    return TestSearchContainers.createElasticsearchContainer(
+            DockerImageName.parse(ELASTICSEARCH_DOCKER_IMAGE))
         .withNetwork(network)
         .withNetworkAliases(ELASTICSEARCH_NETWORK_ALIAS)
-        .withEnv("xpack.security.enabled", "false")
         .withExposedPorts(ELASTICSEARCH_PORT);
   }
 
