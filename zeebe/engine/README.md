@@ -9,24 +9,30 @@ This README provides an overview of the engine's architecture, module structure,
 
 ## High-level engine architecture
 
-The Zeebe Workflow Engine is a state machine for entities like jobs and processes.
+The Zeebe Workflow Engine is a state machine built as an stream of records.
+It keeps track of the state of all entities related to process orchestration (like processes, process instances, jobs, and user tasks), as well as system related entities (like users, and batch operations).
 
-The engine is implemented as a state machine that maintains the state of entities (jobs, processes, etc.) in a key-value store (RocksDB).
-State transitions are driven by a stream of records that are appended to an append-only log.
+The state of these entities is stored in a key-value store (RocksDB).
+State transitions are driven by a stream of records that are appended to an append-only logstream.
 
-The engine is implemented as a collection of stream processors. It is designed to be able to recover its state by replaying the record stream.
-For this reason, records in the stream are split into commands, events, and rejections.
+The engine is implemented as a collection of command processors and event appliers.
 
-- **Commands** are requests to the engine to perform some action, e.g. create a new process instance or complete a job.
-- **Events** are the result of processing commands, e.g. a process instance was created or a job was completed.
-- **Rejections** are indications that a command could not be processed.
+- **Commands** are requests to the engine to perform some action, e.g. create a new process instance or trigger a timer.
+- **Events** are the result of processing commands describing that the state has changed, e.g. a process instance was created or a timer was triggered.
+- **Command rejections** are indications that a command could not be processed, e.g. because the requested change was not allowed.
+
+It is designed to recover its state by replaying the events of the logstream.
+To avoid unnecessary work, it can replay from a snapshot of the state.
 
 The engine operates in two modes: processing and replay.
 
-- In **processing** mode, the engine processes **commands** and **events**. During command processing, the engine
-  may append events, rejections, and follow-up commands to the stream.
-- In **replay** mode, the engine processes only **events** from the stream to reconstruct its state.
-To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
+- In **processing** mode, the engine processes **commands**.
+  Commands are processed in the order that they were added to the logstream.
+  During command processing, the engine can append new records to the logstream and respond to requests.
+  Command processors can reject commands by appending command rejections, append and apply events to change the state, and append follow-up commands to request next steps to do.
+- In **replay** mode, the engine applies **events** to reconstruct its state.
+  Events are applied deterministically and in the order that they were added to the logstream.
+  To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
 
 ## Basic module structure
 
