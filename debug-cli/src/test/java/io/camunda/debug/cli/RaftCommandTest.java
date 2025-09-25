@@ -16,7 +16,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import picocli.CommandLine;
 
-public class RaftMetadataCommandTest {
+public class RaftCommandTest {
 
   CommandLine commandLine;
   StringWriter err;
@@ -40,6 +40,25 @@ public class RaftMetadataCommandTest {
 
     // when
     final int exitCode = commandLine.execute("raft", "-v", "-f", filePath.toString(), "metadata");
+
+    System.out.println(err);
+    // then
+    assertThat(exitCode).isZero();
+    final String output = out.toString();
+    assertThat(output).isNotBlank();
+  }
+
+  @Test
+  public void shouldReadAndPrintRaftConfigurationFile() {
+    // given
+    final var resourceUrl =
+        getClass().getClassLoader().getResource("raft-partition-partition-1.conf");
+    assertThat(resourceUrl).isNotNull();
+    final var filePath = Path.of(resourceUrl.getPath());
+
+    // when
+    final int exitCode =
+        commandLine.execute("raft", "-v", "-f", filePath.toString(), "configuration");
 
     System.out.println(err);
     // then

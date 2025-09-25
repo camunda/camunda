@@ -22,7 +22,7 @@ import uk.co.real_logic.sbe.ir.IrDecoder;
 import uk.co.real_logic.sbe.json.JsonPrinter;
 
 @Command(name = "raft", description = "Print raft metadata files")
-public class RaftMetadataCommand extends CommonOptions implements Callable<Integer> {
+public class RaftCommand extends CommonOptions implements Callable<Integer> {
 
   @Spec CommandSpec spec;
 
@@ -36,6 +36,14 @@ public class RaftMetadataCommand extends CommonOptions implements Callable<Integ
       name = "metadata",
       description = "Print content of raft metastore (raft-partition-*.meta)")
   public int metadata() throws Exception {
+    spec.commandLine().getOut().println(convertToJson());
+    return 0;
+  }
+
+  @Command(
+      name = "configuration",
+      description = "Print content of raft configuration file (raft-partition-*.meta)")
+  public int configuration() throws Exception {
     spec.commandLine().getOut().println(convertToJson());
     return 0;
   }
