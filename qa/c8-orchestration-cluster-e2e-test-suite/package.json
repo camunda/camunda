@@ -6,7 +6,8 @@
     "test": "playwright test",
     "test:local": "node --env-file=.env ./runTest.js",
     "lint": "tsc && eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "responses:regenerate": "assert-json-body extract"
   },
   "devDependencies": {
     "@inquirer/prompts": "^7.3.2",
