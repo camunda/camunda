@@ -96,7 +96,7 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_JOBS_ACTIVE = 32;
   public static final Duration DEFAULT_JOB_POLL_INTERVAL = Duration.ofMillis(100);
   public static final boolean DEFAULT_STREAM_ENABLED = false;
-  public static final String DEFAULT_OPENTELEMETRY_ENDPOINT = "http://localhost:9411/api/v2/spans";
+  public static final String DEFAULT_OPENTELEMETRY_ENDPOINT = "http://localhost:4317";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -127,7 +127,7 @@ public final class CamundaClientBuilderImpl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
-  private String openTelemetryEndpoint;
+  private String openTelemetryEndpoint = DEFAULT_OPENTELEMETRY_ENDPOINT;
 
   @Override
   public URI getRestAddress() {
