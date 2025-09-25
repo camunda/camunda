@@ -208,15 +208,18 @@ final class ElasticsearchArchiverRepositoryIT {
         resourceProvider
             .getIndexTemplateDescriptor(BatchOperationTemplate.class)
             .getFullQualifiedName();
+    final var usageMetricIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
+            .getFullQualifiedName();
+    final var usageMetricTUIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
+            .getFullQualifiedName();
 
-    // FIXME: once the metrics index rollover is correctly implemented, put back these indices in
-    // the test https://github.com/camunda/camunda/issues/34709
-    /*
     final var usageMetricsIndices =
-        List.of(
-            formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
-            formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
-     */
+        List.of(usageMetricIndex + "2024-01-02", usageMetricTUIndex + "2024-01-02");
+
     final var historicalIndices =
         List.of(processInstanceIndex + "2024-01-02", batchOperationIndex + "2024-01");
     final var untouchedIndices =
@@ -231,6 +234,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var repository = createRepository();
     final var indices = new ArrayList<String>();
     indices.addAll(historicalIndices);
+    indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
@@ -248,17 +252,12 @@ final class ElasticsearchArchiverRepositoryIT {
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
 
-    // verify that the usage metrics policy was applied to all usage metric indices
-    // FIXME: once the metrics index rollover is correctly implemented, put back these asserts
-    // https://github.com/camunda/camunda/issues/34709
-    /*
     for (final var index : usageMetricsIndices) {
       assertThat(getLifeCycle(index))
           .isNotNull()
           .extracting(IndexSettingsLifecycle::name)
           .isEqualTo("custom-usage-metrics-policy");
     }
-    */
 
     // verify that the default policy was applied to all other indices
     for (final var index : historicalIndices) {

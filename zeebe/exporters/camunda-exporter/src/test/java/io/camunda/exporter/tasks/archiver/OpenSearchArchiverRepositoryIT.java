@@ -70,8 +70,6 @@ import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.generic.OpenSearchGenericClient;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
-import org.opensearch.client.opensearch.indices.DeleteIndexRequest.Builder;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
 import org.opensearch.client.transport.aws.AwsSdk2TransportOptions;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
@@ -102,11 +100,8 @@ final class OpenSearchArchiverRepositoryIT {
   private final ObjectMapper objectMapper = TestObjectMapper.objectMapper();
 
   @AfterEach
-  void afterEach() throws IOException {
-    final DeleteIndexRequest deleteRequest = new Builder().index("*").build();
-    testClient.indices().delete(deleteRequest);
-
-    // delete all policies created during the tests
+  void afterEach() {
+    deleteTestIndices();
     deleteAllTestPolicies();
   }
 
@@ -207,29 +202,33 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"", "test"})
+  @ValueSource(booleans = {true, false})
   @DisabledIfSystemProperty(
       named = TEST_INTEGRATION_OPENSEARCH_AWS_URL,
       matches = "^(?=\\s*\\S).*$",
       disabledReason = "Excluding from AWS OS IT CI - policy modification not allowed")
-  void shouldSetIndexLifeCycleOnAllValidIndexes(final String prefix) throws IOException {
+  void shouldSetIndexLifeCycleOnAllValidIndexes(final boolean withPrefix) throws IOException {
     // given
-    final var indexPrefix = RandomStringUtils.insecure().nextAlphabetic(9).toLowerCase();
-    resourceProvider = new TestExporterResourceProvider(indexPrefix, true);
+    final var prefix = withPrefix ? indexPrefix : "";
+    resourceProvider = new TestExporterResourceProvider(prefix, true);
     processInstanceIndex =
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class).getFullQualifiedName();
     batchOperationIndex =
         resourceProvider
             .getIndexTemplateDescriptor(BatchOperationTemplate.class)
             .getFullQualifiedName();
-    // FIXME: uncomment once the metrics index rollover is correctly implemented,
-    // https://github.com/camunda/camunda/issues/34709
-    /*
+
+    final var usageMetricIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
+            .getFullQualifiedName();
+    final var usageMetricTUIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
+            .getFullQualifiedName();
+
     final var usageMetricsIndices =
-        List.of(
-            formattedPrefix + "camunda-usage-metric-8.3.0_2024-01-02",
-            formattedPrefix + "camunda-usage-metric-tu-8.3.0_2024-01-02");
-     */
+        List.of(usageMetricIndex + "2024-01-02", usageMetricTUIndex + "2024-01-02");
     final var historicalIndices =
         List.of(processInstanceIndex + "2024-01-02", batchOperationIndex + "2024-01");
     final var untouchedIndices =
@@ -244,6 +243,7 @@ final class OpenSearchArchiverRepositoryIT {
     connectConfiguration.setIndexPrefix(prefix);
     final var repository = createRepository();
     final var indices = new ArrayList<>(historicalIndices);
+    indices.addAll(usageMetricsIndices);
     indices.addAll(untouchedIndices);
 
     retention.setEnabled(true);
@@ -261,16 +261,12 @@ final class OpenSearchArchiverRepositoryIT {
     // then
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     // verify that the usage metrics policy was applied to all usage metric indices
-    // FIXME: uncomment once the metrics index rollover is correctly implemented,
-    // https://github.com/camunda/camunda/issues/34709
-    /*
     for (final var index : usageMetricsIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
           .as("Expected 'custom-usage-metrics-policy' policy to be applied for %s", index)
           .isNotNull()
           .isEqualTo("custom-usage-metrics-policy");
     }
-     */
     // verify that the default policy was applied to all other indices
     for (final var index : historicalIndices) {
       assertThat(fetchPolicyForIndexWithAwait(index))
@@ -601,7 +597,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -633,7 +629,7 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("10", "11");
+    assertThat(batch.ids()).containsExactlyInAnyOrder("10", "11");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -992,6 +988,42 @@ final class OpenSearchArchiverRepositoryIT {
               AwsSdk2TransportOptions.builder()
                   .setMapper(new JacksonJsonpMapper(new ObjectMapper()))
                   .build()));
+    }
+  }
+
+  private void deleteTestIndices() {
+    // Delete only indices that were created by this test class. Criteria:
+    //  - start with dynamic indexPrefix (runtime & historical indices created via templates)
+    //  - start with zeebeIndexPrefix (simulated existing zeebe indices used in tests)
+    //  - start with ARCHIVER_IDX_PREFIX (ad‑hoc indices for generic operations tests)
+    final var indicesToDelete = new ArrayList<String>();
+    try {
+      indicesToDelete.addAll(
+          testClient
+              .indices()
+              .get(
+                  g ->
+                      g.index(indexPrefix + "*", zeebeIndexPrefix + "*", ARCHIVER_IDX_PREFIX + "*")
+                          .ignoreUnavailable(true)
+                          .allowNoIndices(true))
+              .result()
+              .keySet());
+    } catch (final Exception e) {
+      LOGGER.error("Error during retrieving indices", e);
+    }
+
+    if (indicesToDelete.isEmpty()) {
+      LOGGER.debug("No indices found to delete");
+      return;
+    }
+
+    for (final var index : indicesToDelete) {
+      try {
+        testClient.indices().delete(d -> d.index(index).ignoreUnavailable(true));
+        LOGGER.debug("Deleted test index: {}", index);
+      } catch (final Exception e) {
+        LOGGER.warn("Failed to delete index {}: {}", index, e.getMessage());
+      }
     }
   }
 

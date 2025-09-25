@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.slf4j.Logger;
@@ -44,10 +43,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ExtendWith(SchemaManagerITInvocationProvider.class)
-@Disabled(
-    "Disabled due to usage-metric index/template upgrade mismatch: previous version creates concrete indices, "
-        + "but current version expects template-based indices. Re-enable once template conversion "
-        + "is backported to stable/8.8 and upgrade path is supported.")
 class SchemaUpdateIT {
 
   private static final Logger LOG = LoggerFactory.getLogger(SchemaUpdateIT.class);
