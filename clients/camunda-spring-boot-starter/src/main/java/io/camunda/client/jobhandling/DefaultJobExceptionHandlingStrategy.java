@@ -15,7 +15,6 @@
  */
 package io.camunda.client.jobhandling;
 
-import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.ThrowErrorCommandStep1.ThrowErrorCommandStep2;
@@ -44,13 +43,9 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
   }
 
   private CommandWrapper createCommandWrapper(
-      final FinalCommandStep<?> command, final ActivatedJob job, final JobWorkerValue workerValue) {
+      final FinalCommandStep<?> command, final ActivatedJob job, final int maxRetries) {
     return new CommandWrapper(
-        command,
-        job,
-        commandExceptionHandlingStrategy,
-        metricsRecorder,
-        workerValue.getMaxRetries());
+        command, job, commandExceptionHandlingStrategy, metricsRecorder, maxRetries);
   }
 
   @Override
@@ -62,7 +57,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
           createCommandWrapper(
               createFailJobCommand(context.jobClient(), context.job(), jobError),
               context.job(),
-              context.jobWorkerValue());
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB, MetricsRecorder.ACTION_FAILED, context.job().getType());
     } else if (exception instanceof final BpmnError bpmnError) {
@@ -71,7 +66,7 @@ public class DefaultJobExceptionHandlingStrategy implements JobExceptionHandling
           createCommandWrapper(
               createThrowErrorCommand(context.jobClient(), context.job(), bpmnError),
               context.job(),
-              context.jobWorkerValue());
+              context.maxRetries());
       command.executeAsyncWithMetrics(
           MetricsRecorder.METRIC_NAME_JOB,
           MetricsRecorder.ACTION_BPMN_ERROR,

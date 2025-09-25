@@ -15,20 +15,17 @@
  */
 package io.camunda.client.spring.properties;
 
-import static io.camunda.client.annotation.AnnotationUtil.getVariableParameters;
-import static io.camunda.client.annotation.AnnotationUtil.getVariableValue;
-import static io.camunda.client.annotation.AnnotationUtil.getVariablesAsTypeParameters;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang3.StringUtils.*;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.bean.ParameterInfo;
-import java.lang.reflect.Field;
+import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue.Name;
+import io.camunda.client.annotation.value.JobWorkerValue.Type;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -36,10 +33,8 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.util.ReflectionUtils;
 
 public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCustomizer {
   private static final Logger LOG =
@@ -62,65 +57,30 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyFetchVariables(final JobWorkerValue jobWorkerValue) {
-    if (hasActivatedJobInjected(jobWorkerValue)) {
-      LOG.debug(
-          "Worker '{}': ActivatedJob is injected, no variable filtering possible",
-          jobWorkerValue.getName());
-    } else if (jobWorkerValue.getForceFetchAllVariables() != null
+    if (jobWorkerValue.getForceFetchAllVariables() != null
         && jobWorkerValue.getForceFetchAllVariables()) {
-      LOG.debug("Worker '{}': Force fetch all variables is enabled", jobWorkerValue.getName());
+      LOG.debug(
+          "Worker '{}': Force fetch all variables is enabled", jobWorkerValue.getName().value());
       jobWorkerValue.setFetchVariables(List.of());
     } else {
-      final List<String> variables = new ArrayList<>();
+      final List<FetchVariable> variables = new ArrayList<>();
       if (jobWorkerValue.getFetchVariables() != null) {
         variables.addAll(jobWorkerValue.getFetchVariables());
       }
       if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
-        variables.addAll(camundaClientProperties.getWorker().getDefaults().getFetchVariables());
+        variables.addAll(
+            camundaClientProperties.getWorker().getDefaults().getFetchVariables().stream()
+                .map(
+                    fetchVariable ->
+                        new FetchVariable(fetchVariable, FieldSource.FROM_DEFAULT_PROPERTIES))
+                .toList());
       }
-      variables.addAll(
-          readZeebeVariableParameters(jobWorkerValue.getMethodInfo()).stream()
-              .map(this::extractVariableName)
-              .toList());
-      variables.addAll(readVariablesAsTypeParameters(jobWorkerValue.getMethodInfo()));
       jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
       LOG.debug(
-          "Worker '{}': Fetching only required variables {}", jobWorkerValue.getName(), variables);
+          "Worker '{}': Fetching only required variables {}",
+          jobWorkerValue.getName().value(),
+          variables);
     }
-  }
-
-  private boolean hasActivatedJobInjected(final JobWorkerValue jobWorkerValue) {
-    return jobWorkerValue.getMethodInfo().getParameters().stream()
-        .anyMatch(p -> p.getParameter().getType().isAssignableFrom(ActivatedJob.class));
-  }
-
-  private List<ParameterInfo> readZeebeVariableParameters(final MethodInfo methodInfo) {
-    return getVariableParameters(methodInfo);
-  }
-
-  private String extractVariableName(final ParameterInfo parameterInfo) {
-    // get can be used here as the list is already filtered by readZeebeVariableParameters
-    return getVariableValue(parameterInfo).get().getName();
-  }
-
-  private List<String> readVariablesAsTypeParameters(final MethodInfo methodInfo) {
-    final List<String> result = new ArrayList<>();
-    final List<ParameterInfo> parameters = getVariablesAsTypeParameters(methodInfo);
-    parameters.forEach(
-        pi ->
-            ReflectionUtils.doWithFields(
-                pi.getParameter().getType(), f -> result.add(extractFieldName(f))));
-    return result;
-  }
-
-  private String extractFieldName(final Field field) {
-    if (field.isAnnotationPresent(JsonProperty.class)) {
-      final String value = field.getAnnotation(JsonProperty.class).value();
-      if (StringUtils.isNotBlank(value)) {
-        return value;
-      }
-    }
-    return field.getName();
   }
 
   private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
@@ -129,7 +89,7 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     if (defaults != null) {
       copyProperties(defaults, editedJobWorkerValue, OverrideSource.defaults);
     }
-    final String workerType = editedJobWorkerValue.getType();
+    final String workerType = editedJobWorkerValue.getType().value();
     findWorkerOverride(workerType)
         .ifPresent(
             jobWorkerValue -> {
@@ -139,18 +99,35 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private Optional<CamundaClientJobWorkerProperties> findWorkerOverride(final String type) {
-    return Optional.ofNullable(camundaClientProperties.getWorker().getOverride().get(type));
+    return ofNullable(camundaClientProperties.getWorker().getOverride().get(type));
   }
 
   private void copyProperties(
       final CamundaClientJobWorkerProperties source,
       final JobWorkerValue target,
       final OverrideSource overrideSource) {
+    final FieldSource fieldSource =
+        switch (overrideSource) {
+          case worker -> FieldSource.FROM_OVERRIDE_PROPERTIES;
+          case defaults -> FieldSource.FROM_DEFAULT_PROPERTIES;
+        };
     if (overrideSource == OverrideSource.worker) {
       copyProperty(
-          "fetchVariables", overrideSource, source::getFetchVariables, target::setFetchVariables);
-      copyProperty("type", overrideSource, source::getType, target::setType);
-      copyProperty("name", overrideSource, source::getName, target::setName);
+          "fetchVariables",
+          overrideSource,
+          () ->
+              ofNullable(source.getFetchVariables())
+                  .map(
+                      fetchVariables ->
+                          fetchVariables.stream()
+                              .map(fetchVariable -> new FetchVariable(fetchVariable, fieldSource))
+                              .toList())
+                  .orElse(null),
+          target::setFetchVariables);
+      copyProperty(
+          "type", overrideSource, () -> new Type(source.getType(), fieldSource), target::setType);
+      copyProperty(
+          "name", overrideSource, () -> new Name(source.getName(), fieldSource), target::setName);
       copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
     }
     copyProperty("timeout", overrideSource, source::getTimeout, target::setTimeout);
@@ -187,44 +164,33 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
 
   private void applyDefaultWorkerName(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerName = camundaClientProperties.getWorker().getDefaults().getName();
-    if (isBlank(jobWorkerValue.getName())) {
+    final Name jobWorkerName = jobWorkerValue.getName();
+    if (jobWorkerName.source().isGenerated()) {
       if (isNotBlank(defaultJobWorkerName)
           && !DEFAULT_JOB_WORKER_NAME_VAR.equals(defaultJobWorkerName)) {
         LOG.debug(
             "Worker '{}': Setting name to default {}",
-            jobWorkerValue.getName(),
+            jobWorkerValue.getName().value(),
             defaultJobWorkerName);
-        jobWorkerValue.setName(defaultJobWorkerName);
+        jobWorkerValue.setName(new Name(defaultJobWorkerName, FieldSource.FROM_DEFAULT_PROPERTIES));
       } else {
-        final String generatedJobWorkerName =
-            jobWorkerValue.getMethodInfo().getBeanInfo().getBeanName()
-                + "#"
-                + jobWorkerValue.getMethodInfo().getMethodName();
-        LOG.debug(
-            "Worker '{}': Setting name to generated {}",
-            jobWorkerValue.getName(),
-            generatedJobWorkerName);
-        jobWorkerValue.setName(generatedJobWorkerName);
+        LOG.debug("Worker '{}': Using generated name", jobWorkerValue.getName().value());
       }
     }
   }
 
   private void applyDefaultJobWorkerType(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerType = camundaClientProperties.getWorker().getDefaults().getType();
-    if (isBlank(jobWorkerValue.getType())) {
+    final Type jobWorkerType = jobWorkerValue.getType();
+    if (jobWorkerType.source().isGenerated()) {
       if (isNotBlank(defaultJobWorkerType)) {
         LOG.debug(
             "Worker '{}': Setting type to default {}",
-            jobWorkerValue.getName(),
+            jobWorkerValue.getName().value(),
             defaultJobWorkerType);
-        jobWorkerValue.setType(defaultJobWorkerType);
+        jobWorkerValue.setType(new Type(defaultJobWorkerType, FieldSource.FROM_DEFAULT_PROPERTIES));
       } else {
-        final String generatedJobWorkerType = jobWorkerValue.getMethodInfo().getMethodName();
-        LOG.debug(
-            "Worker '{}': Setting type to generated {}",
-            jobWorkerValue.getName(),
-            generatedJobWorkerType);
-        jobWorkerValue.setType(generatedJobWorkerType);
+        LOG.debug("Worker '{}': Using generated type", jobWorkerValue.getName().value());
       }
     }
   }
@@ -247,7 +213,8 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     }
 
     if (!tenantIds.isEmpty()) {
-      LOG.debug("Worker '{}': Setting tenantIds to {}", jobWorkerValue.getName(), tenantIds);
+      LOG.debug(
+          "Worker '{}': Setting tenantIds to {}", jobWorkerValue.getName().value(), tenantIds);
       jobWorkerValue.setTenantIds(new ArrayList<>(tenantIds));
     }
   }
