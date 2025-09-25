@@ -24,9 +24,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstancesArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
+final class ProcessInstanceArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
   private static final Logger LOGGER =
-      LoggerFactory.getLogger(ProcessInstancesArchiverJobTest.class);
+      LoggerFactory.getLogger(ProcessInstanceArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
 
@@ -39,8 +39,8 @@ final class ProcessInstancesArchiverJobTest extends ArchiverJobRecordingMetricsA
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
-  private final ProcessInstancesArchiverJob job =
-      new ProcessInstancesArchiverJob(
+  private final ProcessInstanceArchiverJob job =
+      new ProcessInstanceArchiverJob(
           repository,
           processInstanceTemplate,
           List.of(decisionInstanceTemplate, sequenceFlowTemplate),
@@ -77,8 +77,8 @@ final class ProcessInstancesArchiverJobTest extends ArchiverJobRecordingMetricsA
   @Test
   void shouldOnlyMoveProcessInstancesWhenNoDependentTemplates() {
     // given
-    final ProcessInstancesArchiverJob processInstanceJob =
-        new ProcessInstancesArchiverJob(
+    final ProcessInstanceArchiverJob processInstanceJob =
+        new ProcessInstanceArchiverJob(
             repository, processInstanceTemplate, List.of(), metrics, LOGGER, executor);
 
     // when
@@ -157,7 +157,7 @@ final class ProcessInstancesArchiverJobTest extends ArchiverJobRecordingMetricsA
     // given
     final var dependant = new WeirdlyNamedDependant();
     final var job =
-        new ProcessInstancesArchiverJob(
+        new ProcessInstanceArchiverJob(
             repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
     repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2"));
 

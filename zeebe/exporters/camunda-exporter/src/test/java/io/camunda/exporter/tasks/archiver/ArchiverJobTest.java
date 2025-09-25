@@ -126,8 +126,8 @@ final class ArchiverJobTest {
     }
 
     @Override
-    CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
-      return ((TestRepository) repository).getNextBatch();
+    CompletableFuture<ArchiveBatch> getNextBatch() {
+      return ((TestRepository) getArchiverRepository()).getNextBatch();
     }
 
     @Override

@@ -21,9 +21,9 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class UsageMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
+final class UsageMetricArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricsArchiverJobTest.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(UsageMetricArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
 
@@ -32,8 +32,8 @@ final class UsageMetricsArchiverJobTest extends ArchiverJobRecordingMetricsAbstr
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
-  private final UsageMetricsArchiverJob job =
-      new UsageMetricsArchiverJob(repository, usageMetricTemplate, metrics, LOGGER, executor);
+  private final UsageMetricArchiverJob job =
+      new UsageMetricArchiverJob(repository, usageMetricTemplate, metrics, LOGGER, executor);
 
   @BeforeEach
   void setUp() {

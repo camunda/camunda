@@ -39,8 +39,8 @@ public class BatchOperationArchiverJob extends ArchiverJob {
   }
 
   @Override
-  CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
-    return repository.getBatchOperationsNextBatch();
+  CompletableFuture<ArchiveBatch> getNextBatch() {
+    return getArchiverRepository().getBatchOperationsNextBatch();
   }
 
   @Override
