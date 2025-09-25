@@ -126,15 +126,146 @@ To illustrate how to implement a new feature in the engine, let's consider the f
 ### Testing guidelines
 
 The `zeebe-worklow-engine` module contains various types of tests to ensure the quality of the
-engine code is maintained. Have a look at the following classes.
+engine code is maintained. The module itself contains unit tests, while integration tests are
+located in the [`zeebe/qa` module](../qa). Have a look at the [unit testing guidelines](../../docs/testing/unit.md)
+for more information on how to structure your unit tests.
 
-- JUnit4 `EngineRule` class
-- JUnit5 `ProcessingStateExtension` class
+#### Testing the Zeebe state and event appliers
+
+Zeebe `State` and `EventApplier` classes can be covered with JUnit5 test using the
+`ProcessingStateExtension` class. Have a look at the [`UserStateTest` class](https://github.com/camunda/camunda/blob/3425483f300f638f8fe4e8b471b5b60eecfa5c44/zeebe/engine/src/test/java/io/camunda/zeebe/engine/state/user/UserStateTest.java#L29)
+and [`TenantAppliersTest` class](https://github.com/camunda/camunda/blob/58257ce06621bd2bb9b7af43fb55e84bf24f0403/zeebe/engine/src/test/java/io/camunda/zeebe/engine/state/appliers/TenantAppliersTest.java#L36) as examples.
+
+#### Testing the Zeebe processors
+
+Zeebe `Processor` classes can be covered with JUnit4 tests using the `EngineRule` class. Have a look
+at the [`JobCompleteAuthorizationTest` class](https://github.com/camunda/camunda/blob/fdac437c76893d2c8884ebefb7458b9c955caa56/zeebe/engine/src/test/java/io/camunda/zeebe/engine/processing/job/JobCompleteAuthorizationTest.java#L33)
+as an example.
+
+You may notice that the `EngineRule` instance provides `job()`, `user()`, and `authorization()`
+methods. These provide instances of internal test clients that can be used to interact with the
+engine and submit command records to it. When adding a new feature, consider adding (or expand) a
+test client in the `util` test package. Have a look at the [`JobClient` class](https://github.com/camunda/camunda/blob/e472173bdb593798875f4e47eaf090b33742d491/zeebe/engine/src/test/java/io/camunda/zeebe/engine/util/client/JobClient.java#L29)
+for inspiration.
+
+You will also notice that the `EngineRule` is used in combination with the [`RecordingExporter` class](https://github.com/camunda/camunda/blob/63734638878c03e34889adc64c95fb17258a506d/zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/RecordingExporter.java#L117)
+to assert the state of the engine after processing a command. The `RecordingExporter` class allows
+you to query the log stream for records of a specific type, intent, or value. Make sure you put a
+`limit()` on your `RecordingExporter` query to avoid slowing down your tests with long-running
+queries.
+
+Finally, if your test fails, you will get a nicely formatted output of all the records that have been
+processed by the test engine until the failure. This is provided by the [`CompactRecordLogger` class](https://github.com/camunda/camunda/blob/860df5667ef1e4ffa49b764360b25914b386d949/zeebe/test-util/src/main/java/io/camunda/zeebe/test/util/record/CompactRecordLogger.java#L146),
+and is very useful for debugging test failures. You can also get this output by adding an
+`assert false` statement at the end of your test.
+
+The `CompactRecordLogger` output always provides a detailed legend of the abbreviations used, as
+well as the deployed BPMN processes and decomposed keys for easier debugging. Here is an example of
+a failure output from a test that:
+1. Deploys a simple process with a service task
+2. Creates a process instance of that process
+3. And updates a job that was created for the service task.
+
+```
+INFO  io.camunda.zeebe.test - Test failed, following records were exported:
+INFO  io.camunda.zeebe.test - Compact log representation:
+--------
+	['C'ommand/'E'event/'R'ejection] [valueType] [intent] - #[position]->#[source record position] K[key] - [summary of value]
+	P9K999 - key; #999 - record position; "ID" element/process id; @"elementid"/[P9K999] - element with ID and key
+	Keys are decomposed into partition id and per partition key (e.g. 2251799813685253 -> P1K005). If single partition, the partition is omitted.
+	Long IDs are shortened (e.g. 'startEvent_5d56488e-0570-416c-ba2d-36d2a3acea78' -> 'star..acea78'
+	Headers defined in 'Protocol' are abbreviated (e.g. 'io.camunda.zeebe:userTaskKey:2251799813685253' -> 'uTK:K005').
+--------
+C USG_MTRC  EXPORT     #01-> -1  -1 NONE:ACTIVE start[-1] end[-1] reset[-1] (no metricValues)
+E USG_MTRC  EXPORTED   #02->#01 K01 NONE:ACTIVE start[-1] end[-1] reset[T08:33:10.737] (no metricValues)
+C DPLY      CREATE     #03-> -1  -1
+E PROC      CREATED    #04->#03 K03 process.bpmn -> "process" (version:1)
+E DPLY      CREATED    #05->#03 K02 process.bpmn
+C CREA      CREATE     #06-> -1  -1 new <process "process"> (default start)  (no vars)
+C PI        ACTIVATE   #07->#06 K04 PROCESS "process" in <process "process"[K04]>
+E CREA      CREATED    #08->#06 K05 new <process "process"> (default start)  (no vars)
+E PI        ACTIVATING #09->#06 K04 PROCESS "process" in <process "process"[K04]> EI:[K04] PD:[K03]
+E PI        ACTIVATED  #10->#06 K04 PROCESS "process" in <process "process"[K04]>
+C PI        ACTIVATE   #11->#06  -1 START_EVENT "start" in <process "process"[K04]>
+E PI        ACTIVATING #12->#06 K06 START_EVENT "start" in <process "process"[K04]> EI:[K04->K06] PD:[K03]
+E PI        ACTIVATED  #13->#06 K06 START_EVENT "start" in <process "process"[K04]>
+C PI        COMPLETE   #14->#06 K06 START_EVENT "start" in <process "process"[K04]>
+E PI        COMPLETING #15->#06 K06 START_EVENT "start" in <process "process"[K04]>
+E PI        COMPLETED  #16->#06 K06 START_EVENT "start" in <process "process"[K04]>
+E PI        SQ_FLW_TKN #17->#06 K07 SEQUENCE_FLOW "sequenc..e88de26" in <process "process"[K04]>
+C PI        ACTIVATE   #18->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
+E PI        ACTIVATING #19->#06 K08 SERVICE_TASK "task" in <process "process"[K04]> EI:[K04->K08] PD:[K03]
+E JOB       CREATED    #20->#06 K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
+E PI        ACTIVATED  #21->#06 K08 SERVICE_TASK "task" in <process "process"[K04]>
+C JOB_BATCH ACTIVATE   #22-> -1  -1 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" max: 10
+E JOB_BATCH ACTIVATED  #23->#22 K10 "id-7921b6c2-24cf-402d-84a2-9e8defc6d76e" 1/10
+                K09 "id-7..d76e" @"task"[K08] 3 retries, (no vars)
+C JOB       UPDATE     #24-> -1 K09  5 retries, (no vars)
+E JOB       UPDATED    #25->#24 K09 "id-7..d76e" @"task"[K08] 5 retries, (no vars)
+
+-------------- Deployed Processes ----------------------
+process.bpmn -> "process" (version:1)[K03] ------
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<definitions xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:ns0="http://camunda.org/schema/zeebe/1.0" exporter="Zeebe BPMN Model" exporterVersion="8.8.0-SNAPSHOT" id="definitions_c6519115-ec71-4fe4-a37f-761fca8f548d" xmlns:modeler="http://camunda.org/schema/modeler/1.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0-SNAPSHOT" targetNamespace="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL">
+  <process id="process" isExecutable="true">
+    <startEvent id="start" name="start">
+      <outgoing>sequenceFlow_dae74325-d938-4453-a09d-bb1f2e88de26</outgoing>
+    </startEvent>
+    <serviceTask id="task" name="task">
+      <extensionElements>
+        <ns0:taskDefinition type="id-7921b6c2-24cf-402d-84a2-9e8defc6d76e"/>
+      </extensionElements>
+      <incoming>sequenceFlow_dae74325-d938-4453-a09d-bb1f2e88de26</incoming>
+      <outgoing>sequenceFlow_c1078aaf-1ff7-4d5b-bbee-0a143ae391da</outgoing>
+    </serviceTask>
+    <sequenceFlow id="sequenceFlow_dae74325-d938-4453-a09d-bb1f2e88de26" sourceRef="start" targetRef="task"/>
+    <endEvent id="end" name="end">
+      <incoming>sequenceFlow_c1078aaf-1ff7-4d5b-bbee-0a143ae391da</incoming>
+    </endEvent>
+    <sequenceFlow id="sequenceFlow_c1078aaf-1ff7-4d5b-bbee-0a143ae391da" sourceRef="task" targetRef="end"/>
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_f56e5cde-79a6-4431-9a9e-94ae37d48ee8">
+    <bpmndi:BPMNPlane bpmnElement="process" id="BPMNPlane_4bed1564-ef35-43cf-ace3-1ef28ba13e53">
+      <bpmndi:BPMNShape bpmnElement="start" id="BPMNShape_5500c2e5-cba0-4637-9810-4afe66584c5c">
+        <dc:Bounds height="36.0" width="36.0" x="100.0" y="100.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape bpmnElement="task" id="BPMNShape_1dd0acd6-4461-4d16-862d-7cd68086ed7e">
+        <dc:Bounds height="80.0" width="100.0" x="186.0" y="78.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sequenceFlow_dae74325-d938-4453-a09d-bb1f2e88de26" id="BPMNEdge_1ce279c3-cfb7-4267-8e7e-648eca14ee9c">
+        <di:waypoint x="136.0" y="118.0"/>
+        <di:waypoint x="186.0" y="118.0"/>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape bpmnElement="end" id="BPMNShape_84dc5fa7-8608-4bb1-b3da-d5d216ae4faa">
+        <dc:Bounds height="36.0" width="36.0" x="336.0" y="100.0"/>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge bpmnElement="sequenceFlow_c1078aaf-1ff7-4d5b-bbee-0a143ae391da" id="BPMNEdge_890babbd-622d-4eba-9e5d-4f4fff79d5e6">
+        <di:waypoint x="286.0" y="118.0"/>
+        <di:waypoint x="336.0" y="118.0"/>
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
+
+
+--------------- Decomposed keys (for debugging) -----------------
+ -1 <-> -1
+K01 <-> 2251799813685249
+K02 <-> 2251799813685250
+K03 <-> 2251799813685251
+K04 <-> 2251799813685252
+K05 <-> 2251799813685253
+K06 <-> 2251799813685254
+K07 <-> 2251799813685255
+K08 <-> 2251799813685256
+K09 <-> 2251799813685257
+K10 <-> 2251799813685258
+```
 
 ### Follow-up tasks
 
 - Zeebe QA, clients...
-- Consider adding acceptance tests in the [Camunda QA module](../../qa/README.md) module.
+- Consider adding [acceptance tests](../../docs/testing/acceptance.md) in the [Camunda QA module](../../qa/).
 
 ## Do's and Don'ts
 
