@@ -19,7 +19,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfSystemProperty;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
-import org.testcontainers.elasticsearch.ElasticsearchContainer;
 
 @EnabledIfSystemProperty(named = "camunda.docker.test.enabled", matches = "true")
 public class StartStandaloneBrokerCamundaDockerIT extends AbstractCamundaDockerIT {
@@ -28,11 +27,6 @@ public class StartStandaloneBrokerCamundaDockerIT extends AbstractCamundaDockerI
   // Regression for https://github.com/camunda/camunda/issues/38487
   public void testStartStandaloneBrokerWithoutRestAPI() throws Exception {
     // given
-    // create and start Elasticsearch container
-    final ElasticsearchContainer elasticsearchContainer =
-        createContainer(this::createElasticsearchContainer);
-    elasticsearchContainer.start();
-
     // create camunda container with only StandaloneBroker app
     final var standaloneBrokerContainer =
         new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
@@ -48,9 +42,6 @@ public class StartStandaloneBrokerCamundaDockerIT extends AbstractCamundaDockerI
                     .forPath("/actuator/health")
                     .withReadTimeout(Duration.ofSeconds(120)))
             .withStartupTimeout(Duration.ofSeconds(300))
-            // Unified Configuration
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", DATABASE_TYPE)
-            .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", elasticsearchUrl())
             // disable the REST API
             .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false");
 
