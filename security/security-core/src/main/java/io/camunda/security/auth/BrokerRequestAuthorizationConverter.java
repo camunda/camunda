@@ -47,7 +47,7 @@ public class BrokerRequestAuthorizationConverter {
     authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
     authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
     if (authentication.isAnonymous()) {
-      authorization.put(AUTHORIZED_ANONYMOUS_USER, true);
+      authorization.put(AUTHORIZED_ANONYMOUS_USER, AUTHORIZED_USERNAME);
       return authorization;
     }
 
