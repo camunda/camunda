@@ -7,7 +7,6 @@
  */
 
 import {expect, test} from '@playwright/test';
-
 import {
   jsonHeaders,
   buildUrl,
@@ -101,7 +100,6 @@ test.describe.parallel('Groups API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
-
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
       assertRequiredFields(json.items[0], groupRequiredFields);
