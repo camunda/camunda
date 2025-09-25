@@ -26,6 +26,10 @@ const queryKeys = {
       'decisionInstance',
       decisionEvaluationInstanceKey,
     ],
+    drdData: (decisionEvaluationKey: string) => [
+      'decisionInstanceDrdData',
+      decisionEvaluationKey,
+    ],
   },
 };
 
