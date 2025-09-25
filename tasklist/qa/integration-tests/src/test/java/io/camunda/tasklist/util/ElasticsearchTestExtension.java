@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.store.elasticsearch.VariableStoreElasticSearch.MAX_TERMS_COUNT_SETTING;
 import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -20,18 +19,14 @@ import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.qa.util.TasklistIndexPrefixHolder;
 import io.camunda.tasklist.qa.util.TestSchemaManager;
 import io.camunda.tasklist.qa.util.TestUtil;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
 import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
-import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
-import org.elasticsearch.action.admin.indices.settings.put.UpdateSettingsRequest;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestHighLevelClient;
-import org.elasticsearch.common.settings.Settings;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -109,32 +104,6 @@ public class ElasticsearchTestExtension
         .connect()
         .setIndexPrefix(TasklistElasticsearchProperties.DEFAULT_INDEX_PREFIX);
     assertMaxOpenScrollContexts(10);
-  }
-
-  @Override
-  public void setIndexMaxTermsCount(final String indexName, final int maxTermsCount)
-      throws IOException {
-    esClient
-        .indices()
-        .putSettings(
-            new UpdateSettingsRequest()
-                .indices(indexName)
-                .settings(Settings.builder().put(MAX_TERMS_COUNT_SETTING, maxTermsCount).build()),
-            RequestOptions.DEFAULT);
-  }
-
-  @Override
-  public int getIndexMaxTermsCount(final String indexName) throws IOException {
-    return Integer.parseInt(
-        esClient
-            .indices()
-            .getSettings(
-                new GetSettingsRequest()
-                    .indices(indexName)
-                    .includeDefaults(true)
-                    .names(MAX_TERMS_COUNT_SETTING),
-                RequestOptions.DEFAULT)
-            .getSetting(indexName, MAX_TERMS_COUNT_SETTING));
   }
 
   @Override

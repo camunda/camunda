@@ -7,15 +7,10 @@
  */
 package io.camunda.tasklist.util;
 
-import java.io.IOException;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.Extension;
 
 public interface DatabaseTestExtension extends Extension {
-
-  void setIndexMaxTermsCount(final String indexName, final int maxTermsCount) throws IOException;
-
-  int getIndexMaxTermsCount(final String indexName) throws IOException;
 
   void assertMaxOpenScrollContexts(final int maxOpenScrollContexts);
 
