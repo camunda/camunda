@@ -12,7 +12,7 @@ import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleS
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
-import io.camunda.zeebe.protocol.record.engineIntent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
 public class UserTaskCreatedV2Applier implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
   private final MutableUserTaskState userTaskState;

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.intent.EngineIntent;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -42,12 +41,6 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
   public void appendFollowUpEvent(final long key, final Intent intent, final RecordValue value) {
     final int latestVersion = eventApplier.getLatestVersion(intent);
     appendFollowUpEvent(key, intent, value, latestVersion);
-  }
-
-  @Override
-  public void appendFollowUpEvent(
-      final long key, final EngineIntent engineIntent, final RecordValue value) {
-    appendFollowUpEvent(key, engineIntent.protocolIntent(), value);
   }
 
   @Override

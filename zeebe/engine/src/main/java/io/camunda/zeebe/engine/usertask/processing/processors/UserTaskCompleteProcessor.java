@@ -8,7 +8,6 @@
 package io.camunda.zeebe.engine.usertask.processing.processors;
 
 import io.camunda.zeebe.engine.HandlesIntent;
-import io.camunda.zeebe.engine.intent.UserTaskEngineIntent;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
@@ -102,7 +101,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
     }
 
     final var request = asyncRequest.get();
-    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskEngineIntent.COMPLETED, userTaskRecord);
+    stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.COMPLETED, userTaskRecord);
     completeElementInstance(userTaskRecord);
     responseWriter.writeResponse(
         userTaskKey,

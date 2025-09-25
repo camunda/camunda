@@ -25,7 +25,7 @@ As these are immutable objects and not beans, by default, Jackson will not know 
 The `BuilderAnnotationIntrospector` is added to tell Jackson to use this builder as if the type had
 been  annotated with `JsonPOJOBuilder`.
 
-Finally, to map the `Record`'s engineIntent and value based off on the `valueType` property, we register
+Finally, to map the `Record`'s intent and value based off on the `valueType` property, we register
 an annotation mixin, `RecordMixin`, which allows us to annotate third-party types.
 
 ### Polymorphic deserialization

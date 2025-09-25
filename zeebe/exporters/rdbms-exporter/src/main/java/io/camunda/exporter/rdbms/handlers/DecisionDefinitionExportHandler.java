@@ -29,7 +29,7 @@ public class DecisionDefinitionExportHandler implements RdbmsExportHandler<Decis
 
   @Override
   public boolean canExport(final Record<DecisionRecordValue> record) {
-    // do not react on DecisionEngineIntent.DELETED to keep historic data
+    // do not react on DecisionIntent.DELETED to keep historic data
     return record.getValueType() == ValueType.DECISION
         && record.getIntent() == DecisionIntent.CREATED;
   }

@@ -13,7 +13,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.engineIntent.Intent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -27,7 +27,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
   private final long sourcePosition;
   private final long timestamp;
   private final RecordType recordType;
-  private final Intent engineIntent;
+  private final Intent intent;
   private final int partitionId;
   private final RejectionType rejectionType;
   private final String rejectionReason;
@@ -51,7 +51,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     this.sourcePosition = sourcePosition;
     this.timestamp = timestamp;
 
-    engineIntent = metadata.getIntent();
+    intent = metadata.getIntent();
     recordType = metadata.getRecordType();
     this.partitionId = partitionId;
     rejectionType = metadata.getRejectionType();
@@ -87,7 +87,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
     sourcePosition = copiedRecord.sourcePosition;
     timestamp = copiedRecord.timestamp;
 
-    engineIntent = copiedRecord.engineIntent;
+    intent = copiedRecord.intent;
     recordType = copiedRecord.recordType;
     partitionId = copiedRecord.partitionId;
     rejectionType = copiedRecord.rejectionType;
@@ -122,7 +122,7 @@ public final class CopiedRecord<T extends UnifiedRecordValue> implements Record<
 
   @Override
   public Intent getIntent() {
-    return engineIntent;
+    return intent;
   }
 
   @Override

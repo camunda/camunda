@@ -7,12 +7,12 @@
  */
 package io.camunda.zeebe.engine.state;
 
-import io.camunda.zeebe.engine.intent.EngineIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 
 public interface EventApplierRegistry {
 
-  EventApplierRegistry register(EngineIntent engineIntent, TypedEventApplier eventApplier);
+  <I extends Intent> EventApplierRegistry register(I intent, TypedEventApplier<I, ?> eventApplier);
 
-  EventApplierRegistry register(
-      EngineIntent engineIntent, int version, TypedEventApplier eventApplier);
+  <I extends Intent> EventApplierRegistry register(
+      I intent, int version, TypedEventApplier<I, ?> eventApplier);
 }

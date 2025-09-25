@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableResourceState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
-import io.camunda.zeebe.protocol.record.engineIntent.ResourceIntent;
+import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 
 public class ResourceDeletedApplier implements TypedEventApplier<ResourceIntent, ResourceRecord> {
 

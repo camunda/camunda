@@ -16,7 +16,7 @@ import io.camunda.zeebe.protocol.record.RecordMetadataEncoder;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.engineIntent.Intent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.VersionUtil;
 import io.camunda.zeebe.util.buffer.BufferReader;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -43,7 +43,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
   private RecordType recordType = RecordType.NULL_VAL;
   private ValueType valueType = ValueType.NULL_VAL;
-  private Intent engineIntent = null;
+  private Intent intent = null;
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
@@ -78,7 +78,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     requestId = decoder.requestId();
     protocolVersion = decoder.protocolVersion();
     valueType = decoder.valueType();
-    engineIntent = Intent.fromProtocolValue(valueType, decoder.engineIntent());
+    intent = Intent.fromProtocolValue(valueType, decoder.intent());
     rejectionType = decoder.rejectionType();
     operationReference = decoder.operationReference();
     batchOperationReference = decoder.batchOperationReference();
@@ -148,7 +148,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         .requestId(requestId)
         .protocolVersion(protocolVersion)
         .valueType(valueType)
-        .engineIntent(intentValue)
+        .intent(intentValue)
         .rejectionType(rejectionType)
         .recordVersion(recordVersion)
         .operationReference(operationReference)
@@ -201,14 +201,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  public RecordMetadata engineIntent(final Intent engineIntent) {
-    this.engineIntent = engineIntent;
-    intentValue = engineIntent.value();
+  public RecordMetadata intent(final Intent intent) {
+    this.intent = intent;
+    intentValue = intent.value();
     return this;
   }
 
   public Intent getIntent() {
-    return engineIntent;
+    return intent;
   }
 
   public RecordMetadata recordType(final RecordType recordType) {
@@ -301,7 +301,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     protocolVersion = Protocol.PROTOCOL_VERSION;
     valueType = ValueType.NULL_VAL;
     intentValue = Intent.NULL_VAL;
-    engineIntent = null;
+    intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
@@ -367,8 +367,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
                 + recordType
                 + ", valueType="
                 + valueType
-                + ", engineIntent="
-                + engineIntent);
+                + ", intent="
+                + intent);
     if (!rejectionType.equals(RejectionType.NULL_VAL)) {
       builder.append(", rejectionType=").append(rejectionType);
     }

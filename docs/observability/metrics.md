@@ -95,13 +95,13 @@ If you need to observe the distribution of values over time (e.g., request durat
 Example usage:
 
 ```java
-private Timer registerProcessingDurationTimer(final ValueType valueType, final Intent engineIntent) {
+private Timer registerProcessingDurationTimer(final ValueType valueType, final Intent intent) {
   final var meterDoc = StreamMetricsDoc.PROCESSING_DURATION;
   return Timer.builder(meterDoc.getName())
       .description(meterDoc.getDescription())
       .serviceLevelObjectives(meterDoc.getTimerSLOs())
       .tag(ProcessingDurationKeys.VALUE_TYPE.asString(), valueType.name())
-      .tag(ProcessingDurationKeys.INTENT.asString(), engineIntent.name())
+      .tag(ProcessingDurationKeys.INTENT.asString(), intent.name())
       .register(registry);
 }
 ```

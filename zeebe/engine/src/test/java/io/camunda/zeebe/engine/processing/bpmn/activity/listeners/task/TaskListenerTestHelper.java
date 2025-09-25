@@ -116,7 +116,7 @@ public class TaskListenerTestHelper {
 
   BpmnModelInstance createUserTaskWithTaskListenersAndAssignee(
       final ZeebeTaskListenerEventType listenerType,
-      String assignee,
+      final String assignee,
       final String... listenerTypes) {
     return createProcessWithZeebeUserTask(
         taskBuilder -> {
@@ -251,7 +251,7 @@ public class TaskListenerTestHelper {
 
     assertThat(intents)
         .describedAs(
-            "Expected intents to be only UserTaskEngineIntent, AsyncRequestEngineIntent, or VariableDocumentEngineIntent. "
+            "Expected intents to be only UserTaskType, AsyncRequestIntent, or VariableDocumentIntent. "
                 + "Add support here if others are needed.")
         .allSatisfy(
             intent ->

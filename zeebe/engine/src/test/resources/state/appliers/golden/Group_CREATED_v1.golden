@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
-import io.camunda.zeebe.protocol.record.engineIntent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 
 public class GroupCreatedApplier implements TypedEventApplier<GroupIntent, GroupRecord> {
 

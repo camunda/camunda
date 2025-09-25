@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
-import io.camunda.zeebe.engine.intent.EngineIntent;
-import io.camunda.zeebe.engine.intent.UserTaskEngineIntent;
 import io.camunda.zeebe.engine.processing.scaling.ScaleUpStatusResponseApplier;
 import io.camunda.zeebe.engine.processing.scaling.ScaledUpApplier;
 import io.camunda.zeebe.engine.processing.scaling.ScalingUpApplier;
@@ -19,6 +17,7 @@ import io.camunda.zeebe.engine.state.EventApplierRegistry;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
+import io.camunda.zeebe.engine.usertask.UserTaskType;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
@@ -123,7 +122,7 @@ public final class EventAppliers implements EventApplier, EventApplierRegistry {
 
     registerResourceAppliers(state);
 
-    UserTaskEngineIntent.registerAppliers(this, state);
+    UserTaskType.registerAppliers(this, state);
 
     registerSignalAppliers(state);
 
@@ -654,44 +653,16 @@ public final class EventAppliers implements EventApplier, EventApplierRegistry {
     register(AsyncRequestIntent.PROCESSED, new AsyncRequestProcessedApplier(asyncRequestState));
   }
 
-  private <I extends Intent> void register(final I intent, final TypedEventApplier<I, ?> applier) {
-    register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
+  @Override
+  public <I extends Intent> EventApplierRegistry register(
+      final I intent, final TypedEventApplier<I, ?> applier) {
+    return register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
   }
 
   @Override
-  public EventApplierRegistry register(
-      final EngineIntent engineIntent, final TypedEventApplier eventApplier) {
-    register(engineIntent, RecordMetadata.DEFAULT_RECORD_VERSION, eventApplier);
-    return this;
-  }
-
-  @Override
-  public EventApplierRegistry register(
-      final EngineIntent intent, final int version, final TypedEventApplier applier) {
-    Objects.requireNonNull(intent, "EngineIntent must not be null");
-    Objects.requireNonNull(applier, "Applier must not be null");
-    if (version < 1) {
-      throw new IllegalArgumentException("Version must be greater than 0");
-    }
-    if (!intent.isEvent()) {
-      throw new IllegalArgumentException("Only event intents can be registered");
-    }
-
-    final var previousApplier =
-        mapping
-            .computeIfAbsent(intent.protocolIntent(), unused -> new HashMap<>())
-            .putIfAbsent(version, applier);
-    if (previousApplier != null) {
-      throw new IllegalArgumentException(
-          String.format(
-              "Applier for intent '%s' and version '%d' is already registered", intent, version));
-    }
-    return this;
-  }
-
-  <I extends Intent> void register(
+  public <I extends Intent> EventApplierRegistry register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
-    Objects.requireNonNull(intent, "EngineIntent must not be null");
+    Objects.requireNonNull(intent, "Intent must not be null");
     Objects.requireNonNull(applier, "Applier must not be null");
     if (version < 1) {
       throw new IllegalArgumentException("Version must be greater than 0");
@@ -707,6 +678,7 @@ public final class EventAppliers implements EventApplier, EventApplierRegistry {
           String.format(
               "Applier for intent '%s' and version '%d' is already registered", intent, version));
     }
+    return this;
   }
 
   @Override

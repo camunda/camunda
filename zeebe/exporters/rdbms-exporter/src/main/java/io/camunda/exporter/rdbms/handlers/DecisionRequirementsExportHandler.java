@@ -28,7 +28,7 @@ public class DecisionRequirementsExportHandler
 
   @Override
   public boolean canExport(final Record<DecisionRequirementsRecordValue> record) {
-    // do not react on DecisionRequirementsEngineIntent.DELETED to keep historic data
+    // do not react on DecisionRequirementsIntent.DELETED to keep historic data
     return record.getValueType() == ValueType.DECISION_REQUIREMENTS
         && record.getIntent() == DecisionRequirementsIntent.CREATED;
   }

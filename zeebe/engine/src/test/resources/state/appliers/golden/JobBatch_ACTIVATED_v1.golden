@@ -13,7 +13,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.msgpack.value.LongValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.camunda.zeebe.protocol.record.engineIntent.JobBatchIntent;
+import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import java.util.Iterator;
 
 public class JobBatchActivatedApplier implements TypedEventApplier<JobBatchIntent, JobBatchRecord> {

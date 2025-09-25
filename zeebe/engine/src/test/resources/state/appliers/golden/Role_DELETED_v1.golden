@@ -10,7 +10,7 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableRoleState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
-import io.camunda.zeebe.protocol.record.engineIntent.RoleIntent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 
 public class RoleDeletedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 

@@ -160,7 +160,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final RecordMetadata recordMetadata = new RecordMetadata();
 
-              final DeploymentIntent engineIntent = DeploymentIntent.CREATE;
+              final DeploymentIntent intent = DeploymentIntent.CREATE;
               final int protocolVersion = 1;
               final VersionInfo brokerVersion = new VersionInfo(1, 2, 3);
               final ValueType valueType = ValueType.DEPLOYMENT;
@@ -174,7 +174,7 @@ final class JsonSerializableToJsonTest {
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
 
               recordMetadata
-                  .intent(engineIntent)
+                  .intent(intent)
                   .protocolVersion(protocolVersion)
                   .brokerVersion(brokerVersion)
                   .recordVersion(10)
@@ -225,7 +225,7 @@ final class JsonSerializableToJsonTest {
           "position": 4321,
           "timestamp": 2191,
           "recordType": "COMMAND",
-          "engineIntent": "CREATE",
+          "intent": "CREATE",
           "partitionId": 0,
           "rejectionType": "INVALID_ARGUMENT",
           "rejectionReason": "fails",
@@ -293,7 +293,7 @@ final class JsonSerializableToJsonTest {
           "timestamp": -1,
           "recordType": "NULL_VAL",
           "valueType": "NULL_VAL",
-          "engineIntent": null,
+          "intent": null,
           "rejectionType": "NULL_VAL",
           "rejectionReason": "",
           "brokerVersion": "0.0.0",
@@ -2409,7 +2409,7 @@ final class JsonSerializableToJsonTest {
           "partitionId": 1,
           "queueId": "totally-random-queue-id",
           "valueType": "DEPLOYMENT",
-          "engineIntent": "CREATE",
+          "intent": "CREATE",
           "commandValue": {
             "resources": [{
               "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
@@ -2448,7 +2448,7 @@ final class JsonSerializableToJsonTest {
           "partitionId": 1,
           "queueId": null,
           "valueType": "NULL_VAL",
-          "engineIntent": "UNKNOWN",
+          "intent": "UNKNOWN",
           "commandValue": null
         }
         """

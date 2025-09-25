@@ -88,7 +88,7 @@ combination with the [command value](#command-value) to recreate the distributed
 
 #### Intent
 
-The engineIntent is required during redistribution of the command. We must know what engineIntent we should
+The intent is required during redistribution of the command. We must know what intent we should
 distribute the command with.
 
 #### Command value

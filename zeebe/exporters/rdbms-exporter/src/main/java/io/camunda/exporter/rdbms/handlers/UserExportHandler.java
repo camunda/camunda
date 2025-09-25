@@ -29,7 +29,7 @@ public class UserExportHandler implements RdbmsExportHandler<UserRecordValue> {
 
   @Override
   public boolean canExport(final Record<UserRecordValue> record) {
-    // do not react on UserEngineIntent.DELETED to keep historic data
+    // do not react on UserIntent.DELETED to keep historic data
     return record.getValueType() == ValueType.USER
         && (record.getIntent() == UserIntent.CREATED
             || record.getIntent() == UserIntent.UPDATED

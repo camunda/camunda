@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.engine.intent.EngineIntent;
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -38,9 +37,6 @@ public interface TypedEventWriter {
    * @throws ExceededBatchRecordSizeException if the appended event doesn't fit into the RecordBatch
    */
   void appendFollowUpEvent(long key, Intent intent, RecordValue value);
-
-  void appendFollowUpEvent(
-      long key, EngineIntent engineIntent, RecordValue value);
 
   /**
    * Append a specific version of a follow-up event to the result builder.
@@ -112,10 +108,10 @@ public interface TypedEventWriter {
    * @throws ExceededBatchRecordSizeException if the event exceeds batch size
    */
   default void appendFollowUpEvent(
-      long key,
-      Intent intent,
-      RecordValue value,
-      Consumer<FollowUpEventMetadata.Builder> builderConsumer) {
+      final long key,
+      final Intent intent,
+      final RecordValue value,
+      final Consumer<FollowUpEventMetadata.Builder> builderConsumer) {
     final var builder = FollowUpEventMetadata.builder();
     builderConsumer.accept(builder);
     appendFollowUpEvent(key, intent, value, builder.build());
