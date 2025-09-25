@@ -69,7 +69,7 @@
             </goals>
             <phase>package</phase>
             <configuration>
-              <finalName>cdb-${project.version}</finalName>
+              <finalName>cdbg-${project.version}</finalName>
               <minimizeJar>true</minimizeJar>
               <filters>
                 <filter>
