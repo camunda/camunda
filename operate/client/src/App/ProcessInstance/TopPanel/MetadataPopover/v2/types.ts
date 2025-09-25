@@ -6,15 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import type {
   ElementInstance,
   ProcessInstance,
   Job,
   UserTask,
+  DecisionInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-
-// V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
+// V2 Element Instance Metadata - aggregated type created from v2 APIs
 type V2InstanceMetadata = {
   elementInstanceKey: string;
   elementId: string;
@@ -34,9 +33,6 @@ type V2InstanceMetadata = {
   calledDecisionInstanceId: string | null;
   calledDecisionDefinitionName: string | null;
   jobRetries: number | null;
-  flowNodeInstanceId?: string;
-  flowNodeId?: string;
-  flowNodeType?: string;
   eventId?: string;
   jobType?: string | null;
   jobWorker?: string | null;
@@ -44,14 +40,6 @@ type V2InstanceMetadata = {
   jobCustomHeaders: Record<string, unknown> | null;
   jobKey?: string | null;
 } & Partial<UserTask>;
-
-type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
-  instanceMetadata: V2InstanceMetadata | null;
-  incident: {
-    errorType: {id: string; name: string};
-    errorMessage: string;
-  } | null;
-};
 
 type UserTaskSubset = Pick<
   UserTask,
@@ -70,12 +58,12 @@ type UserTaskSubset = Pick<
   | 'priority'
 >;
 
-// Utility function to create V2 instance metadata from old metadata + migrated element instance
-function createV2InstanceMetadata(
-  oldMetadata: MetaDataDto['instanceMetadata'],
+// Utility function to create V2 instance metadata by aggregating data from v2 APIs
+function buildInstanceMetadata(
   elementInstance: ElementInstance,
   job?: Job,
   calledProcess?: ProcessInstance,
+  decisionInstance?: DecisionInstance,
   userTask: Partial<UserTaskSubset> | null = {},
 ): V2InstanceMetadata {
   const {
@@ -97,9 +85,10 @@ function createV2InstanceMetadata(
   return {
     calledProcessInstanceId: calledProcess?.processInstanceKey ?? null,
     calledProcessDefinitionName: calledProcess?.processDefinitionName ?? null,
-    calledDecisionInstanceId: oldMetadata?.calledDecisionInstanceId ?? null,
+    calledDecisionInstanceId:
+      decisionInstance?.decisionEvaluationInstanceKey ?? null,
     calledDecisionDefinitionName:
-      oldMetadata?.calledDecisionDefinitionName ?? null,
+      decisionInstance?.decisionDefinitionName ?? null,
     jobRetries: job?.retries ?? null,
     jobDeadline: job?.deadline ?? null,
     jobKey: job?.jobKey ?? null,
@@ -120,9 +109,6 @@ function createV2InstanceMetadata(
     hasIncident: elementInstance.hasIncident,
     incidentKey: elementInstance.incidentKey,
     tenantId: elementInstance.tenantId,
-    flowNodeInstanceId: elementInstance.elementInstanceKey,
-    flowNodeId: elementInstance.elementId,
-    flowNodeType: oldMetadata?.flowNodeType,
 
     creationDate,
     completionDate,
@@ -139,6 +125,6 @@ function createV2InstanceMetadata(
   };
 }
 
-export type {V2MetaDataDto};
+export type {V2InstanceMetadata};
 
-export {createV2InstanceMetadata};
+export {buildInstanceMetadata};

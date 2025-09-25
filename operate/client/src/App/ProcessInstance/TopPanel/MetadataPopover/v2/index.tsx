@@ -22,7 +22,7 @@ import {useElementInstance} from 'modules/queries/elementInstances/useElementIns
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useMemo} from 'react';
 import {Details} from './Details';
-import {createV2InstanceMetadata} from './types';
+import {buildInstanceMetadata} from './types';
 import {useGetUserTaskByElementInstance} from 'modules/queries/userTasks/useGetUserTaskByElementInstance';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
@@ -180,7 +180,10 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       },
     },
     {
-      enabled: !!elementInstanceMetadata?.elementInstanceKey,
+      enabled:
+        !!elementInstanceMetadata?.elementInstanceKey &&
+        (elementInstanceMetadata?.type === 'BUSINESS_RULE_TASK' ||
+          elementInstanceMetadata?.hasIncident),
     },
   );
 
@@ -197,7 +200,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     return null;
   }
 
-  const {instanceMetadata, incident} = metaData;
+  const {incident} = metaData;
 
   return (
     <Popover
@@ -225,26 +228,25 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
 
         {elementInstanceMetadata && (
           <Details
-            metaData={{
-              ...metaData,
-              instanceMetadata: createV2InstanceMetadata(
-                instanceMetadata,
-                elementInstanceMetadata,
-                jobSearchResult?.[0],
-                processInstancesSearchResult?.items?.[0],
-                elementInstanceMetadata.type === 'USER_TASK'
-                  ? userTask
-                  : undefined,
-              ),
-              incident: singleIncident
+            instanceMetadata={buildInstanceMetadata(
+              elementInstanceMetadata,
+              jobSearchResult?.[0],
+              processInstancesSearchResult?.items?.[0],
+              decisionInstanceSearchResult?.items?.[0],
+              elementInstanceMetadata.type === 'USER_TASK'
+                ? userTask
+                : undefined,
+            )}
+            incident={
+              singleIncident
                 ? {
                     errorType: resolveIncidentErrorType(
                       singleIncident?.errorType,
                     ),
                     errorMessage: singleIncident.errorMessage,
                   }
-                : null,
-            }}
+                : null
+            }
             elementId={elementInstanceMetadata.elementId}
             businessObject={businessObject}
           />
