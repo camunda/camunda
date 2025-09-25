@@ -58,7 +58,7 @@ public interface VariableState {
    * <p>This method provides access to the variable document key and its associated variable
    * document record within the specified scope. It's particularly useful in scenarios where the
    * original variable update request needs to be referenced, such as during the finalization of a
-   * user task update transition triggered by a {@code VariableDocumentIntent#UPDATE} command.
+   * user task update transition triggered by a {@code VariableDocumentEngineIntent#UPDATE} command.
    *
    * @param scopeKey the scope key for which to retrieve the variable document
    * @return an {@link Optional} containing the {@link VariableDocumentState} if found

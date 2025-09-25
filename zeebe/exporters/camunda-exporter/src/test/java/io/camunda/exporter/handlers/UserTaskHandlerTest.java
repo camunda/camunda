@@ -28,7 +28,7 @@ import io.camunda.webapps.schema.entities.usertask.TaskState;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.engineIntent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -101,12 +101,12 @@ public class UserTaskHandlerTest {
   void shouldHandleRecord() {
     // given
     SUPPORTED_INTENTS.forEach(
-        intent -> {
+        engineIntent -> {
           final Record<UserTaskRecordValue> userTaskRecord =
-              factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
+              factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(engineIntent));
           // when - then
           assertThat(underTest.handlesRecord(userTaskRecord))
-              .describedAs("Expect to handle intent %s", intent)
+              .describedAs("Expect to handle engineIntent %s", engineIntent)
               .isTrue();
         });
   }
@@ -115,14 +115,14 @@ public class UserTaskHandlerTest {
   void shouldNotHandleRecord() {
     // given
     Arrays.stream(UserTaskIntent.values())
-        .filter(intent -> !SUPPORTED_INTENTS.contains(intent))
+        .filter(engineIntent -> !SUPPORTED_INTENTS.contains(engineIntent))
         .forEach(
-            intent -> {
+            engineIntent -> {
               final Record<UserTaskRecordValue> variableRecord =
-                  factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(intent));
+                  factory.generateRecord(ValueType.USER_TASK, r -> r.withIntent(engineIntent));
               // when - then
               assertThat(underTest.handlesRecord(variableRecord))
-                  .describedAs("Expect not to handle intent %s", intent)
+                  .describedAs("Expect not to handle engineIntent %s", engineIntent)
                   .isFalse();
             });
   }
@@ -1075,8 +1075,8 @@ public class UserTaskHandlerTest {
 
   @ParameterizedTest
   @EnumSource(value = UserTaskIntent.class)
-  void flushedEntityShouldContainPartialStates(final UserTaskIntent intent) {
-    Assumptions.assumeThat(intent.isEvent())
+  void flushedEntityShouldContainPartialStates(final UserTaskIntent engineIntent) {
+    Assumptions.assumeThat(engineIntent.isEvent())
         .describedAs("Only relevant for handled events")
         .isTrue();
 
@@ -1085,7 +1085,7 @@ public class UserTaskHandlerTest {
         factory.generateRecord(
             ValueType.USER_TASK,
             r ->
-                r.withIntent(intent)
+                r.withIntent(engineIntent)
                     .withKey(111)
                     .withValue(ImmutableUserTaskRecordValue.builder().build())
                     .withTimestamp(System.currentTimeMillis()));
@@ -1106,7 +1106,7 @@ public class UserTaskHandlerTest {
             updateFieldsCaptor.capture(),
             eq(taskEntity.getId()));
 
-    final var expectedState = mapIntentToExpectedState(intent);
+    final var expectedState = mapIntentToExpectedState(engineIntent);
     if (expectedState == null) {
       assertThat(updateFieldsCaptor.getValue())
           .describedAs("Expect state to not be updated")
@@ -1120,10 +1120,10 @@ public class UserTaskHandlerTest {
 
   /**
    * Maps a given {@link UserTaskIntent} to the expected {@link TaskState} that the user task should
-   * be updated to, or returns {@code null} if the intent should not result in a state update.
+   * be updated to, or returns {@code null} if the engineIntent should not result in a state update.
    */
-  private TaskState mapIntentToExpectedState(final UserTaskIntent intent) {
-    return switch (intent) {
+  private TaskState mapIntentToExpectedState(final UserTaskIntent engineIntent) {
+    return switch (engineIntent) {
       case CREATING -> TaskState.CREATING;
       case CREATED, ASSIGNED, ASSIGNMENT_DENIED, UPDATED, UPDATE_DENIED, COMPLETION_DENIED ->
           TaskState.CREATED;
@@ -1137,8 +1137,8 @@ public class UserTaskHandlerTest {
       default ->
           throw new IllegalArgumentException(
               """
-              Not yet supported intent! \
-              Please consider whether this intent should update the task's state \
+              Not yet supported engineIntent! \
+              Please consider whether this engineIntent should update the task's state \
               and add a case for it""");
     };
   }

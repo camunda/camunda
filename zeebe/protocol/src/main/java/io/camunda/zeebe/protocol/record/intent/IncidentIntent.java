@@ -20,7 +20,8 @@ public enum IncidentIntent implements ProcessInstanceRelatedIntent {
 
   RESOLVE((short) 1, false),
   RESOLVED((short) 2),
-  MIGRATED((short) 3, false);
+  MIGRATED((short) 3, false),
+  UNKNOWN((short) 99);
 
   private final short value;
   private final boolean shouldBanInstance;

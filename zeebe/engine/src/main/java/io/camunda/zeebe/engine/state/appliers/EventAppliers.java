@@ -7,12 +7,15 @@
  */
 package io.camunda.zeebe.engine.state.appliers;
 
+import io.camunda.zeebe.engine.intent.EngineIntent;
+import io.camunda.zeebe.engine.intent.UserTaskEngineIntent;
 import io.camunda.zeebe.engine.processing.scaling.ScaleUpStatusResponseApplier;
 import io.camunda.zeebe.engine.processing.scaling.ScaledUpApplier;
 import io.camunda.zeebe.engine.processing.scaling.ScalingUpApplier;
 import io.camunda.zeebe.engine.state.EventApplier;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForIntent;
 import io.camunda.zeebe.engine.state.EventApplier.NoSuchEventApplier.NoApplierForVersion;
+import io.camunda.zeebe.engine.state.EventApplierRegistry;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -66,7 +69,6 @@ import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
-import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
@@ -80,7 +82,7 @@ import java.util.Objects;
  *
  * <p>Finds the correct {@link TypedEventApplier} and delegates.
  */
-public final class EventAppliers implements EventApplier {
+public final class EventAppliers implements EventApplier, EventApplierRegistry {
 
   public static final TypedEventApplier<Intent, RecordValue> NOOP_EVENT_APPLIER =
       (key, value) -> {};
@@ -121,7 +123,7 @@ public final class EventAppliers implements EventApplier {
 
     registerResourceAppliers(state);
 
-    registerUserTaskAppliers(state);
+    UserTaskEngineIntent.registerAppliers(this, state);
 
     registerSignalAppliers(state);
 
@@ -479,35 +481,6 @@ public final class EventAppliers implements EventApplier {
     register(ResourceIntent.FETCHED, NOOP_EVENT_APPLIER);
   }
 
-  private void registerUserTaskAppliers(final MutableProcessingState state) {
-    register(UserTaskIntent.CREATING, new UserTaskCreatingApplier(state));
-    register(UserTaskIntent.CREATING, 2, new UserTaskCreatingV2Applier(state));
-    register(UserTaskIntent.CREATED, new UserTaskCreatedApplier(state));
-    register(UserTaskIntent.CREATED, 2, new UserTaskCreatedV2Applier(state));
-    register(UserTaskIntent.CANCELING, 1, new UserTaskCancelingV1Applier(state));
-    register(UserTaskIntent.CANCELING, 2, new UserTaskCancelingV2Applier(state));
-    register(UserTaskIntent.CANCELED, new UserTaskCanceledApplier(state));
-    register(UserTaskIntent.COMPLETING, 1, new UserTaskCompletingV1Applier(state));
-    register(UserTaskIntent.COMPLETING, 2, new UserTaskCompletingV2Applier(state));
-    register(UserTaskIntent.COMPLETED, 1, new UserTaskCompletedV1Applier(state));
-    register(UserTaskIntent.COMPLETED, 2, new UserTaskCompletedV2Applier(state));
-    register(UserTaskIntent.ASSIGNING, 1, new UserTaskAssigningV1Applier(state));
-    register(UserTaskIntent.ASSIGNING, 2, new UserTaskAssigningV2Applier(state));
-    register(UserTaskIntent.ASSIGNED, 1, new UserTaskAssignedV1Applier(state));
-    register(UserTaskIntent.ASSIGNED, 2, new UserTaskAssignedV2Applier(state));
-    register(UserTaskIntent.ASSIGNED, 3, new UserTaskAssignedV3Applier(state));
-    register(UserTaskIntent.CLAIMING, new UserTaskClaimingApplier(state));
-    register(UserTaskIntent.UPDATING, 1, new UserTaskUpdatingV1Applier(state));
-    register(UserTaskIntent.UPDATING, 2, new UserTaskUpdatingV2Applier(state));
-    register(UserTaskIntent.UPDATED, 1, new UserTaskUpdatedV1Applier(state));
-    register(UserTaskIntent.UPDATED, 2, new UserTaskUpdatedV2Applier(state));
-    register(UserTaskIntent.MIGRATED, new UserTaskMigratedApplier(state));
-    register(UserTaskIntent.CORRECTED, new UserTaskCorrectedApplier(state));
-    register(UserTaskIntent.COMPLETION_DENIED, new UserTaskCompletionDeniedApplier(state));
-    register(UserTaskIntent.ASSIGNMENT_DENIED, new UserTaskAssignmentDeniedApplier(state));
-    register(UserTaskIntent.UPDATE_DENIED, new UserTaskUpdateDeniedApplier(state));
-  }
-
   private void registerCompensationSubscriptionApplier(
       final MutableProcessingState processingState) {
     register(
@@ -685,9 +658,40 @@ public final class EventAppliers implements EventApplier {
     register(intent, RecordMetadata.DEFAULT_RECORD_VERSION, applier);
   }
 
+  @Override
+  public EventApplierRegistry register(
+      final EngineIntent engineIntent, final TypedEventApplier eventApplier) {
+    register(engineIntent, RecordMetadata.DEFAULT_RECORD_VERSION, eventApplier);
+    return this;
+  }
+
+  @Override
+  public EventApplierRegistry register(
+      final EngineIntent intent, final int version, final TypedEventApplier applier) {
+    Objects.requireNonNull(intent, "EngineIntent must not be null");
+    Objects.requireNonNull(applier, "Applier must not be null");
+    if (version < 1) {
+      throw new IllegalArgumentException("Version must be greater than 0");
+    }
+    if (!intent.isEvent()) {
+      throw new IllegalArgumentException("Only event intents can be registered");
+    }
+
+    final var previousApplier =
+        mapping
+            .computeIfAbsent(intent.protocolIntent(), unused -> new HashMap<>())
+            .putIfAbsent(version, applier);
+    if (previousApplier != null) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Applier for intent '%s' and version '%d' is already registered", intent, version));
+    }
+    return this;
+  }
+
   <I extends Intent> void register(
       final I intent, final int version, final TypedEventApplier<I, ?> applier) {
-    Objects.requireNonNull(intent, "Intent must not be null");
+    Objects.requireNonNull(intent, "EngineIntent must not be null");
     Objects.requireNonNull(applier, "Applier must not be null");
     if (version < 1) {
       throw new IllegalArgumentException("Version must be greater than 0");

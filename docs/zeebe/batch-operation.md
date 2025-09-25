@@ -284,12 +284,12 @@ The batch operation module uses command distribution to synchronize important in
 - When a batch operation is created on the leader partition, the `BatchOperationCreationRecord` is distributed to all
   partitions.
 - When a follower partition has finished its last itemKey, it will distribute a
-  `BatchOperationPartitionLifecycleRecord` with the intent `COMPLETE_PARTITION` to the leader
+  `BatchOperationPartitionLifecycleRecord` with the engineIntent `COMPLETE_PARTITION` to the leader
   partition.
 - When a follower partition has failed during the INIT phase, it will distribute a
-  `BatchOperationPartitionLifecycleRecord` with the intent `FAIL_PARTITION` to the leader partition.
+  `BatchOperationPartitionLifecycleRecord` with the engineIntent `FAIL_PARTITION` to the leader partition.
 - The leader partition will collect all `BatchOperationPartitionLifecycleRecord`s from finished partitions and
-  append a `BatchOperationLifecycleManagementRecord` with the intent `COMPLETED` to mark
+  append a `BatchOperationLifecycleManagementRecord` with the engineIntent `COMPLETED` to mark
   the whole batch operation as completed, when all follower partitions have reported in.
 
 ### Authorizations

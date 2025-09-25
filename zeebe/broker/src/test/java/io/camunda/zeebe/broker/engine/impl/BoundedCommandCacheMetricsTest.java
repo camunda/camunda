@@ -34,12 +34,12 @@ final class BoundedCommandCacheMetricsTest {
     final var timeoutGauge =
         registry
             .get("zeebe.stream.processor.scheduled.command.cache.size")
-            .tag("intent", "JobIntent.TIME_OUT")
+            .tag("intent", "JobEngineIntent.TIME_OUT")
             .gauge();
     final var recurGauge =
         registry
             .get("zeebe.stream.processor.scheduled.command.cache.size")
-            .tag("intent", "JobIntent.RECUR_AFTER_BACKOFF")
+            .tag("intent", "JobEngineIntent.RECUR_AFTER_BACKOFF")
             .gauge();
     assertThat(timeoutGauge).returns(30.0, Gauge::value);
     assertThat(recurGauge).returns(20.0, Gauge::value);

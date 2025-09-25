@@ -108,7 +108,7 @@ public class ScaleRecord extends UnifiedRecordValue implements ScaleRecordValue 
     return this;
   }
 
-  //// Helpers to fill the required fields depending on the intent
+  //// Helpers to fill the required fields depending on the engineIntent
   public ScaleRecord scaleUp(final int desiredPartitionCount) {
     setDesiredPartitionCount(desiredPartitionCount);
     return this;

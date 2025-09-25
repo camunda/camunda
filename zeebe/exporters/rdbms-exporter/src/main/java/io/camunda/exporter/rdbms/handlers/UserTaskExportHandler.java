@@ -19,6 +19,7 @@ import io.camunda.db.rdbms.write.domain.UserTaskMigrationDbModel;
 import io.camunda.db.rdbms.write.service.UserTaskWriter;
 import io.camunda.exporter.rdbms.RdbmsExportHandler;
 import io.camunda.exporter.rdbms.utils.DateUtil;
+import io.camunda.zeebe.engine.HandlesIntent;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCache;
 import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
@@ -33,6 +34,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Based on UserTaskRecordToTaskEntityMapper */
+@HandlesIntent(
+    userTasks = {
+      UserTaskIntent.CREATING,
+      UserTaskIntent.CREATED,
+      UserTaskIntent.ASSIGNING,
+      UserTaskIntent.CLAIMING,
+      UserTaskIntent.ASSIGNED,
+      UserTaskIntent.UPDATING,
+      UserTaskIntent.UPDATED,
+      UserTaskIntent.COMPLETING,
+      UserTaskIntent.COMPLETED,
+      UserTaskIntent.CANCELING,
+      UserTaskIntent.CANCELED,
+      UserTaskIntent.MIGRATED,
+      UserTaskIntent.ASSIGNMENT_DENIED,
+      UserTaskIntent.UPDATE_DENIED,
+      UserTaskIntent.COMPLETION_DENIED
+    })
 public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskExportHandler.class);

@@ -134,7 +134,7 @@ public class CreateUserTest {
         .hasResourceId(username)
         .hasOnlyPermissionTypes(PermissionType.READ);
 
-    // Verify that UserIntent.CREATE and UserIntent.CREATED events exist
+    // Verify that UserEngineIntent.CREATE and UserEngineIntent.CREATED events exist
     final var intents =
         RecordingExporter.userRecords()
             .withUsername(username)
@@ -144,7 +144,7 @@ public class CreateUserTest {
 
     Assertions.assertThat(intents).containsExactly(UserIntent.CREATE, UserIntent.CREATED);
 
-    // Verify that AuthorizationIntent.CREATE and AuthorizationIntent.CREATED events exist
+    // Verify that AuthorizationEngineIntent.CREATE and AuthorizationEngineIntent.CREATED events exist
     final var authorizationIntents =
         RecordingExporter.authorizationRecords()
             .withOwnerId(username)

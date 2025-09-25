@@ -7,8 +7,8 @@
  */
 package io.camunda.zeebe.engine.state.mutable;
 
-import io.camunda.zeebe.engine.state.immutable.UserTaskState;
-import io.camunda.zeebe.engine.state.instance.UserTaskIntermediateStateValue;
+import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState;
+import io.camunda.zeebe.engine.usertask.state.instance.UserTaskIntermediateStateValue;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import java.util.function.Consumer;
 

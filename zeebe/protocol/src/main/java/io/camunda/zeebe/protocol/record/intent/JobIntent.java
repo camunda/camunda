@@ -52,7 +52,9 @@ public enum JobIntent implements ProcessInstanceRelatedIntent {
   MIGRATED((short) 19),
 
   UPDATE((short) 20),
-  UPDATED((short) 21);
+  UPDATED((short) 21),
+
+  UNKNOWN((short) 99);
 
   private final short value;
   private final boolean shouldBanInstance;

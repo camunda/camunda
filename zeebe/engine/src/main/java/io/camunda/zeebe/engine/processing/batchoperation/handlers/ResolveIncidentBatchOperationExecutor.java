@@ -40,7 +40,7 @@ public class ResolveIncidentBatchOperationExecutor implements BatchOperationExec
   public void execute(final long incidentKey, final PersistedBatchOperation batchOperation) {
     final var incident = incidentState.getIncidentRecord(incidentKey);
     if (incident == null) {
-      // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentIntent.REVOLVE
+      // ok I admit it, this is a bit of a hack, but we need to provoke an IncidentEngineIntent.REVOLVE
       // rejection here, so we still append the resolve incident command
       resolveIncident(incidentKey, batchOperation);
       return;

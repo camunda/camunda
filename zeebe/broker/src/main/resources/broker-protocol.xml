@@ -17,7 +17,7 @@
   <sbe:message name="InterPartitionMessage" id="4">
     <field name="receiverPartitionId" id="0" type="uint16"/>
     <field name="valueType" id="1" type="uint8"/>
-    <field name="intent" id="2" type="uint8"/>
+    <field name="engineIntent" id="2" type="uint8"/>
     <field name="recordKey" id="3" type="uint64" presence="optional"/>
     <field name="checkpointId" id="4" type="int64"/>
 

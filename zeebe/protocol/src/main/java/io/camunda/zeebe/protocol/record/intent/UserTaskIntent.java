@@ -122,7 +122,9 @@ public enum UserTaskIntent implements ProcessInstanceRelatedIntent {
    * @apiNote The engine manages this command internally. Writing this command directly won't
    *     trigger user task cancellation. It shouldn't be used via client APIs.
    */
-  CANCEL(23);
+  CANCEL(23),
+
+  UNKNOWN(99);
 
   private final short value;
   private final boolean shouldBanInstance;

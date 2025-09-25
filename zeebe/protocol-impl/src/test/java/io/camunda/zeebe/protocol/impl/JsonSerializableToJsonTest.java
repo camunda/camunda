@@ -82,7 +82,7 @@ import io.camunda.zeebe.protocol.record.JsonSerializable;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.engineIntent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -160,7 +160,7 @@ final class JsonSerializableToJsonTest {
             () -> {
               final RecordMetadata recordMetadata = new RecordMetadata();
 
-              final DeploymentIntent intent = DeploymentIntent.CREATE;
+              final DeploymentIntent engineIntent = DeploymentIntent.CREATE;
               final int protocolVersion = 1;
               final VersionInfo brokerVersion = new VersionInfo(1, 2, 3);
               final ValueType valueType = ValueType.DEPLOYMENT;
@@ -174,7 +174,7 @@ final class JsonSerializableToJsonTest {
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
 
               recordMetadata
-                  .intent(intent)
+                  .engineIntent(engineIntent)
                   .protocolVersion(protocolVersion)
                   .brokerVersion(brokerVersion)
                   .recordVersion(10)
@@ -225,7 +225,7 @@ final class JsonSerializableToJsonTest {
           "position": 4321,
           "timestamp": 2191,
           "recordType": "COMMAND",
-          "intent": "CREATE",
+          "engineIntent": "CREATE",
           "partitionId": 0,
           "rejectionType": "INVALID_ARGUMENT",
           "rejectionReason": "fails",
@@ -293,7 +293,7 @@ final class JsonSerializableToJsonTest {
           "timestamp": -1,
           "recordType": "NULL_VAL",
           "valueType": "NULL_VAL",
-          "intent": null,
+          "engineIntent": null,
           "rejectionType": "NULL_VAL",
           "rejectionReason": "",
           "brokerVersion": "0.0.0",
@@ -2409,7 +2409,7 @@ final class JsonSerializableToJsonTest {
           "partitionId": 1,
           "queueId": "totally-random-queue-id",
           "valueType": "DEPLOYMENT",
-          "intent": "CREATE",
+          "engineIntent": "CREATE",
           "commandValue": {
             "resources": [{
               "resource": "VGhpcyBpcyB0aGUgY29udGVudHMgb2YgdGhlIEJQTU4=",
@@ -2448,7 +2448,7 @@ final class JsonSerializableToJsonTest {
           "partitionId": 1,
           "queueId": null,
           "valueType": "NULL_VAL",
-          "intent": "UNKNOWN",
+          "engineIntent": "UNKNOWN",
           "commandValue": null
         }
         """

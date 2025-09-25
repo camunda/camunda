@@ -251,7 +251,7 @@ public class TaskListenerTestHelper {
 
     assertThat(intents)
         .describedAs(
-            "Expected intents to be only UserTaskIntent, AsyncRequestIntent, or VariableDocumentIntent. "
+            "Expected intents to be only UserTaskEngineIntent, AsyncRequestEngineIntent, or VariableDocumentEngineIntent. "
                 + "Add support here if others are needed.")
         .allSatisfy(
             intent ->

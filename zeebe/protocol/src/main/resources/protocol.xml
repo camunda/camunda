@@ -131,7 +131,7 @@
     <field name="partitionId" id="1" type="uint16"/>
     <field name="key" id="4" type="uint64"/>
     <field name="valueType" id="5" type="ValueType"/>
-    <field name="intent" id="6" type="uint8"/>
+    <field name="engineIntent" id="6" type="uint8"/>
     <!-- populated when the client passes an operation reference to the gateway-->
     <field name="operationReference" id="9" type="uint64" presence="optional" sinceVersion="5"/>
     <data name="value" id="7" type="varDataEncoding"/>
@@ -145,7 +145,7 @@
     <field name="recordType" id="3" type="RecordType"/>
     <!-- value type is usually request.ValueType but can also be ERROR if RecordType is COMMAND_REJECTION -->
     <field name="valueType" id="4" type="ValueType"/>
-    <field name="intent" id="5" type="uint8"/>
+    <field name="engineIntent" id="5" type="uint8"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
     <field name="rejectionType" id="6" type="RejectionType"/>
     <data name="value" id="7" type="varDataEncoding"/>
@@ -172,7 +172,7 @@
     <field name="requestId" id="3" type="uint64"/>
     <field name="protocolVersion" id="4" type="uint16"/>
     <field name="valueType" id="5" type="ValueType"/>
-    <field name="intent" id="6" type="uint8"/>
+    <field name="engineIntent" id="6" type="uint8"/>
     <field name="brokerVersion" id="9" type="Version" sinceVersion="2" presence="optional"/>
     <field name="recordVersion" id="10" type="uint16" sinceVersion="3" presence="optional"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->

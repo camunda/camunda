@@ -176,7 +176,7 @@ public class EventAppliersTest {
         Intent.INTENT_CLASSES.stream()
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
             .filter(Intent::isEvent)
-            // CheckpointIntent is not handled by the engine
+            // CheckpointEngineIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // when
@@ -188,7 +188,7 @@ public class EventAppliersTest {
             intent ->
                 assertThat(eventAppliers.getLatestVersion(intent))
                     .describedAs(
-                        "Intent %s.%s has a registered event applier",
+                        "EngineIntent %s.%s has a registered event applier",
                         intent.getClass().getSimpleName(), intent.name())
                     .isNotEqualTo(-1));
   }
@@ -252,7 +252,7 @@ public class EventAppliersTest {
     final var intents =
         Intent.INTENT_CLASSES.stream()
             .flatMap(c -> Arrays.stream(c.getEnumConstants()))
-            // CheckpointIntent is not handled by the engine
+            // CheckpointEngineIntent is not handled by the engine
             .filter(intent -> !(intent instanceof CheckpointIntent));
 
     // when
@@ -265,7 +265,7 @@ public class EventAppliersTest {
               if (!intent.isEvent()) {
                 assertThat(eventAppliers.getLatestVersion(intent))
                     .describedAs(
-                        "Intent %s.%s is not an event but has a registered event applier",
+                        "EngineIntent %s.%s is not an event but has a registered event applier",
                         intent.getClass().getSimpleName(), intent.name())
                     .isEqualTo(-1);
               }
@@ -307,7 +307,7 @@ public class EventAppliersTest {
       final var intent = registeredApplier.intent;
       final var version = registeredApplier.version;
       final var applier = registeredApplier.applier;
-      final var valueTypeName = intent.getClass().getSimpleName().replace("Intent", "");
+      final var valueTypeName = intent.getClass().getSimpleName().replace("EngineIntent", "");
 
       // find source file
       final var applierClassName = applier.getClass().getSimpleName();

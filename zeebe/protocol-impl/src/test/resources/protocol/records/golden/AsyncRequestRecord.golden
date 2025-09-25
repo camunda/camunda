@@ -12,7 +12,7 @@ import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.engineIntent.Intent;
 import io.camunda.zeebe.protocol.record.value.AsyncRequestRecordValue;
 
 public final class AsyncRequestRecord extends UnifiedRecordValue
@@ -21,7 +21,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
   private final LongProperty scopeKeyProperty = new LongProperty("scopeKey", -1);
   private final EnumProperty<ValueType> valueTypeProperty =
       new EnumProperty<>("valueType", ValueType.class, ValueType.NULL_VAL);
-  private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
+  private final IntegerProperty intentProperty = new IntegerProperty("engineIntent", Intent.NULL_VAL);
   private final LongProperty requestIdProperty = new LongProperty("requestId", -1);
   private final IntegerProperty requestStreamIdProperty =
       new IntegerProperty("requestStreamId", -1);
@@ -72,8 +72,8 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     return getIntent(intentProperty.getValue());
   }
 
-  public AsyncRequestRecord setIntent(final Intent intent) {
-    intentProperty.setValue(intent.value());
+  public AsyncRequestRecord setIntent(final Intent engineIntent) {
+    intentProperty.setValue(engineIntent.value());
     return this;
   }
 
@@ -81,7 +81,7 @@ public final class AsyncRequestRecord extends UnifiedRecordValue
     if (intentValue < 0 || intentValue > Short.MAX_VALUE) {
       throw new IllegalStateException(
           String.format(
-              "Expected to read the intent, but it's persisted value '%d' is not a short integer",
+              "Expected to read the engineIntent, but it's persisted value '%d' is not a short integer",
               intentValue));
     }
     return Intent.fromProtocolValue(getValueType(), (short) intentValue);
