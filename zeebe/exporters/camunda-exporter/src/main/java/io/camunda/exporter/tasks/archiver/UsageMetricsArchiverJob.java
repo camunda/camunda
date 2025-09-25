@@ -7,90 +7,49 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
-import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class UsageMetricsArchiverJob implements ArchiverJob {
+public class UsageMetricsArchiverJob extends ArchiverJob {
 
-  private final ArchiverRepository repository;
-  private final Logger logger;
-  private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
-  private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
-  private final Executor executor;
+  private final UsageMetricTemplate usageMetricTemplate;
 
   public UsageMetricsArchiverJob(
       final ArchiverRepository repository,
+      final UsageMetricTemplate usageMetricTemplate,
+      final CamundaExporterMetrics exporterMetrics,
       final Logger logger,
-      final IndexTemplateDescriptor usageMetricTemplateDescriptor,
-      final IndexTemplateDescriptor usageMetricTUTemplateDescriptor,
       final Executor executor) {
-    this.repository = repository;
-    this.logger = logger;
-    this.usageMetricTemplateDescriptor = usageMetricTemplateDescriptor;
-    this.usageMetricTUTemplateDescriptor = usageMetricTUTemplateDescriptor;
-    this.executor = executor;
+    super(
+        repository,
+        exporterMetrics,
+        logger,
+        executor,
+        exporterMetrics::recordUsageMetricsArchiving,
+        exporterMetrics::recordUsageMetricsArchived);
+    this.usageMetricTemplate = usageMetricTemplate;
   }
 
   @Override
-  public CompletionStage<Integer> archiveNextBatch() {
-    // Run both batches (usage-metric and usage-metric-tu) in parallel and then sum results
-    final CompletableFuture<Integer> usageMetricBatchFuture =
-        repository
-            .getUsageMetricNextBatch()
-            .thenComposeAsync(
-                batch -> archiveBatch(batch, usageMetricTemplateDescriptor, UsageMetricTemplate.ID),
-                executor)
-            .toCompletableFuture();
-
-    final CompletableFuture<Integer> usageMetricTuBatchFuture =
-        repository
-            .getUsageMetricTUNextBatch()
-            .thenComposeAsync(
-                batch ->
-                    archiveBatch(batch, usageMetricTUTemplateDescriptor, UsageMetricTUTemplate.ID),
-                executor)
-            .toCompletableFuture();
-
-    return usageMetricBatchFuture.thenCombineAsync(
-        usageMetricTuBatchFuture, Integer::sum, executor);
-  }
-
-  private CompletionStage<Integer> archiveBatch(
-      final ArchiveBatch batch,
-      final IndexTemplateDescriptor templateDescriptor,
-      final String idField) {
-    if (batch == null || batch.ids() == null || batch.ids().isEmpty()) {
-      logger.trace(
-          "Usage metrics archiver: nothing to archive for template {}",
-          templateDescriptor.getIndexName());
-      return CompletableFuture.completedFuture(0);
-    }
-
-    final List<String> ids = batch.ids();
-    logger.trace(
-        "Usage metrics archiver: archiving {} documents for template {} to suffix {}",
-        ids.size(),
-        templateDescriptor.getIndexName(),
-        batch.finishDate());
-
-    return repository
-        .moveDocuments(
-            templateDescriptor.getFullQualifiedName(),
-            templateDescriptor.getFullQualifiedName() + batch.finishDate(),
-            idField,
-            ids,
-            executor)
-        .thenApplyAsync(ok -> ids.size(), executor);
+  public String getJobName() {
+    return UsageMetricTemplate.INDEX_NAME;
   }
 
   @Override
-  public String getCaption() {
-    return "Usage metrics archiver job";
+  public CompletableFuture<ArchiveBatch> getNextBatch(final ArchiverRepository repository) {
+    return repository.getUsageMetricNextBatch();
+  }
+
+  @Override
+  public String getSourceIndexName() {
+    return usageMetricTemplate.getFullQualifiedName();
+  }
+
+  @Override
+  public String getIdFieldName() {
+    return UsageMetricTemplate.ID;
   }
 }

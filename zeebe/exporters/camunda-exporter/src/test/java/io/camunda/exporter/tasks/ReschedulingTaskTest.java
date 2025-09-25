@@ -8,10 +8,11 @@
 package io.camunda.exporter.tasks;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.tasks.archiver.ArchiverJob;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,10 +30,14 @@ final class ReschedulingTaskTest {
   private static final ScheduledThreadPoolExecutor EXECUTOR =
       Mockito.spy(new ScheduledThreadPoolExecutor(1));
 
+  private final ArchiverJob archiverJob = mock(ArchiverJob.class);
+
   @Test
   void shouldRescheduleTaskOnError() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, EXECUTOR, LOGGER);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
+
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -47,7 +52,9 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRescheduleTaskOnErrorWithDelay() {
     // given
-    final var task = new ReschedulingTask(new FailingJob(), 1, 10, 1000, EXECUTOR, LOGGER);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
+
+    final var task = new ReschedulingTask(archiverJob, 1, 10, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -65,25 +72,12 @@ final class ReschedulingTaskTest {
   @Test
   void shouldResetErrorDelayOnSuccessfulArchiving() {
     // given
-    final var job =
-        new ArchiverJob() {
-          private final AtomicInteger count = new AtomicInteger();
+    when(archiverJob.execute())
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()))
+        .thenReturn(CompletableFuture.completedFuture(1))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException()));
 
-          @Override
-          public CompletableFuture<Integer> archiveNextBatch() {
-            final var runCount = count.getAndIncrement();
-            if (runCount == 0) {
-              return CompletableFuture.failedFuture(new RuntimeException("error"));
-            }
-
-            if (runCount == 2) {
-              return CompletableFuture.failedFuture(new RuntimeException("error"));
-            }
-
-            return CompletableFuture.completedFuture(1);
-          }
-        };
-    final var task = new ReschedulingTask(job, 1, 10L, 1000, EXECUTOR, LOGGER);
+    final var task = new ReschedulingTask(archiverJob, 1, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -105,14 +99,9 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRescheduleEvenIfJobResultIsNull() {
     // given
-    final var job =
-        new ArchiverJob() {
-          @Override
-          public CompletableFuture<Integer> archiveNextBatch() {
-            return null;
-          }
-        };
-    final var task = new ReschedulingTask(job, 1, 10L, 1000, EXECUTOR, LOGGER);
+    when(archiverJob.execute()).thenReturn(null);
+
+    final var task = new ReschedulingTask(archiverJob, 1, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -127,14 +116,9 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRescheduleTaskWithDelayOnPartialBatch() {
     // given
-    final var job =
-        new ArchiverJob() {
-          @Override
-          public CompletableFuture<Integer> archiveNextBatch() {
-            return CompletableFuture.completedFuture(1);
-          }
-        };
-    final var task = new ReschedulingTask(job, 2, 10L, 1000, EXECUTOR, LOGGER);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.completedFuture(1));
+
+    final var task = new ReschedulingTask(archiverJob, 2, 10L, 1000, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -157,14 +141,9 @@ final class ReschedulingTaskTest {
   @Test
   void shouldRespectMaxDelayWhenRescheduleOnPartialBatch() {
     // given
-    final var job =
-        new ArchiverJob() {
-          @Override
-          public CompletableFuture<Integer> archiveNextBatch() {
-            return CompletableFuture.completedFuture(1);
-          }
-        };
-    final var task = new ReschedulingTask(job, 2, 10L, 12L, EXECUTOR, LOGGER);
+    when(archiverJob.execute()).thenReturn(CompletableFuture.completedFuture(1));
+
+    final var task = new ReschedulingTask(archiverJob, 2, 10L, 12L, EXECUTOR, LOGGER);
 
     // when
     task.run();
@@ -186,25 +165,19 @@ final class ReschedulingTaskTest {
 
   @Test
   void shouldNotRescheduleIfClosed() {
+    // given
     final var runningCounter = new AtomicInteger();
-    final var job =
-        new ArchiverJob() {
-          @Override
-          public CompletionStage<Integer> archiveNextBatch() {
-            return CompletableFuture.completedFuture(runningCounter.incrementAndGet());
-          }
-        };
-    final var task = new ReschedulingTask(job, 1, 100, 100, EXECUTOR, LOGGER);
+    when(archiverJob.execute())
+        .thenReturn(CompletableFuture.completedFuture(runningCounter.incrementAndGet()));
+
+    final var task = new ReschedulingTask(archiverJob, 1, 100, 100, EXECUTOR, LOGGER);
+
+    // when
     task.run();
     task.close();
+
+    // then
     Awaitility.await("Until it's been rescheduled").until(() -> task.executionCount() == 1);
     assertThat(runningCounter.get()).isEqualTo(1);
-  }
-
-  private static final class FailingJob implements ArchiverJob {
-    @Override
-    public CompletableFuture<Integer> archiveNextBatch() {
-      return CompletableFuture.failedFuture(new RuntimeException("failure"));
-    }
   }
 }

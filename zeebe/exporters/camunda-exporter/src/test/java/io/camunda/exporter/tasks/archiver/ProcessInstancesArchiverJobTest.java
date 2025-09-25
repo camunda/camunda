@@ -16,69 +16,109 @@ import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.SequenceFlowTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Executor;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-final class ProcessInstancesArchiverJobTest {
+final class ProcessInstancesArchiverJobTest extends ArchiverJobRecordingMetricsAbstractTest {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstancesArchiverJobTest.class);
 
   private final Executor executor = Runnable::run;
+
   private final TestRepository repository = new TestRepository();
   private final ListViewTemplate processInstanceTemplate = new ListViewTemplate("", true);
   private final DecisionInstanceTemplate decisionInstanceTemplate =
       new DecisionInstanceTemplate("", true);
   private final SequenceFlowTemplate sequenceFlowTemplate = new SequenceFlowTemplate("", true);
+
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
+
   private final ProcessInstancesArchiverJob job =
       new ProcessInstancesArchiverJob(
           repository,
           processInstanceTemplate,
-          List.of(sequenceFlowTemplate, decisionInstanceTemplate),
+          List.of(decisionInstanceTemplate, sequenceFlowTemplate),
           metrics,
           LOGGER,
           executor);
 
-  @Test
-  void shouldReturnZeroIfNoBatchGiven() {
-    // given - when
-    final var result = job.archiveNextBatch();
+  @BeforeEach
+  void setUp() {
+    // given
+    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+  }
 
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
-    assertThat(repository.moves).isEmpty();
+  @AfterEach
+  void cleanUp() {
+    meterRegistry.clear();
+  }
+
+  @Override
+  ArchiverJob getArchiverJob() {
+    return job;
+  }
+
+  @Override
+  SimpleMeterRegistry getMeterRegistry() {
+    return meterRegistry;
+  }
+
+  @Override
+  String getJobMetricName() {
+    return "zeebe.camunda.exporter.archiver.process.instances";
   }
 
   @Test
-  void shouldReturnZeroIfNoBatchIdsGiven() {
+  void shouldOnlyMoveProcessInstancesWhenNoDependentTemplates() {
     // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of());
+    final ProcessInstancesArchiverJob processInstanceJob =
+        new ProcessInstancesArchiverJob(
+            repository, processInstanceTemplate, List.of(), metrics, LOGGER, executor);
 
     // when
-    final var result = job.archiveNextBatch();
+    final int count = processInstanceJob.execute().toCompletableFuture().join();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(0);
-    assertThat(repository.moves).isEmpty();
+    assertThat(count).isEqualTo(3); // batch has 3 ids
+    assertArchivingCounts(count); // asserted as 3 above
+    assertArchiverTimer(1);
+
+    // then should move
+    assertThat(repository.moves)
+        .containsExactly(
+            new DocumentMove(
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                ListViewTemplate.PROCESS_INSTANCE_KEY,
+                List.of("1", "2", "3"),
+                executor));
   }
 
   @Test
   void shouldMoveDependants() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
     // when
-    final var result = job.archiveNextBatch();
+    final int count = job.execute().toCompletableFuture().join();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
+    assertThat(count).isEqualTo(3); // batch has 3 ids
+    assertArchivingCounts(count); // asserted as 3 above
+    assertArchiverTimer(1);
+
+    // then should move
     assertThat(repository.moves)
-        .contains(
+        .containsExactly(
+            new DocumentMove(
+                decisionInstanceTemplate.getFullQualifiedName(),
+                decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                decisionInstanceTemplate.getProcessInstanceDependantField(),
+                List.of("1", "2", "3"),
+                executor),
             new DocumentMove(
                 sequenceFlowTemplate.getFullQualifiedName(),
                 sequenceFlowTemplate.getFullQualifiedName() + "2024-01-01",
@@ -86,11 +126,30 @@ final class ProcessInstancesArchiverJobTest {
                 List.of("1", "2", "3"),
                 executor),
             new DocumentMove(
-                decisionInstanceTemplate.getFullQualifiedName(),
-                decisionInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                decisionInstanceTemplate.getProcessInstanceDependantField(),
+                processInstanceTemplate.getFullQualifiedName(),
+                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
+                ListViewTemplate.PROCESS_INSTANCE_KEY,
                 List.of("1", "2", "3"),
                 executor));
+  }
+
+  @Test
+  void shouldMoveDependantsBeforeProcessInstances() {
+    // when
+    final int count = job.execute().toCompletableFuture().join();
+
+    // then
+    assertThat(count).isEqualTo(3); // batch has 3 ids
+    assertArchivingCounts(count); // asserted as 3 above
+    assertArchiverTimer(1);
+
+    // then should move in correct order
+    assertThat(repository.moves)
+        .map(DocumentMove::sourceIndexName)
+        .containsExactly(
+            decisionInstanceTemplate.getFullQualifiedName(),
+            sequenceFlowTemplate.getFullQualifiedName(),
+            processInstanceTemplate.getFullQualifiedName());
   }
 
   @Test
@@ -100,80 +159,18 @@ final class ProcessInstancesArchiverJobTest {
     final var job =
         new ProcessInstancesArchiverJob(
             repository, processInstanceTemplate, List.of(dependant), metrics, LOGGER, executor);
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
+    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2"));
 
     // when
-    final var result = job.archiveNextBatch();
+    final int count = job.execute().toCompletableFuture().join();
 
     // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
+    assertThat(count).isEqualTo(2); // batch has 2 ids
+    assertArchivingCounts(count); // asserted as 2 above
+    assertArchiverTimer(1);
     assertThat(repository.moves)
         .contains(
-            new DocumentMove(
-                "foo_", "foo_" + "2024-01-01", "bar", List.of("1", "2", "3"), executor));
-  }
-
-  @Test
-  void shouldMoveProcessInstances() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
-    // when
-    final var result = job.archiveNextBatch();
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
-    assertThat(repository.moves)
-        .contains(
-            new DocumentMove(
-                processInstanceTemplate.getFullQualifiedName(),
-                processInstanceTemplate.getFullQualifiedName() + "2024-01-01",
-                ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
-                List.of("1", "2", "3"),
-                executor));
-  }
-
-  @Test
-  void shouldMoveDependantsBeforeProcessInstances() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
-    // when
-    final var result = job.archiveNextBatch();
-
-    // then
-    assertThat(result).succeedsWithin(Duration.ZERO).isEqualTo(3);
-    assertThat(repository.moves)
-        .map(DocumentMove::sourceIndexName)
-        .containsExactly(
-            sequenceFlowTemplate.getFullQualifiedName(),
-            decisionInstanceTemplate.getFullQualifiedName(),
-            processInstanceTemplate.getFullQualifiedName());
-  }
-
-  @Test
-  void shouldRecordProcessInstancesArchived() {
-    // given
-    repository.batch = new ArchiveBatch("2024-01-01", List.of("1", "2", "3"));
-
-    // when
-    final var count =
-        job.archiveNextBatch().toCompletableFuture().join()
-            + job.archiveNextBatch().toCompletableFuture().join();
-
-    // then
-    assertThat(
-            meterRegistry
-                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archiving")
-                .count())
-        .isEqualTo(6)
-        .isEqualTo(count);
-    assertThat(
-            meterRegistry
-                .counter("zeebe.camunda.exporter.archiver.process.instances", "state", "archived")
-                .count())
-        .isEqualTo(6)
-        .isEqualTo(count);
+            new DocumentMove("foo_", "foo_" + "2024-01-01", "bar", List.of("1", "2"), executor));
   }
 
   private static final class WeirdlyNamedDependant implements ProcessInstanceDependant {

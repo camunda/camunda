@@ -24,6 +24,7 @@ import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
+import io.camunda.exporter.tasks.archiver.UsageMetricsTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
@@ -230,6 +231,7 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
     tasks.add(buildUsageMetricsArchiverJob());
+    tasks.add(buildUsageMetricsTUArchiverJob());
     if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
       tasks.add(buildProcessInstanceToBeArchivedCountJob());
     }
@@ -320,9 +322,19 @@ public final class BackgroundTaskManagerFactory {
     return buildReschedulingArchiverTask(
         new UsageMetricsArchiverJob(
             archiverRepository,
-            logger,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
+            metrics,
+            logger,
+            executor));
+  }
+
+  private ReschedulingTask buildUsageMetricsTUArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new UsageMetricsTUArchiverJob(
+            archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            metrics,
+            logger,
             executor));
   }
 
