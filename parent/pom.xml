@@ -322,6 +322,12 @@
           <type>pom</type>
           <scope>import</scope>
         </dependency>
+      <!-- https://mvnrepository.com/artifact/io.opentelemetry/opentelemetry-exporter-zipkin -->
+      <dependency>
+        <groupId>io.opentelemetry</groupId>
+        <artifactId>opentelemetry-exporter-zipkin</artifactId>
+        <version>1.54.1</version>
+      </dependency>
       <dependency>
         <groupId>io.camunda</groupId>
         <artifactId>camunda-zeebe</artifactId>

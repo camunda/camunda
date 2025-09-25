@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 public class TemporaryTest {
 
   @Test
-  void x() throws URISyntaxException {
+  void x() throws URISyntaxException, InterruptedException {
     final CamundaClient client =
         CamundaClient.newClientBuilder()
             .restAddress(new URI("http://localhost:8080"))
@@ -30,5 +30,6 @@ public class TemporaryTest {
             Bpmn.createExecutableProcess("process").startEvent().endEvent().done(), "process.bpmn")
         .send()
         .join();
+    Thread.sleep(5000);
   }
 }

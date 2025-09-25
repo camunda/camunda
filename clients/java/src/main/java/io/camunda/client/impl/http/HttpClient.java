@@ -441,6 +441,7 @@ public final class HttpClient implements AutoCloseable {
             SimpleRequestProducer.create(request),
             new ApiResponseConsumer<>(entityConsumer),
             apiCallback.get()));
+    result.whenComplete((r, t) -> span.end());
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(

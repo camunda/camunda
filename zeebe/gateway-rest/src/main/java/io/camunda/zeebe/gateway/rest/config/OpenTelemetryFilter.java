@@ -19,10 +19,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+@Component
 public class OpenTelemetryFilter extends OncePerRequestFilter {
-
 
   private static final String SPAN_REQUEST_ATTR = "OpenTelemetryFilter.SPAN";
   private final Tracer tracer = GlobalOpenTelemetry.getTracer("io.camunda.gateway");
@@ -36,9 +37,7 @@ public class OpenTelemetryFilter extends OncePerRequestFilter {
 
     final String spanName = request.getMethod() + " " + request.getRequestURI();
     final Span span =
-        tracer.spanBuilder(spanName)
-            .setSpanKind(SpanKind.SERVER)
-            .startSpan();
+        tracer.spanBuilder("remco his test span").setSpanKind(SpanKind.SERVER).startSpan();
 
     // put span on request so async listener can find it
     request.setAttribute(SPAN_REQUEST_ATTR, span);
@@ -53,7 +52,8 @@ public class OpenTelemetryFilter extends OncePerRequestFilter {
       // if async started, end in AsyncListener; else end now
       if (request.isAsyncStarted()) {
         try {
-          request.getAsyncContext()
+          request
+              .getAsyncContext()
               .addListener(
                   new AsyncListener() {
                     @Override
