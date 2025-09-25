@@ -193,6 +193,9 @@ const mockEvaluatedLargeXml = openFile(
   './e2e-playwright/mocks/resources/invoiceClassificationEvaluatedLarge.dmn',
 );
 
+// TODO: Apply the transformations of this function to the existing mock data when
+// the GET /api/decision-instances/<key> endpoint related code is removed. This should happen
+// with https://github.com/camunda/camunda/issues/28392
 function mapDecisionInstanceToV2(
   instance: DecisionInstanceDto,
 ): GetDecisionInstanceResponseBody {
