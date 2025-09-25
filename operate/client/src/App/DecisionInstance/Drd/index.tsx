@@ -11,7 +11,6 @@ import {observer} from 'mobx-react';
 import {useNavigate} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 import {DrdViewer} from 'modules/dmn-js/DrdViewer';
-import {drdStore} from 'modules/stores/drd';
 import {PanelHeader, Container, Stack} from './styled';
 import {tracking} from 'modules/tracking';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
@@ -22,18 +21,17 @@ import {useQuery} from '@tanstack/react-query';
 import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useDrdData} from 'modules/queries/decisionInstances/useDrdData';
 import {useDrdStateOverlay} from 'modules/queries/decisionInstances/useDrdStateOverlay';
+import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 
 interface DrdProps {
   decisionEvaluationInstanceKey: string;
   decisionDefinitionKey?: string;
   decisionEvaluationKey?: string;
+  drdPanelState: DrdPanelState;
+  onChangeDrdPanelState(state: DrdPanelState): void;
 }
 
 const Drd: React.FC<DrdProps> = observer((props) => {
-  const {
-    setPanelState,
-    state: {panelState},
-  } = drdStore;
   const drdViewer = useRef<DrdViewer | null>(null);
   const drdViewerRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
@@ -83,7 +81,7 @@ const Drd: React.FC<DrdProps> = observer((props) => {
     <Container data-testid="drd">
       <PanelHeader title={decisionDefinitionStore.name ?? ''}>
         <Stack orientation="horizontal">
-          {panelState === 'minimized' && (
+          {props.drdPanelState === 'minimized' && (
             <Button
               kind="ghost"
               hasIconOnly
@@ -93,7 +91,7 @@ const Drd: React.FC<DrdProps> = observer((props) => {
               aria-label="Maximize DRD Panel"
               size="lg"
               onClick={() => {
-                setPanelState('maximized');
+                props.onChangeDrdPanelState('maximized');
                 tracking.track({
                   eventName: 'drd-panel-interaction',
                   action: 'maximize',
@@ -101,7 +99,7 @@ const Drd: React.FC<DrdProps> = observer((props) => {
               }}
             />
           )}
-          {panelState === 'maximized' && (
+          {props.drdPanelState === 'maximized' && (
             <Button
               kind="ghost"
               hasIconOnly
@@ -111,7 +109,7 @@ const Drd: React.FC<DrdProps> = observer((props) => {
               aria-label="Minimize DRD Panel"
               size="lg"
               onClick={() => {
-                setPanelState('minimized');
+                props.onChangeDrdPanelState('minimized');
                 tracking.track({
                   eventName: 'drd-panel-interaction',
                   action: 'minimize',
@@ -128,7 +126,7 @@ const Drd: React.FC<DrdProps> = observer((props) => {
             aria-label="Close DRD Panel"
             size="lg"
             onClick={() => {
-              setPanelState('closed');
+              props.onChangeDrdPanelState('closed');
               tracking.track({
                 eventName: 'drd-panel-interaction',
                 action: 'close',

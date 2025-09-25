@@ -41,6 +41,8 @@ describe('<Drd />', () => {
         }
         decisionEvaluationKey={invoiceClassification.decisionEvaluationKey}
         decisionDefinitionKey={invoiceClassification.decisionDefinitionKey}
+        drdPanelState="minimized"
+        onChangeDrdPanelState={() => void 0}
       />,
       {
         wrapper: Wrapper,
