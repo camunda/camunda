@@ -12,6 +12,7 @@ import com.google.protobuf.util.JsonFormat;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.PersistedClusterConfiguration.Header;
 import io.camunda.zeebe.dynamic.config.protocol.Topology;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -19,12 +20,16 @@ import java.nio.file.Path;
 import java.util.Scanner;
 import java.util.concurrent.Callable;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.Spec;
 
 @Command(
     name = "topology",
     description = "Print or edit the topology.meta file from dynamic-config module")
-public class TopologyMetaCommand implements Callable<Integer> {
+public class TopologyMetaCommand extends CommonOptions implements Callable<Integer> {
+
+  @Spec CommandSpec spec;
 
   @Option(
       names = {"-s", "--save"},
@@ -36,10 +41,19 @@ public class TopologyMetaCommand implements Callable<Integer> {
       description = "Path of the .topology.meta")
   private Path file;
 
+  @Option(
+      names = {"--source"},
+      description = "The input file when saving it")
+  private Path source;
+
   @Override
   public Integer call() throws Exception {
     try {
-      validateArguments();
+      final var file = validateArguments();
+      if (verbose) {
+        spec.commandLine().getErr().println("Path used: " + file);
+      }
+
       if (save) {
         saveFile(file);
 
@@ -53,17 +67,38 @@ public class TopologyMetaCommand implements Callable<Integer> {
     }
   }
 
-  private void saveFile(final Path file) throws IOException {
-    final var scanner = new Scanner(System.in);
+  private String readInput(final Scanner scanner) {
     final var jsonBuilder = new StringBuilder();
-
     while (scanner.hasNextLine()) {
       jsonBuilder.append(scanner.nextLine()).append("\n");
     }
-    scanner.close();
+    return jsonBuilder.toString();
+  }
+
+  private String readInputFromStdin() {
+    try (final var scanner = new Scanner(System.in)) {
+      return readInput(scanner);
+    }
+  }
+
+  private String readInputFromFile() throws IOException {
+    try (final var fis = new FileInputStream(source.toFile());
+        final var scanner = new Scanner(fis)) {
+      return readInput(scanner);
+    }
+  }
+
+  public static Topology.ClusterTopology parseTopology(final String json)
+      throws InvalidProtocolBufferException {
     final var builder = Topology.ClusterTopology.newBuilder();
-    JsonFormat.parser().merge(jsonBuilder.toString(), builder);
-    final var protobuf = builder.build();
+    JsonFormat.parser().merge(json, builder);
+    return builder.build();
+  }
+
+  private void saveFile(final Path file) throws IOException {
+    final var json = source == null ? readInputFromStdin() : readInputFromFile();
+
+    final var protobuf = parseTopology(json);
 
     final var bytes = protobuf.toByteArray();
     PersistedClusterConfiguration.writeToFile(bytes, file);
@@ -72,24 +107,26 @@ public class TopologyMetaCommand implements Callable<Integer> {
   private void printFile(final Path path) throws IOException {
     final var content = Files.readAllBytes(path);
     final var header = PersistedClusterConfiguration.Header.parseFrom(content, path);
-    System.err.println("Header: " + header);
+    spec.commandLine().getErr().println("Header: " + header);
     final var buffer =
         ByteBuffer.wrap(content, Header.HEADER_LENGTH, content.length - Header.HEADER_LENGTH);
 
     final var protobuf = Topology.ClusterTopology.parseFrom(buffer);
     final var json = convertToJson(protobuf);
-    System.out.println(json);
+    spec.commandLine().getOut().println(json);
   }
 
-  private String convertToJson(final Topology.ClusterTopology topology) throws IOException {
+  public String convertToJson(final Topology.ClusterTopology topology) throws IOException {
     try {
       return JsonFormat.printer()
           .includingDefaultValueFields()
           .preservingProtoFieldNames()
           .print(topology);
     } catch (final IllegalArgumentException e) {
-      System.err.println(
-          "Invalid timestamp detected, fixing by setting lastUpdated to 0 for all members");
+      spec.commandLine()
+          .getErr()
+          .println(
+              "Invalid timestamp detected, fixing by setting lastUpdated to 0 for all members");
 
       final var builder = Topology.ClusterTopology.newBuilder(topology);
 
@@ -123,9 +160,13 @@ public class TopologyMetaCommand implements Callable<Integer> {
     }
   }
 
-  private void validateArguments() {
-    if (file == null) {
-      throw new IllegalArgumentException("Missing path");
+  private Path validateArguments() {
+    if (file != null) {
+      return file;
+    } else if (root != null) {
+      return root.resolve(".topology.meta");
     }
+
+    throw new IllegalArgumentException("Missing path, provide a path with either --root or --file");
   }
 }
