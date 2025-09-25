@@ -12,18 +12,17 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Resources Validation API Tests', () => {
-  test('deleteResource - Additional prop __unexpectedField', async ({
+test.describe('Messagesubscriptions Validation API Tests', () => {
+  test('searchMessageSubscriptions - Additional prop __unexpectedField', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 1,
       __unexpectedField: 'x',
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -35,10 +34,12 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Body wrong top-level type', async ({request}) => {
+  test('searchMessageSubscriptions - Body wrong top-level type', async ({
+    request,
+  }) => {
     const requestBody: string[] = [];
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -50,14 +51,21 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Param operationReference wrong type (#1)', async ({
+  test('searchMessageSubscriptions - Enum violation sort.0.field (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 'not-a-number',
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'messageSubscriptionKey_INVALID',
+          },
+        },
+      },
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -69,14 +77,21 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Param operationReference wrong type (#2)', async ({
+  test('searchMessageSubscriptions - Enum violation sort.0.field (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: true,
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'MESSAGESUBSCRIPTIONKEY',
+          },
+        },
+      },
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: 'x'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -88,14 +103,21 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Constraint violation operationReference (#1)', async ({
+  test('searchMessageSubscriptions - Enum violation sort.0.field (#3)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 0.99999,
+      sort: {
+        '0': {
+          field: {
+            __invalidEnum: true,
+            value: 'messagesubscriptionkey',
+          },
+        },
+      },
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -107,14 +129,21 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Constraint violation operationReference (#2)', async ({
+  test('searchMessageSubscriptions - Enum violation sort.0.order (#1)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: 0,
+      sort: {
+        '0': {
+          order: {
+            __invalidEnum: true,
+            value: 'ASC_INVALID',
+          },
+        },
+      },
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,
@@ -126,14 +155,21 @@ test.describe('Resources Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('deleteResource - Constraint violation operationReference (#3)', async ({
+  test('searchMessageSubscriptions - Enum violation sort.0.order (#2)', async ({
     request,
   }) => {
     const requestBody = {
-      operationReference: -99,
+      sort: {
+        '0': {
+          order: {
+            __invalidEnum: true,
+            value: 'asc',
+          },
+        },
+      },
     };
     const res = await request.post(
-      buildUrl('/resources/{resourceKey}/deletion', {resourceKey: '1'}),
+      buildUrl('/message-subscriptions/search', undefined),
       {
         headers: jsonHeaders(),
         data: requestBody,

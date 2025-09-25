@@ -12,31 +12,15 @@
  * Spec Commit: f2fd6a1393ca4c7feae1efd10c7c863c0f146187
  */
 import {test, expect} from '@playwright/test';
-import {jsonHeaders, buildUrl} from '../../../../utils/http';
+import {jsonHeaders, buildUrl} from '../../../utils/http';
 
-test.describe('Variables Validation API Tests', () => {
-  test('getVariable - Path param variableKey pattern violation', async ({
-    request,
-  }) => {
-    const res = await request.get(
-      buildUrl('/variables/{variableKey}', {variableKey: 'a'}),
-      {
-        headers: jsonHeaders(),
-      },
-    );
-    // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
-    //   if (res.status() !== 400) {
-    //     try { console.error(await res.text()); } catch {}
-    //   }
-    expect(res.status()).toBe(400);
-  });
-  test('searchVariables - Additional prop __unexpectedField', async ({
-    request,
-  }) => {
+test.describe('Clock Validation API Tests', () => {
+  test('pinClock - Additional prop __unexpectedField', async ({request}) => {
     const requestBody = {
+      timestamp: 1,
       __unexpectedField: 'x',
     };
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -46,9 +30,9 @@ test.describe('Variables Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchVariables - Body wrong top-level type', async ({request}) => {
+  test('pinClock - Body wrong top-level type', async ({request}) => {
     const requestBody: string[] = [];
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -58,20 +42,11 @@ test.describe('Variables Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchVariables - Enum violation sort.0.field (#1)', async ({
-    request,
-  }) => {
+  test('pinClock - Param timestamp wrong type (#1)', async ({request}) => {
     const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'value_INVALID',
-          },
-        },
-      },
+      timestamp: 'not-a-number',
     };
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -81,20 +56,11 @@ test.describe('Variables Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchVariables - Enum violation sort.0.field (#2)', async ({
-    request,
-  }) => {
+  test('pinClock - Param timestamp wrong type (#2)', async ({request}) => {
     const requestBody = {
-      sort: {
-        '0': {
-          field: {
-            __invalidEnum: true,
-            value: 'VALUE',
-          },
-        },
-      },
+      timestamp: true,
     };
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -104,20 +70,9 @@ test.describe('Variables Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchVariables - Enum violation sort.0.order (#1)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      sort: {
-        '0': {
-          order: {
-            __invalidEnum: true,
-            value: 'ASC_INVALID',
-          },
-        },
-      },
-    };
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+  test('pinClock - Missing timestamp', async ({request}) => {
+    const requestBody = {};
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
       data: requestBody,
     });
@@ -127,22 +82,9 @@ test.describe('Variables Validation API Tests', () => {
     //   }
     expect(res.status()).toBe(400);
   });
-  test('searchVariables - Enum violation sort.0.order (#2)', async ({
-    request,
-  }) => {
-    const requestBody = {
-      sort: {
-        '0': {
-          order: {
-            __invalidEnum: true,
-            value: 'asc',
-          },
-        },
-      },
-    };
-    const res = await request.post(buildUrl('/variables/search', undefined), {
+  test('pinClock - Missing body', async ({request}) => {
+    const res = await request.put(buildUrl('/clock', undefined), {
       headers: jsonHeaders(),
-      data: requestBody,
     });
     // Conditionals are banned by eslint in qa tests. The following block can be uncommented for debugging purposes.
     //   if (res.status() !== 400) {
