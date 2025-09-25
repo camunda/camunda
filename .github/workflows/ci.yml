@@ -983,7 +983,9 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
+          -P parallel-tests
           -Dcamunda.docker.test.enabled=true
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}"
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}"
