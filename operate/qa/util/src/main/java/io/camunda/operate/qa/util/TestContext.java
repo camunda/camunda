@@ -38,7 +38,7 @@ public class TestContext<T extends TestContext<T>> {
   private URI zeebeGrpcAddress;
   private String internalZeebeContactPoint;
 
-  private String zeebeIndexPrefix = "zeebe-record";
+  private String indexPrefix;
 
   private String externalOperateHost;
   private Integer externalOperatePort;
@@ -239,12 +239,12 @@ public class TestContext<T extends TestContext<T>> {
     return (T) this;
   }
 
-  public String getZeebeIndexPrefix() {
-    return zeebeIndexPrefix;
+  public String getIndexPrefix() {
+    return indexPrefix;
   }
 
-  public T setZeebeIndexPrefix(final String zeebeIndexPrefix) {
-    this.zeebeIndexPrefix = zeebeIndexPrefix;
+  public T setIndexPrefix(final String indexPrefix) {
+    this.indexPrefix = indexPrefix;
     return (T) this;
   }
 

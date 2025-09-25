@@ -27,7 +27,6 @@ public class OperateProperties {
 
   private static final String UNKNOWN_VERSION = "unknown-version";
 
-  private boolean importerEnabled = false;
   private boolean webappEnabled = true;
 
   private boolean rfc3339ApiDateFormat = false;
@@ -61,12 +60,6 @@ public class OperateProperties {
 
   @NestedConfigurationProperty
   private OperateOpensearchProperties opensearch = new OperateOpensearchProperties();
-
-  @NestedConfigurationProperty
-  private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
-
-  @NestedConfigurationProperty
-  private ZeebeOpensearchProperties zeebeOpensearch = new ZeebeOpensearchProperties();
 
   @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
@@ -113,14 +106,6 @@ public class OperateProperties {
     return DatabaseType.Opensearch.equals(database);
   }
 
-  public boolean isImporterEnabled() {
-    return importerEnabled;
-  }
-
-  public void setImporterEnabled(final boolean importerEnabled) {
-    this.importerEnabled = importerEnabled;
-  }
-
   public boolean isWebappEnabled() {
     return webappEnabled;
   }
@@ -159,22 +144,6 @@ public class OperateProperties {
 
   public void setOpensearch(final OperateOpensearchProperties opensearch) {
     this.opensearch = opensearch;
-  }
-
-  public ZeebeElasticsearchProperties getZeebeElasticsearch() {
-    return zeebeElasticsearch;
-  }
-
-  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
-    this.zeebeElasticsearch = zeebeElasticsearch;
-  }
-
-  public ZeebeOpensearchProperties getZeebeOpensearch() {
-    return zeebeOpensearch;
-  }
-
-  public void setZeebeOpensearch(final ZeebeOpensearchProperties zeebeOpensearch) {
-    this.zeebeOpensearch = zeebeOpensearch;
   }
 
   public ZeebeProperties getZeebe() {

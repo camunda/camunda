@@ -110,21 +110,6 @@ public class OpensearchConnectorIT extends OperateAbstractIT {
         WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
   }
 
-  @Test
-  @Ignore
-  public void shouldSetCustomHeaderOnAllZeebeOSClientRequests() throws IOException {
-    // given
-    final var client = connector.zeebeOpensearchClient();
-
-    // when
-    client.cluster().health(new HealthRequest.Builder().build());
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
   @DynamicPropertySource
   public static void setSearchPluginProperties(final DynamicPropertyRegistry registry)
       throws IOException {

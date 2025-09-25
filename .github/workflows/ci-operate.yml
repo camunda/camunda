@@ -355,42 +355,6 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "team-core-features"
 
-  run-importer-tests:
-    if: inputs.runBeTests
-    name: "Integration / Importer ITs"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    env:
-      TEST_TYPE: Integration
-      TEST_OWNER: Data Layer
-    permissions: {} # GITHUB_TOKEN unused in this job
-    steps:
-      - name: Check out repository code
-        uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
-      - uses: ./.github/actions/setup-build
-        with:
-          maven-cache-key-modifier: operate-importer
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: Build Operate
-        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
-      - name: Run Tests
-        run: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          job_name: "operate-importer-test"
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          user_description: "team-data-layer"
-
   run-backup-restore-tests:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"

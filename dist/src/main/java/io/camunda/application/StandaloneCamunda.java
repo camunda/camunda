@@ -93,11 +93,6 @@ public class StandaloneCamunda {
   public static Map<String, Object> getDefaultProperties() {
     final var defaultProperties = new HashMap<String, Object>();
     defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
-    // Per default, we target a green field installation with the StandaloneCamunda application.
-    // Meaning, we will disable the importers per default
-    // Importers can still be enabled by configuration
-    defaultProperties.put("camunda.operate.importerEnabled", "false");
-    defaultProperties.put("camunda.tasklist.importerEnabled", "false");
     return defaultProperties;
   }
 }

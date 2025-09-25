@@ -19,9 +19,6 @@
     <module>common</module>
     <module>schema</module>
     <module>data-generator</module>
-    <module>importer-common</module>
-    <module>importer-8_7</module>
-    <module>importer</module>
     <module>webapp</module>
   </modules>
 

@@ -108,20 +108,6 @@ public class ElasticsearchConnectorIT {
         WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
   }
 
-  @Test
-  void shouldSetCustomHeaderOnAllZeebeEsClientRequests() throws IOException {
-    // given
-    final var client = connector.zeebeEsClient();
-
-    // when
-    client.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
   @DynamicPropertySource
   public static void setSearchPluginProperties(final DynamicPropertyRegistry registry)
       throws IOException {

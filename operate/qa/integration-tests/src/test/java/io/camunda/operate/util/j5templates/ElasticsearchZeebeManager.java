@@ -42,12 +42,6 @@ public class ElasticsearchZeebeManager extends ZeebeContainerManager {
   }
 
   @Override
-  protected void updatePrefix() {
-    LOGGER.info("Starting Zeebe with ELS prefix: " + prefix);
-    operateProperties.getZeebeElasticsearch().setPrefix(prefix);
-  }
-
-  @Override
   protected void removeIndices() {
     TestUtil.removeAllIndices(esClient, prefix);
   }

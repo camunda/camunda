@@ -13,8 +13,7 @@
 
 # Opensearch implementation
 
-Operate uses Elasticsearch to import Zeebe data ([Zeebe Elasticsearch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/property/ZeebeElasticsearchProperties.java#L9-L9)) and stores and searches its own
-data also in Elasticsearch ( [Operate Elasticsearch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/property/OperateElasticsearchProperties.java#L9-L9)).
+Operate searches its in Elasticsearch ( [Operate Elasticsearch](https://github.com/camunda/operate/blob/7ad44931a7d23f5e500dd708d238ce3046e3c71b/common/src/main/java/io/camunda/operate/property/OperateElasticsearchProperties.java#L9-L9)).
 
 The goal is to do the same in Opensearch. For that Operate needs to implement all Elasticsearch related code also for Opensearch.
 
