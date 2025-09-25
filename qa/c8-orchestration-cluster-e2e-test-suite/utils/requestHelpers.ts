@@ -30,8 +30,9 @@ import {expect} from '@playwright/test';
 import type {APIRequestContext} from 'playwright-core';
 import {defaultAssertionOptions, generateUniqueId} from './constants';
 import {Serializable} from 'playwright-core/types/structs';
-import {deploy} from './zeebeClient';
+import {cancelProcessInstance, createInstances, deploy} from './zeebeClient';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 export async function createGroupAndStoreResponseFields(
   request: APIRequestContext,
@@ -704,4 +705,32 @@ export async function activateJobToObtainAValidJobKey(
   const activateJson = await activateRes.json();
   expect(activateJson.jobs.length).toBe(1);
   return activateJson.jobs[0].jobKey;
+}
+
+export function setupProcessInstanceTests(
+  processName: string,
+  variables?: JSONDoc,
+) {
+  const state: Record<string, unknown> = {};
+
+  return {
+    state,
+    beforeAll: async () => {
+      await deploy([`./resources/${processName}.bpmn`]);
+    },
+    beforeEach: async () => {
+      const processInstance = await createInstances(
+        processName,
+        1,
+        1,
+        variables,
+      );
+      state['processInstanceKey'] = processInstance[0].processInstanceKey;
+    },
+    afterEach: async () => {
+      if (!state['processCompleted']) {
+        await cancelProcessInstance(state['processInstanceKey'] as string);
+      }
+    },
+  };
 }
