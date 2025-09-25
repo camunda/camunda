@@ -14,16 +14,13 @@ import {
   within,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
-import {invoiceClassification as invoiceClassificationV2} from 'modules/mocks/mockDecisionInstanceV2';
-import {mockDrdData} from 'modules/mocks/mockDrdData';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
 import {DecisionInstance} from './';
 import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
-import {mockFetchDrdData} from 'modules/mocks/api/decisionInstances/fetchDrdData';
-import {mockFetchDecisionInstance} from 'modules/mocks/api/decisionInstances/fetchDecisionInstance';
-import {mockFetchDecisionInstance as mockFetchDecisionInstanceV2} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
+import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
+import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
@@ -56,10 +53,12 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('<DecisionInstance />', () => {
   beforeEach(() => {
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockFetchDecisionInstanceV2().withSuccess(invoiceClassificationV2);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
     mockMe().withSuccess(createUser());
     mockMe().withSuccess(createUser());
   });
@@ -75,7 +74,7 @@ describe('<DecisionInstance />', () => {
     ).toBeInTheDocument();
 
     expect(document.title).toBe(
-      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionName}`,
+      `Operate: Decision Instance ${DECISION_INSTANCE_ID} of ${invoiceClassification.decisionDefinitionName}`,
     );
   });
 
@@ -195,8 +194,11 @@ describe('<DecisionInstance />', () => {
     unmount();
 
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
 
     render(<DecisionInstance />, {wrapper: Wrapper});
 
@@ -258,10 +260,12 @@ describe('<DecisionInstance />', () => {
 
     unmount();
 
-    mockFetchDrdData().withSuccess(mockDrdData);
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
-    mockFetchDecisionInstanceV2().withSuccess(invoiceClassificationV2);
+    mockSearchDecisionInstances().withSuccess({
+      items: [invoiceClassification],
+      page: {totalItems: 1},
+    });
 
     render(<DecisionInstance />, {wrapper: Wrapper});
 
@@ -282,7 +286,6 @@ describe('<DecisionInstance />', () => {
 
   it('should display forbidden content', async () => {
     mockFetchDecisionInstance().withServerError(403);
-    mockFetchDecisionInstanceV2().withServerError(403);
     render(<DecisionInstance />, {wrapper: Wrapper});
 
     expect(

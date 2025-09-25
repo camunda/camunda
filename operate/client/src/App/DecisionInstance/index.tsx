@@ -10,8 +10,6 @@ import {useEffect} from 'react';
 import {observer} from 'mobx-react';
 import {useParams} from 'react-router-dom';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
-import {drdDataStore} from 'modules/stores/drdData';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
 import {InstanceDetail} from '../Layout/InstanceDetail';
@@ -29,19 +27,6 @@ const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
   const {data, error, isFetchedAfterMount} =
     useDecisionInstance(decisionInstanceId);
-
-  useEffect(() => {
-    drdDataStore.init();
-
-    return () => {
-      decisionInstanceDetailsStore.reset();
-      drdDataStore.reset();
-    };
-  }, []);
-
-  useEffect(() => {
-    decisionInstanceDetailsStore.fetchDecisionInstance(decisionInstanceId);
-  }, [decisionInstanceId]);
 
   useEffect(() => {
     if (
@@ -69,7 +54,13 @@ const DecisionInstance: React.FC = observer(() => {
   }
 
   if (drdStore.state.panelState === 'maximized') {
-    return <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />;
+    return (
+      <Drd
+        decisionEvaluationInstanceKey={decisionInstanceId}
+        decisionEvaluationKey={data?.decisionEvaluationKey}
+        decisionDefinitionKey={data?.decisionDefinitionKey}
+      />
+    );
   }
 
   return (
@@ -91,7 +82,11 @@ const DecisionInstance: React.FC = observer(() => {
           rightPanel={
             drdStore.state.panelState === 'minimized' ? (
               <DrdPanel>
-                <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />
+                <Drd
+                  decisionEvaluationInstanceKey={decisionInstanceId}
+                  decisionEvaluationKey={data?.decisionEvaluationKey}
+                  decisionDefinitionKey={data?.decisionDefinitionKey}
+                />
               </DrdPanel>
             ) : null
           }
