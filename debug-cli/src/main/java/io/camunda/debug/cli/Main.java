@@ -7,6 +7,9 @@
  */
 package io.camunda.debug.cli;
 
+import io.camunda.debug.cli.log.LogCommand;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 
@@ -15,8 +18,10 @@ import picocli.CommandLine.Command;
     description = "Camunda Debug CLI - A tool for debugging and troubleshooting Camunda instances",
     mixinStandardHelpOptions = true,
     version = "1.0.0",
-    subcommands = {CommandLine.HelpCommand.class, TopologyMetaCommand.class})
+    subcommands = {CommandLine.HelpCommand.class, TopologyMetaCommand.class, LogCommand.class})
 public class Main {
+
+  public static MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
   public static void main(final String[] args) {
     try {
