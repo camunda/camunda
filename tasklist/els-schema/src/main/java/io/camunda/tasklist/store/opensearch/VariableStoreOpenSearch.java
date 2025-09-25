@@ -135,7 +135,7 @@ public class VariableStoreOpenSearch implements VariableStore {
                   .filter(OpenSearchUtil.joinWithAnd(flowNodeInstanceKeyQ, varNamesQ))
                   .build());
           final SearchRequest.Builder searchRequest = new SearchRequest.Builder();
-          searchRequest.index(variableIndex.getAlias()).query(query.build());
+          searchRequest.index(variableIndex.getFullQualifiedName()).query(query.build());
           applyFetchSourceForVariableIndex(searchRequest, fieldNames);
 
           try {
@@ -297,7 +297,7 @@ public class VariableStoreOpenSearch implements VariableStore {
 
     final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
     searchRequestBuilder
-        .index(flowNodeInstanceIndex.getAlias())
+        .index(flowNodeInstanceIndex.getFullQualifiedName())
         .query(combinedQuery.build())
         .sort(
             sort ->
