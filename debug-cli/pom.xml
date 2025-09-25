@@ -68,5 +68,16 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>uk.co.real-logic</groupId>
+      <artifactId>sbe-tool</artifactId>
+      <version>${version.sbe}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-atomix-cluster</artifactId>
+    </dependency>
   </dependencies>
 </project>
