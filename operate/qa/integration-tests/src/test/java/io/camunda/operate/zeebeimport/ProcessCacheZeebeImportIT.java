@@ -45,8 +45,8 @@ public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
     final Long processDefinitionKey2 =
         ZeebeTestUtil.deployProcess(camundaClient, null, "processWithGateway.bpmn");
 
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
     String demoProcessName = processCache.getProcessNameOrDefaultValue(processDefinitionKey1, null);
     assertThat(demoProcessName).isNotNull();
@@ -65,8 +65,8 @@ public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
     final Long processDefinitionKey2 =
         ZeebeTestUtil.deployProcess(camundaClient, null, "processWithGateway.bpmn");
 
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
     String flowNodeName =
         processCache.getFlowNodeNameOrDefaultValue(processDefinitionKey1, "start", null);
@@ -88,8 +88,8 @@ public class ProcessCacheZeebeImportIT extends OperateZeebeAbstractIT {
     final Long processDefinitionKey2 =
         ZeebeTestUtil.deployProcess(camundaClient, null, "processWithGateway.bpmn");
 
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey1);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey2);
 
     String demoProcessVersionTag = processCache.getProcessVersionTag(processDefinitionKey1);
     assertThat(demoProcessVersionTag).isEqualTo("demo-tag_v1");

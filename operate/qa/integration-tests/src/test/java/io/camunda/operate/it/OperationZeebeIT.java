@@ -162,7 +162,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   public void testSeveralOperationsPersistedForSeveralIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstanceWithIncidents();
-    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
+    // searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 2);
     final List<IncidentEntity> incidents =
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
 
@@ -278,7 +278,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(8);
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -313,7 +313,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // process all Zeebe records
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     final List<IncidentDto> incidents =
         incidentReader
@@ -357,8 +357,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(2);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(
+    //    operationsByProcessInstanceAreCompleted, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -427,8 +427,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
 
     // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(
+    //    operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // then
     // all three variables are returned
@@ -482,10 +482,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
     // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    // elasticsearchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey,
+    // elastic// searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey,
     // processInstanceKey, newVar2Name);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(
+    //    operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // then
     // all three variables are returned
@@ -549,8 +549,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
     // elasticsearchTestRule.processAllEvents(2);
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(
+    //    operationsByProcessInstanceAreCompleted, processInstanceKey);
     processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
     assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
@@ -594,7 +594,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of one operation is COMPLETED and of the other - FAILED
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
 
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
@@ -647,7 +647,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of one operation is COMPLETED and of the other - FAILED
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
 
     final ListViewProcessInstanceDto processInstance =
         processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
@@ -679,8 +679,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     // the state of 1st operation is COMPLETED and the 2nd - FAILED
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
-    searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(noActivitiesHaveIncident, processInstanceKey);
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).hasSize(1);
@@ -826,8 +826,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
     final Long processInstanceKey2 =
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck,
+    // processInstanceKey1);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck,
+    // processInstanceKey2);
 
     final ListViewQueryDto processInstanceQuery =
         createGetAllProcessInstancesQuery()
@@ -918,8 +920,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
     final Long processInstanceKey2 =
         ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, payload);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey1);
-    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey2);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck,
+    // processInstanceKey1);
+    // searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck,
+    // processInstanceKey2);
     List<DecisionInstanceEntity> decisionInstanceEntities =
         searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
     final String decisionDefinitionId = decisionInstanceEntities.get(0).getDecisionDefinitionId();

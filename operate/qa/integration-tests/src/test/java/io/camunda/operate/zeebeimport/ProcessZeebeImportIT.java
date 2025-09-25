@@ -106,7 +106,7 @@ public class ProcessZeebeImportIT extends OperateZeebeAbstractIT {
     final Long loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
 
     // when
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, loanProcessV1Id);
+    // searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, loanProcessV1Id);
     // elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     // then

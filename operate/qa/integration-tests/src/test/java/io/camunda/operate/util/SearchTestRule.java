@@ -9,14 +9,11 @@ package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.slf4j.Logger;
@@ -66,32 +63,6 @@ public class SearchTestRule extends TestWatcher {
 
   public void refreshOperateSearchIndices() {
     searchTestRuleProvider.refreshOperateSearchIndices();
-  }
-
-  public void processAllRecordsAndWait(
-      final Integer maxWaitingRounds,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    searchTestRuleProvider.processAllRecordsAndWait(maxWaitingRounds, predicate, arguments);
-  }
-
-  public void processAllRecordsAndWait(
-      final Predicate<Object[]> predicate, final Object... arguments) {
-    searchTestRuleProvider.processAllRecordsAndWait(predicate, arguments);
-  }
-
-  public void processAllRecordsAndWait(
-      final Predicate<Object[]> predicate,
-      final Supplier<Object> supplier,
-      final Object... arguments) {
-    searchTestRuleProvider.processAllRecordsAndWait(predicate, supplier, arguments);
-  }
-
-  public void processRecordsWithTypeAndWait(
-      final ImportValueType importValueType,
-      final Predicate<Object[]> predicate,
-      final Object... arguments) {
-    searchTestRuleProvider.processRecordsWithTypeAndWait(importValueType, predicate, arguments);
   }
 
   public void persistNew(final ExporterEntity... entitiesToPersist) {

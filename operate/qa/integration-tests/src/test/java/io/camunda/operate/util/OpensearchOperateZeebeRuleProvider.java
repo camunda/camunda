@@ -61,7 +61,6 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
   public void starting(final Description description) {
     prefix = indexPrefixHolder.createNewIndexPrefix();
     LOGGER.info("Starting Camunda Exporter with prefix: {}", prefix);
-    operateProperties.getZeebeOpensearch().setPrefix(prefix);
     operateProperties.getOpensearch().setIndexPrefix(prefix);
     searchEngineConfiguration.connect().setIndexPrefix(prefix);
 

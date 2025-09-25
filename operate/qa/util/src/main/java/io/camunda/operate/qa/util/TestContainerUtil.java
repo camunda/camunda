@@ -397,14 +397,11 @@ public class TestContainerUtil {
     operateContainer
         // ES
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         // OS
         .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
 
         /* these need to match the URL value even if they're not used */
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATABASE_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", getElasticURL(testContext))
         .withEnv("SPRING_PROFILES_ACTIVE", "dev, consolidated-auth")
@@ -423,9 +420,9 @@ public class TestContainerUtil {
     if (zeebeContactPoint != null) {
       operateContainer.withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebeContactPoint);
     }
-    if (testContext.getZeebeIndexPrefix() != null) {
+    if (testContext.getIndexPrefix() != null) {
       operateContainer.withEnv(
-          "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
+          "CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PREFIX", testContext.getIndexPrefix());
     }
   }
 
@@ -445,7 +442,7 @@ public class TestContainerUtil {
               testContext.getInternalElsHost(),
               testContext.getInternalElsPort(),
               testContext.getInternalZeebeContactPoint(),
-              testContext.getZeebeIndexPrefix());
+              testContext.getIndexPrefix());
       final Path tempFile = Files.createTempFile(getClass().getPackage().getName(), ".tmp");
       properties.store(new FileWriter(tempFile.toFile()), null);
       return tempFile;
@@ -495,7 +492,7 @@ public class TestContainerUtil {
       final String connectionType) {
     final TestContext testContext =
         new TestContext()
-            .setZeebeIndexPrefix(prefix)
+            .setIndexPrefix(prefix)
             .setPartitionCount(partitionCount)
             .setMultitenancyEnabled(multitenancyEnabled)
             .setConnectionType(connectionType);
@@ -624,15 +621,15 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", dbUrl);
-    if (testContext.getZeebeIndexPrefix() != null && dbType != null) {
+    if (testContext.getIndexPrefix() != null && dbType != null) {
       broker
           .withEnv(
               "CAMUNDA_DATA_SECONDARYSTORAGE_" + dbType.toUpperCase() + "_INDEXPREFIX",
-              testContext.getZeebeIndexPrefix())
+              testContext.getIndexPrefix())
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX",
-              testContext.getZeebeIndexPrefix())
-          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getZeebeIndexPrefix());
+              testContext.getIndexPrefix())
+          .withEnv("CAMUNDA_DATABASE_INDEXPREFIX", testContext.getIndexPrefix());
     }
   }
 
@@ -654,10 +651,9 @@ public class TestContainerUtil {
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_ESCALATION", "false")
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PROCESSEVENT", "false");
 
-    if (testContext.getZeebeIndexPrefix() != null) {
+    if (testContext.getIndexPrefix() != null) {
       broker.withEnv(
-          "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX",
-          testContext.getZeebeIndexPrefix());
+          "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_INDEX_PREFIX", testContext.getIndexPrefix());
     }
   }
 

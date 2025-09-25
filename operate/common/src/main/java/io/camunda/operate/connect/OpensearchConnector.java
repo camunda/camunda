@@ -62,7 +62,6 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -80,7 +79,6 @@ public class OpensearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
   private PluginRepository osClientRepository = new PluginRepository();
-  private PluginRepository zeebeOsClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
 
   private final ObjectMapper objectMapper;
@@ -94,10 +92,6 @@ public class OpensearchConnector {
 
   public void setOsClientRepository(final PluginRepository osClientRepository) {
     this.osClientRepository = osClientRepository;
-  }
-
-  public void setZeebeOsClientRepository(final PluginRepository zeebeOsClientRepository) {
-    this.zeebeOsClientRepository = zeebeOsClientRepository;
   }
 
   @Bean
@@ -143,14 +137,6 @@ public class OpensearchConnector {
       LOGGER.warn("OpenSearch cluster health check is disabled.");
     }
     return openSearchClient;
-  }
-
-  @Bean("zeebeOpensearchClient")
-  @ConditionalOnProperty(value = "camunda.operate.importer-enabled", havingValue = "true")
-  public OpenSearchClient zeebeOpensearchClient() {
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeOsClientRepository.load(operateProperties.getZeebeOpensearch().getInterceptorPlugins());
-    return createOsClient(operateProperties.getZeebeOpensearch(), zeebeOsClientRepository);
   }
 
   public OpenSearchAsyncClient createAsyncOsClient(
