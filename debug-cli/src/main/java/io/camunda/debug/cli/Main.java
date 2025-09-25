@@ -15,7 +15,11 @@ import picocli.CommandLine.Command;
     description = "Camunda Debug CLI - A tool for debugging and troubleshooting Camunda instances",
     mixinStandardHelpOptions = true,
     version = "1.0.0",
-    subcommands = {CommandLine.HelpCommand.class, TopologyMetaCommand.class})
+    subcommands = {
+      CommandLine.HelpCommand.class,
+      TopologyMetaCommand.class,
+      RaftMetadataCommand.class
+    })
 public class Main {
 
   public static void main(final String[] args) {

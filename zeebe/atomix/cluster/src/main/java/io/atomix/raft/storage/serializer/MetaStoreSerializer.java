@@ -32,8 +32,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class MetaStoreSerializer {
 
+  public static final int VERSION_LENGTH = Byte.BYTES;
   private static final byte VERSION = 1;
-  private static final int VERSION_LENGTH = Byte.BYTES;
   private final ByteBuffer metaByteBuffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
   private final UnsafeBuffer metaBuffer = new UnsafeBuffer(metaByteBuffer);
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();

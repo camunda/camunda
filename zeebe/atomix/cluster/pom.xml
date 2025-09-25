@@ -280,6 +280,18 @@
   </dependencies>
 
   <build>
+    <resources>
+      <resource>
+        <directory>${project.basedir}/src/main/resources</directory>
+      </resource>
+    <resource>
+      <directory>${project.build.directory}/generated-sources</directory>
+      <includes>
+        <include>**/*.sbeir</include>
+        <include>**/*.xml</include>
+      </includes>
+    </resource>
+    </resources>
     <plugins>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
@@ -318,6 +330,32 @@
           </execution>
         </executions>
       </plugin>
+
+<!--      <plugin>-->
+<!--        <groupId>org.apache.maven.plugins</groupId>-->
+<!--        <artifactId>maven-resources-plugin</artifactId>-->
+<!--        <executions>-->
+<!--          <execution>-->
+<!--            <id>copy-generated-files</id>-->
+<!--            <phase>process-resources</phase>-->
+<!--            <goals>-->
+<!--              <goal>copy-resources</goal>-->
+<!--            </goals>-->
+<!--            <configuration>-->
+<!--              <outputDirectory>${project.build.outputDirectory}</outputDirectory>-->
+<!--              <resources>-->
+<!--                <resource>-->
+<!--                  <directory>${project.build.directory}/generated-sources/sbe</directory>-->
+<!--                  <includes>-->
+<!--                    <include>**/*.sbeir</include>-->
+<!--                  </includes>-->
+<!--                </resource>-->
+<!--              </resources>-->
+<!--            </configuration>-->
+<!--          </execution>-->
+<!--        </executions>-->
+<!--      </plugin>-->
+
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
