@@ -504,7 +504,7 @@
             <!-- Used for OpenAPI generation -->
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
             <dependency>io.opentelemetry.instrumentation:opentelemetry-spring-boot-starter</dependency>
-            <dependency>io.opentelemetry.instrumentation:opentelemetry-zipkin-spring-boot-starter<</dependency>
+            <dependency>io.opentelemetry.instrumentation:opentelemetry-zipkin-spring-boot-starter</dependency>
           </usedDependencies>
         </configuration>
       </plugin>
