@@ -8,13 +8,13 @@ This is a small overview of the contents of the different modules:
 * `auth` authentication and authorization components shared by broker and gateway
 * `atomix` contains transport, membership, and consensus algorithms
 * `backup` abstracts how primary storage backups are handled in Zeebe
-* `backup-store` implementations for different backup stores
-  * `backup-stores/azure` Microsoft Azure Blob Storage backup store implementation
-  * `backup-stores/common` shared abstractions for backup store implementations
-  * `backup-stores/filesystem` filesystem-based backup store
-  * `backup-stores/gcs` Google Cloud Storage backup store implementation
-  * `backup-stores/s3` Amazon S3 backup store implementation
-  * `backup-stores/testkit` testing utilities/fakes for backup stores
+* `backup-stores` implementations for different backup stores
+* `backup-stores/azure` Microsoft Azure Blob Storage backup store implementation
+* `backup-stores/common` shared abstractions for backup store implementations
+* `backup-stores/filesystem` filesystem-based backup store
+* `backup-stores/gcs` Google Cloud Storage backup store implementation
+* `backup-stores/s3` Amazon S3 backup store implementation
+* `backup-stores/testkit` testing utilities/fakes for backup stores
 * `bpmn-model` is a Java API for BPMN process definitions used for parsing etc.
 * `broker` contains the Zeebe broker which is the server side of Zeebe
 * `broker-client` client for internal communication between cluster components
@@ -23,10 +23,10 @@ This is a small overview of the contents of the different modules:
 * `dynamic-config` dynamic configuration management for brokers
 * `engine` is the implementation of the event stream processor
 * `exporter-api` exporter SPI for implementing exporters
-  * `exporters/camunda-exporter` Camunda Platform exporter implementation
-  * `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
-  * `exporters/opensearch-exporter` OpenSearch exporter implementation
-  * `exporters/rdbms-exporter` RDBMS exporter implementation
+* `exporters/camunda-exporter` Camunda Platform exporter implementation
+* `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
+* `exporters/opensearch-exporter` OpenSearch exporter implementation
+* `exporters/rdbms-exporter` RDBMS exporter implementation
 * `exporter-common` common utilities for exporter implementations
 * `exporter-test` thread-safe exporter test controller
 * `expression-language` engine core expression evaluation
