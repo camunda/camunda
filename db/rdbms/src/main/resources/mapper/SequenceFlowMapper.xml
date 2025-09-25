@@ -165,6 +165,28 @@
             #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
+  <insert id="createIfNotExists"
+    parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel" databaseId="mssql">
+    MERGE INTO ${prefix}SEQUENCE_FLOW AS target
+    USING (SELECT 1 AS dummy) AS src
+      ON (target.FLOW_NODE_ID = #{flowNodeId} AND target.PROCESS_INSTANCE_KEY = #{processInstanceKey})
+    WHEN NOT MATCHED THEN
+      INSERT (FLOW_NODE_ID,
+              PROCESS_INSTANCE_KEY,
+              PROCESS_DEFINITION_KEY,
+              PROCESS_DEFINITION_ID,
+              TENANT_ID,
+              PARTITION_ID,
+              HISTORY_CLEANUP_DATE)
+      VALUES (#{flowNodeId},
+              #{processInstanceKey},
+              #{processDefinitionKey},
+              #{processDefinitionId},
+              #{tenantId},
+              #{partitionId},
+              #{historyCleanupDate, jdbcType=TIMESTAMP});
+  </insert>
+
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}SEQUENCE_FLOW
     SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}

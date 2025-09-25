@@ -19,8 +19,8 @@
            pi.END_DATE,
            pi.TENANT_ID,
            CASE
-               WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
-               ELSE TRUE
+               WHEN pi.NUM_INCIDENTS = 0 THEN ${false}
+               ELSE ${true}
            END AS HAS_INCIDENT,
            pi.PARENT_PROCESS_INSTANCE_KEY,
            pi.PARENT_ELEMENT_INSTANCE_KEY,
@@ -55,8 +55,8 @@
     pi.END_DATE,
     pi.TENANT_ID,
     CASE
-        WHEN pi.NUM_INCIDENTS = 0 THEN FALSE
-        ELSE TRUE
+        WHEN pi.NUM_INCIDENTS = 0 THEN ${false}
+        ELSE ${true}
     END AS HAS_INCIDENT,
     pi.PARENT_PROCESS_INSTANCE_KEY,
     pi.PARENT_ELEMENT_INSTANCE_KEY,

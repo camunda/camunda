@@ -21,6 +21,7 @@ public class RdbmsDatabaseIdProvider extends VendorDatabaseIdProvider {
     VENDOR_PROPERTIES.put("Oracle", "oracle");
     VENDOR_PROPERTIES.put("MariaDB", "mariadb");
     VENDOR_PROPERTIES.put("MySQL", "mysql");
+    VENDOR_PROPERTIES.put("Microsoft SQL Server", "mssql");
   }
 
   private final String databaseIdOverride;
