@@ -88,12 +88,14 @@ public record RdbmsWriterConfig(
       Duration minHistoryCleanupInterval,
       Duration maxHistoryCleanupInterval,
       int historyCleanupBatchSize,
+      Duration usageMetricsCleanup,
       Duration usageMetricsTTL) {
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
     public static final Duration DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(1);
     public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
+    public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
     public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 1000;
 
@@ -115,6 +117,7 @@ public record RdbmsWriterConfig(
       private Duration minHistoryCleanupInterval = DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
       private Duration maxHistoryCleanupInterval = DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
       private int historyCleanupBatchSize = DEFAULT_HISTORY_CLEANUP_BATCH_SIZE;
+      private Duration usageMetricsCleanup = DEFAULT_USAGE_METRICS_CLEANUP;
       private Duration usageMetricsTTL = DEFAULT_USAGE_METRICS_TTL;
 
       public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
@@ -166,6 +169,11 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public HistoryConfig.Builder usageMetricsCleanup(final Duration usageMetricsCleanup) {
+        this.usageMetricsCleanup = usageMetricsCleanup;
+        return this;
+      }
+
       public HistoryConfig.Builder usageMetricsTTL(final Duration usageMetricsTTL) {
         this.usageMetricsTTL = usageMetricsTTL;
         return this;
@@ -182,6 +190,7 @@ public record RdbmsWriterConfig(
             minHistoryCleanupInterval,
             maxHistoryCleanupInterval,
             historyCleanupBatchSize,
+            usageMetricsCleanup,
             usageMetricsTTL);
       }
     }

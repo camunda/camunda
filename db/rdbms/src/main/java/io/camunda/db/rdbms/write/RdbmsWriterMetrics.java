@@ -67,6 +67,13 @@ public class RdbmsWriterMetrics {
         .minimumExpectedValue(Duration.ofMillis(10));
   }
 
+  public ResourceSample measureUsageMetricsHistoryCleanupDuration() {
+    return Timer.resource(meterRegistry, meterName("historyCleanup.usageMetrics.duration.seconds"))
+        .description("Usage metrics history cleanup duration in seconds")
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(10));
+  }
+
   public void recordHistoryCleanupBulkSize(final int bulkSize, final String entityName) {
     DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
         .description("Exporter bulk size")

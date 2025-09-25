@@ -81,7 +81,7 @@ class HistoryCleanupServiceTest {
 
     final var historyConfig = mock(RdbmsWriterConfig.HistoryConfig.class);
     when(config.history()).thenReturn(historyConfig);
-    when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(30));
+    when(historyConfig.defaultHistoryTTL()).thenReturn(Duration.ofDays(90));
     when(historyConfig.batchOperationCancelProcessInstanceHistoryTTL())
         .thenReturn(Duration.ofDays(2));
     when(historyConfig.batchOperationMigrateProcessInstanceHistoryTTL())
@@ -92,6 +92,7 @@ class HistoryCleanupServiceTest {
     when(historyConfig.minHistoryCleanupInterval()).thenReturn(Duration.ofHours(1));
     when(historyConfig.maxHistoryCleanupInterval()).thenReturn(Duration.ofDays(1));
     when(historyConfig.historyCleanupBatchSize()).thenReturn(100);
+    when(historyConfig.usageMetricsCleanup()).thenReturn(Duration.ofDays(1));
     when(historyConfig.usageMetricsTTL()).thenReturn(Duration.ofDays(730));
 
     historyCleanupService =
@@ -161,7 +162,7 @@ class HistoryCleanupServiceTest {
         historyCleanupService.cleanupUsageMetricsHistory(PARTITION_ID, CLEANUP_DATE);
 
     // then
-    assertThat(nextCleanupInterval).isEqualTo(Duration.ofDays(30));
+    assertThat(nextCleanupInterval).isEqualTo(Duration.ofDays(1));
     verify(usageMetricWriter)
         .cleanupMetrics(PARTITION_ID, CLEANUP_DATE.minus(Duration.ofDays(730)), 100);
     verify(usageMetricTUWriter)
@@ -262,6 +263,6 @@ class HistoryCleanupServiceTest {
         .isEqualTo(Duration.ofDays(5));
 
     assertThat(historyCleanupService.resolveBatchOperationTTL(BatchOperationType.ADD_VARIABLE))
-        .isEqualTo(Duration.ofDays(30)); // default history TTL
+        .isEqualTo(Duration.ofDays(90)); // default history TTL
   }
 }
