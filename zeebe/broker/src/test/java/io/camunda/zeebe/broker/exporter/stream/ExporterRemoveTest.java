@@ -122,4 +122,37 @@ public class ExporterRemoveTest {
     assertThat(rule.getDirector().removeExporter(EXPORTER_ID_1))
         .succeedsWithin(Duration.ofSeconds(5));
   }
+
+  @Test
+  public void shouldContinueExportingIfExporterFailedToOpenIsDisabled() {
+    // given
+    exporters
+        .get(EXPORTER_ID_1)
+        .onOpen(
+            ignore -> {
+              throw new RuntimeException("Force fail open");
+            });
+    rule.startExporterDirector(exporterDescriptors);
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // when
+    rule.getDirector().removeExporter(EXPORTER_ID_1).join();
+
+    rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+    final long expectedLastExportedPosition =
+        rule.writeEvent(DeploymentIntent.CREATED, new DeploymentRecord());
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> assertThat(exporters.get(EXPORTER_ID_2).getExportedRecords()).hasSize(3));
+
+    assertThat(rule.getDirector().getLowestPosition().join())
+        .describedAs("The lowest position should be updated when one exporter is removed")
+        .isEqualTo(expectedLastExportedPosition);
+
+    assertThat(exporters.get(EXPORTER_ID_1).getExportedRecords())
+        .describedAs("Should not export to exporter-1 after disabling")
+        .hasSizeLessThanOrEqualTo(1);
+  }
 }
