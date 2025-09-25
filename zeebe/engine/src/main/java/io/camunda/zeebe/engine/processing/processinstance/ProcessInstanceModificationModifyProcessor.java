@@ -132,6 +132,15 @@ public final class ProcessInstanceModificationModifyProcessor
       Expected to modify instance of process '%s' but it is currently suspended. \
       Suspended process instances cannot be modified.""";
 
+  private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_TERMINATED =
+      """
+      Expected to modify instance of process '%s' but it contains one or more activate instructions \
+      for elements whose required flow scope instance is also being terminated: %s. \
+      Please provide a valid ancestor scope key for the activation or avoid terminating the required flow scope.""";
+
+  private static final String ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT =
+      "element '%s' requires flow scope instance '%d' which is being terminated";
+
   private static final EnumSet<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       EnumSet.of(
           BpmnElementType.UNSPECIFIED,
@@ -347,6 +356,10 @@ public final class ProcessInstanceModificationModifyProcessor
         .flatMap(valid -> validateVariableScopeExists(process, activateInstructions))
         .flatMap(valid -> validateVariableScopeIsFlowScope(process, activateInstructions))
         .flatMap(valid -> validateAncestorKeys(process, value))
+        .flatMap(
+            valid ->
+                validateFlowScopeNotTerminatedForActivation(
+                    processInstance, process, activateInstructions, terminateInstructions))
         .map(valid -> VALID);
   }
 
@@ -672,6 +685,66 @@ public final class ProcessInstanceModificationModifyProcessor
     }
 
     return false;
+  }
+
+  private Either<Rejection, ?> validateFlowScopeNotTerminatedForActivation(
+      final ElementInstance processInstance,
+      final DeployedProcess process,
+      final List<ProcessInstanceModificationActivateInstructionValue> activateInstructions,
+      final List<ProcessInstanceModificationTerminateInstructionValue> terminateInstructions) {
+    // Collect all terminate instance keys
+    final Set<Long> terminatedInstanceKeys =
+        terminateInstructions.stream()
+            .map(ProcessInstanceModificationTerminateInstructionValue::getElementInstanceKey)
+            .collect(Collectors.toSet());
+
+    // For each activation, determine required flow scope instance key
+    final List<String> conflictingActivations = new ArrayList<>();
+    for (final var instruction : activateInstructions) {
+      final var elementToActivate = process.getProcess().getElementById(instruction.getElementId());
+      if (elementToActivate == null) {
+        continue; // Already validated elsewhere
+      }
+      final long ancestorScopeKey = instruction.getAncestorScopeKey();
+      final long requiredFlowScopeKey;
+      if (ancestorScopeKey > 0) {
+        requiredFlowScopeKey = ancestorScopeKey;
+      } else {
+        // Find the active instance of the flow scope for this element
+        final var flowScope = elementToActivate.getFlowScope();
+        if (flowScope == null) {
+          continue; // No flow scope required
+        }
+        final var flowScopeInstance =
+            elementInstanceState.getChildren(processInstance.getKey()).stream()
+                .filter(
+                    ei ->
+                        BufferUtil.bufferAsString(flowScope.getId())
+                            .equals(ei.getValue().getElementId()))
+                .findFirst()
+                .orElse(null);
+        if (flowScopeInstance == null) {
+          continue; // No active flow scope instance found
+        }
+        requiredFlowScopeKey = flowScopeInstance.getKey();
+      }
+      if (terminatedInstanceKeys.contains(requiredFlowScopeKey)) {
+        conflictingActivations.add(
+            String.format(
+                ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_CONFLICT,
+                instruction.getElementId(),
+                requiredFlowScopeKey));
+      }
+    }
+    if (conflictingActivations.isEmpty()) {
+      return VALID;
+    }
+    final String reason =
+        String.format(
+            ERROR_MESSAGE_ACTIVATION_FLOW_SCOPE_TERMINATED,
+            BufferUtil.bufferAsString(process.getBpmnProcessId()),
+            String.join(", ", conflictingActivations));
+    return Either.left(new Rejection(RejectionType.INVALID_ARGUMENT, reason));
   }
 
   public void executeVariableInstruction(
