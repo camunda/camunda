@@ -24,6 +24,8 @@ import io.camunda.zeebe.exporter.common.cache.process.CachedProcessEntity;
 import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.IntentHandler;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.OffsetDateTime;
@@ -52,7 +54,8 @@ import org.slf4j.LoggerFactory;
       UserTaskIntent.UPDATE_DENIED,
       UserTaskIntent.COMPLETION_DENIED
     })
-public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordValue> {
+public class UserTaskExportHandler
+    implements RdbmsExportHandler<UserTaskRecordValue>, IntentHandler {
 
   private static final Logger LOG = LoggerFactory.getLogger(UserTaskExportHandler.class);
 
@@ -82,6 +85,26 @@ public class UserTaskExportHandler implements RdbmsExportHandler<UserTaskRecordV
       final ExporterEntityCache<Long, CachedProcessEntity> processCache) {
     this.userTaskWriter = userTaskWriter;
     this.processCache = processCache;
+  }
+
+  @Override
+  public Set<? extends Intent> getHandledIntents() {
+    return Set.of(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.CREATED,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.CLAIMING,
+        UserTaskIntent.ASSIGNED,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.UPDATED,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETED,
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.CANCELED,
+        UserTaskIntent.MIGRATED,
+        UserTaskIntent.ASSIGNMENT_DENIED,
+        UserTaskIntent.UPDATE_DENIED,
+        UserTaskIntent.COMPLETION_DENIED);
   }
 
   @Override

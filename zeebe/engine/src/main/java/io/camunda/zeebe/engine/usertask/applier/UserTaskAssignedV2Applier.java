@@ -15,12 +15,15 @@ import io.camunda.zeebe.engine.usertask.state.immutable.UserTaskState.LifecycleS
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.IntentHandler;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
+import java.util.Set;
 
 @HandlesIntent(userTask = UserTaskIntent.ASSIGNED)
 public final class UserTaskAssignedV2Applier
-    implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
+    implements TypedEventApplier<UserTaskIntent, UserTaskRecord>, IntentHandler {
 
   private final MutableUserTaskState userTaskState;
   private final MutableElementInstanceState elementInstanceState;
@@ -50,5 +53,10 @@ public final class UserTaskAssignedV2Applier
         elementInstanceState.updateInstance(elementInstance);
       }
     }
+  }
+
+  @Override
+  public Set<? extends Intent> getHandledIntents() {
+    return Set.of(UserTaskIntent.ASSIGNED);
   }
 }

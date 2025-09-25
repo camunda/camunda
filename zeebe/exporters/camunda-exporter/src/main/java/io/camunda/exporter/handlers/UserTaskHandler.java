@@ -23,6 +23,8 @@ import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.IntentHandler;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import java.time.Instant;
@@ -53,7 +55,8 @@ import org.slf4j.LoggerFactory;
       UserTaskIntent.UPDATE_DENIED,
       UserTaskIntent.COMPLETION_DENIED
     })
-public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecordValue> {
+public class UserTaskHandler
+    implements ExportHandler<TaskEntity, UserTaskRecordValue>, IntentHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
@@ -90,6 +93,26 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     this.formCache = formCache;
     this.processCache = processCache;
     this.exporterMetadata = exporterMetadata;
+  }
+
+  @Override
+  public Set<? extends Intent> getHandledIntents() {
+    return Set.of(
+        UserTaskIntent.CREATING,
+        UserTaskIntent.CREATED,
+        UserTaskIntent.COMPLETING,
+        UserTaskIntent.COMPLETED,
+        UserTaskIntent.CANCELING,
+        UserTaskIntent.CANCELED,
+        UserTaskIntent.MIGRATED,
+        UserTaskIntent.ASSIGNING,
+        UserTaskIntent.CLAIMING,
+        UserTaskIntent.ASSIGNED,
+        UserTaskIntent.UPDATING,
+        UserTaskIntent.UPDATED,
+        UserTaskIntent.ASSIGNMENT_DENIED,
+        UserTaskIntent.UPDATE_DENIED,
+        UserTaskIntent.COMPLETION_DENIED);
   }
 
   @Override
