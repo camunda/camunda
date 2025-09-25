@@ -42,6 +42,7 @@ export const jobResponseFields = [
   'listenerEventType',
 ];
 export const jobSearchPageResponseRequiredFields = ['totalItems'];
+export const userTaskSearchPageResponseRequiredFields = ['totalItems'];
 export const jobSearchItemResponseFields = [
   'customHeaders',
   'elementInstanceKey',
@@ -57,6 +58,29 @@ export const jobSearchItemResponseFields = [
   'tenantId',
   'type',
   'worker',
+];
+export const userTaskSearchItemResponseFields = [
+  'name',
+  'state',
+  'assignee',
+  'elementId',
+  'candidateGroups',
+  'candidateUsers',
+  'processDefinitionId',
+  'creationDate',
+  'completionDate',
+  'followUpDate',
+  'dueDate',
+  'tenantId',
+  'externalFormReference',
+  'processDefinitionVersion',
+  'priority',
+  'userTaskKey',
+  'elementInstanceKey',
+  'processName',
+  'processDefinitionKey',
+  'processInstanceKey',
+  'formKey',
 ];
 export const clusterTopologyResponseFields = [
   'brokers',

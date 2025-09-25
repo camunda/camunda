@@ -18,6 +18,7 @@ import {
   tenantRequiredFields,
   userRequiredFields,
   decisionDefinitionRequiredFields,
+  userTaskSearchPageResponseRequiredFields,
 } from './beans/requestBeans';
 import {
   assertEqualsForKeys,
@@ -25,6 +26,7 @@ import {
   assertStatusCode,
   buildUrl,
   jsonHeaders,
+  paginatedResponseFields,
 } from './http';
 import {expect} from '@playwright/test';
 import type {APIRequestContext} from 'playwright-core';
@@ -734,4 +736,43 @@ export function setupProcessInstanceTests(
       }
     },
   };
+}
+
+export async function findUserTask(
+  request: APIRequestContext,
+  procKey: string,
+  state: string,
+) {
+  const localState: Record<string, unknown> = {};
+  console.log(procKey);
+  await expect(async () => {
+    const searchRes = await request.post(buildUrl('/user-tasks/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey: procKey}},
+    });
+    await assertStatusCode(searchRes, 200);
+    const searchJson = await searchRes.json();
+
+    assertRequiredFields(searchJson, paginatedResponseFields);
+    assertRequiredFields(
+      searchJson.page,
+      userTaskSearchPageResponseRequiredFields,
+    );
+    expect(searchJson.page.totalItems).toBe(1);
+    expect(searchJson.items.length).toBe(1);
+    expect(searchJson.items[0].state).toBe(state);
+    localState['userTaskKey'] = searchJson.items[0].userTaskKey;
+  }).toPass(defaultAssertionOptions);
+  return localState['userTaskKey'] as string;
+}
+
+export async function completeUserTask(
+  request: APIRequestContext,
+  userTaskKey: string,
+  payload: unknown = {},
+) {
+  return await request.post(buildUrl(`/user-tasks/${userTaskKey}/completion`), {
+    headers: jsonHeaders(),
+    data: payload,
+  });
 }
