@@ -708,7 +708,8 @@ export async function activateJobToObtainAValidJobKey(
 }
 
 export function setupProcessInstanceTests(
-  processName: string,
+  processFileName: string,
+  processName?: string,
   variables?: JSONDoc,
 ) {
   const state: Record<string, unknown> = {};
@@ -716,11 +717,11 @@ export function setupProcessInstanceTests(
   return {
     state,
     beforeAll: async () => {
-      await deploy([`./resources/${processName}.bpmn`]);
+      await deploy([`./resources/${processFileName}.bpmn`]);
     },
     beforeEach: async () => {
       const processInstance = await createInstances(
-        processName,
+        processName ? processName : processFileName,
         1,
         1,
         variables,
