@@ -98,6 +98,7 @@ public final class CreateProcessInstanceCommandImpl
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
    *     CamundaClientConfiguration, Predicate, HttpClient, boolean)}
    */
+  @Deprecated
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,
