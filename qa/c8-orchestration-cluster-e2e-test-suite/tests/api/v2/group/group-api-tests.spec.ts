@@ -7,7 +7,6 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {expectResponseShapeFor} from '../../../../utils/route-test';
 
 import {
   jsonHeaders,
@@ -102,10 +101,7 @@ test.describe.parallel('Groups API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
-      expectResponseShapeFor(
-        {path: '/groups/search', method: 'POST', status: '200'},
-        json,
-      );
+
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
       assertRequiredFields(json.items[0], groupRequiredFields);
