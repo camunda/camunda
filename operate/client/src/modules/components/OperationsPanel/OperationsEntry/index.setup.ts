@@ -11,16 +11,10 @@ import type {
   BatchOperationType,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-type ExtendedOperationType =
-  | BatchOperationType
-  | 'DELETE_PROCESS_INSTANCE'
-  | 'DELETE_PROCESS_DEFINITION'
-  | 'DELETE_DECISION_DEFINITION';
-
 const OPERATIONS: Record<
-  ExtendedOperationType,
+  BatchOperationType,
   Omit<BatchOperation, 'batchOperationType'> & {
-    batchOperationType: ExtendedOperationType;
+    batchOperationType: BatchOperationType;
   }
 > = {
   RESOLVE_INCIDENT: {
