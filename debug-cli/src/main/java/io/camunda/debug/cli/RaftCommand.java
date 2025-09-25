@@ -64,18 +64,16 @@ public class RaftCommand extends CommonOptions implements Callable<Integer> {
         MetaStoreSerializer.VERSION_LENGTH,
         metadataContentBuffer.capacity() - MetaStoreSerializer.VERSION_LENGTH);
 
-    final var irFileResource = getClass().getClassLoader().getResource("raft-entry-schema.sbeir");
-    if (irFileResource == null) {
-      throw new IllegalStateException(
-          "Could not find SBE IR file 'raft-entry-schema.sbeir' in resources");
-    }
+    final var irFileResource =
+        getClass().getClassLoader().getResourceAsStream("raft-entry-schema.sbeir");
+    final var bytes = irFileResource.readAllBytes();
 
-    final var irFile = irFileResource.getFile();
-    if (verbose) {
-      spec.commandLine().getErr().print("Using SBE IR file: " + irFile + "\n");
-    }
+    //    final var irFile = irFileResource.ge
+    //    if (verbose) {
+    //      spec.commandLine().getErr().print("Using SBE IR file: " + irFile + "\n");
+    //    }
 
-    try (final IrDecoder irDecoder = new IrDecoder(irFile)) {
+    try (final IrDecoder irDecoder = new IrDecoder(ByteBuffer.wrap(bytes))) {
       final var ir = irDecoder.decode();
       final StringBuilder output = new StringBuilder();
       new JsonPrinter(ir).print(output, metadataWithoutVersion, 0);
