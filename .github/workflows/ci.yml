@@ -948,7 +948,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild,-include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
