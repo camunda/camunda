@@ -572,6 +572,8 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+
+    exporter.setArgs(args);
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
@@ -590,40 +592,41 @@ public class BrokerBasedPropertiesOverride {
     // it is possible to have an exporter with no args defined
     final Map<String, Object> args =
         exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
-    setArg(args, "queueSize", database.getQueueSize());
-    setArg(args, "flushInterval", database.getFlushInterval());
+    setArgIfNotNull(args, "queueSize", database.getQueueSize());
+    setArgIfNotNull(args, "flushInterval", database.getFlushInterval());
 
     if (database.getHistory() != null) {
-      setArg(args, "history.defaultHistoryTTL", database.getHistory().getDefaultHistoryTTL());
-      setArg(
+      setArgIfNotNull(
+          args, "history.defaultHistoryTTL", database.getHistory().getDefaultHistoryTTL());
+      setArgIfNotNull(
           args,
           "history.defaultBatchOperationHistoryTTL",
           database.getHistory().getDefaultBatchOperationHistoryTTL());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.batchOperationCancelProcessInstanceHistoryTTL",
           database.getHistory().getBatchOperationCancelProcessInstanceHistoryTTL());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.batchOperationMigrateProcessInstanceHistoryTTL",
           database.getHistory().getBatchOperationMigrateProcessInstanceHistoryTTL());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.batchOperationModifyProcessInstanceHistoryTTL",
           database.getHistory().getBatchOperationModifyProcessInstanceHistoryTTL());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.batchOperationResolveIncidentHistoryTTL",
           database.getHistory().getBatchOperationResolveIncidentHistoryTTL());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.minHistoryCleanupInterval",
           database.getHistory().getMinHistoryCleanupInterval());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.maxHistoryCleanupInterval",
           database.getHistory().getMaxHistoryCleanupInterval());
-      setArg(
+      setArgIfNotNull(
           args,
           "history.historyCleanupBatchSize",
           database.getHistory().getHistoryCleanupBatchSize());
@@ -632,19 +635,29 @@ public class BrokerBasedPropertiesOverride {
     }
 
     if (database.getProcessCache() != null) {
-      setArg(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
+      setArgIfNotNull(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
     }
 
     if (database.getBatchOperationCache() != null) {
-      setArg(args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
+      setArgIfNotNull(
+          args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
     }
 
-    setArg(
+    setArgIfNotNull(
         args,
         "exportBatchOperationItemsOnCreation",
         database.isExportBatchOperationItemsOnCreation());
-    setArg(
+    setArgIfNotNull(
         args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
+
+    exporter.setArgs(args);
+  }
+
+  private void setArgIfNotNull(
+      final Map<String, Object> args, final String breadcrumb, final Object value) {
+    if (value != null) {
+      setArg(args, breadcrumb, value);
+    }
   }
 
   @SuppressWarnings("unchecked")
