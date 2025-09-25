@@ -21,18 +21,32 @@ The engine is implemented as a collection of command processors and event applie
 - **Events** are the result of processing commands describing that the state has changed, e.g. a process instance was created or a timer was triggered.
 - **Command rejections** are indications that a command could not be processed, e.g. because the requested change was not allowed.
 
-It is designed to recover its state by replaying the events of the logstream.
-To avoid unnecessary work, it can replay from a snapshot of the state.
-
 The engine operates in two modes: processing and replay.
 
-- In **processing** mode, the engine processes **commands**.
-  Commands are processed in the order that they were added to the logstream.
-  During command processing, the engine can append new records to the logstream and respond to requests.
-  Command processors can reject commands by appending command rejections, append and apply events to change the state, and append follow-up commands to request next steps to do.
-- In **replay** mode, the engine applies **events** to reconstruct its state.
-  Events are applied deterministically and in the order that they were added to the logstream.
-  To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
+### Replay mode
+
+In **replay** mode, the engine applies **events** to reconstruct its state.
+The engine always starts in replay mode first.
+Events are applied deterministically and in the order that they were added to the logstream.
+
+To avoid unnecessary work, replay can start from a snapshot of the state.
+Replay then starts with the first event that has not yet been applied to that snapshot.
+
+To learn more about replay, see [ZEP004](https://github.com/zeebe-io/enhancements/blob/master/ZEP004-wf-stream-processing.md).
+
+### Processing mode
+
+In **processing** mode, the engine processes **commands**.
+Commands are processed in the order that they were added to the logstream.
+
+During command processing, the engine can append new records to the logstream, respond to requests, and execute side-effects.
+
+Command processors can:
+- reject commands by appending command rejections,
+- append and apply events to change the state,
+- append follow-up commands to request next steps to do,
+- respond to requests with a rejection or an event,
+- append side-effects to be executed when processing successfully completes.
 
 There are three sources of commands.
 
