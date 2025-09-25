@@ -15,6 +15,7 @@
 
   <properties>
     <version.java>17</version.java>
+    <version.wiremock-spring-boot>3.10.6</version.wiremock-spring-boot>
   </properties>
 
   <dependencies>
@@ -50,6 +51,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.wiremock.integrations</groupId>
+      <artifactId>wiremock-spring-boot</artifactId>
+      <version>${version.wiremock-spring-boot}</version>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -70,6 +78,8 @@
               <dependency>org.springframework.boot:spring-boot-test</dependency>
               <dependency>org.springframework:spring-beans</dependency>
               <dependency>org.springframework:spring-context</dependency>
+              <dependency>org.wiremock:wiremock</dependency>
+              <dependency>org.testcontainers:testcontainers</dependency>
             </ignoredUsedUndeclaredDependencies>
             <ignoredNonTestScopedDependencies>
               <dependency>com.fasterxml.jackson.core:jackson-databind</dependency>
