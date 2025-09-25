@@ -35,7 +35,8 @@ public class JobWorkerValue {
   private Boolean forceFetchAllVariables;
   private Boolean streamEnabled;
   private Duration streamTimeout;
-  private Integer maxRetries;
+  private Integer maxRetries = 0;
+  private Duration retryBackoff;
 
   public JobWorkerValue() {}
 
@@ -54,7 +55,8 @@ public class JobWorkerValue {
       final Boolean forceFetchAllVariables,
       final Boolean streamEnabled,
       final Duration streamTimeout,
-      final Integer maxRetries) {
+      final Integer maxRetries,
+      final Duration retryBackoff) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -70,6 +72,7 @@ public class JobWorkerValue {
     this.streamEnabled = streamEnabled;
     this.streamTimeout = streamTimeout;
     this.maxRetries = maxRetries;
+    this.retryBackoff = retryBackoff;
   }
 
   public String getType() {
@@ -192,6 +195,14 @@ public class JobWorkerValue {
     this.maxRetries = maxRetries;
   }
 
+  public Duration getRetryBackoff() {
+    return retryBackoff;
+  }
+
+  public void setRetryBackoff(final Duration retryBackoff) {
+    this.retryBackoff = retryBackoff;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -209,14 +220,12 @@ public class JobWorkerValue {
         forceFetchAllVariables,
         streamEnabled,
         streamTimeout,
-        maxRetries);
+        maxRetries,
+        retryBackoff);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
@@ -235,7 +244,8 @@ public class JobWorkerValue {
         && Objects.equals(forceFetchAllVariables, that.forceFetchAllVariables)
         && Objects.equals(streamEnabled, that.streamEnabled)
         && Objects.equals(streamTimeout, that.streamTimeout)
-        && Objects.equals(maxRetries, that.maxRetries);
+        && Objects.equals(maxRetries, that.maxRetries)
+        && Objects.equals(retryBackoff, that.retryBackoff);
   }
 
   @Override
@@ -273,6 +283,8 @@ public class JobWorkerValue {
         + streamTimeout
         + ", maxRetries="
         + maxRetries
+        + ", retryBackoff="
+        + retryBackoff
         + '}';
   }
 }
