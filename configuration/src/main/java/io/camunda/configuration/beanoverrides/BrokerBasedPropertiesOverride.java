@@ -572,8 +572,6 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
-
-    exporter.setArgs(args);
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {

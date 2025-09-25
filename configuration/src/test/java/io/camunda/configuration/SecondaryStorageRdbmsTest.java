@@ -188,11 +188,14 @@ public class SecondaryStorageRdbmsTest {
     }
 
     @Test
-    void testSecondaryStorageExporterCanWorkWithoutArgs() {
+    void testSecondaryStorageExporterWithoutArgsGetDefaults() {
       final ExporterCfg exporter = brokerBasedProperties.getRdbmsExporter();
       assertThat(exporter).isNotNull();
       final Map<String, Object> args = exporter.getArgs();
-      assertThat(args).isNull();
+      assertThat(args.get("queueSize")).isEqualTo(QUEUE_SIZE);
+      assertThat(args.get("flushInterval")).isEqualTo(FLUSH_INTERVAL);
+      assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
+      assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
     }
   }
 }
