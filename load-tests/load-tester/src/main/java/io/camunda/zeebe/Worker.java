@@ -8,6 +8,7 @@
 package io.camunda.zeebe;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerMetrics;
@@ -18,6 +19,7 @@ import io.micrometer.core.instrument.Tags;
 import java.time.Duration;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
@@ -58,6 +60,41 @@ public class Worker extends App {
             .metrics(metrics)
             .open();
 
+    // assign & complete user tasks
+    final var executorService = Executors.newScheduledThreadPool(1);
+
+    executorService.scheduleAtFixedRate(
+        () -> {
+          final var tasks =
+              client
+                  .newUserTaskSearchRequest()
+                  .filter(f -> f.state(s -> s.neq(UserTaskState.COMPLETED)))
+                  .page(p -> p.limit(20))
+                  .send()
+                  .join()
+                  .items();
+
+          LOGGER.info("{} tasks found", tasks.size());
+
+          tasks.forEach(
+              task -> {
+                try {
+                  client
+                      .newAssignUserTaskCommand(task.getUserTaskKey())
+                      .assignee("john_" + System.currentTimeMillis())
+                      .send()
+                      .join();
+                  client.newCompleteUserTaskCommand(task.getUserTaskKey()).send().join();
+                  LOGGER.info("Completed user task {}", task.getUserTaskKey());
+                } catch (final Exception e) {
+                  LOGGER.error("Error while executing user task command", e);
+                }
+              });
+        },
+        0,
+        1,
+        TimeUnit.SECONDS);
+
     final ResponseChecker responseChecker = new ResponseChecker(requestFutures);
     responseChecker.start();
 
@@ -65,6 +102,7 @@ public class Worker extends App {
         .addShutdownHook(
             new Thread(
                 () -> {
+                  executorService.shutdown();
                   worker.close();
                   client.close();
                   responseChecker.close();
