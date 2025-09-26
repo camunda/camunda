@@ -222,6 +222,12 @@ public final class AsyncSnapshotDirector extends Actor
               } else {
                 inProgressSnapshot.lowerBoundSnapshotPosition =
                     position == StreamProcessor.UNSET_POSITION ? 0L : position;
+                if (inProgressSnapshot.lowerBoundSnapshotPosition == 0 && !forceSnapshot) {
+                  LOG.debug(
+                      "We will skip taking this snapshot, because we haven't processed anything yet.");
+                  snapshotFuture.complete(null);
+                  return;
+                }
                 snapshot(inProgressSnapshot, forceSnapshot).onComplete(snapshotFuture);
               }
             });
