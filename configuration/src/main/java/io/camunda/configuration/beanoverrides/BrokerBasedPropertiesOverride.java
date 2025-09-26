@@ -16,6 +16,7 @@ import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.Interceptor;
+import io.camunda.configuration.InterceptorPlugin;
 import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
@@ -75,6 +76,8 @@ public class BrokerBasedPropertiesOverride {
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
+  private static final String CONNECT_INTERCEPTOR_PLUGINS_BREAD_CRUMB =
+      "connect.interceptorPlugins";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -563,11 +566,51 @@ public class BrokerBasedPropertiesOverride {
       setArg(args, "connect.security.verifyHostname", database.getSecurity().isVerifyHostname());
       setArg(args, "connect.security.selfSigned", database.getSecurity().isSelfSigned());
     }
+
+    populateInterceptorPlugins(exporter, database, args);
+
     setArg(args, "connect.username", database.getUsername());
     setArg(args, "connect.password", database.getPassword());
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+  }
+
+  private void populateInterceptorPlugins(
+      final ExporterCfg exporter,
+      final SecondaryStorageDatabase database,
+      final Map<String, Object> args) {
+
+    if (exporter.getArgs() != null) {
+      final Object connectObj = exporter.getArgs().get("connect");
+      if (connectObj instanceof final Map<?, ?> connectMap
+          && connectMap.containsKey("interceptorPlugins")) {
+        final String warningMessage =
+            String.format(
+                "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+                "camunda.data.secondary-storage."
+                    + database.getDatabaseName()
+                    + ".interceptor-plugins",
+                "zeebe.broker.exporters.camundaexporter.args.connect.interceptorPlugins");
+        LOGGER.warn(warningMessage);
+      }
+    }
+
+    for (int i = 0; i < database.getInterceptorPlugins().size(); i++) {
+      final InterceptorPlugin interceptorPlugin = database.getInterceptorPlugins().get(i);
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREAD_CRUMB + ".%s.id", i),
+          interceptorPlugin.getId());
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREAD_CRUMB + ".%s.className", i),
+          interceptorPlugin.getClassName());
+      setArg(
+          args,
+          String.format(CONNECT_INTERCEPTOR_PLUGINS_BREAD_CRUMB + ".%s.jarPath", i),
+          interceptorPlugin.getJarPath());
+    }
   }
 
   @SuppressWarnings("unchecked")
