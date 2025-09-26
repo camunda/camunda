@@ -29,7 +29,7 @@ public class LiquibaseScriptGenerator {
     final var targetDir = args[0] + "/liquibase";
 
     final var prefix = args.length >= 2 ? args[1] : "";
-    final var databases = Set.of("h2", "mariadb", "mysql", "postgresql", "oracle");
+    final var databases = Set.of("h2", "mariadb", "mysql", "mssql", "postgresql", "oracle");
 
     for (final var database : databases) {
       generateLiquibaseScript(

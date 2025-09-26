@@ -174,6 +174,11 @@
           AND HISTORY_CLEANUP_DATE &lt; #{cleanupDate}
       LIMIT #{limit}
   </sql>
+  <sql id="historyCleanup" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}${tableName}
+    WHERE HISTORY_CLEANUP_DATE &lt; #{cleanupDate, jdbcType=TIMESTAMP}
+  </sql>
   <sql id="historyCleanup" databaseId="oracle">
     DELETE
     FROM ${prefix}${tableName}

@@ -18,13 +18,13 @@
                            ELEMENT_INSTANCE_KEY, TENANT_ID, DUE_DATE, FOLLOW_UP_DATE,
                            EXTERNAL_FORM_REFERENCE, PROCESS_DEFINITION_VERSION, CUSTOM_HEADERS,
                                     PRIORITY, PARTITION_ID, HISTORY_CLEANUP_DATE)
-    VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate},
-            #{completionDate},
+    VALUES (#{userTaskKey}, #{elementId}, #{name}, #{processDefinitionId}, #{creationDate, jdbcType=TIMESTAMP},
+            #{completionDate, jdbcType=TIMESTAMP},
             #{assignee}, #{state}, #{formKey},
             #{processDefinitionKey}, #{processInstanceKey}, #{elementInstanceKey}, #{tenantId},
-            #{dueDate}, #{followUpDate},
+            #{dueDate, jdbcType=TIMESTAMP}, #{followUpDate, jdbcType=TIMESTAMP},
             #{externalFormReference}, #{processDefinitionVersion}, #{serializedCustomHeaders},
-            #{priority}, #{partitionId}, #{historyCleanupDate})
+            #{priority}, #{partitionId}, #{historyCleanupDate, jdbcType=TIMESTAMP})
   </insert>
 
   <insert id="insertCandidateUsers" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
@@ -314,10 +314,10 @@
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.UserTaskDbModel">
     UPDATE ${prefix}USER_TASK
     SET
-    COMPLETION_DATE = #{completionDate},
-    DUE_DATE = #{dueDate},
+    COMPLETION_DATE = #{completionDate, jdbcType=TIMESTAMP},
+    DUE_DATE = #{dueDate, jdbcType=TIMESTAMP},
     STATE = #{state},
-    FOLLOW_UP_DATE = #{followUpDate},
+    FOLLOW_UP_DATE = #{followUpDate, jdbcType=TIMESTAMP},
     CUSTOM_HEADERS = #{serializedCustomHeaders},
     PRIORITY = #{priority},
     ASSIGNEE = #{assignee},
