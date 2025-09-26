@@ -43,13 +43,15 @@ jobs:
           RELEASE_REGEX="^release-[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?$"
 
           if [[ "$GITHUB_EVENT_NAME" == "pull_request" || "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
+            # Direct release branch PRs
             if [[ "$PR_BASE_REF" =~ $RELEASE_REGEX ]]; then
               if [[ "$GITHUB_EVENT_ACTION" == "closed" && "$PR_MERGED" == "true" ]]; then
                 VALID="true"
               fi
-            elif [[ "$PR_BASE_REF" == "main" ]]; then
+            # Backport PRs to main or stable branches
+            elif [[ "$PR_BASE_REF" == "main" ]] || [[ "$PR_BASE_REF" =~ ^stable/[0-9]+\.[0-9]+$ ]]; then
               if [[ "$GITHUB_EVENT_ACTION" == "labeled" && ("$PR_LABEL" =~ ^backport\ release-[0-9]+\.[0-9]+\.[0-9]+) ]]; then
-              VALID="true"
+                VALID="true"
               fi
             fi
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
