@@ -49,7 +49,7 @@ This composite action collects and aggregates flaky test results from multiple C
   },
   {
     "job": "integration-tests/Zeebe - [IT] Zeebe QA - Core Features",
-    "flaky_tests": "io.camunda.zeebe.it.clustering.AvailabilityTest.shouldCreateProcessWhenPartitionRecovers"
+    "flaky_tests": "io.camunda.zeebe.it.cluster.clustering.AvailabilityTest.shouldCreateProcessWhenPartitionRecovers"
   }
 ]
 ```
