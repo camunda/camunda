@@ -51,6 +51,12 @@ public class SecondaryStorageOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static ExporterConfiguration fromArgs(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaexporter", args)
+        .instantiate(ExporterConfiguration.class);
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -122,8 +128,7 @@ public class SecondaryStorageOpensearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -260,8 +265,8 @@ public class SecondaryStorageOpensearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
+
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);

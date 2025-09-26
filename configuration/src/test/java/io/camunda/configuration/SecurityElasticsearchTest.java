@@ -25,19 +25,19 @@ import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @ActiveProfiles({"broker"})
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class,
-  SearchEngineConnectPropertiesOverride.class,
-  BrokerBasedPropertiesOverride.class,
-  TasklistPropertiesOverride.class,
-  OperatePropertiesOverride.class,
-})
+@SpringBootTest(
+    classes = {
+      UnifiedConfiguration.class,
+      SearchEngineConnectPropertiesOverride.class,
+      BrokerBasedPropertiesOverride.class,
+      TasklistPropertiesOverride.class,
+      OperatePropertiesOverride.class,
+    })
 public class SecurityElasticsearchTest {
 
   private ExporterConfiguration getExporterConfiguration(
@@ -49,7 +49,13 @@ public class SecurityElasticsearchTest {
     final Map<String, Object> args = camundaExporter.getArgs();
     assertThat(args).isNotNull();
 
-    return UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+    return fromArgs(args);
+  }
+
+  private static ExporterConfiguration fromArgs(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaexporter", args)
+        .instantiate(ExporterConfiguration.class);
   }
 
   @Nested
