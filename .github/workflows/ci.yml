@@ -277,7 +277,7 @@ jobs:
       - name: Setup General UT Modules
         run: |
           bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
-      - name: Maven Test Build
+      - name: Maven Test Build Unit
         shell: bash
         # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
         #
@@ -290,6 +290,8 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -378,6 +380,8 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -704,7 +708,7 @@ jobs:
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
-      - name: Maven Test Build
+      - name: Maven Test Build DataLayer
         shell: bash
         run: >
           ./mvnw -B -T1C --no-snapshot-updates
@@ -781,8 +785,30 @@ jobs:
             docker-file: camunda.Dockerfile
             owner: "Data Layer"
             module: "Schema Manager"
-          - group: qa-integration
-            name: "Zeebe QA"
+          - group: zeebe-engine-integration
+            name: "Zeebe Engine QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
+            test-filter: "io/camunda/zeebe/it/engine/**"
+          - group: zeebe-ds-integration
+            name: "Zeebe Cluster QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io/camunda/zeebe/it/cluster/**"
+          - group: zeebe-shared-integration
+            name: "Zeebe General QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
@@ -873,7 +899,11 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
-      - name: Maven Test Build
+      - name: Maven Test Build Integration
+        env:
+          # Propagate matrix test filters (may be empty for other matrix entries)
+          TEST_FILTER: ${{ matrix.test-filter }}
+          TEST_EXCLUDE_FILTER: ${{ matrix.test-exclude-filter }}
         shell: bash
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
@@ -886,6 +916,8 @@ jobs:
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-Dit.excludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
