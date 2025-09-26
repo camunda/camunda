@@ -34,8 +34,10 @@ import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.query.UsageMetricsQuery;
 import io.camunda.search.query.UsageMetricsTUQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
@@ -53,6 +55,7 @@ public class UsageMetricsIT {
   private static final OffsetDateTime NOW = OffsetDateTime.now();
   private static final OffsetDateTime NOW_MINUS_5M = NOW.minusMinutes(5);
   private static final OffsetDateTime NOW_MINUS_10M = NOW.minusMinutes(10);
+  private static final OffsetDateTime NOW_MINUS_3Y = NOW.minusYears(3);
   private static final String TENANT1 = "tenant1";
   private static final String TENANT2 = "tenant2";
 
@@ -203,7 +206,8 @@ public class UsageMetricsIT {
 
     // when
     final var actualTU =
-        usageMetricTUDbReader.usageMetricTUStatistics(UsageMetricsTUQuery.of(q -> q), null);
+        usageMetricTUDbReader.usageMetricTUStatistics(
+            UsageMetricsTUQuery.of(q -> q), ResourceAccessChecks.disabled());
 
     // then
     assertThat(actualTU).isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
@@ -348,5 +352,76 @@ public class UsageMetricsIT {
         .isEqualTo(
             new UsageMetricTUStatisticsEntity(
                 2, Map.of(TENANT1, new UsageMetricTUStatisticsEntityTenant(2L))));
+  }
+
+  @TestTemplate
+  public void shouldCleanupUsageMetricsProperly() {
+    // given
+    writeMetric(usageMetricWriter, RPI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, EDI, NOW, TENANT1, 11L);
+    writeMetric(usageMetricWriter, RPI, NOW_MINUS_3Y, TENANT2, 3L);
+    writeMetric(usageMetricWriter, EDI, NOW_MINUS_3Y, TENANT2, 3L);
+    rdbmsWriter.flush();
+
+    Awaitility.await("should find created usage metrics")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      usageMetricReader.usageMetricStatistics(
+                          UsageMetricsQuery.of(q -> q), ResourceAccessChecks.disabled()))
+                  .isEqualTo(new UsageMetricStatisticsEntity(14, 14, 2, null));
+            });
+
+    // when
+    usageMetricWriter.cleanupMetrics(PARTITION_ID.intValue(), NOW.minusYears(2), 100);
+
+    // then
+    Awaitility.await("should find less usage metrics after removal")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      usageMetricReader.usageMetricStatistics(
+                          UsageMetricsQuery.of(q -> q), ResourceAccessChecks.disabled()))
+                  .isEqualTo(new UsageMetricStatisticsEntity(11, 11, 1, null));
+            });
+  }
+
+  @TestTemplate
+  public void shouldCleanupUsageMetricsTUProperly() {
+    // given
+    writeTUMetric(usageMetricTUWriter, NOW, TENANT1, ASSIGNEE_HASH_1);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_3Y, TENANT1, ASSIGNEE_HASH_2);
+    writeTUMetric(usageMetricTUWriter, NOW_MINUS_3Y, TENANT1, ASSIGNEE_HASH_3);
+    rdbmsWriter.flush();
+
+    Awaitility.await("should find created usage metrics")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      usageMetricTUDbReader.usageMetricTUStatistics(
+                          UsageMetricsTUQuery.of(q -> q), ResourceAccessChecks.disabled()))
+                  .isEqualTo(new UsageMetricTUStatisticsEntity(3, null));
+            });
+
+    // when
+    usageMetricTUWriter.cleanupMetrics(PARTITION_ID.intValue(), NOW.minusYears(2), 100);
+
+    // then
+    Awaitility.await("should find created usage metrics")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      usageMetricTUDbReader.usageMetricTUStatistics(
+                          UsageMetricsTUQuery.of(q -> q), ResourceAccessChecks.disabled()))
+                  .isEqualTo(new UsageMetricTUStatisticsEntity(1, null));
+            });
   }
 }

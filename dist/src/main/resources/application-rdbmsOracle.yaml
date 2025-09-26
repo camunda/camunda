@@ -87,6 +87,8 @@ zeebe:
             minHistoryCleanupInterval: PT1S
             maxHistoryCleanupInterval: PT1H
             historyCleanupBatchSize: 1000
+            usageMetricsCleanup: PT1D
+            usageMetricsTTL: PT730D
       #elasticsearch:
       #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
       #  args:
