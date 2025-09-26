@@ -85,6 +85,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.elasticsearch</groupId>
+      <artifactId>elasticsearch-x-content</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>io.zeebe</groupId>
