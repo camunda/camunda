@@ -16,13 +16,11 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.RecordValue;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableFormMetadataValue.Builder.class)
-public interface FormMetadataValue extends RecordValue, TenantOwned {
+public interface FormMetadataValue extends ExtendedMetadataValue {
 
   /**
    * @return the ID of the form
@@ -30,38 +28,17 @@ public interface FormMetadataValue extends RecordValue, TenantOwned {
   String getFormId();
 
   /**
-   * @return the version of the deployed form
-   */
-  int getVersion();
-
-  /**
-   * @return the custom version tag of the form
-   */
-  String getVersionTag();
-
-  /**
    * @return the key of the deployed form
    */
   long getFormKey();
 
-  /**
-   * @return the name of the resource through which this form was deployed
-   */
-  String getResourceName();
+  @Override
+  default String entityId() {
+    return getFormId();
+  }
 
-  /**
-   * @return the checksum of the form resource (MD5)
-   */
-  byte[] getChecksum();
-
-  /**
-   * @return {@code true} if the form is a duplicate (and has been deployed previously), otherwise
-   *     {@code false}
-   */
-  boolean isDuplicate();
-
-  /**
-   * @return the key of the deployment this form was deployed with
-   */
-  long getDeploymentKey();
+  @Override
+  default long entityKey() {
+    return getFormKey();
+  }
 }

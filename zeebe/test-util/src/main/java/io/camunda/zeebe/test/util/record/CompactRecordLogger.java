@@ -120,6 +120,9 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsRecordValue;
+import io.camunda.zeebe.protocol.record.value.deployment.ExtendedMetadataValue;
+import io.camunda.zeebe.protocol.record.value.deployment.Form;
+import io.camunda.zeebe.protocol.record.value.deployment.MetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Resource;
@@ -280,6 +283,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
+    valueLoggers.put(ValueType.FORM, this::summarizeForm);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -487,9 +491,7 @@ public class CompactRecordLogger {
   }
 
   private String summarizeProcessInformation(final Process value) {
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(), formatId(value.getBpmnProcessId()), value.getVersion());
+    return summarizeDeploymentMetadata(value).toString();
   }
 
   private String summarizeElementInformation(
@@ -975,11 +977,7 @@ public class CompactRecordLogger {
 
   private String summarizeDecisionRequirements(final Record<?> record) {
     final var value = (DecisionRequirementsRecordValue) record.getValue();
-    return String.format(
-        "%s -> %s (version:%d)",
-        value.getResourceName(),
-        formatId(value.getDecisionRequirementsId()),
-        value.getDecisionRequirementsVersion());
+    return summarizeDeploymentMetadata(value).toString();
   }
 
   private String summarizeDecision(final Record<?> record) {
@@ -1251,24 +1249,7 @@ public class CompactRecordLogger {
 
   private String summarizeResource(final Record<?> record) {
     final var value = (Resource) record.getValue();
-    final var result = new StringBuilder();
-
-    result
-        .append(value.getResourceName())
-        .append(" -> ")
-        .append(formatId(value.getResourceId()))
-        .append(" v")
-        .append(value.getVersion());
-
-    if (StringUtils.isNotEmpty(value.getVersionTag())) {
-      result.append("(tag-").append(value.getVersionTag()).append(")");
-    }
-
-    if (value.isDuplicate()) {
-      result.append(" (dup)");
-    }
-
-    return result.append(formatTenant(value)).toString();
+    return summarizeDeploymentMetadata(value).toString();
   }
 
   private String summarizeResourceDeletion(final Record<?> record) {
@@ -1486,6 +1467,38 @@ public class CompactRecordLogger {
     }
 
     return summary.toString();
+  }
+
+  private String summarizeForm(final Record<?> record) {
+    final var value = (Form) record.getValue();
+    return summarizeDeploymentMetadata(value).toString();
+  }
+
+  private StringBuilder summarizeDeploymentMetadata(final MetadataValue value) {
+    final StringBuilder result = new StringBuilder();
+
+    result
+        .append(value.getResourceName())
+        .append(" -> ")
+        .append(formatId(value.entityId()))
+        .append("[")
+        .append(shortenKey(value.entityKey()))
+        .append("]")
+        .append(" (version:")
+        .append(value.entityVersion());
+
+    if (value instanceof final ExtendedMetadataValue extended
+        && StringUtils.isNotEmpty(extended.getVersionTag())) {
+      result.append(" tag:").append(extended.getVersionTag());
+    }
+
+    result.append(")");
+
+    if (value.isDuplicate()) {
+      result.append(" (dup)");
+    }
+
+    return result.append(formatTenant(value));
   }
 
   private String formatPinnedTime(final long time) {

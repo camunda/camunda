@@ -15,30 +15,27 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import org.immutables.value.Value;
+import io.camunda.zeebe.protocol.record.RecordValue;
 
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableResourceMetadataValue.Builder.class)
-public interface ResourceMetadataValue extends ExtendedMetadataValue {
+public interface ExtendedMetadataValue extends MetadataValue, RecordValue {
 
   /**
-   * @return the ID of the Resource
+   * @return the version of the deployed entity
    */
-  String getResourceId();
+  int getVersion();
 
   /**
-   * @return the key of the deployed Resource
+   * @return the custom version tag of the entity
    */
-  long getResourceKey();
+  String getVersionTag();
+
+  /**
+   * @return the key of the deployment this entity was deployed with
+   */
+  long getDeploymentKey();
 
   @Override
-  default String entityId() {
-    return getResourceId();
-  }
-
-  @Override
-  default long entityKey() {
-    return getResourceKey();
+  default int entityVersion() {
+    return getVersion();
   }
 }

@@ -16,7 +16,6 @@
 package io.camunda.zeebe.protocol.record.value.deployment;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import org.immutables.value.Value;
 
 /**
@@ -26,7 +25,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableDecisionRequirementsMetadataValue.Builder.class)
-public interface DecisionRequirementsMetadataValue extends TenantOwned {
+public interface DecisionRequirementsMetadataValue extends MetadataValue {
 
   /**
    * @return the ID of the DRG in the DMN
@@ -53,19 +52,18 @@ public interface DecisionRequirementsMetadataValue extends TenantOwned {
    */
   String getNamespace();
 
-  /**
-   * @return the name of the resource through which this DRG was deployed
-   */
-  String getResourceName();
+  @Override
+  default String entityId() {
+    return getDecisionRequirementsId();
+  }
 
-  /**
-   * @return the checksum of the DMN resource (MD5)
-   */
-  byte[] getChecksum();
+  @Override
+  default long entityKey() {
+    return getDecisionRequirementsKey();
+  }
 
-  /**
-   * @return {@code true} if the DRG is a duplicate (and has been deployed previously), otherwise
-   *     {@code false}
-   */
-  boolean isDuplicate();
+  @Override
+  default int entityVersion() {
+    return getDecisionRequirementsVersion();
+  }
 }

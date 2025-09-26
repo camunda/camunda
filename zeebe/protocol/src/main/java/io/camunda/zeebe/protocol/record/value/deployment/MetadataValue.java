@@ -15,30 +15,37 @@
  */
 package io.camunda.zeebe.protocol.record.value.deployment;
 
-import io.camunda.zeebe.protocol.record.ImmutableProtocol;
-import org.immutables.value.Value;
+import io.camunda.zeebe.protocol.record.value.TenantOwned;
 
-@Value.Immutable
-@ImmutableProtocol(builder = ImmutableResourceMetadataValue.Builder.class)
-public interface ResourceMetadataValue extends ExtendedMetadataValue {
+public interface MetadataValue extends TenantOwned {
+  /**
+   * @return the ID of the entity
+   */
+  String entityId();
 
   /**
-   * @return the ID of the Resource
+   * @return the key of the deployed entity
    */
-  String getResourceId();
+  long entityKey();
 
   /**
-   * @return the key of the deployed Resource
+   * @return the version of the deployed entity
    */
-  long getResourceKey();
+  int entityVersion();
 
-  @Override
-  default String entityId() {
-    return getResourceId();
-  }
+  /**
+   * @return the name of the resource through which this entity was deployed
+   */
+  String getResourceName();
 
-  @Override
-  default long entityKey() {
-    return getResourceKey();
-  }
+  /**
+   * @return the checksum of the entity resource (MD5)
+   */
+  byte[] getChecksum();
+
+  /**
+   * @return {@code true} if the entity is a duplicate (and has been deployed previously), otherwise
+   *     {@code false}
+   */
+  boolean isDuplicate();
 }
