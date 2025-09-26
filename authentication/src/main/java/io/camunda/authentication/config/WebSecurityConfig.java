@@ -25,6 +25,7 @@ import io.camunda.authentication.filters.AdminUserCheckFilter;
 import io.camunda.authentication.filters.OAuth2RefreshTokenFilter;
 import io.camunda.authentication.filters.WebComponentAuthorizationCheckFilter;
 import io.camunda.authentication.handler.AuthFailureHandler;
+import io.camunda.authentication.handler.OAuth2AuthenticationExceptionHandler;
 import io.camunda.authentication.service.MembershipService;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -847,7 +848,8 @@ public class WebSecurityConfig {
                                 authorization.authorizationRequestResolver(
                                     authorizationRequestResolver(
                                         clientRegistrationRepository, oidcProviderRepository)))
-                        .tokenEndpoint(tokenEndpointCustomizer);
+                        .tokenEndpoint(tokenEndpointCustomizer)
+                        .failureHandler(new OAuth2AuthenticationExceptionHandler());
                   })
               .oidcLogout(httpSecurityOidcLogoutConfigurer -> {})
               .logout(
