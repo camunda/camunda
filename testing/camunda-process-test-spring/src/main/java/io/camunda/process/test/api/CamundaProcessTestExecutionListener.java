@@ -21,6 +21,7 @@ import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.process.test.api.coverage.ProcessCoverage;
 import io.camunda.process.test.api.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.api.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -82,6 +83,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   private final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
   private final ProcessCoverageBuilder processCoverageBuilder;
+  private final TestDeploymentService testDeploymentService;
   private final List<AutoCloseable> createdClients = new ArrayList<>();
 
   private ProcessCoverage processCoverage;
@@ -103,6 +105,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     this.containerRuntimeBuilder = containerRuntimeBuilder;
     this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
+    testDeploymentService = new TestDeploymentService();
   }
 
   @Override
@@ -171,6 +174,10 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // deploy resources
+    testDeploymentService.deployTestResources(
+        testContext.getTestMethod(), testContext.getTestClass(), client);
   }
 
   @Override
