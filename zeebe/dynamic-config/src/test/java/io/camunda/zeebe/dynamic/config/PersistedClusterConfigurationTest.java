@@ -122,7 +122,11 @@ final class PersistedClusterConfigurationTest {
     final var fileContent = Files.readAllBytes(topologyFile);
     final var newBody = serializer.encode(changedTopology);
     System.arraycopy(
-        newBody, 0, fileContent, PersistedClusterConfiguration.HEADER_LENGTH, newBody.length);
+        newBody,
+        0,
+        fileContent,
+        PersistedClusterConfiguration.Header.HEADER_LENGTH,
+        newBody.length);
     Files.write(topologyFile, fileContent, StandardOpenOption.WRITE);
 
     // then -- checksum mismatch is detected
