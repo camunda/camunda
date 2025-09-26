@@ -304,6 +304,7 @@
     "jsonEditorEditVariableTitle": "Editar Variable",
     "jsonEditorApplyButtonLabel": "Aplicar",
     "jsonEditorCancelButtonLabel": "Cancelar",
+    "jsonEditorCloseButtonLabel": "Cerrar",
     "variableEditorVariableNameHeader": "Nombre",
     "variableEditorVariableNameLabel_ordinal": "Nombre de la {{count}}.ª variable",
     "variableEditorVariableValueHeader": "Valor",
