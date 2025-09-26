@@ -378,6 +378,11 @@ describe('TopPanel', () => {
       page: {totalItems: 1},
     });
 
+    mockSearchIncidentsByProcessInstance('instance_id').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
