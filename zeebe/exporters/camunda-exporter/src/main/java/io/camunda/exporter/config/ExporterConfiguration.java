@@ -168,6 +168,7 @@ public class ExporterConfiguration {
   }
 
   public static class HistoryConfiguration {
+    private boolean processInstanceEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -176,6 +177,14 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
+
+    public boolean isProcessInstanceEnabled() {
+      return processInstanceEnabled;
+    }
+
+    public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
+      this.processInstanceEnabled = processInstanceEnabled;
+    }
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;
