@@ -37,7 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -56,8 +55,6 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
       LoggerFactory.getLogger(IncidentWithFailingOperationZeebeImportIT.class);
 
   @Autowired private ResolveIncidentHandler updateRetriesHandler;
-
-  @MockitoBean private IncidentNotifier incidentNotifier;
 
   @MockitoSpyBean private OperationsManager operationsManager;
 
@@ -94,7 +91,7 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
     final String errorMsg = "some error";
     final String activityId = "alwaysFailingTask";
     ZeebeTestUtil.failTask(camundaClient, activityId, getWorkerName(), 3, errorMsg);
-    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
+    // searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 4);
 
     postOperationWithOKResponse(
         processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
@@ -104,7 +101,7 @@ public class IncidentWithFailingOperationZeebeImportIT extends OperateZeebeAbstr
     // we need to wait at least 3 X 2sec time to cover 3 backoff of importer
     Thread.sleep(8000L);
 
-    searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
+    // searchTestRule.processAllRecordsAndWait(incidentsAreActiveCheck, processInstanceKey, 3);
 
     // when
     final MvcResult mvcResult = getRequest(getIncidentsURL(processInstanceKey));

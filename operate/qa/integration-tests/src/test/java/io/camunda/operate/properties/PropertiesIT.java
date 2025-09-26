@@ -55,20 +55,12 @@ public class PropertiesIT {
             == SecondaryStorageType.elasticsearch,
         "Skipping because DB is not Elasticsearch");
 
-    assertThat(operateProperties.getImporter().isStartLoadingDataOnStartup()).isFalse();
     assertThat(operateProperties.getBatchOperationMaxSize()).isEqualTo(500);
     assertThat(operateProperties.getElasticsearch().getClusterName()).isEqualTo("clusterName");
     assertThat(operateProperties.getElasticsearch().getHost()).isEqualTo("someHost");
     assertThat(operateProperties.getElasticsearch().getPort()).isEqualTo(12345);
     assertThat(operateProperties.getElasticsearch().getDateFormat()).isEqualTo("yyyy-MM-dd");
     assertThat(operateProperties.getElasticsearch().getBatchSize()).isEqualTo(111);
-    assertThat(operateProperties.getZeebeElasticsearch().getClusterName())
-        .isEqualTo("zeebeElasticClusterName");
-    assertThat(operateProperties.getZeebeElasticsearch().getHost()).isEqualTo("someHost");
-    assertThat(operateProperties.getZeebeElasticsearch().getPort()).isEqualTo(12345);
-    assertThat(operateProperties.getZeebeElasticsearch().getDateFormat()).isEqualTo("dd-MM-yyyy");
-    assertThat(operateProperties.getZeebeElasticsearch().getBatchSize()).isEqualTo(222);
-    assertThat(operateProperties.getZeebeElasticsearch().getPrefix()).isEqualTo("somePrefix");
     assertThat(operateProperties.getZeebe().getGatewayAddress()).isEqualTo("someZeebeHost:999");
     assertThat(operateProperties.getOperationExecutor().getBatchSize()).isEqualTo(555);
     assertThat(operateProperties.getOperationExecutor().getWorkerId()).isEqualTo("someWorker");
@@ -84,6 +76,5 @@ public class PropertiesIT {
     assertThat(securityConfiguration.getAuthorizations().isEnabled()).isTrue();
     // assert that it can be set from ${camunda.operate.multiTenancy.enabled}
     assertThat(securityConfiguration.getMultiTenancy().isChecksEnabled()).isTrue();
-    assertThat(operateProperties.getImporter().getCompletedReaderMinEmptyBatches()).isEqualTo(10);
   }
 }

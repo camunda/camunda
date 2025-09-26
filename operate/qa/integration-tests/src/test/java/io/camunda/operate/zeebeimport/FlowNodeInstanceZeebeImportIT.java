@@ -55,7 +55,7 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
     // let the boundary event happen
     // Thread.sleep(1500L);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
 
     // when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -123,10 +123,10 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"items\": [0, 1]}");
     ZeebeTestUtil.completeTask(camundaClient, jobKey, getWorkerName(), null, 3);
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreCompletedCheck, processInstanceKey, flowNodeId1, 2);
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreCompletedCheck, processInstanceKey, subprocessFlowNodeId, 1);
+    // searchTestRule.processAllRecordsAndWait(
+    //    flowNodesAreCompletedCheck, processInstanceKey, flowNodeId1, 2);
+    // searchTestRule.processAllRecordsAndWait(
+    //    flowNodesAreCompletedCheck, processInstanceKey, subprocessFlowNodeId, 1);
 
     // find out subprocess instance ids
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -209,11 +209,11 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(
             camundaClient, processId, "{\"items\": [0, 1, 2, 3, 4, 5]}");
     ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(camundaClient, "taskB", getWorkerName(), null, 6);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskC");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskC");
     ZeebeTestUtil.failTask(camundaClient, "taskC", getWorkerName(), 3, "some error");
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     searchTestRule.refreshSerchIndexes();
 
@@ -482,9 +482,9 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(camundaClient, "taskB", getWorkerName(), 3, "some error");
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -536,9 +536,9 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(camundaClient, "taskB", getWorkerName(), 3, "some error");
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // when
     final String processInstanceId = String.valueOf(processInstanceKey);
@@ -700,9 +700,9 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
     final long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"items\": [0]}");
     ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.failTask(camundaClient, "taskB", getWorkerName(), 3, "some error");
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
 
     // when
     final Map<String, FlowNodeStateDto> flowNodeStateDtos =
@@ -729,10 +729,10 @@ public class FlowNodeInstanceZeebeImportIT extends OperateZeebeAbstractIT {
         ZeebeTestUtil.startProcessInstance(
             camundaClient, processId, "{\"items\": [0,1,2,3,4,5,6,7,8,9]}");
     ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "taskB");
     ZeebeTestUtil.completeTask(camundaClient, "taskB", getWorkerName(), null, 9);
-    searchTestRule.processAllRecordsAndWait(
-        flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
+    // searchTestRule.processAllRecordsAndWait(
+    //    flowNodesAreCompletedCheck, processInstanceKey, "taskB", 9);
 
     // when
     final Map<String, FlowNodeStateDto> flowNodeStateDtos =

@@ -28,7 +28,6 @@ import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandl
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
 import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.reader.TenantAccess;
@@ -79,13 +78,10 @@ public class OperateZeebeSearchAbstractIT {
 
   @Autowired protected ZeebeContainerManager zeebeContainerManager;
   @Autowired protected SearchContainerManager searchContainerManager;
-  @Autowired protected TestResourceManager testResourceManager;
   @Autowired protected TestSearchRepository testSearchRepository;
-  @Autowired protected MockMvcManager mockMvcManager;
 
-  // Used to control and clear process/import info between test suites
+  // Used to control and clear process info between test suites
   @Autowired protected ProcessCache processCache;
-  @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected PartitionHolder partitionHolder;
 
   @Autowired protected BeanFactory beanFactory;
@@ -119,9 +115,6 @@ public class OperateZeebeSearchAbstractIT {
 
     // Required to keep search and zeebe from hanging between test suites
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
-    importPositionHolder.scheduleImportPositionUpdateTask();
 
     final var partitionSupplier = new StandalonePartitionSupplier(camundaClient);
     partitionHolder.setPartitionSupplier(partitionSupplier);
@@ -184,8 +177,6 @@ public class OperateZeebeSearchAbstractIT {
 
     // Required to keep search and zeebe from hanging between test suites
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
 
     // Allows time for everything to settle and clean up before the next test starts
     zeebeStabilityDelay();

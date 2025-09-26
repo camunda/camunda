@@ -82,8 +82,8 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
     final Long processInstanceKey =
         ZeebeTestUtil.startProcessInstance(
             camundaClient, processId, "{\"var1\": \"initialValue\", \"otherVar\": 123}");
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
-    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherVar");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task1");
+    // searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "otherVar");
 
     // then
     List<VariableDto> variables = getVariables(processInstanceKey);
@@ -94,8 +94,9 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
 
     // TC2 - when subprocess and task with input mapping are activated
     completeTask(processInstanceKey, "task1", null);
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
-    searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey, "taskVarIn");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task2");
+    // searchTestRule.processAllRecordsAndWait(variableExistsCheck, processInstanceKey,
+    // "taskVarIn");
 
     // then
     variables = getVariables(processInstanceKey, "subProcess");
@@ -109,9 +110,9 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
     // TC3 - when activity with output mapping is completed
     completeTask(
         processInstanceKey, "task2", "{\"taskVarOut\": \"someResult\", \"otherTaskVar\": 456}");
-    searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task3");
-    searchTestRule.processAllRecordsAndWait(
-        variableExistsCheck, processInstanceKey, "otherTaskVar");
+    // searchTestRule.processAllRecordsAndWait(flowNodeIsActiveCheck, processInstanceKey, "task3");
+    // searchTestRule.processAllRecordsAndWait(
+    //    variableExistsCheck, processInstanceKey, "otherTaskVar");
 
     // then
     variables = getVariables(processInstanceKey, "task2");
@@ -132,10 +133,10 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
     ZeebeTestUtil.updateVariables(
         camundaClient, processInstanceKey, "{\"var1\": \"updatedValue\" , \"newVar\": 555 }");
     // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    searchTestRule.processAllRecordsAndWait(
-        variableEqualsCheck, processInstanceKey, processInstanceKey, "var1", "\"updatedValue\"");
-    searchTestRule.processAllRecordsAndWait(
-        variableEqualsCheck, processInstanceKey, processInstanceKey, "newVar", "555");
+    // searchTestRule.processAllRecordsAndWait(
+    //    variableEqualsCheck, processInstanceKey, processInstanceKey, "var1", "\"updatedValue\"");
+    // searchTestRule.processAllRecordsAndWait(
+    //    variableEqualsCheck, processInstanceKey, processInstanceKey, "newVar", "555");
 
     variables = getVariables(processInstanceKey);
     assertThat(variables).hasSize(4);
@@ -146,8 +147,8 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
 
     // TC5 - when task is completed with new payload and process instance is finished
     completeTask(processInstanceKey, "task3", "{\"task3Completed\": true}");
-    searchTestRule.processAllRecordsAndWait(
-        variableExistsCheck, processInstanceKey, "task3Completed");
+    // searchTestRule.processAllRecordsAndWait(
+    //    variableExistsCheck, processInstanceKey, "task3Completed");
 
     // then
     variables = getVariables(processInstanceKey);
@@ -425,8 +426,8 @@ public class VariableZeebeImportIT extends OperateZeebeAbstractIT {
     searchTestRule.refreshOperateSearchIndices();
     // execute the operation
     executeOneBatch();
-    searchTestRule.processAllRecordsAndWait(
-        operationsByProcessInstanceAreCompleted, processInstanceKey);
+    // searchTestRule.processAllRecordsAndWait(
+    //    operationsByProcessInstanceAreCompleted, processInstanceKey);
 
     // when one variable is requested
     final VariableDto variable =

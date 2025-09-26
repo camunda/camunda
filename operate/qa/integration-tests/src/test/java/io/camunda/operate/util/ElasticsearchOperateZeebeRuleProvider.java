@@ -69,7 +69,6 @@ public class ElasticsearchOperateZeebeRuleProvider implements OperateZeebeRulePr
   public void starting(final Description description) {
     prefix = indexPrefixHolder.createNewIndexPrefix();
     LOGGER.info("Starting Camunda Exporter with prefix: " + prefix);
-    operateProperties.getZeebeElasticsearch().setPrefix(prefix);
     operateProperties.getElasticsearch().setIndexPrefix(prefix);
 
     startZeebe();
