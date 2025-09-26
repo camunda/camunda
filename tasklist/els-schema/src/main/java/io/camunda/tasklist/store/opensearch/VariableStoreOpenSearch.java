@@ -206,58 +206,6 @@ public class VariableStoreOpenSearch implements VariableStore {
 
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
-    final var processInstanceKeyQuery =
-        TermsQuery.of(
-                t ->
-                    t.field(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY)
-                        .terms(
-                            v ->
-                                v.value(
-                                    processInstanceKeys.stream()
-                                        .map(FieldValue::of)
-                                        .collect(toList()))))
-            .toQuery();
-    final var flowNodeInstanceStateQuery =
-        TermQuery.of(
-                t ->
-                    t.field(FlowNodeInstanceTemplate.STATE)
-                        .value(v -> v.stringValue(FlowNodeState.ACTIVE.toString())))
-            .toQuery();
-
-    final Query.Builder typeQuery = new Query.Builder();
-    typeQuery.terms(
-        terms ->
-            terms
-                .field(FlowNodeInstanceTemplate.TYPE)
-                .terms(
-                    t ->
-                        t.value(
-                            Arrays.asList(
-                                FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
-                                FieldValue.of(
-                                    FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString()),
-                                FieldValue.of(FlowNodeType.USER_TASK.toString()),
-                                FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
-                                FieldValue.of(FlowNodeType.PROCESS.toString())))));
-
-    final Query.Builder combinedQuery = new Query.Builder();
-    combinedQuery.constantScore(
-        cs ->
-            cs.filter(
-                OpenSearchUtil.joinWithAnd(
-                    processInstanceKeyQuery, flowNodeInstanceStateQuery, typeQuery.build())));
-
-    final SearchRequest.Builder searchRequestBuilder = new SearchRequest.Builder();
-    searchRequestBuilder
-        .index(flowNodeInstanceIndex.getFullQualifiedName())
-        .query(combinedQuery.build())
-        .sort(
-            sort ->
-                sort.field(f -> f.field(FlowNodeInstanceTemplate.POSITION).order(SortOrder.Asc)))
-        .size(tasklistProperties.getOpenSearch().getBatchSize());
-
     try {
       return scrollInChunks(
           processInstanceKeys,
@@ -407,30 +355,33 @@ public class VariableStoreOpenSearch implements VariableStore {
                         .value(v -> v.stringValue(FlowNodeState.ACTIVE.toString())))
             .toQuery();
 
-    final Query.Builder typeQuery = new Query.Builder();
-    typeQuery.terms(
-        terms ->
-            terms
-                .field(FlowNodeInstanceTemplate.TYPE)
-                .terms(
-                    t ->
-                        t.value(
-                            Arrays.asList(
-                                FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
-                                FieldValue.of(
-                                    FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString()),
-                                FieldValue.of(FlowNodeType.USER_TASK.toString()),
-                                FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
-                                FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
-                                FieldValue.of(FlowNodeType.PROCESS.toString())))));
+    final var typeQuery =
+        new Query.Builder()
+            .terms(
+                terms ->
+                    terms
+                        .field(FlowNodeInstanceTemplate.TYPE)
+                        .terms(
+                            t ->
+                                t.value(
+                                    Arrays.asList(
+                                        FieldValue.of(FlowNodeType.AD_HOC_SUB_PROCESS.toString()),
+                                        FieldValue.of(
+                                            FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE
+                                                .toString()),
+                                        FieldValue.of(FlowNodeType.USER_TASK.toString()),
+                                        FieldValue.of(FlowNodeType.SUB_PROCESS.toString()),
+                                        FieldValue.of(FlowNodeType.EVENT_SUB_PROCESS.toString()),
+                                        FieldValue.of(FlowNodeType.MULTI_INSTANCE_BODY.toString()),
+                                        FieldValue.of(FlowNodeType.PROCESS.toString())))))
+            .build();
 
     final Query.Builder combinedQuery = new Query.Builder();
     combinedQuery.constantScore(
         cs ->
             cs.filter(
                 OpenSearchUtil.joinWithAnd(
-                    processInstanceKeyQuery, flowNodeInstanceStateQuery, typeQuery.build())));
+                    processInstanceKeyQuery, flowNodeInstanceStateQuery, typeQuery)));
 
     return new SearchRequest.Builder()
         .index(flowNodeInstanceIndex.getFullQualifiedName())
@@ -450,8 +401,7 @@ public class VariableStoreOpenSearch implements VariableStore {
         terms ->
             terms
                 .field(SCOPE_KEY)
-                .terms(
-                    t -> t.value(scopeFlowNodeIds.stream().map(FieldValue::of).collect(toList()))));
+                .terms(t -> t.value(scopeFlowNodeIds.stream().map(FieldValue::of).toList())));
 
     Query.Builder varNamesQ = null;
     if (isNotEmpty(varNames)) {
@@ -460,7 +410,7 @@ public class VariableStoreOpenSearch implements VariableStore {
           terms ->
               terms
                   .field(VariableTemplate.NAME)
-                  .terms(t -> t.value(varNames.stream().map(FieldValue::of).collect(toList()))));
+                  .terms(t -> t.value(varNames.stream().map(FieldValue::of).toList())));
     }
     final Query.Builder query = new Query.Builder();
     query.constantScore(

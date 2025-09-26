@@ -82,7 +82,6 @@ public abstract class ElasticsearchUtil {
       30000; // this scroll timeout value is used for reindex and delete queries
   public static final int QUERY_MAX_SIZE = 10000;
   public static final int UPDATE_RETRY_COUNT = 3;
-  public static final int DEFAULT_MAX_TERMS_COUNT = 65536;
   public static final Function<SearchHit, Long> SEARCH_HIT_ID_TO_LONG =
       (hit) -> Long.valueOf(hit.getId());
   public static final Function<SearchHit, String> SEARCH_HIT_ID_TO_STRING = SearchHit::getId;
