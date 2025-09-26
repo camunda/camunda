@@ -34,6 +34,7 @@ public class AuthorizationUpdateProcessor
   private final SideEffectWriter sideEffectWriter;
   private final AuthorizationCheckBehavior authorizationCheckBehavior;
   private final PermissionsBehavior permissionsBehavior;
+  private final AuthorizationEntityChecker authorizationEntityChecker;
 
   public AuthorizationUpdateProcessor(
       final Writers writers,
@@ -49,6 +50,7 @@ public class AuthorizationUpdateProcessor
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
     permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
   }
 
   @Override
@@ -66,7 +68,7 @@ public class AuthorizationUpdateProcessor
                     command.getValue().getPermissionTypes(),
                     record.getResourceType(),
                     "Expected to update authorization with permission types '%s' and resource type '%s', but these permissions are not supported. Supported permission types are: '%s'"))
-        .flatMap(permissionsBehavior::mappingRuleExists)
+        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             authorizationRecord -> writeEventAndDistribute(command, authorizationRecord),
             (rejection) -> {
@@ -77,8 +79,8 @@ public class AuthorizationUpdateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    permissionsBehavior
-        .mappingRuleExists(command.getValue())
+    authorizationEntityChecker
+        .ownerAndResourceExists(command)
         .flatMap(
             s ->
                 permissionsBehavior.authorizationExists(
