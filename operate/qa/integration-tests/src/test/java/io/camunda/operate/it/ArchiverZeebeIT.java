@@ -113,6 +113,7 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   @After
   public void after() {
     operateProperties.getArchiver().setRolloverInterval("1d");
+    super.after();
   }
 
   @Test

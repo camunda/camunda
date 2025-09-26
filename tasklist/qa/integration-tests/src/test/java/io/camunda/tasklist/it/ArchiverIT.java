@@ -97,6 +97,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   @AfterEach
   public void after() {
     tasklistProperties.getArchiver().setRolloverInterval("1d");
+    super.after();
   }
 
   @Test
