@@ -555,4 +555,13 @@ class TaskServiceTest {
     verify(taskValidator).validateCanAssign(taskBefore, expectedAllowOverrideAssignment);
     assertThat(result).isEqualTo(TaskDTO.createFrom(assignedTask, objectMapper));
   }
+<<<<<<< HEAD
+=======
+
+  protected void setAuthenticatedClient(final String id) {
+
+    final var authentication = CamundaAuthentication.of(b -> b.clientId(id));
+    when(authenticationProvider.getCamundaAuthentication()).thenReturn(authentication);
+  }
+>>>>>>> 2b1d940d (fix: handle >8KB vars with full value)
 }
