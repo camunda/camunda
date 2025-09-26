@@ -227,6 +227,7 @@
     <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
+    <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
@@ -2814,6 +2815,28 @@
             <version>${plugin.version.google-java-format}</version>
           </dependency>
         </dependencies>
+      </plugin>
+
+      <!-- Plugin to check for api changes -->
+      <plugin>
+        <groupId>com.github.siom79.japicmp</groupId>
+        <artifactId>japicmp-maven-plugin</artifactId>
+        <version>${plugin.version.japicmp}</version>
+        <configuration>
+          <parameter>
+            <accessModifier>private</accessModifier>
+            <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
+          </parameter>
+          <skip>true</skip>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>cmp</goal>
+            </goals>
+            <phase>verify</phase>
+          </execution>
+        </executions>
       </plugin>
 
     </plugins>
