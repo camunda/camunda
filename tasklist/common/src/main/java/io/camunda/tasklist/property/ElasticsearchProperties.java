@@ -21,6 +21,7 @@ public class ElasticsearchProperties {
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZZ";
 
   public static final String ELS_DATE_FORMAT_DEFAULT = "date_time";
+  public static final int DEFAULT_MAX_TERMS_COUNT = 10_000;
 
   private String clusterName = "elasticsearch";
 
@@ -33,6 +34,7 @@ public class ElasticsearchProperties {
   private String elsDateFormat = ELS_DATE_FORMAT_DEFAULT;
 
   private int batchSize = 200;
+  private int maxTermsCount = DEFAULT_MAX_TERMS_COUNT;
 
   private Integer socketTimeout;
   private Integer connectTimeout;
@@ -110,6 +112,14 @@ public class ElasticsearchProperties {
 
   public void setBatchSize(final int batchSize) {
     this.batchSize = batchSize;
+  }
+
+  public int getMaxTermsCount() {
+    return maxTermsCount;
+  }
+
+  public void setMaxTermsCount(final int maxTermsCount) {
+    this.maxTermsCount = maxTermsCount;
   }
 
   public boolean isCreateSchema() {
