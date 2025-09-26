@@ -22,6 +22,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.it.migration.util.PrefixMigrationUtils;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -445,65 +446,84 @@ public class PrefixMigrationIT {
       final SearchEngineClient searchEngineClient,
       final String oldTasklistPrefix,
       final String oldOperatePrefix) {
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX))
+                  .isEmpty();
 
-    assertThat(searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX))
-        .isEmpty();
-
-    assertThat(searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX))
-        .isEmpty();
+              assertThat(
+                      searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX))
+                  .isEmpty();
+            });
   }
 
   private void assertOldIndexTemplatesAreRemoved(
       final SearchEngineClient searchEngineClient,
       final String oldTasklistPrefix,
       final String oldOperatePrefix) {
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      searchEngineClient.getMappings(
+                          oldTasklistPrefix + "-*", MappingSource.INDEX_TEMPLATE))
+                  .isEmpty();
 
-    assertThat(
-            searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX_TEMPLATE))
-        .isEmpty();
-
-    assertThat(
-            searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX_TEMPLATE))
-        .isEmpty();
+              assertThat(
+                      searchEngineClient.getMappings(
+                          oldOperatePrefix + "-*", MappingSource.INDEX_TEMPLATE))
+                  .isEmpty();
+            });
   }
 
   private void assertOldComponentTemplatesAreRemoved(
       final ConnectConfiguration connectConfig,
       final String oldTasklistPrefix,
-      final String oldOperatePrefix)
-      throws IOException, InterruptedException {
+      final String oldOperatePrefix) {
 
     final var oldTasklistComponentTemplate = oldTasklistPrefix + "_template";
     final var oldOperateComponentTemplate = oldOperatePrefix + "_template";
 
     try (final var httpClient = HttpClient.newHttpClient()) {
-      var req =
-          HttpRequest.newBuilder()
-              .uri(
-                  URI.create(
-                      connectConfig.getUrl()
-                          + "/_component_template/"
-                          + oldTasklistComponentTemplate))
-              .GET()
-              .build();
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .pollInterval(Duration.ofMillis(500))
+          .untilAsserted(
+              () -> {
+                var req =
+                    HttpRequest.newBuilder()
+                        .uri(
+                            URI.create(
+                                connectConfig.getUrl()
+                                    + "/_component_template/"
+                                    + oldTasklistComponentTemplate))
+                        .GET()
+                        .build();
 
-      assertThat(httpClient.send(req, BodyHandlers.discarding()))
-          .extracting(HttpResponse::statusCode)
-          .isEqualTo(404);
+                assertThat(httpClient.send(req, BodyHandlers.discarding()))
+                    .extracting(HttpResponse::statusCode)
+                    .isEqualTo(404);
 
-      req =
-          HttpRequest.newBuilder()
-              .uri(
-                  URI.create(
-                      connectConfig.getUrl()
-                          + "/_component_template/"
-                          + oldOperateComponentTemplate))
-              .GET()
-              .build();
+                req =
+                    HttpRequest.newBuilder()
+                        .uri(
+                            URI.create(
+                                connectConfig.getUrl()
+                                    + "/_component_template/"
+                                    + oldOperateComponentTemplate))
+                        .GET()
+                        .build();
 
-      assertThat(httpClient.send(req, BodyHandlers.discarding()))
-          .extracting(HttpResponse::statusCode)
-          .isEqualTo(404);
+                assertThat(httpClient.send(req, BodyHandlers.discarding()))
+                    .extracting(HttpResponse::statusCode)
+                    .isEqualTo(404);
+              });
     }
   }
 }
