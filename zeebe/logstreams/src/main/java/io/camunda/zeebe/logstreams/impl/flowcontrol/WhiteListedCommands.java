@@ -21,7 +21,10 @@ public class WhiteListedCommands {
       Set.of(
           JobIntent.COMPLETE,
           JobIntent.FAIL,
+<<<<<<< HEAD
           JobIntent.YIELD,
+=======
+>>>>>>> e395c6a6 (fix: do not enforce write limits for whitelisted commands)
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
