@@ -24,18 +24,15 @@ jobs:
       test-enabled: true
       caller-git-ref: main
       extra-values: |
-        zeebe:
+        orchestration:
           image:
-            tag: SNAPSHOT
-        operate:
-          image:
-            tag: SNAPSHOT
-        tasklist:
-          image:
-            tag: SNAPSHOT
+            tag: 8.8-SNAPSHOT
         optimize:
           image:
-            tag: 8-SNAPSHOT
+            tag: 8.8-SNAPSHOT
+        connectors:
+          image:
+            tag: 8.8-SNAPSHOT
       vault-secret-mapping: |
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_USR | TEST_DOCKER_USERNAME;
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
