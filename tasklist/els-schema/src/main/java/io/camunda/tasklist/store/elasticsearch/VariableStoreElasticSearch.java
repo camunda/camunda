@@ -202,38 +202,6 @@ public class VariableStoreElasticSearch implements VariableStore {
 
   @Override
   public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys) {
-    final BoolQueryBuilder queryBuilder = QueryBuilders.boolQuery();
-
-    final TermsQueryBuilder processInstanceKeyQuery =
-        termsQuery(FlowNodeInstanceTemplate.PROCESS_INSTANCE_KEY, processInstanceKeys);
-    final var flowNodeInstanceStateQuery =
-        termsQuery(FlowNodeInstanceTemplate.STATE, FlowNodeState.ACTIVE.toString());
-
-    queryBuilder.must(flowNodeInstanceStateQuery);
-    queryBuilder.must(processInstanceKeyQuery);
-
-    final TermsQueryBuilder typeQuery =
-        QueryBuilders.termsQuery(
-            FlowNodeInstanceTemplate.TYPE,
-            FlowNodeType.AD_HOC_SUB_PROCESS.toString(),
-            FlowNodeType.AD_HOC_SUB_PROCESS_INNER_INSTANCE.toString(),
-            FlowNodeType.USER_TASK.toString(),
-            FlowNodeType.SUB_PROCESS.toString(),
-            FlowNodeType.EVENT_SUB_PROCESS.toString(),
-            FlowNodeType.MULTI_INSTANCE_BODY.toString(),
-            FlowNodeType.PROCESS.toString());
-    queryBuilder.must(typeQuery);
-
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            typeQuery, processInstanceKeyQuery, flowNodeInstanceStateQuery);
-    final SearchRequest searchRequest =
-        new SearchRequest(flowNodeInstanceIndex.getFullQualifiedName())
-            .source(
-                new SearchSourceBuilder()
-                    .query(constantScoreQuery(query))
-                    .sort(FlowNodeInstanceTemplate.POSITION, SortOrder.ASC)
-                    .size(tasklistProperties.getElasticsearch().getBatchSize()));
     try {
       return scrollInChunks(
           processInstanceKeys,

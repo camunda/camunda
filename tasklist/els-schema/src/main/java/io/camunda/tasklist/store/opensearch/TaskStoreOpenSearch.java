@@ -9,7 +9,6 @@ package io.camunda.tasklist.store.opensearch;
 
 import static io.camunda.tasklist.util.CollectionUtil.asMap;
 import static io.camunda.tasklist.util.CollectionUtil.getOrDefaultFromMap;
-import static io.camunda.tasklist.util.OpenSearchUtil.DEFAULT_MAX_TERMS_COUNT;
 import static io.camunda.tasklist.util.OpenSearchUtil.SCROLL_KEEP_ALIVE_MS;
 import static io.camunda.tasklist.util.OpenSearchUtil.createSearchRequest;
 import static io.camunda.tasklist.util.OpenSearchUtil.joinQueryBuilderWithAnd;
@@ -295,11 +294,10 @@ public class TaskStoreOpenSearch implements TaskStore {
   private List<TaskEntity> getActiveTasksByProcessInstanceIds(
       final List<String> processInstanceIds) {
     try {
-      // the number of process instance ids may be large and exceed #DEFAULT_MAX_TERMS_COUNT, so
-      // we need to chunk them
+      // the number of process instance ids may be large so we need to chunk them
       return scrollInChunks(
           processInstanceIds,
-          DEFAULT_MAX_TERMS_COUNT,
+          tasklistProperties.getOpenSearch().getMaxTermsCount(),
           this::buildSearchCreatedTasksByProcessInstanceIdsRequest,
           TaskEntity.class,
           osClient);
@@ -463,9 +461,7 @@ public class TaskStoreOpenSearch implements TaskStore {
             .toList();
 
     final List<String> tasksIdsCreatedFiltered =
-        processIdsCreatedFiltered.isEmpty()
-            ? Collections.emptyList()
-            : retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
+        retrieveTaskIdByProcessInstanceId(processIdsCreatedFiltered, taskVariablesFilter);
 
     final List<String> taskIdsCompletedFiltered =
         getTasksIdsCompletedWithMatchingVars(varNames, varValues);
