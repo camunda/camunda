@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Set;
+import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public abstract class SecondaryStorageDatabase {
 
@@ -18,7 +19,9 @@ public abstract class SecondaryStorageDatabase {
   /** Name of the cluster */
   private String clusterName = databaseName().toLowerCase();
 
-  private Security security = new Security(databaseName());
+  @NestedConfigurationProperty private Security security = new Security(databaseName());
+
+  @NestedConfigurationProperty private History history = new History(databaseName());
 
   /** Username for the database configured as secondary storage. */
   private String username = "";
@@ -116,6 +119,14 @@ public abstract class SecondaryStorageDatabase {
 
   public void setNumberOfShards(final int numberOfShards) {
     this.numberOfShards = numberOfShards;
+  }
+
+  public History getHistory() {
+    return history;
+  }
+
+  public void setHistory(final History history) {
+    this.history = history;
   }
 
   private String prefix() {

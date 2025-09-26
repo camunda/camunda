@@ -565,6 +565,9 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+
+    setArg(
+        args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
   }
 
   @SuppressWarnings("unchecked")
