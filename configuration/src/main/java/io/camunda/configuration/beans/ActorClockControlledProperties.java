@@ -7,4 +7,9 @@
  */
 package io.camunda.configuration.beans;
 
+/**
+ * NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ * Configuration system, from the object
+ * io.camunda.configuration.beanoverrides.ActorClockControlledPropertiesOverride
+ */
 public record ActorClockControlledProperties(boolean controlled) {}
