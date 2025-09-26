@@ -45,8 +45,10 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -56,6 +58,7 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -104,6 +107,12 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
     cancelProcessInstanceHandler.setZeebeClient(super.getClient());
     clearMetrics();
+  }
+
+  @Override
+  @After
+  public void after() {
+    operateProperties.getArchiver().setRolloverInterval("1d");
   }
 
   @Test
@@ -194,6 +203,58 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     request.setPageSize(count + 100);
     final ListViewResponseDto responseDto = listViewReader.queryProcessInstances(request);
     assertThat(responseDto.getTotalCount()).isEqualTo(count);
+  }
+
+  //   Junit4 does not support parameterized tests mixing with non-parameterized tests
+  @Test
+  public void shouldApplyRolloverIntervalCorrectlyForAllCases() throws IOException {
+    final Object[][] cases =
+        new Object[][] {
+          {
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1w",
+            LocalDate.of(2024, 10, 7).atStartOfDay().toInstant(ZoneOffset.UTC)
+          },
+          {
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1d",
+            LocalDate.of(2024, 10, 10).atStartOfDay().toInstant(ZoneOffset.UTC)
+          },
+          {
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1M",
+            LocalDate.of(2024, 10, 1).atStartOfDay().toInstant(ZoneOffset.UTC)
+          },
+          {
+            LocalDate.of(2024, 10, 16).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1w",
+            LocalDate.of(2024, 10, 14).atStartOfDay().toInstant(ZoneOffset.UTC)
+          }
+        };
+
+    for (final Object[] c : cases) {
+      final Instant processEndTime = (Instant) c[0];
+      final String rolloverInterval = (String) c[1];
+      final Instant expectedArchiveBucket = (Instant) c[2];
+
+      operateProperties.getArchiver().setRolloverInterval(rolloverInterval);
+
+      final String processId = "demoProcess";
+      final String activityId = "task1";
+      deployProcessWithOneActivity(processId, activityId);
+
+      final List<Long> id = startInstances(processId, 1, processEndTime);
+      createOperations(id);
+      finishInstances(1, processEndTime, activityId);
+      searchTestRule.processAllRecordsAndWait(processInstancesAreFinishedCheck, id);
+
+      assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(1);
+      searchTestRule.refreshSerchIndexes();
+      assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(0);
+      searchTestRule.refreshSerchIndexes();
+
+      assertInstancesInCorrectIndex(1, id, expectedArchiveBucket, processEndTime, true);
+    }
   }
 
   @Test
@@ -403,24 +464,39 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
   private void assertInstancesInCorrectIndex(
       final int instancesCount,
       final List<Long> ids,
-      final Instant endDate,
+      final Instant archiveIndexDateStamp,
       final boolean ignoreAbsentIndex)
       throws IOException {
-    assertProcessInstanceIndex(instancesCount, ids, endDate);
+    assertInstancesInCorrectIndex(
+        instancesCount, ids, archiveIndexDateStamp, archiveIndexDateStamp, ignoreAbsentIndex);
+  }
+
+  private void assertInstancesInCorrectIndex(
+      final int instancesCount,
+      final List<Long> ids,
+      final Instant archiveIndexDateStamp,
+      final Instant processCompletionDate,
+      final boolean ignoreAbsentIndex)
+      throws IOException {
+    assertProcessInstanceIndex(instancesCount, ids, archiveIndexDateStamp, processCompletionDate);
     for (final ProcessInstanceDependant template : processInstanceDependantTemplates) {
       if (!(template instanceof IncidentTemplate || template instanceof SequenceFlowTemplate)) {
         assertDependentIndex(
             template.getFullQualifiedName(),
             ProcessInstanceDependant.PROCESS_INSTANCE_KEY,
             ids,
-            endDate,
+            archiveIndexDateStamp,
             ignoreAbsentIndex);
       }
     }
   }
 
   private void assertProcessInstanceIndex(
-      final int instancesCount, final List<Long> ids, final Instant endDate) throws IOException {
+      final int instancesCount,
+      final List<Long> ids,
+      final Instant endDate,
+      final Instant processCompletionDate)
+      throws IOException {
     final String destinationIndexName;
     if (endDate != null) {
       destinationIndexName =
@@ -436,10 +512,10 @@ public class ArchiverZeebeIT extends OperateZeebeAbstractIT {
     assertThat(processInstances)
         .extracting(ListViewTemplate.PROCESS_INSTANCE_KEY)
         .containsExactlyInAnyOrderElementsOf(ids);
-    if (endDate != null) {
+    if (processCompletionDate != null) {
       assertThat(processInstances)
           .extracting(ListViewTemplate.END_DATE)
-          .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
+          .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(processCompletionDate));
     }
     // TODO assert children records - activities
   }
