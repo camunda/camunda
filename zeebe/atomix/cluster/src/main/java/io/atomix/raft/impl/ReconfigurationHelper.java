@@ -22,6 +22,8 @@ import io.atomix.raft.protocol.JoinRequest;
 import io.atomix.raft.protocol.LeaveRequest;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.TransferRequest;
+import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import io.atomix.raft.storage.log.entry.ConfigurationEntry;
 import io.atomix.raft.storage.system.Configuration;
 import io.atomix.raft.utils.ForceConfigureQuorum;
 import io.atomix.utils.concurrent.ThreadContext;
@@ -56,6 +58,24 @@ public final class ReconfigurationHelper {
     final var result = new CompletableFuture<Void>();
     threadContext.execute(
         () -> {
+          try {
+            tryReloadConfigurationFromLog();
+          } catch (final Exception e) {
+            LOGGER.warn("Failed to join cluster, could not reload configuration from log", e);
+            result.completeExceptionally(e);
+          }
+
+          // Always transition to the current member type, which is right now always PASSIVE before
+          // joining the cluster. This is required so that if the join was partially completed
+          // before the restart of this member, then this member should continue participating in
+          // the raft protocol in an active role. If the member stays INACTIVE, it won't respond to
+          // the requests from the other members. This is particularly important when joining a
+          // single member cluster, because the other member can continue the reconfiguration
+          // process only if this member responds to append and vote requests.
+          raftContext.transition(raftContext.getCluster().getLocalMember().getType());
+
+          // We don't know if the latest configuration loaded from the log is valid. So we will
+          // retry join any way.
           final var joining =
               new DefaultRaftMember(
                   raftContext.getCluster().getLocalMember().memberId(), Type.ACTIVE, Instant.now());
@@ -69,9 +89,55 @@ public final class ReconfigurationHelper {
                     "Cannot join cluster, because there are no other members in the cluster."));
             return;
           }
+
+          // if single member cluster, we retry with the same member a few times before failing the
+          // join request. This gives the other member a chance to become leader and continue the
+          // reconfiguration process.
+          if (clusterMembers.size() == 1) {
+            final var otherMember = clusterMembers.stream().findFirst().get();
+            assistingMembers.offer(otherMember);
+            assistingMembers.offer(otherMember);
+            assistingMembers.offer(otherMember);
+          }
           threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
         });
     return result;
+  }
+
+  /**
+   * If the previous join was partially or fully completed, i.e. committed the first configuration
+   * with joint consensus or committed the final configuration, then in the next retry, this member
+   * can already start with that configuration. This is mainly required if the member is joining to
+   * a single member cluster, making the quorum to 2 out of 2. If this member did not re-start in
+   * the ACTIVE state when the other node has already included it in the quorum, then the other
+   * member cannot become leader and continue the reconfiguration step.
+   */
+  private void tryReloadConfigurationFromLog() {
+    IndexedRaftLogEntry lastConfigurationEntry = null;
+    // The reader needs to be uncommitted because the configuration entry might not be committed yet
+    // on this node, but committed on the leader already.
+    try (final var reader = raftContext.getLog().openUncommittedReader()) {
+      while (reader.hasNext()) {
+        final var entry = reader.next();
+        if (entry.entry() instanceof ConfigurationEntry) {
+          lastConfigurationEntry = entry;
+        }
+      }
+      if (lastConfigurationEntry != null) {
+        final ConfigurationEntry configurationEntry =
+            (ConfigurationEntry) lastConfigurationEntry.entry();
+        raftContext
+            .getCluster()
+            .configure(
+                new Configuration(
+                    lastConfigurationEntry.index(),
+                    lastConfigurationEntry.term(),
+                    configurationEntry.timestamp(),
+                    configurationEntry.newMembers(),
+                    configurationEntry.oldMembers(),
+                    false));
+      }
+    }
   }
 
   /**
@@ -119,8 +185,16 @@ public final class ReconfigurationHelper {
               } else if (response.status() == Status.OK) {
                 LOGGER.debug("Join request accepted");
                 result.complete(null);
-              } else if (response.error().type() == RaftError.Type.NO_LEADER
-                  || response.error().type() == RaftError.Type.UNAVAILABLE) {
+              } else if (response.error().type() == RaftError.Type.NO_LEADER) {
+                LOGGER.debug(
+                    "Join request failed, retrying after {}",
+                    raftContext.getElectionTimeout(),
+                    response.error().createException());
+                // Wait for a new leader to be elected and retry then
+                threadContext.schedule(
+                    raftContext.getElectionTimeout(),
+                    () -> joinWithRetry(joining, assistingMembers, result));
+              } else if (response.error().type() == RaftError.Type.UNAVAILABLE) {
                 LOGGER.debug("Join request failed, retrying", response.error().createException());
                 threadContext.execute(() -> joinWithRetry(joining, assistingMembers, result));
               } else {
