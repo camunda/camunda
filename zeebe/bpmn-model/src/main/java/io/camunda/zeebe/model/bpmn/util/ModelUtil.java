@@ -44,6 +44,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeExecutionListeners;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -71,7 +72,7 @@ public class ModelUtil {
           Arrays.asList(SubProcess.class, CallActivity.class);
 
   public static <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
-      final BaseElement element, Class<T> type) {
+      final BaseElement element, final Class<T> type) {
     final ExtensionElements extensionElements = element.getExtensionElements();
     if (extensionElements == null) {
       return Collections.emptyList();
@@ -123,6 +124,22 @@ public class ModelUtil {
         .collect(Collectors.toList());
   }
 
+  public static List<EventDefinition> getEventDefinitionsForMessageStartEvents(
+      final ModelElementInstance element) {
+    // Only validates that there are no duplicate message names in message definitions that refer to
+    // different messages, other cases are already handled by MessageValidator.
+    final Set<Message> referredMessages = new HashSet<>();
+    return element.getChildElementsByType(StartEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(MessageEventDefinition.class::isInstance)
+        .filter(
+            definition -> {
+              final Message message = ((MessageEventDefinition) definition).getMessage();
+              return referredMessages.add(message);
+            })
+        .collect(Collectors.toList());
+  }
+
   public static List<EventDefinition> getEventDefinitionsForLinkCatchEvents(
       final ModelElementInstance element) {
     final List<EventDefinition> definitions =
@@ -164,6 +181,14 @@ public class ModelUtil {
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
 
+  public static void verifyNoDuplicateMessageStartEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions = getEventDefinitionsForMessageStartEvents(element);
+
+    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+  }
+
   public static void verifyLinkIntermediateEvents(
       final ModelElementInstance element, final Consumer<String> errorCollector) {
 
@@ -188,7 +213,7 @@ public class ModelUtil {
   }
 
   private static Map<BpmnModelElementInstance, Set<String>> groupEventsByScope(
-      List<EventDefinition> events) {
+      final List<EventDefinition> events) {
     return getEventDefinition(events, LinkEventDefinition.class)
         .filter(def -> def.getName() != null && !def.getName().isEmpty())
         .collect(
@@ -203,7 +228,7 @@ public class ModelUtil {
       final Consumer<String> errorCollector) {
     throwEventsGroupByScope.forEach(
         (scope, items) -> {
-          for (String item : items) {
+          for (final String item : items) {
             if (!catchEventsGroupByScope
                 .getOrDefault(scope, Collections.emptySet())
                 .contains(item)) {
