@@ -26,6 +26,7 @@ import {useIsProcessInstanceRunning} from 'modules/queries/processInstance/useIs
 import {usePermissions} from 'modules/queries/permissions/usePermissions';
 import {Restricted} from 'modules/components/Restricted';
 import {useVariables} from 'modules/queries/variables/useVariables';
+import {getVariable} from 'modules/api/v2/variables/getVariable';
 
 type Props = {
   scopeId: string | null;
@@ -52,6 +53,16 @@ const VariablesTable: React.FC<Props> = ({
   const isEditMode = (variableName: string) =>
     (initialValues?.name === variableName && isProcessInstanceRunning) ||
     isVariableModificationAllowed;
+
+  const createFetchFullVariableHandler =
+    (variableKey: string) => async (): Promise<string | null> => {
+      try {
+        const {response} = await getVariable(variableKey);
+        return response?.value ?? null;
+      } catch {
+        return null;
+      }
+    };
 
   const rows =
     variablesData?.pages?.flatMap((page) =>
@@ -94,10 +105,17 @@ const VariablesTable: React.FC<Props> = ({
                   }
 
                   if (!isProcessInstanceRunning) {
-                    if (isTruncated) {
-                      return <ViewFullVariableButton variableName={name} />;
-                    }
-                    return null;
+                    return (
+                      <ViewFullVariableButton
+                        variableName={name}
+                        onClick={
+                          isTruncated
+                            ? createFetchFullVariableHandler(variableKey)
+                            : undefined
+                        }
+                        value={!isTruncated ? value : undefined}
+                      />
+                    );
                   }
 
                   if (initialValues?.name === name) {
@@ -112,7 +130,12 @@ const VariablesTable: React.FC<Props> = ({
                       }}
                       fallback={
                         isTruncated ? (
-                          <ViewFullVariableButton variableName={name} />
+                          <ViewFullVariableButton
+                            variableName={name}
+                            onClick={createFetchFullVariableHandler(
+                              variableKey,
+                            )}
+                          />
                         ) : null
                       }
                     >
