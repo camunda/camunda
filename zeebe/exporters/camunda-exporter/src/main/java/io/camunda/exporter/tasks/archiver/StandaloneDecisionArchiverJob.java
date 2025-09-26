@@ -8,18 +8,18 @@
 package io.camunda.exporter.tasks.archiver;
 
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 import org.slf4j.Logger;
 
-public class BatchOperationArchiverJob extends ArchiverJob {
+public class StandaloneDecisionArchiverJob extends ArchiverJob {
 
-  private final BatchOperationTemplate batchOperationTemplate;
+  private final DecisionInstanceTemplate decisionInstanceTemplate;
 
-  public BatchOperationArchiverJob(
+  public StandaloneDecisionArchiverJob(
       final ArchiverRepository repository,
-      final BatchOperationTemplate batchOperationTemplate,
+      final DecisionInstanceTemplate decisionInstanceTemplate,
       final CamundaExporterMetrics metrics,
       final Logger logger,
       final Executor executor) {
@@ -28,28 +28,28 @@ public class BatchOperationArchiverJob extends ArchiverJob {
         metrics,
         logger,
         executor,
-        metrics::recordBatchOperationsArchiving,
-        metrics::recordBatchOperationsArchived);
-    this.batchOperationTemplate = batchOperationTemplate;
+        metrics::recordStandaloneDecisionsArchiving,
+        metrics::recordStandaloneDecisionsArchived);
+    this.decisionInstanceTemplate = decisionInstanceTemplate;
   }
 
   @Override
   String getJobName() {
-    return BatchOperationTemplate.INDEX_NAME;
+    return "standalone-decision";
   }
 
   @Override
   CompletableFuture<ArchiveBatch> getNextBatch() {
-    return getArchiverRepository().getBatchOperationsNextBatch();
+    return getArchiverRepository().getStandaloneDecisionNextBatch();
   }
 
   @Override
   String getSourceIndexName() {
-    return batchOperationTemplate.getFullQualifiedName();
+    return decisionInstanceTemplate.getFullQualifiedName();
   }
 
   @Override
   String getIdFieldName() {
-    return BatchOperationTemplate.ID;
+    return DecisionInstanceTemplate.ID;
   }
 }

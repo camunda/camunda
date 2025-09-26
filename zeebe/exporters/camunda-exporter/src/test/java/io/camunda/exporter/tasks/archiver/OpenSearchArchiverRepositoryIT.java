@@ -31,6 +31,7 @@ import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -396,6 +397,70 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetUsageMetricNextBatch() throws IOException {
+    // given - 3 documents, two older than archive threshold, one recent
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var usageMetricIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
+            .getFullQualifiedName();
+    createUsageMetricIndex(usageMetricIndex);
+    final var documents =
+        List.of(
+            new TestUsageMetric("1", twoHoursAgo),
+            new TestUsageMetric("2", twoHoursAgo),
+            new TestUsageMetric("3", now.toString()));
+    documents.forEach(doc -> index(usageMetricIndex, doc));
+    testClient.indices().refresh(r -> r.index(usageMetricIndex));
+    config.setRolloverBatchSize(5);
+
+    // when
+    final var result = repository.getUsageMetricNextBatch();
+
+    // then
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldGetUsageMetricTUNextBatch() throws IOException {
+    // given - 3 TU documents, two older than archive threshold, one recent
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var usageMetricTUIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
+            .getFullQualifiedName();
+    createUsageMetricTUIndex(usageMetricTUIndex);
+    final var documents =
+        List.of(
+            new TestUsageMetricTU("10", twoHoursAgo),
+            new TestUsageMetricTU("11", twoHoursAgo),
+            new TestUsageMetricTU("12", now.toString()));
+    documents.forEach(doc -> index(usageMetricTUIndex, doc));
+    testClient.indices().refresh(r -> r.index(usageMetricTUIndex));
+    config.setRolloverBatchSize(5);
+
+    // when
+    final var result = repository.getUsageMetricTUNextBatch();
+
+    // then
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactlyInAnyOrder("10", "11");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
   void shouldGetBatchOperationsNextBatch() throws IOException {
     // given - 3 documents, two of which were created over an hour ago, one of which was created
     final var now = Instant.now();
@@ -423,6 +488,45 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
     assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
+  void shouldGetStandaloneDecisionNextBatch() throws IOException {
+    // given - 5 documents, two of which were created over an hour ago and should be archived,
+    // one of which was created recently, one on a different partition and one with a different
+    // process instance key
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestStandaloneDecision("1", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, -1),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, 12345),
+            new TestStandaloneDecision("5", now.toString(), 1, -1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    final var standaloneDecisionIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+    createStandaloneDecisionIndex(standaloneDecisionIndex);
+    documents.forEach(doc -> index(standaloneDecisionIndex, doc));
+    testClient.indices().refresh(r -> r.index(standaloneDecisionIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getStandaloneDecisionNextBatch();
+
+    // then - we expect only the first two documents created two hours ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -567,70 +671,6 @@ final class OpenSearchArchiverRepositoryIT {
     final var batch = repository.getBatchOperationsNextBatch().join();
     assertThat(batch.ids()).containsAll(List.of("1", "2"));
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
-  }
-
-  @Test
-  void shouldGetUsageMetricNextBatch() throws IOException {
-    // given - 3 documents, two older than archive threshold, one recent
-    final var now = Instant.now();
-    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
-    final var usageMetricIndex =
-        resourceProvider
-            .getIndexTemplateDescriptor(UsageMetricTemplate.class)
-            .getFullQualifiedName();
-    createUsageMetricIndex(usageMetricIndex);
-    final var documents =
-        List.of(
-            new TestUsageMetric("1", twoHoursAgo),
-            new TestUsageMetric("2", twoHoursAgo),
-            new TestUsageMetric("3", now.toString()));
-    documents.forEach(doc -> index(usageMetricIndex, doc));
-    testClient.indices().refresh(r -> r.index(usageMetricIndex));
-    config.setRolloverBatchSize(5);
-
-    // when
-    final var result = repository.getUsageMetricNextBatch();
-
-    // then
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var batch = result.join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("1", "2");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
-  }
-
-  @Test
-  void shouldGetUsageMetricTUNextBatch() throws IOException {
-    // given - 3 TU documents, two older than archive threshold, one recent
-    final var now = Instant.now();
-    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
-    final var usageMetricTUIndex =
-        resourceProvider
-            .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
-            .getFullQualifiedName();
-    createUsageMetricTUIndex(usageMetricTUIndex);
-    final var documents =
-        List.of(
-            new TestUsageMetricTU("10", twoHoursAgo),
-            new TestUsageMetricTU("11", twoHoursAgo),
-            new TestUsageMetricTU("12", now.toString()));
-    documents.forEach(doc -> index(usageMetricTUIndex, doc));
-    testClient.indices().refresh(r -> r.index(usageMetricTUIndex));
-    config.setRolloverBatchSize(5);
-
-    // when
-    final var result = repository.getUsageMetricTUNextBatch();
-
-    // then
-    final var dateFormatter =
-        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
-    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
-    final var batch = result.join();
-    assertThat(batch.ids()).containsExactlyInAnyOrder("10", "11");
-    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
   @Test
@@ -854,6 +894,29 @@ final class OpenSearchArchiverRepositoryIT {
                     .aliases(usageMetricTUIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+  private void createStandaloneDecisionIndex(final String standaloneDecisionIndex)
+      throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var evaluationDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        DecisionInstanceTemplate.ID,
+                        idProp,
+                        DecisionInstanceTemplate.EVALUATION_DATE,
+                        evaluationDateProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(standaloneDecisionIndex)
+                    .mappings(properties)
+                    .aliases(standaloneDecisionIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
@@ -1074,6 +1137,10 @@ final class OpenSearchArchiverRepositoryIT {
   private record TestUsageMetric(String id, String endTime) implements TDocument {}
 
   private record TestUsageMetricTU(String id, String endTime) implements TDocument {}
+
+  private record TestStandaloneDecision(
+      String id, String evaluationDate, int partitionId, int processInstanceKey)
+      implements TDocument {}
 
   private interface TDocument {
     String id();
