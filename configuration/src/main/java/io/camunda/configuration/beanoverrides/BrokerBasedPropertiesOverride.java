@@ -431,27 +431,24 @@ public class BrokerBasedPropertiesOverride {
 
     /* Load exporter config map */
 
-    final List<ExporterCfg> exporters =
-        override.getExporters().values().stream()
-            .filter(e -> e.getClassName().equals(CAMUNDA_EXPORTER_CLASS_NAME))
-            .toList();
-
-    final ExporterCfg exporter;
-    if (exporters.isEmpty()) {
+    ExporterCfg exporter = override.getCamundaExporter();
+    if (exporter == null) {
       exporter = new ExporterCfg();
       exporter.setClassName(CAMUNDA_EXPORTER_CLASS_NAME);
       exporter.setArgs(new LinkedHashMap<>());
       override.getExporters().put(CAMUNDA_EXPORTER_NAME, exporter);
-    } else {
-      exporter = exporters.getFirst();
     }
 
     /* Override config map values */
 
     // https://github.com/camunda/camunda/issues/37880
     // it is possible to have an exporter with no args defined
-    final Map<String, Object> args =
-        exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
+    Map<String, Object> args = exporter.getArgs();
+    if (args == null) {
+      args = new LinkedHashMap<>();
+      exporter.setArgs(args);
+    }
+
     setArg(args, "connect.type", secondaryStorage.getType().name());
     setArg(args, "connect.url", database.getUrl());
     setArg(args, "connect.clusterName", database.getClusterName());
