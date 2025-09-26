@@ -21,9 +21,10 @@ import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
+import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
-import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
-import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
+import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
+import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
@@ -230,6 +231,7 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
     tasks.add(buildUsageMetricsArchiverJob());
+    tasks.add(buildUsageMetricsTUArchiverJob());
     if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
       tasks.add(buildProcessInstanceToBeArchivedCountJob());
     }
@@ -297,7 +299,7 @@ public final class BackgroundTaskManagerFactory {
         .forEach(dependantTemplates::add);
 
     return buildReschedulingArchiverTask(
-        new ProcessInstancesArchiverJob(
+        new ProcessInstanceArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class),
             dependantTemplates,
@@ -318,11 +320,21 @@ public final class BackgroundTaskManagerFactory {
 
   private ReschedulingTask buildUsageMetricsArchiverJob() {
     return buildReschedulingArchiverTask(
-        new UsageMetricsArchiverJob(
+        new UsageMetricArchiverJob(
             archiverRepository,
-            logger,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
+            metrics,
+            logger,
+            executor));
+  }
+
+  private ReschedulingTask buildUsageMetricsTUArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new UsageMetricTUArchiverJob(
+            archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            metrics,
+            logger,
             executor));
   }
 
