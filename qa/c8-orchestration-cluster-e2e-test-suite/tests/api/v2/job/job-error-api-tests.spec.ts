@@ -19,16 +19,21 @@ import {
   setupProcessInstanceTests,
 } from '../../../../utils/requestHelpers';
 
+/* eslint-disable playwright/expect-expect */
 test.describe('Job Error API Tests', () => {
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'processWithThreeParallelTasks',
+    'job_api_process',
+    'jobApiProcess',
   );
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
 
   test('Throw Error for Job - success', async ({request}) => {
-    const jobKey = await activateJobToObtainAValidJobKey(request, 'someTask');
+    const jobKey = await activateJobToObtainAValidJobKey(
+      request,
+      'jobApiTaskType',
+    );
 
     const errorRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
       headers: jsonHeaders(),
@@ -76,7 +81,7 @@ test.describe('Job Error API Tests', () => {
     await test.step('Activate job to obtain a valid job key', async () => {
       localState['jobKey'] = await activateJobToObtainAValidJobKey(
         request,
-        'finalTask',
+        'jobApiTaskType',
       );
     });
 

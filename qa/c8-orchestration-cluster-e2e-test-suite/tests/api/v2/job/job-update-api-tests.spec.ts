@@ -19,16 +19,21 @@ import {
   setupProcessInstanceTests,
 } from '../../../../utils/requestHelpers';
 
+/* eslint-disable playwright/expect-expect */
 test.describe('Job Update API Tests', () => {
   const {beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'processWithThreeParallelTasks',
+    'job_api_process',
+    'jobApiProcess',
   );
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
   test.afterEach(afterEach);
 
   test('Update Job - success', async ({request}) => {
-    const jobKey = await activateJobToObtainAValidJobKey(request, 'someTask');
+    const jobKey = await activateJobToObtainAValidJobKey(
+      request,
+      'jobApiTaskType',
+    );
 
     await test.step('PATCH update the job', async () => {
       const updateRes = await request.patch(buildUrl(`/jobs/${jobKey}`), {
