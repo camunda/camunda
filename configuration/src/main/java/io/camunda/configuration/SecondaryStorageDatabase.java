@@ -20,6 +20,8 @@ public abstract class SecondaryStorageDatabase {
 
   private Security security = new Security(databaseName());
 
+  private History history = new History(databaseName());
+
   /** Username for the database configured as secondary storage. */
   private String username = "";
 
@@ -116,6 +118,14 @@ public abstract class SecondaryStorageDatabase {
 
   public void setNumberOfShards(final int numberOfShards) {
     this.numberOfShards = numberOfShards;
+  }
+
+  public History getHistory() {
+    return history;
+  }
+
+  public void setHistory(final History history) {
+    this.history = history;
   }
 
   private String prefix() {
