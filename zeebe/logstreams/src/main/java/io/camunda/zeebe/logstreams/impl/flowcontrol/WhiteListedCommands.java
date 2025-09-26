@@ -13,7 +13,10 @@ import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
+=======
+>>>>>>> e395c6a6 (fix: do not enforce write limits for whitelisted commands)
 import java.util.Set;
 
 public class WhiteListedCommands {
@@ -22,12 +25,18 @@ public class WhiteListedCommands {
       Set.of(
           JobIntent.COMPLETE,
           JobIntent.FAIL,
+<<<<<<< HEAD
           JobIntent.YIELD,
+=======
+>>>>>>> e395c6a6 (fix: do not enforce write limits for whitelisted commands)
           ProcessInstanceIntent.CANCEL,
           DeploymentIntent.CREATE,
           DeploymentIntent.DISTRIBUTE,
           DeploymentDistributionIntent.COMPLETE,
+<<<<<<< HEAD
           ScaleIntent.STATUS,
+=======
+>>>>>>> e395c6a6 (fix: do not enforce write limits for whitelisted commands)
           CommandDistributionIntent.ACKNOWLEDGE);
 
   public static boolean isWhitelisted(final Intent intent) {
