@@ -9,4 +9,9 @@ package io.camunda.configuration.beans;
 
 import io.camunda.search.schema.config.IndexConfiguration;
 
+/**
+ * NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ * Configuration system, from the object
+ * io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride
+ */
 public class SearchEngineIndexProperties extends IndexConfiguration {}
