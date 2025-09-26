@@ -314,8 +314,13 @@ public class SecondaryStorageElasticsearchTest {
     void testSecondaryStorageExporterCanWorkWithoutArgs() {
       final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
       assertThat(camundaExporter).isNotNull();
+
       final Map<String, Object> args = camundaExporter.getArgs();
-      assertThat(args).isNull();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://matching-url:4321");
     }
   }
 
