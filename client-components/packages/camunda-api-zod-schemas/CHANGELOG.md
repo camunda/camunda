@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.5
+
+### 🩹 Fixes
+
+- update batch operation schema types ([#38331](https://github.com/camunda/camunda/pull/38331))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.4
 
 ### 🩹 Fixes
