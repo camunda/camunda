@@ -73,22 +73,17 @@ zeebe:
     exporters:
       rdbms:
         className: io.camunda.exporter.rdbms.RdbmsExporter
-        args:
-          flushInterval: PT0.5S
-          queueSize: 1000
-      #elasticsearch:
-      #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-      #  args:
-      #    url: http://localhost:9200
 
 camunda:
-  database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: rdbms
-    url: jdbc:h2:mem:camunda
-    username: sa
-    password:
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda
+        username: sa
+        password:
+        flushInterval: PT0.5S
+        queueSize: 1000
   # Operate configuration properties
   operate:
     # Set operate username and password.

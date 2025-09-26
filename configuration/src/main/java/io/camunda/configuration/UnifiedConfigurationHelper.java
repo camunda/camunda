@@ -263,10 +263,17 @@ public class UnifiedConfigurationHelper {
 
   /* Helper methods */
 
-  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+  public static ExporterConfiguration argsToCamundaExporterConfiguration(
+      final Map<String, Object> args) {
     return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
             "camundaExporter", args)
         .instantiate(ExporterConfiguration.class);
+  }
+
+  public static io.camunda.exporter.rdbms.ExporterConfiguration argsToRdbmsExporterConfiguration(
+      final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration("rdbms", args)
+        .instantiate(io.camunda.exporter.rdbms.ExporterConfiguration.class);
   }
 
   /* Setters used by tests to inject the mock objects */

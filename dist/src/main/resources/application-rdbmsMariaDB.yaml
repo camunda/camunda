@@ -74,32 +74,27 @@ zeebe:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
         className: RdbmsExporter
-        args:
-          flushInterval: PT0.5S
-          queueSize: 1000
-          history:
-            defaultHistoryTTL: PT1M
-            defaultBatchOperationHistoryTTL: PT7D
-            batchOperationCancelProcessInstanceHistoryTTL: PT1D
-            batchOperationMigrateProcessInstanceHistoryTTL: PT10D
-            batchOperationModifyProcessInstanceHistoryTTL: PT7D
-            batchOperationResolveIncidentHistoryTTL: PT5D
-            minHistoryCleanupInterval: PT1S
-            maxHistoryCleanupInterval: PT1H
-            historyCleanupBatchSize: 1000
-      #elasticsearch:
-      #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-      #  args:
-      #    url: http://localhost:9200
 
 camunda:
-  database:
-    # Controls which database must be used, possible values: elasticsearch, opensearch
-    # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE
-    type: rdbms
-    url: jdbc:mariadb://localhost:3306/camunda
-    username: camunda
-    password: demo
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:mariadb://localhost:3306/camunda
+        username: camunda
+        password: demo
+        flushInterval: PT0.5S
+        queueSize: 1000
+        history:
+          defaultHistoryTTL: PT1M
+          defaultBatchOperationHistoryTTL: PT168H
+          batchOperationCancelProcessInstanceHistoryTTL: PT24H
+          batchOperationMigrateProcessInstanceHistoryTTL: PT240H
+          batchOperationModifyProcessInstanceHistoryTTL: PT168H
+          batchOperationResolveIncidentHistoryTTL: PT120H
+          minHistoryCleanupInterval: PT1S
+          maxHistoryCleanupInterval: PT1H
+          historyCleanupBatchSize: 1000
   # Operate configuration properties
   operate:
     # Set operate username and password.
