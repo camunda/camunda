@@ -979,7 +979,9 @@ jobs:
     name: "Docker / Tool / Checks"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    timeout-minutes: 15
     permissions:
       security-events: write
     services:
@@ -1015,7 +1017,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild
+          maven-extra-args: -PskipFrontendBuild,-include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-camunda-docker
         with:
@@ -1045,12 +1047,18 @@ jobs:
           dockerfile: camunda.Dockerfile
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Pull local docker image
+        # We pull the image to ensure that we have the right platform image locally,
+        # as the runner might be on the arm64 if that was pulled last by the verify step
+        run: docker pull ${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}
       - name: Run Docker tests
         shell: bash
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3
+          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
+          -P parallel-tests
           -Dcamunda.docker.test.enabled=true
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}"
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}"
