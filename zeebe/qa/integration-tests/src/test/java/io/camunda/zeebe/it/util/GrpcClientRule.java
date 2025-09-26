@@ -9,9 +9,13 @@ package io.camunda.zeebe.it.util;
 
 import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.test.EmbeddedBrokerRule;
+<<<<<<< HEAD
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import io.camunda.zeebe.it.clustering.ClusteringRule;
+=======
+import io.camunda.zeebe.it.cluster.clustering.ClusteringRule;
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.netty.util.NetUtil;
@@ -59,7 +63,7 @@ public final class GrpcClientRule extends ExternalResource {
 
   /**
    * This is a hacky way to allow us to use this class in {@link
-   * io.camunda.zeebe.it.clustering.ClusteringRuleExtension}
+   * io.camunda.zeebe.it.cluster.clustering.ClusteringRuleExtension}
    */
   public GrpcClientRule(final ZeebeClient client) {
     this.client = client;

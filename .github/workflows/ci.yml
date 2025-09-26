@@ -214,6 +214,448 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
+<<<<<<< HEAD
+=======
+          maven-cache-key-modifier: ut-general-unit-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # shellcheck disabled because the list of modules needs to contain single quotes
+      - name: Setup General UT Modules
+        run: |
+          bash .ci/scripts/ci/setup-general-ut.sh "${{ needs.setup-unit-tests.outputs.GENERAL_UT_DO_NOT_SKIP_MODULES}}" "${{ needs.setup-unit-tests.outputs.GENERAL_UT_EXTRA_SKIP_MODULES}}"
+      - name: Maven Test Build Unit
+        shell: bash
+        # Modules in zeebe, operate, tasklist, and optimize are skipped as they have dedicated unit test jobs
+        #
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=7
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D junitThreadCount=16
+          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -pl ${{ env.GENERAL_UT_MODULES }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "General - [UT]"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  zeebe-unit-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Zeebe / Unit - ${{matrix.component}}"
+    needs: [ detect-changes, setup-unit-tests ]
+    timeout-minutes: 10
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    env:
+      TEST_TYPE: "Unit"
+      TEST_PRODUCT: "Zeebe"
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - component: General
+            suite: CoreFeatures
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_CORE_FEATURES_MODULES }}
+          - component: Protocol
+            suite: CoreFeatures
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_PROTOCOL_MODULES }}
+          - component: Gateway
+            suite: CoreFeatures
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_GATEWAY_MODULES }}
+          - component: Exporter
+            suite: DataLayer
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_EXPORTER_MODULES }}
+          - component: Backup
+            suite: DistributedSystems
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_BACKUP_MODULES }}
+          - component:  Distributed
+            suite: DistributedSystems
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_DISTRIBUTED_MODULES }}
+          - component: Client
+            suite: CamundaEx
+            maven-modules: ${{ needs.setup-unit-tests.outputs.ZEEBE_CLIENT_MODULES }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_owner: "${{ matrix.suite }}"
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: ut-zeebe
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Run Test (Zeebe)
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=7
+          -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
+          -D junitThreadCount=16
+          -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
+          -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dtest="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-DexcludeTests="${TEST_EXCLUDE_FILTER}"}
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[UT] Zeebe - ${{ matrix.component }} - ${{matrix.suite}}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        id: matrix-write
+        with:
+          matrix-step-name: ${{ github.job }}
+          matrix-key: ${{ matrix.component }}-${{ matrix.suite }}
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "zeebe-unit-tests/${{ matrix.component }}-${{matrix.suite}}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "${{matrix.suite}}"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  elasticsearch-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    name: "General / Integration / Elasticsearch ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up an elastic search service container
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      elasticsearch:
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          # Disabling the security to make sure we can access without tls in our tests
+          # https://www.elastic.co/guide/en/elasticsearch/reference/current/security-settings.html#general-security-settings
+          xpack.security.enabled: "false"
+          # We run a single node for our integration tests
+          discovery.type: "single-node"
+          # Disabling to make sure we can delete indices via wildcards
+          # https://www.elastic.co/guide/en/elasticsearch/reference/current/index-management-settings.html
+          action.destructive_requires_name: "false"
+          # We need to configure ILM to run more often, to make sure data is cleaned up earlier
+          # Useful for tests where we verify history clean up
+          # Default is 10m
+          # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-settings.html
+          indices.lifecycle.poll_interval: "1s"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with ES service container
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -D test.integration.camunda.database.type=es
+      #
+      - name: Run integration test with externalized ES
+        shell: bash
+        run: >
+          ./mvnw -B -T 1 --no-snapshot-updates
+          -D forkCount=4
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=es
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] Elasticsearch"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  opensearch-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    name: "General / Integration / OpenSearch ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-16-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    services:
+      # Set up an OpenSearch service container
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      opensearch:
+        image: opensearchproject/opensearch:2.19.3
+        # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl --silent --fail http://localhost:9200/_cluster/health"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+        env:
+          # Disabling the security to make sure we can access without tls in our tests
+          # https://opensearch.org/docs/latest/security/configuration/disable-enable-security/
+          DISABLE_SECURITY_PLUGIN: "true"
+          # We run a single node for our integration tests
+          discovery.type: "single-node"
+          # Disabling to make sure we can delete indices via wildcards
+          # https://opensearch.org/docs/latest/install-and-configure/configuring-opensearch/index-settings/
+          action.destructive_requires_name: "false"
+          # We have to specify an initial password to bootstrap OpenSearch
+          # https://opensearch.org/blog/replacing-default-admin-credentials/
+          OPENSEARCH_INITIAL_ADMIN_PASSWORD: "yourStrongPassword123!"
+          # We need to configure ISM to run more often, to make sure data is cleaned up earlier
+          # Useful for tests where we verify history clean up
+          # Default is 5 - unit is minutes
+          # https://opensearch.org/docs/latest/im-plugin/ism/settings/
+          plugins.index_state_management.job_interval: "1"
+          # A randomized delay that is added to a job’s base run time to prevent a surge of activity from all indexes at the same time.
+          plugins.index_state_management.jitter: "0"
+          knn.algo_param.index_thread_qty: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with OS service container
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -D test.integration.camunda.database.type=os
+      #
+      - name: Run integration test with externalized OS
+        shell: bash
+        run: >
+          ./mvnw -B -T 1 --no-snapshot-updates
+          -D forkCount=4
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=os
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] OpenSearch"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-h2-integration-tests:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS - H2 ITs"
+    timeout-minutes: 15
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    env:
+      ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: it-elasticsearch
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      # Build the platform before running the integration tests; skipping frontend
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -PskipFrontendBuild
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run specific integration tests with H2 inmemory database
+      #
+      # To communicate to the IT what database to expect and run against:
+      # -Dcamunda.it.database.type=rdbms
+      #
+      - name: Run integration test with InMemory H2
+        shell: bash
+        timeout-minutes: 10
+        run: >
+          ./mvnw -B -T 2 --no-snapshot-updates
+          -D forkCount=3
+          -D maven.javadoc.skip=true
+          -D skipUTs -D skipChecks
+          -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
+          -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
+          -D test.integration.camunda.database.type=rdbms
+          -pl 'qa/acceptance-tests'
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[IT] RDBMS - H2"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "General"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+
+  rdbms-integration-tests:
+    if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
+    needs: [ detect-changes ]
+    name: "General / Integration / RDBMS ITs"
+    timeout-minutes: 10
+    runs-on: gcp-perf-core-8-default
+    outputs:
+      flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
+    permissions: { }  # no GITHUB_TOKEN is needed
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: it-rdbms
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -221,10 +663,17 @@ jobs:
         with:
           maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
+<<<<<<< HEAD
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+=======
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      # Run integration tests with RDBMS database
+      - name: Maven Test Build DataLayer
+        shell: bash
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
         run: >
           ./mvnw -T2 -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
@@ -279,13 +728,63 @@ jobs:
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
             maven-build-threads: 2
             maven-test-fork-count: 7
+<<<<<<< HEAD
             runs-on: gcp-perf-core-8-longrunning
           - group: qa-integration
             name: "Zeebe QA - Integration Tests"
+=======
+            runs-on: gcp-perf-core-16-longrunning
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
+          - group: schema-manager
+            name: "Schema Manager"
+            maven-modules: "schema-manager"
+            maven-build-threads: 1
+            maven-test-fork-count: 3
+            runs-on: gcp-perf-core-8-default
+            docker-repository: localhost:5000/camunda/camunda
+            docker-file: camunda.Dockerfile
+            owner: "Data Layer"
+            module: "Schema Manager"
+          - group: zeebe-engine-integration
+            name: "Zeebe Engine QA"
             maven-modules: "zeebe/qa/integration-tests"
             maven-build-threads: 1
             maven-test-fork-count: 10
             runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Core Features"
+            module: "Zeebe"
+            test-filter: "io/camunda/zeebe/it/engine/**"
+          - group: zeebe-ds-integration
+            name: "Zeebe Cluster QA"
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "Distributed Systems"
+            module: "Zeebe"
+            test-filter: "io/camunda/zeebe/it/cluster/**"
+          - group: zeebe-shared-integration
+            name: "Zeebe General QA"
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
+            maven-modules: "zeebe/qa/integration-tests"
+            maven-build-threads: 1
+            maven-test-fork-count: 10
+            runs-on: gcp-perf-core-16-default
+<<<<<<< HEAD
+=======
+            docker-repository: localhost:5000/camunda/zeebe
+            docker-file: Dockerfile
+            owner: "General"
+            module: "Zeebe"
+            test-exclude-filter: "io/camunda/zeebe/it/engine/**,io/camunda/zeebe/it/cluster/**"
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
           - group: qa-update
             name: "Zeebe QA - Update Tests"
             maven-modules: "zeebe/qa/update-tests"
@@ -338,8 +837,18 @@ jobs:
           push: true
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Create build output log file
+<<<<<<< HEAD
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> $GITHUB_ENV
       - name: Maven Test Build
+=======
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Test Build Integration
+        env:
+          # Propagate matrix test filters (may be empty for other matrix entries)
+          TEST_FILTER: ${{ matrix.test-filter }}
+          TEST_EXCLUDE_FILTER: ${{ matrix.test-exclude-filter }}
+        shell: bash
+>>>>>>> 9314f99a (test: split zeebe integration tests into engine, cluster and shared)
         run: >
           ./mvnw -B -T ${{ matrix.maven-build-threads }} --no-snapshot-updates
           -D forkCount=${{ matrix.maven-test-fork-count }}
@@ -348,6 +857,8 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
+          ${TEST_FILTER:+-Dit.test="${TEST_FILTER}"}
+          ${TEST_EXCLUDE_FILTER:+-Dit.excludeTests="${TEST_EXCLUDE_FILTER}"}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
