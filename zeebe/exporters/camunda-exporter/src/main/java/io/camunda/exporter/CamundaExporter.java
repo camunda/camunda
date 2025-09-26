@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CHUNK;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_CREATION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_EXECUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT;
+import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
@@ -484,7 +485,8 @@ public class CamundaExporter implements Exporter {
             BATCH_OPERATION_EXECUTION,
             BATCH_OPERATION_LIFECYCLE_MANAGEMENT,
             BATCH_OPERATION_CHUNK,
-            USAGE_METRIC);
+            USAGE_METRIC,
+            CLUSTER_VARIABLE);
 
     @Override
     public boolean acceptType(final RecordType recordType) {

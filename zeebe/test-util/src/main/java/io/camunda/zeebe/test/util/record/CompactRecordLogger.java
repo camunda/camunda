@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.util.record;
 import static io.camunda.zeebe.protocol.record.ValueType.AD_HOC_SUB_PROCESS_INSTRUCTION;
 import static io.camunda.zeebe.protocol.record.ValueType.ASYNC_REQUEST;
 import static io.camunda.zeebe.protocol.record.ValueType.AUTHORIZATION;
+import static io.camunda.zeebe.protocol.record.ValueType.CLUSTER_VARIABLE;
 import static io.camunda.zeebe.protocol.record.ValueType.COMMAND_DISTRIBUTION;
 import static io.camunda.zeebe.protocol.record.ValueType.COMPENSATION_SUBSCRIPTION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
@@ -73,6 +74,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -196,7 +198,8 @@ public class CompactRecordLogger {
           entry(COMPENSATION_SUBSCRIPTION.name(), "COMP_SUB"),
           entry(USAGE_METRIC.name(), "USG_MTRC"),
           entry(CREATE_WITH_AWAITING_RESULT.name(), "WITH_RESULT"),
-          entry(ESCALATION.name(), "ESC"));
+          entry(ESCALATION.name(), "ESC"),
+          entry(CLUSTER_VARIABLE.name(), "CLSTR_VAR"));
 
   private static final Map<RecordType, Character> RECORD_TYPE_ABBREVIATIONS =
       ofEntries(
@@ -280,6 +283,7 @@ public class CompactRecordLogger {
     valueLoggers.put(ValueType.PROCESS_INSTANCE_RESULT, this::summarizeProcessInstanceResult);
     valueLoggers.put(ValueType.ESCALATION, this::summarizeEscalation);
     valueLoggers.put(ValueType.PROCESS_INSTANCE_MIGRATION, this::summarizeProcessInstanceMigration);
+    valueLoggers.put(CLUSTER_VARIABLE, this::summarizeClusterVariable);
   }
 
   public CompactRecordLogger(final Collection<Record<?>> records) {
@@ -918,6 +922,12 @@ public class CompactRecordLogger {
             shortenKey(value.getScopeKey()),
             formatVariables(value),
             formatTenant(value));
+  }
+
+  private String summarizeClusterVariable(final Record<?> record) {
+    final var value = (ClusterVariableRecordValue) record.getValue();
+    return "%s->%s%s"
+        .formatted(value.getName(), formatVariableValue(value.getValue()), formatTenant(value));
   }
 
   private StringBuilder summarizeRejection(final Record<?> record) {

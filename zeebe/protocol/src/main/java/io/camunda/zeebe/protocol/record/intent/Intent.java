@@ -76,7 +76,8 @@ public interface Intent {
           AsyncRequestIntent.class,
           UsageMetricIntent.class,
           MultiInstanceIntent.class,
-          RuntimeInstructionIntent.class);
+          RuntimeInstructionIntent.class,
+          ClusterVariableIntent.class);
   short NULL_VAL = 255;
   Intent UNKNOWN = UnknownIntent.UNKNOWN;
 
@@ -204,6 +205,8 @@ public interface Intent {
         return MultiInstanceIntent.from(intent);
       case RUNTIME_INSTRUCTION:
         return RuntimeInstructionIntent.from(intent);
+      case CLUSTER_VARIABLE:
+        return ClusterVariableIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -319,6 +322,8 @@ public interface Intent {
         return AsyncRequestIntent.valueOf(intent);
       case RUNTIME_INSTRUCTION:
         return RuntimeInstructionIntent.valueOf(intent);
+      case CLUSTER_VARIABLE:
+        return ClusterVariableIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
