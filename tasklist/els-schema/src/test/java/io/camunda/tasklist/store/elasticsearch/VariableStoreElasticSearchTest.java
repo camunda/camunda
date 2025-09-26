@@ -73,7 +73,7 @@ class VariableStoreElasticSearchTest {
     when(mockedHits.getHits()).thenReturn(new SearchHit[] {});
 
     // When
-    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of("1234567"));
+    final List<FlowNodeInstanceEntity> result = instance.getFlowNodeInstances(List.of(1234567L));
 
     // Then
     verify(esClient, never()).scroll(any(SearchScrollRequest.class), any(RequestOptions.class));
@@ -141,6 +141,6 @@ class VariableStoreElasticSearchTest {
     assertThat(queryAsString)
         .isEqualTo(
             """
-           {"query":{"constant_score":{"filter":{"bool":{"must":[{"terms":{"scopeKey":["flowNodeId1"],"boost":1.0}},{"terms":{"name":["varName1","varName2"],"boost":1.0}}],"adjust_pure_negative":true,"boost":1.0}},"boost":1.0}}}""");
+           {"size":200,"query":{"constant_score":{"filter":{"bool":{"must":[{"terms":{"scopeKey":["flowNodeId1"],"boost":1.0}},{"terms":{"name":["varName1","varName2"],"boost":1.0}}],"adjust_pure_negative":true,"boost":1.0}},"boost":1.0}}}""");
   }
 }
