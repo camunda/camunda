@@ -9,26 +9,11 @@ package io.camunda.zeebe.logstreams.impl.flowcontrol;
 
 import com.netflix.concurrency.limits.limiter.AbstractLimiter;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
-import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
-import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
-import io.camunda.zeebe.protocol.record.intent.JobIntent;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import java.util.Optional;
-import java.util.Set;
 
 public final class RequestLimiter extends AbstractLimiter<Intent> {
 
-  private static final Set<? extends Intent> WHITE_LISTED_COMMANDS =
-      Set.of(
-          JobIntent.COMPLETE,
-          JobIntent.FAIL,
-          ProcessInstanceIntent.CANCEL,
-          DeploymentIntent.CREATE,
-          DeploymentIntent.DISTRIBUTE,
-          DeploymentDistributionIntent.COMPLETE,
-          CommandDistributionIntent.ACKNOWLEDGE);
   private final LogStreamMetrics metrics;
 
   private RequestLimiter(final CommandRateLimiterBuilder builder, final LogStreamMetrics metrics) {
@@ -40,7 +25,7 @@ public final class RequestLimiter extends AbstractLimiter<Intent> {
 
   @Override
   public Optional<Listener> acquire(final Intent intent) {
-    if (getInflight() >= getLimit() && !WHITE_LISTED_COMMANDS.contains(intent)) {
+    if (getInflight() >= getLimit() && !WhiteListedCommands.isWhitelisted(intent)) {
       return createRejectedListener();
     }
     final Listener listener = createListener();

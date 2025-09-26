@@ -128,22 +128,25 @@ public final class FlowControl implements AppendListener {
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
       final WriteContext context, final List<LogAppendEntryMetadata> batchMetadata) {
-    final Listener requestListener;
+    Listener requestListener = null;
+    var alwaysAllowed = false;
     switch (context) {
       case final Internal ignored -> {
         // Internal commands are always accepted for incident response and maintenance.
-        return Either.right(new InFlightEntry(metrics, batchMetadata, null));
+        alwaysAllowed = true;
       }
       case UserCommand(final var intent) -> {
+        alwaysAllowed = WhiteListedCommands.isWhitelisted(intent);
         requestListener = processingLimiter.acquire(intent).orElse(null);
         if (requestListener == null) {
           return Either.left(Rejection.RequestLimitExhausted);
         }
       }
-      default -> requestListener = null;
+      default -> {}
     }
 
-    if (writeRateLimiter != null && !writeRateLimiter.tryAcquire(batchMetadata.size())) {
+    if (writeRateLimiter != null
+        && (!writeRateLimiter.tryAcquire(batchMetadata.size()) && !alwaysAllowed)) {
       if (requestListener != null) {
         requestListener.onIgnore();
       }
