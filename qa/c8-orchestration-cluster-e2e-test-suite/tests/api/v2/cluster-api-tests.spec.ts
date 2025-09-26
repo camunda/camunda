@@ -30,8 +30,10 @@ test.describe('Cluster API Tests', () => {
     expect(result.brokers).toHaveLength(1);
     assertRequiredFields(result.brokers[0], brokerResponseFields);
     expect(result.brokers[0].partitions).toHaveLength(1);
-    assertRequiredFields(result.brokers[0].partitions[0]);
+    assertRequiredFields(
+      result.brokers[0].partitions[0],
       partitionsResponseFields,
+    );
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {
