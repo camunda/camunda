@@ -49,6 +49,12 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
 
+  private static ExporterConfiguration fromArgs(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaexporter", args)
+        .instantiate(ExporterConfiguration.class);
+  }
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -118,8 +124,7 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -253,8 +258,7 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -361,8 +365,8 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
+
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://wanted-url:4321");
     }
   }
