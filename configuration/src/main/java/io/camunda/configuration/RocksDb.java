@@ -7,34 +7,11 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.Properties;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 public class RocksDb {
-
-  private static final String PREFIX = "camunda.data.primary-storage.rocks-db";
-
-  private static final Set<String> LEGACY_ENABLE_STATISTICS_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.enableStatistics");
-  private static final Set<String> LEGACY_ACCESS_METRICS_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.accessMetrics");
-  private static final Set<String> LEGACY_MEMORY_LIMIT_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.memoryLimit");
-  private static final Set<String> LEGACY_MAX_OPEN_FILES_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.maxOpenFiles");
-  private static final Set<String> LEGACY_MAX_WRITE_BUFFER_NUMBER_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.maxWriteBufferNumber");
-  private static final Set<String> LEGACY_MIN_WRITE_BUFFER_NUMBER_TO_MERGE_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.minWriteBufferNumberToMerge");
-  private static final Set<String> LEGACY_IO_RATE_BYTES_PER_SECOND_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.ioRateBytesPerSecond");
-  private static final Set<String> LEGACY_DISABLE_WAL_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.disableWal");
-  private static final Set<String> LEGACY_ENABLE_SST_PARTITIONING_PROPERTIES =
-      Set.of("zeebe.broker.experimental.rocksdb.enableSstPartitioning");
 
   /**
    * Specify custom column family options overwriting Zeebe's own defaults. WARNING: This setting
@@ -124,12 +101,7 @@ public class RocksDb {
   }
 
   public boolean isStatisticsEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".statistics-enabled",
-        statisticsEnabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLE_STATISTICS_PROPERTIES);
+    return statisticsEnabled;
   }
 
   public void setStatisticsEnabled(final boolean statisticsEnabled) {
@@ -137,12 +109,7 @@ public class RocksDb {
   }
 
   public AccessMetricsKind getAccessMetrics() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".access-metrics",
-        accessMetrics,
-        AccessMetricsKind.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ACCESS_METRICS_PROPERTIES);
+    return accessMetrics;
   }
 
   public void setAccessMetrics(final AccessMetricsKind accessMetrics) {
@@ -150,12 +117,7 @@ public class RocksDb {
   }
 
   public DataSize getMemoryLimit() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".memory-limit",
-        memoryLimit,
-        DataSize.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MEMORY_LIMIT_PROPERTIES);
+    return memoryLimit;
   }
 
   public void setMemoryLimit(final DataSize memoryLimit) {
@@ -163,12 +125,7 @@ public class RocksDb {
   }
 
   public int getMaxOpenFiles() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-open-files",
-        maxOpenFiles,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MAX_OPEN_FILES_PROPERTIES);
+    return maxOpenFiles;
   }
 
   public void setMaxOpenFiles(final int maxOpenFiles) {
@@ -176,12 +133,7 @@ public class RocksDb {
   }
 
   public int getMaxWriteBufferNumber() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-write-buffer-number",
-        maxWriteBufferNumber,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MAX_WRITE_BUFFER_NUMBER_PROPERTIES);
+    return maxWriteBufferNumber;
   }
 
   public void setMaxWriteBufferNumber(final int maxWriteBufferNumber) {
@@ -189,12 +141,7 @@ public class RocksDb {
   }
 
   public int getMinWriteBufferNumberToMerge() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".min-write-buffer-number-to-merge",
-        minWriteBufferNumberToMerge,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MIN_WRITE_BUFFER_NUMBER_TO_MERGE_PROPERTIES);
+    return minWriteBufferNumberToMerge;
   }
 
   public void setMinWriteBufferNumberToMerge(final int minWriteBufferNumberToMerge) {
@@ -202,12 +149,7 @@ public class RocksDb {
   }
 
   public int getIoRateBytesPerSecond() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".io-rate-bytes-per-second",
-        ioRateBytesPerSecond,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_IO_RATE_BYTES_PER_SECOND_PROPERTIES);
+    return ioRateBytesPerSecond;
   }
 
   public void setIoRateBytesPerSecond(final int ioRateBytesPerSecond) {
@@ -215,12 +157,7 @@ public class RocksDb {
   }
 
   public boolean isWalDisabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".wal-disabled",
-        walDisabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_DISABLE_WAL_PROPERTIES);
+    return walDisabled;
   }
 
   public void setWalDisabled(final boolean walDisabled) {
@@ -228,12 +165,7 @@ public class RocksDb {
   }
 
   public boolean isSstPartitioningEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".sst-partitioning-enabled",
-        sstPartitioningEnabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLE_SST_PARTITIONING_PROPERTIES);
+    return sstPartitioningEnabled;
   }
 
   public void setSstPartitioningEnabled(final boolean sstPartitioningEnabled) {

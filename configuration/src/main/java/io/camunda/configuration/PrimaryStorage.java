@@ -7,18 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class PrimaryStorage {
-
-  private static final String PREFIX = "camunda.data.primary-storage";
-
-  private static final Set<String> LEGACY_DIRECTORY_PROPERTIES =
-      Set.of("zeebe.broker.data.directory");
-  private static final Set<String> LEGACY_RUNTIME_DIRECTORY_PROPERTIES =
-      Set.of("zeebe.broker.data.runtimeDirectory");
 
   /** Specify the directory in which data is stored. */
   private String directory = "data";
@@ -39,12 +30,7 @@ public class PrimaryStorage {
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
 
   public String getDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".directory",
-        directory,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_DIRECTORY_PROPERTIES);
+    return directory;
   }
 
   public void setDirectory(final String directory) {
@@ -52,12 +38,7 @@ public class PrimaryStorage {
   }
 
   public String getRuntimeDirectory() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".runtime-directory",
-        runtimeDirectory,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_RUNTIME_DIRECTORY_PROPERTIES);
+    return runtimeDirectory;
   }
 
   public void setRuntimeDirectory(final String runtimeDirectory) {

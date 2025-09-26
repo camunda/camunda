@@ -26,20 +26,20 @@ import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 
 @ActiveProfiles({"broker", "tasklist", "operate"})
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class,
-  TasklistPropertiesOverride.class,
-  OperatePropertiesOverride.class,
-  BrokerBasedPropertiesOverride.class,
-  SearchEngineConnectPropertiesOverride.class,
-  SearchEngineIndexPropertiesOverride.class,
-})
+@SpringBootTest(
+    classes = {
+      UnifiedConfiguration.class,
+      TasklistPropertiesOverride.class,
+      OperatePropertiesOverride.class,
+      BrokerBasedPropertiesOverride.class,
+      SearchEngineConnectPropertiesOverride.class,
+      SearchEngineIndexPropertiesOverride.class,
+    })
 public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
@@ -48,6 +48,12 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_PASSWORD = "testPassword";
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
+
+  private static ExporterConfiguration fromArgs(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaexporter", args)
+        .instantiate(ExporterConfiguration.class);
+  }
 
   @Nested
   @TestPropertySource(
@@ -118,8 +124,7 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -253,8 +258,7 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
       assertThat(exporterConfiguration.getConnect().getType()).isEqualTo(expectedType);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
@@ -366,8 +370,8 @@ public class SecondaryStorageElasticsearchTest {
       final Map<String, Object> args = camundaExporter.getArgs();
       assertThat(args).isNotNull();
 
-      final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      final ExporterConfiguration exporterConfiguration = fromArgs(args);
+
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://wanted-url:4321");
     }
   }

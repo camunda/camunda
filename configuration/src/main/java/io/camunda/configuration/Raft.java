@@ -15,7 +15,6 @@ import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.D
 import static io.camunda.zeebe.broker.system.configuration.ExperimentalRaftCfg.DEFAULT_SNAPSHOT_REQUEST_TIMEOUT;
 
 import java.time.Duration;
-import java.util.Set;
 import org.springframework.util.unit.DataSize;
 
 /**
@@ -23,35 +22,6 @@ import org.springframework.util.unit.DataSize;
  * Raft algorithm parameters including timing, elections, and log flushing.
  */
 public class Raft {
-  private static final String PREFIX = "camunda.cluster.raft";
-
-  private static final String LEGACY_HEARTBEAT_INTERVAL = "zeebe.broker.cluster.heartbeatInterval";
-  private static final String LEGACY_ELECTION_TIMEOUT = "zeebe.broker.cluster.electionTimeout";
-  private static final String LEGACY_PRIORITY_ELECTION_ENABLED =
-      "zeebe.broker.cluster.raft.enablePriorityElection";
-  private static final String LEGACY_FLUSH_ENABLED = "zeebe.broker.cluster.raft.flush.enabled";
-  private static final String LEGACY_FLUSH_DELAY = "zeebe.broker.cluster.raft.flush.delay";
-  private static final String LEGACY_MAX_APPENDS_PER_FOLLOWER =
-      "zeebe.broker.experimental.maxAppendsPerFollower";
-  private static final String LEGACY_MAX_APPEND_BATCH_SIZE =
-      "zeebe.broker.experimental.maxAppendBatchSize";
-  private static final String LEGACY_REQUEST_TIMEOUT =
-      "zeebe.broker.experimental.raft.requestTimeout";
-  private static final String LEGACY_SNAPSHOT_REQUEST_TIMEOUT =
-      "zeebe.broker.experimental.raft.snapshotRequestTimeout";
-  private static final String LEGACY_SNAPSHOT_CHUNK_SIZE =
-      "zeebe.broker.experimental.raft.snapshotChunkSize";
-  private static final String LEGACY_CONFIGURATION_CHANGE_TIMEOUT =
-      "zeebe.broker.experimental.raft.configurationChangeTimeout";
-  private static final String LEGACY_MAX_QUORUM_RESPONSE_TIMEOUT =
-      "zeebe.broker.experimental.raft.maxQuorumResponseTimeout";
-  private static final String LEGACY_MIN_STEP_DOWN_FAILURE_COUNT =
-      "zeebe.broker.experimental.raft.minStepDownFailureCount";
-  private static final String LEGACY_PREFER_SNAPSHOT_REPLICATION_THRESHOLD =
-      "zeebe.broker.experimental.raft.preferSnapshotReplicationThreshold";
-  private static final String LEGACY_PREALLOCATE_SEGMENT_FILES =
-      "zeebe.broker.experimental.raft.preallocateSegmentFiles";
-
   /**
    * The heartbeat interval for Raft. The leader sends a heartbeat to a follower every
    * heartbeatInterval. This is an advanced setting.
@@ -166,12 +136,7 @@ public class Raft {
   private boolean preallocateSegmentFiles = true;
 
   public Duration getHeartbeatInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".heartbeat-interval",
-        heartbeatInterval,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_HEARTBEAT_INTERVAL));
+    return heartbeatInterval;
   }
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
@@ -179,12 +144,7 @@ public class Raft {
   }
 
   public Duration getElectionTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".election-timeout",
-        electionTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_ELECTION_TIMEOUT));
+    return electionTimeout;
   }
 
   public void setElectionTimeout(final Duration electionTimeout) {
@@ -192,12 +152,7 @@ public class Raft {
   }
 
   public boolean isPriorityElectionEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".priority-election-enabled",
-        priorityElectionEnabled,
-        Boolean.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PRIORITY_ELECTION_ENABLED));
+    return priorityElectionEnabled;
   }
 
   public void setPriorityElectionEnabled(final boolean priorityElectionEnabled) {
@@ -205,12 +160,7 @@ public class Raft {
   }
 
   public boolean isFlushEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".flush-enabled",
-        flushEnabled,
-        Boolean.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_FLUSH_ENABLED));
+    return flushEnabled;
   }
 
   public void setFlushEnabled(final boolean flushEnabled) {
@@ -218,12 +168,7 @@ public class Raft {
   }
 
   public Duration getFlushDelay() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".flush-delay",
-        flushDelay,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_FLUSH_DELAY));
+    return flushDelay;
   }
 
   public void setFlushDelay(final Duration flushDelay) {
@@ -231,12 +176,7 @@ public class Raft {
   }
 
   public int getMaxAppendsPerFollower() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-appends-per-follower",
-        maxAppendsPerFollower,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_MAX_APPENDS_PER_FOLLOWER));
+    return maxAppendsPerFollower;
   }
 
   public void setMaxAppendsPerFollower(final int maxAppendsPerFollower) {
@@ -244,12 +184,7 @@ public class Raft {
   }
 
   public DataSize getMaxAppendBatchSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-append-batch-size",
-        maxAppendBatchSize,
-        DataSize.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_MAX_APPEND_BATCH_SIZE));
+    return maxAppendBatchSize;
   }
 
   public void setMaxAppendBatchSize(final DataSize maxAppendBatchSize) {
@@ -257,12 +192,7 @@ public class Raft {
   }
 
   public Duration getRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".request-timeout",
-        requestTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_REQUEST_TIMEOUT));
+    return requestTimeout;
   }
 
   public void setRequestTimeout(final Duration requestTimeout) {
@@ -270,12 +200,7 @@ public class Raft {
   }
 
   public Duration getSnapshotRequestTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".snapshot-request-timeout",
-        snapshotRequestTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_SNAPSHOT_REQUEST_TIMEOUT));
+    return snapshotRequestTimeout;
   }
 
   public void setSnapshotRequestTimeout(final Duration snapshotRequestTimeout) {
@@ -283,12 +208,7 @@ public class Raft {
   }
 
   public DataSize getSnapshotChunkSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".snapshot-chunk-size",
-        snapshotChunkSize,
-        DataSize.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_SNAPSHOT_CHUNK_SIZE));
+    return snapshotChunkSize;
   }
 
   public void setSnapshotChunkSize(final DataSize snapshotChunkSize) {
@@ -296,12 +216,7 @@ public class Raft {
   }
 
   public Duration getConfigurationChangeTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".configuration-change-timeout",
-        configurationChangeTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_CONFIGURATION_CHANGE_TIMEOUT));
+    return configurationChangeTimeout;
   }
 
   public void setConfigurationChangeTimeout(final Duration configurationChangeTimeout) {
@@ -309,12 +224,7 @@ public class Raft {
   }
 
   public Duration getMaxQuorumResponseTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-quorum-response-timeout",
-        maxQuorumResponseTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_MAX_QUORUM_RESPONSE_TIMEOUT));
+    return maxQuorumResponseTimeout;
   }
 
   public void setMaxQuorumResponseTimeout(final Duration maxQuorumResponseTimeout) {
@@ -322,12 +232,7 @@ public class Raft {
   }
 
   public int getMinStepDownFailureCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".min-step-down-failure-count",
-        minStepDownFailureCount,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_MIN_STEP_DOWN_FAILURE_COUNT));
+    return minStepDownFailureCount;
   }
 
   public void setMinStepDownFailureCount(final int minStepDownFailureCount) {
@@ -335,12 +240,7 @@ public class Raft {
   }
 
   public int getPreferSnapshotReplicationThreshold() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".prefer-snapshot-replication-threshold",
-        preferSnapshotReplicationThreshold,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PREFER_SNAPSHOT_REPLICATION_THRESHOLD));
+    return preferSnapshotReplicationThreshold;
   }
 
   public void setPreferSnapshotReplicationThreshold(final int preferSnapshotReplicationThreshold) {
@@ -348,12 +248,7 @@ public class Raft {
   }
 
   public boolean isPreallocateSegmentFiles() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".preallocate-segment-files",
-        preallocateSegmentFiles,
-        Boolean.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(LEGACY_PREALLOCATE_SEGMENT_FILES));
+    return preallocateSegmentFiles;
   }
 
   public void setPreallocateSegmentFiles(final boolean preallocateSegmentFiles) {

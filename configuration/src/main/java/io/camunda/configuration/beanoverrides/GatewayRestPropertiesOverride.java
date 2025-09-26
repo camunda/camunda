@@ -18,12 +18,10 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
 @EnableConfigurationProperties(LegacyGatewayRestProperties.class)
-@DependsOn("unifiedConfigurationHelper")
 public class GatewayRestPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
@@ -41,7 +39,6 @@ public class GatewayRestPropertiesOverride {
   public GatewayRestProperties gatewayRestProperties() {
     final GatewayRestProperties override = new GatewayRestProperties();
     BeanUtils.copyProperties(legacyGatewayRestProperties, override);
-
     populateFromProcessCache(override);
     populateFromExecutor(override);
 

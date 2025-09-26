@@ -23,14 +23,12 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(LegacyTasklistProperties.class)
 @PropertySource("classpath:tasklist-version.properties")
-@DependsOn("unifiedConfigurationHelper")
+@EnableConfigurationProperties(LegacyTasklistProperties.class)
 public class TasklistPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
@@ -48,7 +46,6 @@ public class TasklistPropertiesOverride {
   public TasklistProperties tasklistProperties() {
     final TasklistProperties override = new TasklistProperties();
     BeanUtils.copyProperties(legacyTasklistProperties, override);
-
     pouplateFromBackup(override);
 
     final SecondaryStorage database =
@@ -64,8 +61,7 @@ public class TasklistPropertiesOverride {
   }
 
   private void pouplateFromBackup(final TasklistProperties override) {
-    final Backup backup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withTasklistBackupProperties();
+    final Backup backup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
     backupProperties.setRepositoryName(backup.getRepositoryName());
   }

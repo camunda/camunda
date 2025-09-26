@@ -7,18 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
 import org.springframework.util.unit.DataSize;
 
 public class LogStream {
-  private static final String PREFIX = "camunda.data.primary-storage.log-stream";
-
-  private static final Set<String> LEGACY_INDEX_DENSITY_PROPERTIES =
-      Set.of("zeebe.broker.data.logIndexDensity");
-  private static final Set<String> LEGACY_SEGMENT_SIZE_PROPERTIES =
-      Set.of("zeebe.broker.data.logSegmentSize");
-
   /**
    * The density of the log index, which determines how frequently index entries are created in the
    * log. This value specifies the number of log entries between each index entry. A lower value
@@ -34,12 +25,7 @@ public class LogStream {
   private DataSize logSegmentSize = DataSize.ofMegabytes(128);
 
   public int getLogIndexDensity() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".log-index-density",
-        logIndexDensity,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_INDEX_DENSITY_PROPERTIES);
+    return logIndexDensity;
   }
 
   public void setLogIndexDensity(final int logIndexDensity) {
@@ -47,12 +33,7 @@ public class LogStream {
   }
 
   public DataSize getLogSegmentSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".log-segment-size",
-        logSegmentSize,
-        DataSize.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_SEGMENT_SIZE_PROPERTIES);
+    return logSegmentSize;
   }
 
   public void setLogSegmentSize(final DataSize logSegmentSize) {

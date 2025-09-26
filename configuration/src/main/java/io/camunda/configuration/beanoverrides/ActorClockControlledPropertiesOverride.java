@@ -11,11 +11,9 @@ import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.ActorClockControlledProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-@DependsOn("unifiedConfigurationHelper")
 public class ActorClockControlledPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;

@@ -8,36 +8,11 @@
 package io.camunda.configuration;
 
 import java.time.Duration;
-import java.util.Map;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.util.unit.DataSize;
 
 /** Network configuration for cluster communication. */
 public class Network {
-
-  private static final String PREFIX = "camunda.cluster.network";
-
-  private static final Map<String, String> LEGACY_GATEWAY_NETWORK_PROPERTIES =
-      Map.of(
-          "host", "zeebe.gateway.cluster.host",
-          "advertisedHost", "zeebe.gateway.cluster.advertisedHost",
-          "socketSendBuffer", "zeebe.gateway.cluster.socketSendBuffer",
-          "socketReceiveBuffer", "zeebe.gateway.cluster.socketReceiveBuffer",
-          "maxMessageSize", "zeebe.gateway.network.maxMessageSize");
-
-  private static final Map<String, String> LEGACY_BROKER_NETWORK_PROPERTIES =
-      Map.of(
-          "host", "zeebe.broker.network.host",
-          "advertisedHost", "zeebe.broker.network.advertisedHost",
-          "portOffset", "zeebe.broker.network.portOffset",
-          "maxMessageSize", "zeebe.broker.network.maxMessageSize",
-          "socketSendBuffer", "zeebe.broker.network.socketSendBuffer",
-          "socketReceiveBuffer", "zeebe.broker.network.socketReceiveBuffer",
-          "heartbeatTimeout", "zeebe.broker.network.heartbeatTimeout",
-          "heartbeatInterval", "zeebe.broker.network.heartbeatInterval");
-
-  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_NETWORK_PROPERTIES;
 
   /**
    * Controls the default host the broker should bind to. Can be overwritten on a per-binding basis
@@ -92,12 +67,7 @@ public class Network {
   @NestedConfigurationProperty private CommandApi commandApi = new CommandApi();
 
   public String getHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".host",
-        host,
-        String.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("host")));
+    return host;
   }
 
   public void setHost(final String host) {
@@ -105,12 +75,7 @@ public class Network {
   }
 
   public String getAdvertisedHost() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".advertised-host",
-        advertisedHost,
-        String.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("advertisedHost")));
+    return advertisedHost;
   }
 
   public void setAdvertisedHost(final String advertisedHost) {
@@ -118,12 +83,7 @@ public class Network {
   }
 
   public int getPortOffset() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".port-offset",
-        portOffset,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("portOffset")));
+    return portOffset;
   }
 
   public void setPortOffset(final int portOffset) {
@@ -131,12 +91,7 @@ public class Network {
   }
 
   public DataSize getMaxMessageSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".max-message-size",
-        maxMessageSize,
-        DataSize.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("maxMessageSize")));
+    return maxMessageSize;
   }
 
   public void setMaxMessageSize(final DataSize maxMessageSize) {
@@ -144,12 +99,7 @@ public class Network {
   }
 
   public DataSize getSocketSendBuffer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".socket-send-buffer",
-        socketSendBuffer,
-        DataSize.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("socketSendBuffer")));
+    return socketSendBuffer;
   }
 
   public void setSocketSendBuffer(final DataSize socketSendBuffer) {
@@ -157,12 +107,7 @@ public class Network {
   }
 
   public DataSize getSocketReceiveBuffer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".socket-receive-buffer",
-        socketReceiveBuffer,
-        DataSize.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("socketReceiveBuffer")));
+    return socketReceiveBuffer;
   }
 
   public void setSocketReceiveBuffer(final DataSize socketReceiveBuffer) {
@@ -170,12 +115,7 @@ public class Network {
   }
 
   public Duration getHeartbeatTimeout() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".heartbeat-timeout",
-        heartbeatTimeout,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("heartbeatTimeout")));
+    return heartbeatTimeout;
   }
 
   public void setHeartbeatTimeout(final Duration heartbeatTimeout) {
@@ -183,12 +123,7 @@ public class Network {
   }
 
   public Duration getHeartbeatInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".heartbeat-interval",
-        heartbeatInterval,
-        Duration.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("heartbeatInterval")));
+    return heartbeatInterval;
   }
 
   public void setHeartbeatInterval(final Duration heartbeatInterval) {
@@ -224,18 +159,6 @@ public class Network {
     copy.heartbeatInterval = heartbeatInterval;
     copy.internalApi = internalApi;
 
-    return copy;
-  }
-
-  public Network withBrokerNetworkProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_BROKER_NETWORK_PROPERTIES;
-    return copy;
-  }
-
-  public Network withGatewayNetworkProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_GATEWAY_NETWORK_PROPERTIES;
     return copy;
   }
 }

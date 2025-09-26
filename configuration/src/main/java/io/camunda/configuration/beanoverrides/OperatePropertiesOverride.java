@@ -23,14 +23,12 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 @Configuration
-@EnableConfigurationProperties(LegacyOperateProperties.class)
 @PropertySource("classpath:operate-version.properties")
-@DependsOn("unifiedConfigurationHelper")
+@EnableConfigurationProperties(LegacyOperateProperties.class)
 public class OperatePropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
@@ -48,8 +46,7 @@ public class OperatePropertiesOverride {
   public OperateProperties operateProperties() {
     final OperateProperties override = new OperateProperties();
     BeanUtils.copyProperties(legacyOperateProperties, override);
-
-    pouplateFromBackup(override);
+    populateFromBackup(override);
 
     final SecondaryStorage database =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
@@ -63,9 +60,8 @@ public class OperatePropertiesOverride {
     return override;
   }
 
-  private void pouplateFromBackup(final OperateProperties override) {
-    final Backup operateBackup =
-        unifiedConfiguration.getCamunda().getData().getBackup().withOperateBackupProperties();
+  private void populateFromBackup(final OperateProperties override) {
+    final Backup operateBackup = unifiedConfiguration.getCamunda().getData().getBackup();
     final BackupProperties backupProperties = override.getBackup();
     backupProperties.setRepositoryName(operateBackup.getRepositoryName());
     backupProperties.setSnapshotTimeout(operateBackup.getSnapshotTimeout());
