@@ -464,6 +464,9 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.password", database.getPassword());
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
+
+    setArg(
+        args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
   }
 
   @SuppressWarnings("unchecked")
