@@ -254,7 +254,14 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .endEvent("test")
             .done(),
         singletonList(expect(MessageEventDefinition.class, "Must reference a message"))
-      }
+      },
+      {
+        getProcessWithMultipleStartEventsWithSameMessageName(),
+        singletonList(
+            expect(
+                "process",
+                "Multiple message event definitions with the same name 'messageName' are not allowed."))
+      },
     };
   }
 
@@ -282,6 +289,14 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
     final String messageName = "messageName";
     process.startEvent("start1").message(m -> m.id("start-message").name(messageName)).endEvent();
     process.startEvent("start2").message(messageName).endEvent();
+    return process.done();
+  }
+
+  private static BpmnModelInstance getProcessWithMultipleStartEventsWithSameMessageName() {
+    final ProcessBuilder process = Bpmn.createExecutableProcess("process");
+    final String messageName = "messageName";
+    process.startEvent("start1").message(m -> m.id("start1-message").name(messageName)).endEvent();
+    process.startEvent("start2").message(m -> m.id("start2-message").name(messageName)).endEvent();
     return process.done();
   }
 

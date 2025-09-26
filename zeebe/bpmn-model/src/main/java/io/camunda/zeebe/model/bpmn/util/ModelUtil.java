@@ -40,6 +40,7 @@ import io.camunda.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,6 +66,39 @@ public class ModelUtil {
       ESCALATION_BOUNDARY_EVENT_SUPPORTED_ACTIVITIES =
           Arrays.asList(SubProcess.class, CallActivity.class);
 
+<<<<<<< HEAD
+=======
+  public static <T extends BpmnModelElementInstance> Collection<T> getExtensionElementsByType(
+      final BaseElement element, final Class<T> type) {
+    final ExtensionElements extensionElements = element.getExtensionElements();
+    if (extensionElements == null) {
+      return Collections.emptyList();
+    }
+    return extensionElements.getChildElementsByType(type);
+  }
+
+  public static void validateExecutionListenersDefinitionForElement(
+      final BaseElement element,
+      final ValidationResultCollector validationResultCollector,
+      final Consumer<Collection<ZeebeExecutionListener>> executionListenersSupportValidation) {
+    final Collection<ZeebeExecutionListeners> executionListeners =
+        ModelUtil.getExtensionElementsByType(element, ZeebeExecutionListeners.class);
+
+    if (!executionListeners.isEmpty()) {
+      if (executionListeners.size() == 1) {
+        executionListeners.stream()
+            .findFirst()
+            .ifPresent(
+                listeners ->
+                    executionListenersSupportValidation.accept(listeners.getExecutionListeners()));
+      } else {
+        validationResultCollector.addError(
+            0, "Element must not have more than one execution listeners definition");
+      }
+    }
+  }
+
+>>>>>>> 9c606fe8 (feat: add validation for message start event)
   public static List<EventDefinition> getEventDefinitionsForBoundaryEvents(final Activity element) {
     return element.getBoundaryEvents().stream()
         .flatMap(event -> event.getEventDefinitions().stream())
@@ -85,6 +119,22 @@ public class ModelUtil {
     return element.getChildElementsByType(StartEvent.class).stream()
         .flatMap(i -> i.getEventDefinitions().stream())
         .filter(e -> e instanceof SignalEventDefinition)
+        .collect(Collectors.toList());
+  }
+
+  public static List<EventDefinition> getEventDefinitionsForMessageStartEvents(
+      final ModelElementInstance element) {
+    // Only validates that there are no duplicate message names in message definitions that refer to
+    // different messages, other cases are already handled by MessageValidator.
+    final Set<Message> referredMessages = new HashSet<>();
+    return element.getChildElementsByType(StartEvent.class).stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .filter(MessageEventDefinition.class::isInstance)
+        .filter(
+            definition -> {
+              final Message message = ((MessageEventDefinition) definition).getMessage();
+              return referredMessages.add(message);
+            })
         .collect(Collectors.toList());
   }
 
@@ -129,6 +179,14 @@ public class ModelUtil {
     verifyNoDuplicatedEventDefinition(definitions, errorCollector);
   }
 
+  public static void verifyNoDuplicateMessageStartEvents(
+      final ModelElementInstance element, final Consumer<String> errorCollector) {
+
+    final List<EventDefinition> definitions = getEventDefinitionsForMessageStartEvents(element);
+
+    verifyNoDuplicatedEventDefinition(definitions, errorCollector);
+  }
+
   public static void verifyLinkIntermediateEvents(
       final ModelElementInstance element, final Consumer<String> errorCollector) {
 
@@ -153,7 +211,7 @@ public class ModelUtil {
   }
 
   private static Map<BpmnModelElementInstance, Set<String>> groupEventsByScope(
-      List<EventDefinition> events) {
+      final List<EventDefinition> events) {
     return getEventDefinition(events, LinkEventDefinition.class)
         .filter(def -> def.getName() != null && !def.getName().isEmpty())
         .collect(
@@ -168,7 +226,7 @@ public class ModelUtil {
       final Consumer<String> errorCollector) {
     throwEventsGroupByScope.forEach(
         (scope, items) -> {
-          for (String item : items) {
+          for (final String item : items) {
             if (!catchEventsGroupByScope
                 .getOrDefault(scope, Collections.emptySet())
                 .contains(item)) {
