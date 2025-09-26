@@ -76,9 +76,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
         {batchOperationType === 'MIGRATE_PROCESS_INSTANCE' && (
           <MigrateAlt size={16} data-testid="operation-migrate-icon" />
         )}
-        {(batchOperationType === 'DELETE_PROCESS_INSTANCE' ||
-          batchOperationType === 'DELETE_PROCESS_DEFINITION' ||
-          batchOperationType === 'DELETE_DECISION_DEFINITION') && (
+        {[
+          'DELETE_PROCESS_INSTANCE',
+          'DELETE_PROCESS_DEFINITION',
+          'DELETE_DECISION_DEFINITION',
+        ].includes(batchOperationType) && (
           <TrashCan size={16} data-testid="operation-delete-icon" />
         )}
       </Header>
