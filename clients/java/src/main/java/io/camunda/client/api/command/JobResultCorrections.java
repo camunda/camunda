@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 public class JobResultCorrections {
@@ -43,8 +44,18 @@ public class JobResultCorrections {
    * @param dueDate due date of the task
    * @return this corrections
    */
-  public JobResultCorrections dueDate(final String dueDate) {
-    this.dueDate = dueDate;
+  public JobResultCorrections dueDate(final OffsetDateTime dueDate) {
+    this.dueDate = dueDate != null ? dueDate.toString() : null;
+    return this;
+  }
+
+  /**
+   * Clear the due date in the user task.
+   *
+   * @return this corrections
+   */
+  public JobResultCorrections clearDueDate() {
+    dueDate = "";
     return this;
   }
 
@@ -54,8 +65,18 @@ public class JobResultCorrections {
    * @param followUpDate follow up date of the task
    * @return this corrections
    */
-  public JobResultCorrections followUpDate(final String followUpDate) {
-    this.followUpDate = followUpDate;
+  public JobResultCorrections followUpDate(final OffsetDateTime followUpDate) {
+    this.followUpDate = followUpDate != null ? followUpDate.toString() : null;
+    return this;
+  }
+
+  /**
+   * Clear the follow up date in the user task.
+   *
+   * @return this corrections
+   */
+  public JobResultCorrections clearFollowUpDate() {
+    followUpDate = "";
     return this;
   }
 
