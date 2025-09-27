@@ -245,6 +245,7 @@ public final class SearchQueryResponseMapper {
   private static ProcessInstanceSequenceFlowResult toProcessInstanceSequenceFlowResult(
       final SequenceFlowEntity result) {
     return new ProcessInstanceSequenceFlowResult()
+        .sequenceFlowId(result.sequenceFlowId())
         .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionId(result.processDefinitionId())
