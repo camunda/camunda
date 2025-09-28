@@ -31,7 +31,7 @@ import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReaderImpl;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -42,6 +42,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
@@ -175,8 +176,8 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
     final CamundaAssertJsonMapper jsonMapper = createJsonMapper();
-    final BpmnExampleDataReaderImpl exampleDataReader =
-        new BpmnExampleDataReaderImpl(client, jsonMapper);
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior, jsonMapper);
 
     return new JobWorkerMockBuilderImpl(jobType, client, exampleDataReader);
   }
@@ -218,10 +219,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
 
-    final BpmnExampleDataReaderImpl exampleDataReader =
-        new BpmnExampleDataReaderImpl(client, createJsonMapper());
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior, createJsonMapper());
 
-    final Map<String, Object> exampleDataVariables =
+    final String exampleDataVariables =
         exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
 
     LOGGER.debug(
@@ -304,12 +305,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector) {
     final CamundaClient client = createClient();
-    final BpmnExampleDataReaderImpl exampleDataReader =
-        new BpmnExampleDataReaderImpl(client, createJsonMapper());
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior, createJsonMapper());
 
     final UserTask userTask = awaitUserTask(userTaskSelector, client);
 
-    final Map<String, Object> exampleDataVariables =
+    final String exampleData =
         exampleDataReader.readExampleData(
             userTask.getProcessDefinitionKey(), userTask.getElementId());
 
@@ -317,11 +318,11 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         "Mock: Complete user task [{}, userTaskKey: '{}'] with example data {} ",
         userTaskSelector.describe(),
         userTask.getUserTaskKey(),
-        exampleDataVariables);
+        exampleData);
 
     client
         .newCompleteUserTaskCommand(userTask.getUserTaskKey())
-        .variables(exampleDataVariables)
+        .variables(exampleData)
         .send()
         .join();
   }
@@ -372,16 +373,19 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final AtomicReference<UserTask> userTask = new AtomicReference<>();
     awaitBehavior.untilAsserted(
         () -> {
-          final Optional<UserTask> maybeUserTask =
+          final Collection<UserTask> allUserTasks =
+              client.newUserTaskSearchRequest().send().join().items();
+
+          final Collection<UserTask> userTasks =
               client
                   .newUserTaskSearchRequest()
                   .filter(userTaskSelector::applyFilter)
                   .send()
                   .join()
-                  .items()
-                  .stream()
-                  .filter(userTaskSelector::test)
-                  .findFirst();
+                  .items();
+
+          final Optional<UserTask> maybeUserTask =
+              userTasks.stream().filter(userTaskSelector::test).findFirst();
 
           assertThat(maybeUserTask)
               .withFailMessage(

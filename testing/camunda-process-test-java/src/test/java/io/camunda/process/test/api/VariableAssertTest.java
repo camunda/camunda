@@ -21,14 +21,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ElementInstance;
 import io.camunda.client.api.search.response.Variable;
-import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.api.assertions.ElementSelectors;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.process.test.utils.ElementInstanceBuilder;
@@ -64,9 +61,6 @@ public class VariableAssertTest {
     CONTEXT_VARIABLE_VALUE.put("a", 1);
     CONTEXT_VARIABLE_VALUE.put("b", 2);
   }
-
-  private final CamundaAssertJsonMapper jsonMapper =
-      new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
 
   @Mock private CamundaDataSource camundaDataSource;
   @Mock private ProcessInstanceEvent processInstanceEvent;

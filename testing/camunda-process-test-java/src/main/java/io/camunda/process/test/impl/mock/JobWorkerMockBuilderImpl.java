@@ -34,14 +34,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   private final String jobType;
   private final CamundaClient client;
-  private final BpmnExampleDataReaderImpl exampleDataReader;
+  private final BpmnExampleDataReader exampleDataReader;
 
   private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
 
   public JobWorkerMockBuilderImpl(
       final String jobType,
       final CamundaClient client,
-      final BpmnExampleDataReaderImpl exampleDataReader) {
+      final BpmnExampleDataReader exampleDataReader) {
 
     this.jobType = jobType;
     this.client = client;
@@ -73,7 +73,7 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
         (jobClient, job) -> {
           final String logMessagePrefix = this.logMessagePrefix.apply(ACTION_COMPLETE_JOB, job);
 
-          final Map<String, Object> exampleDataVariables =
+          final String exampleDataVariables =
               exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
 
           LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);

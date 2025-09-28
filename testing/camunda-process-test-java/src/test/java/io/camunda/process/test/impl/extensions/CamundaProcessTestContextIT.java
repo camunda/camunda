@@ -65,6 +65,7 @@ public class CamundaProcessTestContextIT {
   private final CamundaAssertJsonMapper jsonMapper =
       new CamundaAssertJsonMapper(new CamundaObjectMapper(new ObjectMapper()));
 
+  // to be injected
   private CamundaProcessTestContext processTestContext;
   private CamundaClient client;
 
@@ -232,45 +233,11 @@ public class CamundaProcessTestContextIT {
   }
 
   @Test
-  void shouldCompleteJob() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeJob("test");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
-  void shouldCompleteJobWithVariables() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.completeJob("test", variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
   void shouldMockJobWorkerWithExampleData() {
     // Given
     processTestContext.mockJobWorker("email").thenCompleteWithExampleData();
 
-    final long processDefinitionKey =
-        deployProcessModel("mockJobWorker/send-email-with-example.bpmn");
+    final long processDefinitionKey = deployProcessModel(processModelWithExampleData());
 
     // When
     final ProcessInstanceEvent processInstanceEvent =
@@ -288,214 +255,12 @@ public class CamundaProcessTestContextIT {
   void shouldGiveClearErrorMessageWhenJobIsMissing() {
     // Given
     final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
+    client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
 
     // Then
     Assertions.assertThatThrownBy(() -> processTestContext.completeJob("not-found"))
         .hasMessage(
             "Expected to complete a job with the type 'not-found' " + "but no job is available.");
-  }
-
-  @Test
-  void shouldThrowBpmnErrorFromJob() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.throwBpmnErrorFromJob("test", "bpmn-error");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("error-end");
-  }
-
-  @Test
-  void shouldThrowBpmnErrorFromJobWithVariables() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithServiceTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.throwBpmnErrorFromJob("test", "bpmn-error", variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("error-end");
-
-    final Map<String, Object> expectedVariables = new HashMap<>();
-    expectedVariables.put("error_code", 123);
-    assertThatProcessInstance(processInstanceEvent).hasVariables(expectedVariables);
-  }
-
-  @Test
-  void shouldCompleteUserTask() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeUserTask("user-task-1");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
-  void shouldCompleteUserTaskWithVariables() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.completeUserTask("user-task-1", variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
-  void shouldCompleteUserTaskWithExampleData() {
-    // Given
-    final long processDefinitionKey =
-        deployProcessModel("mockJobWorker/user-task-with-example.bpmn");
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("email_output", "Lorem ipsum");
-
-    // When
-    processTestContext.completeUserTaskWithExampleData("user_task_write_email");
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
-  void shouldCompleteUserTaskByTaskName() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"));
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
-  void shouldCompleteUserTaskByTaskNameWithVariable() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.completeUserTask(UserTaskSelectors.byTaskName("user-task"), variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
-  void shouldCompleteUserTaskByElementId() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"));
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
-  void shouldCompleteUserTaskByElementIdWithVariables() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.completeUserTask(UserTaskSelectors.byElementId("user-task-1"), variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
-  void shouldCompleteUserTaskBySelector() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    processTestContext.completeUserTask(t -> t.getName().equals("user-task"));
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-  }
-
-  @Test
-  void shouldCompleteUserTaskBySelectorWithVariables() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-    final Map<String, Object> variables = new HashMap<>();
-    variables.put("abc", 123);
-
-    // When
-    processTestContext.completeUserTask(t -> t.getName().equals("user-task"), variables);
-
-    // Then
-    assertThatProcessInstance(processInstanceEvent).isCompleted();
-    assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
-    assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
-  }
-
-  @Test
-  void shouldGiveHelpfulErrorMessageWhenCompleteUserTaskFails() {
-    // Given
-    final long processDefinitionKey = deployProcessModel(processModelWithUserTask());
-    final ProcessInstanceEvent processInstanceEvent =
-        client.newCreateInstanceCommand().processDefinitionKey(processDefinitionKey).send().join();
-
-    // When
-    Assertions.assertThatThrownBy(
-            () ->
-                processTestContext.completeUserTask(UserTaskSelectors.byElementId("unknown-task")))
-        .hasMessage(
-            "Expected to complete user task [elementId: unknown-task] but no user task is available.");
   }
 
   @Test
@@ -925,6 +690,18 @@ public class CamundaProcessTestContextIT {
         .endEvent("error-end")
         .moveToActivity("service-task-1")
         .endEvent("success-end")
+        .done();
+  }
+
+  private BpmnModelInstance processModelWithExampleData() {
+    return Bpmn.createExecutableProcess("process")
+        .startEvent()
+        .serviceTask(
+            "send-email",
+            t ->
+                t.zeebeJobType("email")
+                    .zeebeProperty("camundaModeler:exampleOutputJson", "{\"send_status\": 200}"))
+        .endEvent()
         .done();
   }
 

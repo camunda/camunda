@@ -17,8 +17,8 @@ package io.camunda.process.test.api.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
-import io.camunda.process.test.api.mock.BpmnExampleDataReader.BpmnExampleDataReadException;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.FailedToParseBpmnModelException;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.InvalidExampleDataJsonException;
 import java.util.List;
 import java.util.Map;
 
@@ -44,11 +44,11 @@ public interface JobWorkerMockBuilder {
   JobWorkerMock thenComplete(final Map<String, Object> variables);
 
   /**
-   * Configures the mock worker to complete jobs variables extracted from the BPMN model's example
-   * data.
+   * Configures the mock worker to complete jobs with variables from the example data property of
+   * the related BPMN elements. If no property is defined, it completes the job without variables.
    *
-   * @throws BpmnExampleDataReadException if no example data was found
-   * @throws JsonMappingException if the example data isn't valid JSON.
+   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON.
+   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
    */
   JobWorkerMock thenCompleteWithExampleData();
 

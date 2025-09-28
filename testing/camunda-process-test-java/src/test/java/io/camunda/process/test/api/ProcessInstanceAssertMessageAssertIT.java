@@ -107,7 +107,7 @@ public class ProcessInstanceAssertMessageAssertIT {
 
     // then all messages are correlated
     CamundaAssert.assertThatProcessInstance(processInstance)
-        .isActive()
+        .isCompleted()
         .hasVariable("eventId", "1")
         .hasCorrelatedMessage("message_awaiting")
         .hasCorrelatedMessage("message_await_before_parallel")

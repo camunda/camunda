@@ -18,9 +18,10 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
-import io.camunda.process.test.api.mock.BpmnExampleDataReader.BpmnExampleDataReadException;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper.JsonMappingException;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.FailedToParseBpmnModelException;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.InvalidExampleDataJsonException;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.NoSuchBpmnElementException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -144,12 +145,12 @@ public interface CamundaProcessTestContext {
   void completeJob(final String jobType);
 
   /**
-   * Completes a job of the specified type with variables extracted from the BPMN model's example
-   * data.
+   * Completes a job of the specified type with the variables from the example data property of the
+   * related BPMN element. If no property is defined, it completes the job without variables.
    *
    * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
-   * @throws BpmnExampleDataReadException if no example data was found
-   * @throws JsonMappingException if the example data isn't valid JSON.
+   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
+   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
    */
   void completeJobWithExampleData(final String jobType);
 
@@ -213,22 +214,26 @@ public interface CamundaProcessTestContext {
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
 
   /**
-   * Completes a user task with the given BPMN element ID with variables extracted from the BPMN
-   * model's example data.
+   * Completes a user task with the given element selector with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the user task
+   * without variables.
    *
    * @param elementId the elementId of the user task and its associated example data
-   * @throws BpmnExampleDataReadException if no example data was found
-   * @throws JsonMappingException if the example data isn't valid JSON.
+   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
+   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
+   * @throws NoSuchBpmnElementException if no element exists with the given elementId
    */
   void completeUserTaskWithExampleData(final String elementId);
 
   /**
-   * Completes a user task that matches the specified selector with variables extracted from the
-   * BPMN model's example data
+   * Completes a user task with the given element selector with the variables from the example data
+   * property of the related BPMN element. If no property is defined, it completes the user task
+   * without variables.
    *
    * @param userTaskSelector the selector to identify the user task to complete
-   * @throws BpmnExampleDataReadException if no example data was found
-   * @throws JsonMappingException if the example data isn't valid JSON.
+   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
+   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
+   * @throws NoSuchBpmnElementException if no element corresponding to the selector was found
    */
   void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
 

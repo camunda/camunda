@@ -70,6 +70,8 @@ public class ZeebeConstants {
   public static final String ATTRIBUTE_RESOURCE_TYPE = "resourceType";
   public static final String ATTRIBUTE_LINK_NAME = "linkName";
 
+  public static final String ATTRIBUTE_EXAMPLE_DATA = "camundaModeler:exampleOutputJson";
+
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
