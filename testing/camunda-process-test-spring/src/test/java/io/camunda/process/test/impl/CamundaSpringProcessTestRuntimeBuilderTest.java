@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.spring.properties.CamundaClientAuthProperties;
 import io.camunda.client.spring.properties.CamundaClientCloudProperties;
@@ -41,9 +42,18 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.util.unit.DataSize;
 
 public class CamundaSpringProcessTestRuntimeBuilderTest {
+
+  private CamundaClientProperties camundaClientProperties;
+
+  @BeforeEach
+  public void setup() {
+    camundaClientProperties = new CamundaClientProperties();
+  }
 
   @Test
   void shouldBuildManagedRuntimeByDefault() {
@@ -75,6 +85,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
+    runtimeConfiguration.setCamundaClientProperties(camundaClientProperties);
 
     final Map<String, String> camundaEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
@@ -87,6 +98,13 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
     runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
+    runtimeConfiguration.getClientProperties().setTenantId("customTenantId");
+    runtimeConfiguration.getClientProperties().setRequestTimeout(Duration.ofSeconds(60));
+    runtimeConfiguration.getClientProperties().setRequestTimeoutOffset(Duration.ofSeconds(120));
+    runtimeConfiguration.getClientProperties().setKeepAlive(Duration.ofSeconds(50));
+    runtimeConfiguration.getClientProperties().setMaxMessageSize(DataSize.ofMegabytes(100));
+    runtimeConfiguration.getClientProperties().setMaxMetadataSize(DataSize.ofMegabytes(90));
+    runtimeConfiguration.getClientProperties().setExecutionThreads(200);
 
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
@@ -98,6 +116,16 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.getCamundaExposedPorts()).isEqualTo(camundaExposedPorts);
     assertThat(runtimeBuilder.getCamundaLoggerName()).isEqualTo("io.camunda.custom.logger.name");
     assertThat(runtimeBuilder.getConnectorsLoggerName()).isEqualTo("io.camunda.custom.logger.name");
+
+    final CamundaClientBuilderImpl cbf =
+        (CamundaClientBuilderImpl) runtimeBuilder.getConfiguredCamundaClientBuilderFactory().get();
+
+    assertThat(cbf.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(60));
+    assertThat(cbf.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(120));
+    assertThat(cbf.getKeepAlive()).isEqualTo(Duration.ofSeconds(50));
+    assertThat(cbf.getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(100).toBytes());
+    assertThat(cbf.getMaxMetadataSize()).isEqualTo(DataSize.ofMegabytes(90).toBytes());
+    assertThat(cbf.getNumJobWorkerExecutionThreads()).isEqualTo(200);
   }
 
   @Test
@@ -154,7 +182,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS);
 
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
+        runtimeBuilder.getConfiguredCamundaClientBuilderFactory();
     final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
     final CamundaClientConfiguration configuration =
         getCamundaClientConfiguration(remoteClientBuilder);
@@ -203,7 +231,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(remoteConnectorsRestApiAddress);
 
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
+        runtimeBuilder.getConfiguredCamundaClientBuilderFactory();
     final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
 
     final CamundaClientConfiguration configuration =
@@ -240,7 +268,7 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // then
     final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-        runtimeBuilder.getRemoteCamundaClientBuilderFactory();
+        runtimeBuilder.getConfiguredCamundaClientBuilderFactory();
     final CamundaClientBuilder remoteClientBuilder = remoteCamundaClientBuilderFactory.get();
 
     final CamundaClientConfiguration configuration =

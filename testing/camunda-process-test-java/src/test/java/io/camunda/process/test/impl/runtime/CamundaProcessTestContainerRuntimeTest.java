@@ -234,4 +234,16 @@ public class CamundaProcessTestContainerRuntimeTest {
     verify(connectorsContainer).withEnv(expectedConnectorSecrets);
     verify(connectorsContainer).withLogConsumer(any());
   }
+
+  @Test
+  void shouldConfigureMultiTenancy() {
+    // when
+    CamundaProcessTestContainerRuntime.newBuilder()
+        .withContainerFactory(containerFactory)
+        .withMultiTenancyEnabled(true)
+        .build();
+
+    // then
+    verify(camundaContainer).withMultiTenancy();
+  }
 }

@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
@@ -496,14 +497,15 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Configure the connection to the remote runtime using the given client builder.
+   * Override the Camunda Client runtime builder's properties after initial configuration values
+   * have been set.
    *
-   * @param camundaClientBuilderFactory the client builder to configure the connection
+   * @param camundaClientBuilderConfigurer consumer that modifies the client builder's configuration
    * @return the extension builder
    */
-  public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
-      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
-    runtimeBuilder.withRemoteCamundaClientBuilderFactory(camundaClientBuilderFactory);
+  public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> camundaClientBuilderConfigurer) {
+    runtimeBuilder.withCamundaClientOverrides(camundaClientBuilderConfigurer);
     return this;
   }
 

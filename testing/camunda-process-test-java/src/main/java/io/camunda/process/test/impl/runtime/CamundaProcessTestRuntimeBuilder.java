@@ -15,14 +15,18 @@
  */
 package io.camunda.process.test.impl.runtime;
 
+import io.camunda.client.CamundaClientBuilder;
+import io.camunda.client.CredentialsProvider;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,9 +76,6 @@ public class CamundaProcessTestRuntimeBuilder {
   private CamundaProcessTestRuntimeMode runtimeMode =
       CamundaProcessTestRuntimeDefaults.RUNTIME_MODE;
 
-  private CamundaClientBuilderFactory remoteCamundaClientBuilderFactory =
-      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
-
   private URI remoteCamundaMonitoringApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
   private URI remoteConnectorsRestApiAddress =
@@ -87,6 +88,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   private List<String> coverageExcludedProcesses =
       CamundaProcessTestRuntimeDefaults.COVERAGE_EXCLUDED_PROCESSES;
+
+  private CamundaClientBuilderFactory camundaClientBuilderFactory =
+      CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
+  private Consumer<CamundaClientBuilder> camundaClientConfigurer = (clientBuilder) -> {};
 
   // ============ For testing =================
 
@@ -215,12 +220,6 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withRemoteCamundaClientBuilderFactory(
-      final CamundaClientBuilderFactory remoteCamundaClientBuilderFactory) {
-    this.remoteCamundaClientBuilderFactory = remoteCamundaClientBuilderFactory;
-    return this;
-  }
-
   public CamundaProcessTestRuntimeBuilder withRemoteCamundaMonitoringApiAddress(
       final URI remoteCamundaMonitoringApiAddress) {
     this.remoteCamundaMonitoringApiAddress = remoteCamundaMonitoringApiAddress;
@@ -235,6 +234,19 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public CamundaProcessTestRuntimeBuilder withMultiTenancyEnabled(final boolean enabled) {
     isMultiTenancyEnabled = enabled;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory clientFactory) {
+    camundaClientBuilderFactory = clientFactory;
+    return this;
+  }
+
+  public CamundaProcessTestRuntimeBuilder withCamundaClientOverrides(
+      final Consumer<CamundaClientBuilder> clientConfigurerFn) {
+
+    camundaClientConfigurer = clientConfigurerFn;
     return this;
   }
 
@@ -342,10 +354,6 @@ public class CamundaProcessTestRuntimeBuilder {
     return runtimeMode;
   }
 
-  public CamundaClientBuilderFactory getRemoteCamundaClientBuilderFactory() {
-    return remoteCamundaClientBuilderFactory;
-  }
-
   public URI getRemoteCamundaMonitoringApiAddress() {
     return remoteCamundaMonitoringApiAddress;
   }
@@ -360,5 +368,22 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public List<String> getCoverageExcludedProcesses() {
     return coverageExcludedProcesses;
+  }
+
+  public CamundaClientBuilderFactory getConfiguredCamundaClientBuilderFactory() {
+    return () -> {
+      final CamundaClientBuilder clientBuilder = camundaClientBuilderFactory.get();
+
+      if (isMultiTenancyEnabled && runtimeMode == CamundaProcessTestRuntimeMode.MANAGED) {
+        clientBuilder.credentialsProvider(
+            CredentialsProvider.newBasicAuthCredentialsProviderBuilder()
+                .username(MultiTenancyConfiguration.MULTITENANCY_USER_USERNAME)
+                .password(MultiTenancyConfiguration.MULTITENANCY_USER_PASSWORD)
+                .build());
+      }
+
+      camundaClientConfigurer.accept(clientBuilder);
+      return clientBuilder;
+    };
   }
 }

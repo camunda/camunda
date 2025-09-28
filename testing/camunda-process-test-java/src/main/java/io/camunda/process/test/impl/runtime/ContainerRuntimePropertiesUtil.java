@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
@@ -208,7 +209,15 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+    switch (runtimeMode) {
+      case MANAGED:
+        return CamundaClient::newClientBuilder;
+      case REMOTE:
+        return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+      default:
+        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
+        return CamundaClient::newClientBuilder;
+    }
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {

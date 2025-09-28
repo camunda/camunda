@@ -15,12 +15,14 @@
  */
 package io.camunda.process.test.impl.configuration;
 
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 import org.springframework.context.annotation.Bean;
@@ -30,6 +32,8 @@ import org.springframework.context.annotation.Primary;
 @Configuration
 @ConfigurationProperties(prefix = "camunda.process-test")
 public class CamundaProcessTestRuntimeConfiguration {
+
+  @Autowired private CamundaClientProperties camundaClientProperties;
 
   private String camundaDockerImageName =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME;
@@ -232,5 +236,13 @@ public class CamundaProcessTestRuntimeConfiguration {
 
   public void setCoverage(final CoverageReportConfiguration coverage) {
     this.coverage = coverage;
+  }
+
+  public CamundaClientProperties getClientProperties() {
+    return camundaClientProperties;
+  }
+
+  public void setCamundaClientProperties(final CamundaClientProperties camundaClientProperties) {
+    this.camundaClientProperties = camundaClientProperties;
   }
 }

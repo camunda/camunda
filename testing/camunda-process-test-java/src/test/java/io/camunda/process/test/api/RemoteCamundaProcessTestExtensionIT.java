@@ -89,9 +89,9 @@ public class RemoteCamundaProcessTestExtensionIT {
     @Override
     public void beforeAll(final ExtensionContext context) {
       EXTENSION
-          .withRemoteCamundaClientBuilderFactory(
-              () ->
-                  CamundaClient.newClientBuilder()
+          .withCamundaClientBuilderOverrides(
+              clientBuilder ->
+                  clientBuilder
                       .restAddress(REMOTE_CAMUNDA_CONTAINER.getRestApiAddress())
                       .grpcAddress(REMOTE_CAMUNDA_CONTAINER.getGrpcApiAddress()))
           .withRemoteCamundaMonitoringApiAddress(
