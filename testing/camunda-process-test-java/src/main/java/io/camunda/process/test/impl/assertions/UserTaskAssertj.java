@@ -22,6 +22,7 @@ import io.camunda.client.api.search.response.UserTask;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -132,7 +133,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   @Override
-  public UserTaskAssert hasDueDate(final String dueDate) {
+  public UserTaskAssert hasDueDate(final OffsetDateTime dueDate) {
     awaitUserTask(
         userTask ->
             assertThat(userTask.getDueDate())
@@ -145,7 +146,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   @Override
-  public UserTaskAssert hasCompletionDate(final String completionDate) {
+  public UserTaskAssert hasCompletionDate(final OffsetDateTime completionDate) {
     awaitUserTask(
         userTask ->
             assertThat(userTask.getCompletionDate())
@@ -158,7 +159,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   @Override
-  public UserTaskAssert hasFollowUpDate(final String followUpDate) {
+  public UserTaskAssert hasFollowUpDate(final OffsetDateTime followUpDate) {
     awaitUserTask(
         userTask ->
             assertThat(userTask.getFollowUpDate())
@@ -171,7 +172,7 @@ public class UserTaskAssertj extends AbstractAssert<UserTaskAssertj, UserTaskSel
   }
 
   @Override
-  public UserTaskAssert hasCreationDate(final String creationDate) {
+  public UserTaskAssert hasCreationDate(final OffsetDateTime creationDate) {
     awaitUserTask(
         userTask ->
             assertThat(userTask.getCreationDate())

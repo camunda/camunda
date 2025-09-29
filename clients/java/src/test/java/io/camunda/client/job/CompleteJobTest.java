@@ -32,6 +32,8 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResultCorrections;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -43,6 +45,11 @@ public final class CompleteJobTest extends ClientTest {
   public static final String USER_TASK_DISCRIMINATOR = TypeEnum.USER_TASK.getValue();
   public static final String AD_HOC_SUB_PROCESS_DISCRIMINATOR =
       TypeEnum.AD_HOC_SUB_PROCESS.getValue();
+
+  private static final OffsetDateTime TEST_DUE_DATE =
+      OffsetDateTime.of(2023, 11, 11, 11, 11, 11, 11, ZoneOffset.of("Z"));
+  private static final OffsetDateTime TEST_FOLLOW_UP_DATE =
+      OffsetDateTime.of(2023, 11, 12, 11, 11, 11, 11, ZoneOffset.of("Z"));
 
   @Test
   public void shouldCompleteJobByKey() {
@@ -359,8 +366,8 @@ public final class CompleteJobTest extends ClientTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("follow up date")
+                    .correctDueDate(TEST_DUE_DATE)
+                    .correctFollowUpDate(TEST_FOLLOW_UP_DATE)
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctCandidateGroups(Arrays.asList("Group A", "Group B"))
                     .correctPriority(80))
@@ -381,8 +388,8 @@ public final class CompleteJobTest extends ClientTest {
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
-                            .setDueDate("due date")
-                            .setFollowUpDate("follow up date")
+                            .setDueDate(TEST_DUE_DATE.toString())
+                            .setFollowUpDate(TEST_FOLLOW_UP_DATE.toString())
                             .setCandidateUsers(
                                 StringList.newBuilder()
                                     .addAllValues(Arrays.asList("User A", "User B"))
@@ -414,8 +421,8 @@ public final class CompleteJobTest extends ClientTest {
             r ->
                 r.forUserTask()
                     .correctAssignee("Test")
-                    .correctDueDate("due date")
-                    .correctFollowUpDate("")
+                    .correctDueDate(TEST_DUE_DATE)
+                    .clearFollowUpDate()
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
@@ -435,7 +442,7 @@ public final class CompleteJobTest extends ClientTest {
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
-                            .setDueDate("due date")
+                            .setDueDate(TEST_DUE_DATE.toString())
                             .setFollowUpDate("")
                             .setCandidateUsers(
                                 StringList.newBuilder()
@@ -514,8 +521,8 @@ public final class CompleteJobTest extends ClientTest {
                 r.forUserTask()
                     .deny(false)
                     .correctAssignee("Test")
-                    .correctDueDate(null)
-                    .correctFollowUpDate("")
+                    .clearDueDate()
+                    .clearFollowUpDate()
                     .correctCandidateUsers(Arrays.asList("User A", "User B"))
                     .correctPriority(80))
         .send()
@@ -535,7 +542,7 @@ public final class CompleteJobTest extends ClientTest {
                     .setCorrections(
                         JobResultCorrections.newBuilder()
                             .setAssignee("Test")
-                            .clearDueDate()
+                            .setDueDate("")
                             .setFollowUpDate("")
                             .setCandidateUsers(
                                 StringList.newBuilder()
@@ -569,7 +576,7 @@ public final class CompleteJobTest extends ClientTest {
                         c ->
                             c.assignee("Test")
                                 .dueDate(null)
-                                .followUpDate("")
+                                .clearFollowUpDate()
                                 .candidateUsers(Arrays.asList("User A", "User B"))
                                 .priority(80)))
         .send()

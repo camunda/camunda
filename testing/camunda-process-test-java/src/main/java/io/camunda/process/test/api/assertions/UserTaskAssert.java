@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.api.assertions;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 
 /** The assertion object to verify a user task. */
@@ -105,7 +106,7 @@ public interface UserTaskAssert {
    * @param dueDate the due date of the user task in ISO-8601 format
    * @return the assertion object
    */
-  UserTaskAssert hasDueDate(final String dueDate);
+  UserTaskAssert hasDueDate(final OffsetDateTime dueDate);
 
   /**
    * Verifies that the user task has the expected completion date.
@@ -113,7 +114,7 @@ public interface UserTaskAssert {
    * @param completionDate the completion date of the user task in ISO-8601 format
    * @return the assertion object
    */
-  UserTaskAssert hasCompletionDate(final String completionDate);
+  UserTaskAssert hasCompletionDate(final OffsetDateTime completionDate);
 
   /**
    * Verifies that the user task has the expected follow-up date.
@@ -121,7 +122,7 @@ public interface UserTaskAssert {
    * @param followUpDate the follow-up date of the user task in ISO-8601 format
    * @return the assertion object
    */
-  UserTaskAssert hasFollowUpDate(final String followUpDate);
+  UserTaskAssert hasFollowUpDate(final OffsetDateTime followUpDate);
 
   /**
    * Verifies that the user task has the expected creation date.
@@ -129,7 +130,7 @@ public interface UserTaskAssert {
    * @param creationDate the creation date of the user task in ISO-8601 format
    * @return the assertion object
    */
-  UserTaskAssert hasCreationDate(final String creationDate);
+  UserTaskAssert hasCreationDate(final OffsetDateTime creationDate);
 
   /**
    * Verifies that the user task contains the expected candidate group.
