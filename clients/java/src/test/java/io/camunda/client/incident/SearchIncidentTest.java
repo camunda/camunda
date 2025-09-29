@@ -87,7 +87,7 @@ public class SearchIncidentTest extends ClientRestTest {
                     .errorMessage("Can't decide")
                     .elementId("element")
                     .elementInstanceKey(4L)
-                    .creationTime("2024-05-23T23:05:00.000+000")
+                    .creationTime(OffsetDateTime.parse("2024-05-23T23:05:00.001Z"))
                     .state(IncidentState.ACTIVE)
                     .jobKey(5L)
                     .tenantId("tenant"))
@@ -104,7 +104,7 @@ public class SearchIncidentTest extends ClientRestTest {
     assertThat(filter.getErrorMessage()).isEqualTo("Can't decide");
     assertThat(filter.getElementId()).isEqualTo("element");
     assertThat(filter.getElementInstanceKey()).isEqualTo("4");
-    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.000+000");
+    assertThat(filter.getCreationTime()).isEqualTo("2024-05-23T23:05:00.001Z");
     assertThat(filter.getState()).isEqualTo(StateEnum.ACTIVE);
     assertThat(filter.getJobKey()).isEqualTo("5");
     assertThat(filter.getTenantId()).isEqualTo("tenant");
