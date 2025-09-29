@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
+import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
@@ -36,6 +37,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -230,6 +232,7 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildIncidentMarkerTask());
     tasks.add(buildProcessInstanceArchiverJob());
     tasks.add(buildUsageMetricsArchiverJob());
+    tasks.add(buildStandaloneDecisionArchiverJob());
     if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
       tasks.add(buildProcessInstanceToBeArchivedCountJob());
     }
@@ -323,6 +326,16 @@ public final class BackgroundTaskManagerFactory {
             logger,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            executor));
+  }
+
+  private ReschedulingTask buildStandaloneDecisionArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new StandaloneDecisionArchiverJob(
+            archiverRepository,
+            resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class),
+            metrics,
+            logger,
             executor));
   }
 
