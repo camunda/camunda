@@ -15,7 +15,9 @@
  */
 package io.camunda.client.api.search.filter;
 
+import io.camunda.client.api.search.filter.builder.StringProperty;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
+import java.util.function.Consumer;
 
 public interface ProcessDefinitionFilter extends SearchRequestFilter {
 
@@ -41,6 +43,14 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ProcessDefinitionFilter name(final String name);
+
+  /**
+   * Filters process definitions by the specified name using {@link StringProperty} consumer.
+   *
+   * @param fn the name {@link StringProperty} consumer of the process definition
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter name(final Consumer<StringProperty> fn);
 
   /**
    * Filters process definitions by the specified resource name.
@@ -73,6 +83,15 @@ public interface ProcessDefinitionFilter extends SearchRequestFilter {
    * @return the updated filter
    */
   ProcessDefinitionFilter processDefinitionId(final String processDefinitionId);
+
+  /**
+   * Filters process definitions by the specified processDefinitionId using {@link StringProperty}
+   * consumer.
+   *
+   * @param fn the processDefinitionId {@link StringProperty} consumer of the process definition
+   * @return the updated filter
+   */
+  ProcessDefinitionFilter processDefinitionId(final Consumer<StringProperty> fn);
 
   /**
    * Filters process definitions by the specified tenant id.

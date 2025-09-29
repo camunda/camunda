@@ -103,11 +103,11 @@ public class QueryProcessDefinitionTest extends ClientRestTest {
         .filter(
             f ->
                 f.processDefinitionKey(5L)
-                    .name("Order process")
+                    .name(sp -> sp.eq("Order process"))
                     .resourceName("usertest/complex-process.bpmn")
                     .version(2)
                     .versionTag("alpha")
-                    .processDefinitionId("orderProcess")
+                    .processDefinitionId(sp -> sp.eq("orderProcess"))
                     .tenantId("<default>"))
         .send()
         .join();
