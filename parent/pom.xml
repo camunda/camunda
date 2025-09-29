@@ -2673,6 +2673,7 @@
                   <dep>org.postgresql:postgresql</dep>
                   <dep>org.mariadb.jdbc:mariadb-java-client</dep>
                   <dep>com.mysql:mysql-connector-j</dep>
+                  <dep>com.microsoft.sqlserver:mssql-jdbc</dep>
                   <dep>com.oracle.database.jdbc:ojdbc8</dep>
                   <dep>io.camunda:camunda-authentication</dep>
                   <dep>org.skyscreamer:jsonassert</dep>

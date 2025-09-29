@@ -20,6 +20,7 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.containers.MSSQLServerContainer;
 import org.testcontainers.containers.MariaDBContainer;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -64,7 +65,13 @@ public class CamundaRdbmsInvocationContextProviderExtension
               .withDatabaseContainer(
                   new OracleContainer("gvenzl/oracle-free:latest")
                       .withUsername("camunda")
-                      .withPassword("camunda")));
+                      .withPassword("camunda")),
+          "camundaWithMssqlDB",
+          new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
+              .withRdbms()
+              .withDatabaseContainer(
+                  new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2019-latest")
+                      .acceptLicense()));
 
   private final Set<String> useTestApplications;
 

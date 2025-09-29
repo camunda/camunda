@@ -40,4 +40,8 @@
   <update id="truncateTable" parameterType="java.lang.String" databaseId="postgresql">
     TRUNCATE TABLE ${prefix}${tableName} CASCADE
   </update>
+
+  <update id="truncateTable" parameterType="java.lang.String" databaseId="mssql">
+    DELETE FROM ${prefix}${tableName}
+  </update>
 </mapper>

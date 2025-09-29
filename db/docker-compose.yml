@@ -22,6 +22,15 @@ services:
     ports:
       - "5432:5432"
 
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    restart: always
+    environment:
+      ACCEPT_EULA: y
+      MSSQL_SA_PASSWORD: Camunda#8_demo
+    ports:
+      - "1433:1433"
+
   mariadb:
     image: mariadb:11.8
     restart: always
