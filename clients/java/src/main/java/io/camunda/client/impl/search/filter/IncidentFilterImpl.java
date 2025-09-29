@@ -85,11 +85,7 @@ public class IncidentFilterImpl
 
   @Override
   public IncidentFilter creationTime(final OffsetDateTime creationTime) {
-    if (creationTime == null) {
-      filter.setCreationTime(null);
-      return this;
-    }
-    filter.setCreationTime(creationTime.toString());
+    filter.setCreationTime(creationTime == null ? null : creationTime.toString());
     return this;
   }
 
