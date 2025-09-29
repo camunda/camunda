@@ -93,6 +93,7 @@ const test = base.extend<PlaywrightFixtures>({
                 mixpanelAPIHost: null,
                 isResourcePermissionsEnabled: false,
                 isUserAccessRestrictionsEnabled: true,
+                clientMode: 'v1',
               };
             `,
       }),
