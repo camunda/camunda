@@ -51,6 +51,14 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter name(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setName(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionFilter resourceName(final String resourceName) {
     filter.setResourceName(resourceName);
     return this;
@@ -74,6 +82,14 @@ public class ProcessDefinitionFilterImpl
   }
 
   @Override
+  public ProcessDefinitionFilter processDefinitionId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setProcessDefinitionId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public ProcessDefinitionFilter tenantId(final String tenantId) {
     filter.setTenantId(tenantId);
     return this;
@@ -82,20 +98,6 @@ public class ProcessDefinitionFilterImpl
   @Override
   public ProcessDefinitionFilter hasStartForm(final boolean hasStartForm) {
     filter.hasStartForm(hasStartForm);
-    return this;
-  }
-
-  public ProcessDefinitionFilter name(final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
-    fn.accept(property);
-    filter.setName(provideSearchRequestProperty(property));
-    return this;
-  }
-
-  public ProcessDefinitionFilter processDefinitionId(final Consumer<StringProperty> fn) {
-    final StringProperty property = new StringPropertyImpl();
-    fn.accept(property);
-    filter.setProcessDefinitionId(provideSearchRequestProperty(property));
     return this;
   }
 
