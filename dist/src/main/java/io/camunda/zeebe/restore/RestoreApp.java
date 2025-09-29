@@ -11,6 +11,9 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.BrokerBasedConfiguration;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
+import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
+import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -30,7 +33,16 @@ import org.springframework.context.annotation.Import;
 
 @SpringBootApplication(scanBasePackages = {"io.camunda.zeebe.restore"})
 @ConfigurationPropertiesScan(basePackages = {"io.camunda.zeebe.restore"})
-@Import(value = {BrokerBasedConfiguration.class, WorkingDirectoryConfiguration.class})
+@Import(
+    value = {
+      // Unified Configuration classes
+      UnifiedConfigurationHelper.class,
+      UnifiedConfiguration.class,
+      BrokerBasedPropertiesOverride.class,
+      // ---
+      BrokerBasedConfiguration.class,
+      WorkingDirectoryConfiguration.class
+    })
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
