@@ -6,14 +6,15 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 
 ## Build & Commands
 
-- Build quickly: `./mvnw package -Dquickly -T1C`
-- Install quickly: `./mvnw install -Dquickly -T1C`
-- Lint: `./mvnw verify -DskipTests -T1C -Dquickly -DskipChecks=false`
-- Auto format: `./mvnw process-sources -PautoFormat -T1C -Dquickly -Dspotless.apply.skip=false`
-- Run unit tests: `./mvnw verify -DskipChecks -DskipITs -T1C -Dquickly`
-- Run integration tests: `./mvnw verify -DskipChecks -DskipUTs -T1C -Dquickly`
-- Run tests: `./mvnw verify -DskipChecks -T1C -Dquickly`
-- Build the docker image: `./mvnw package -DskipTests -T1C -Dquickly && docker build -f camunda.Dockerfile --target app -t "camunda/camunda:current-test" --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz .`
+- Clean: `./mvnw clean -T1C`
+- Lint: `./mvnw license:check spotless:check -T1C`
+- Auto format: `./mvnw license:format spotless:apply -T1C`
+- Build quickly: `./mvnw install -Dquickly -T1C`
+- Run static checks: `./mvnw verify -Dquickly -DskipChecks=false -P'!autoFormat,checkFormat,spotbugs' -T1C`
+- Run unit tests: `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C`
+- Run integration tests: `./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C`
+- Run all tests: `./mvnw verify -T1C`
+- Build the docker image: `./mvnw install -DskipChecks -DskipTests -T1C && docker build -f camunda.Dockerfile --target app -t "camunda/camunda:current-test" --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz .`
 
 ### Development Environment
 
@@ -23,7 +24,7 @@ using BPMN (Business Process Model and Notation) for process definition and exec
 
 ## Code Style and Conventions
 
-- Defined via the Maven Spotless plugin, run `./mvnw verify -DskipTests -T1C -Dquickly -Dspotless.checks.skip=false`
+- Defined via the Maven Spotless plugin, to auto format run `./mvnw spotless:check -T1C`
 - Follow conventions in `CONTRIBUTING.md` and all Markdown files in `docs/`
 
 ## Testing
