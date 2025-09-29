@@ -25,6 +25,7 @@ import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.oauth.OAuthCredentialsProvider;
 import io.camunda.client.spring.properties.CamundaClientAuthProperties;
 import io.camunda.client.spring.properties.CamundaClientCloudProperties;
+import io.camunda.client.spring.properties.CamundaClientJobWorkerProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
@@ -95,9 +96,9 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.setCamundaEnvVars(camundaEnvVars);
     final List<Integer> camundaExposedPorts = List.of(100, 200);
     runtimeConfiguration.setCamundaExposedPorts(camundaExposedPorts);
-
     runtimeConfiguration.setCamundaLoggerName("io.camunda.custom.logger.name");
     runtimeConfiguration.setConnectorsLoggerName("io.camunda.custom.logger.name");
+
     runtimeConfiguration.getClientProperties().setTenantId("customTenantId");
     runtimeConfiguration.getClientProperties().setRequestTimeout(Duration.ofSeconds(60));
     runtimeConfiguration.getClientProperties().setRequestTimeoutOffset(Duration.ofSeconds(120));
@@ -105,6 +106,19 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     runtimeConfiguration.getClientProperties().setMaxMessageSize(DataSize.ofMegabytes(100));
     runtimeConfiguration.getClientProperties().setMaxMetadataSize(DataSize.ofMegabytes(90));
     runtimeConfiguration.getClientProperties().setExecutionThreads(200);
+    runtimeConfiguration.getClientProperties().setRestAddress(URI.create("http://0.0.0.0:8090"));
+    runtimeConfiguration.getClientProperties().setGrpcAddress(URI.create("http://0.0.0.0:8091"));
+    runtimeConfiguration.getClientProperties().setOverrideAuthority("customOverrideAuthority");
+    runtimeConfiguration.getClientProperties().setCaCertificatePath("/path/to/file/");
+    runtimeConfiguration.getClientProperties().setPreferRestOverGrpc(false);
+
+    final CamundaClientJobWorkerProperties workerProps =
+        runtimeConfiguration.getClientProperties().getWorker().getDefaults();
+    workerProps.setPollInterval(Duration.ofHours(1));
+    workerProps.setTimeout(Duration.ofHours(2));
+    workerProps.setMaxJobsActive(10);
+    workerProps.setName("customWorkerName");
+    workerProps.setStreamEnabled(true);
 
     // when
     CamundaSpringProcessTestRuntimeBuilder.buildRuntime(runtimeBuilder, runtimeConfiguration);
@@ -120,12 +134,23 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     final CamundaClientBuilderImpl cbf =
         (CamundaClientBuilderImpl) runtimeBuilder.getConfiguredCamundaClientBuilderFactory().get();
 
-    assertThat(cbf.getDefaultRequestTimeout()).isEqualTo(Duration.ofSeconds(60));
-    assertThat(cbf.getDefaultRequestTimeoutOffset()).isEqualTo(Duration.ofSeconds(120));
-    assertThat(cbf.getKeepAlive()).isEqualTo(Duration.ofSeconds(50));
+    assertThat(cbf.getDefaultRequestTimeout()).hasSeconds(60);
+    assertThat(cbf.getDefaultRequestTimeoutOffset()).hasSeconds(120);
+    assertThat(cbf.getKeepAlive()).hasSeconds(50);
     assertThat(cbf.getMaxMessageSize()).isEqualTo(DataSize.ofMegabytes(100).toBytes());
     assertThat(cbf.getMaxMetadataSize()).isEqualTo(DataSize.ofMegabytes(90).toBytes());
+    assertThat(cbf.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8090"));
+    assertThat(cbf.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8091"));
+    assertThat(cbf.getOverrideAuthority()).isEqualTo("customOverrideAuthority");
+    assertThat(cbf.getCaCertificatePath()).isEqualTo("/path/to/file/");
     assertThat(cbf.getNumJobWorkerExecutionThreads()).isEqualTo(200);
+    assertThat(cbf.preferRestOverGrpc()).isFalse();
+
+    assertThat(cbf.getDefaultJobPollInterval()).hasHours(1);
+    assertThat(cbf.getDefaultJobTimeout()).hasHours(2);
+    assertThat(cbf.getDefaultJobWorkerMaxJobsActive()).isEqualTo(10);
+    assertThat(cbf.getDefaultJobWorkerName()).isEqualTo("customWorkerName");
+    assertThat(cbf.getDefaultJobWorkerStreamEnabled()).isTrue();
   }
 
   @Test

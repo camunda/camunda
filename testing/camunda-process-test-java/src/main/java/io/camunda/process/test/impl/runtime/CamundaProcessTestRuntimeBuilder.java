@@ -91,7 +91,8 @@ public class CamundaProcessTestRuntimeBuilder {
 
   private CamundaClientBuilderFactory camundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
-  private Consumer<CamundaClientBuilder> camundaClientConfigurer = (clientBuilder) -> {};
+  private Consumer<CamundaClientBuilder> camundaClientOverrides =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_CLIENT_OVERRIDES;
 
   // ============ For testing =================
 
@@ -243,10 +244,9 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
-  public CamundaProcessTestRuntimeBuilder withCamundaClientOverrides(
-      final Consumer<CamundaClientBuilder> clientConfigurerFn) {
-
-    camundaClientConfigurer = clientConfigurerFn;
+  public CamundaProcessTestRuntimeBuilder withCamundaClientBuilderOverrides(
+      final Consumer<CamundaClientBuilder> clientOverridesFn) {
+    camundaClientOverrides = clientOverridesFn;
     return this;
   }
 
@@ -382,7 +382,7 @@ public class CamundaProcessTestRuntimeBuilder {
                 .build());
       }
 
-      camundaClientConfigurer.accept(clientBuilder);
+      camundaClientOverrides.accept(clientBuilder);
       return clientBuilder;
     };
   }

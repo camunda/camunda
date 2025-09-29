@@ -18,8 +18,10 @@ package io.camunda.process.test.impl.runtime;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
@@ -51,6 +53,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
+  private final CamundaClientProperties camundaClientProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -68,6 +71,7 @@ public final class ContainerRuntimePropertiesUtil {
     connectorsContainerRuntimeProperties = new ConnectorsContainerRuntimeProperties(properties);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
+    camundaClientProperties = new CamundaClientProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -209,14 +213,18 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
+    return () -> camundaClientProperties.configureClientBuilder(createCamundaClientBuilder());
+  }
+
+  private CamundaClientBuilder createCamundaClientBuilder() {
     switch (runtimeMode) {
       case MANAGED:
-        return CamundaClient::newClientBuilder;
+        return CamundaClient.newClientBuilder();
       case REMOTE:
-        return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+        return remoteRuntimeProperties.createCamundaClientBuilder();
       default:
         LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
-        return CamundaClient::newClientBuilder;
+        return CamundaClient.newClientBuilder();
     }
   }
 
@@ -230,5 +238,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public CoverageReportProperties getCoverageReportProperties() {
     return coverageReportProperties;
+  }
+
+  public CamundaClientProperties getCamundaClientProperties() {
+    return camundaClientProperties;
   }
 }

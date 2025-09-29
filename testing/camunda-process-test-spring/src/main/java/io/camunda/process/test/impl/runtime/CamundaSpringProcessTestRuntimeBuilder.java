@@ -24,7 +24,6 @@ import io.camunda.client.spring.properties.CamundaClientCloudProperties;
 import io.camunda.client.spring.properties.CamundaClientJobWorkerProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import java.util.function.Consumer;
@@ -58,8 +57,7 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withCamundaDockerImageName(runtimeConfiguration.getCamundaDockerImageName())
         .withCamundaEnv(runtimeConfiguration.getCamundaEnvVars())
         .withCamundaLogger(runtimeConfiguration.getCamundaLoggerName())
-        .withMultiTenancyEnabled(runtimeConfiguration.isMultiTenancyEnabled())
-        .withCamundaClientOverrides((clientBuilder) -> {});
+        .withMultiTenancyEnabled(runtimeConfiguration.isMultiTenancyEnabled());
 
     runtimeConfiguration.getCamundaExposedPorts().forEach(runtimeBuilder::withCamundaExposedPort);
 
@@ -76,8 +74,9 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .forEach(runtimeBuilder::withConnectorsExposedPort);
 
     runtimeBuilder.withCamundaClientBuilderFactory(
-        configureCamundaClientBuilderFactory(
-            runtimeConfiguration.getClientProperties(), CamundaClient.newClientBuilder()));
+        () ->
+            configureCamundaClientBuilder(
+                runtimeConfiguration.getClientProperties(), CamundaClient.newClientBuilder()));
   }
 
   private static void configureRemoteRuntime(
@@ -90,58 +89,51 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withRemoteConnectorsRestApiAddress(
             runtimeConfiguration.getRemote().getConnectorsRestApiAddress());
 
-    final CamundaClientBuilderFactory remoteClientBuilderFactory =
-        createRemoteClientBuilderFactory(runtimeConfiguration);
-    runtimeBuilder.withCamundaClientBuilderFactory(remoteClientBuilderFactory);
-  }
-
-  private static CamundaClientBuilderFactory createRemoteClientBuilderFactory(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-
     final CamundaClientProperties clientProperties = runtimeConfiguration.getRemote().getClient();
-    return configureCamundaClientBuilderFactory(
-        clientProperties, createCamundaClientBuilder(clientProperties));
+
+    runtimeBuilder.withCamundaClientBuilderFactory(
+        () ->
+            configureCamundaClientBuilder(
+                clientProperties, createCamundaClientBuilder(clientProperties)));
   }
 
-  private static CamundaClientBuilderFactory configureCamundaClientBuilderFactory(
+  private static CamundaClientBuilder configureCamundaClientBuilder(
       final CamundaClientProperties clientProperties, final CamundaClientBuilder clientBuilder) {
 
-    return () -> {
-      clientBuilder.preferRestOverGrpc(clientProperties.getPreferRestOverGrpc());
+    clientBuilder.preferRestOverGrpc(clientProperties.getPreferRestOverGrpc());
 
-      setIfExists(clientProperties.getRestAddress(), clientBuilder::restAddress);
-      setIfExists(clientProperties.getGrpcAddress(), clientBuilder::grpcAddress);
-      setIfExists(clientProperties.getRequestTimeout(), clientBuilder::defaultRequestTimeout);
-      setIfExists(
-          clientProperties.getRequestTimeoutOffset(), clientBuilder::defaultRequestTimeoutOffset);
-      setIfExists(clientProperties.getTenantId(), clientBuilder::defaultTenantId);
-      setIfExists(clientProperties.getMessageTimeToLive(), clientBuilder::defaultMessageTimeToLive);
-      setIfExists(
-          clientProperties.getMaxMessageSize(),
-          clientBuilder::maxMessageSize,
-          (maxMessageSize) -> (int) maxMessageSize.toBytes());
-      setIfExists(
-          clientProperties.getMaxMetadataSize(),
-          clientBuilder::maxMetadataSize,
-          (maxMetadataSize) -> (int) maxMetadataSize.toBytes());
-      setIfExists(
-          clientProperties.getExecutionThreads(), clientBuilder::numJobWorkerExecutionThreads);
-      setIfExists(clientProperties.getCaCertificatePath(), clientBuilder::caCertificatePath);
-      setIfExists(clientProperties.getKeepAlive(), clientBuilder::keepAlive);
-      setIfExists(clientProperties.getOverrideAuthority(), clientBuilder::overrideAuthority);
+    setIfExists(clientProperties.getRestAddress(), clientBuilder::restAddress);
+    setIfExists(clientProperties.getGrpcAddress(), clientBuilder::grpcAddress);
+    setIfExists(clientProperties.getRequestTimeout(), clientBuilder::defaultRequestTimeout);
+    setIfExists(
+        clientProperties.getRequestTimeoutOffset(), clientBuilder::defaultRequestTimeoutOffset);
+    setIfExists(clientProperties.getTenantId(), clientBuilder::defaultTenantId);
+    setIfExists(clientProperties.getMessageTimeToLive(), clientBuilder::defaultMessageTimeToLive);
+    setIfExists(
+        clientProperties.getMaxMessageSize(),
+        clientBuilder::maxMessageSize,
+        (maxMessageSize) -> (int) maxMessageSize.toBytes());
+    setIfExists(
+        clientProperties.getMaxMetadataSize(),
+        clientBuilder::maxMetadataSize,
+        (maxMetadataSize) -> (int) maxMetadataSize.toBytes());
+    setIfExists(
+        clientProperties.getExecutionThreads(), clientBuilder::numJobWorkerExecutionThreads);
+    setIfExists(clientProperties.getCaCertificatePath(), clientBuilder::caCertificatePath);
+    setIfExists(clientProperties.getKeepAlive(), clientBuilder::keepAlive);
+    setIfExists(clientProperties.getOverrideAuthority(), clientBuilder::overrideAuthority);
 
-      final CamundaClientJobWorkerProperties jobWorkerProps =
-          clientProperties.getWorker().getDefaults();
+    final CamundaClientJobWorkerProperties jobWorkerProps =
+        clientProperties.getWorker().getDefaults();
 
-      setIfExists(jobWorkerProps.getPollInterval(), clientBuilder::defaultJobPollInterval);
-      setIfExists(jobWorkerProps.getTimeout(), clientBuilder::defaultJobTimeout);
-      setIfExists(jobWorkerProps.getMaxJobsActive(), clientBuilder::defaultJobWorkerMaxJobsActive);
-      setIfExists(jobWorkerProps.getName(), clientBuilder::defaultJobWorkerName);
-      setIfExists(jobWorkerProps.getTenantIds(), clientBuilder::defaultJobWorkerTenantIds);
-      setIfExists(jobWorkerProps.getStreamEnabled(), clientBuilder::defaultJobWorkerStreamEnabled);
+    setIfExists(jobWorkerProps.getPollInterval(), clientBuilder::defaultJobPollInterval);
+    setIfExists(jobWorkerProps.getTimeout(), clientBuilder::defaultJobTimeout);
+    setIfExists(jobWorkerProps.getMaxJobsActive(), clientBuilder::defaultJobWorkerMaxJobsActive);
+    setIfExists(jobWorkerProps.getName(), clientBuilder::defaultJobWorkerName);
+    setIfExists(jobWorkerProps.getTenantIds(), clientBuilder::defaultJobWorkerTenantIds);
+    setIfExists(jobWorkerProps.getStreamEnabled(), clientBuilder::defaultJobWorkerStreamEnabled);
 
-      return clientBuilder;
-    };
+    return clientBuilder;
   }
 
   private static <T> void setIfExists(final T property, final Consumer<T> setter) {

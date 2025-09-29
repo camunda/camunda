@@ -497,15 +497,30 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Override the Camunda Client runtime builder's properties after initial configuration values
-   * have been set.
+   * Configure the connection to the remote runtime using the given client builder.
+   *
+   * @param camundaClientBuilderFactory the client builder to configure the connection
+   * @return the extension builder
+   * @deprecated use withCamundaClientBuilderOverrides instead.
+   * @since 8.8.0
+   */
+  @Deprecated
+  public CamundaProcessTestExtension withRemoteCamundaClientBuilderFactory(
+      final CamundaClientBuilderFactory camundaClientBuilderFactory) {
+
+    runtimeBuilder.withCamundaClientBuilderFactory(camundaClientBuilderFactory);
+    return this;
+  }
+
+  /**
+   * Configure the connection to the Camunda runtime using the given client builder.
    *
    * @param camundaClientBuilderConfigurer consumer that modifies the client builder's configuration
    * @return the extension builder
    */
   public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
       final Consumer<CamundaClientBuilder> camundaClientBuilderConfigurer) {
-    runtimeBuilder.withCamundaClientOverrides(camundaClientBuilderConfigurer);
+    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderConfigurer);
     return this;
   }
 

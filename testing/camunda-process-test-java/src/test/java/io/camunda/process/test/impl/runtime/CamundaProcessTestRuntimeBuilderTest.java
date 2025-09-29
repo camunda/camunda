@@ -42,12 +42,12 @@ public class CamundaProcessTestRuntimeBuilderTest {
   }
 
   @Test
-  public void shouldConfigureTheCamundaClientBuilderFactory() {
+  public void shouldOverrideCamundaClientBuilderConfiguration() {
     // given
     final String tenantId = "customTenant";
     final Duration requestTimeout = Duration.ofHours(1);
 
-    runtimeBuilder.withCamundaClientOverrides(
+    runtimeBuilder.withCamundaClientBuilderOverrides(
         clientBuilder -> {
           clientBuilder.defaultRequestTimeout(requestTimeout).defaultTenantId(tenantId);
         });
