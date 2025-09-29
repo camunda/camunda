@@ -20,7 +20,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
     basePackages = "io.camunda.operate.zeebeimport",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @ConditionalOnProperty(
-    name = "camunda.operate.importerEnabled",
+    name = "camunda.operate.importer-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class ImportModuleConfiguration {

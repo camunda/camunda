@@ -45,7 +45,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "External Process", description = "API to manage processes by external consumers.")
 @RestController
 @ConditionalOnProperty(
-    value = "camunda.tasklist.featureFlag.processPublicEndpoints",
+    value = "camunda.tasklist.feature-flag.process-public-endpoints",
     matchIfMissing = true)
 @RequestMapping(
     value = TasklistURIs.EXTERNAL_PROCESS_URL_V1,
