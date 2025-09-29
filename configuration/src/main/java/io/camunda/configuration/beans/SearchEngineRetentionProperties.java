@@ -9,4 +9,9 @@ package io.camunda.configuration.beans;
 
 import io.camunda.search.schema.config.RetentionConfiguration;
 
+/**
+ * NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ * Configuration system, from the object
+ * io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride
+ */
 public class SearchEngineRetentionProperties extends RetentionConfiguration {}

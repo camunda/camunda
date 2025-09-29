@@ -7,7 +7,9 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Retention;
+import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineRetentionProperties;
@@ -47,12 +49,34 @@ public class SearchEngineRetentionPropertiesOverride {
     final SearchEngineRetentionProperties override = new SearchEngineRetentionProperties();
     BeanUtils.copyProperties(legacySearchEngineRetentionProperties, override);
 
-    final Retention retention =
-        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
-
-    override.setEnabled(retention.isEnabled());
-    override.setMinimumAge(retention.getMinimumAge());
+    populateFromRetention(override);
+    populateFromSecondaryStorage(override);
 
     return override;
+  }
+
+  private void populateFromRetention(final SearchEngineRetentionProperties override) {
+    final Retention retention =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getRetention();
+    override.setEnabled(retention.isEnabled());
+    override.setMinimumAge(retention.getMinimumAge());
+  }
+
+  private void populateFromSecondaryStorage(final SearchEngineRetentionProperties override) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    final DocumentBasedSecondaryStorageDatabase database =
+        switch (secondaryStorage.getType()) {
+          case elasticsearch -> secondaryStorage.getElasticsearch();
+          case opensearch -> secondaryStorage.getOpensearch();
+          default -> null;
+        };
+
+    if (database == null) {
+      return;
+    }
+
+    override.setPolicyName(database.getHistory().getPolicyName());
   }
 }

@@ -338,7 +338,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return new TestRestOperateClient(restAddress(), username, password);
   }
 
-  public TestRestOperateClient newOperateClient(CredentialsProvider credentialsProvider) {
+  public TestRestOperateClient newOperateClient(final CredentialsProvider credentialsProvider) {
     return new TestRestOperateClient(restAddress(), credentialsProvider);
   }
 
@@ -346,7 +346,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
     return new TestRestTasklistClient(restAddress());
   }
 
-  public TestRestTasklistClient newTasklistClient(CredentialsProvider credentialsProvider) {
+  public TestRestTasklistClient newTasklistClient(final CredentialsProvider credentialsProvider) {
     return new TestRestTasklistClient(restAddress(), credentialsProvider);
   }
 
