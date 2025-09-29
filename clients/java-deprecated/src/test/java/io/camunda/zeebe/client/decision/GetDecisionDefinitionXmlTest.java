@@ -15,10 +15,8 @@
  */
 package io.camunda.zeebe.client.decision;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.github.tomakehurst.wiremock.http.RequestMethod;
-import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +24,10 @@ public final class GetDecisionDefinitionXmlTest extends ClientRestTest {
 
   @Test
   void shouldGetDecisionDefinitionXml() {
-    // when
+    // when / then
     final long decisionDefinitionKey = 1L;
-    client.newDecisionDefinitionGetXmlRequest(decisionDefinitionKey).send().join();
 
-    // then
-    final LoggedRequest request = gatewayService.getLastRequest();
-    assertThat(request.getUrl())
-        .isEqualTo("/v2/decision-definitions/" + decisionDefinitionKey + "/xml");
-    assertThat(request.getMethod()).isEqualTo(RequestMethod.GET);
+    assertThatThrownBy(() -> client.newDecisionDefinitionGetXmlRequest(decisionDefinitionKey))
+        .isInstanceOf(UnsupportedOperationException.class);
   }
 }
