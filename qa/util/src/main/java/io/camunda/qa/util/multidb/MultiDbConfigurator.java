@@ -89,7 +89,8 @@ public class MultiDbConfigurator {
     /* Camunda */
     elasticsearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
-    elasticsearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
+    elasticsearchProperties.put(
+        "camunda.data.secondary-storage.elasticsearch.history.policy-name", indexPrefix + "-ilm");
     // 0s causes ILM to move data asap - it is normally the default
     // https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
     elasticsearchProperties.put("camunda.database.retention.minimumAge", "0s");
@@ -208,7 +209,8 @@ public class MultiDbConfigurator {
     opensearchProperties.put("camunda.database.url", opensearchUrl);
     opensearchProperties.put(
         "camunda.database.retention.enabled", Boolean.toString(retentionEnabled));
-    opensearchProperties.put("camunda.database.retention.policyName", indexPrefix + "-ilm");
+    opensearchProperties.put(
+        "camunda.data.secondary-storage.opensearch.history.policy-name", indexPrefix + "-ilm");
     opensearchProperties.put("camunda.database.retention.minimumAge", "0s");
     opensearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
 
