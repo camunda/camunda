@@ -323,9 +323,10 @@ public final class BackgroundTaskManagerFactory {
     return buildReschedulingArchiverTask(
         new UsageMetricsArchiverJob(
             archiverRepository,
-            logger,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            metrics,
+            logger,
             executor));
   }
 
