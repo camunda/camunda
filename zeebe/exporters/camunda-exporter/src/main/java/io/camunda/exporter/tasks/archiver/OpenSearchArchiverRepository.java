@@ -19,6 +19,7 @@ import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
@@ -64,6 +65,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
@@ -92,13 +94,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    decisionInstanceTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
     this.genericClient = genericClient;
   }
 
   @Override
   public CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch() {
-    final var request = createFinishedInstancesSearchRequest();
+    final var request = createFinishedProcessInstancesSearchRequest();
 
     final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(request, Object.class))
@@ -130,7 +134,10 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             usageMetricTUTemplateDescriptor.getFullQualifiedName(),
             UsageMetricTUTemplate.END_TIME,
             UsageMetricTUTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
@@ -145,11 +152,30 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             usageMetricTemplateDescriptor.getFullQualifiedName(),
             UsageMetricTemplate.END_TIME,
             UsageMetricTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
                     response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
+    final var searchRequest = createStandaloneDecisionSearchRequest();
+
+    final var timer = Timer.start();
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response,
+                    DecisionInstanceTemplate.EVALUATION_DATE,
+                    decisionInstanceTemplateDescriptor),
             executor);
   }
 
@@ -363,6 +389,13 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             executor);
   }
 
+  private SearchRequest createFinishedProcessInstancesSearchRequest() {
+    return createSearchRequest(
+        listViewTemplateDescriptor.getFullQualifiedName(),
+        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
+        ListViewTemplate.END_DATE);
+  }
+
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
     final var endDateQ =
         QueryBuilders.range()
@@ -374,6 +407,39 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         batchOperationTemplateDescriptor.getFullQualifiedName(),
         endDateQ.toQuery(),
         BatchOperationTemplate.END_DATE);
+  }
+
+  private SearchRequest createStandaloneDecisionSearchRequest() {
+    return createSearchRequest(
+        decisionInstanceTemplateDescriptor.getFullQualifiedName(),
+        standaloneDecisionInstancesSearchQuery(config.getArchivingTimePoint(), partitionId),
+        DecisionInstanceTemplate.EVALUATION_DATE);
+  }
+
+  private Query standaloneDecisionInstancesSearchQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(DecisionInstanceTemplate.EVALUATION_DATE)
+            .lte(JsonData.of(archivingTimePoint))
+            .build();
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(DecisionInstanceTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build();
+    // standalone decision instances have processInstanceKey = -1
+    final var standaloneDecisionInstanceQ =
+        QueryBuilders.term()
+            .field(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY)
+            .value(FieldValue.of(-1))
+            .build();
+    return QueryBuilders.bool()
+        .filter(endDateQ.toQuery())
+        .filter(partitionQ.toQuery())
+        .filter(standaloneDecisionInstanceQ.toQuery())
+        .build()
+        .toQuery();
   }
 
   private CompletableFuture<ArchiveBatch> createArchiveBatch(
@@ -435,13 +501,6 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
           new ExporterException(
               "Failed to send request, likely because we failed to parse the request", e));
     }
-  }
-
-  private SearchRequest createFinishedInstancesSearchRequest() {
-    return createSearchRequest(
-        listViewTemplateDescriptor.getFullQualifiedName(),
-        finishedProcessInstancesQuery(config.getArchivingTimePoint(), partitionId),
-        ListViewTemplate.END_DATE);
   }
 
   private SearchRequest createSearchRequest(
