@@ -6,7 +6,8 @@
     "test": "playwright test",
     "test:local": "node --env-file=.env ./runTest.js",
     "lint": "tsc && eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "responses:regenerate": "assert-json-body extract"
   },
   "devDependencies": {
     "@inquirer/prompts": "^7.3.2",
@@ -36,6 +37,7 @@
   "dependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@camunda8/sdk": "^8.7.29",
+    "assert-json-body": "^1.0.2",
     "axios": "^1.8.1",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^15.21.0"
