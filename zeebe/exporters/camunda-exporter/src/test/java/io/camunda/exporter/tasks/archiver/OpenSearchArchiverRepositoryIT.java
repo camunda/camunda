@@ -620,12 +620,13 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
-  @Test
-  void shouldGetUsageMetricNextBatch() throws IOException {
-    // given - 3 documents, two older than archive threshold, one recent
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void shouldGetUsageMetricNextBatch(final int partitionId) throws IOException {
+    // given
     final var now = Instant.now();
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
+    final var repository = createRepository(partitionId);
     final var usageMetricIndex =
         resourceProvider
             .getIndexTemplateDescriptor(UsageMetricTemplate.class)
@@ -633,9 +634,12 @@ final class OpenSearchArchiverRepositoryIT {
     createUsageMetricIndex(usageMetricIndex);
     final var documents =
         List.of(
-            new TestUsageMetric("1", twoHoursAgo),
-            new TestUsageMetric("2", twoHoursAgo),
-            new TestUsageMetric("3", now.toString()));
+            new TestUsageMetric("1", twoHoursAgo, 1),
+            new TestUsageMetric("2", twoHoursAgo, 1),
+            new TestUsageMetric("3", twoHoursAgo, -1),
+            new TestUsageMetric("4", twoHoursAgo, 21),
+            new TestUsageMetric("20", now.toString(), 2),
+            new TestUsageMetric("21", twoHoursAgo, 2));
     documents.forEach(doc -> index(usageMetricIndex, doc));
     testClient.indices().refresh(r -> r.index(usageMetricIndex));
     config.setRolloverBatchSize(5);
@@ -648,16 +652,21 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    if (partitionId == 1) {
+      assertThat(batch.ids()).containsExactly("1", "2", "3");
+    } else {
+      assertThat(batch.ids()).containsExactly("21");
+    }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
-  @Test
-  void shouldGetUsageMetricTUNextBatch() throws IOException {
-    // given - 3 TU documents, two older than archive threshold, one recent
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void shouldGetUsageMetricTUNextBatch(final int partitionId) throws IOException {
+    // given
     final var now = Instant.now();
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
+    final var repository = createRepository(partitionId);
     final var usageMetricTUIndex =
         resourceProvider
             .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
@@ -665,9 +674,12 @@ final class OpenSearchArchiverRepositoryIT {
     createUsageMetricTUIndex(usageMetricTUIndex);
     final var documents =
         List.of(
-            new TestUsageMetricTU("10", twoHoursAgo),
-            new TestUsageMetricTU("11", twoHoursAgo),
-            new TestUsageMetricTU("12", now.toString()));
+            new TestUsageMetricTU("10", twoHoursAgo, 1),
+            new TestUsageMetricTU("11", twoHoursAgo, 1),
+            new TestUsageMetricTU("12", twoHoursAgo, -1),
+            new TestUsageMetricTU("14", now.toString(), 1),
+            new TestUsageMetricTU("20", now.toString(), 2),
+            new TestUsageMetricTU("21", twoHoursAgo, 2));
     documents.forEach(doc -> index(usageMetricTUIndex, doc));
     testClient.indices().refresh(r -> r.index(usageMetricTUIndex));
     config.setRolloverBatchSize(5);
@@ -680,7 +692,11 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("10", "11");
+    if (partitionId == 1) {
+      assertThat(batch.ids()).containsExactly("10", "11", "12");
+    } else {
+      assertThat(batch.ids()).containsExactly("21");
+    }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -959,19 +975,35 @@ final class OpenSearchArchiverRepositoryIT {
 
   // no need to close resource returned here, since the transport is closed above anyway
   private OpenSearchArchiverRepository createRepository() {
+    return createRepository(1);
+  }
+
+  private OpenSearchArchiverRepository createRepository(final int partitionId) {
     final var client = createOpenSearchAsyncClient();
 
     return createRepository(
-        new OpenSearchGenericClient(client._transport(), client._transportOptions()));
+        new OpenSearchGenericClient(client._transport(), client._transportOptions()), partitionId);
   }
 
   private OpenSearchArchiverRepository createRepository(
       final OpenSearchGenericClient genericClient) {
+    return createRepository(genericClient, 1);
+  }
+
+  private OpenSearchArchiverRepository createRepository(
+      final OpenSearchGenericClient genericClient, final int partitionId) {
     final var client = createOpenSearchAsyncClient();
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
-        1, config, resourceProvider, client, genericClient, Runnable::run, metrics, LOGGER);
+        partitionId,
+        config,
+        resourceProvider,
+        client,
+        genericClient,
+        Runnable::run,
+        metrics,
+        LOGGER);
   }
 
   private void createProcessInstanceIndex() throws IOException {
@@ -1087,9 +1119,10 @@ final class OpenSearchArchiverRepositoryIT {
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
 
-  private record TestUsageMetric(String id, String endTime) implements TDocument {}
+  private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
 
-  private record TestUsageMetricTU(String id, String endTime) implements TDocument {}
+  private record TestUsageMetricTU(String id, String endTime, int partitionId)
+      implements TDocument {}
 
   private interface TDocument {
     String id();
