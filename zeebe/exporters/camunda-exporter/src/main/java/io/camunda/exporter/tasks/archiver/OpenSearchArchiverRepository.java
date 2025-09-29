@@ -7,6 +7,8 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
@@ -35,6 +37,7 @@ import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
 import org.opensearch.client.opensearch._types.SortOrder;
 import org.opensearch.client.opensearch._types.Time;
+import org.opensearch.client.opensearch._types.query_dsl.BoolQuery.Builder;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch._types.query_dsl.QueryBuilders;
 import org.opensearch.client.opensearch._types.query_dsl.TermsQuery;
@@ -124,7 +127,9 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
-            usageMetricTUTemplateDescriptor.getFullQualifiedName(), UsageMetricTUTemplate.END_TIME);
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .thenComposeAsync(
             response ->
@@ -137,23 +142,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
-            usageMetricTemplateDescriptor.getFullQualifiedName(), UsageMetricTemplate.END_TIME);
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
     return sendRequestAsync(() -> client.search(searchRequest, Object.class))
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
                     response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
             executor);
-  }
-
-  private SearchRequest createUsageMetricSearchRequest(
-      final String indexName, final String endTimeField) {
-    final var endDateQ =
-        QueryBuilders.range()
-            .field(endTimeField)
-            .lte(JsonData.of(config.getArchivingTimePoint()))
-            .build();
-    return createSearchRequest(indexName, endDateQ.toQuery(), endTimeField);
   }
 
   @Override
@@ -266,6 +263,41 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
     } catch (final IOException e) {
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private SearchRequest createUsageMetricSearchRequest(
+      final String indexName, final String endTimeField, final String partitionIdField) {
+    final var endDateQ =
+        QueryBuilders.range()
+            .field(endTimeField)
+            .lte(JsonData.of(config.getArchivingTimePoint()))
+            .build()
+            .toQuery();
+
+    final Builder boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+
+    if (partitionId == START_PARTITION_ID) {
+      // Include -1 for migrated documents without partitionId
+      final List<FieldValue> partitionIds = List.of(FieldValue.of(-1), FieldValue.of(partitionId));
+      final var termsQ =
+          QueryBuilders.terms()
+              .field(partitionIdField)
+              .terms(t -> t.value(partitionIds))
+              .build()
+              .toQuery();
+      boolBuilder.must(termsQ);
+    } else {
+      final var termQ =
+          QueryBuilders.term()
+              .field(partitionIdField)
+              .value(FieldValue.of(partitionId))
+              .build()
+              .toQuery();
+      boolBuilder.must(termQ);
+    }
+
+    return createSearchRequest(indexName, boolBuilder.build().toQuery(), endTimeField);
   }
 
   private Query finishedProcessInstancesQuery(
