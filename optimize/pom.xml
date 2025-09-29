@@ -51,8 +51,8 @@
     <apache.http5-client.version>5.4</apache.http5-client.version>
     <apache.http5-core.version>5.3.1</apache.http5-core.version>
     <guava.version>33.3.1-jre</guava.version>
-    <spring.boot.version>3.3.13</spring.boot.version>
-    <spring.version>6.1.21</spring.version>
+    <spring.boot.version>3.5.5</spring.boot.version>
+    <spring.version>6.2.10</spring.version>
     <spring.security.version>6.4.7</spring.security.version>
     <version.tomcat>10.1.44</version.tomcat>
     <httpclient.version>4.5.14</httpclient.version>
