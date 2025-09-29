@@ -57,6 +57,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of usage-metrics-task-users that have been archived. */
   private final Counter usageMetricsTUArchived;
 
+  /** Count of standalone-decisions that are in progress of archiving. */
+  private final Counter standaloneDecisionsArchiving;
+
+  /** Count of standalone-decisions that have been archived. */
+  private final Counter standaloneDecisionsArchived;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -129,6 +135,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "archiving")
             .description(
                 "Count of completed usage-metrics-task-users that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    standaloneDecisionsArchived =
+        Counter.builder(meterName("archiver.standalone.decisions"))
+            .tag("state", "archived")
+            .description("Count of completed standalone-decisions, that have been archived.")
+            .register(meterRegistry);
+    standaloneDecisionsArchiving =
+        Counter.builder(meterName("archiver.standalone.decisions"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed standalone-decisions that have been found, and are now in progress of archiving.")
             .register(meterRegistry);
     archiverSearchTimer =
         Timer.builder(meterName("archiver.request.duration"))
@@ -248,6 +265,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordUsageMetricsTUArchiving(final int count) {
     usageMetricsTUArchiving.increment(count);
+  }
+
+  public void recordStandaloneDecisionsArchived(final int count) {
+    standaloneDecisionsArchived.increment(count);
+  }
+
+  public void recordStandaloneDecisionsArchiving(final int count) {
+    standaloneDecisionsArchiving.increment(count);
   }
 
   public void recordFlushFailureType(final String failureType) {
