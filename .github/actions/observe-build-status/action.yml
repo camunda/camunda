@@ -91,7 +91,7 @@ runs:
           echo 'EOF'
         } >> $GITHUB_OUTPUT
 
-    - uses: camunda/infra-global-github-actions/submit-test-status@main
+    - uses: camunda/infra-global-github-actions/submit-test-status@26888-submit-junit-test-details-to-ci-analytics
       if: ${{ inputs.detailed_junit_flaky_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
         test_event_record: "${{ steps.get-detailed-flaky-junit-tests.outputs.result }}"  # TODO: what is the size limit?
