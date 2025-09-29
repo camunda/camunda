@@ -141,6 +141,7 @@ jobs:
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
+          job_name: "hadolint/${{ matrix.dockerfile }}"
           build_status: ${{ job.status }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
