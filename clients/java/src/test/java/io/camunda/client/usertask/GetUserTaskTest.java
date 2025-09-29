@@ -22,6 +22,7 @@ import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.UserTaskResult;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
+import java.time.OffsetDateTime;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +38,11 @@ public class GetUserTaskTest extends ClientRestTest {
             .elementInstanceKey("2")
             .processDefinitionKey("3")
             .processInstanceKey("4")
-            .userTaskKey("5"));
+            .userTaskKey("5")
+            .creationDate(OffsetDateTime.now().toString())
+            .completionDate(OffsetDateTime.now().toString())
+            .dueDate(OffsetDateTime.now().toString())
+            .followUpDate(OffsetDateTime.now().toString()));
 
     // when
     client.newUserTaskGetRequest(userTaskKey).send().join();

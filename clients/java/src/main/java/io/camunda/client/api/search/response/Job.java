@@ -18,6 +18,7 @@ package io.camunda.client.api.search.response;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.JobState;
 import io.camunda.client.api.search.enums.ListenerEventType;
+import java.time.OffsetDateTime;
 import java.util.Map;
 
 public interface Job {
@@ -48,9 +49,9 @@ public interface Job {
 
   Map<String, String> getCustomerHeaders();
 
-  String getDeadline();
+  OffsetDateTime getDeadline();
 
-  String getEndTime();
+  OffsetDateTime getEndTime();
 
   String getProcessDefinitionId();
 
