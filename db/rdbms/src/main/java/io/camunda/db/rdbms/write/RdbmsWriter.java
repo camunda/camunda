@@ -155,7 +155,9 @@ public class RdbmsWriter {
             batchOperationWriter,
             messageSubscriptionWriter,
             correlatedMessageSubscriptionWriter,
-            metrics);
+            metrics,
+            usageMetricWriter,
+            usageMetricTUWriter);
   }
 
   public AuthorizationWriter getAuthorizationWriter() {

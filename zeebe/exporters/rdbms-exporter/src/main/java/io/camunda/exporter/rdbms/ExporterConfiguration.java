@@ -145,6 +145,8 @@ public class ExporterConfiguration {
             .minHistoryCleanupInterval(history.getMinHistoryCleanupInterval())
             .maxHistoryCleanupInterval(history.getMaxHistoryCleanupInterval())
             .historyCleanupBatchSize(history.getHistoryCleanupBatchSize())
+            .usageMetricsCleanup(history.getUsageMetricsCleanup())
+            .usageMetricsTTL(history.getUsageMetricsTTL())
             .build();
 
     return new RdbmsWriterConfig.Builder()
@@ -194,6 +196,9 @@ public class ExporterConfiguration {
     private Duration maxHistoryCleanupInterval =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
     private int historyCleanupBatchSize = DEFAULT_CLEANUP_BATCH_SIZE;
+    private Duration usageMetricsCleanup =
+        RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
+    private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
 
     public Duration getDefaultHistoryTTL() {
       return defaultHistoryTTL;
@@ -274,6 +279,22 @@ public class ExporterConfiguration {
       this.historyCleanupBatchSize = historyCleanupBatchSize;
     }
 
+    public Duration getUsageMetricsCleanup() {
+      return usageMetricsCleanup;
+    }
+
+    public void setUsageMetricsCleanup(final Duration usageMetricsCleanup) {
+      this.usageMetricsCleanup = usageMetricsCleanup;
+    }
+
+    public Duration getUsageMetricsTTL() {
+      return usageMetricsTTL;
+    }
+
+    public void setUsageMetricsTTL(final Duration usageMetricsTTL) {
+      this.usageMetricsTTL = usageMetricsTTL;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
 
@@ -298,6 +319,8 @@ public class ExporterConfiguration {
           errors);
       checkPositiveDuration(minHistoryCleanupInterval, "minHistoryCleanupInterval", errors);
       checkPositiveDuration(maxHistoryCleanupInterval, "maxHistoryCleanupInterval", errors);
+      checkPositiveDuration(usageMetricsCleanup, "usageMetricsCleanup", errors);
+      checkPositiveDuration(usageMetricsTTL, "usageMetricsTTL", errors);
 
       if (maxHistoryCleanupInterval.compareTo(minHistoryCleanupInterval) <= 0) {
         errors.add(
