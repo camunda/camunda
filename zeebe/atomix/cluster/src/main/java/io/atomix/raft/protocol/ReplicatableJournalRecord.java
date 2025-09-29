@@ -58,9 +58,7 @@ public record ReplicatableJournalRecord(
   public String toString() {
     final var recordToString =
         serializedJournalRecord != null
-            ? "{rawToString="
-                + serializedJournalRecord
-                + ", length="
+            ? "{length="
                 + serializedJournalRecord.length
                 + ", hashCode="
                 + Arrays.hashCode(serializedJournalRecord)
