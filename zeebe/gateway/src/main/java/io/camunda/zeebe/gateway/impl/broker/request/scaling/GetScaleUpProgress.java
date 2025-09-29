@@ -24,6 +24,11 @@ public class GetScaleUpProgress extends BrokerExecuteCommand<ScaleRecord> {
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
+  public GetScaleUpProgress(final int partitionId) {
+    super(ValueType.SCALE, ScaleIntent.STATUS);
+    setPartitionId(partitionId);
+  }
+
   @Override
   public BufferWriter getRequestWriter() {
     return requestDto;
