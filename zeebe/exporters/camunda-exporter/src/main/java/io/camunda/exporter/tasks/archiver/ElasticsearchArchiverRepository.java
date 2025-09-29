@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
@@ -16,6 +17,7 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
@@ -135,7 +137,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
-            usageMetricTemplateDescriptor.getFullQualifiedName(), UsageMetricTemplate.END_TIME);
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
 
     final var timer = Timer.start();
     return client
@@ -152,7 +156,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
-            usageMetricTUTemplateDescriptor.getFullQualifiedName(), UsageMetricTUTemplate.END_TIME);
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
 
     final var timer = Timer.start();
     return client
@@ -398,11 +404,26 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   private SearchRequest createUsageMetricSearchRequest(
-      final String indexName, final String endTimeField) {
+      final String indexName, final String endTimeField, final String partitionIdField) {
     final var endDateQ =
         QueryBuilders.range(
             q -> q.date(d -> d.field(endTimeField).lte(config.getArchivingTimePoint())));
-    return createSearchRequest(indexName, endDateQ, endTimeField);
+
+    final Builder boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+
+    if (partitionId == START_PARTITION_ID) {
+      // Include -1 for migrated documents without partitionId
+      final List<FieldValue> partitionIds = List.of(FieldValue.of(-1), FieldValue.of(partitionId));
+      final var termsQ =
+          QueryBuilders.terms(q -> q.field(partitionIdField).terms(t -> t.value(partitionIds)));
+      boolBuilder.must(termsQ);
+    } else {
+      final var termQ = QueryBuilders.term(q -> q.field(partitionIdField).value(partitionId));
+      boolBuilder.must(termQ);
+    }
+
+    return createSearchRequest(indexName, boolBuilder.build()._toQuery(), endTimeField);
   }
 
   private SearchRequest createSearchRequest(
