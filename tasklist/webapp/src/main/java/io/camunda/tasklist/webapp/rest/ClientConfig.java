@@ -55,7 +55,7 @@ public class ClientConfig {
   @Value("${spring.servlet.multipart.max-request-size:4MB}")
   private DataSize maxRequestSizeConfigValue;
 
-  @Value("${CAMUNDA_TASKLIST_V2_MODE_ENABLED:#{false}}")
+  @Value("${CAMUNDA_TASKLIST_V2_MODE_ENABLED:#{true}}")
   private boolean isV2ModeEnabled;
 
   @Autowired private TasklistProfileService profileService;
