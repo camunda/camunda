@@ -139,5 +139,4 @@ test.describe.parallel('Assign User Task Tests', () => {
       await assertStatusCode(res2, 204);
     });
   });
-  // TODO: Evaluate if a test for 409 Conflict is necessary here
 });

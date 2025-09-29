@@ -13,11 +13,11 @@ import {
 } from '../../../../utils/requestHelpers';
 import {
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get User Task Tests', () => {
@@ -37,7 +37,15 @@ test.describe.parallel('Get User Task Tests', () => {
     const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}`), {
       headers: jsonHeaders(),
     });
-    await assertStatusCode(res, 200);
+    const responseBody = await res.json();
+    validateResponseShape(
+      {
+        path: '/user-tasks/{userTaskKey}',
+        method: 'GET',
+        status: '200',
+      },
+      responseBody,
+    );
   });
 
   test('Get user task - not found', async ({request}) => {
@@ -68,6 +76,4 @@ test.describe.parallel('Get User Task Tests', () => {
     });
     await assertUnauthorizedRequest(res);
   });
-
-  // TODO: Evaluate if a test for 403 Forbidden is necessary here
 });

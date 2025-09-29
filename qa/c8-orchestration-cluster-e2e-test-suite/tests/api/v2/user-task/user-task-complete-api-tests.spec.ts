@@ -14,15 +14,13 @@ import {
 import {expect, test} from '@playwright/test';
 import {
   assertNotFoundRequest,
-  assertRequiredFields,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  paginatedResponseFields,
 } from '../../../../utils/http';
-import {userTaskSearchPageResponseRequiredFields} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Complete User Task Tests', () => {
@@ -66,10 +64,13 @@ test.describe.parallel('Complete User Task Tests', () => {
         await assertStatusCode(verifyRes, 200);
         const verifyJson = await verifyRes.json();
 
-        assertRequiredFields(verifyJson, paginatedResponseFields);
-        assertRequiredFields(
-          verifyJson.page,
-          userTaskSearchPageResponseRequiredFields,
+        validateResponseShape(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          verifyJson,
         );
         expect(verifyJson.page.totalItems).toBe(1);
         expect(verifyJson.items.length).toBe(1);
@@ -120,23 +121,5 @@ test.describe.parallel('Complete User Task Tests', () => {
       },
     );
     await assertUnauthorizedRequest(res);
-  });
-
-  test.skip('Complete user task - conflict when already completed', async ({
-    request,
-  }) => {
-    const userTaskKey = await findUserTask(
-      request,
-      state['processInstanceKey'] as string,
-      'CREATED',
-    );
-
-    const first = await completeUserTask(request, userTaskKey);
-    await assertStatusCode(first, 204);
-
-    const second = await completeUserTask(request, userTaskKey);
-    await assertStatusCode(second, 409);
-
-    state['processCompleted'] = true;
   });
 });

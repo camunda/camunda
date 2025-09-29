@@ -80,7 +80,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to defect
+  // Skipped due to issue #38880
   test.skip('Unassign user task - not found', async ({request}) => {
     const unknownUserTaskKey = '2251799813694876';
     const res = await request.delete(
@@ -138,6 +138,4 @@ test.describe.parallel('Unassign User Task Tests', () => {
       await assertStatusCode(res2, 204);
     });
   });
-
-  // TODO: Evaluate if a test for 409 Conflict is necessary here
 });
