@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedClass;
+import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.introspect.NopAnnotationIntrospector;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 
@@ -41,6 +42,30 @@ final class AnnotationIntrospector extends NopAnnotationIntrospector {
     }
 
     return super.findPropertyIgnoralByName(config, ann);
+  }
+
+  @Override
+  public AnnotatedMethod resolveSetterConflict(
+      final MapperConfig<?> config, final AnnotatedMethod setter1, final AnnotatedMethod setter2) {
+    // Immutable builders can have two setters for the same property, one taking the value
+    // directly, and one taking a Consumer to set properties on a nested builder.
+    // In this case, we prefer the setter taking the value directly.
+    if (setter1.getDeclaringClass().isAnnotationPresent(ImmutableProtocol.Builder.class)
+        && setter2.getDeclaringClass().isAnnotationPresent(ImmutableProtocol.Builder.class)) {
+      if (setter1.getParameterCount() == 1 && setter2.getParameterCount() == 1) {
+        final Class<?> paramType1 = setter1.getRawParameterType(0);
+        final Class<?> paramType2 = setter2.getRawParameterType(0);
+
+        // Prefer the setter with the correct type (not Consumer)
+        if (paramType1.equals(java.util.function.Consumer.class)) {
+          return setter2;
+        } else if (paramType2.equals(java.util.function.Consumer.class)) {
+          return setter1;
+        }
+      }
+    }
+
+    return super.resolveSetterConflict(config, setter1, setter2);
   }
 
   @Override
