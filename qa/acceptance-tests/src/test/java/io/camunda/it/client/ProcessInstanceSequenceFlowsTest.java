@@ -10,11 +10,12 @@ package io.camunda.it.client;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.impl.search.response.ProcessInstanceSequenceFlowImpl;
+import io.camunda.client.api.search.response.ProcessInstanceSequenceFlow;
 import io.camunda.it.util.TestHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import java.util.ArrayList;
@@ -101,8 +102,16 @@ public class ProcessInstanceSequenceFlowsTest {
     // then
     assertThat(actual).hasSize(1);
     assertThat(actual)
+        .extracting(
+            ProcessInstanceSequenceFlow::getSequenceFlowId,
+            ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionId,
+            ProcessInstanceSequenceFlow::getElementId,
+            ProcessInstanceSequenceFlow::getTenantId)
         .containsExactlyInAnyOrder(
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "sequenceFlow1"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "incident_process_v1",
@@ -124,14 +133,23 @@ public class ProcessInstanceSequenceFlowsTest {
     // then
     assertThat(actual).hasSize(2);
     assertThat(actual)
+        .extracting(
+            ProcessInstanceSequenceFlow::getSequenceFlowId,
+            ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionId,
+            ProcessInstanceSequenceFlow::getElementId,
+            ProcessInstanceSequenceFlow::getTenantId)
         .containsExactlyInAnyOrder(
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_00yb6c4"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "processWithSubProcess",
                 "Flow_00yb6c4",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_14vfmwp"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "processWithSubProcess",
@@ -153,20 +171,30 @@ public class ProcessInstanceSequenceFlowsTest {
     // then
     assertThat(actual).hasSize(3);
     assertThat(actual)
+        .extracting(
+            ProcessInstanceSequenceFlow::getSequenceFlowId,
+            ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionId,
+            ProcessInstanceSequenceFlow::getElementId,
+            ProcessInstanceSequenceFlow::getTenantId)
         .containsExactlyInAnyOrder(
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1xuspnu"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
                 "Flow_1xuspnu",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_03xh6j8"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
                 "Flow_03xh6j8",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1ffbwjw"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
@@ -188,32 +216,44 @@ public class ProcessInstanceSequenceFlowsTest {
     // then
     assertThat(actual).hasSize(5);
     assertThat(actual)
+        .extracting(
+            ProcessInstanceSequenceFlow::getSequenceFlowId,
+            ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionId,
+            ProcessInstanceSequenceFlow::getElementId,
+            ProcessInstanceSequenceFlow::getTenantId)
         .containsExactlyInAnyOrder(
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_01h019c"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_01h019c",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_08mqnul"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_08mqnul",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1h48f0w"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1h48f0w",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1gqyehp"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1gqyehp",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1rlbq9a"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
@@ -235,32 +275,44 @@ public class ProcessInstanceSequenceFlowsTest {
     // then
     assertThat(actual).hasSize(5);
     assertThat(actual)
+        .extracting(
+            ProcessInstanceSequenceFlow::getSequenceFlowId,
+            ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionKey,
+            ProcessInstanceSequenceFlow::getProcessDefinitionId,
+            ProcessInstanceSequenceFlow::getElementId,
+            ProcessInstanceSequenceFlow::getTenantId)
         .containsExactlyInAnyOrder(
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_01h019c"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_01h019c",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_08mqnul"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_08mqnul",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1h48f0w"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1h48f0w",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1hb4p0z"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1hb4p0z",
                 "<default>"),
-            new ProcessInstanceSequenceFlowImpl(
+            tuple(
+                "%s_%s".formatted(processInstanceKey, "Flow_1rlbq9a"),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
