@@ -9,6 +9,8 @@ package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -31,6 +33,9 @@ public class Data {
 
   /** This section allows to configure Zeebe's secondary storage. */
   @NestedConfigurationProperty private SecondaryStorage secondaryStorage = new SecondaryStorage();
+
+  /** This section allows configuring exporters */
+  private Map<String, Exporter> exporters = new HashMap<>();
 
   public Duration getSnapshotPeriod() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -75,5 +80,13 @@ public class Data {
 
   public void setSecondaryStorage(final SecondaryStorage secondaryStorage) {
     this.secondaryStorage = secondaryStorage;
+  }
+
+  public Map<String, Exporter> getExporters() {
+    return exporters;
+  }
+
+  public void setExporters(final Map<String, Exporter> exporters) {
+    this.exporters = exporters;
   }
 }
