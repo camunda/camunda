@@ -42,6 +42,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -83,7 +84,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ElasticsearchArchiverRepositoryIT.class);
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
 
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -574,6 +575,45 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetStandaloneDecisionNextBatch() throws IOException {
+    // given - 5 documents, two of which were created over an hour ago and should be archived,
+    // one of which was created recently, one on a different partition and one with a different
+    // process instance key
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestStandaloneDecision("1", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, -1),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, 12345),
+            new TestStandaloneDecision("5", now.toString(), 1, -1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    final var standaloneDecisionIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+    createStandaloneDecisionIndex(standaloneDecisionIndex);
+    documents.forEach(doc -> index(standaloneDecisionIndex, doc));
+    testClient.indices().refresh(r -> r.index(standaloneDecisionIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getStandaloneDecisionNextBatch();
+
+    // then - we expect only the first two documents created two hours ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
   void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
     // given a rollover of 3 days:
     config.setRolloverInterval("3d");
@@ -856,7 +896,7 @@ final class ElasticsearchArchiverRepositoryIT {
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
     connectConfig.setType(DatabaseType.ELASTICSEARCH.toString());
-    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setUrl(SEARCH_DB.esUrl());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
     schemaManagerConfig.getRetry().setMaxRetries(1);
     final SearchEngineConfiguration searchEngineConfiguration =
@@ -914,7 +954,7 @@ final class ElasticsearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(searchDB.esUrl())).build();
+    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.esUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
@@ -1010,6 +1050,29 @@ final class ElasticsearchArchiverRepositoryIT {
                     .aliases(usageMetricTUIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+  private void createStandaloneDecisionIndex(final String standaloneDecisionIndex)
+      throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var evaluationDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        DecisionInstanceTemplate.ID,
+                        idProp,
+                        DecisionInstanceTemplate.EVALUATION_DATE,
+                        evaluationDateProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(standaloneDecisionIndex)
+                    .mappings(properties)
+                    .aliases(standaloneDecisionIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
   private record TestDocument(String id) implements TDocument {}
 
   private record TestBatchOperation(String id, String endDate) implements TDocument {}
@@ -1020,6 +1083,10 @@ final class ElasticsearchArchiverRepositoryIT {
   private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
 
   private record TestUsageMetricTU(String id, String endTime, int partitionId)
+      implements TDocument {}
+
+  private record TestStandaloneDecision(
+      String id, String evaluationDate, int partitionId, int processInstanceKey)
       implements TDocument {}
 
   private interface TDocument {
