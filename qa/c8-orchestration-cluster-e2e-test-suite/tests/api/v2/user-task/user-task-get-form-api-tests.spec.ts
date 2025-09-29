@@ -22,6 +22,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get User Task Form Tests', () => {
@@ -96,8 +97,15 @@ test.describe.parallel('Get User Task Form Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      await assertStatusCode(res, 200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/user-tasks/{userTaskKey}/form',
+          method: 'GET',
+          status: '200',
+        },
+        json,
+      );
       expect(json.formId).toBe('user_task_form');
       expect(json.version).toBe(1);
       expect(json.schema).toBe(expectedSchema);
@@ -183,37 +191,5 @@ test.describe.parallel('Get User Task Form Tests', () => {
         `User Task with key '${nonExistingUserTaskKey}' not found`,
       );
     }).toPass(defaultAssertionOptions);
-  });
-
-  // TODO: Revisit if 403 is the correct status code here
-  test.skip('Get user task form - 403 forbidden - task belongs to another tenant', async ({
-    request,
-  }) => {
-    const processInstance = await createInstances(
-      'user_registration',
-      1,
-      1,
-      {},
-    );
-    const userTaskKey = await findUserTask(
-      request,
-      processInstance[0].processInstanceKey,
-      'CREATED',
-    );
-
-    const res = await request.get(buildUrl(`/user-tasks/${userTaskKey}/form`), {
-      // Request with different tenant id
-      headers: jsonHeaders('anotherTenantUserAccessToken'),
-    });
-    await assertStatusCode(res, 403);
-    const json = await res.json();
-    assertRequiredFields(json, ['detail', 'title']);
-    expect(json.title).toBe('FORBIDDEN');
-    expect(json.detail).toContain(
-      `User task with key '${userTaskKey}' does not belong to your tenant`,
-    );
-    await cancelProcessInstance(
-      processInstance[0].processInstanceKey as string,
-    );
   });
 });

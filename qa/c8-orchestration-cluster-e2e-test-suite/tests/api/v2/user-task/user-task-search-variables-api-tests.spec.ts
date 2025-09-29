@@ -13,18 +13,17 @@ import {
 } from '../../../../utils/requestHelpers';
 import {
   assertBadRequest,
-  assertRequiredFields,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  paginatedResponseFields,
 } from 'utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {validateResponseShape} from 'assert-json-body';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
+    'usertask_with_variables',
     'usertask_with_variables',
     {testset1: 'something', testset2: 'something else', zip: 123},
   );
@@ -48,9 +47,15 @@ test.describe.parallel('Search User Task Variables Tests', () => {
           data: {},
         },
       );
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/{userTaskKey}/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(3);
       expect(json.items.length).toBe(3);
     }).toPass(defaultAssertionOptions);
@@ -73,9 +78,15 @@ test.describe.parallel('Search User Task Variables Tests', () => {
           },
         },
       );
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/{userTaskKey}/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(3);
       expect(json.items.length).toBe(3);
       expect(json.items[0].name).toEqual('zip');
@@ -87,7 +98,6 @@ test.describe.parallel('Search User Task Variables Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // TODO: Check if 401 is necessary here
   test('Search user task variables - unauthorized', async ({request}) => {
     const userTaskKey = await findUserTask(
       request,
@@ -164,9 +174,15 @@ test.describe.parallel('Search User Task Variables Tests', () => {
           },
         },
       );
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/{userTaskKey}/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(1);
       expect(json.items.length).toBe(1);
       expect(json.items[0].name).toBe('testset1');
@@ -196,9 +212,15 @@ test.describe.parallel('Search User Task Variables Tests', () => {
           },
         },
       );
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/{userTaskKey}/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(2);
       expect(json.items.length).toBe(2);
       expect(json.items[0].name).toBe('testset1');

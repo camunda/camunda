@@ -9,16 +9,13 @@
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
-  assertRequiredFields,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
-  paginatedResponseFields,
 } from '../../../../utils/http';
-import {userTaskSearchPageResponseRequiredFields} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {setupProcessInstanceTests} from '../../../../utils/requestHelpers';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Tests', () => {
@@ -36,10 +33,16 @@ test.describe.parallel('Search User Task Tests', () => {
         headers: jsonHeaders(),
         data: {},
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      assertRequiredFields(json.page, userTaskSearchPageResponseRequiredFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
+
       expect(json.page.totalItems).toBeGreaterThan(3);
     }).toPass(defaultAssertionOptions);
   });
@@ -77,10 +80,15 @@ test.describe.parallel('Search User Task Tests', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      assertRequiredFields(json.page, userTaskSearchPageResponseRequiredFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(3);
     }).toPass(defaultAssertionOptions);
   });
@@ -98,10 +106,15 @@ test.describe.parallel('Search User Task Tests', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      assertRequiredFields(json.page, userTaskSearchPageResponseRequiredFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(1);
       expect(json.items[0].name).toBe('First user task');
     }).toPass(defaultAssertionOptions);
@@ -117,10 +130,15 @@ test.describe.parallel('Search User Task Tests', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      assertRequiredFields(json.page, userTaskSearchPageResponseRequiredFields);
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBe(0);
       expect(json.items.length).toBe(0);
     }).toPass(defaultAssertionOptions);

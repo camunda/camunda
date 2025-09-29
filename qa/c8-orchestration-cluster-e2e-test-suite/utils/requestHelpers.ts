@@ -744,7 +744,6 @@ export async function findUserTask(
   state: string,
 ) {
   const localState: Record<string, unknown> = {};
-  console.log(procKey);
   await expect(async () => {
     const searchRes = await request.post(buildUrl('/user-tasks/search'), {
       headers: jsonHeaders(),
