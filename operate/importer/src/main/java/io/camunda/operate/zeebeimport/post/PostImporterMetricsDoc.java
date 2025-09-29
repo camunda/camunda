@@ -8,21 +8,18 @@
 package io.camunda.operate.zeebeimport.post;
 
 import io.camunda.operate.Metrics;
+import io.camunda.zeebe.util.micrometer.ExtendedMeterDocumentation;
+import io.micrometer.core.instrument.Meter.Type;
 
 /**
- * Documentation for post importer metrics following the Camunda metrics guide.
- *
- * <p>This class serves as documentation for all metrics related to the post importer functionality,
- * providing clear descriptions and usage guidelines for each metric.
+ * {@link PostImporterMetricsDoc} documents all post importer specific metrics following the Camunda
+ * metrics guide.
  */
-public final class PostImporterMetricsDoc {
-
-  private PostImporterMetricsDoc() {
-    // Utility class
-  }
+@SuppressWarnings("NullableProblems")
+public enum PostImporterMetricsDoc implements ExtendedMeterDocumentation {
 
   /**
-   * Post importer queue size metric documentation.
+   * Post importer queue size metric.
    *
    * <p>This gauge metric tracks the current size of the post importer queue for each partition. It
    * helps monitor if the post importer is stuck or overloaded, which is critical for operational
@@ -31,35 +28,26 @@ public final class PostImporterMetricsDoc {
    * <p><strong>Use case:</strong> Quickly determine if the post importer is experiencing issues
    * without requiring manual polling. This was identified as a need in support case SUPPORT-27255.
    *
-   * <p><strong>Type:</strong> Gauge (current value at a specific moment)
-   *
-   * <p><strong>Tags:</strong>
-   *
-   * <ul>
-   *   <li>partition - The partition ID for which the queue size is measured
-   * </ul>
-   *
    * <p><strong>Update frequency:</strong> Updated on each processing batch request when {@code
    * getPendingIncidents()} is called.
    *
    * <p><strong>Alerting considerations:</strong> High values may indicate that the post importer is
    * unable to keep up with the incoming incident processing workload.
    */
-  public static final class PostImporterQueueSize {
-    public static final String NAME = Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE;
-    public static final String DESCRIPTION =
-        "Current size of the post importer queue for processing pending incidents";
-
-    private PostImporterQueueSize() {
-      // Utility class
-    }
-
+  POST_IMPORTER_QUEUE_SIZE {
+    @Override
     public String getName() {
-      return NAME;
+      return Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE;
     }
 
-    public String getDescription() {
-      return DESCRIPTION;
+    @Override
+    public Type getType() {
+      return Type.GAUGE;
     }
-  }
+
+    @Override
+    public String getDescription() {
+      return "Current size of the post importer queue for processing pending incidents";
+    }
+  };
 }

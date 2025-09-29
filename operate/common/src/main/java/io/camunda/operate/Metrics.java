@@ -109,6 +109,14 @@ public class Metrics {
     Gauge.builder(name, gaugeSupplier).tags(tags).register(registry);
   }
 
+  public void registerGaugeSupplier(
+      final String name,
+      final String description,
+      final Supplier<Number> gaugeSupplier,
+      final String... tags) {
+    Gauge.builder(name, gaugeSupplier).tags(tags).description(description).register(registry);
+  }
+
   public <E> void registerGaugeQueueSize(
       final String name, final Queue<E> queue, final String... tags) {
     registerGauge(name, queue, q -> q.size(), tags);
