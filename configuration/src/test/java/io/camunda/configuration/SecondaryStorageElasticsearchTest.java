@@ -319,7 +319,7 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(args).isNotNull();
 
       final ExporterConfiguration exporterConfiguration =
-          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+          UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://matching-url:4321");
     }
   }
