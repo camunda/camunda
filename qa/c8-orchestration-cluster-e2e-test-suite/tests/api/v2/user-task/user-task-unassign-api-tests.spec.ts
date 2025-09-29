@@ -80,7 +80,7 @@ test.describe.parallel('Unassign User Task Tests', () => {
     await assertUnauthorizedRequest(res);
   });
 
-  // Skipped due to issue #38880
+  // Skipped due to bug #38880: https://github.com/camunda/camunda/issues/38880
   test.skip('Unassign user task - not found', async ({request}) => {
     const unknownUserTaskKey = '2251799813694876';
     const res = await request.delete(
