@@ -6,12 +6,13 @@ name: Release Branch Notifications
 
 on:
   pull_request:
-    branches: ['release-*']
-    types: [labeled, closed]
-  pull_request_target:
     types: [labeled]
+    branches:
+      - main
+      - stable/**
   push:
-    branches: ['release-*']
+    branches:
+      - release-*
 
 jobs:
   validate-event:
@@ -42,14 +43,9 @@ jobs:
           # Regex for release branches: release-X.Y.Z or release-X.Y.Z-alphaK
           RELEASE_REGEX="^release-[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9]+)?$"
 
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" || "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             # Direct release branch PRs
-            if [[ "$PR_BASE_REF" =~ $RELEASE_REGEX ]]; then
-              if [[ "$GITHUB_EVENT_ACTION" == "closed" && "$PR_MERGED" == "true" ]]; then
-                VALID="true"
-              fi
-            # Backport PRs to main or stable branches
-            elif [[ "$PR_BASE_REF" == "main" ]] || [[ "$PR_BASE_REF" =~ ^stable/[0-9]+\.[0-9]+$ ]]; then
+            if [[ "$PR_BASE_REF" == "main" ]] || [[ "$PR_BASE_REF" =~ ^stable/[0-9]+\.[0-9]+$ ]]; then
               if [[ "$GITHUB_EVENT_ACTION" == "labeled" && ("$PR_LABEL" =~ ^backport\ release-[0-9]+\.[0-9]+\.[0-9]+) ]]; then
                 VALID="true"
               fi
@@ -60,6 +56,7 @@ jobs:
             fi
           fi
 
+          echo "🔍 Validation result: $VALID"
           echo "valid=$VALID" >> "$GITHUB_OUTPUT"
   notify-release-activity:
     name: Send Slack notification for release branch activity
@@ -103,7 +100,7 @@ jobs:
           echo "🔍 Processing event: $GITHUB_EVENT_NAME - $GITHUB_EVENT_ACTION"
 
           # Determine event type and extract data
-          if [[ "$GITHUB_EVENT_NAME" == "pull_request" || "$GITHUB_EVENT_NAME" == "pull_request_target" ]]; then
+          if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
             BRANCH_NAME="$PR_BASE_REF"
             AUTHOR="$PR_AUTHOR"
 
@@ -112,36 +109,50 @@ jobs:
               PR_TITLE="${PR_TITLE:0:77}..."
             fi
 
-            if [[ "$GITHUB_EVENT_ACTION" == "closed" && "$PR_MERGED" == "true" ]]; then
-              ACTION_TYPE="MERGE COMPLETED"
-              LINK_TEXT="Merged PR: #$PR_NUMBER - $PR_TITLE"
-              LINK_URL="$PR_URL"
-            elif [[ "$GITHUB_EVENT_ACTION" == "labeled" ]]; then
-              ACTION_TYPE="BACKPORTING"
-              LINK_TEXT="PR: #$PR_NUMBER - $PR_TITLE (Label: $PR_LABEL)"
-              LINK_URL="$PR_URL"
-            fi
+            ACTION_TYPE="BACKPORTING"
+            LINK_TEXT="PR: #$PR_NUMBER - $PR_TITLE (Label: $PR_LABEL)"
+            LINK_URL="$PR_URL"
 
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
-            ACTION_TYPE="DIRECT PUSH to release branch"
             BRANCH_NAME="$GITHUB_REF_NAME"
             AUTHOR="$PUSH_AUTHOR"
 
-            COMMIT_MSG=""
-            COMMIT_SHA=""
-
-            if [[ -n "$HEAD_COMMIT_SHA" ]]; then
-              COMMIT_MSG="$HEAD_COMMIT_MSG"
-              COMMIT_SHA="$HEAD_COMMIT_SHA"
-
-              if [[ ${#COMMIT_MSG} -gt 60 ]]; then
-                COMMIT_MSG="${COMMIT_MSG:0:57}..."
+            # Check if this is a merge commit (typically has "Merge pull request" in commit message)
+            if [[ -n "$HEAD_COMMIT_MSG" && "$HEAD_COMMIT_MSG" =~ ^Merge\ pull\ request\ #([0-9]+) ]]; then
+              ACTION_TYPE="MERGE COMPLETED"
+              PR_NUMBER="${BASH_REMATCH[1]}"
+              
+              # Extract PR title from commit message if available
+              # Merge commit format: "Merge pull request #123 from branch\n\nPR Title"
+              if [[ "$HEAD_COMMIT_MSG" =~ $'\n\n'(.+) ]]; then
+                PR_TITLE_FROM_COMMIT="${BASH_REMATCH[1]}"
+                # Truncate long titles
+                if [[ ${#PR_TITLE_FROM_COMMIT} -gt 60 ]]; then
+                  PR_TITLE_FROM_COMMIT="${PR_TITLE_FROM_COMMIT:0:57}..."
+                fi
+                LINK_TEXT="Merged PR: #$PR_NUMBER - $PR_TITLE_FROM_COMMIT"
+              else
+                LINK_TEXT="Merged PR: #$PR_NUMBER"
               fi
-              LINK_TEXT="Commit: ${COMMIT_SHA:0:7} - $COMMIT_MSG"
-              LINK_URL="$HEAD_COMMIT_URL"
+              
+              LINK_URL="$REPO_URL/pull/$PR_NUMBER"
             else
-              LINK_TEXT="Push to release branch"
-              LINK_URL="${COMPARE_URL:-$REPO_URL/tree/$GITHUB_REF_NAME}"
+              # This is a direct push
+              ACTION_TYPE="DIRECT PUSH to release branch"
+              
+              if [[ -n "$HEAD_COMMIT_SHA" ]]; then
+                COMMIT_MSG="$HEAD_COMMIT_MSG"
+                COMMIT_SHA="$HEAD_COMMIT_SHA"
+
+                if [[ ${#COMMIT_MSG} -gt 60 ]]; then
+                  COMMIT_MSG="${COMMIT_MSG:0:57}..."
+                fi
+                LINK_TEXT="Commit: ${COMMIT_SHA:0:7} - $COMMIT_MSG"
+                LINK_URL="$HEAD_COMMIT_URL"
+              else
+                LINK_TEXT="Push to release branch"
+                LINK_URL="${COMPARE_URL:-$REPO_URL/tree/$GITHUB_REF_NAME}"
+              fi
             fi
           fi
 
