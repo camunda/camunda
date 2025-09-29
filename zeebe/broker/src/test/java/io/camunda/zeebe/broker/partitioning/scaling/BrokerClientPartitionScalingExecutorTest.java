@@ -88,7 +88,8 @@ public class BrokerClientPartitionScalingExecutorTest {
         new ScaleRecord().setDesiredPartitionCount(5).setRedistributedPartitions(partitions);
 
     // then
-    assertThat(awaitRedistributionWith(Either.right(scaleRecord), true)).isCompleted();
+    // when all partitions are ready all partitions receive a request
+    assertThat(awaitRedistributionWith(Either.right(scaleRecord), 5, true)).isCompleted();
   }
 
   @Test
@@ -101,12 +102,14 @@ public class BrokerClientPartitionScalingExecutorTest {
 
   private CompletableFuture<Void> awaitRedistributionWith(
       final Either<Throwable, ScaleRecord> scaleRecord) {
-    return awaitRedistributionWith(scaleRecord, false);
+    return awaitRedistributionWith(scaleRecord, 1, false);
   }
 
   @SuppressWarnings("unchecked")
   private CompletableFuture<Void> awaitRedistributionWith(
-      final Either<Throwable, ScaleRecord> scaleRecord, final boolean expectSnapshotRequestSent) {
+      final Either<Throwable, ScaleRecord> scaleRecord,
+      final int expectedRequests,
+      final boolean expectSnapshotRequestSent) {
     // given
     doNothing().when(brokerClient).sendRequestWithRetry(any(), any(), any());
     final var responseConsumerCaptor = ArgumentCaptor.forClass(BrokerResponseConsumer.class);
@@ -118,18 +121,21 @@ public class BrokerClientPartitionScalingExecutorTest {
         executor
             .awaitRedistributionCompletion(5, Set.of(4, 5), Duration.ofSeconds(5))
             .toCompletableFuture();
-    verify(brokerClient)
-        .sendRequestWithRetry(
-            requestCaptor.capture(), responseConsumerCaptor.capture(), throwableCaptor.capture());
-    final var request = requestCaptor.getValue();
-    assertThat(request).isInstanceOf(GetScaleUpProgress.class);
-    final var getScaleUpProgress = (GetScaleUpProgress) request;
-    assertThat(request.getPartitionId()).isEqualTo(1);
+    // first request is sent to partition 1
+    for (int i = Protocol.DEPLOYMENT_PARTITION; i <= expectedRequests; i++) {
+      verify(brokerClient)
+          .sendRequestWithRetry(
+              requestCaptor.capture(), responseConsumerCaptor.capture(), throwableCaptor.capture());
+      final var request = requestCaptor.getValue();
+      assertThat(request).isInstanceOf(GetScaleUpProgress.class);
+      final var getScaleUpProgress = (GetScaleUpProgress) request;
+      assertThat(request.getPartitionId()).isEqualTo(i);
 
-    clearInvocations(brokerClient);
-    scaleRecord.ifRightOrLeft(
-        record -> responseConsumerCaptor.getValue().accept(1L, record),
-        ex -> throwableCaptor.getValue().accept(ex));
+      clearInvocations(brokerClient);
+      scaleRecord.ifRightOrLeft(
+          record -> responseConsumerCaptor.getValue().accept(1L, record),
+          ex -> throwableCaptor.getValue().accept(ex));
+    }
 
     if (expectSnapshotRequestSent) {
       verify(brokerClient, timeout(5000))
