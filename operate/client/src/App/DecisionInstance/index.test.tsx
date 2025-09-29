@@ -13,7 +13,7 @@ import {
   within,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {DecisionInstance} from './';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';

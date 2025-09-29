@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {Drd} from '.';
 import {MemoryRouter} from 'react-router-dom';

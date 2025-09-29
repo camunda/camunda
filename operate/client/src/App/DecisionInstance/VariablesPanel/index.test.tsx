@@ -18,7 +18,7 @@ import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/
 import {
   invoiceClassification,
   literalExpression,
-} from 'modules/mocks/mockDecisionInstanceV2';
+} from 'modules/mocks/mockDecisionInstance';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
   <QueryClientProvider client={getMockQueryClient()}>

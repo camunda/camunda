@@ -11,7 +11,7 @@ import {
   screen,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Header} from '../index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';

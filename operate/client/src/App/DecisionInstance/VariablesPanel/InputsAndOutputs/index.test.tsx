@@ -16,7 +16,7 @@ import {
   assignApproverGroup,
   assignApproverGroupWithoutVariables,
   invoiceClassification,
-} from 'modules/mocks/mockDecisionInstanceV2';
+} from 'modules/mocks/mockDecisionInstance';
 import {InputsAndOutputs} from './index';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
 import {QueryClientProvider} from '@tanstack/react-query';

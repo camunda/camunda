@@ -17,7 +17,7 @@ import {createUser} from 'modules/testUtils';
 import {Paths} from 'modules/Routes';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 
