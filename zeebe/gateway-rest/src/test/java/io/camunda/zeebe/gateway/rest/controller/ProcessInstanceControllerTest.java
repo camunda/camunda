@@ -1550,6 +1550,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {"items":[
               {
+                "sequenceFlowId": "pi1_sequenceFlow1",
                 "processInstanceKey": "1",
                 "processDefinitionKey": "1",
                 "processDefinitionId": "pd1",
