@@ -15,7 +15,7 @@ import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 
 public class OAuth2AuthenticationExceptionHandler implements AuthenticationFailureHandler {
-  private static final String AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE =
+  public static final String AUTHORIZATION_REQUEST_NOT_FOUND_ERROR_CODE =
       "authorization_request_not_found";
 
   @Override
