@@ -23,6 +23,7 @@ import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.IncidentFilter.ErrorTypeEnum;
 import io.camunda.client.protocol.rest.IncidentFilter.StateEnum;
+import java.time.OffsetDateTime;
 
 public class IncidentFilterImpl
     extends TypedSearchRequestPropertyProvider<io.camunda.client.protocol.rest.IncidentFilter>
@@ -83,8 +84,8 @@ public class IncidentFilterImpl
   }
 
   @Override
-  public IncidentFilter creationTime(final String creationTime) {
-    filter.setCreationTime(creationTime);
+  public IncidentFilter creationTime(final OffsetDateTime creationTime) {
+    filter.setCreationTime(creationTime == null ? null : creationTime.toString());
     return this;
   }
 
