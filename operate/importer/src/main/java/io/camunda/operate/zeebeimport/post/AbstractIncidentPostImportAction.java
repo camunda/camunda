@@ -27,11 +27,11 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
-import io.micrometer.core.instrument.Gauge;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +58,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
 
   protected ImportPositionEntity lastProcessedPosition;
   private final BackoffIdleStrategy errorStrategy;
-  private volatile long lastKnownQueueSize = 0;
+  private final AtomicLong lastKnownQueueSize = new AtomicLong(0);
 
   public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
@@ -66,19 +66,20 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
   }
 
   protected void initializeMetrics() {
-    if (metrics != null) {
-      final var metricDoc = PostImporterMetricsDoc.PostImporterQueueSize.NAME;
-      final var description = PostImporterMetricsDoc.PostImporterQueueSize.DESCRIPTION;
+    final var metricDoc = Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE;
+    final var description =
+        "Current size of the post importer queue for processing pending incidents";
 
-      Gauge.builder(metricDoc, () -> lastKnownQueueSize)
-          .description(description)
-          .tag(Metrics.TAG_KEY_PARTITION, String.valueOf(partitionId))
-          .register(metrics.getMeterRegistry());
-    }
+    metrics.registerGaugeSupplier(
+        metricDoc,
+        description,
+        () -> lastKnownQueueSize,
+        Metrics.TAG_KEY_PARTITION,
+        String.valueOf(partitionId));
   }
 
   protected void updateQueueSizeMetric(final long queueSize) {
-    lastKnownQueueSize = queueSize;
+    lastKnownQueueSize.set(queueSize);
   }
 
   @Override
