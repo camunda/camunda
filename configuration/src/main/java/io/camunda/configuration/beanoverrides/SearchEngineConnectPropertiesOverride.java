@@ -7,9 +7,9 @@
  */
 package io.camunda.configuration.beanoverrides;
 
+import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
@@ -51,7 +51,7 @@ public class SearchEngineConnectPropertiesOverride {
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
-    final SecondaryStorageDatabase database =
+    final DocumentBasedSecondaryStorageDatabase database =
         (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
             ? secondaryStorage.getElasticsearch()
             : secondaryStorage.getOpensearch();

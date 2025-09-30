@@ -11,7 +11,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilit
 import java.util.Map;
 import java.util.Set;
 
-public class History {
+public class DocumentBasedHistory {
 
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
 
@@ -24,7 +24,7 @@ public class History {
 
   private boolean processInstanceEnabled = DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED;
 
-  public History(final String databaseName) {
+  public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
   }
 
