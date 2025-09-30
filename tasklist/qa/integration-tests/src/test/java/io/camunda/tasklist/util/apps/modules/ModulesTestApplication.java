@@ -19,7 +19,6 @@ import io.camunda.tasklist.data.os.DevDataGeneratorOpenSearch;
 import io.camunda.tasklist.util.TasklistZeebeIntegrationTest;
 import io.camunda.tasklist.util.TestApplication;
 import io.camunda.tasklist.webapp.management.WebappManagementModuleConfiguration;
-import io.camunda.tasklist.zeebeimport.security.ImporterSecurityModuleConfiguration;
 import io.camunda.webapps.WebappsModuleConfiguration;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -59,7 +58,6 @@ import org.springframework.context.annotation.Profile;
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Import({
   WebappsModuleConfiguration.class,
-  ImporterSecurityModuleConfiguration.class,
   WebappManagementModuleConfiguration.class,
   TasklistPropertiesOverride.class,
   UnifiedConfiguration.class,

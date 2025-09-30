@@ -81,6 +81,16 @@ public class SearchTestRule extends TestWatcher {
   }
 
   public void waitFor(final Predicate<Object[]> testCheck, final Object... arguments) {
-    Awaitility.await().atMost(Duration.ofSeconds(5)).until(() -> testCheck.test(arguments));
+    Awaitility.await()
+        .atMost(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofMillis(500))
+        .until(
+            () -> {
+              final boolean found = testCheck.test(arguments);
+              if (!found) {
+                refreshSerchIndexes();
+              }
+              return found;
+            });
   }
 }

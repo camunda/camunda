@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.zeebeimport;
+package io.camunda.tasklist.it;
 
 import static io.camunda.tasklist.util.TestCheck.PROCESS_IS_DEPLOYED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,8 +50,8 @@ public class ProcessCacheIT extends TasklistZeebeIntegrationTest {
     final String processId1 = ZeebeTestUtil.deployProcess(camundaClient, "simple_process.bpmn");
     final String processId2 = ZeebeTestUtil.deployProcess(camundaClient, "simple_process_2.bpmn");
 
-    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
-    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId2);
+    databaseTestExtension.waitFor(processIsDeployedCheck, processId1);
+    databaseTestExtension.waitFor(processIsDeployedCheck, processId2);
 
     String demoProcessName = processCache.getProcessName(processId1);
     assertThat(demoProcessName).isNotNull();

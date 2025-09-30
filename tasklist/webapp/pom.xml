@@ -25,12 +25,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>tasklist-importer</artifactId>
-      <scope>runtime</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>tasklist-webjar</artifactId>
     </dependency>
 
@@ -409,7 +403,6 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
-            <dependency>io.camunda:tasklist-importer</dependency>
             <dependency>io.camunda:tasklist-webjar</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>

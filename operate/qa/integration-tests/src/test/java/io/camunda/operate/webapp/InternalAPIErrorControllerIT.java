@@ -46,8 +46,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })

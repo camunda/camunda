@@ -82,44 +82,6 @@ class OpensearchConnectorTest {
   }
 
   @Test
-  void shouldApplyRequestInterceptorsForOSTasklistCamundaClient() throws Exception {
-    final var context = HttpClientContext.create();
-    final var taskListProperties = new TasklistProperties();
-    final PluginRepository pluginRepository = new PluginRepository();
-    pluginRepository.load(
-        List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-
-    final var connector = Mockito.spy(new OpenSearchConnector());
-    Mockito.doReturn(true).when(connector).checkHealth(Mockito.any(OpenSearchClient.class));
-    connector.setZeebeOsClientRepository(pluginRepository);
-    connector.setTasklistProperties(taskListProperties);
-    connector.setTasklistObjectMapper(new ObjectMapper());
-
-    // Regular tasklist client
-    final var client = connector.tasklistZeebeOsClient();
-
-    // when
-    final WireMockRuntimeInfo wmRuntimeInfo = osServer.getRuntimeInfo();
-    final var asyncResp =
-        getOpensearchApacheClient(((ApacheHttpClient5Transport) client._transport()))
-            .execute(
-                SimpleHttpRequest.create("GET", wmRuntimeInfo.getHttpBaseUrl()),
-                context,
-                NoopCallback.INSTANCE);
-
-    try {
-      asyncResp.get();
-    } catch (final Exception e) {
-      // ignore as we don't really care about the outcome
-    }
-
-    // then
-    final var reqWrapper = context.getRequest();
-
-    assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
-  }
-
-  @Test
   void shouldApplyRequestInterceptorsForOSAsyncTasklistClient() throws Exception {
     final var context = HttpClientContext.create();
     final var taskListProperties = new TasklistProperties();

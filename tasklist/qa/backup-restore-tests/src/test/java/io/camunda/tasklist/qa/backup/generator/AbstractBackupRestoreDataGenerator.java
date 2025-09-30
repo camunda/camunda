@@ -63,7 +63,7 @@ public abstract class AbstractBackupRestoreDataGenerator implements BackupRestor
 
     initClient(testContext);
 
-    indexPrefix = testContext.getZeebeIndexPrefix();
+    indexPrefix = testContext.getIndexPrefix();
   }
 
   protected abstract void initClient(BackupRestoreTestContext testContext);

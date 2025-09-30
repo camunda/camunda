@@ -72,7 +72,6 @@ import org.elasticsearch.client.RestHighLevelClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -87,7 +86,6 @@ public class ElasticsearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   private PluginRepository esClientRepository = new PluginRepository();
-  private PluginRepository zeebeEsClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
 
   private ElasticsearchClient elasticsearchClient;
@@ -95,11 +93,6 @@ public class ElasticsearchConnector {
   @VisibleForTesting
   public void setEsClientRepository(final PluginRepository esClientRepository) {
     this.esClientRepository = esClientRepository;
-  }
-
-  @VisibleForTesting
-  public void setZeebeEsClientRepository(final PluginRepository zeebeEsClientRepository) {
-    this.zeebeEsClientRepository = zeebeEsClientRepository;
   }
 
   @VisibleForTesting
@@ -159,17 +152,6 @@ public class ElasticsearchConnector {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     esClientRepository.load(tasklistProperties.getElasticsearch().getInterceptorPlugins());
     return createEsClient(tasklistProperties.getElasticsearch(), esClientRepository);
-  }
-
-  @Bean(destroyMethod = "close")
-  @ConditionalOnProperty(value = "camunda.tasklist.importer-enabled", havingValue = "true")
-  public RestHighLevelClient tasklistZeebeEsClient() {
-    // some weird error when ELS sets available processors number for Netty - see
-    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeEsClientRepository.load(
-        tasklistProperties.getZeebeElasticsearch().getInterceptorPlugins());
-    return createEsClient(tasklistProperties.getZeebeElasticsearch(), zeebeEsClientRepository);
   }
 
   protected RestHighLevelClient createEsClient(

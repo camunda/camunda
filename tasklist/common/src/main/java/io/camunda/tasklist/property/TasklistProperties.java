@@ -59,12 +59,6 @@ public class TasklistProperties {
   @NestedConfigurationProperty
   private TasklistOpenSearchProperties openSearch = new TasklistOpenSearchProperties();
 
-  @NestedConfigurationProperty
-  private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
-
-  @NestedConfigurationProperty
-  private ZeebeOpenSearchProperties zeebeOpenSearch = new ZeebeOpenSearchProperties();
-
   @NestedConfigurationProperty private ZeebeProperties zeebe = new ZeebeProperties();
 
   @NestedConfigurationProperty private ImportProperties importer = new ImportProperties();
@@ -126,14 +120,6 @@ public class TasklistProperties {
 
   public void setElasticsearch(final TasklistElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
-  }
-
-  public ZeebeElasticsearchProperties getZeebeElasticsearch() {
-    return zeebeElasticsearch;
-  }
-
-  public void setZeebeElasticsearch(final ZeebeElasticsearchProperties zeebeElasticsearch) {
-    this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
   public ZeebeProperties getZeebe() {
@@ -355,15 +341,6 @@ public class TasklistProperties {
 
   public TasklistProperties setDatabase(final String database) {
     this.database = database;
-    return this;
-  }
-
-  public ZeebeOpenSearchProperties getZeebeOpenSearch() {
-    return zeebeOpenSearch;
-  }
-
-  public TasklistProperties setZeebeOpenSearch(final ZeebeOpenSearchProperties zeebeOpenSearch) {
-    this.zeebeOpenSearch = zeebeOpenSearch;
     return this;
   }
 

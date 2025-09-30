@@ -40,11 +40,6 @@ public class TasklistZeebeExtensionElasticSearch extends TasklistZeebeExtension 
   }
 
   @Override
-  protected void setZeebeIndexesPrefix(final String prefix) {
-    tasklistProperties.getZeebeElasticsearch().setPrefix(prefix);
-  }
-
-  @Override
   protected String getZeebeExporterIndexPrefixConfigParameterName() {
     return "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_INDEXPREFIX";
   }

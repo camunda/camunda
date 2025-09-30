@@ -16,14 +16,6 @@ camunda.tasklist:
   zeebe:
     gatewayAddress: localhost:26500
     worker: tasklist
-  zeebeElasticsearch:
-    clusterName: docker-cluster
-    url: http://localhost:9200
-    prefix: test-record
-  importer:
-    readerBackoff: 0
-    schedulerBackoff: 0
-    startLoadingDataOnStartup: false
 camunda.webapps:
   enabled: true
   default-app: operate

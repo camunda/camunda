@@ -410,7 +410,6 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
         // OS
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", getElasticURL(testContext))
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", getElasticURL(testContext))
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", getElasticURL(testContext));
     final Map<String, String> customEnvs = testContext.getOperateContainerEnvs();
     customEnvs.forEach(operateContainer::withEnv);
@@ -580,16 +579,12 @@ public class TestContainerUtil {
         .withEnv("CAMUNDA_DATABASE_URL", dbUrl)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", dbUrl)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", dbUrl)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", dbUrl)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", dbUrl)
         // unified config db url + compaptibility vars (opensearch)
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_URL", dbUrl)
         .withEnv("CAMUNDA_OPERATE_OPENSEARCH_URL", dbUrl)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEOPENSEARCH_URL", dbUrl)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", dbUrl);
+        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", dbUrl);
     if (testContext.getIndexPrefix() != null && dbType != null) {
       broker
           .withEnv(

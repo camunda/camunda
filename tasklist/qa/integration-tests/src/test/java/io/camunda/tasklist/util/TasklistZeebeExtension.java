@@ -66,15 +66,12 @@ public abstract class TasklistZeebeExtension
     stop();
   }
 
-  protected abstract void setZeebeIndexesPrefix(String prefix);
-
   private void startZeebe() {
     Testcontainers.exposeHostPorts(getDatabasePort());
     zeebeContainer = createZeebeContainer();
     zeebeContainer.start();
     prefix = zeebeContainer.getEnvMap().get(getZeebeExporterIndexPrefixConfigParameterName());
     LOGGER.info("Using Zeebe container with indexPrefix={}", prefix);
-    setZeebeIndexesPrefix(prefix);
     final Integer zeebeRestPort = zeebeContainer.getMappedPort(8080);
 
     client =

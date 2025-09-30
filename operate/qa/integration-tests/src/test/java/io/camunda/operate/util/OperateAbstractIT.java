@@ -40,8 +40,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false",

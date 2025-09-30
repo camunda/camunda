@@ -43,8 +43,6 @@ import org.springframework.test.web.servlet.MvcResult;
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       // configure webhook to notify about the incidents
       OperateProperties.PREFIX + ".alert.webhook = http://somepath",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"

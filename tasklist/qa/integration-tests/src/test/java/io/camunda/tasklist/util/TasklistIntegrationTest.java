@@ -7,13 +7,8 @@
  */
 package io.camunda.tasklist.util;
 
-import static org.mockito.Mockito.when;
-
 import io.camunda.tasklist.property.TasklistProperties;
-import io.camunda.tasklist.zeebe.PartitionHolder;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +21,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 @SpringBootTest(
     classes = {TestApplication.class},
     properties = {
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + "importer.jobType = testJobType",
       "camunda.webapps.enabled = true",
       "camunda.webapps.default-app = tasklist",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
@@ -45,11 +38,5 @@ public abstract class TasklistIntegrationTest {
   public void before() {
     testStartTime = OffsetDateTime.now();
     new SpringContextHolder().setApplicationContext(applicationContext);
-  }
-
-  protected void mockPartitionHolder(final PartitionHolder partitionHolder) {
-    final List<Integer> partitions = new ArrayList<>();
-    partitions.add(1);
-    when(partitionHolder.getPartitionIds()).thenReturn(partitions);
   }
 }

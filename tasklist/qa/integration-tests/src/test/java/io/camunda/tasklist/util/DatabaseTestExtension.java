@@ -10,25 +10,36 @@ package io.camunda.tasklist.util;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Function;
-import java.util.function.Supplier;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.extension.Extension;
 
 public interface DatabaseTestExtension extends Extension {
 
   void assertMaxOpenScrollContexts(final int maxOpenScrollContexts);
 
-  void refreshIndexesInElasticsearch();
-
-  void refreshZeebeIndices();
-
   void refreshTasklistIndices();
 
-  void processAllRecordsAndWait(TestCheck testCheck, Object... arguments);
+  default void waitFor(
+      final Duration timeout, final TestCheck testCheck, final Object... arguments) {
+    Awaitility.await()
+        .atMost(timeout)
+        .pollInterval(Duration.ofMillis(500))
+        .until(
+            () -> {
+              final boolean found = testCheck.test(arguments);
+              if (!found) {
+                refreshTasklistIndices();
+              }
+              return found;
+            });
+  }
 
-  void processRecordsAndWaitFor(
-      TestCheck testCheck, Supplier<Object> supplier, Object... arguments);
+  default void waitFor(final TestCheck testCheck, final Object... arguments) {
+    waitFor(Duration.ofSeconds(30), testCheck, arguments);
+  }
 
   int getOpenScrollcontextSize();
 

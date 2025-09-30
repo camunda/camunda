@@ -93,24 +93,12 @@ camunda:
     zeebe:
       # Gateway address
       gatewayAddress: localhost:26500
-    # ELS instance to export Zeebe data to
-    zeebeElasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # Index prefix, configured in Zeebe Elasticsearch exporter
-      prefix: zeebe-record
   # Tasklist configuration properties
   tasklist:
     # Zeebe instance
     zeebe:
       # Gateway address
       gatewayAddress: localhost:26500
-    # ELS instance to export Zeebe data to
-    zeebeElasticsearch:
-      # Cluster name
-      clusterName: elasticsearch
-      # Index prefix, configured in Zeebe Elasticsearch exporter
-      prefix: zeebe-record
   security:
     # Configures authenticated access in the cluster. We support 3 different authentication modes:
     # - No authentication:

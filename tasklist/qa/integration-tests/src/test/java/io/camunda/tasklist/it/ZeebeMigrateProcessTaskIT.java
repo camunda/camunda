@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.tasklist.zeebeimport;
+package io.camunda.tasklist.it;
 
 import static io.camunda.tasklist.util.assertions.CustomAssertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -27,7 +27,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
-public class ZeebeImportMigrateProcessTaskIT extends TasklistZeebeIntegrationTest {
+public class ZeebeMigrateProcessTaskIT extends TasklistZeebeIntegrationTest {
 
   @Autowired private WebApplicationContext context;
 

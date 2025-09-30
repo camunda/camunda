@@ -22,7 +22,6 @@ In order to Setup the Webapp locally, after to start the docker images (See Task
 * `CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME=test;`
 * `CAMUNDA_TASKLIST_ELASTICSEARCH_URL=http://localhost:9200;`
 * `CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS=localhost:26500;`
-* `CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL=http://localhost:9200;`
 * `SERVER_PORT=8082;SPRING_PROFILES_ACTIVE=identity-auth;`
 * `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUERURI=http://localhost:18080/auth/realms/camunda-platform;`
 * `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWKSETURI=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs`
@@ -45,9 +44,7 @@ In case of high load you may need to scale importing of data from Zeebe and arch
 In order to achieve this you can run any of the modules separately: Webapp, Importer and Archiver.
 
 For this you can use following configuration parameters:
-* `camunda.tasklist.importerEnabled`: when `true` will include the Importer in current run, default: false
 * `camunda.tasklist.webappEnabled`: when `true` will include the Webapp in current run, default: true
-* `camunda.tasklist.archiverEnabled`: when `true` will include the Archiver in current run, default: true
 * `camunda.tasklist.clusterNode.partitionIds`: array of Zeebe partition ids, this Importer (or Archiver) node must be responsible for, default: empty array, meaning all partitions data is loaded
 * `camunda.tasklist.clusterNode.nodeCount`: total amount of Importer (or Archiver) nodes in cluster
 * `camunda.tasklist.clusterNode.currentNodeId`: id of current Importer (or Archiver) node, starting from 0
