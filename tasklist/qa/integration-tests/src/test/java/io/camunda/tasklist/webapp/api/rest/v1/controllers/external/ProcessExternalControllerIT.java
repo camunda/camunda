@@ -208,7 +208,7 @@ public class ProcessExternalControllerIT extends TasklistZeebeIntegrationTest {
 
     final String processId1 = ZeebeTestUtil.deployProcess(camundaClient, pathProcess);
 
-    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    databaseTestExtension.waitFor(processIsDeployedCheck, processId1);
 
     // when
     return mockMvcHelper.doRequest(

@@ -67,7 +67,6 @@ public class StartupIT {
     tasklistContainer
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticSearchUrl)
-        .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_DATABASE_URL", elasticSearchUrl)
         .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");

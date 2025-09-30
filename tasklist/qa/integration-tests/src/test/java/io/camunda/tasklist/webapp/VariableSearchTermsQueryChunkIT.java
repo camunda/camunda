@@ -67,12 +67,8 @@ public class VariableSearchTermsQueryChunkIT extends TasklistZeebeIntegrationTes
     final String invar = "inputvar";
     final String taskLocalVar = "taskvar";
 
-    tester
-        .startProcessInstances(benchmarkProcess, processCount, "{\"inputvar\": \"" + invar + "\"}")
-        .then()
-        .tasksAreCreated("Activity_SUBP", processCount);
-
-    databaseTestExtension.refreshTasklistIndices();
+    tester.startProcessInstances(
+        benchmarkProcess, processCount, "{\"inputvar\": \"" + invar + "\"}");
 
     // Using the CamundaExporter and the shared Operate indices having the FNIs
     // present requires more time compared to the User Task created state check

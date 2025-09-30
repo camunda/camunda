@@ -31,8 +31,6 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
     properties = {
       "spring.thymeleaf.prefix = classpath:/META-INF/resources/",
       "server.servlet.context-path = " + IndexControllerIT.CONTEXT_PATH,
-      TasklistProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      TasklistProperties.PREFIX + ".archiver.rolloverEnabled = false",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true"
     })
 public class IndexControllerIT {

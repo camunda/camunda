@@ -21,7 +21,6 @@ import org.springframework.test.context.junit4.SpringRunner;
       ModulesTestApplication.class,
     },
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       "spring.profiles.active=test,consolidated-auth"

@@ -72,7 +72,7 @@ public class BackupRestoreTest {
 
   @BeforeEach
   public void setup() {
-    testContext = new BackupRestoreTestContext().setZeebeIndexPrefix(INDEX_PREFIX);
+    testContext = new BackupRestoreTestContext().setIndexPrefix(INDEX_PREFIX);
   }
 
   @Test
@@ -122,7 +122,6 @@ public class BackupRestoreTest {
             .withEnv("CAMUNDA_TASKLIST_BACKUP_REPOSITORYNAME", REPOSITORY_NAME)
             .withEnv("CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED", "false")
             .withEnv("CAMUNDA_TASKLIST_ZEEBE_COMPATIBILITY_ENABLED", "true")
-            .withEnv("CAMUNDA_TASKLIST_IMPORTERENABLED", "false")
             .withEnv("CAMUNDA_TASKLIST_FEATUREFLAG_ALLOWNONSELFASSIGNMENT", "true")
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_METHOD", "BASIC")
             .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")

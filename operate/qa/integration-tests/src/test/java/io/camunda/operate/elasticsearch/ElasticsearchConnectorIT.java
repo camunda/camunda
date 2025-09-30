@@ -48,8 +48,7 @@ import org.testcontainers.utility.DockerImageName;
       OperatePropertiesOverride.class,
       UnifiedConfigurationHelper.class,
       UnifiedConfiguration.class
-    },
-    properties = OperateProperties.PREFIX + ".importer-enabled=true")
+    })
 public class ElasticsearchConnectorIT {
 
   @Container

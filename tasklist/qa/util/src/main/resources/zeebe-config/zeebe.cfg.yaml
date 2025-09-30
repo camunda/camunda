@@ -1,5 +1,0 @@
-zeebe.broker.exporters.elasticsearch:
-  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-  args:
-    url: "http://elasticsearch:9200"
-    index.prefix: "migration-test"

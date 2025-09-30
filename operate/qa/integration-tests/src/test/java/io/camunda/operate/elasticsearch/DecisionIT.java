@@ -42,8 +42,6 @@ import org.springframework.test.web.servlet.MvcResult;
       UnifiedConfiguration.class,
     },
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
-      OperateProperties.PREFIX + ".archiver.rolloverEnabled = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       "camunda.security.multiTenancy.checksEnabled = true",

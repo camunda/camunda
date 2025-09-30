@@ -723,24 +723,6 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-common</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
-        <artifactId>tasklist-importer-870</artifactId>
-        <version>${project.version}</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.camunda</groupId>
         <artifactId>tasklist-data-generator</artifactId>
         <version>${project.version}</version>
       </dependency>

@@ -13,15 +13,6 @@ camunda:
     elasticsearch:
       dateFormat: yyyy-MM-dd
       batchSize: 111
-    zeebeElasticsearch:
-      clusterName: zeebeElasticClusterName
-      url: http://localhost:9200
-      dateFormat: dd-MM-yyyy
-      batchSize: 222
-      prefix: somePrefix
-    importer:
-      startLoadingDataOnStartup: false
-      completedReaderMinEmptyBatches: 10
     zeebe:
       gatewayAddress: someZeebeHost:999
     operationExecutor:

@@ -69,7 +69,6 @@ public class StartupIT {
         .withEnv("CAMUNDA_DATABASE_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", elasticsearchUrl)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", elasticsearchUrl)
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL", elasticsearchUrl)
         // Unified Configuration: DB type + compatibility
         .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "elasticsearch")
@@ -80,8 +79,6 @@ public class StartupIT {
         // ---
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HOST", elsHost)
         .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_HOST", elsHost)
-        .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort))
         .withEnv("CAMUNDA_OPERATE_ZEEBE_COMPATIBILITY_ENABLED", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true")
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
