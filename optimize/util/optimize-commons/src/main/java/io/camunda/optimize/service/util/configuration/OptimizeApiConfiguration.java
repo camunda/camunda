@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class OptimizeApiConfiguration {
 
@@ -54,13 +55,19 @@ public class OptimizeApiConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OptimizeApiConfiguration that = (OptimizeApiConfiguration) o;
+    return Objects.equals(accessToken, that.accessToken)
+        && Objects.equals(jwtSetUri, that.jwtSetUri)
+        && Objects.equals(audience, that.audience);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(accessToken, jwtSetUri, audience);
   }
 
   @Override

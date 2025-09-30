@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class M2mAuth0ClientConfiguration {
 
   private String m2mClientId;
@@ -35,13 +37,18 @@ public class M2mAuth0ClientConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final M2mAuth0ClientConfiguration that = (M2mAuth0ClientConfiguration) o;
+    return Objects.equals(m2mClientId, that.m2mClientId)
+        && Objects.equals(m2mClientSecret, that.m2mClientSecret);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(m2mClientId, m2mClientSecret);
   }
 
   @Override

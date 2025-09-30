@@ -18,6 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which filter type the jackson
@@ -89,16 +90,26 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
     this.excludeUndefined = excludeUndefined;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DateFilterDataDto<?> that = (DateFilterDataDto<?>) o;
+    return includeUndefined == that.includeUndefined
+        && excludeUndefined == that.excludeUndefined
+        && type == that.type
+        && Objects.equals(start, that.start)
+        && Objects.equals(end, that.end);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, start, end, includeUndefined, excludeUndefined);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof DateFilterDataDto;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @SuppressWarnings("checkstyle:ConstantName")

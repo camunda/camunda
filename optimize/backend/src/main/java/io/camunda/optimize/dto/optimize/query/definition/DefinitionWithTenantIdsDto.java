@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
@@ -64,13 +65,20 @@ public class DefinitionWithTenantIdsDto extends SimpleDefinitionDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DefinitionWithTenantIdsDto that = (DefinitionWithTenantIdsDto) o;
+    return Objects.equals(tenantIds, that.tenantIds);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), tenantIds);
   }
 
   @Override

@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.query.entity.EntityResponseDto;
 import io.camunda.optimize.dto.optimize.query.entity.EntityType;
 import jakarta.validation.Valid;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionEntity {
 
@@ -190,13 +191,38 @@ public class ReportDefinitionDto<D extends ReportDataDto> implements CollectionE
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportDefinitionDto<?> that = (ReportDefinitionDto<?>) o;
+    return combined == that.combined
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(data, that.data)
+        && reportType == that.reportType;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        collectionId,
+        data,
+        combined,
+        reportType);
   }
 
   @Override

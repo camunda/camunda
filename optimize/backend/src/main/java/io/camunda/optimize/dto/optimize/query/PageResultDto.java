@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class PageResultDto<T> {
 
@@ -73,13 +74,19 @@ public class PageResultDto<T> {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PageResultDto<?> that = (PageResultDto<?>) o;
+    return limit == that.limit
+        && Objects.equals(pagingState, that.pagingState)
+        && Objects.equals(entities, that.entities);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(pagingState, limit, entities);
   }
 
   @Override

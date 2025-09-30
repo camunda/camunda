@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
 
@@ -67,13 +68,20 @@ public class RawDataFlowNodeDataDto implements RawDataInstanceDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RawDataFlowNodeDataDto that = (RawDataFlowNodeDataDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, name, startDate, endDate);
   }
 
   @Override

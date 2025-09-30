@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.alert;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class AlertCreationRequestDto {
 
@@ -92,13 +93,32 @@ public class AlertCreationRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AlertCreationRequestDto that = (AlertCreationRequestDto) o;
+    return fixNotification == that.fixNotification
+        && Objects.equals(name, that.name)
+        && Objects.equals(checkInterval, that.checkInterval)
+        && Objects.equals(reportId, that.reportId)
+        && Objects.equals(threshold, that.threshold)
+        && thresholdOperator == that.thresholdOperator
+        && Objects.equals(reminder, that.reminder)
+        && Objects.equals(emails, that.emails);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        name,
+        checkInterval,
+        reportId,
+        threshold,
+        thresholdOperator,
+        fixNotification,
+        reminder,
+        emails);
   }
 
   @Override

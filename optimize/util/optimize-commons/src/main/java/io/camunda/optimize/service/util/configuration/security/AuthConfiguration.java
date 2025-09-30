@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class AuthConfiguration {
@@ -94,13 +95,26 @@ public class AuthConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AuthConfiguration that = (AuthConfiguration) o;
+    return Objects.equals(cloudAuthConfiguration, that.cloudAuthConfiguration)
+        && Objects.equals(ccsmAuthConfiguration, that.ccsmAuthConfiguration)
+        && Objects.equals(tokenLifeTime, that.tokenLifeTime)
+        && Objects.equals(tokenSecret, that.tokenSecret)
+        && Objects.equals(cookieConfiguration, that.cookieConfiguration);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        cloudAuthConfiguration,
+        ccsmAuthConfiguration,
+        tokenLifeTime,
+        tokenSecret,
+        cookieConfiguration);
   }
 
   @Override

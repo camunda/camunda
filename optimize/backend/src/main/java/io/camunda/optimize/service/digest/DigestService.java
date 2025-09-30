@@ -42,6 +42,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import org.apache.commons.lang3.StringUtils;
@@ -479,13 +480,25 @@ public class DigestService implements ConfigurationReloadable {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final DigestTemplateKpiSummaryDto that = (DigestTemplateKpiSummaryDto) o;
+      return targetMet == that.targetMet
+          && Objects.equals(reportName, that.reportName)
+          && Objects.equals(reportLink, that.reportLink)
+          && Objects.equals(kpiType, that.kpiType)
+          && Objects.equals(target, that.target)
+          && Objects.equals(current, that.current)
+          && Objects.equals(changeInPercent, that.changeInPercent)
+          && changeType == that.changeType;
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(
+          reportName, reportLink, kpiType, targetMet, target, current, changeInPercent, changeType);
     }
 
     @Override

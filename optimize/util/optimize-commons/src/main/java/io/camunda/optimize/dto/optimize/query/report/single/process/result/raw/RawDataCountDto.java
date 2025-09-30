@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.process.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
+import java.util.Objects;
 
 public class RawDataCountDto implements RawDataInstanceDto {
 
@@ -52,13 +53,19 @@ public class RawDataCountDto implements RawDataInstanceDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RawDataCountDto that = (RawDataCountDto) o;
+    return incidents == that.incidents
+        && openIncidents == that.openIncidents
+        && userTasks == that.userTasks;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(incidents, openIncidents, userTasks);
   }
 
   @Override

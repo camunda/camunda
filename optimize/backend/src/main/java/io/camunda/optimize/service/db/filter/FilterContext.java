@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.db.filter;
 
 import java.time.ZoneId;
+import java.util.Objects;
 
 public final class FilterContext {
 
@@ -28,13 +29,17 @@ public final class FilterContext {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FilterContext that = (FilterContext) o;
+    return userTaskReport == that.userTaskReport && Objects.equals(timezone, that.timezone);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(timezone, userTaskReport);
   }
 
   @Override

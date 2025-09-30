@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.rest.engine.dto;
 
+import java.util.Objects;
+
 public class EngineUserDto {
 
   private UserProfileDto profile;
@@ -40,13 +42,17 @@ public class EngineUserDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EngineUserDto that = (EngineUserDto) o;
+    return Objects.equals(profile, that.profile) && Objects.equals(credentials, that.credentials);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(profile, credentials);
   }
 
   @Override

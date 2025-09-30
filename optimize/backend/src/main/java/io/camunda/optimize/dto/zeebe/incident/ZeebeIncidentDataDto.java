@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.List;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeIncidentDataDto implements IncidentRecordValue {
@@ -158,16 +159,40 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
         + ")";
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeIncidentDataDto that = (ZeebeIncidentDataDto) o;
+    return elementInstanceKey == that.elementInstanceKey
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionKey == that.processDefinitionKey
+        && jobKey == that.jobKey
+        && variableScopeKey == that.variableScopeKey
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(errorType, that.errorType)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
-  protected boolean canEqual(final Object other) {
-    return other instanceof ZeebeIncidentDataDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        errorMessage,
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        jobKey,
+        errorType,
+        variableScopeKey,
+        tenantId);
   }
 
   @SuppressWarnings("checkstyle:ConstantName")

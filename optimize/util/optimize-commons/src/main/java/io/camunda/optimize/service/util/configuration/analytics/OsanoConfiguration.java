@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 import java.util.Optional;
 
 public class OsanoConfiguration {
@@ -36,12 +37,19 @@ public class OsanoConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(scriptUrl);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OsanoConfiguration that = (OsanoConfiguration) o;
+    return Objects.equals(scriptUrl, that.scriptUrl);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class DefinitionTenantsRequestDto {
 
@@ -45,13 +46,18 @@ public class DefinitionTenantsRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DefinitionTenantsRequestDto that = (DefinitionTenantsRequestDto) o;
+    return Objects.equals(versions, that.versions)
+        && Objects.equals(filterByCollectionScope, that.filterByCollectionScope);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(versions, filterByCollectionScope);
   }
 
   @Override

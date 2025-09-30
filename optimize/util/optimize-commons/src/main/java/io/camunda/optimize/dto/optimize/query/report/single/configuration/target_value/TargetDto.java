@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
+
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -14,13 +16,19 @@ public class TargetDto {
   private Boolean isBelow = false;
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TargetDto targetDto = (TargetDto) o;
+    return unit == targetDto.unit
+        && Objects.equals(value, targetDto.value)
+        && Objects.equals(isBelow, targetDto.isBelow);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(unit, value, isBelow);
   }
 
   @Override

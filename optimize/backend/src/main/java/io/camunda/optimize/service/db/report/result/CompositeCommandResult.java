@@ -40,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -450,13 +451,32 @@ public class CompositeCommandResult {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CompositeCommandResult that = (CompositeCommandResult) o;
+    return isGroupByKeyOfNumericType == that.isGroupByKeyOfNumericType
+        && isDistributedByKeyOfNumericType == that.isDistributedByKeyOfNumericType
+        && Objects.equals(reportDataDto, that.reportDataDto)
+        && Objects.equals(viewProperty, that.viewProperty)
+        && Objects.equals(groupBySorting, that.groupBySorting)
+        && Objects.equals(distributedBySorting, that.distributedBySorting)
+        && Objects.equals(defaultNumberValueSupplier, that.defaultNumberValueSupplier)
+        && Objects.equals(groups, that.groups);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        reportDataDto,
+        viewProperty,
+        groupBySorting,
+        distributedBySorting,
+        isGroupByKeyOfNumericType,
+        isDistributedByKeyOfNumericType,
+        defaultNumberValueSupplier,
+        groups);
   }
 
   @Override
@@ -541,13 +561,19 @@ public class CompositeCommandResult {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final GroupByResult that = (GroupByResult) o;
+      return Objects.equals(key, that.key)
+          && Objects.equals(label, that.label)
+          && Objects.equals(distributions, that.distributions);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(key, label, distributions);
     }
 
     @Override
@@ -625,13 +651,19 @@ public class CompositeCommandResult {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final DistributedByResult that = (DistributedByResult) o;
+      return Objects.equals(key, that.key)
+          && Objects.equals(label, that.label)
+          && Objects.equals(viewResult, that.viewResult);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(key, label, viewResult);
     }
 
     @Override
@@ -682,13 +714,18 @@ public class CompositeCommandResult {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ViewResult that = (ViewResult) o;
+      return Objects.equals(viewMeasures, that.viewMeasures)
+          && Objects.equals(rawData, that.rawData);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(viewMeasures, rawData);
     }
 
     @Override
@@ -818,13 +855,19 @@ public class CompositeCommandResult {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ViewMeasure that = (ViewMeasure) o;
+      return Objects.equals(aggregationType, that.aggregationType)
+          && userTaskDurationTime == that.userTaskDurationTime
+          && Objects.equals(value, that.value);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(aggregationType, userTaskDurationTime, value);
     }
 
     @Override
@@ -917,13 +960,18 @@ public class CompositeCommandResult {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ViewMeasureIdentifier that = (ViewMeasureIdentifier) o;
+      return Objects.equals(aggregationType, that.aggregationType)
+          && userTaskDurationTime == that.userTaskDurationTime;
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(aggregationType, userTaskDurationTime);
     }
 
     @Override
