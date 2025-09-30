@@ -111,8 +111,8 @@ final class BackupServiceImpl {
       case DOES_NOT_EXIST ->
           inProgressBackup
               .findValidSnapshot()
-              .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
               .andThen(ok -> inProgressBackup.reserveSnapshot(), concurrencyControl)
+              .andThen(inProgressBackup::findSegmentFiles, concurrencyControl)
               .andThen(ok -> inProgressBackup.findSnapshotFiles(), concurrencyControl)
               .onComplete(
                   (result, error) -> {
