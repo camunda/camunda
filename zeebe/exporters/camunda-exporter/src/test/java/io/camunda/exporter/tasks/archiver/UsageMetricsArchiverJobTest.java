@@ -9,8 +9,10 @@ package io.camunda.exporter.tasks.archiver;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +30,11 @@ final class UsageMetricsArchiverJobTest {
   private final UsageMetricsTestRepository repository = new UsageMetricsTestRepository();
   private final UsageMetricTemplate usageMetricTemplate = new UsageMetricTemplate("", true);
   private final UsageMetricTUTemplate usageMetricTUTemplate = new UsageMetricTUTemplate("", true);
+  private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+  private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
   private final UsageMetricsArchiverJob job =
       new UsageMetricsArchiverJob(
-          repository, LOGGER, usageMetricTemplate, usageMetricTUTemplate, executor);
+          repository, usageMetricTemplate, usageMetricTUTemplate, metrics, LOGGER, executor);
 
   @Test
   void shouldReturnZeroIfNoBatches() {
@@ -76,6 +80,9 @@ final class UsageMetricsArchiverJobTest {
                 UsageMetricTemplate.ID,
                 List.of("1", "2"),
                 executor));
+
+    assertMetricCounter("usage.metrics", 2);
+    assertMetricCounter("usage.metrics.tu", 0);
   }
 
   @Test
@@ -96,6 +103,9 @@ final class UsageMetricsArchiverJobTest {
                 UsageMetricTUTemplate.ID,
                 List.of("10", "11", "12"),
                 executor));
+
+    assertMetricCounter("usage.metrics", 0);
+    assertMetricCounter("usage.metrics.tu", 3);
   }
 
   @Test
@@ -123,6 +133,9 @@ final class UsageMetricsArchiverJobTest {
                 UsageMetricTUTemplate.ID,
                 List.of("10"),
                 executor));
+
+    assertMetricCounter("usage.metrics", 2);
+    assertMetricCounter("usage.metrics.tu", 1);
   }
 
   @Test
@@ -142,6 +155,26 @@ final class UsageMetricsArchiverJobTest {
             usageMetricTUTemplate.getFullQualifiedName());
   }
 
+  private void assertMetricCounter(final String metricName, final int expected) {
+    // then
+    assertThat(
+            meterRegistry
+                .counter(
+                    String.format("zeebe.camunda.exporter.archiver.%s", metricName),
+                    "state",
+                    "archiving")
+                .count())
+        .isEqualTo(expected);
+    assertThat(
+            meterRegistry
+                .counter(
+                    String.format("zeebe.camunda.exporter.archiver.%s", metricName),
+                    "state",
+                    "archived")
+                .count())
+        .isEqualTo(expected);
+  }
+
   private static final class UsageMetricsTestRepository
       extends ArchiverRepository.NoopArchiverRepository {
 
@@ -150,13 +183,13 @@ final class UsageMetricsArchiverJobTest {
     ArchiveBatch usageTUBatch;
 
     @Override
-    public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
-      return CompletableFuture.completedFuture(usageBatch);
+    public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+      return CompletableFuture.completedFuture(usageTUBatch);
     }
 
     @Override
-    public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-      return CompletableFuture.completedFuture(usageTUBatch);
+    public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+      return CompletableFuture.completedFuture(usageBatch);
     }
 
     @Override

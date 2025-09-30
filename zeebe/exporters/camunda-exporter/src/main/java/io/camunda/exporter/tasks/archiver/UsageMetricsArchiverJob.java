@@ -7,33 +7,39 @@
  */
 package io.camunda.exporter.tasks.archiver;
 
+import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
+import io.camunda.zeebe.util.FunctionUtil;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class UsageMetricsArchiverJob implements ArchiverJob {
 
   private final ArchiverRepository repository;
-  private final Logger logger;
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final CamundaExporterMetrics metrics;
+  private final Logger logger;
   private final Executor executor;
 
   public UsageMetricsArchiverJob(
       final ArchiverRepository repository,
-      final Logger logger,
       final IndexTemplateDescriptor usageMetricTemplateDescriptor,
       final IndexTemplateDescriptor usageMetricTUTemplateDescriptor,
+      final CamundaExporterMetrics metrics,
+      final Logger logger,
       final Executor executor) {
     this.repository = repository;
-    this.logger = logger;
     this.usageMetricTemplateDescriptor = usageMetricTemplateDescriptor;
     this.usageMetricTUTemplateDescriptor = usageMetricTUTemplateDescriptor;
+    this.metrics = metrics;
+    this.logger = logger;
     this.executor = executor;
   }
 
@@ -44,7 +50,13 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
         repository
             .getUsageMetricNextBatch()
             .thenComposeAsync(
-                batch -> archiveBatch(batch, usageMetricTemplateDescriptor, UsageMetricTemplate.ID),
+                batch ->
+                    archiveBatch(
+                        batch,
+                        usageMetricTemplateDescriptor,
+                        UsageMetricTemplate.ID,
+                        metrics::recordUsageMetricsArchiving,
+                        metrics::recordUsageMetricsArchived),
                 executor)
             .toCompletableFuture();
 
@@ -53,7 +65,12 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
             .getUsageMetricTUNextBatch()
             .thenComposeAsync(
                 batch ->
-                    archiveBatch(batch, usageMetricTUTemplateDescriptor, UsageMetricTUTemplate.ID),
+                    archiveBatch(
+                        batch,
+                        usageMetricTUTemplateDescriptor,
+                        UsageMetricTUTemplate.ID,
+                        metrics::recordUsageMetricsTUArchiving,
+                        metrics::recordUsageMetricsTUArchived),
                 executor)
             .toCompletableFuture();
 
@@ -64,7 +81,9 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
   private CompletionStage<Integer> archiveBatch(
       final ArchiveBatch batch,
       final IndexTemplateDescriptor templateDescriptor,
-      final String idField) {
+      final String idField,
+      final Consumer<Integer> recordArchiving,
+      final Consumer<Integer> recordArchived) {
     if (batch == null || batch.ids() == null || batch.ids().isEmpty()) {
       logger.trace(
           "Usage metrics archiver: nothing to archive for template {}",
@@ -78,14 +97,23 @@ public class UsageMetricsArchiverJob implements ArchiverJob {
         ids.size(),
         templateDescriptor.getIndexName(),
         batch.finishDate());
+    recordArchiving.accept(ids.size());
 
-    return repository
-        .moveDocuments(
+    return moveBatch(
             templateDescriptor.getFullQualifiedName(),
             templateDescriptor.getFullQualifiedName() + batch.finishDate(),
             idField,
-            ids,
-            executor)
+            ids)
+        .thenApplyAsync(FunctionUtil.peek(recordArchived), executor);
+  }
+
+  private CompletableFuture<Integer> moveBatch(
+      final String sourceIndex,
+      final String destinationIndexName,
+      final String idField,
+      final List<String> ids) {
+    return repository
+        .moveDocuments(sourceIndex, destinationIndexName, idField, ids, executor)
         .thenApplyAsync(ok -> ids.size(), executor);
   }
 
