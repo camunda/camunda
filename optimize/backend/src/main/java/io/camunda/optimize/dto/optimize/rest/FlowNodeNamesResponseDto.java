@@ -9,9 +9,42 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import java.util.HashMap;
 import java.util.Map;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class FlowNodeNamesResponseDto {
+
   private Map<String, String> flowNodeNames = new HashMap<>();
+
+  public FlowNodeNamesResponseDto() {}
+
+  public Map<String, String> getFlowNodeNames() {
+    return flowNodeNames;
+  }
+
+  public void setFlowNodeNames(final Map<String, String> flowNodeNames) {
+    this.flowNodeNames = flowNodeNames;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof FlowNodeNamesResponseDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeNamesResponseDto that = (FlowNodeNamesResponseDto) o;
+    return Objects.equals(flowNodeNames, that.flowNodeNames);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(flowNodeNames);
+  }
+
+  @Override
+  public String toString() {
+    return "FlowNodeNamesResponseDto(flowNodeNames=" + getFlowNodeNames() + ")";
+  }
 }

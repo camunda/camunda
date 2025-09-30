@@ -11,15 +11,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 import org.apache.lucene.search.ScoreDoc;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class IdentitySearchResultResponseDto {
+
   private List<IdentityWithMetadataResponseDto> result = new ArrayList<>();
 
   /**
@@ -30,5 +26,60 @@ public class IdentitySearchResultResponseDto {
 
   public IdentitySearchResultResponseDto(final List<IdentityWithMetadataResponseDto> result) {
     this.result = result;
+  }
+
+  public IdentitySearchResultResponseDto(
+      final List<IdentityWithMetadataResponseDto> result, final ScoreDoc scoreDoc) {
+    this.result = result;
+    this.scoreDoc = scoreDoc;
+  }
+
+  public IdentitySearchResultResponseDto() {}
+
+  public List<IdentityWithMetadataResponseDto> getResult() {
+    return result;
+  }
+
+  public void setResult(final List<IdentityWithMetadataResponseDto> result) {
+    this.result = result;
+  }
+
+  public ScoreDoc getScoreDoc() {
+    return scoreDoc;
+  }
+
+  @JsonIgnore
+  public void setScoreDoc(final ScoreDoc scoreDoc) {
+    this.scoreDoc = scoreDoc;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof IdentitySearchResultResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(result, scoreDoc);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IdentitySearchResultResponseDto that = (IdentitySearchResultResponseDto) o;
+    return Objects.equals(result, that.result) && Objects.equals(scoreDoc, that.scoreDoc);
+  }
+
+  @Override
+  public String toString() {
+    return "IdentitySearchResultResponseDto(result="
+        + getResult()
+        + ", scoreDoc="
+        + getScoreDoc()
+        + ")";
   }
 }

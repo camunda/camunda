@@ -11,14 +11,8 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionRestDto;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDto {
 
   @JsonUnwrapped private DashboardDefinitionRestDto definitionDto;
@@ -27,5 +21,47 @@ public class AuthorizedDashboardDefinitionResponseDto extends AuthorizedEntityDt
       final RoleType currentUserRole, final DashboardDefinitionRestDto definitionDto) {
     super(currentUserRole);
     this.definitionDto = definitionDto;
+  }
+
+  protected AuthorizedDashboardDefinitionResponseDto() {}
+
+  public DashboardDefinitionRestDto getDefinitionDto() {
+    return definitionDto;
+  }
+
+  @JsonUnwrapped
+  public void setDefinitionDto(final DashboardDefinitionRestDto definitionDto) {
+    this.definitionDto = definitionDto;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof AuthorizedDashboardDefinitionResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), definitionDto);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedDashboardDefinitionResponseDto that =
+        (AuthorizedDashboardDefinitionResponseDto) o;
+    return Objects.equals(definitionDto, that.definitionDto);
+  }
+
+  @Override
+  public String toString() {
+    return "AuthorizedDashboardDefinitionResponseDto(definitionDto=" + getDefinitionDto() + ")";
   }
 }

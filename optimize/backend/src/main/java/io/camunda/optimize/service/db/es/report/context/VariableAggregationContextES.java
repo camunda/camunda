@@ -8,15 +8,110 @@
 package io.camunda.optimize.service.db.es.report.context;
 
 import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
+import co.elastic.clients.elasticsearch._types.aggregations.Aggregation.Builder.ContainerBuilder;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import io.camunda.optimize.service.db.report.context.VariableAggregationContext;
 import java.util.Map;
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
+import java.util.Objects;
 
-@SuperBuilder
-@Data
 public class VariableAggregationContextES extends VariableAggregationContext {
+
   private final BoolQuery baseQueryForMinMaxStats;
   private final Map<String, Aggregation.Builder.ContainerBuilder> subAggregations;
+
+  protected VariableAggregationContextES(final VariableAggregationContextESBuilder<?, ?> b) {
+    super(b);
+    this.baseQueryForMinMaxStats = b.baseQueryForMinMaxStats;
+    this.subAggregations = b.subAggregations;
+  }
+
+  public BoolQuery getBaseQueryForMinMaxStats() {
+    return this.baseQueryForMinMaxStats;
+  }
+
+  public Map<String, ContainerBuilder> getSubAggregations() {
+    return this.subAggregations;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final VariableAggregationContextES that = (VariableAggregationContextES) o;
+    return Objects.equals(baseQueryForMinMaxStats, that.baseQueryForMinMaxStats)
+        && Objects.equals(subAggregations, that.subAggregations);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), baseQueryForMinMaxStats, subAggregations);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof VariableAggregationContextES;
+  }
+
+  public String toString() {
+    return "VariableAggregationContextES(baseQueryForMinMaxStats="
+        + this.getBaseQueryForMinMaxStats()
+        + ", subAggregations="
+        + this.getSubAggregations()
+        + ")";
+  }
+
+  public static VariableAggregationContextESBuilder<?, ?> builder() {
+    return new VariableAggregationContextESBuilderImpl();
+  }
+
+  public abstract static class VariableAggregationContextESBuilder<
+          C extends VariableAggregationContextES,
+          B extends VariableAggregationContextESBuilder<C, B>>
+      extends VariableAggregationContextBuilder<C, B> {
+
+    private BoolQuery baseQueryForMinMaxStats;
+    private Map<String, ContainerBuilder> subAggregations;
+
+    public B baseQueryForMinMaxStats(final BoolQuery baseQueryForMinMaxStats) {
+      this.baseQueryForMinMaxStats = baseQueryForMinMaxStats;
+      return self();
+    }
+
+    public B subAggregations(final Map<String, ContainerBuilder> subAggregations) {
+      this.subAggregations = subAggregations;
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    public String toString() {
+      return "VariableAggregationContextES.VariableAggregationContextESBuilder(super="
+          + super.toString()
+          + ", baseQueryForMinMaxStats="
+          + this.baseQueryForMinMaxStats
+          + ", subAggregations="
+          + this.subAggregations
+          + ")";
+    }
+  }
+
+  private static final class VariableAggregationContextESBuilderImpl
+      extends VariableAggregationContextESBuilder<
+          VariableAggregationContextES, VariableAggregationContextESBuilderImpl> {
+
+    private VariableAggregationContextESBuilderImpl() {}
+
+    protected VariableAggregationContextESBuilderImpl self() {
+      return this;
+    }
+
+    public VariableAggregationContextES build() {
+      return new VariableAggregationContextES(this);
+    }
+  }
 }

@@ -15,15 +15,13 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
+import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
 
   // This should be the name of the template prefix and without version suffix or optimize prefix
-  @Getter private final String templateName;
-  @Getter private final int templateVersion;
+  private final String templateName;
+  private final int templateVersion;
 
   public DeleteIndexTemplateIfExistsStep(final String templateName, final int templateVersion) {
     super(null);
@@ -57,5 +55,36 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
         "%s[Template]",
         OptimizeIndexNameService.getOptimizeIndexOrTemplateNameForAliasAndVersion(
             templateName, String.valueOf(templateVersion)));
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DeleteIndexTemplateIfExistsStep;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DeleteIndexTemplateIfExistsStep that = (DeleteIndexTemplateIfExistsStep) o;
+    return templateVersion == that.templateVersion
+        && Objects.equals(templateName, that.templateName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), templateName, templateVersion);
+  }
+
+  public String getTemplateName() {
+    return this.templateName;
+  }
+
+  public int getTemplateVersion() {
+    return this.templateVersion;
   }
 }

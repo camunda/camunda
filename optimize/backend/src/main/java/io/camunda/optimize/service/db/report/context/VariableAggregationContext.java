@@ -13,14 +13,12 @@ import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import io.camunda.optimize.service.db.filter.FilterContext;
 import io.camunda.optimize.service.db.report.MinMaxStatDto;
 import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.Objects;
 import java.util.Optional;
-import lombok.Data;
-import lombok.NonNull;
-import lombok.experimental.SuperBuilder;
 
-@SuperBuilder
-@Data
 public class VariableAggregationContext {
+
   private final String variableName;
   private final VariableType variableType;
   private final String variablePath;
@@ -32,7 +30,25 @@ public class VariableAggregationContext {
   private final String[] indexNames;
   private MinMaxStatDto variableRangeMinMaxStats;
   private final MinMaxStatDto combinedRangeMinMaxStats;
-  @NonNull private final FilterContext filterContext;
+  private final FilterContext filterContext;
+
+  protected VariableAggregationContext(final VariableAggregationContextBuilder<?, ?> b) {
+    this.variableName = b.variableName;
+    this.variableType = b.variableType;
+    this.variablePath = b.variablePath;
+    this.nestedVariableNameField = b.nestedVariableNameField;
+    this.nestedVariableValueFieldLabel = b.nestedVariableValueFieldLabel;
+    this.timezone = b.timezone;
+    this.customBucketDto = b.customBucketDto;
+    this.dateUnit = b.dateUnit;
+    this.indexNames = b.indexNames;
+    this.variableRangeMinMaxStats = b.variableRangeMinMaxStats;
+    this.combinedRangeMinMaxStats = b.combinedRangeMinMaxStats;
+    this.filterContext = b.filterContext;
+    if (filterContext == null) {
+      throw new IllegalArgumentException("FilterContext cannot be null");
+    }
+  }
 
   public Optional<MinMaxStatDto> getCombinedRangeMinMaxStats() {
     return Optional.ofNullable(combinedRangeMinMaxStats);
@@ -40,5 +56,254 @@ public class VariableAggregationContext {
 
   public double getMaxVariableValue() {
     return getCombinedRangeMinMaxStats().orElse(variableRangeMinMaxStats).getMax();
+  }
+
+  public String getVariableName() {
+    return this.variableName;
+  }
+
+  public VariableType getVariableType() {
+    return this.variableType;
+  }
+
+  public String getVariablePath() {
+    return this.variablePath;
+  }
+
+  public String getNestedVariableNameField() {
+    return this.nestedVariableNameField;
+  }
+
+  public String getNestedVariableValueFieldLabel() {
+    return this.nestedVariableValueFieldLabel;
+  }
+
+  public ZoneId getTimezone() {
+    return this.timezone;
+  }
+
+  public CustomBucketDto getCustomBucketDto() {
+    return this.customBucketDto;
+  }
+
+  public AggregateByDateUnit getDateUnit() {
+    return this.dateUnit;
+  }
+
+  public String[] getIndexNames() {
+    return this.indexNames;
+  }
+
+  public MinMaxStatDto getVariableRangeMinMaxStats() {
+    return this.variableRangeMinMaxStats;
+  }
+
+  public FilterContext getFilterContext() {
+    return this.filterContext;
+  }
+
+  public void setVariableRangeMinMaxStats(final MinMaxStatDto variableRangeMinMaxStats) {
+    this.variableRangeMinMaxStats = variableRangeMinMaxStats;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariableAggregationContext that = (VariableAggregationContext) o;
+    return Objects.equals(variableName, that.variableName)
+        && variableType == that.variableType
+        && Objects.equals(variablePath, that.variablePath)
+        && Objects.equals(nestedVariableNameField, that.nestedVariableNameField)
+        && Objects.equals(nestedVariableValueFieldLabel, that.nestedVariableValueFieldLabel)
+        && Objects.equals(timezone, that.timezone)
+        && Objects.equals(customBucketDto, that.customBucketDto)
+        && dateUnit == that.dateUnit
+        && Objects.deepEquals(indexNames, that.indexNames)
+        && Objects.equals(variableRangeMinMaxStats, that.variableRangeMinMaxStats)
+        && Objects.equals(combinedRangeMinMaxStats, that.combinedRangeMinMaxStats)
+        && Objects.equals(filterContext, that.filterContext);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        variableName,
+        variableType,
+        variablePath,
+        nestedVariableNameField,
+        nestedVariableValueFieldLabel,
+        timezone,
+        customBucketDto,
+        dateUnit,
+        Arrays.hashCode(indexNames),
+        variableRangeMinMaxStats,
+        combinedRangeMinMaxStats,
+        filterContext);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof VariableAggregationContext;
+  }
+
+  public String toString() {
+    return "VariableAggregationContext(variableName="
+        + this.getVariableName()
+        + ", variableType="
+        + this.getVariableType()
+        + ", variablePath="
+        + this.getVariablePath()
+        + ", nestedVariableNameField="
+        + this.getNestedVariableNameField()
+        + ", nestedVariableValueFieldLabel="
+        + this.getNestedVariableValueFieldLabel()
+        + ", timezone="
+        + this.getTimezone()
+        + ", customBucketDto="
+        + this.getCustomBucketDto()
+        + ", dateUnit="
+        + this.getDateUnit()
+        + ", indexNames="
+        + java.util.Arrays.deepToString(this.getIndexNames())
+        + ", variableRangeMinMaxStats="
+        + this.getVariableRangeMinMaxStats()
+        + ", combinedRangeMinMaxStats="
+        + this.getCombinedRangeMinMaxStats()
+        + ", filterContext="
+        + this.getFilterContext()
+        + ")";
+  }
+
+  public static VariableAggregationContextBuilder<?, ?> builder() {
+    return new VariableAggregationContextBuilderImpl();
+  }
+
+  public abstract static class VariableAggregationContextBuilder<
+      C extends VariableAggregationContext, B extends VariableAggregationContextBuilder<C, B>> {
+
+    private String variableName;
+    private VariableType variableType;
+    private String variablePath;
+    private String nestedVariableNameField;
+    private String nestedVariableValueFieldLabel;
+    private ZoneId timezone;
+    private CustomBucketDto customBucketDto;
+    private AggregateByDateUnit dateUnit;
+    private String[] indexNames;
+    private MinMaxStatDto variableRangeMinMaxStats;
+    private MinMaxStatDto combinedRangeMinMaxStats;
+    private FilterContext filterContext;
+
+    public B variableName(final String variableName) {
+      this.variableName = variableName;
+      return self();
+    }
+
+    public B variableType(final VariableType variableType) {
+      this.variableType = variableType;
+      return self();
+    }
+
+    public B variablePath(final String variablePath) {
+      this.variablePath = variablePath;
+      return self();
+    }
+
+    public B nestedVariableNameField(final String nestedVariableNameField) {
+      this.nestedVariableNameField = nestedVariableNameField;
+      return self();
+    }
+
+    public B nestedVariableValueFieldLabel(final String nestedVariableValueFieldLabel) {
+      this.nestedVariableValueFieldLabel = nestedVariableValueFieldLabel;
+      return self();
+    }
+
+    public B timezone(final ZoneId timezone) {
+      this.timezone = timezone;
+      return self();
+    }
+
+    public B customBucketDto(final CustomBucketDto customBucketDto) {
+      this.customBucketDto = customBucketDto;
+      return self();
+    }
+
+    public B dateUnit(final AggregateByDateUnit dateUnit) {
+      this.dateUnit = dateUnit;
+      return self();
+    }
+
+    public B indexNames(final String[] indexNames) {
+      this.indexNames = indexNames;
+      return self();
+    }
+
+    public B variableRangeMinMaxStats(final MinMaxStatDto variableRangeMinMaxStats) {
+      this.variableRangeMinMaxStats = variableRangeMinMaxStats;
+      return self();
+    }
+
+    public B combinedRangeMinMaxStats(final MinMaxStatDto combinedRangeMinMaxStats) {
+      this.combinedRangeMinMaxStats = combinedRangeMinMaxStats;
+      return self();
+    }
+
+    public B filterContext(final FilterContext filterContext) {
+      if (filterContext == null) {
+        throw new IllegalArgumentException("filterContext must not be null");
+      }
+
+      this.filterContext = filterContext;
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    public String toString() {
+      return "VariableAggregationContext.VariableAggregationContextBuilder(variableName="
+          + this.variableName
+          + ", variableType="
+          + this.variableType
+          + ", variablePath="
+          + this.variablePath
+          + ", nestedVariableNameField="
+          + this.nestedVariableNameField
+          + ", nestedVariableValueFieldLabel="
+          + this.nestedVariableValueFieldLabel
+          + ", timezone="
+          + this.timezone
+          + ", customBucketDto="
+          + this.customBucketDto
+          + ", dateUnit="
+          + this.dateUnit
+          + ", indexNames="
+          + java.util.Arrays.deepToString(this.indexNames)
+          + ", variableRangeMinMaxStats="
+          + this.variableRangeMinMaxStats
+          + ", combinedRangeMinMaxStats="
+          + this.combinedRangeMinMaxStats
+          + ", filterContext="
+          + this.filterContext
+          + ")";
+    }
+  }
+
+  private static final class VariableAggregationContextBuilderImpl
+      extends VariableAggregationContextBuilder<
+          VariableAggregationContext, VariableAggregationContextBuilderImpl> {
+
+    private VariableAggregationContextBuilderImpl() {}
+
+    protected VariableAggregationContextBuilderImpl self() {
+      return this;
+    }
+
+    public VariableAggregationContext build() {
+      return new VariableAggregationContext(this);
+    }
   }
 }

@@ -7,11 +7,8 @@
  */
 package io.camunda.optimize.service.mixpanel.client;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
 public class MixpanelHeartbeatMetrics {
 
   private long processReportCount;
@@ -21,4 +18,127 @@ public class MixpanelHeartbeatMetrics {
   private long dashboardShareCount;
   private long alertCount;
   private long taskReportCount;
+
+  public MixpanelHeartbeatMetrics(
+      final long processReportCount,
+      final long decisionReportCount,
+      final long dashboardCount,
+      final long reportShareCount,
+      final long dashboardShareCount,
+      final long alertCount,
+      final long taskReportCount) {
+    this.processReportCount = processReportCount;
+    this.decisionReportCount = decisionReportCount;
+    this.dashboardCount = dashboardCount;
+    this.reportShareCount = reportShareCount;
+    this.dashboardShareCount = dashboardShareCount;
+    this.alertCount = alertCount;
+    this.taskReportCount = taskReportCount;
+  }
+
+  public long getProcessReportCount() {
+    return processReportCount;
+  }
+
+  public void setProcessReportCount(final long processReportCount) {
+    this.processReportCount = processReportCount;
+  }
+
+  public long getDecisionReportCount() {
+    return decisionReportCount;
+  }
+
+  public void setDecisionReportCount(final long decisionReportCount) {
+    this.decisionReportCount = decisionReportCount;
+  }
+
+  public long getDashboardCount() {
+    return dashboardCount;
+  }
+
+  public void setDashboardCount(final long dashboardCount) {
+    this.dashboardCount = dashboardCount;
+  }
+
+  public long getReportShareCount() {
+    return reportShareCount;
+  }
+
+  public void setReportShareCount(final long reportShareCount) {
+    this.reportShareCount = reportShareCount;
+  }
+
+  public long getDashboardShareCount() {
+    return dashboardShareCount;
+  }
+
+  public void setDashboardShareCount(final long dashboardShareCount) {
+    this.dashboardShareCount = dashboardShareCount;
+  }
+
+  public long getAlertCount() {
+    return alertCount;
+  }
+
+  public void setAlertCount(final long alertCount) {
+    this.alertCount = alertCount;
+  }
+
+  public long getTaskReportCount() {
+    return taskReportCount;
+  }
+
+  public void setTaskReportCount(final long taskReportCount) {
+    this.taskReportCount = taskReportCount;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof MixpanelHeartbeatMetrics;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MixpanelHeartbeatMetrics that = (MixpanelHeartbeatMetrics) o;
+    return processReportCount == that.processReportCount
+        && decisionReportCount == that.decisionReportCount
+        && dashboardCount == that.dashboardCount
+        && reportShareCount == that.reportShareCount
+        && dashboardShareCount == that.dashboardShareCount
+        && alertCount == that.alertCount
+        && taskReportCount == that.taskReportCount;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processReportCount,
+        decisionReportCount,
+        dashboardCount,
+        reportShareCount,
+        dashboardShareCount,
+        alertCount,
+        taskReportCount);
+  }
+
+  @Override
+  public String toString() {
+    return "MixpanelHeartbeatMetrics(processReportCount="
+        + getProcessReportCount()
+        + ", decisionReportCount="
+        + getDecisionReportCount()
+        + ", dashboardCount="
+        + getDashboardCount()
+        + ", reportShareCount="
+        + getReportShareCount()
+        + ", dashboardShareCount="
+        + getDashboardShareCount()
+        + ", alertCount="
+        + getAlertCount()
+        + ", taskReportCount="
+        + getTaskReportCount()
+        + ")";
+  }
 }

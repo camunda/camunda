@@ -7,9 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.rest;
 
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class ErrorResponseDto {
 
   private String errorCode;
@@ -46,6 +45,73 @@ public class ErrorResponseDto {
     this.detailedMessage = detailedMessage;
   }
 
+  public String getErrorCode() {
+    return errorCode;
+  }
+
+  public void setErrorCode(final String errorCode) {
+    this.errorCode = errorCode;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  public String getDetailedMessage() {
+    return detailedMessage;
+  }
+
+  public void setDetailedMessage(final String detailedMessage) {
+    this.detailedMessage = detailedMessage;
+  }
+
+  public AuthorizedReportDefinitionResponseDto getReportDefinition() {
+    return reportDefinition;
+  }
+
+  public void setReportDefinition(final AuthorizedReportDefinitionResponseDto reportDefinition) {
+    this.reportDefinition = reportDefinition;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ErrorResponseDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ErrorResponseDto that = (ErrorResponseDto) o;
+    return Objects.equals(errorCode, that.errorCode)
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(detailedMessage, that.detailedMessage)
+        && Objects.equals(reportDefinition, that.reportDefinition);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(errorCode, errorMessage, detailedMessage, reportDefinition);
+  }
+
+  @Override
+  public String toString() {
+    return "ErrorResponseDto(errorCode="
+        + getErrorCode()
+        + ", errorMessage="
+        + getErrorMessage()
+        + ", detailedMessage="
+        + getDetailedMessage()
+        + ", reportDefinition="
+        + getReportDefinition()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String errorCode = "errorCode";

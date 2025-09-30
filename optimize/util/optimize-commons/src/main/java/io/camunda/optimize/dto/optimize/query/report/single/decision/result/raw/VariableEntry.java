@@ -9,12 +9,9 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
 
-@Getter
-@Setter
 public class VariableEntry {
+
   private String id;
   private String name;
   private VariableType type;
@@ -29,20 +26,39 @@ public class VariableEntry {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof VariableEntry)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final VariableEntry that = (VariableEntry) o;
-    return Objects.equals(id, that.id)
-        && Objects.equals(name, that.name)
-        && Objects.equals(type, that.type);
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name) && type == that.type;
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(id, name, type);
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public VariableType getType() {
+    return type;
+  }
+
+  public void setType(final VariableType type) {
+    this.type = type;
   }
 }

@@ -25,7 +25,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.process.group.value.ProcessGroupByValueDto;
 import java.util.Objects;
-import lombok.Data;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which group by type the jackson
@@ -47,27 +46,23 @@ import lombok.Data;
   @JsonSubTypes.Type(value = CandidateGroupGroupByDto.class, name = GROUP_BY_CANDIDATE_GROUP),
   @JsonSubTypes.Type(value = DurationGroupByDto.class, name = GROUP_BY_DURATION),
 })
-@Data
 public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
     implements Combinable {
 
   @JsonProperty protected ProcessGroupByType type;
   protected VALUE value;
 
-  @Override
-  public String toString() {
-    return type.getId();
-  }
+  public ProcessGroupByDto() {}
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof ProcessGroupByDto)) {
       return false;
     }
-    ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
+    final ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
     return isTypeCombinable(that) && Combinable.isCombinable(value, that.value);
   }
 
@@ -77,6 +72,46 @@ public abstract class ProcessGroupByDto<VALUE extends ProcessGroupByValueDto>
 
   @JsonIgnore
   public String createCommandKey() {
+    return type.getId();
+  }
+
+  public ProcessGroupByType getType() {
+    return type;
+  }
+
+  @JsonProperty
+  public void setType(final ProcessGroupByType type) {
+    this.type = type;
+  }
+
+  public VALUE getValue() {
+    return value;
+  }
+
+  public void setValue(final VALUE value) {
+    this.value = value;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessGroupByDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessGroupByDto<?> that = (ProcessGroupByDto<?>) o;
+    return type == that.type && Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, value);
+  }
+
+  @Override
+  public String toString() {
     return type.getId();
   }
 }

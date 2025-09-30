@@ -8,15 +8,8 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@AllArgsConstructor
-@NoArgsConstructor
 public class ProcessDigestDto extends ProcessDigestResponseDto {
 
   // This is the baseline results, or in other words the results that were included in the
@@ -28,7 +21,49 @@ public class ProcessDigestDto extends ProcessDigestResponseDto {
     this.kpiReportResults = kpiReportResults;
   }
 
+  public ProcessDigestDto(final Map<String, String> kpiReportResults) {
+    this.kpiReportResults = kpiReportResults;
+  }
+
+  public ProcessDigestDto() {}
+
+  public Map<String, String> getKpiReportResults() {
+    return kpiReportResults;
+  }
+
+  public void setKpiReportResults(final Map<String, String> kpiReportResults) {
+    this.kpiReportResults = kpiReportResults;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessDigestDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessDigestDto that = (ProcessDigestDto) o;
+    return Objects.equals(kpiReportResults, that.kpiReportResults);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), kpiReportResults);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessDigestDto(kpiReportResults=" + getKpiReportResults() + ")";
+  }
+
   /** Needed to inherit field name constants from {@link ProcessDigestResponseDto} */
+  @SuppressWarnings("checkstyle:ConstantName")
   public static class Fields extends ProcessDigestResponseDto.Fields {
 
     public static final String kpiReportResults = "kpiReportResults";

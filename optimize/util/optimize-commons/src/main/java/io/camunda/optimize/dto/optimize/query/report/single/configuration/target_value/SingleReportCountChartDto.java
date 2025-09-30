@@ -8,13 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class SingleReportCountChartDto {
 
   private Boolean isBelow = false;
@@ -22,17 +16,36 @@ public class SingleReportCountChartDto {
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof final SingleReportCountChartDto that)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
+    final SingleReportCountChartDto that = (SingleReportCountChartDto) o;
     return Objects.equals(isBelow, that.isBelow) && Objects.equals(value, that.value);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(isBelow, value);
+  }
+
+  @Override
+  public String toString() {
+    return "SingleReportCountChartDto(isBelow=" + getIsBelow() + ", value=" + getValue() + ")";
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
   }
 }

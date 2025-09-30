@@ -13,25 +13,84 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@Data
 public class ProcessVariableNameRequestDto {
+
   private List<ProcessToQueryDto> processesToQuery = new ArrayList<>();
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
   @JsonIgnore private ZoneId timezone = ZoneId.systemDefault();
 
   public ProcessVariableNameRequestDto(
-      List<ProcessToQueryDto> processesToQuery, List<ProcessFilterDto<?>> filter) {
+      final List<ProcessToQueryDto> processesToQuery, final List<ProcessFilterDto<?>> filter) {
     this.processesToQuery = processesToQuery;
     this.filter = filter;
     timezone = ZoneId.systemDefault();
   }
 
-  public ProcessVariableNameRequestDto(List<ProcessToQueryDto> processesToQuery) {
+  public ProcessVariableNameRequestDto(final List<ProcessToQueryDto> processesToQuery) {
     this(processesToQuery, Collections.emptyList());
+  }
+
+  public ProcessVariableNameRequestDto() {}
+
+  public List<ProcessToQueryDto> getProcessesToQuery() {
+    return processesToQuery;
+  }
+
+  public void setProcessesToQuery(final List<ProcessToQueryDto> processesToQuery) {
+    this.processesToQuery = processesToQuery;
+  }
+
+  public List<ProcessFilterDto<?>> getFilter() {
+    return filter;
+  }
+
+  public void setFilter(final List<ProcessFilterDto<?>> filter) {
+    this.filter = filter;
+  }
+
+  public ZoneId getTimezone() {
+    return timezone;
+  }
+
+  @JsonIgnore
+  public void setTimezone(final ZoneId timezone) {
+    this.timezone = timezone;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessVariableNameRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(processesToQuery, filter, timezone);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableNameRequestDto that = (ProcessVariableNameRequestDto) o;
+    return Objects.equals(processesToQuery, that.processesToQuery)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(timezone, that.timezone);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessVariableNameRequestDto(processesToQuery="
+        + getProcessesToQuery()
+        + ", filter="
+        + getFilter()
+        + ", timezone="
+        + getTimezone()
+        + ")";
   }
 }

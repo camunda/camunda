@@ -12,14 +12,8 @@ import io.camunda.optimize.dto.optimize.datasource.EngineDataSourceDto;
 import io.camunda.optimize.dto.optimize.query.variable.DecisionVariableNameResponseDto;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
 
   private String dmn10Xml;
@@ -42,7 +36,6 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     this.outputVariableNames = outputVariableNames;
   }
 
-  @Builder
   public DecisionDefinitionOptimizeDto(
       final String id,
       final String key,
@@ -60,6 +53,196 @@ public class DecisionDefinitionOptimizeDto extends DefinitionOptimizeResponseDto
     this.dmn10Xml = dmn10Xml;
     this.inputVariableNames = inputVariableNames;
     this.outputVariableNames = outputVariableNames;
+  }
+
+  public DecisionDefinitionOptimizeDto(
+      final String dmn10Xml,
+      final List<DecisionVariableNameResponseDto> inputVariableNames,
+      final List<DecisionVariableNameResponseDto> outputVariableNames) {
+    this.dmn10Xml = dmn10Xml;
+    this.inputVariableNames = inputVariableNames;
+    this.outputVariableNames = outputVariableNames;
+  }
+
+  public String getDmn10Xml() {
+    return dmn10Xml;
+  }
+
+  public void setDmn10Xml(final String dmn10Xml) {
+    this.dmn10Xml = dmn10Xml;
+  }
+
+  public List<DecisionVariableNameResponseDto> getInputVariableNames() {
+    return inputVariableNames;
+  }
+
+  public void setInputVariableNames(
+      final List<DecisionVariableNameResponseDto> inputVariableNames) {
+    this.inputVariableNames = inputVariableNames;
+  }
+
+  public List<DecisionVariableNameResponseDto> getOutputVariableNames() {
+    return outputVariableNames;
+  }
+
+  public void setOutputVariableNames(
+      final List<DecisionVariableNameResponseDto> outputVariableNames) {
+    this.outputVariableNames = outputVariableNames;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionDefinitionOptimizeDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DecisionDefinitionOptimizeDto that = (DecisionDefinitionOptimizeDto) o;
+    return Objects.equals(dmn10Xml, that.dmn10Xml)
+        && Objects.equals(inputVariableNames, that.inputVariableNames)
+        && Objects.equals(outputVariableNames, that.outputVariableNames);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), dmn10Xml, inputVariableNames, outputVariableNames);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionDefinitionOptimizeDto(dmn10Xml="
+        + getDmn10Xml()
+        + ", inputVariableNames="
+        + getInputVariableNames()
+        + ", outputVariableNames="
+        + getOutputVariableNames()
+        + ")";
+  }
+
+  public static DecisionDefinitionOptimizeDtoBuilder builder() {
+    return new DecisionDefinitionOptimizeDtoBuilder();
+  }
+
+  public static class DecisionDefinitionOptimizeDtoBuilder {
+
+    private String id;
+    private String key;
+    private String version;
+    private String versionTag;
+    private String name;
+    private DataSourceDto dataSource;
+    private String tenantId;
+    private String dmn10Xml;
+    private boolean deleted;
+    private List<DecisionVariableNameResponseDto> inputVariableNames;
+    private List<DecisionVariableNameResponseDto> outputVariableNames;
+
+    DecisionDefinitionOptimizeDtoBuilder() {}
+
+    public DecisionDefinitionOptimizeDtoBuilder id(final String id) {
+      this.id = id;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder key(final String key) {
+      this.key = key;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder version(final String version) {
+      this.version = version;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder versionTag(final String versionTag) {
+      this.versionTag = versionTag;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder dataSource(final DataSourceDto dataSource) {
+      this.dataSource = dataSource;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder dmn10Xml(final String dmn10Xml) {
+      this.dmn10Xml = dmn10Xml;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder deleted(final boolean deleted) {
+      this.deleted = deleted;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder inputVariableNames(
+        final List<DecisionVariableNameResponseDto> inputVariableNames) {
+      this.inputVariableNames = inputVariableNames;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDtoBuilder outputVariableNames(
+        final List<DecisionVariableNameResponseDto> outputVariableNames) {
+      this.outputVariableNames = outputVariableNames;
+      return this;
+    }
+
+    public DecisionDefinitionOptimizeDto build() {
+      return new DecisionDefinitionOptimizeDto(
+          id,
+          key,
+          version,
+          versionTag,
+          name,
+          dataSource,
+          tenantId,
+          dmn10Xml,
+          deleted,
+          inputVariableNames,
+          outputVariableNames);
+    }
+
+    @Override
+    public String toString() {
+      return "DecisionDefinitionOptimizeDto.DecisionDefinitionOptimizeDtoBuilder(id="
+          + id
+          + ", key="
+          + key
+          + ", version="
+          + version
+          + ", versionTag="
+          + versionTag
+          + ", name="
+          + name
+          + ", dataSource="
+          + dataSource
+          + ", tenantId="
+          + tenantId
+          + ", dmn10Xml="
+          + dmn10Xml
+          + ", deleted="
+          + deleted
+          + ", inputVariableNames="
+          + inputVariableNames
+          + ", outputVariableNames="
+          + outputVariableNames
+          + ")";
+    }
   }
 
   public enum Fields {

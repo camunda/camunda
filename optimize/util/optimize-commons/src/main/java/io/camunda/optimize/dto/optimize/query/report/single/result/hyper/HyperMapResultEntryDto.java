@@ -8,39 +8,89 @@
 package io.camunda.optimize.dto.optimize.query.report.single.result.hyper;
 
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.ToString;
+import java.util.Objects;
 
-@EqualsAndHashCode
-@ToString
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class HyperMapResultEntryDto {
 
   // @formatter:off
-  @NonNull @Getter @Setter private String key;
-  @Getter @Setter private List<MapResultEntryDto> value;
-  @Setter private String label;
+  private String key;
+  private List<MapResultEntryDto> value;
+  private String label;
 
   // @formatter:on
 
-  public HyperMapResultEntryDto(@NonNull final String key, final List<MapResultEntryDto> value) {
+  public HyperMapResultEntryDto(final String key, final List<MapResultEntryDto> value) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+
     this.key = key;
     this.value = value;
   }
 
   public HyperMapResultEntryDto(
-      @NonNull final String key, final List<MapResultEntryDto> value, String label) {
+      final String key, final List<MapResultEntryDto> value, final String label) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+
     this.key = key;
     setValue(value);
     this.label = label;
   }
 
+  protected HyperMapResultEntryDto() {}
+
   public String getLabel() {
     return label != null && !label.isEmpty() ? label : key;
+  }
+
+  public void setLabel(final String label) {
+    this.label = label;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof HyperMapResultEntryDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final HyperMapResultEntryDto that = (HyperMapResultEntryDto) o;
+    return Objects.equals(key, that.key)
+        && Objects.equals(value, that.value)
+        && Objects.equals(label, that.label);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key, value, label);
+  }
+
+  @Override
+  public String toString() {
+    return "HyperMapResultEntryDto(key=" + key + ", value=" + value + ", label=" + getLabel() + ")";
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(final String key) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+
+    this.key = key;
+  }
+
+  public List<MapResultEntryDto> getValue() {
+    return value;
+  }
+
+  public void setValue(final List<MapResultEntryDto> value) {
+    this.value = value;
   }
 }

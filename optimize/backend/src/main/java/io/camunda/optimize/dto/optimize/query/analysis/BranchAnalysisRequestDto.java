@@ -14,10 +14,10 @@ import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class BranchAnalysisRequestDto {
+
   private String end;
   private String gateway;
   private String processDefinitionKey;
@@ -26,12 +26,102 @@ public class BranchAnalysisRequestDto {
 
   private List<ProcessFilterDto<?>> filter = new ArrayList<>();
 
+  public BranchAnalysisRequestDto() {}
+
   @JsonIgnore
-  public void setProcessDefinitionVersion(String definitionVersion) {
-    this.processDefinitionVersions = Lists.newArrayList(definitionVersion);
+  public void setProcessDefinitionVersion(final String definitionVersion) {
+    processDefinitionVersions = Lists.newArrayList(definitionVersion);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  public String getEnd() {
+    return end;
+  }
+
+  public void setEnd(final String end) {
+    this.end = end;
+  }
+
+  public String getGateway() {
+    return gateway;
+  }
+
+  public void setGateway(final String gateway) {
+    this.gateway = gateway;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public List<String> getProcessDefinitionVersions() {
+    return processDefinitionVersions;
+  }
+
+  public void setProcessDefinitionVersions(final List<String> processDefinitionVersions) {
+    this.processDefinitionVersions = processDefinitionVersions;
+  }
+
+  public List<ProcessFilterDto<?>> getFilter() {
+    return filter;
+  }
+
+  public void setFilter(final List<ProcessFilterDto<?>> filter) {
+    this.filter = filter;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof BranchAnalysisRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        end, gateway, processDefinitionKey, processDefinitionVersions, tenantIds, filter);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BranchAnalysisRequestDto that = (BranchAnalysisRequestDto) o;
+    return Objects.equals(end, that.end)
+        && Objects.equals(gateway, that.gateway)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(filter, that.filter);
+  }
+
+  @Override
+  public String toString() {
+    return "BranchAnalysisRequestDto(end="
+        + getEnd()
+        + ", gateway="
+        + getGateway()
+        + ", processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", processDefinitionVersions="
+        + getProcessDefinitionVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ", filter="
+        + getFilter()
+        + ")";
   }
 }

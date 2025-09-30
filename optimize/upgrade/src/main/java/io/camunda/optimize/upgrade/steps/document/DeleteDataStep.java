@@ -12,9 +12,8 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 public class DeleteDataStep extends UpgradeStep {
 
   private final DatabaseQueryWrapper queryWrapper;
@@ -30,7 +29,29 @@ public class DeleteDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.deleteDataByIndexName(index, queryWrapper);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DeleteDataStep;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DeleteDataStep that = (DeleteDataStep) o;
+    return Objects.equals(queryWrapper, that.queryWrapper);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), queryWrapper);
   }
 }

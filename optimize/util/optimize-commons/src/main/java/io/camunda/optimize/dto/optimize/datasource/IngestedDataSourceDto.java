@@ -9,13 +9,8 @@ package io.camunda.optimize.dto.optimize.datasource;
 
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.SchedulerConfig;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.ToString;
+import java.util.Objects;
 
-@Getter
-@EqualsAndHashCode(callSuper = true)
-@ToString(callSuper = true)
 public class IngestedDataSourceDto extends DataSourceDto implements SchedulerConfig {
 
   public IngestedDataSourceDto() {
@@ -24,5 +19,31 @@ public class IngestedDataSourceDto extends DataSourceDto implements SchedulerCon
 
   public IngestedDataSourceDto(final String name) {
     super(DataImportSourceType.INGESTED_DATA, name);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof IngestedDataSourceDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(getClass(), super.hashCode());
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
+  }
+
+  @Override
+  public String toString() {
+    return "IngestedDataSourceDto(super=" + super.toString() + ")";
   }
 }

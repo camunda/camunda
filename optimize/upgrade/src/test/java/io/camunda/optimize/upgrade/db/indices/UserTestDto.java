@@ -5,19 +5,24 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.optimize.rest.engine.dto;
+package io.camunda.optimize.upgrade.db.indices;
 
 import java.util.Objects;
 
-public class UserCredentialsDto {
+public class UserTestDto {
 
-  private String password;
+  String username;
+  String password;
 
-  public UserCredentialsDto(final String password) {
-    this.password = password;
+  public UserTestDto() {}
+
+  public String getUsername() {
+    return username;
   }
 
-  protected UserCredentialsDto() {}
+  public void setUsername(final String username) {
+    this.username = username;
+  }
 
   public String getPassword() {
     return password;
@@ -28,12 +33,12 @@ public class UserCredentialsDto {
   }
 
   protected boolean canEqual(final Object other) {
-    return other instanceof UserCredentialsDto;
+    return other instanceof UserTestDto;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(password);
+    return Objects.hash(username, password);
   }
 
   @Override
@@ -44,12 +49,12 @@ public class UserCredentialsDto {
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final UserCredentialsDto that = (UserCredentialsDto) o;
-    return Objects.equals(password, that.password);
+    final UserTestDto that = (UserTestDto) o;
+    return Objects.equals(username, that.username) && Objects.equals(password, that.password);
   }
 
   @Override
   public String toString() {
-    return "UserCredentialsDto(password=" + getPassword() + ")";
+    return "UserTestDto(username=" + getUsername() + ", password=" + getPassword() + ")";
   }
 }

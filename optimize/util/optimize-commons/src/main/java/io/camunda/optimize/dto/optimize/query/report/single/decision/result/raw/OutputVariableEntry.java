@@ -13,18 +13,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
 
 public class OutputVariableEntry extends VariableEntry {
-  @Getter @Setter private List<Object> values = new ArrayList<>();
+
+  private List<Object> values = new ArrayList<>();
 
   protected OutputVariableEntry() {}
 
   public OutputVariableEntry(
       final String id, final String name, final VariableType type, final Object value) {
     super(id, name, type);
-    this.values.add(value);
+    values.add(value);
   }
 
   public OutputVariableEntry(
@@ -41,15 +40,12 @@ public class OutputVariableEntry extends VariableEntry {
 
   @JsonIgnore
   public Object getFirstValue() {
-    return this.values.stream().findFirst().orElse(null);
+    return values.stream().findFirst().orElse(null);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof OutputVariableEntry)) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
     if (!super.equals(o)) {
@@ -62,5 +58,13 @@ public class OutputVariableEntry extends VariableEntry {
   @Override
   public int hashCode() {
     return Objects.hash(super.hashCode(), values);
+  }
+
+  public List<Object> getValues() {
+    return values;
+  }
+
+  public void setValues(final List<Object> values) {
+    this.values = values;
   }
 }

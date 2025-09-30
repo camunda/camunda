@@ -12,21 +12,13 @@ import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.UserDto;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
 
   private static final String ID_SEGMENT_SEPARATOR = ":";
-
-  @Setter(value = AccessLevel.PROTECTED)
   private String id;
-
   private IdentityWithMetadataResponseDto identity;
   private RoleType role;
 
@@ -56,6 +48,8 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
     this.role = role;
   }
 
+  protected CollectionRoleResponseDto() {}
+
   @Override
   public int compareTo(final CollectionRoleResponseDto other) {
     if (identity instanceof UserDto && other.getIdentity() instanceof GroupDto) {
@@ -74,6 +68,64 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
   public static <T extends IdentityWithMetadataResponseDto> CollectionRoleResponseDto from(
       final CollectionRoleRequestDto roleDto, final T identityWithMetaData) {
     return new CollectionRoleResponseDto(identityWithMetaData, roleDto.getRole());
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  protected void setId(final String id) {
+    this.id = id;
+  }
+
+  public IdentityWithMetadataResponseDto getIdentity() {
+    return identity;
+  }
+
+  public void setIdentity(final IdentityWithMetadataResponseDto identity) {
+    this.identity = identity;
+  }
+
+  public RoleType getRole() {
+    return role;
+  }
+
+  public void setRole(final RoleType role) {
+    this.role = role;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CollectionRoleResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, identity, role);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionRoleResponseDto that = (CollectionRoleResponseDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(identity, that.identity)
+        && Objects.equals(role, that.role);
+  }
+
+  @Override
+  public String toString() {
+    return "CollectionRoleResponseDto(id="
+        + getId()
+        + ", identity="
+        + getIdentity()
+        + ", role="
+        + getRole()
+        + ")";
   }
 
   public enum Fields {

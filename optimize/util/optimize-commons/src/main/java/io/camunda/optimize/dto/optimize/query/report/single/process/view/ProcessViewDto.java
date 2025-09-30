@@ -18,11 +18,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@Data
 public class ProcessViewDto implements Combinable {
 
   private static final Set<ProcessViewEntity> FLOW_NODE_ENTITIES =
@@ -45,6 +41,8 @@ public class ProcessViewDto implements Combinable {
     this.entity = entity;
     this.properties = properties;
   }
+
+  public ProcessViewDto() {}
 
   @Override
   public boolean isCombinable(final Object o) {
@@ -79,15 +77,6 @@ public class ProcessViewDto implements Combinable {
     return properties != null && !properties.isEmpty() ? properties.get(0) : null;
   }
 
-  @JsonSetter
-  public void setProperties(final List<ViewProperty> properties) {
-    this.properties = new ArrayList<>(properties);
-  }
-
-  public void setProperties(final ViewProperty... properties) {
-    this.properties = Arrays.asList(properties);
-  }
-
   private boolean isEntityCombinable(final ProcessViewDto viewDto) {
     // note: user tasks are combinable with flow nodes as they are a subset of flow nodes
     return Objects.equals(entity, viewDto.entity)
@@ -98,6 +87,51 @@ public class ProcessViewDto implements Combinable {
     return Combinable.isCombinable(getFirstProperty(), viewDto.getFirstProperty());
   }
 
+  public ProcessViewEntity getEntity() {
+    return entity;
+  }
+
+  public void setEntity(final ProcessViewEntity entity) {
+    this.entity = entity;
+  }
+
+  public List<ViewProperty> getProperties() {
+    return properties;
+  }
+
+  @JsonSetter
+  public void setProperties(final List<ViewProperty> properties) {
+    this.properties = new ArrayList<>(properties);
+  }
+
+  public void setProperties(final ViewProperty... properties) {
+    this.properties = Arrays.asList(properties);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessViewDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessViewDto that = (ProcessViewDto) o;
+    return entity == that.entity && Objects.equals(properties, that.properties);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(entity, properties);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessViewDto(entity=" + getEntity() + ", properties=" + getProperties() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String entity = "entity";

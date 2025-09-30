@@ -7,13 +7,46 @@
  */
 package io.camunda.optimize.dto.optimize.query;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class TokenDto {
+
   protected String token;
+
+  public TokenDto(final String token) {
+    this.token = token;
+  }
+
+  public TokenDto() {}
+
+  public String getToken() {
+    return token;
+  }
+
+  public void setToken(final String token) {
+    this.token = token;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof TokenDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TokenDto tokenDto = (TokenDto) o;
+    return Objects.equals(token, tokenDto.token);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(token);
+  }
+
+  @Override
+  public String toString() {
+    return "TokenDto(token=" + getToken() + ")";
+  }
 }

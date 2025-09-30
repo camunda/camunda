@@ -13,12 +13,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
 import java.util.List;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
-@EqualsAndHashCode
-@Data
 public class ZeebeIncidentDataDto implements IncidentRecordValue {
 
   private String errorMessage;
@@ -31,6 +28,8 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
   private ErrorType errorType;
   private long variableScopeKey;
   private String tenantId;
+
+  public ZeebeIncidentDataDto() {}
 
   @Override
   public String toJson() {
@@ -60,6 +59,143 @@ public class ZeebeIncidentDataDto implements IncidentRecordValue {
     throw new UnsupportedOperationException("Operation not supported");
   }
 
+  public String getErrorMessage() {
+    return this.errorMessage;
+  }
+
+  public String getBpmnProcessId() {
+    return this.bpmnProcessId;
+  }
+
+  public String getElementId() {
+    return this.elementId;
+  }
+
+  public long getElementInstanceKey() {
+    return this.elementInstanceKey;
+  }
+
+  public long getProcessInstanceKey() {
+    return this.processInstanceKey;
+  }
+
+  public long getProcessDefinitionKey() {
+    return this.processDefinitionKey;
+  }
+
+  public long getJobKey() {
+    return this.jobKey;
+  }
+
+  public ErrorType getErrorType() {
+    return this.errorType;
+  }
+
+  public long getVariableScopeKey() {
+    return this.variableScopeKey;
+  }
+
+  public void setErrorMessage(final String errorMessage) {
+    this.errorMessage = errorMessage;
+  }
+
+  public void setBpmnProcessId(final String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public void setElementId(final String elementId) {
+    this.elementId = elementId;
+  }
+
+  public void setElementInstanceKey(final long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public void setProcessInstanceKey(final long processInstanceKey) {
+    this.processInstanceKey = processInstanceKey;
+  }
+
+  public void setProcessDefinitionKey(final long processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setJobKey(final long jobKey) {
+    this.jobKey = jobKey;
+  }
+
+  public void setErrorType(final ErrorType errorType) {
+    this.errorType = errorType;
+  }
+
+  public void setVariableScopeKey(final long variableScopeKey) {
+    this.variableScopeKey = variableScopeKey;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  public String toString() {
+    return "ZeebeIncidentDataDto(errorMessage="
+        + this.getErrorMessage()
+        + ", bpmnProcessId="
+        + this.getBpmnProcessId()
+        + ", elementId="
+        + this.getElementId()
+        + ", elementInstanceKey="
+        + this.getElementInstanceKey()
+        + ", processInstanceKey="
+        + this.getProcessInstanceKey()
+        + ", processDefinitionKey="
+        + this.getProcessDefinitionKey()
+        + ", jobKey="
+        + this.getJobKey()
+        + ", errorType="
+        + this.getErrorType()
+        + ", variableScopeKey="
+        + this.getVariableScopeKey()
+        + ", tenantId="
+        + this.getTenantId()
+        + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeIncidentDataDto that = (ZeebeIncidentDataDto) o;
+    return elementInstanceKey == that.elementInstanceKey
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionKey == that.processDefinitionKey
+        && jobKey == that.jobKey
+        && variableScopeKey == that.variableScopeKey
+        && Objects.equals(errorMessage, that.errorMessage)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(errorType, that.errorType)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        errorMessage,
+        bpmnProcessId,
+        elementId,
+        elementInstanceKey,
+        processInstanceKey,
+        processDefinitionKey,
+        jobKey,
+        errorType,
+        variableScopeKey,
+        tenantId);
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String errorMessage = "errorMessage";

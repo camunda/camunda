@@ -7,24 +7,79 @@
  */
 package io.camunda.optimize.dto.optimize.query.entity;
 
-import jakarta.ws.rs.QueryParam;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class EntityNameRequestDto {
 
-  @QueryParam("collectionId")
   private String collectionId;
 
-  @QueryParam("dashboardId")
   private String dashboardId;
 
-  @QueryParam("reportId")
   private String reportId;
+
+  public EntityNameRequestDto(
+      final String collectionId, final String dashboardId, final String reportId) {
+    this.collectionId = collectionId;
+    this.dashboardId = dashboardId;
+    this.reportId = reportId;
+  }
+
+  public EntityNameRequestDto() {}
+
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  public String getDashboardId() {
+    return dashboardId;
+  }
+
+  public void setDashboardId(final String dashboardId) {
+    this.dashboardId = dashboardId;
+  }
+
+  public String getReportId() {
+    return reportId;
+  }
+
+  public void setReportId(final String reportId) {
+    this.reportId = reportId;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EntityNameRequestDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityNameRequestDto that = (EntityNameRequestDto) o;
+    return Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(dashboardId, that.dashboardId)
+        && Objects.equals(reportId, that.reportId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(collectionId, dashboardId, reportId);
+  }
+
+  @Override
+  public String toString() {
+    return "EntityNameRequestDto(collectionId="
+        + getCollectionId()
+        + ", dashboardId="
+        + getDashboardId()
+        + ", reportId="
+        + getReportId()
+        + ")";
+  }
 
   public enum Fields {
     collectionId,

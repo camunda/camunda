@@ -13,13 +13,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class DecisionViewDto {
 
   protected List<ViewProperty> properties = new ArrayList<>();
@@ -28,9 +23,19 @@ public class DecisionViewDto {
     getProperties().add(property);
   }
 
+  public DecisionViewDto(final List<ViewProperty> properties) {
+    this.properties = properties;
+  }
+
+  public DecisionViewDto() {}
+
   @JsonIgnore
   public String createCommandKey() {
     return getProperties().stream().findFirst().map(ViewProperty::toString).orElse(null);
+  }
+
+  public List<ViewProperty> getProperties() {
+    return properties;
   }
 
   @JsonSetter
@@ -42,6 +47,30 @@ public class DecisionViewDto {
     this.properties = Arrays.asList(properties);
   }
 
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionViewDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionViewDto that = (DecisionViewDto) o;
+    return Objects.equals(properties, that.properties);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(properties);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionViewDto(properties=" + getProperties() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String properties = "properties";
