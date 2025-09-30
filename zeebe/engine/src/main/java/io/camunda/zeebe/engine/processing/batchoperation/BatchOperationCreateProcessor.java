@@ -158,6 +158,8 @@ public final class BatchOperationCreateProcessor
             case MODIFY_PROCESS_INSTANCE ->
                 PermissionType.CREATE_BATCH_OPERATION_MODIFY_PROCESS_INSTANCE;
             case RESOLVE_INCIDENT -> PermissionType.CREATE_BATCH_OPERATION_RESOLVE_INCIDENT;
+            case DELETE_PROCESS_INSTANCE ->
+                PermissionType.CREATE_BATCH_OPERATION_DELETE_PROCESS_INSTANCE;
           };
       return authCheckBehavior.isAuthorized(
           new AuthorizationRequest(command, AuthorizationResourceType.BATCH, permission).build());
