@@ -288,6 +288,17 @@ public final class ProcessInstanceServices
     return sendBrokerRequest(brokerRequest);
   }
 
+  public CompletableFuture<BatchOperationCreationRecord>
+      deleteHistoryProcessInstanceBatchOperationWithResult(final ProcessInstanceFilter filter) {
+    final var brokerRequest =
+        new BrokerCreateBatchOperationRequest()
+            .setFilter(filter)
+            .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+            .setAuthentication(authentication);
+
+    return sendBrokerRequest(brokerRequest);
+  }
+
   public CompletableFuture<BatchOperationCreationRecord> resolveIncidentsBatchOperationWithResult(
       final ProcessInstanceFilter filter) {
     final var brokerRequest =

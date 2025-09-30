@@ -2111,6 +2111,44 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
       x-eventually-consistent: true
+
+  /process-instances/history:
+    delete:
+      tags:
+        - Process instance
+      operationId: deleteProcessInstancesHistoryBatchOperation
+      summary: Create a batch operation to delete historic process instance data
+      description: |
+        Deletes the history of process instances matching a specified filter.
+        TODO add nice description here.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessInstanceDeleteHistoryBatchOperationRequest"
+      responses:
+        "200":
+          description: The batch operation request was created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchOperationCreatedResult"
+        "400":
+          description: >
+            The process instance batch operation failed.
+            More details are provided in the response body.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances/incident-resolution:
     post:
       tags:
@@ -12524,6 +12562,15 @@ components:
       type: object
       additionalProperties: false
       description: The process instance filter that defines which process instances should be canceled.
+      properties:
+        filter:
+          $ref: "#/components/schemas/ProcessInstanceFilter"
+      required:
+        - filter
+    ProcessInstanceDeleteHistoryBatchOperationRequest:
+      type: object
+      description: |
+        The process instance filter that defines which process instances should have their history deleted.
       properties:
         filter:
           $ref: "#/components/schemas/ProcessInstanceFilter"
