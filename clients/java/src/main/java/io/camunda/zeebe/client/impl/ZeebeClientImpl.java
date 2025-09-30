@@ -442,7 +442,7 @@ public final class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public CorrelateMessageCommandStep1 newCorrelateMessageCommand() {
-    return new CorrelateMessageCommandImpl(httpClient, jsonMapper);
+    return new CorrelateMessageCommandImpl(config, httpClient, jsonMapper);
   }
 
   @Override

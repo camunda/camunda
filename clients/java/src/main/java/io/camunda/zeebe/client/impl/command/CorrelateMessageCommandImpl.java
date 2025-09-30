@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.client.impl.command;
 
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CorrelateMessageCommandStep1;
@@ -41,11 +42,15 @@ public class CorrelateMessageCommandImpl extends CommandWithVariables<CorrelateM
   private final MessageCorrelationRequest request = new MessageCorrelationRequest();
   private final RequestConfig.Builder httpRequestConfig;
 
-  public CorrelateMessageCommandImpl(final HttpClient httpClient, final JsonMapper jsonMapper) {
+  public CorrelateMessageCommandImpl(
+      final ZeebeClientConfiguration config,
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper) {
     super(jsonMapper);
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     httpRequestConfig = httpClient.newRequestConfig();
+    tenantId(config.getDefaultTenantId());
   }
 
   @Override
