@@ -43,8 +43,8 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
-// Check if V2 mode is enabled to exclude V1-only tests
-const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED === 'true';
+// Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
+const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
 
 export default defineConfig({
   testDir: `./tests/`,
