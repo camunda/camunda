@@ -17,6 +17,9 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.util.FileUtil;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
@@ -34,13 +37,17 @@ import org.slf4j.event.Level;
  */
 public final class FilesystemBackupStore implements BackupStore {
 
-  public static final String ERROR_MSG_BACKUP_NOT_FOUND =
-      "Expected to restore from backup with id '%s', but does not exist.";
-  public static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
-      "Expected to restore from completed backup with id '%s', but was in state '%s'";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(FilesystemBackupStore.class);
+
+  private static final String ERROR_MSG_BACKUP_NOT_FOUND =
+      "Expected to restore from backup with id '%s', but does not exist.";
+  private static final String ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE =
+      "Expected to restore from completed backup with id '%s', but was in state '%s'";
+  private static final String SNAPSHOT_FILESET_NAME = "snapshot";
+  private static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final String CONTENTS_PATH = "contents";
+  private static final String MANIFESTS_PATH = "manifests";
+
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
@@ -50,8 +57,19 @@ public final class FilesystemBackupStore implements BackupStore {
 
     this.executor = executor;
 
-    fileSetManager = new FileSetManager(config.basePath());
-    manifestManager = new ManifestManager(config.basePath());
+    final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
+    final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
+    try {
+      FileUtil.ensureDirectoryExists(contentsDir);
+      FileUtil.ensureDirectoryExists(manifestsDir);
+    } catch (final IOException e) {
+      throw new UncheckedIOException(
+          "Unable to create backup directory structure; do you have the right permissions or configuration?",
+          e);
+    }
+
+    fileSetManager = new FileSetManager(contentsDir);
+    manifestManager = new ManifestManager(manifestsDir);
   }
 
   @Override

@@ -38,7 +38,7 @@ class FileSetManagerTest {
   void setUp() {
 
     // do not mock the backupIdentifier
-    fileSetManager = new FileSetManager(backupDir.toString());
+    fileSetManager = new FileSetManager(backupDir);
     backupIdentifier = new BackupIdentifierImpl(1337, 0, 42L);
     fileSet = mock(FileSet.class);
   }
@@ -51,13 +51,13 @@ class FileSetManagerTest {
 
     fileSetManager.save(backupIdentifier, "fileSetName", namedFileSet);
 
-    final Path savedFilePath = backupDir.resolve("contents/0/42/1337/fileSetName/testFile.txt");
+    final Path savedFilePath = backupDir.resolve("0/42/1337/fileSetName/testFile.txt");
     assertThat(Files.exists(savedFilePath)).isTrue();
   }
 
   @Test
   void testDelete() throws IOException {
-    final Path fileSetPath = backupDir.resolve("contents/0/42/1337/fileSetName");
+    final Path fileSetPath = backupDir.resolve("0/42/1337/fileSetName");
     Files.createDirectories(fileSetPath);
 
     fileSetManager.delete(backupIdentifier, "fileSetName");
@@ -72,7 +72,7 @@ class FileSetManagerTest {
 
   @Test
   void testRestore() throws IOException {
-    final Path backupFilePath = backupDir.resolve("contents/0/42/1337/fileSetName/testFile.txt");
+    final Path backupFilePath = backupDir.resolve("0/42/1337/fileSetName/testFile.txt");
     Files.createDirectories(backupFilePath.getParent());
     Files.createFile(backupFilePath);
     when(fileSet.files()).thenReturn(List.of(new FileSet.NamedFile("testFile.txt")));
@@ -85,6 +85,6 @@ class FileSetManagerTest {
 
     final Path restoredFilePath = targetFolder.resolve("testFile.txt");
     assertThat(Files.exists(restoredFilePath)).isTrue();
-    assertThat(restoredFileSet.namedFiles().get("testFile.txt")).isEqualTo(restoredFilePath);
+    assertThat(restoredFileSet.namedFiles()).containsEntry("testFile.txt", restoredFilePath);
   }
 }
