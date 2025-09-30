@@ -125,7 +125,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
     final var manifest = Manifest.createInProgress(backup);
     final byte[] serializedManifest;
 
-    final ManifestManager manifestManager = new ManifestManager(backupDir.toString());
+    final ManifestManager manifestManager = new ManifestManager(backupDir.resolve("manifests"));
     try {
       final var path = manifestManager.manifestPath(manifest);
       Files.createDirectories(path.getParent());
