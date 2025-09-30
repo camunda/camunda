@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(intent = UserTaskIntent.class, type = "CREATED")
+@HandlesIntent(intent = UserTaskIntent.class, type = "CREATED", version = 2)
 public class UserTaskCreatedV2Applier implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
   private final MutableUserTaskState userTaskState;
 

@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(intent = UserTaskIntent.class, type = "UPDATING")
+@HandlesIntent(intent = UserTaskIntent.class, type = "UPDATING", version = 2)
 public final class UserTaskUpdatingV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 
