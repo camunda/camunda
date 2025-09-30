@@ -2,7 +2,7 @@
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda-orchestration-cluster-api",
     "commit": "5c7f71ce5afb9b742d048d85c1f6a718441835fa",
-    "generatedAt": "2025-09-29T07:29:32.263Z",
+    "generatedAt": "2025-09-30T09:20:59.459Z",
     "specPath": "specification/rest-api.yaml",
     "specSha256": "1563d4681faab084e2e9039aff67a513e17eca262ab8f1e5ad7111df3cb44b3f"
   },
@@ -292,7 +292,7 @@
               "optional": [
                 {
                   "name": "tags",
-                  "type": "TagSet",
+                  "type": "array<string>",
                   "rawRefName": "TagSet"
                 },
                 {
@@ -1631,7 +1631,7 @@
         "optional": [
           {
             "name": "tags",
-            "type": "TagSet",
+            "type": "array<string>",
             "rawRefName": "TagSet"
           }
         ]
@@ -1688,7 +1688,7 @@
           },
           {
             "name": "tags",
-            "type": "TagSet",
+            "type": "array<string>",
             "rawRefName": "TagSet"
           },
           {
@@ -1860,7 +1860,7 @@
                 },
                 {
                   "name": "tags",
-                  "type": "TagSet",
+                  "type": "array<string>",
                   "rawRefName": "TagSet"
                 },
                 {
