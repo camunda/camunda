@@ -1,0 +1,35 @@
+{
+  "name": "request-validation-generator",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generates negative request validation Playwright tests (missing required, type mismatch, union oneOf violations) in QA suite format.",
+  "scripts": {
+    "build": "tsc -p .",
+    "fetch-spec": "tsx scripts/fetch-spec.ts",
+    "generate:raw": "tsx scripts/generate.ts",
+    "generate": "npm run generate:raw && npm run format && npm run lint:generated",
+    "generate:full": "npm run fetch-spec && npm run generate:raw -- --deep && npm run format && npm run lint:generated",
+    "generate:smoke": "npm run generate:raw -- --max-missing=2 --max-type-mismatch=3 && npm run format && npm run lint:generated",
+    "analyze-spec": "tsx scripts/analyze-spec.ts",
+    "format": "prettier --write generated/**/*.ts",
+    "lint": "eslint . --ext .ts",
+    "lint:generated": "eslint generated/**/*.ts || (echo 'Lint errors in generated output' && exit 1)",
+    "regenerate": "npm run fetch-spec && npm run generate && npm run format",
+    "clean": "rimraf dist generated",
+    "sync:tests": "tsx scripts/sync-tests.ts",
+    "sync:full": "npm run build && npm run generate:full && npm run sync:tests"
+  },
+  "devDependencies": {
+    "@apidevtools/swagger-parser": "^10.0.3",
+    "@types/node": "^22.0.0",
+    "prettier": "^3.2.5",
+    "eslint": "^9.9.0",
+    "@eslint/js": "^9.9.0",
+    "typescript-eslint": "^8.0.0",
+  "rimraf": "^5.0.5",
+    "tsx": "^4.7.0",
+    "typescript": "^5.5.4",
+    "yaml": "^2.4.2"
+  }
+}
