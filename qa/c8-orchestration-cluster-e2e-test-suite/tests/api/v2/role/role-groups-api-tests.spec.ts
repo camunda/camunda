@@ -28,6 +28,7 @@ import {
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Role Groups API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -180,6 +181,14 @@ test.describe.parallel('Role Groups API Tests', () => {
 
         expect(res.status()).toBe(200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/groups/{groupId}/roles/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
@@ -254,6 +263,10 @@ test.describe.parallel('Role Groups API Tests', () => {
         totalItemsEqualTo: 3,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/roles/{roleId}/groups/search', method: 'POST', status: '200'},
+        json,
+      );
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group1), group1);
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group2), group2);
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group3), group3);
@@ -270,6 +283,11 @@ test.describe.parallel('Role Groups API Tests', () => {
       const res = await request.post(
         buildUrl('/roles/{roleId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
+      );
+      const json = await res.json();
+      validateResponseShape(
+        {path: '/roles/{roleId}/groups/search', method: 'POST', status: '200'},
+        json,
       );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
@@ -292,6 +310,11 @@ test.describe.parallel('Role Groups API Tests', () => {
     const res = await request.post(
       buildUrl('/roles/{roleId}/groups/search', p),
       {headers: jsonHeaders(), data: {}},
+    );
+    const json = await res.json();
+    validateResponseShape(
+      {path: '/roles/{roleId}/groups/search', method: 'POST', status: '200'},
+      json,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

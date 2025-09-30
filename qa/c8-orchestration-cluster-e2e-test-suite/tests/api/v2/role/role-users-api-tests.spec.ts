@@ -27,6 +27,7 @@ import {
 } from '../../../../utils/requestHelpers';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Role Users API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -152,6 +153,10 @@ test.describe.parallel('Role Users API Tests', () => {
         itemsLengthEqualTo: 3,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/roles/{roleId}/users/search', method: 'POST', status: '200'},
+        json,
+      );
       assertUserNameInResponse(json, user1);
       assertUserNameInResponse(json, user2);
       assertUserNameInResponse(json, user3);

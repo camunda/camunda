@@ -30,6 +30,7 @@ import {
   TENANT_EXPECTED_BODY,
 } from '../../../utils/beans/requestBeans';
 import {cleanupUsers} from '../../../utils/usersCleanup';
+import {validateResponseShape} from '../../../json-body-assertions';
 
 test.describe.parallel('Authentication API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -74,6 +75,14 @@ test.describe.parallel('Authentication API Tests', () => {
 
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/authentication/me',
+          method: 'GET',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);

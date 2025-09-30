@@ -31,6 +31,7 @@ import {
   mappingRuleRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {cleanupRoles} from '../../../../utils/rolesCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Role Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -238,6 +239,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         totalItemsEqualTo: 2,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       const matchingItem1 = json.items.find(
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule1,
       );
@@ -284,6 +293,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       });
       const json = await res.json();
       const item = json.items[0];
+      validateResponseShape(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,

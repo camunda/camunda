@@ -23,6 +23,7 @@ import {
 } from '../../../../utils/requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Group Roles API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -65,6 +66,10 @@ test.describe.parallel('Group Roles API Tests', () => {
         itemsLengthEqualTo: 2,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/groups/{groupId}/roles/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRoleInResponse(
         json,
         ROLE_EXPECTED_BODY(groupIdKey, state, 1),
@@ -99,7 +104,10 @@ test.describe.parallel('Group Roles API Tests', () => {
         data: {},
       },
     );
-
+    validateResponseShape(
+      {path: '/groups/{groupId}/roles/search', method: 'POST', status: '200'},
+      await res.json(),
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -137,6 +145,10 @@ test.describe.parallel('Group Roles API Tests', () => {
         ROLE_EXPECTED_BODY(groupIdKey, state, 1),
         roleId,
       );
+      validateResponseShape(
+        {path: '/groups/{groupId}/roles/search', method: 'POST', status: '200'},
+        json,
+      );
     }).toPass(defaultAssertionOptions);
   });
 
@@ -164,6 +176,10 @@ test.describe.parallel('Group Roles API Tests', () => {
         itemsLengthEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/groups/{groupId}/roles/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRoleInResponse(
         json,
         ROLE_EXPECTED_BODY(groupIdKey, state, 2),
@@ -198,6 +214,10 @@ test.describe.parallel('Group Roles API Tests', () => {
         itemsLengthEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/groups/{groupId}/roles/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRoleInResponse(
         json,
         ROLE_EXPECTED_BODY(groupIdKey, state, 1),

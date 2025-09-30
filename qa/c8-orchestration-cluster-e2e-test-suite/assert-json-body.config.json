@@ -1,16 +1,16 @@
 {
   "extract": {
     "repo": "https://github.com/camunda/camunda-orchestration-cluster-api.git",
-    "specPath": "specification/openapi.yaml",
+    "specPath": "specification/rest-api.yaml",
     "ref": "main",
-    "outputDir": "assert-json-body",
+    "outputDir": "json-body-assertions",
     "preserveCheckout": false,
     "dryRun": false,
     "logLevel": "info",
     "failIfExists": false
   },
   "validate": {
-    "recordResponses": false,
+    "recordResponses": true,
     "throwOnValidationFail": true
   }
 }

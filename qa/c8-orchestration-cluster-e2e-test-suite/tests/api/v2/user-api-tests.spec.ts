@@ -32,6 +32,7 @@ import {
   userRequiredFields,
 } from '../../../utils/beans/requestBeans';
 import {cleanupUsers} from '../../../utils/usersCleanup';
+import {validateResponseShape} from '../../../json-body-assertions';
 
 test.describe.parallel('Users API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -61,6 +62,14 @@ test.describe.parallel('Users API Tests', () => {
 
       expect(res.status()).toBe(201);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users',
+          method: 'POST',
+          status: '201',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, user, userRequiredFields);
       if (json && json.username) {
@@ -92,6 +101,14 @@ test.describe.parallel('Users API Tests', () => {
 
         expect(res.status()).toBe(201);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/users',
+            method: 'POST',
+            status: '201',
+          },
+          json,
+        );
         assertRequiredFields(json, userRequiredFields);
         assertEqualsForKeys(
           json,
@@ -122,6 +139,14 @@ test.describe.parallel('Users API Tests', () => {
           totalItemsEqualTo: 2,
         });
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         assertUserInResponse(
           json,
           expectedBodyForFirstUser,
@@ -195,8 +220,7 @@ test.describe.parallel('Users API Tests', () => {
     createdUserIds.push(json.username);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Create User Missing Name Success', async ({request}) => {
+  test('Create User Missing Name Success', async ({request}) => {
     const body = {
       username: `username-${generateUniqueId()}`,
       email: 'user@example.com',
@@ -240,6 +264,14 @@ test.describe.parallel('Users API Tests', () => {
 
     expect(res.status()).toBe(201);
     const json = await res.json();
+    validateResponseShape(
+      {
+        path: '/users',
+        method: 'POST',
+        status: '201',
+      },
+      json,
+    );
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
     createdUserIds.push(json.username);
@@ -297,6 +329,14 @@ test.describe.parallel('Users API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/{username}',
+          method: 'GET',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -333,13 +373,20 @@ test.describe.parallel('Users API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Update User Missing Name Success', async ({request}) => {
+  test('Update User Missing Name Success', async ({request}) => {
     const p = {username: state['username6'] as string};
     const requestBody = {
       email: `updated-${generateUniqueId()}-email@example.com`,
@@ -357,13 +404,20 @@ test.describe.parallel('Users API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug 37720: https://github.com/camunda/camunda/issues/37720
-  test.skip('Update User Missing Email Success', async ({request}) => {
+  test('Update User Missing Email Success', async ({request}) => {
     const p = {username: state['username7'] as string};
     const requestBody = {
       name: `updated-${generateUniqueId()}-name`,
@@ -381,6 +435,14 @@ test.describe.parallel('Users API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -407,6 +469,14 @@ test.describe.parallel('Users API Tests', () => {
 
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedResponseBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -501,6 +571,14 @@ test.describe.parallel('Users API Tests', () => {
         totalItemGreaterThan: 2,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertUserInResponse(
         json,
         user1ExpectedBody,
@@ -565,6 +643,14 @@ test.describe.parallel('Users API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertUserInResponse(json, expectedBody, expectedBody.username as string);
     }).toPass(defaultAssertionOptions);
   });
@@ -592,6 +678,14 @@ test.describe.parallel('Users API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertUserInResponse(json, expectedBody, expectedBody.username as string);
     }).toPass(defaultAssertionOptions);
   });
@@ -619,6 +713,10 @@ test.describe.parallel('Users API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/users/search', method: 'POST', status: '200'},
+        json,
+      );
       assertUserInResponse(json, expectedBody, expectedBody.username as string);
     }).toPass(defaultAssertionOptions);
   });
@@ -634,6 +732,12 @@ test.describe.parallel('Users API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
+
+    const json = await res.json();
+    validateResponseShape(
+      {path: '/users/search', method: 'POST', status: '200'},
+      json,
+    );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

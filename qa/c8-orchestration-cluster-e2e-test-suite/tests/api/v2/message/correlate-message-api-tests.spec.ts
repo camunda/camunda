@@ -20,6 +20,7 @@ import {
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {defaultAssertionOptions} from '../../../../utils/constants';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe('Correlate Message API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -92,6 +93,10 @@ test.describe('Correlate Message API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {path: '/messages/correlation', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(json, correlateMessageRequiredFields);
       assertEqualsForKeys(
         json,
@@ -118,6 +123,14 @@ test.describe('Correlate Message API Tests', () => {
         );
         expect(res.status()).toBe(200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/message-subscriptions/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);

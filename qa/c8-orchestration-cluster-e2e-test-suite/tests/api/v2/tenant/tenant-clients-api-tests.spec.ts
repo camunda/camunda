@@ -25,6 +25,7 @@ import {
   clientFromState,
   createTenant,
 } from '../../../../utils/requestHelpers';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Tenant Clients API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -137,6 +138,14 @@ test.describe.parallel('Tenant Clients API Tests', () => {
         itemsLengthEqualTo: 3,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/tenants/{tenantId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertClientsInResponse(json, client1);
       assertClientsInResponse(json, client2);
       assertClientsInResponse(json, client3);

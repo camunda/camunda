@@ -28,6 +28,7 @@ import {
   assertTenantInResponse,
   createTenantAndStoreResponseFields,
 } from '../../../../utils/requestHelpers';
+import {validateResponseShape} from 'assert-json-body';
 
 test.describe.parallel('Tenants API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -118,6 +119,10 @@ test.describe.parallel('Tenants API Tests', () => {
       });
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {path: '/tenants/{tenantId}', method: 'GET', status: '200'},
+        json,
+      );
       assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -289,6 +294,10 @@ test.describe.parallel('Tenants API Tests', () => {
         totalItemGreaterThan: 2,
       });
       const json = await res.json();
+      validateResponseShape(
+        {path: '/tenants/search', method: 'POST', status: '200'},
+        json,
+      );
       assertTenantInResponse(
         json,
         tenant1ExpectedBody,
@@ -328,6 +337,10 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
+      validateResponseShape(
+        {path: '/tenants/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -359,6 +372,10 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
+      validateResponseShape(
+        {path: '/tenants/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -389,6 +406,10 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
+      validateResponseShape(
+        {path: '/tenants/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);

@@ -26,6 +26,7 @@ import {
   groupIdFromState,
 } from '../../../../utils/requestHelpers';
 import {GROUPS_EXPECTED_BODY} from '../../../../utils/beans/requestBeans';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Tenant Groups API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -233,6 +234,14 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         totalItemsEqualTo: 3,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/tenants/{tenantId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group1), group1);
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group2), group2);
       assertGroupsInResponse(json, GROUPS_EXPECTED_BODY(group3), group3);
@@ -254,6 +263,15 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
       });
+      const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/tenants/{tenantId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
     }).toPass(defaultAssertionOptions);
   });
 

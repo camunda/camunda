@@ -14,6 +14,7 @@ import {
   assertEqualsForKeys,
 } from '../../../../utils/http';
 import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Publish Message API Tests', () => {
   test('Publish Message', async ({request}) => {
@@ -24,6 +25,10 @@ test.describe.parallel('Publish Message API Tests', () => {
     });
     expect(res.status()).toBe(200);
     const json = await res.json();
+    validateResponseShape(
+      {path: '/messages/publication', method: 'POST', status: '200'},
+      json,
+    );
     assertRequiredFields(json, ['tenantId', 'messageKey']);
     assertEqualsForKeys(json, {tenantId: '<default>'}, ['tenantId']);
   });

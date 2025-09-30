@@ -26,6 +26,7 @@ import {
   userFromState,
 } from '../../../../utils/requestHelpers';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Tenant Users API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -144,6 +145,14 @@ test.describe.parallel('Tenant Users API Tests', () => {
         itemsLengthEqualTo: 3,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/tenants/{tenantId}/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertUserNameInResponse(json, user1);
       assertUserNameInResponse(json, user2);
       assertUserNameInResponse(json, user3);
@@ -166,7 +175,11 @@ test.describe.parallel('Tenant Users API Tests', () => {
       buildUrl('/tenants/{tenantId}/users/search', p),
       {headers: jsonHeaders(), data: {}},
     );
-
+    const json = await res.json();
+    validateResponseShape(
+      {path: '/tenants/{tenantId}/users/search', method: 'POST', status: '200'},
+      json,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -196,6 +209,15 @@ test.describe.parallel('Tenant Users API Tests', () => {
         const res = await request.post(
           buildUrl('/tenants/{tenantId}/users/search', p),
           {headers: jsonHeaders(), data: {}},
+        );
+        const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/tenants/{tenantId}/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
         );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,

@@ -29,6 +29,7 @@ import {
 } from '../../../../utils/requestHelpers';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Group Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -107,6 +108,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
+      validateResponseShape(
+        {
+          path: '/groups/{groupId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
         json.items[0],
@@ -139,6 +148,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
     );
     expect(res.status()).toBe(200);
     const json = await res.json();
+    validateResponseShape(
+      {
+        path: '/groups/{groupId}/mapping-rules/search',
+        method: 'POST',
+        status: '200',
+      },
+      json,
+    );
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
@@ -174,6 +191,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
       );
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/groups/{groupId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(0);
       expect(json.items.length).toBe(0);

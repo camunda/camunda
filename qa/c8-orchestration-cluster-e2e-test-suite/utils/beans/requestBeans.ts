@@ -38,7 +38,7 @@ export const brokerResponseFields = [
   'partitions',
   'version',
 ];
-export const partionsResponseFields = ['partitionId', 'role', 'health'];
+export const partitionsResponseFields = ['partitionId', 'role', 'health'];
 export const groupRequiredFields: string[] = ['groupId', 'name', 'description'];
 export const tenantRequiredFields: string[] = [
   'tenantId',

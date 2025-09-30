@@ -9,7 +9,7 @@
 import {test, expect} from '@playwright/test';
 import {buildUrl, jsonHeaders, assertRequiredFields} from '../../../utils/http';
 import {licenseRequiredFields} from '../../../utils/beans/requestBeans';
-import {validateResponseShape} from '../../../assert-json-body';
+import {validateResponseShape} from '../../../json-body-assertions';
 
 test.describe.parallel('License API Tests', () => {
   test('Get License', async ({request}) => {

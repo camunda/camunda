@@ -25,6 +25,7 @@ import {
   mappingRuleBundle,
   mappingRuleRequiredFields,
 } from '../../../utils/beans/requestBeans';
+import {validateResponseShape} from '../../../json-body-assertions';
 
 test.describe.parallel('Mapping Rules API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -203,6 +204,10 @@ test.describe.parallel('Mapping Rules API Tests', () => {
           it.mappingRuleId === mappingRule1.mappingRuleId,
       );
       expect(matchingItem1).toBeDefined();
+      validateResponseShape(
+        {path: '/mapping-rules/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(matchingItem1, mappingRuleRequiredFields);
       assertEqualsForKeys(
         matchingItem1,
@@ -241,6 +246,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, paginatedResponseFields);
       assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
@@ -269,6 +282,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
         json.items[0],
@@ -372,6 +393,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         totalItemsEqualTo: 1,
       });
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
         json.items[0],
@@ -408,6 +437,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       );
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/mapping-rules/{mappingRuleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json, mappingRuleRequiredFields);
       expect(json.claimName).toBe(updateBody.claimName);
       expect(json.name).toBe(updateBody.name);

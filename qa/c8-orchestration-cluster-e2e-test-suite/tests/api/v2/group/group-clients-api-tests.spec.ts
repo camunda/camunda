@@ -27,6 +27,7 @@ import {
   generateUniqueId,
 } from '../../../../utils/constants';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Groups Clients API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -101,6 +102,14 @@ test.describe.parallel('Groups Clients API Tests', () => {
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
+      validateResponseShape(
+        {
+          path: '/groups/{groupId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       assertRequiredFields(json.items[0], requiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, requiredFields);
     }).toPass(defaultAssertionOptions);
@@ -131,6 +140,10 @@ test.describe.parallel('Groups Clients API Tests', () => {
 
     expect(res.status()).toBe(200);
     const json = await res.json();
+    validateResponseShape(
+      {path: '/groups/{groupId}/clients/search', method: 'POST', status: '200'},
+      json,
+    );
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
@@ -166,6 +179,14 @@ test.describe.parallel('Groups Clients API Tests', () => {
         );
         expect(res.status()).toBe(200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/groups/{groupId}/clients/search',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
         expect(json.items.length).toBe(0);

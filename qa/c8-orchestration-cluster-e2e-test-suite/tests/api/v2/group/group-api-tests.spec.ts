@@ -24,6 +24,7 @@ import {
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {createGroupAndStoreResponseFields} from '../../../../utils/requestHelpers';
 import {cleanupGroups} from '../../../../utils/groupsCleanup';
+import {validateResponseShape} from '../../../../json-body-assertions';
 
 test.describe.parallel('Groups API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -102,6 +103,10 @@ test.describe.parallel('Groups API Tests', () => {
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
+      validateResponseShape(
+        {path: '/groups/search', method: 'POST', status: '200'},
+        json,
+      );
       assertRequiredFields(json.items[0], groupRequiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -128,6 +133,10 @@ test.describe.parallel('Groups API Tests', () => {
     expect(res.status()).toBe(200);
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
+    validateResponseShape(
+      {path: '/groups/search', method: 'POST', status: '200'},
+      json,
+    );
     expect(json.page.totalItems).toBe(1);
     assertRequiredFields(json.items[0], groupRequiredFields);
     assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
@@ -184,6 +193,10 @@ test.describe.parallel('Groups API Tests', () => {
 
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {path: '/groups/{groupId}', method: 'GET', status: '200'},
+        json,
+      );
       assertRequiredFields(json, groupRequiredFields);
       assertEqualsForKeys(json, expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
@@ -227,6 +240,10 @@ test.describe.parallel('Groups API Tests', () => {
 
       expect(res.status()).toBe(200);
       const json = await res.json();
+      validateResponseShape(
+        {path: '/groups/{groupId}', method: 'PUT', status: '200'},
+        json,
+      );
       assertRequiredFields(json, ['groupId', 'name']);
       assertEqualsForKeys(json, {name: body.name}, ['name']);
       assertEqualsForKeys(json, {description: body.description}, [

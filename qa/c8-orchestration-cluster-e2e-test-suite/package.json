@@ -37,7 +37,7 @@
   "dependencies": {
     "@axe-core/playwright": "^4.10.1",
     "@camunda8/sdk": "^8.7.29",
-    "assert-json-body": "^1.0.2",
+    "assert-json-body": "^1.1.2",
     "axios": "^1.8.1",
     "dotenv": "^17.0.0",
     "mailslurp-client": "^15.21.0"
