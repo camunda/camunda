@@ -26,3 +26,8 @@ clean:
 .PHONY: clean-ope
 clean-ope:
 	$(COMMAND_STUB_OPE) down -v
+
+.PHONY: grizzly
+grizzly:
+	@set -o allexport && source .env && \
+	grr serve ./grafana/dashboards --port 8093 --watch
