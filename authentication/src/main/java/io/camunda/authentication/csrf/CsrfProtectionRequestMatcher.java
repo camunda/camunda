@@ -37,7 +37,7 @@ public class CsrfProtectionRequestMatcher implements RequestMatcher {
     allowedPaths.add(WebSecurityConfig.LOGIN_URL);
     allowedPaths.add(WebSecurityConfig.LOGOUT_URL);
     allowedPathsPattern = allowedPathsToPattern(allowedPaths);
-    LOG.info("CSRF protection configuration - allowed paths pattern: {}", allowedPathsPattern);
+    LOG.debug("CSRF protection configuration - allowed paths pattern: {}", allowedPathsPattern);
   }
 
   @Override
