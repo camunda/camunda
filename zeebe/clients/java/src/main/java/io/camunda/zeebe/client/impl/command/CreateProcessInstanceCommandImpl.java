@@ -74,6 +74,7 @@ public final class CreateProcessInstanceCommandImpl
    *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
    *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
    */
+  @Deprecated
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
       final JsonMapper jsonMapper,

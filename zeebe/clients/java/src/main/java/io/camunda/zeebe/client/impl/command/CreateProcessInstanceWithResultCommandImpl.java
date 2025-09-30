@@ -111,7 +111,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
 
   @Override
   public CreateProcessInstanceWithResultCommandStep1 tenantId(final String tenantId) {
-    // todo(#13536): replace dummy implementation
+    createProcessInstanceRequestBuilder.setTenantId(tenantId);
     return this;
   }
 }
