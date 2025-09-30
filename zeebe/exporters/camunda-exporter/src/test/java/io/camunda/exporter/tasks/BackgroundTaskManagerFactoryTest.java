@@ -112,7 +112,8 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not contain ProcessInstanceToBeArchivedCountJob when PI config is disabled")
-        .noneMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
+        .noneMatch(task -> isProcessInstanceToBeArchivedCountTask(task))
+        .noneMatch(task -> isProcessInstanceArchiverTask(task));
   }
 
   @Test
@@ -147,23 +148,6 @@ class BackgroundTaskManagerFactoryTest {
         .as("Should contain both PI archiver and count tasks when all configs are enabled")
         .anyMatch(task -> isProcessInstanceArchiverTask(task))
         .anyMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
-  }
-
-  @Test
-  void shouldNotScheduleAnyProcessInstanceTasksWhenConfigDisabled() {
-    // given
-    config.getHistory().setProcessInstanceEnabled(false);
-    config.getHistory().setTrackArchivalMetricsForProcessInstance(true);
-
-    // when
-    final var taskManager = factory.build();
-
-    // then
-    final var tasks = getTasksFromManager(taskManager);
-    assertThat(tasks)
-        .as("Should not contain any PI-related tasks when PI config is disabled")
-        .noneMatch(task -> isProcessInstanceArchiverTask(task))
-        .noneMatch(task -> isProcessInstanceToBeArchivedCountTask(task));
   }
 
   @Test
