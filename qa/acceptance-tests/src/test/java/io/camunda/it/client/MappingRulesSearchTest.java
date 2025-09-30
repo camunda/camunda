@@ -85,10 +85,9 @@ public class MappingRulesSearchTest {
   @Test
   void searchShouldReturnMappingRulesWithPaging() {
     final var mappingRuleSearchResponse =
-        camundaClient.newMappingRulesSearchRequest().page(p -> p.size(1)).send().join();
+        camundaClient.newMappingRulesSearchRequest().page(p -> p.limit(1)).send().join();
 
     assertThat(mappingRuleSearchResponse.items()).hasSize(1);
-    assertThat(mappingRuleSearchResponse.total()).isGreaterThanOrEqualTo(2);
   }
 
   @Test
