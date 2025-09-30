@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
@@ -80,12 +81,13 @@ public interface RestoreAcceptance {
 
   private void restoreBackup(final long backupId) {
     final var restore =
-        new TestRestoreApp()
-            .withBrokerConfig(this::configureBackupStore)
-            .withBackupId(backupId)
-            .start();
+        new TestRestoreApp().withConfig(this::configureBackupStore).withBackupId(backupId).start();
     restore.close();
   }
 
+  /** All configuration must be duplicated in configureBackupStore(UnifiedConfiguration) as well. */
   void configureBackupStore(final BrokerCfg cfg);
+
+  /** RestoreApp can only be configured via UnifiedConfiguration */
+  void configureBackupStore(final Camunda cfg);
 }
