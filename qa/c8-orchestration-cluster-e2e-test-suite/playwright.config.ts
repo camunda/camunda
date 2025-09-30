@@ -11,17 +11,16 @@ const testRailOptions = {
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
 
-// Default: V2 mode (unless CAMUNDA_TASKLIST_V1_MODE_ENABLED=true)
-const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V1_MODE_ENABLED !== 'true';
+// Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
+const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
 
-// Define reporters without SlackReporter
+// Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
   ['html', { outputFolder: 'html-report' }],
 ];
 
-// Define reporters with SlackReporter
 const useReportersWithSlack: any[] = [
   [
     './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
@@ -43,6 +42,7 @@ const useReportersWithSlack: any[] = [
   ...useReportersWithoutSlack,
 ];
 
+// Detect changed folders
 const args = process.argv.slice(2);
 const changedFoldersArgIndex = args.indexOf('--changed-folders');
 const changedFolders =
@@ -50,7 +50,7 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
-// Define normal projects (for QA orchestration cluster)
+// Projects
 const normalProjects = [
   {
     name: 'chromium',
@@ -97,7 +97,7 @@ const normalProjects = [
     testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
     use: devices['Desktop Edge'],
     testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
-    grep: /@v1-only/, // Explicitly run only v1 tests
+    grep: /@v1-only/, // explicitly run v1 tests
     teardown: 'chromium-subset',
   },
   {
@@ -109,7 +109,7 @@ const normalProjects = [
       'tests/tasklist/v1/*.spec.ts',
       'v2-stateless-tests/**',
     ],
-    grep: /^(?!.*@v1-only).*$/, // Exclude v1-only
+    grep: /^(?!.*@v1-only).*$/, // exclude v1-only
     teardown: 'chromium-subset',
   },
   {
@@ -133,7 +133,6 @@ export default defineConfig({
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
-  // Exclude @v1-only tests when in V2 mode (default)
   grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : undefined,
   expect: {
     timeout: 10_000,
