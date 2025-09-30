@@ -15,11 +15,10 @@ import org.apache.commons.io.output.NullOutputStream;
 
 public class ObjectSizeEstimator {
 
-  // Use ThreadLocal Kryo to avoid synchronization and allow reuse per thread
   private static final ThreadLocal<Kryo> THREAD_LOCAL_KRYO =
       ThreadLocal.withInitial(
           () -> {
-            Kryo kryo = new Kryo();
+            final Kryo kryo = new Kryo();
             kryo.setRegistrationRequired(false);
             kryo.setReferences(false);
             return kryo;
