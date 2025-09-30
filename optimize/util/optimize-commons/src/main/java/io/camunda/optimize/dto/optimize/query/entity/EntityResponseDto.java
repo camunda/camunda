@@ -10,14 +10,8 @@ package io.camunda.optimize.dto.optimize.query.entity;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import java.time.OffsetDateTime;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Data
 public class EntityResponseDto {
 
   private String id;
@@ -86,6 +80,202 @@ public class EntityResponseDto {
         currentUserRole);
   }
 
+  public EntityResponseDto(
+      final String id,
+      final String name,
+      final String description,
+      final OffsetDateTime lastModified,
+      final OffsetDateTime created,
+      final String owner,
+      final String lastModifier,
+      final EntityType entityType,
+      final EntityData data,
+      final Boolean combined,
+      final ReportType reportType,
+      final RoleType currentUserRole) {
+    this.id = id;
+    this.name = name;
+    this.description = description;
+    this.lastModified = lastModified;
+    this.created = created;
+    this.owner = owner;
+    this.lastModifier = lastModifier;
+    this.entityType = entityType;
+    this.data = data;
+    this.combined = combined;
+    this.reportType = reportType;
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected EntityResponseDto() {}
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public OffsetDateTime getLastModified() {
+    return lastModified;
+  }
+
+  public void setLastModified(final OffsetDateTime lastModified) {
+    this.lastModified = lastModified;
+  }
+
+  public OffsetDateTime getCreated() {
+    return created;
+  }
+
+  public void setCreated(final OffsetDateTime created) {
+    this.created = created;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(final String owner) {
+    this.owner = owner;
+  }
+
+  public String getLastModifier() {
+    return lastModifier;
+  }
+
+  public void setLastModifier(final String lastModifier) {
+    this.lastModifier = lastModifier;
+  }
+
+  public EntityType getEntityType() {
+    return entityType;
+  }
+
+  public void setEntityType(final EntityType entityType) {
+    this.entityType = entityType;
+  }
+
+  public EntityData getData() {
+    return data;
+  }
+
+  public void setData(final EntityData data) {
+    this.data = data;
+  }
+
+  public Boolean getCombined() {
+    return combined;
+  }
+
+  public void setCombined(final Boolean combined) {
+    this.combined = combined;
+  }
+
+  public ReportType getReportType() {
+    return reportType;
+  }
+
+  public void setReportType(final ReportType reportType) {
+    this.reportType = reportType;
+  }
+
+  public RoleType getCurrentUserRole() {
+    return currentUserRole;
+  }
+
+  public void setCurrentUserRole(final RoleType currentUserRole) {
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EntityResponseDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityResponseDto that = (EntityResponseDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && entityType == that.entityType
+        && Objects.equals(data, that.data)
+        && Objects.equals(combined, that.combined)
+        && reportType == that.reportType
+        && currentUserRole == that.currentUserRole;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        entityType,
+        data,
+        combined,
+        reportType,
+        currentUserRole);
+  }
+
+  @Override
+  public String toString() {
+    return "EntityResponseDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", description="
+        + getDescription()
+        + ", lastModified="
+        + getLastModified()
+        + ", created="
+        + getCreated()
+        + ", owner="
+        + getOwner()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", entityType="
+        + getEntityType()
+        + ", data="
+        + getData()
+        + ", combined="
+        + getCombined()
+        + ", reportType="
+        + getReportType()
+        + ", currentUserRole="
+        + getCurrentUserRole()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

@@ -9,14 +9,12 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DefinitionExceptionResponseDto extends ErrorResponseDto {
+
   private Set<DefinitionExceptionItemDto> definitions;
 
   protected DefinitionExceptionResponseDto() {
@@ -30,5 +28,40 @@ public class DefinitionExceptionResponseDto extends ErrorResponseDto {
       final Set<DefinitionExceptionItemDto> definitions) {
     super(errorCode, errorMessage, detailedErrorMessage);
     this.definitions = definitions;
+  }
+
+  public Set<DefinitionExceptionItemDto> getDefinitions() {
+    return definitions;
+  }
+
+  public void setDefinitions(final Set<DefinitionExceptionItemDto> definitions) {
+    this.definitions = definitions;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DefinitionExceptionResponseDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DefinitionExceptionResponseDto that = (DefinitionExceptionResponseDto) o;
+    return Objects.equals(definitions, that.definitions);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), definitions);
+  }
+
+  @Override
+  public String toString() {
+    return "DefinitionExceptionResponseDto(definitions=" + getDefinitions() + ")";
   }
 }

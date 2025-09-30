@@ -16,26 +16,26 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
-import lombok.RequiredArgsConstructor;
+import java.util.Objects;
 
-@AllArgsConstructor
-@RequiredArgsConstructor
-@NoArgsConstructor
-@Data
 public abstract class CommandEvaluationResult<T> {
 
   protected long instanceCount;
   protected long instanceCountWithoutFilters;
-  @NonNull protected List<MeasureDto<T>> measures = new ArrayList<>();
-  @NonNull protected ReportDataDto reportData;
-  @NonNull protected PaginationDto pagination = new PaginationDto(null, null);
+  protected List<MeasureDto<T>> measures = new ArrayList<>();
+  protected ReportDataDto reportData;
+  protected PaginationDto pagination = new PaginationDto(null, null);
 
   protected CommandEvaluationResult(
-      @NonNull final List<MeasureDto<T>> measures, @NonNull final ReportDataDto reportData) {
+      final List<MeasureDto<T>> measures, final ReportDataDto reportData) {
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
     this.measures = measures;
     this.reportData = reportData;
   }
@@ -43,24 +43,67 @@ public abstract class CommandEvaluationResult<T> {
   protected CommandEvaluationResult(
       final long instanceCount,
       final long instanceCountWithoutFilters,
-      @NonNull final List<MeasureDto<T>> measures,
-      @NonNull final ReportDataDto reportData) {
+      final List<MeasureDto<T>> measures,
+      final ReportDataDto reportData) {
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
     this.instanceCount = instanceCount;
     this.instanceCountWithoutFilters = instanceCountWithoutFilters;
     this.measures = measures;
     this.reportData = reportData;
   }
 
-  public <R extends ReportDataDto> R getReportDataAs(Class<R> reportDataType) {
+  public CommandEvaluationResult(final ReportDataDto reportData) {
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
+    this.reportData = reportData;
+  }
+
+  public CommandEvaluationResult(
+      final long instanceCount,
+      final long instanceCountWithoutFilters,
+      final List<MeasureDto<T>> measures,
+      final ReportDataDto reportData,
+      final PaginationDto pagination) {
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
+    if (pagination == null) {
+      throw new IllegalArgumentException("pagination cannot be null");
+    }
+
+    this.instanceCount = instanceCount;
+    this.instanceCountWithoutFilters = instanceCountWithoutFilters;
+    this.measures = measures;
+    this.reportData = reportData;
+    this.pagination = pagination;
+  }
+
+  public CommandEvaluationResult() {}
+
+  public <R extends ReportDataDto> R getReportDataAs(final Class<R> reportDataType) {
     return reportDataType.cast(reportData);
   }
 
   public T getFirstMeasureData() {
-    return this.measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
+    return measures.stream().findFirst().map(MeasureDto::getData).orElse(null);
   }
 
   public void addMeasure(final MeasureDto<T> measureDto) {
-    this.measures.add(measureDto);
+    measures.add(measureDto);
   }
 
   public abstract List<String[]> getResultAsCsv(
@@ -87,5 +130,98 @@ public abstract class CommandEvaluationResult<T> {
     } else {
       return ((DecisionReportDataDto) reportData).getView().createCommandKey().replace("-", "_");
     }
+  }
+
+  public long getInstanceCount() {
+    return instanceCount;
+  }
+
+  public void setInstanceCount(final long instanceCount) {
+    this.instanceCount = instanceCount;
+  }
+
+  public long getInstanceCountWithoutFilters() {
+    return instanceCountWithoutFilters;
+  }
+
+  public void setInstanceCountWithoutFilters(final long instanceCountWithoutFilters) {
+    this.instanceCountWithoutFilters = instanceCountWithoutFilters;
+  }
+
+  public List<MeasureDto<T>> getMeasures() {
+    return measures;
+  }
+
+  public void setMeasures(final List<MeasureDto<T>> measures) {
+    if (measures == null) {
+      throw new IllegalArgumentException("measures cannot be null");
+    }
+
+    this.measures = measures;
+  }
+
+  public ReportDataDto getReportData() {
+    return reportData;
+  }
+
+  public void setReportData(final ReportDataDto reportData) {
+    if (reportData == null) {
+      throw new IllegalArgumentException("reportData cannot be null");
+    }
+
+    this.reportData = reportData;
+  }
+
+  public PaginationDto getPagination() {
+    return pagination;
+  }
+
+  public void setPagination(final PaginationDto pagination) {
+    if (pagination == null) {
+      throw new IllegalArgumentException("pagination cannot be null");
+    }
+
+    this.pagination = pagination;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CommandEvaluationResult;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        instanceCount, instanceCountWithoutFilters, measures, reportData, pagination);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CommandEvaluationResult<?> that = (CommandEvaluationResult<?>) o;
+    return instanceCount == that.instanceCount
+        && instanceCountWithoutFilters == that.instanceCountWithoutFilters
+        && Objects.equals(measures, that.measures)
+        && Objects.equals(reportData, that.reportData)
+        && Objects.equals(pagination, that.pagination);
+  }
+
+  @Override
+  public String toString() {
+    return "CommandEvaluationResult(instanceCount="
+        + getInstanceCount()
+        + ", instanceCountWithoutFilters="
+        + getInstanceCountWithoutFilters()
+        + ", measures="
+        + getMeasures()
+        + ", reportData="
+        + getReportData()
+        + ", pagination="
+        + getPagination()
+        + ")";
   }
 }

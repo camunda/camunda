@@ -11,9 +11,8 @@ import io.camunda.optimize.dto.optimize.query.dashboard.filter.DashboardFilterDt
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class BaseDashboardDefinitionDto {
 
   protected String id;
@@ -29,6 +28,175 @@ public class BaseDashboardDefinitionDto {
   protected List<DashboardFilterDto<?>> availableFilters = new ArrayList<>();
   protected Long refreshRateSeconds;
 
+  public BaseDashboardDefinitionDto() {}
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public OffsetDateTime getLastModified() {
+    return lastModified;
+  }
+
+  public void setLastModified(final OffsetDateTime lastModified) {
+    this.lastModified = lastModified;
+  }
+
+  public OffsetDateTime getCreated() {
+    return created;
+  }
+
+  public void setCreated(final OffsetDateTime created) {
+    this.created = created;
+  }
+
+  public String getOwner() {
+    return owner;
+  }
+
+  public void setOwner(final String owner) {
+    this.owner = owner;
+  }
+
+  public String getLastModifier() {
+    return lastModifier;
+  }
+
+  public void setLastModifier(final String lastModifier) {
+    this.lastModifier = lastModifier;
+  }
+
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  public boolean isManagementDashboard() {
+    return managementDashboard;
+  }
+
+  public void setManagementDashboard(final boolean managementDashboard) {
+    this.managementDashboard = managementDashboard;
+  }
+
+  public boolean isInstantPreviewDashboard() {
+    return instantPreviewDashboard;
+  }
+
+  public void setInstantPreviewDashboard(final boolean instantPreviewDashboard) {
+    this.instantPreviewDashboard = instantPreviewDashboard;
+  }
+
+  public List<DashboardFilterDto<?>> getAvailableFilters() {
+    return availableFilters;
+  }
+
+  public void setAvailableFilters(final List<DashboardFilterDto<?>> availableFilters) {
+    this.availableFilters = availableFilters;
+  }
+
+  public Long getRefreshRateSeconds() {
+    return refreshRateSeconds;
+  }
+
+  public void setRefreshRateSeconds(final Long refreshRateSeconds) {
+    this.refreshRateSeconds = refreshRateSeconds;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof BaseDashboardDefinitionDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BaseDashboardDefinitionDto that = (BaseDashboardDefinitionDto) o;
+    return managementDashboard == that.managementDashboard
+        && instantPreviewDashboard == that.instantPreviewDashboard
+        && Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(availableFilters, that.availableFilters)
+        && Objects.equals(refreshRateSeconds, that.refreshRateSeconds);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        collectionId,
+        managementDashboard,
+        instantPreviewDashboard,
+        availableFilters,
+        refreshRateSeconds);
+  }
+
+  @Override
+  public String toString() {
+    return "BaseDashboardDefinitionDto(id="
+        + getId()
+        + ", name="
+        + getName()
+        + ", description="
+        + getDescription()
+        + ", lastModified="
+        + getLastModified()
+        + ", created="
+        + getCreated()
+        + ", owner="
+        + getOwner()
+        + ", lastModifier="
+        + getLastModifier()
+        + ", collectionId="
+        + getCollectionId()
+        + ", managementDashboard="
+        + isManagementDashboard()
+        + ", instantPreviewDashboard="
+        + isInstantPreviewDashboard()
+        + ", availableFilters="
+        + getAvailableFilters()
+        + ", refreshRateSeconds="
+        + getRefreshRateSeconds()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

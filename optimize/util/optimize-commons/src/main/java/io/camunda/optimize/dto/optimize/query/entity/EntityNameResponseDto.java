@@ -7,16 +7,75 @@
  */
 package io.camunda.optimize.dto.optimize.query.entity;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class EntityNameResponseDto {
 
   private String collectionName;
   private String dashboardName;
   private String reportName;
+
+  public EntityNameResponseDto(
+      final String collectionName, final String dashboardName, final String reportName) {
+    this.collectionName = collectionName;
+    this.dashboardName = dashboardName;
+    this.reportName = reportName;
+  }
+
+  public EntityNameResponseDto() {}
+
+  public String getCollectionName() {
+    return collectionName;
+  }
+
+  public void setCollectionName(final String collectionName) {
+    this.collectionName = collectionName;
+  }
+
+  public String getDashboardName() {
+    return dashboardName;
+  }
+
+  public void setDashboardName(final String dashboardName) {
+    this.dashboardName = dashboardName;
+  }
+
+  public String getReportName() {
+    return reportName;
+  }
+
+  public void setReportName(final String reportName) {
+    this.reportName = reportName;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EntityNameResponseDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityNameResponseDto that = (EntityNameResponseDto) o;
+    return Objects.equals(collectionName, that.collectionName)
+        && Objects.equals(dashboardName, that.dashboardName)
+        && Objects.equals(reportName, that.reportName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(collectionName, dashboardName, reportName);
+  }
+
+  @Override
+  public String toString() {
+    return "EntityNameResponseDto(collectionName="
+        + getCollectionName()
+        + ", dashboardName="
+        + getDashboardName()
+        + ", reportName="
+        + getReportName()
+        + ")";
+  }
 }

@@ -8,11 +8,10 @@
 package io.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import lombok.Data;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@Data
 public class InstantDashboardDataDto {
 
   public static final String INSTANT_DASHBOARD_DEFAULT_TEMPLATE = "template1.json";
@@ -22,8 +21,26 @@ public class InstantDashboardDataDto {
   private long templateHash;
   private String dashboardId;
 
+  public InstantDashboardDataDto() {}
+
   public String getInstantDashboardId() {
     return processDefinitionKey + "_" + templateName.replace(".", "");
+  }
+
+  public void setInstantDashboardId(final String instantDashboardId) {
+    this.instantDashboardId = instantDashboardId;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public String getTemplateName() {
+    return templateName;
   }
 
   public void setTemplateName(final String templateName) {
@@ -31,6 +48,61 @@ public class InstantDashboardDataDto {
         StringUtils.isEmpty(templateName) ? INSTANT_DASHBOARD_DEFAULT_TEMPLATE : templateName;
   }
 
+  public long getTemplateHash() {
+    return templateHash;
+  }
+
+  public void setTemplateHash(final long templateHash) {
+    this.templateHash = templateHash;
+  }
+
+  public String getDashboardId() {
+    return dashboardId;
+  }
+
+  public void setDashboardId(final String dashboardId) {
+    this.dashboardId = dashboardId;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof InstantDashboardDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final InstantDashboardDataDto that = (InstantDashboardDataDto) o;
+    return templateHash == that.templateHash
+        && Objects.equals(instantDashboardId, that.instantDashboardId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(templateName, that.templateName)
+        && Objects.equals(dashboardId, that.dashboardId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        instantDashboardId, processDefinitionKey, templateName, templateHash, dashboardId);
+  }
+
+  @Override
+  public String toString() {
+    return "InstantDashboardDataDto(instantDashboardId="
+        + getInstantDashboardId()
+        + ", processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", templateName="
+        + getTemplateName()
+        + ", templateHash="
+        + getTemplateHash()
+        + ", dashboardId="
+        + getDashboardId()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String instantDashboardId = "instantDashboardId";

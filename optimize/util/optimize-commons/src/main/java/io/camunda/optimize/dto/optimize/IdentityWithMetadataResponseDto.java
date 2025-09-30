@@ -11,12 +11,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonTypeInfo(
@@ -28,10 +24,6 @@ import org.apache.commons.lang3.StringUtils;
   @JsonSubTypes.Type(value = UserDto.class, name = "user"),
   @JsonSubTypes.Type(value = GroupDto.class, name = "group"),
 })
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@ToString(callSuper = true)
-@EqualsAndHashCode(callSuper = true)
 public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
 
   private String name;
@@ -45,6 +37,8 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
     super(id, type);
     this.name = name;
   }
+
+  protected IdentityWithMetadataResponseDto() {}
 
   @JsonIgnore
   protected abstract List<Supplier<String>> getSearchableDtoFields();
@@ -63,6 +57,49 @@ public abstract class IdentityWithMetadataResponseDto extends IdentityDto {
                         && StringUtils.containsAnyIgnoreCase(searchableField.get(), searchTerm));
   }
 
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof IdentityWithMetadataResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), name);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final IdentityWithMetadataResponseDto that = (IdentityWithMetadataResponseDto) o;
+    return Objects.equals(name, that.name);
+  }
+
+  @Override
+  public String toString() {
+    return "IdentityWithMetadataResponseDto(super="
+        + super.toString()
+        + ", name="
+        + getName()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String name = "name";

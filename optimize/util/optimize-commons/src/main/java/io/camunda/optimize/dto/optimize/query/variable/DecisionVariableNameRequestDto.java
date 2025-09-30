@@ -16,36 +16,97 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@AllArgsConstructor
-@Data
-@NoArgsConstructor
 public class DecisionVariableNameRequestDto {
+
   @NotNull private String decisionDefinitionKey;
   private List<String> decisionDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
 
   public DecisionVariableNameRequestDto(
       @NotNull final String key, final String version, final String tenantId) {
-    this.decisionDefinitionKey = key;
-    this.decisionDefinitionVersions = Collections.singletonList(version);
-    this.tenantIds = Collections.singletonList(tenantId);
+    decisionDefinitionKey = key;
+    decisionDefinitionVersions = Collections.singletonList(version);
+    tenantIds = Collections.singletonList(tenantId);
   }
 
   public DecisionVariableNameRequestDto(@NotNull final String key, final List<String> versions) {
-    this.decisionDefinitionKey = key;
-    this.decisionDefinitionVersions = versions;
+    decisionDefinitionKey = key;
+    decisionDefinitionVersions = versions;
   }
 
+  public DecisionVariableNameRequestDto(
+      @NotNull final String decisionDefinitionKey,
+      final List<String> decisionDefinitionVersions,
+      final List<String> tenantIds) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionVersions = decisionDefinitionVersions;
+    this.tenantIds = tenantIds;
+  }
+
+  public DecisionVariableNameRequestDto() {}
+
   @JsonIgnore
-  public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {
-    this.decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
+  public void setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
+    decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  public @NotNull String getDecisionDefinitionKey() {
+    return decisionDefinitionKey;
+  }
+
+  public void setDecisionDefinitionKey(@NotNull final String decisionDefinitionKey) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+  }
+
+  public List<String> getDecisionDefinitionVersions() {
+    return decisionDefinitionVersions;
+  }
+
+  public void setDecisionDefinitionVersions(final List<String> decisionDefinitionVersions) {
+    this.decisionDefinitionVersions = decisionDefinitionVersions;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionVariableNameRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(decisionDefinitionKey, decisionDefinitionVersions, tenantIds);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionVariableNameRequestDto that = (DecisionVariableNameRequestDto) o;
+    return Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(decisionDefinitionVersions, that.decisionDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionVariableNameRequestDto(decisionDefinitionKey="
+        + getDecisionDefinitionKey()
+        + ", decisionDefinitionVersions="
+        + getDecisionDefinitionVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ")";
   }
 }

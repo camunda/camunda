@@ -8,9 +8,8 @@
 package io.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class DatabaseIndex {
 
   @JsonProperty("number_of_replicas")
@@ -26,4 +25,91 @@ public class DatabaseIndex {
   private Integer nestedDocumentsLimit;
 
   private String prefix;
+
+  public DatabaseIndex() {}
+
+  public Integer getNumberOfReplicas() {
+    return numberOfReplicas;
+  }
+
+  @JsonProperty("number_of_replicas")
+  public void setNumberOfReplicas(final Integer numberOfReplicas) {
+    this.numberOfReplicas = numberOfReplicas;
+  }
+
+  public Integer getNumberOfShards() {
+    return numberOfShards;
+  }
+
+  @JsonProperty("number_of_shards")
+  public void setNumberOfShards(final Integer numberOfShards) {
+    this.numberOfShards = numberOfShards;
+  }
+
+  public String getRefreshInterval() {
+    return refreshInterval;
+  }
+
+  @JsonProperty("refresh_interval")
+  public void setRefreshInterval(final String refreshInterval) {
+    this.refreshInterval = refreshInterval;
+  }
+
+  public Integer getNestedDocumentsLimit() {
+    return nestedDocumentsLimit;
+  }
+
+  @JsonProperty("nested_documents_limit")
+  public void setNestedDocumentsLimit(final Integer nestedDocumentsLimit) {
+    this.nestedDocumentsLimit = nestedDocumentsLimit;
+  }
+
+  public String getPrefix() {
+    return prefix;
+  }
+
+  public void setPrefix(final String prefix) {
+    this.prefix = prefix;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DatabaseIndex;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        prefix, numberOfShards, numberOfReplicas, refreshInterval, nestedDocumentsLimit);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseIndex that = (DatabaseIndex) o;
+    return Objects.equals(numberOfShards, that.numberOfShards)
+        && Objects.equals(numberOfReplicas, that.numberOfReplicas)
+        && Objects.equals(nestedDocumentsLimit, that.nestedDocumentsLimit)
+        && Objects.equals(prefix, that.prefix)
+        && Objects.equals(refreshInterval, that.refreshInterval);
+  }
+
+  @Override
+  public String toString() {
+    return "DatabaseIndex(numberOfReplicas="
+        + getNumberOfReplicas()
+        + ", numberOfShards="
+        + getNumberOfShards()
+        + ", refreshInterval="
+        + getRefreshInterval()
+        + ", nestedDocumentsLimit="
+        + getNestedDocumentsLimit()
+        + ", prefix="
+        + getPrefix()
+        + ")";
+  }
 }

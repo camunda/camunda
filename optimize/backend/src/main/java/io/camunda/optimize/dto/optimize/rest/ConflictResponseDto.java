@@ -9,14 +9,12 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.Set;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ConflictResponseDto extends ErrorResponseDto {
+
   private Set<ConflictedItemDto> conflictedItems;
 
   protected ConflictResponseDto() {
@@ -39,5 +37,40 @@ public class ConflictResponseDto extends ErrorResponseDto {
       final Set<ConflictedItemDto> conflictedItems) {
     super(errorCode, errorMessage, detailedErrorMessage);
     this.conflictedItems = conflictedItems;
+  }
+
+  public Set<ConflictedItemDto> getConflictedItems() {
+    return conflictedItems;
+  }
+
+  public void setConflictedItems(final Set<ConflictedItemDto> conflictedItems) {
+    this.conflictedItems = conflictedItems;
+  }
+
+  @Override
+  public String toString() {
+    return "ConflictResponseDto(conflictedItems=" + getConflictedItems() + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ConflictResponseDto that = (ConflictResponseDto) o;
+    return Objects.equals(conflictedItems, that.conflictedItems);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), conflictedItems);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ConflictResponseDto;
   }
 }

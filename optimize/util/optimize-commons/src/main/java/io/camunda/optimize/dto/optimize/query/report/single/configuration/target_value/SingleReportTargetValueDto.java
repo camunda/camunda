@@ -7,9 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class SingleReportTargetValueDto {
 
   private SingleReportCountChartDto countChart = new SingleReportCountChartDto();
@@ -19,6 +18,97 @@ public class SingleReportTargetValueDto {
   private SingleReportDurationChartDto durationChart = new SingleReportDurationChartDto();
   private Boolean isKpi;
 
+  public SingleReportTargetValueDto() {}
+
+  public SingleReportCountChartDto getCountChart() {
+    return countChart;
+  }
+
+  public void setCountChart(final SingleReportCountChartDto countChart) {
+    this.countChart = countChart;
+  }
+
+  public DurationProgressDto getDurationProgress() {
+    return durationProgress;
+  }
+
+  public void setDurationProgress(final DurationProgressDto durationProgress) {
+    this.durationProgress = durationProgress;
+  }
+
+  public Boolean getActive() {
+    return active;
+  }
+
+  public void setActive(final Boolean active) {
+    this.active = active;
+  }
+
+  public CountProgressDto getCountProgress() {
+    return countProgress;
+  }
+
+  public void setCountProgress(final CountProgressDto countProgress) {
+    this.countProgress = countProgress;
+  }
+
+  public SingleReportDurationChartDto getDurationChart() {
+    return durationChart;
+  }
+
+  public void setDurationChart(final SingleReportDurationChartDto durationChart) {
+    this.durationChart = durationChart;
+  }
+
+  public Boolean getIsKpi() {
+    return isKpi;
+  }
+
+  public void setIsKpi(final Boolean isKpi) {
+    this.isKpi = isKpi;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof SingleReportTargetValueDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SingleReportTargetValueDto that = (SingleReportTargetValueDto) o;
+    return Objects.equals(countChart, that.countChart)
+        && Objects.equals(durationProgress, that.durationProgress)
+        && Objects.equals(active, that.active)
+        && Objects.equals(countProgress, that.countProgress)
+        && Objects.equals(durationChart, that.durationChart)
+        && Objects.equals(isKpi, that.isKpi);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(countChart, durationProgress, active, countProgress, durationChart, isKpi);
+  }
+
+  @Override
+  public String toString() {
+    return "SingleReportTargetValueDto(countChart="
+        + getCountChart()
+        + ", durationProgress="
+        + getDurationProgress()
+        + ", active="
+        + getActive()
+        + ", countProgress="
+        + getCountProgress()
+        + ", durationChart="
+        + getDurationChart()
+        + ", isKpi="
+        + getIsKpi()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String countChart = "countChart";

@@ -8,13 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class CountProgressDto {
 
   private String baseline = "0";
@@ -22,23 +16,57 @@ public class CountProgressDto {
   private Boolean isBelow = false;
 
   @Override
-  public int hashCode() {
-    return Objects.hash(baseline, target);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CountProgressDto that = (CountProgressDto) o;
+    return Objects.equals(baseline, that.baseline)
+        && Objects.equals(target, that.target)
+        && Objects.equals(isBelow, that.isBelow);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof final CountProgressDto that)) {
-      return false;
-    }
-    return Objects.equals(baseline, that.baseline)
-        && Objects.equals(isBelow, that.isBelow)
-        && Objects.equals(target, that.target);
+  public int hashCode() {
+    return Objects.hash(baseline, target, isBelow);
   }
 
+  @Override
+  public String toString() {
+    return "CountProgressDto(baseline="
+        + getBaseline()
+        + ", target="
+        + getTarget()
+        + ", isBelow="
+        + getIsBelow()
+        + ")";
+  }
+
+  public String getBaseline() {
+    return baseline;
+  }
+
+  public void setBaseline(final String baseline) {
+    this.baseline = baseline;
+  }
+
+  public String getTarget() {
+    return target;
+  }
+
+  public void setTarget(final String target) {
+    this.target = target;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String baseline = "baseline";

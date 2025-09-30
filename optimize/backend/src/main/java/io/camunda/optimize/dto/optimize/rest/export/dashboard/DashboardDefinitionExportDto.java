@@ -20,14 +20,9 @@ import io.camunda.optimize.service.util.IdGenerator;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
 
   @NotNull private List<DashboardReportTileDto> tiles = new ArrayList<>();
@@ -47,6 +42,8 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
     collectionId = dashboardDefinition.getCollectionId();
   }
 
+  public DashboardDefinitionExportDto() {}
+
   @JsonIgnore
   public Set<String> getTileIds() {
     return tiles.stream()
@@ -63,6 +60,81 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
         .collect(toSet());
   }
 
+  public @NotNull List<DashboardReportTileDto> getTiles() {
+    return tiles;
+  }
+
+  public void setTiles(@NotNull final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  public @NotNull List<DashboardFilterDto<?>> getAvailableFilters() {
+    return availableFilters;
+  }
+
+  public void setAvailableFilters(@NotNull final List<DashboardFilterDto<?>> availableFilters) {
+    this.availableFilters = availableFilters;
+  }
+
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  public boolean isInstantPreviewDashboard() {
+    return isInstantPreviewDashboard;
+  }
+
+  public void setInstantPreviewDashboard(final boolean isInstantPreviewDashboard) {
+    this.isInstantPreviewDashboard = isInstantPreviewDashboard;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardDefinitionExportDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(), tiles, availableFilters, collectionId, isInstantPreviewDashboard);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardDefinitionExportDto that = (DashboardDefinitionExportDto) o;
+    return isInstantPreviewDashboard == that.isInstantPreviewDashboard
+        && Objects.equals(tiles, that.tiles)
+        && Objects.equals(availableFilters, that.availableFilters)
+        && Objects.equals(collectionId, that.collectionId);
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardDefinitionExportDto(tiles="
+        + getTiles()
+        + ", availableFilters="
+        + getAvailableFilters()
+        + ", collectionId="
+        + getCollectionId()
+        + ", isInstantPreviewDashboard="
+        + isInstantPreviewDashboard()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String tiles = "tiles";

@@ -20,11 +20,10 @@ import io.camunda.search.connect.plugin.PluginConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.Data;
 
-@Data
 public class OpenSearchConfiguration {
 
   private DatabaseConnection connection;
@@ -38,6 +37,8 @@ public class OpenSearchConfiguration {
   private DatabaseSettings settings;
 
   private Map<String, PluginConfiguration> interceptorPlugins;
+
+  public OpenSearchConfiguration() {}
 
   @JsonIgnore
   public Integer getConnectionTimeout() {
@@ -167,5 +168,93 @@ public class OpenSearchConfiguration {
   @JsonIgnore
   public void setIndexPrefix(final String prefix) {
     settings.getIndex().setPrefix(prefix);
+  }
+
+  public DatabaseConnection getConnection() {
+    return this.connection;
+  }
+
+  public DatabaseBackup getBackup() {
+    return this.backup;
+  }
+
+  public DatabaseSecurity getSecurity() {
+    return this.security;
+  }
+
+  public int getScrollTimeoutInSeconds() {
+    return this.scrollTimeoutInSeconds;
+  }
+
+  public DatabaseSettings getSettings() {
+    return this.settings;
+  }
+
+  public Map<String, PluginConfiguration> getInterceptorPlugins() {
+    return this.interceptorPlugins;
+  }
+
+  public void setConnection(final DatabaseConnection connection) {
+    this.connection = connection;
+  }
+
+  public void setBackup(final DatabaseBackup backup) {
+    this.backup = backup;
+  }
+
+  public void setSecurity(final DatabaseSecurity security) {
+    this.security = security;
+  }
+
+  public void setScrollTimeoutInSeconds(final int scrollTimeoutInSeconds) {
+    this.scrollTimeoutInSeconds = scrollTimeoutInSeconds;
+  }
+
+  public void setSettings(final DatabaseSettings settings) {
+    this.settings = settings;
+  }
+
+  public void setInterceptorPlugins(final Map<String, PluginConfiguration> interceptorPlugins) {
+    this.interceptorPlugins = interceptorPlugins;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OpenSearchConfiguration that = (OpenSearchConfiguration) o;
+    return scrollTimeoutInSeconds == that.scrollTimeoutInSeconds
+        && Objects.equals(connection, that.connection)
+        && Objects.equals(backup, that.backup)
+        && Objects.equals(security, that.security)
+        && Objects.equals(settings, that.settings)
+        && Objects.equals(interceptorPlugins, that.interceptorPlugins);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        connection, backup, security, scrollTimeoutInSeconds, settings, interceptorPlugins);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof OpenSearchConfiguration;
+  }
+
+  public String toString() {
+    return "OpenSearchConfiguration(connection="
+        + this.getConnection()
+        + ", backup="
+        + this.getBackup()
+        + ", security="
+        + this.getSecurity()
+        + ", scrollTimeoutInSeconds="
+        + this.getScrollTimeoutInSeconds()
+        + ", settings="
+        + this.getSettings()
+        + ", interceptorPlugins="
+        + this.getInterceptorPlugins()
+        + ")";
   }
 }

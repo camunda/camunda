@@ -21,29 +21,50 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
+import java.util.Objects;
 
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
-@SuperBuilder
 @DecisionFiltersMustReferenceExistingDefinitionsConstraint
 public class DecisionReportDataDto extends SingleReportDataDto {
 
-  @Builder.Default @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
+  @Valid protected List<DecisionFilterDto<?>> filter = new ArrayList<>();
   protected DecisionViewDto view;
   protected DecisionGroupByDto<?> groupBy;
 
-  @Builder.Default
   protected ProcessReportDistributedByDto<?> distributedBy = new NoneDistributedByDto();
 
   protected DecisionVisualization visualization;
+
+  public DecisionReportDataDto(
+      @Valid final List<DecisionFilterDto<?>> filter,
+      final DecisionViewDto view,
+      final DecisionGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy,
+      final DecisionVisualization visualization) {
+    this.filter = filter;
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.visualization = visualization;
+  }
+
+  public DecisionReportDataDto() {}
+
+  protected DecisionReportDataDto(final DecisionReportDataDtoBuilder<?, ?> b) {
+    super(b);
+    if (b.filterSet) {
+      filter = b.filterValue;
+    } else {
+      filter = defaultFilter();
+    }
+    view = b.view;
+    groupBy = b.groupBy;
+    if (b.distributedBySet) {
+      distributedBy = b.distributedByValue;
+    } else {
+      distributedBy = defaultDistributedBy();
+    }
+    visualization = b.visualization;
+  }
 
   public String getDecisionDefinitionKey() {
     return getDefinitionKey();
@@ -107,6 +128,97 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     return Collections.singletonList(createCommandKey());
   }
 
+  public @Valid List<DecisionFilterDto<?>> getFilter() {
+    return filter;
+  }
+
+  public void setFilter(@Valid final List<DecisionFilterDto<?>> filter) {
+    this.filter = filter;
+  }
+
+  public DecisionViewDto getView() {
+    return view;
+  }
+
+  public void setView(final DecisionViewDto view) {
+    this.view = view;
+  }
+
+  public DecisionGroupByDto<?> getGroupBy() {
+    return groupBy;
+  }
+
+  public void setGroupBy(final DecisionGroupByDto<?> groupBy) {
+    this.groupBy = groupBy;
+  }
+
+  public ProcessReportDistributedByDto<?> getDistributedBy() {
+    return distributedBy;
+  }
+
+  public void setDistributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
+    this.distributedBy = distributedBy;
+  }
+
+  public DecisionVisualization getVisualization() {
+    return visualization;
+  }
+
+  public void setVisualization(final DecisionVisualization visualization) {
+    this.visualization = visualization;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionReportDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionReportDataDto that = (DecisionReportDataDto) o;
+    return Objects.equals(filter, that.filter)
+        && Objects.equals(view, that.view)
+        && Objects.equals(groupBy, that.groupBy)
+        && Objects.equals(distributedBy, that.distributedBy)
+        && visualization == that.visualization;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(filter, view, groupBy, distributedBy, visualization);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionReportDataDto(filter="
+        + getFilter()
+        + ", view="
+        + getView()
+        + ", groupBy="
+        + getGroupBy()
+        + ", distributedBy="
+        + getDistributedBy()
+        + ", visualization="
+        + getVisualization()
+        + ")";
+  }
+
+  @Valid
+  private static List<DecisionFilterDto<?>> defaultFilter() {
+    return new ArrayList<>();
+  }
+
+  private static ProcessReportDistributedByDto<?> defaultDistributedBy() {
+    return new NoneDistributedByDto();
+  }
+
+  public static DecisionReportDataDtoBuilder<?, ?> builder() {
+    return new DecisionReportDataDtoBuilderImpl();
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String filter = "filter";
@@ -114,5 +226,85 @@ public class DecisionReportDataDto extends SingleReportDataDto {
     public static final String groupBy = "groupBy";
     public static final String distributedBy = "distributedBy";
     public static final String visualization = "visualization";
+  }
+
+  public abstract static class DecisionReportDataDtoBuilder<
+          C extends DecisionReportDataDto, B extends DecisionReportDataDtoBuilder<C, B>>
+      extends SingleReportDataDtoBuilder<C, B> {
+
+    private @Valid List<DecisionFilterDto<?>> filterValue;
+    private boolean filterSet;
+    private DecisionViewDto view;
+    private DecisionGroupByDto<?> groupBy;
+    private ProcessReportDistributedByDto<?> distributedByValue;
+    private boolean distributedBySet;
+    private DecisionVisualization visualization;
+
+    public B filter(@Valid final List<DecisionFilterDto<?>> filter) {
+      filterValue = filter;
+      filterSet = true;
+      return self();
+    }
+
+    public B view(final DecisionViewDto view) {
+      this.view = view;
+      return self();
+    }
+
+    public B groupBy(final DecisionGroupByDto<?> groupBy) {
+      this.groupBy = groupBy;
+      return self();
+    }
+
+    public B distributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
+      distributedByValue = distributedBy;
+      distributedBySet = true;
+      return self();
+    }
+
+    public B visualization(final DecisionVisualization visualization) {
+      this.visualization = visualization;
+      return self();
+    }
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "DecisionReportDataDto.DecisionReportDataDtoBuilder(super="
+          + super.toString()
+          + ", filterValue="
+          + filterValue
+          + ", view="
+          + view
+          + ", groupBy="
+          + groupBy
+          + ", distributedByValue="
+          + distributedByValue
+          + ", visualization="
+          + visualization
+          + ")";
+    }
+  }
+
+  private static final class DecisionReportDataDtoBuilderImpl
+      extends DecisionReportDataDtoBuilder<
+          DecisionReportDataDto, DecisionReportDataDtoBuilderImpl> {
+
+    private DecisionReportDataDtoBuilderImpl() {}
+
+    @Override
+    protected DecisionReportDataDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public DecisionReportDataDto build() {
+      return new DecisionReportDataDto(this);
+    }
   }
 }

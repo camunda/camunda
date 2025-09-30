@@ -9,22 +9,55 @@ package io.camunda.optimize.dto.optimize.query.report.single.decision.group.valu
 
 import io.camunda.optimize.dto.optimize.query.report.single.group.AggregateByDateUnit;
 import java.util.Objects;
-import lombok.Data;
 
-@Data
 public class DecisionGroupByEvaluationDateTimeValueDto implements DecisionGroupByValueDto {
 
   protected AggregateByDateUnit unit;
 
+  public DecisionGroupByEvaluationDateTimeValueDto() {}
+
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByEvaluationDateTimeValueDto)) {
       return false;
     }
-    DecisionGroupByEvaluationDateTimeValueDto that = (DecisionGroupByEvaluationDateTimeValueDto) o;
+    final DecisionGroupByEvaluationDateTimeValueDto that =
+        (DecisionGroupByEvaluationDateTimeValueDto) o;
     return Objects.equals(unit, that.unit);
+  }
+
+  public AggregateByDateUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final AggregateByDateUnit unit) {
+    this.unit = unit;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionGroupByEvaluationDateTimeValueDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionGroupByEvaluationDateTimeValueDto that =
+        (DecisionGroupByEvaluationDateTimeValueDto) o;
+    return unit == that.unit;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(unit);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionGroupByEvaluationDateTimeValueDto(unit=" + getUnit() + ")";
   }
 }

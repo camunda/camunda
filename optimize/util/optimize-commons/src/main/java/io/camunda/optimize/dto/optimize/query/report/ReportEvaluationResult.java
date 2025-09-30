@@ -10,17 +10,21 @@ package io.camunda.optimize.dto.optimize.query.report;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginatedDataExportDto;
 import java.time.ZoneId;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import java.util.Objects;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
 public abstract class ReportEvaluationResult {
 
-  @NonNull protected ReportDefinitionDto<?> reportDefinition;
+  protected ReportDefinitionDto<?> reportDefinition;
+
+  public ReportEvaluationResult(final ReportDefinitionDto<?> reportDefinition) {
+    if (reportDefinition == null) {
+      throw new IllegalArgumentException("reportDefinition cannot be null");
+    }
+
+    this.reportDefinition = reportDefinition;
+  }
+
+  public ReportEvaluationResult() {}
 
   public String getId() {
     return reportDefinition.getId();
@@ -30,4 +34,39 @@ public abstract class ReportEvaluationResult {
       final Integer limit, final Integer offset, final ZoneId timezone);
 
   public abstract PaginatedDataExportDto getResult();
+
+  public ReportDefinitionDto<?> getReportDefinition() {
+    return reportDefinition;
+  }
+
+  public void setReportDefinition(final ReportDefinitionDto<?> reportDefinition) {
+    if (reportDefinition == null) {
+      throw new IllegalArgumentException("reportDefinition cannot be null");
+    }
+
+    this.reportDefinition = reportDefinition;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ReportEvaluationResult;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportEvaluationResult that = (ReportEvaluationResult) o;
+    return Objects.equals(reportDefinition, that.reportDefinition);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(reportDefinition);
+  }
+
+  @Override
+  public String toString() {
+    return "ReportEvaluationResult(reportDefinition=" + getReportDefinition() + ")";
+  }
 }

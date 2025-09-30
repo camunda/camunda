@@ -12,14 +12,9 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class DecisionInstanceDto implements OptimizeDto {
 
   private String decisionInstanceId;
@@ -40,6 +35,270 @@ public class DecisionInstanceDto implements OptimizeDto {
   private String engine;
   private String tenantId;
 
+  public DecisionInstanceDto(
+      final String decisionInstanceId,
+      final String processDefinitionId,
+      final String processDefinitionKey,
+      final String decisionDefinitionId,
+      final String decisionDefinitionKey,
+      final String decisionDefinitionVersion,
+      final OffsetDateTime evaluationDateTime,
+      final String processInstanceId,
+      final String rootProcessInstanceId,
+      final String activityId,
+      final Double collectResultValue,
+      final String rootDecisionInstanceId,
+      final List<InputInstanceDto> inputs,
+      final List<OutputInstanceDto> outputs,
+      final Set<String> matchedRules,
+      final String engine,
+      final String tenantId) {
+    this.decisionInstanceId = decisionInstanceId;
+    this.processDefinitionId = processDefinitionId;
+    this.processDefinitionKey = processDefinitionKey;
+    this.decisionDefinitionId = decisionDefinitionId;
+    this.decisionDefinitionKey = decisionDefinitionKey;
+    this.decisionDefinitionVersion = decisionDefinitionVersion;
+    this.evaluationDateTime = evaluationDateTime;
+    this.processInstanceId = processInstanceId;
+    this.rootProcessInstanceId = rootProcessInstanceId;
+    this.activityId = activityId;
+    this.collectResultValue = collectResultValue;
+    this.rootDecisionInstanceId = rootDecisionInstanceId;
+    this.inputs = inputs;
+    this.outputs = outputs;
+    this.matchedRules = matchedRules;
+    this.engine = engine;
+    this.tenantId = tenantId;
+  }
+
+  public DecisionInstanceDto() {}
+
+  public String getDecisionInstanceId() {
+    return this.decisionInstanceId;
+  }
+
+  public String getProcessDefinitionId() {
+    return this.processDefinitionId;
+  }
+
+  public String getProcessDefinitionKey() {
+    return this.processDefinitionKey;
+  }
+
+  public String getDecisionDefinitionId() {
+    return this.decisionDefinitionId;
+  }
+
+  public String getDecisionDefinitionKey() {
+    return this.decisionDefinitionKey;
+  }
+
+  public String getDecisionDefinitionVersion() {
+    return this.decisionDefinitionVersion;
+  }
+
+  public OffsetDateTime getEvaluationDateTime() {
+    return this.evaluationDateTime;
+  }
+
+  public String getProcessInstanceId() {
+    return this.processInstanceId;
+  }
+
+  public String getRootProcessInstanceId() {
+    return this.rootProcessInstanceId;
+  }
+
+  public String getActivityId() {
+    return this.activityId;
+  }
+
+  public Double getCollectResultValue() {
+    return this.collectResultValue;
+  }
+
+  public String getRootDecisionInstanceId() {
+    return this.rootDecisionInstanceId;
+  }
+
+  public List<InputInstanceDto> getInputs() {
+    return this.inputs;
+  }
+
+  public List<OutputInstanceDto> getOutputs() {
+    return this.outputs;
+  }
+
+  public Set<String> getMatchedRules() {
+    return this.matchedRules;
+  }
+
+  public String getEngine() {
+    return this.engine;
+  }
+
+  public String getTenantId() {
+    return this.tenantId;
+  }
+
+  public void setDecisionInstanceId(final String decisionInstanceId) {
+    this.decisionInstanceId = decisionInstanceId;
+  }
+
+  public void setProcessDefinitionId(final String processDefinitionId) {
+    this.processDefinitionId = processDefinitionId;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setDecisionDefinitionId(final String decisionDefinitionId) {
+    this.decisionDefinitionId = decisionDefinitionId;
+  }
+
+  public void setDecisionDefinitionKey(final String decisionDefinitionKey) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+  }
+
+  public void setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
+    this.decisionDefinitionVersion = decisionDefinitionVersion;
+  }
+
+  public void setEvaluationDateTime(final OffsetDateTime evaluationDateTime) {
+    this.evaluationDateTime = evaluationDateTime;
+  }
+
+  public void setProcessInstanceId(final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
+  }
+
+  public void setRootProcessInstanceId(final String rootProcessInstanceId) {
+    this.rootProcessInstanceId = rootProcessInstanceId;
+  }
+
+  public void setActivityId(final String activityId) {
+    this.activityId = activityId;
+  }
+
+  public void setCollectResultValue(final Double collectResultValue) {
+    this.collectResultValue = collectResultValue;
+  }
+
+  public void setRootDecisionInstanceId(final String rootDecisionInstanceId) {
+    this.rootDecisionInstanceId = rootDecisionInstanceId;
+  }
+
+  public void setInputs(final List<InputInstanceDto> inputs) {
+    this.inputs = inputs;
+  }
+
+  public void setOutputs(final List<OutputInstanceDto> outputs) {
+    this.outputs = outputs;
+  }
+
+  public void setMatchedRules(final Set<String> matchedRules) {
+    this.matchedRules = matchedRules;
+  }
+
+  public void setEngine(final String engine) {
+    this.engine = engine;
+  }
+
+  public void setTenantId(final String tenantId) {
+    this.tenantId = tenantId;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceDto that = (DecisionInstanceDto) o;
+    return Objects.equals(decisionInstanceId, that.decisionInstanceId)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(decisionDefinitionVersion, that.decisionDefinitionVersion)
+        && Objects.equals(evaluationDateTime, that.evaluationDateTime)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(rootProcessInstanceId, that.rootProcessInstanceId)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(collectResultValue, that.collectResultValue)
+        && Objects.equals(rootDecisionInstanceId, that.rootDecisionInstanceId)
+        && Objects.equals(inputs, that.inputs)
+        && Objects.equals(outputs, that.outputs)
+        && Objects.equals(matchedRules, that.matchedRules)
+        && Objects.equals(engine, that.engine)
+        && Objects.equals(tenantId, that.tenantId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        decisionInstanceId,
+        processDefinitionId,
+        processDefinitionKey,
+        decisionDefinitionId,
+        decisionDefinitionKey,
+        decisionDefinitionVersion,
+        evaluationDateTime,
+        processInstanceId,
+        rootProcessInstanceId,
+        activityId,
+        collectResultValue,
+        rootDecisionInstanceId,
+        inputs,
+        outputs,
+        matchedRules,
+        engine,
+        tenantId);
+  }
+
+  public String toString() {
+    return "DecisionInstanceDto(decisionInstanceId="
+        + this.getDecisionInstanceId()
+        + ", processDefinitionId="
+        + this.getProcessDefinitionId()
+        + ", processDefinitionKey="
+        + this.getProcessDefinitionKey()
+        + ", decisionDefinitionId="
+        + this.getDecisionDefinitionId()
+        + ", decisionDefinitionKey="
+        + this.getDecisionDefinitionKey()
+        + ", decisionDefinitionVersion="
+        + this.getDecisionDefinitionVersion()
+        + ", evaluationDateTime="
+        + this.getEvaluationDateTime()
+        + ", processInstanceId="
+        + this.getProcessInstanceId()
+        + ", rootProcessInstanceId="
+        + this.getRootProcessInstanceId()
+        + ", activityId="
+        + this.getActivityId()
+        + ", collectResultValue="
+        + this.getCollectResultValue()
+        + ", rootDecisionInstanceId="
+        + this.getRootDecisionInstanceId()
+        + ", inputs="
+        + this.getInputs()
+        + ", outputs="
+        + this.getOutputs()
+        + ", matchedRules="
+        + this.getMatchedRules()
+        + ", engine="
+        + this.getEngine()
+        + ", tenantId="
+        + this.getTenantId()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String decisionInstanceId = "decisionInstanceId";

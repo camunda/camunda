@@ -17,9 +17,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.Dat
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DateFilterType;
 import java.time.OffsetDateTime;
 import java.util.List;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -30,9 +28,6 @@ import lombok.Setter;
   @JsonSubTypes.Type(value = RollingFlowNodeDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
   @JsonSubTypes.Type(value = RelativeFlowNodeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
 })
-@Getter
-@Setter
-@EqualsAndHashCode(callSuper = true)
 public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto<START> {
 
   protected List<String> flowNodeIds;
@@ -46,6 +41,37 @@ public abstract class FlowNodeDateFilterDataDto<START> extends DateFilterDataDto
     this.flowNodeIds = flowNodeIds;
   }
 
+  public List<String> getFlowNodeIds() {
+    return flowNodeIds;
+  }
+
+  public void setFlowNodeIds(final List<String> flowNodeIds) {
+    this.flowNodeIds = flowNodeIds;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof FlowNodeDateFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeDateFilterDataDto<?> that = (FlowNodeDateFilterDataDto<?>) o;
+    return Objects.equals(flowNodeIds, that.flowNodeIds);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), flowNodeIds);
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String flowNodeIds = "flowNodeIds";

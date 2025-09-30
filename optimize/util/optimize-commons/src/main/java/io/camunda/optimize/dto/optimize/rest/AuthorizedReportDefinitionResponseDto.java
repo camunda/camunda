@@ -11,14 +11,8 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
 
   @JsonUnwrapped private ReportDefinitionDto definitionDto;
@@ -29,6 +23,48 @@ public class AuthorizedReportDefinitionResponseDto extends AuthorizedEntityDto {
     this.definitionDto = definitionDto;
   }
 
+  protected AuthorizedReportDefinitionResponseDto() {}
+
+  public ReportDefinitionDto getDefinitionDto() {
+    return definitionDto;
+  }
+
+  @JsonUnwrapped
+  public void setDefinitionDto(final ReportDefinitionDto definitionDto) {
+    this.definitionDto = definitionDto;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof AuthorizedReportDefinitionResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), definitionDto);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedReportDefinitionResponseDto that = (AuthorizedReportDefinitionResponseDto) o;
+    return Objects.equals(definitionDto, that.definitionDto);
+  }
+
+  @Override
+  public String toString() {
+    return "AuthorizedReportDefinitionResponseDto(definitionDto=" + getDefinitionDto() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String definitionDto = "definitionDto";

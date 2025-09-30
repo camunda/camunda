@@ -27,9 +27,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -61,8 +59,6 @@ import lombok.NoArgsConstructor;
   @JsonSubTypes.Type(value = DashboardDateVariableFilterDataDto.class, name = DATE_TYPE),
   @JsonSubTypes.Type(value = DashboardDateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE)
 })
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public abstract class DashboardVariableFilterDataDto implements FilterDataDto {
 
   protected VariableType type;
@@ -74,5 +70,60 @@ public abstract class DashboardVariableFilterDataDto implements FilterDataDto {
     this.name = name;
     this.type = type;
     this.data = data;
+  }
+
+  protected DashboardVariableFilterDataDto() {}
+
+  public VariableType getType() {
+    return type;
+  }
+
+  public void setType(final VariableType type) {
+    this.type = type;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public DashboardVariableFilterSubDataDto getData() {
+    return data;
+  }
+
+  public void setData(final DashboardVariableFilterSubDataDto data) {
+    this.data = data;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardVariableFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DashboardVariableFilterDataDto that = (DashboardVariableFilterDataDto) o;
+    return type == that.type && Objects.equals(name, that.name) && Objects.equals(data, that.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, name, data);
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardVariableFilterDataDto(type="
+        + getType()
+        + ", name="
+        + getName()
+        + ", data="
+        + getData()
+        + ")";
   }
 }

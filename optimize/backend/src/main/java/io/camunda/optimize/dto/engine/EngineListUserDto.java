@@ -7,22 +7,142 @@
  */
 package io.camunda.optimize.dto.engine;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Builder
-@Data
-@EqualsAndHashCode(of = {"id"})
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 public class EngineListUserDto {
 
   private String id;
   private String firstName;
   private String lastName;
   private String email;
+
+  public EngineListUserDto(
+      final String id, final String firstName, final String lastName, final String email) {
+    this.id = id;
+    this.firstName = firstName;
+    this.lastName = lastName;
+    this.email = email;
+  }
+
+  protected EngineListUserDto() {}
+
+  public String getId() {
+    return id;
+  }
+
+  public void setId(final String id) {
+    this.id = id;
+  }
+
+  public String getFirstName() {
+    return firstName;
+  }
+
+  public void setFirstName(final String firstName) {
+    this.firstName = firstName;
+  }
+
+  public String getLastName() {
+    return lastName;
+  }
+
+  public void setLastName(final String lastName) {
+    this.lastName = lastName;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(final String email) {
+    this.email = email;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof EngineListUserDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, firstName, lastName, email);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EngineListUserDto that = (EngineListUserDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(firstName, that.firstName)
+        && Objects.equals(lastName, that.lastName)
+        && Objects.equals(email, that.email);
+  }
+
+  @Override
+  public String toString() {
+    return "EngineListUserDto(id="
+        + getId()
+        + ", firstName="
+        + getFirstName()
+        + ", lastName="
+        + getLastName()
+        + ", email="
+        + getEmail()
+        + ")";
+  }
+
+  public static EngineListUserDtoBuilder builder() {
+    return new EngineListUserDtoBuilder();
+  }
+
+  public static class EngineListUserDtoBuilder {
+
+    private String id;
+    private String firstName;
+    private String lastName;
+    private String email;
+
+    EngineListUserDtoBuilder() {}
+
+    public EngineListUserDtoBuilder id(final String id) {
+      this.id = id;
+      return this;
+    }
+
+    public EngineListUserDtoBuilder firstName(final String firstName) {
+      this.firstName = firstName;
+      return this;
+    }
+
+    public EngineListUserDtoBuilder lastName(final String lastName) {
+      this.lastName = lastName;
+      return this;
+    }
+
+    public EngineListUserDtoBuilder email(final String email) {
+      this.email = email;
+      return this;
+    }
+
+    public EngineListUserDto build() {
+      return new EngineListUserDto(id, firstName, lastName, email);
+    }
+
+    @Override
+    public String toString() {
+      return "EngineListUserDto.EngineListUserDtoBuilder(id="
+          + id
+          + ", firstName="
+          + firstName
+          + ", lastName="
+          + lastName
+          + ", email="
+          + email
+          + ")";
+    }
+  }
 }
