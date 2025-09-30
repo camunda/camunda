@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.FileAlreadyExistsException;
@@ -37,34 +38,33 @@ import org.slf4j.LoggerFactory;
 public final class ManifestManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ManifestManager.class);
-
-  /**
-   * The path format consists of the following elements:
-   *
-   * <ul>
-   *   <li>{@code basePath}
-   *   <li>{@code "manifests"}
-   *   <li>{@code partitionId}
-   *   <li>{@code checkpointId}
-   *   <li>{@code nodeId}
-   *   <li>{@code "manifest.json"}
-   * </ul>
-   *
-   * The path format is constructed by
-   * basePath/manifests/partitionId/checkpointId/nodeId/manifest.json
-   */
-  private static final String MANIFEST_PATH_FORMAT = "%s/manifests/%s/%s/%s/manifest.json";
-
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS)
           .setSerializationInclusion(Include.NON_ABSENT);
-  private final String basePath;
 
-  ManifestManager(final String basePath) {
-    this.basePath = basePath;
+  /**
+   * The path format consists of the following elements:
+   *
+   * <ul>
+   *   <li>{@code manifestsPath}
+   *   <li>{@code partitionId}
+   *   <li>{@code checkpointId}
+   *   <li>{@code nodeId}
+   *   <li>{@code "manifest.json"}
+   * </ul>
+   *
+   * The path format is constructed by {@code
+   * manifestsPath}/partitionId/checkpointId/nodeId/manifest.json
+   */
+  private static final String MANIFEST_FILENAME = "manifest.json";
+
+  private final Path manifestsPath;
+
+  ManifestManager(final Path manifestsPath) {
+    this.manifestsPath = manifestsPath;
   }
 
   InProgressManifest createInitialManifest(final Backup backup) {
@@ -138,7 +138,7 @@ public final class ManifestManager {
     }
   }
 
-  public void deleteManifest(final BackupIdentifier id) {
+  void deleteManifest(final BackupIdentifier id) {
     final Manifest manifest = getManifest(id);
     if (manifest == null) {
       return;
@@ -160,10 +160,18 @@ public final class ManifestManager {
   }
 
   Manifest getManifest(final BackupIdentifier id) {
-    return getManifestWithPath(
-        Path.of(
-            MANIFEST_PATH_FORMAT.formatted(
-                basePath, id.partitionId(), id.checkpointId(), id.nodeId())));
+    return getManifestWithPath(getManifestPath(id));
+  }
+
+  Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
+    try (final Stream<Path> files = Files.walk(manifestsPath)) {
+      return files
+          .filter(filePath -> filterBlobsByWildcard(wildcard, filePath.toString()))
+          .map(this::getManifestWithPath)
+          .toList();
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Unable to list manifests from " + manifestsPath, e);
+    }
   }
 
   private Manifest getManifestWithPath(final Path path) {
@@ -178,41 +186,37 @@ public final class ManifestManager {
     }
   }
 
-  public Collection<Manifest> listManifests(final BackupIdentifierWildcard wildcard) {
-    final Path manifestBasePath = Path.of(basePath + "/manifests/");
-    try (final Stream<Path> files = Files.walk(manifestBasePath)) {
-      return files
-          .filter(filePath -> filterBlobsByWildcard(wildcard, filePath.toString()))
-          .map(this::getManifestWithPath)
-          .toList();
-    } catch (final IOException e) {
-      throw new UncheckedIOException("Unable to list manifests from path " + manifestBasePath, e);
-    }
+  @VisibleForTesting
+  Path manifestPath(final Manifest manifest) {
+    return getManifestPath(manifest.id());
   }
 
-  public Path manifestPath(final Manifest manifest) {
-    return manifestIdPath(manifest.id());
-  }
-
-  private Path manifestIdPath(final BackupIdentifier backupIdentifier) {
-    return Path.of(
-        MANIFEST_PATH_FORMAT.formatted(
-            basePath,
-            backupIdentifier.partitionId(),
-            backupIdentifier.checkpointId(),
-            backupIdentifier.nodeId()));
+  private Path getManifestPath(final BackupIdentifier id) {
+    return getManifestPath(
+        String.valueOf(id.partitionId()),
+        String.valueOf(id.checkpointId()),
+        String.valueOf(id.nodeId()));
   }
 
   private boolean filterBlobsByWildcard(
       final BackupIdentifierWildcard wildcard, final String path) {
     final var pattern =
         Pattern.compile(
-                MANIFEST_PATH_FORMAT.formatted(
-                    basePath,
-                    wildcard.partitionId().map(Number::toString).orElse("\\d+"),
-                    wildcard.checkpointPattern().asRegex(),
-                    wildcard.nodeId().map(Number::toString).orElse("\\d+")))
+                getManifestPath(
+                        wildcard.partitionId().map(Number::toString).orElse("\\d+"),
+                        wildcard.checkpointPattern().asRegex(),
+                        wildcard.nodeId().map(Number::toString).orElse("\\d+"))
+                    .toString())
             .asMatchPredicate();
     return pattern.test(path);
+  }
+
+  private Path getManifestPath(
+      final String partitionId, final String checkpointId, final String nodeId) {
+    return manifestsPath
+        .resolve(partitionId)
+        .resolve(checkpointId)
+        .resolve(nodeId)
+        .resolve(MANIFEST_FILENAME);
   }
 }
