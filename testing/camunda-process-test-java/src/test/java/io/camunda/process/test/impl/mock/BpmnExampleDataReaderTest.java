@@ -23,10 +23,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
 import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReader.InvalidExampleDataJsonException;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReader.NoSuchBpmnElementException;
-import io.camunda.process.test.utils.CamundaAssertExpectFailure;
 import io.camunda.process.test.utils.CamundaAssertExtension;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Collections;
@@ -53,7 +51,7 @@ public class BpmnExampleDataReaderTest {
 
   @BeforeEach
   public void setup() {
-    reader = new BpmnExampleDataReader(client, new AwaitilityBehavior(), jsonMapper);
+    reader = new BpmnExampleDataReader(client, new AwaitilityBehavior());
   }
 
   @Test
@@ -64,7 +62,7 @@ public class BpmnExampleDataReaderTest {
 
     // when
     final Map<String, Object> actual =
-        reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_send_email");
+        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
 
     // then
     final Map<String, Object> expected =
@@ -87,7 +85,7 @@ public class BpmnExampleDataReaderTest {
 
     // when
     final Map<String, Object> actual =
-        reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_send_email");
+        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
 
     // then
     final Map<String, Object> expected =
@@ -98,18 +96,16 @@ public class BpmnExampleDataReaderTest {
   }
 
   @Test
-  public void noExampleDataFoundReturnsEmptyVariablesObject() {
+  public void noExampleDataFoundThrowsException() {
     // given
     when(client.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
         .thenReturn(bpmnModelWithoutExampleData());
 
     // when/then
-    final Map<String, Object> actualMap =
-        reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_send_email");
-    final String actualJson = reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email");
-
-    assertThat(actualMap).isEmpty();
-    assertThat(actualJson).isEqualTo("{}");
+    assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
+        .hasMessageContaining(
+            "BPMN Model [processDefinitionKey: '1', elementId: 'task_send_email'] has no example data. Example data must have the attribute name '%s'",
+            ZeebeConstants.PROPERTY_EXAMPLE_DATA);
   }
 
   @Test
@@ -118,68 +114,49 @@ public class BpmnExampleDataReaderTest {
     when(client.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
         .thenReturn(bpmnModelWithEmptyExampleData());
 
-    // when/then
+    // when
     final Map<String, Object> actualMap =
-        reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_send_email");
-    final String actualJson = reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email");
+        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
 
+    // then
     assertThat(actualMap).isEmpty();
-    assertThat(actualJson).isEqualTo("{}");
   }
 
   @Test
-  @CamundaAssertExpectFailure
-  public void noSuchElementFound() {
+  public void noSuchElementFoundReturnsEmptyJsonObject() {
     // given
     when(client.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
         .thenReturn(bpmnModelWithoutExampleData());
 
     // when/then
     assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_missing"))
-        .isInstanceOf(NoSuchBpmnElementException.class)
-        .hasMessageContaining("BPMN Model [processDefinitionKey: '1', elementId: 'task_missing']")
-        .hasMessageContaining("does not contain element with id 'task_missing'");
-
-    assertThatThrownBy(() -> reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_missing"))
-        .isInstanceOf(NoSuchBpmnElementException.class)
-        .hasMessageContaining("BPMN Model [processDefinitionKey: '1', elementId: 'task_missing']")
-        .hasMessageContaining("does not contain element with id 'task_missing'");
+        .hasMessageContaining(
+            "BPMN Model [processDefinitionKey: '1', elementId: 'task_missing'] does not contain element with id 'task_missing'");
   }
 
   @Test
-  @CamundaAssertExpectFailure
-  public void malformedExampleData() {
+  public void malformedExampleDataReturnsTheMalformedData() {
     // given
     when(client.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
         .thenReturn(bpmnModelWithMalformedExampleData());
 
     // when/then
-    final String expectedFailureMessage =
-        "BPMN Model [processDefinitionKey: '1', elementId: 'task_send_email'] has invalid JSON example data 'this is not valid json'";
-
-    assertThatThrownBy(() -> reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "task_send_email"))
-        .isInstanceOf(InvalidExampleDataJsonException.class)
-        .hasMessageContaining(expectedFailureMessage);
-
-    assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
-        .isInstanceOf(InvalidExampleDataJsonException.class)
-        .hasMessageContaining(expectedFailureMessage);
+    assertThat(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
+        .isEqualTo("this is not valid json");
   }
 
   @Test
-  public void emptyExampleData() {
+  public void emptyExampleDataThrowsException() {
     // given
     when(client.newProcessDefinitionGetXmlRequest(PROCESS_DEFINITION_KEY).send().join())
         .thenReturn(bpmnModelWithEmptyExampleDataAttribute());
 
     // when/then
-    final Map<String, Object> actualMap =
-        reader.readExampleDataAsMap(PROCESS_DEFINITION_KEY, "service_task_review_email_c");
-    final String actualJson =
-        reader.readExampleData(PROCESS_DEFINITION_KEY, "service_task_review_email_c");
-
-    assertThat(actualMap).isEmpty();
-    assertThat(actualJson).isEqualTo("{}");
+    assertThatThrownBy(
+            () -> reader.readExampleData(PROCESS_DEFINITION_KEY, "service_task_review_email_c"))
+        .hasMessageContaining(
+            "BPMN Model [processDefinitionKey: '1', elementId: 'service_task_review_email_c'] has no example data. Example data must have the attribute name '%s'",
+            ZeebeConstants.PROPERTY_EXAMPLE_DATA);
   }
 
   private String bpmnModelWithEmptyExampleDataAttribute() {

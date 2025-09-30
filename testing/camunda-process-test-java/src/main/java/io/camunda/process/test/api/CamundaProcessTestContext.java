@@ -19,9 +19,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReader.FailedToParseBpmnModelException;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReader.InvalidExampleDataJsonException;
-import io.camunda.process.test.impl.mock.BpmnExampleDataReader.NoSuchBpmnElementException;
 import io.camunda.zeebe.client.ZeebeClient;
 import io.camunda.zeebe.client.ZeebeClientBuilder;
 import java.net.URI;
@@ -149,8 +146,6 @@ public interface CamundaProcessTestContext {
    * related BPMN element. If no property is defined, it completes the job without variables.
    *
    * @param jobType the type of the job to complete, matching the `zeebeJobType` in the BPMN model
-   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
-   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
    */
   void completeJobWithExampleData(final String jobType);
 
@@ -219,9 +214,6 @@ public interface CamundaProcessTestContext {
    * without variables.
    *
    * @param elementId the elementId of the user task and its associated example data
-   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
-   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
-   * @throws NoSuchBpmnElementException if no element exists with the given elementId
    */
   void completeUserTaskWithExampleData(final String elementId);
 
@@ -231,9 +223,6 @@ public interface CamundaProcessTestContext {
    * without variables.
    *
    * @param userTaskSelector the selector to identify the user task to complete
-   * @throws InvalidExampleDataJsonException if the example data isn't valid JSON
-   * @throws FailedToParseBpmnModelException if the BPMN definition wasn't found
-   * @throws NoSuchBpmnElementException if no element corresponding to the selector was found
    */
   void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector);
 

@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -73,11 +74,19 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
         (jobClient, job) -> {
           final String logMessagePrefix = this.logMessagePrefix.apply(ACTION_COMPLETE_JOB, job);
 
-          final String exampleDataVariables =
-              exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
+          try {
+            final String exampleDataVariables =
+                exampleDataReader.readExampleData(
+                    job.getProcessDefinitionKey(), job.getElementId());
 
-          LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
-          jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+            LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
+            jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+          } catch (final BpmnExampleDataReaderException e) {
+
+            LOGGER.warn(
+                "{} without example data due to errors. {}", logMessagePrefix, e.getMessage(), e);
+            jobClient.newCompleteCommand(job).send().join();
+          }
         });
   }
 
