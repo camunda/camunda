@@ -28,7 +28,8 @@ import org.springframework.context.annotation.Primary;
 @DependsOn("unifiedConfigurationHelper")
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
-  SecondaryStorageType.opensearch
+  SecondaryStorageType.opensearch,
+  SecondaryStorageType.rdbms
 })
 public class SearchEngineConnectPropertiesOverride {
 
@@ -51,10 +52,25 @@ public class SearchEngineConnectPropertiesOverride {
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
-    final SecondaryStorageDatabase database =
-        (secondaryStorage.getType() == SecondaryStorageType.elasticsearch)
-            ? secondaryStorage.getElasticsearch()
-            : secondaryStorage.getOpensearch();
+    final SecondaryStorageDatabase database;
+
+    switch (secondaryStorage.getType()) {
+      case elasticsearch:
+        {
+          database = secondaryStorage.getElasticsearch();
+          break;
+        }
+      case rdbms:
+        {
+          database = secondaryStorage.getRdbms();
+          break;
+        }
+      default:
+        {
+          database = secondaryStorage.getOpensearch();
+          break;
+        }
+    }
 
     override.setType(secondaryStorage.getType().name());
     override.setUrl(database.getUrl());

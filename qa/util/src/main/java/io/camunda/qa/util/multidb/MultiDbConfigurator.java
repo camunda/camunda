@@ -276,24 +276,23 @@ public class MultiDbConfigurator {
     testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");
-    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.defaultHistoryTTL",
+        "zeebe.broker.exporters.rdbms.className", "io.camunda.exporter.rdbms.RdbmsExporter");
+    testApplication.withProperty("camunda.data.secondary-storage.rdbms.flushInterval", "PT0S");
+    testApplication.withProperty(
+        "camunda.data.secondary-storage.rdbms.history.defaultHistoryTTL",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.defaultBatchOperationHistoryTTL",
+        "camunda.data.secondary-storage.rdbms.history.defaultBatchOperationHistoryTTL",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.minHistoryCleanupInterval",
+        "camunda.data.secondary-storage.rdbms.history.minHistoryCleanupInterval",
         retentionEnabled ? "PT1S" : "PT1H");
     testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.maxHistoryCleanupInterval",
+        "camunda.data.secondary-storage.rdbms.history.maxHistoryCleanupInterval",
         retentionEnabled ? "PT5S" : "PT2H");
     testApplication.withExporter(
-        "rdbms",
-        cfg -> {
-          cfg.setClassName("-");
-        });
+        "rdbms", cfg -> cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter"));
     testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
     testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
   }

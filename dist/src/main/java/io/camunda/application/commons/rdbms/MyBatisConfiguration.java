@@ -62,14 +62,14 @@ public class MyBatisConfiguration {
 
   @Bean
   @ConditionalOnProperty(
-      prefix = "camunda.database",
+      prefix = "camunda.data.secondary-storage.rdbms",
       name = "auto-ddl",
       havingValue = "true",
       matchIfMissing = true)
   public MultiTenantSpringLiquibase rdbmsExporterLiquibase(
       final DataSource dataSource,
       final VendorDatabaseProperties vendorDatabaseProperties,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix) {
+      @Value("${camunda.data.secondary-storage.rdbms.index-prefix:}") final String indexPrefix) {
     final String prefix = StringUtils.trimToEmpty(indexPrefix);
     LOGGER.info("Initializing Liquibase for RDBMS with global table prefix '{}'.", prefix);
 
@@ -91,7 +91,7 @@ public class MyBatisConfiguration {
 
   @Bean
   public RdbmsDatabaseIdProvider databaseIdProvider(
-      @Value("${camunda.database.database-vendor-id:}") final String vendorId) {
+      @Value("${camunda.data.secondary-storage.rdbms.database-vendor-id:}") final String vendorId) {
     return new RdbmsDatabaseIdProvider(vendorId);
   }
 
@@ -110,7 +110,7 @@ public class MyBatisConfiguration {
       final DataSource dataSource,
       final DatabaseIdProvider databaseIdProvider,
       final VendorDatabaseProperties databaseProperties,
-      @Value("${camunda.database.index-prefix:}") final String indexPrefix)
+      @Value("${camunda.data.secondary-storage.rdbms.index-prefix:}") final String indexPrefix)
       throws Exception {
 
     final var configuration = new org.apache.ibatis.session.Configuration();

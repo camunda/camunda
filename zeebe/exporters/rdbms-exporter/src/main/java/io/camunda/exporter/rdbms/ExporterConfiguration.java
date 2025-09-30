@@ -15,9 +15,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ExporterConfiguration {
-  private static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
-  private static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
-  private static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
+  public static final Duration DEFAULT_FLUSH_INTERVAL = Duration.ofMillis(500);
+  public static final int DEFAULT_CLEANUP_BATCH_SIZE = 1000;
+  public static final int DEFAULT_MAX_CACHE_SIZE = 10_000;
 
   private Duration flushInterval = DEFAULT_FLUSH_INTERVAL;
   private int queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
