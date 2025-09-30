@@ -20,6 +20,8 @@ import {searchJobs} from 'modules/api/v2/jobs/searchJobs';
 const MAX_JOBS_PER_REQUEST = 50;
 const JOBS_SEARCH_QUERY_KEY = 'jobsSearch';
 
+type JobsFilter = Required<QueryJobsRequestBody>['filter'];
+
 function getQueryKey(payload: QueryJobsRequestBody) {
   return [JOBS_SEARCH_QUERY_KEY, ...Object.values(payload)];
 }
@@ -80,4 +82,4 @@ function useJobs<T = QueryJobsResponseBody>(options: {
   });
 }
 
-export {useJobs};
+export {useJobs, type JobsFilter};

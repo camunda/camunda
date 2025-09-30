@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -16,7 +16,7 @@ import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
 import {Listeners} from './Listeners/v2';
 import {WarningFilled} from './styled';
-import {useJobs} from 'modules/queries/jobs/useJobs';
+import {useJobs, type JobsFilter} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 
 // TODO: Remove when listeners tab is fully migrated to v2
@@ -42,26 +42,24 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerEntity['listenerType']>();
 
-  const shouldUseFlowNodeId = !flowNodeInstanceId && flowNodeId;
-
-  let jobsFilter = {};
-  if (shouldUseFlowNodeId) {
-    jobsFilter = {
-      processInstanceKey: {$eq: processInstanceId},
-      elementId: {$eq: flowNodeId},
-      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
-    };
-  } else if (flowNodeInstanceId) {
-    jobsFilter = {
-      processInstanceKey: {$eq: processInstanceId},
-      elementId: {$eq: flowNodeInstanceId},
-      ...(listenerTypeFilter && {kind: {$eq: listenerTypeFilter}}),
-    };
-  }
-
   // TODO: remove when listeners tab is fully migrated to v2
   const {listenersFailureCount, fetchListeners, reset} =
     processInstanceListenersStore;
+
+  const jobsFilter = useMemo<JobsFilter | undefined>(() => {
+    if (!flowNodeInstanceId && !flowNodeId) {
+      // We cannot meaningfully filter for a flow-node if none is selected.
+      // Therefore, no filter is defined to not trigger a job search.
+      return;
+    }
+
+    return {
+      processInstanceKey: processInstanceId,
+      elementId: flowNodeId,
+      elementInstanceKey: flowNodeInstanceId,
+      kind: listenerTypeFilter,
+    };
+  }, [processInstanceId, flowNodeId, flowNodeInstanceId, listenerTypeFilter]);
 
   const {
     data: jobs,
@@ -71,8 +69,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     hasPreviousPage,
   } = useJobs({
     payload: {filter: jobsFilter},
-    disabled:
-      !IS_LISTENERS_TAB_V2 || (!shouldUseFlowNodeId && !flowNodeInstanceId),
+    disabled: !IS_LISTENERS_TAB_V2 || !jobsFilter,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
@@ -89,22 +86,21 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     if (IS_LISTENERS_TAB_V2) {
       return;
     }
-
-    if (shouldUseFlowNodeId) {
-      fetchListeners({
-        fetchType: 'initial',
-        processInstanceId: processInstanceId,
-        payload: {
-          flowNodeId,
-          ...(listenerTypeFilter && {listenerTypeFilter}),
-        },
-      });
-    } else if (flowNodeInstanceId) {
+    if (flowNodeInstanceId) {
       fetchListeners({
         fetchType: 'initial',
         processInstanceId: processInstanceId,
         payload: {
           flowNodeInstanceId,
+          ...(listenerTypeFilter && {listenerTypeFilter}),
+        },
+      });
+    } else if (flowNodeId) {
+      fetchListeners({
+        fetchType: 'initial',
+        processInstanceId: processInstanceId,
+        payload: {
+          flowNodeId,
           ...(listenerTypeFilter && {listenerTypeFilter}),
         },
       });
@@ -114,7 +110,6 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     processInstanceId,
     flowNodeId,
     flowNodeInstanceId,
-    shouldUseFlowNodeId,
     listenerTypeFilter,
   ]);
 
