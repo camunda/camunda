@@ -69,7 +69,7 @@ jobs:
 
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.branch }} # Use the branch selected by the user
+          ref: ${{ github.event.inputs.branch }}
 
       - name: Set NON_STANDALONE variable
         run: |
@@ -87,11 +87,11 @@ jobs:
             DATABASE=elasticsearch docker compose up -d operate tasklist
           else
             echo "Using standalone camunda container"
-            if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
-              echo "Starting with Tasklist V2 mode enabled"
-              CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
+            if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
+              echo "Starting with Tasklist V1 mode enabled"
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
             else
-              echo "Starting with default Tasklist V1 mode"
+              echo "Starting with default Tasklist V2 mode"
               DATABASE=elasticsearch docker compose up -d camunda
             fi
           fi
@@ -172,7 +172,7 @@ jobs:
           method: approle
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
-          exportEnv: false # we rely on step outputs, no need for environment variables
+          exportEnv: false
           secrets: |
             secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
             secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
@@ -218,8 +218,8 @@ jobs:
         shell: bash
         env:
           TESTRAIL_HOST: "https://camunda.testrail.com/"
-          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }} # Use the imported secret
-          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }} # Use the imported secret
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
           JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
         run: |
           pip install trcli

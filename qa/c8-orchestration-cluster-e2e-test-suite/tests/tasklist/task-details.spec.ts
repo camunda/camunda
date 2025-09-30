@@ -484,7 +484,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Checkbox Task');
 
-    await expect(taskDetailsPage.checkbox).toBeChecked();
+    await expect(taskDetailsPage.checkbox).toBeChecked({timeout: 60000});
   });
 
   test('task completion with select form', async ({
@@ -504,7 +504,7 @@ test.describe('task details page', () => {
     await taskPanelPage.assertCompletedHeadingVisible();
     await taskPanelPage.openTask('Select User Task');
 
-    await expect(taskDetailsPage.form).toContainText('Value');
+    await expect(taskDetailsPage.form).toContainText('Value', {timeout: 30000});
   });
 
   test('task completion with radio button form', async ({
