@@ -41,7 +41,7 @@ public class StandaloneTaskMigration implements ApplicationListener<MigrationFin
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.NONE)
             .sources(
                 StandaloneTaskMigration.class,
                 AsyncMigrationsRunner.class,

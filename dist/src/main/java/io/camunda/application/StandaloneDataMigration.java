@@ -43,7 +43,7 @@ public class StandaloneDataMigration implements ApplicationListener<MigrationFin
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.NONE)
             .sources(
                 StandaloneDataMigration.class,
                 AsyncMigrationsRunner.class,

@@ -44,7 +44,7 @@ public class StandaloneUsageMetricMigration implements ApplicationListener<Migra
     final SpringApplication application =
         new SpringApplicationBuilder()
             .logStartupInfo(true)
-            .web(WebApplicationType.SERVLET)
+            .web(WebApplicationType.NONE)
             .sources(
                 StandaloneUsageMetricMigration.class,
                 AsyncMigrationsRunner.class,
