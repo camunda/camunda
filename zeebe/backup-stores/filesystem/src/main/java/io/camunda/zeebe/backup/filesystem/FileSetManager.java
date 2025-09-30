@@ -27,12 +27,10 @@ final class FileSetManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FileSetManager.class);
 
-  // The path format is constructed by basePath/contents/partitionId/checkpointId/nodeId/nameOfFile
-  private static final String PATH_FORMAT = "%s/contents/%s/%s/%s/%s/";
-  private final String basePath;
+  private final Path contentsPath;
 
-  FileSetManager(final String basePath) {
-    this.basePath = basePath;
+  FileSetManager(final Path contentsPath) {
+    this.contentsPath = contentsPath;
   }
 
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
@@ -119,8 +117,10 @@ final class FileSetManager {
   }
 
   private Path fileSetPath(final BackupIdentifier id, final String fileSetName) {
-    return Path.of(
-        PATH_FORMAT.formatted(
-            basePath, id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName));
+    return contentsPath
+        .resolve(String.valueOf(id.partitionId()))
+        .resolve(String.valueOf(id.checkpointId()))
+        .resolve(String.valueOf(id.nodeId()))
+        .resolve(fileSetName);
   }
 }
