@@ -13,6 +13,7 @@ import io.camunda.optimize.rest.constants.RestConstants;
 import io.camunda.optimize.util.SuppressionConstants;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 public class CookieConfiguration {
@@ -72,13 +73,19 @@ public class CookieConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CookieConfiguration that = (CookieConfiguration) o;
+    return sameSiteFlagEnabled == that.sameSiteFlagEnabled
+        && cookieSecureMode == that.cookieSecureMode
+        && Objects.equals(maxSize, that.maxSize);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(sameSiteFlagEnabled, cookieSecureMode, maxSize);
   }
 
   @Override

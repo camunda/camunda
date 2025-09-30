@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.dto.optimize.query.sorting.SortOrder;
 import java.util.List;
+import java.util.Objects;
 
 public class Page<T> {
 
@@ -90,12 +91,24 @@ public class Page<T> {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(offset, limit, total, sortBy, sortOrder, results);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Page<?> page = (Page<?>) o;
+    return Objects.equals(offset, page.offset)
+        && Objects.equals(limit, page.limit)
+        && Objects.equals(total, page.total)
+        && Objects.equals(sortBy, page.sortBy)
+        && Objects.equals(sortOrder, page.sortOrder)
+        && Objects.equals(results, page.results);
   }
 
   @Override

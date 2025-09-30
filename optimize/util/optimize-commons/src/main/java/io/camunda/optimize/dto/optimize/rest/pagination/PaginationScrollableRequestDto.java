@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import java.util.Objects;
 
 public class PaginationScrollableRequestDto {
   @Min(0)
@@ -62,13 +63,19 @@ public class PaginationScrollableRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PaginationScrollableRequestDto that = (PaginationScrollableRequestDto) o;
+    return Objects.equals(limit, that.limit)
+        && Objects.equals(searchRequestId, that.searchRequestId)
+        && Objects.equals(paginationTimeout, that.paginationTimeout);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(limit, searchRequestId, paginationTimeout);
   }
 
   @Override

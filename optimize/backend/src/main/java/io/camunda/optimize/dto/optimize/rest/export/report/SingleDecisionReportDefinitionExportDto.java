@@ -14,6 +14,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.service.db.schema.index.report.SingleDecisionReportIndex;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExportDto {
 
@@ -56,13 +57,21 @@ public class SingleDecisionReportDefinitionExportDto extends ReportDefinitionExp
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final SingleDecisionReportDefinitionExportDto that =
+        (SingleDecisionReportDefinitionExportDto) o;
+    return Objects.equals(data, that.data);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), data);
   }
 
   @Override

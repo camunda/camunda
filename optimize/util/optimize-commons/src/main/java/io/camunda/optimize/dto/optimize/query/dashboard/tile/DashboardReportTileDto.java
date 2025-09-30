@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class DashboardReportTileDto {
 
@@ -77,13 +78,21 @@ public class DashboardReportTileDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DashboardReportTileDto that = (DashboardReportTileDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(position, that.position)
+        && Objects.equals(dimensions, that.dimensions)
+        && type == that.type
+        && Objects.equals(configuration, that.configuration);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, position, dimensions, type, configuration);
   }
 
   @Override

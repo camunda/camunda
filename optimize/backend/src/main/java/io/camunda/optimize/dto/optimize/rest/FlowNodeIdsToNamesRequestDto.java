@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.rest;
 
 import java.util.List;
+import java.util.Objects;
 
 public class FlowNodeIdsToNamesRequestDto {
 
@@ -55,13 +56,20 @@ public class FlowNodeIdsToNamesRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeIdsToNamesRequestDto that = (FlowNodeIdsToNamesRequestDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersion, that.processDefinitionVersion)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(nodeIds, that.nodeIds);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(processDefinitionKey, processDefinitionVersion, tenantId, nodeIds);
   }
 
   @Override

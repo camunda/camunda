@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.sharing;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class ReportShareRestDto implements Serializable {
 
@@ -37,13 +38,17 @@ public class ReportShareRestDto implements Serializable {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportShareRestDto that = (ReportShareRestDto) o;
+    return Objects.equals(id, that.id) && Objects.equals(reportId, that.reportId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, reportId);
   }
 
   @Override

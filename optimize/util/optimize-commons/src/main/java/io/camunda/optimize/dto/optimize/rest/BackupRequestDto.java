@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class BackupRequestDto {
 
@@ -36,12 +37,19 @@ public class BackupRequestDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(backupId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BackupRequestDto that = (BackupRequestDto) o;
+    return Objects.equals(backupId, that.backupId);
   }
 
   @Override

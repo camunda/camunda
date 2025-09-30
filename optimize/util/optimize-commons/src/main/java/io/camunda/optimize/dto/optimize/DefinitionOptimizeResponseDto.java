@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import java.io.Serializable;
+import java.util.Objects;
 
 public abstract class DefinitionOptimizeResponseDto implements Serializable, OptimizeDto {
 
@@ -129,13 +130,25 @@ public abstract class DefinitionOptimizeResponseDto implements Serializable, Opt
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DefinitionOptimizeResponseDto that = (DefinitionOptimizeResponseDto) o;
+    return deleted == that.deleted
+        && Objects.equals(id, that.id)
+        && Objects.equals(key, that.key)
+        && Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(name, that.name)
+        && Objects.equals(dataSource, that.dataSource)
+        && Objects.equals(tenantId, that.tenantId)
+        && type == that.type;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, key, version, versionTag, name, dataSource, tenantId, deleted, type);
   }
 
   @Override

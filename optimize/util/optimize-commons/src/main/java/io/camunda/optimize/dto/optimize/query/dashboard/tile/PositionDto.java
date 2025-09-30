@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.dashboard.tile;
 
+import java.util.Objects;
+
 public class PositionDto {
 
   protected int x;
@@ -40,13 +42,17 @@ public class PositionDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PositionDto that = (PositionDto) o;
+    return x == that.x && y == that.y;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(x, y);
   }
 
   @Override

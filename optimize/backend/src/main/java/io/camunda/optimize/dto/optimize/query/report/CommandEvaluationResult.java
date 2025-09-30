@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public abstract class CommandEvaluationResult<T> {
 
@@ -189,12 +190,24 @@ public abstract class CommandEvaluationResult<T> {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        instanceCount, instanceCountWithoutFilters, measures, reportData, pagination);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CommandEvaluationResult<?> that = (CommandEvaluationResult<?>) o;
+    return instanceCount == that.instanceCount
+        && instanceCountWithoutFilters == that.instanceCountWithoutFilters
+        && Objects.equals(measures, that.measures)
+        && Objects.equals(reportData, that.reportData)
+        && Objects.equals(pagination, that.pagination);
   }
 
   @Override

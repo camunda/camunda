@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class IncidentDto implements Serializable, OptimizeDto {
 
@@ -176,16 +177,52 @@ public class IncidentDto implements Serializable, OptimizeDto {
     this.engineAlias = engineAlias;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IncidentDto that = (IncidentDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(createTime, that.createTime)
+        && Objects.equals(endTime, that.endTime)
+        && Objects.equals(durationInMs, that.durationInMs)
+        && Objects.equals(incidentType, that.incidentType)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(failedActivityId, that.failedActivityId)
+        && Objects.equals(incidentMessage, that.incidentMessage)
+        && Objects.equals(incidentStatus, that.incidentStatus)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(definitionKey, that.definitionKey)
+        && Objects.equals(definitionVersion, that.definitionVersion)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(engineAlias, that.engineAlias);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof IncidentDto;
   }
 
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        id,
+        createTime,
+        endTime,
+        durationInMs,
+        incidentType,
+        activityId,
+        failedActivityId,
+        incidentMessage,
+        incidentStatus,
+        processInstanceId,
+        definitionKey,
+        definitionVersion,
+        tenantId,
+        engineAlias);
   }
 
   public String toString() {

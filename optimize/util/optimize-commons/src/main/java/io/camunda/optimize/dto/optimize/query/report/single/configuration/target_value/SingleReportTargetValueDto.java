@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
+import java.util.Objects;
+
 public class SingleReportTargetValueDto {
 
   private SingleReportCountChartDto countChart = new SingleReportCountChartDto();
@@ -71,13 +73,22 @@ public class SingleReportTargetValueDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SingleReportTargetValueDto that = (SingleReportTargetValueDto) o;
+    return Objects.equals(countChart, that.countChart)
+        && Objects.equals(durationProgress, that.durationProgress)
+        && Objects.equals(active, that.active)
+        && Objects.equals(countProgress, that.countProgress)
+        && Objects.equals(durationChart, that.durationChart)
+        && Objects.equals(isKpi, that.isKpi);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(countChart, durationProgress, active, countProgress, durationChart, isKpi);
   }
 
   @Override

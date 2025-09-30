@@ -11,6 +11,7 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class ProcessVariableDto implements OptimizeDto {
 
@@ -152,16 +153,44 @@ public class ProcessVariableDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  protected boolean canEqual(final Object other) {
-    return other instanceof ProcessVariableDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        id,
+        name,
+        type,
+        value,
+        timestamp,
+        valueInfo,
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceId,
+        version,
+        engineAlias,
+        tenantId);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableDto that = (ProcessVariableDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(type, that.type)
+        && Objects.equals(value, that.value)
+        && Objects.equals(timestamp, that.timestamp)
+        && Objects.equals(valueInfo, that.valueInfo)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(version, that.version)
+        && Objects.equals(engineAlias, that.engineAlias)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   public String toString() {

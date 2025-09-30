@@ -12,6 +12,7 @@ import static io.camunda.optimize.util.SuppressionConstants.UNCHECKED_CAST;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import io.camunda.optimize.dto.optimize.rest.pagination.PaginationDto;
 import java.time.ZoneId;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -101,16 +102,35 @@ public class ReportEvaluationContext<R extends ReportDefinitionDto<?>> {
     this.timezone = timezone;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportEvaluationContext<?> that = (ReportEvaluationContext<?>) o;
+    return isCsvExport == that.isCsvExport
+        && isJsonExport == that.isJsonExport
+        && Objects.equals(reportDefinition, that.reportDefinition)
+        && Objects.equals(pagination, that.pagination)
+        && Objects.equals(hiddenFlowNodeIds, that.hiddenFlowNodeIds)
+        && Objects.equals(combinedRangeMinMaxStats, that.combinedRangeMinMaxStats)
+        && Objects.equals(timezone, that.timezone);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        reportDefinition,
+        pagination,
+        isCsvExport,
+        isJsonExport,
+        hiddenFlowNodeIds,
+        combinedRangeMinMaxStats,
+        timezone);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof ReportEvaluationContext;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

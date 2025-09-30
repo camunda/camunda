@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.SimpleDefinitionDto;
 import io.camunda.optimize.dto.optimize.TenantDto;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 
 public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
 
@@ -79,13 +80,22 @@ public class DefinitionVersionWithTenantsDto extends SimpleDefinitionDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DefinitionVersionWithTenantsDto that = (DefinitionVersionWithTenantsDto) o;
+    return Objects.equals(version, that.version)
+        && Objects.equals(versionTag, that.versionTag)
+        && Objects.equals(tenants, that.tenants);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), version, versionTag, tenants);
   }
 
   @Override

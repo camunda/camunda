@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value;
 
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
+import java.util.Objects;
 
 public class CombinedReportDurationChartDto {
 
@@ -25,13 +26,19 @@ public class CombinedReportDurationChartDto {
   public CombinedReportDurationChartDto() {}
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CombinedReportDurationChartDto that = (CombinedReportDurationChartDto) o;
+    return unit == that.unit
+        && Objects.equals(isBelow, that.isBelow)
+        && Objects.equals(value, that.value);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(unit, isBelow, value);
   }
 
   @Override

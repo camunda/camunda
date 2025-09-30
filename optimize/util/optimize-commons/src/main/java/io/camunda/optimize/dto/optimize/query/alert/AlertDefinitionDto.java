@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.alert;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class AlertDefinitionDto extends AlertCreationRequestDto {
 
@@ -74,13 +75,26 @@ public class AlertDefinitionDto extends AlertCreationRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AlertDefinitionDto that = (AlertDefinitionDto) o;
+    return triggered == that.triggered
+        && Objects.equals(id, that.id)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(), id, lastModified, created, owner, lastModifier, triggered);
   }
 
   @Override

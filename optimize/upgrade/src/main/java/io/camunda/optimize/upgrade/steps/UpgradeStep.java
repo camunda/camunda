@@ -11,6 +11,7 @@ import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
+import java.util.Objects;
 
 public abstract class UpgradeStep {
 
@@ -63,13 +64,17 @@ public abstract class UpgradeStep {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UpgradeStep that = (UpgradeStep) o;
+    return skipIndexConversion == that.skipIndexConversion && Objects.equals(index, that.index);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(index, skipIndexConversion);
   }
 
   @Override

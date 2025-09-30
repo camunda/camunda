@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.variable;
 import static io.camunda.optimize.service.db.DatabaseConstants.MAX_RESPONSE_SIZE_LIMIT;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessVariableReportValuesRequestDto {
 
@@ -76,12 +77,24 @@ public class ProcessVariableReportValuesRequestDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(reportIds, name, type, valueFilter, resultOffset, numResults);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessVariableReportValuesRequestDto that = (ProcessVariableReportValuesRequestDto) o;
+    return Objects.equals(reportIds, that.reportIds)
+        && Objects.equals(name, that.name)
+        && Objects.equals(type, that.type)
+        && Objects.equals(valueFilter, that.valueFilter)
+        && Objects.equals(resultOffset, that.resultOffset)
+        && Objects.equals(numResults, that.numResults);
   }
 
   @Override

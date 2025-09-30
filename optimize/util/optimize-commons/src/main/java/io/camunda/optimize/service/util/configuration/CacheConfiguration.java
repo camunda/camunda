@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class CacheConfiguration {
 
   private int maxSize;
@@ -36,12 +38,20 @@ public class CacheConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(defaultTtlMillis, maxSize);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CacheConfiguration that = (CacheConfiguration) o;
+    return Objects.equals(defaultTtlMillis, that.defaultTtlMillis)
+        && Objects.equals(maxSize, that.maxSize);
   }
 
   @Override
