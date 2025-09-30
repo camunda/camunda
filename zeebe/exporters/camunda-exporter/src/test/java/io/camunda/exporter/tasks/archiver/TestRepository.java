@@ -32,12 +32,17 @@ final class TestRepository extends NoopArchiverRepository {
   }
 
   @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    return CompletableFuture.completedFuture(batch);
+  }
+
+  @Override
   public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
     return CompletableFuture.completedFuture(batch);
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
     return CompletableFuture.completedFuture(batch);
   }
 

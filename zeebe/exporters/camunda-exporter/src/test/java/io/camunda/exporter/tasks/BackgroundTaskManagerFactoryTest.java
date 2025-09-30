@@ -18,6 +18,7 @@ import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
+import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
@@ -162,10 +163,11 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(6)
+        .hasSize(7)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
+        .anyMatch(task -> isTaskOfType(task, StandaloneDecisionArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
         .anyMatch(task -> task instanceof ApplyRolloverPeriodJob);
@@ -189,14 +191,6 @@ class BackgroundTaskManagerFactoryTest {
 
   private boolean isProcessInstanceToBeArchivedCountTask(final RunnableTask task) {
     return isTaskOfType(task, ProcessInstanceToBeArchivedCountJob.class);
-  }
-
-  private boolean isIncidentUpdateTask(final RunnableTask task) {
-    return isTaskOfType(task, IncidentUpdateTask.class);
-  }
-
-  private boolean isUsageMetricsArchiverTask(final RunnableTask task) {
-    return isTaskOfType(task, UsageMetricArchiverJob.class);
   }
 
   private boolean isTaskOfType(final RunnableTask task, final Class<?> type) {

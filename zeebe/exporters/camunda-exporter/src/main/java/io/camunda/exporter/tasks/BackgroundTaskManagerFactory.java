@@ -23,6 +23,7 @@ import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
+import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricTUArchiverJob;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
@@ -37,6 +38,7 @@ import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -237,6 +239,7 @@ public final class BackgroundTaskManagerFactory {
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildUsageMetricsTUArchiverJob());
+    tasks.add(buildStandaloneDecisionArchiverJob());
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
       tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
@@ -335,6 +338,16 @@ public final class BackgroundTaskManagerFactory {
         new UsageMetricTUArchiverJob(
             archiverRepository,
             resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            metrics,
+            logger,
+            executor));
+  }
+
+  private ReschedulingTask buildStandaloneDecisionArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new StandaloneDecisionArchiverJob(
+            archiverRepository,
+            resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class),
             metrics,
             logger,
             executor));
