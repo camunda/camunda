@@ -21,6 +21,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+import java.util.concurrent.locks.LockSupport;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.jetbrains.annotations.Async;
 import org.slf4j.Logger;
@@ -44,6 +45,7 @@ public class ActorTask {
   final Actor actor;
   ActorJob currentJob;
   boolean shouldYield;
+  boolean shouldPark;
   final AtomicReference<TaskSchedulingState> schedulingState = new AtomicReference<>();
   final AtomicLong stateCount = new AtomicLong(0);
   private final CompletableActorFuture<Void> jobClosingTaskFuture = new CompletableActorFuture<>();
@@ -163,6 +165,10 @@ public class ActorTask {
 
     if (currentJob == null) {
       resubmit = onAllJobsDone();
+    }
+
+    if (shouldPark) {
+      LockSupport.parkNanos(1L);
     }
 
     return resubmit;
@@ -459,6 +465,7 @@ public class ActorTask {
 
   public void yieldThread() {
     shouldYield = true;
+    shouldPark = true;
   }
 
   public long getStateCount() {
