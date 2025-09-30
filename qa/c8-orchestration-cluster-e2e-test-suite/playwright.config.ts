@@ -1,5 +1,5 @@
 /* eslint-disable */
-import {devices, defineConfig} from '@playwright/test';
+import { devices, defineConfig } from '@playwright/test';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -11,11 +11,14 @@ const testRailOptions = {
 
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
 
+// Default: V2 mode (unless CAMUNDA_TASKLIST_V1_MODE_ENABLED=true)
+const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V1_MODE_ENABLED !== 'true';
+
 // Define reporters without SlackReporter
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
-  ['html', {outputFolder: 'html-report'}],
+  ['html', { outputFolder: 'html-report' }],
 ];
 
 // Define reporters with SlackReporter
@@ -47,15 +50,11 @@ const changedFolders =
     ? args[changedFoldersArgIndex + 1].split(',')
     : [];
 
-// Check if V2 mode is enabled to exclude V1-only tests
-const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED === 'true';
-
-// Define normal projects (for QA orchestration cluster )
+// Define normal projects (for QA orchestration cluster)
 const normalProjects = [
   {
     name: 'chromium',
     use: devices['Desktop Chrome'],
-    // Specify only tests in the changed folders for the 'chromium' project
     testMatch: changedFolders.includes('chromium')
       ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
       : ['tests/**/*.spec.ts'],
@@ -98,6 +97,7 @@ const normalProjects = [
     testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
     use: devices['Desktop Edge'],
     testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    grep: /@v1-only/, // Explicitly run only v1 tests
     teardown: 'chromium-subset',
   },
   {
@@ -109,7 +109,7 @@ const normalProjects = [
       'tests/tasklist/v1/*.spec.ts',
       'v2-stateless-tests/**',
     ],
-    grep: /^(?!.*@v1-only).*$/,
+    grep: /^(?!.*@v1-only).*$/, // Exclude v1-only
     teardown: 'chromium-subset',
   },
   {
@@ -133,6 +133,7 @@ export default defineConfig({
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
+  // Exclude @v1-only tests when in V2 mode (default)
   grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : undefined,
   expect: {
     timeout: 10_000,

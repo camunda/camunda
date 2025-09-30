@@ -68,7 +68,7 @@ CAMUNDA_AUTH_STRATEGY=BASIC
 CAMUNDA_BASIC_AUTH_USERNAME=demo
 CAMUNDA_BASIC_AUTH_PASSWORD=demo
 ZEEBE_REST_ADDRESS=http://localhost:8080
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=true
+CAMUNDA_TASKLIST_V1_MODE_ENABLED=true
 ```
 
 ---
@@ -80,13 +80,13 @@ For running tests locally, ensure you have an active instance. To set it up:
 1. Open a terminal in the `config` folder inside the `c8-orchestration-cluster-e2e-test-suite` directory.
 2. Run:
 
-**For Tasklist V2 mode:**
+**For Tasklist V1 mode:**
 
 ```bash
-CAMUNDA_TASKLIST_V2_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
+CAMUNDA_TASKLIST_V1_MODE_ENABLED=true DATABASE=elasticsearch docker compose up -d camunda
 ```
 
-**For Tasklist V1 mode:**
+**For Tasklist V2 mode:**
 
 ```bash
 DATABASE=elasticsearch docker compose up -d camunda
