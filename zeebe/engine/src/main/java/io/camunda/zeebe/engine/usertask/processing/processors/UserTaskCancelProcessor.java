@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
-@HandlesIntent(userTask = UserTaskIntent.CANCEL)
+@HandlesIntent(intent = UserTaskIntent.class, type = "CANCEL")
 public class UserTaskCancelProcessor implements UserTaskCommandProcessor {
 
   private final ElementInstanceState elementInstanceState;

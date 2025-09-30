@@ -30,7 +30,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-@HandlesIntent(userTask = UserTaskIntent.COMPLETE)
+@HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETE")
 public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "complete";

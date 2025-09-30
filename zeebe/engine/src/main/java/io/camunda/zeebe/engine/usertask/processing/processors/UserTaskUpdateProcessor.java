@@ -32,7 +32,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@HandlesIntent(userTask = UserTaskIntent.UPDATE)
+@HandlesIntent(intent = UserTaskIntent.class, type = "UPDATE")
 public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskUpdateProcessor.class);

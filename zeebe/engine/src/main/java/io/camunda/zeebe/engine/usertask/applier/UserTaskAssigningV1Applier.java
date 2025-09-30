@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(userTask = UserTaskIntent.ASSIGNING)
+@HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNING")
 public final class UserTaskAssigningV1Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

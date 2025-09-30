@@ -23,6 +23,7 @@ import io.camunda.zeebe.exporter.common.utils.ProcessCacheUtil;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntents;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.IntentHandler;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
@@ -37,24 +38,23 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@HandlesIntent(
-    userTasks = {
-      UserTaskIntent.CREATING,
-      UserTaskIntent.CREATED,
-      UserTaskIntent.COMPLETING,
-      UserTaskIntent.COMPLETED,
-      UserTaskIntent.CANCELING,
-      UserTaskIntent.CANCELED,
-      UserTaskIntent.MIGRATED,
-      UserTaskIntent.ASSIGNING,
-      UserTaskIntent.CLAIMING,
-      UserTaskIntent.ASSIGNED,
-      UserTaskIntent.UPDATING,
-      UserTaskIntent.UPDATED,
-      UserTaskIntent.ASSIGNMENT_DENIED,
-      UserTaskIntent.UPDATE_DENIED,
-      UserTaskIntent.COMPLETION_DENIED
-    })
+@HandlesIntents({
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CREATING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CREATED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CANCELING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CANCELED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "MIGRATED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CLAIMING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "UPDATING"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "UPDATED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNMENT_DENIED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "UPDATE_DENIED"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETION_DENIED")
+})
 public class UserTaskHandler
     implements ExportHandler<TaskEntity, UserTaskRecordValue>, IntentHandler {
 

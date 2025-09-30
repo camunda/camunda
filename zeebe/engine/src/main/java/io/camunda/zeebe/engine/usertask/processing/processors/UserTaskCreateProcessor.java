@@ -26,7 +26,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.List;
 
 @ExcludeAuthorizationCheck
-@HandlesIntent(userTask = UserTaskIntent.CREATE)
+@HandlesIntent(intent = UserTaskIntent.class, type = "CREATE")
 public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
 
   private final StateWriter stateWriter;

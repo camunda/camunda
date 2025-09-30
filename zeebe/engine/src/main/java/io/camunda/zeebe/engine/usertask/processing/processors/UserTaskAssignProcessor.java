@@ -25,7 +25,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-@HandlesIntent(userTask = UserTaskIntent.ASSIGN)
+@HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGN")
 public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "assign";

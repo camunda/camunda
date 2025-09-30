@@ -18,7 +18,7 @@ import io.camunda.zeebe.protocol.record.intent.IntentHandler;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Set;
 
-@HandlesIntent(userTask = UserTaskIntent.ASSIGNED)
+@HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNED")
 public final class UserTaskAssignedV1Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord>, IntentHandler {
 

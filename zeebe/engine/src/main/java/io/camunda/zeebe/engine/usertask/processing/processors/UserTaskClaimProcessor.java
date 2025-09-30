@@ -26,7 +26,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import java.util.List;
 
-@HandlesIntent(userTask = UserTaskIntent.CLAIM)
+@HandlesIntent(intent = UserTaskIntent.class, type = "CLAIM")
 public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
 
   private static final String DEFAULT_ACTION = "claim";

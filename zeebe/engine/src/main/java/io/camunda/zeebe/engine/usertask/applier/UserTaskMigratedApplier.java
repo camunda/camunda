@@ -14,7 +14,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(userTask = UserTaskIntent.MIGRATED)
+@HandlesIntent(intent = UserTaskIntent.class, type = "MIGRATED")
 public final class UserTaskMigratedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

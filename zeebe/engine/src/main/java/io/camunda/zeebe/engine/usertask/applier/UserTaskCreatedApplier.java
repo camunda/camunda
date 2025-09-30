@@ -15,7 +15,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(userTask = UserTaskIntent.CREATED)
+@HandlesIntent(intent = UserTaskIntent.class, type = "CREATED")
 public final class UserTaskCreatedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

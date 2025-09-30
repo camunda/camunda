@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(userTask = UserTaskIntent.COMPLETION_DENIED)
+@HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETION_DENIED")
 public class UserTaskCompletionDeniedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

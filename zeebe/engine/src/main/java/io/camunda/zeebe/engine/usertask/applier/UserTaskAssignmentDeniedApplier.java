@@ -17,7 +17,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
-@HandlesIntent(userTask = UserTaskIntent.ASSIGNMENT_DENIED)
+@HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNMENT_DENIED")
 public class UserTaskAssignmentDeniedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

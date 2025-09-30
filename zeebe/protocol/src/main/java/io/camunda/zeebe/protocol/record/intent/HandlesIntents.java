@@ -16,22 +16,13 @@
 package io.camunda.zeebe.protocol.record.intent;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-/** Reflects classes that handle a specific intent */
+/** Container annotation for repeatable {@link HandlesIntent} annotations */
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
-@Repeatable(HandlesIntents.class)
-public @interface HandlesIntent {
-  /** The intent class to handle */
-  Class<? extends Intent> intent();
-
-  /** The type of the intent as a string referencing the enum constant */
-  String type();
-
-  /** The record version, defaults to 1 */
-  int version() default 1;
+public @interface HandlesIntents {
+  HandlesIntent[] value();
 }
