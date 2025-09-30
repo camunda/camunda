@@ -1,0 +1,185 @@
+
+
+
+############################--------IMPORT ENTITIES-------##################################
+
+
+### Import Dashboard Entity - Success (Expect 200)
+# @name Import Dashboard Only
+####################################################   Here your collection target ID
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/import?collectionId=a9fc99f2-6474-444f-a8db-9962ec82fb42
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+  {
+    "_comment": "here the id of the Dashboard to be imported",
+    "id": "1357f075-1998-4c49-8aac-712fd7c02ef4",
+    "exportEntityType": "dashboard",
+    "name": "Process dashboard",
+    "description": "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize.",
+    "sourceIndexVersion": 8,
+    "availableFilters": [],
+    "collectionId": "cc3ae5fa-5c46-4622-9dec-93e2d87dbaf0"
+  }
+]
+
+> {% client.test("Dashboard import should be successful", function () {
+    client.assert(response.status === 200, "Expected status code 200");
+
+    const body = response.body;
+
+    client.assert(Array.isArray(body), "Response body should be an array");
+    client.assert(body.length > 0, "Expected at least one entity in the response");
+
+    const dashboard = body[0];
+    client.assert(dashboard.entityType === "dashboard", "Expected entityType to be 'dashboard'");
+    client.assert(dashboard.id, "Expected dashboard to have an 'id'");
+  }); %}
+
+
+
+
+
+
+
+
+### Import Entities - Single Dashboard Without Reports (Expect 200)
+# @name Import Single Dashboard - No Reports
+####################################################   Here your collection target ID
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/import?collectionId=682d8142-e092-42b3-83d7-1eb9f2640448
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+  {
+    "id": "d3b236cb-affd-4010-81be-74834d5908f6",
+    "exportEntityType": "dashboard",
+    "name": "process dashboard",
+    "description": "This dashboard provides a competitive overview of metrics and use cases that can be covered with Optimize.",
+    "sourceIndexVersion": 8,
+    "availableFilters": [],
+    "collectionId": "682d8142-e092-42b3-83d7-1eb9f2640448"
+  }
+]
+
+> {%
+  client.test("Single dashboard (no reports) should be imported successfully", function () {
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+    client.assert(Array.isArray(response.body), "Response body is not an array");
+    client.assert(response.body.length === 1, "Expected 1 imported entity");
+    client.assert(response.body[0].id !== "", "Imported entity ID should not be empty");
+    client.assert(response.body[0].entityType === "dashboard", "Expected imported entityType to be 'dashboard'");
+  });
+%}
+
+
+
+
+
+### Import Dashboard - Invalid Report Reference (Expect 400 or 200 with no import)
+# @name Import Dashboard with Invalid Report Reference
+####################################################   Here your collection target ID
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/import?collectionId=a9fc99f2-6474-444f-a8db-9962ec82fb42
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+
+[
+
+  {
+    "_comment": "here the id of the Dashboard to be imported",
+    "id": "12345678-abcd-efgh-ijkl-987654321000",
+    "exportEntityType": "dashboard",
+    "name": "Bad Report Ref Dashboard",
+    "description": "This references a non-existent report",
+    "sourceIndexVersion": 8,
+    "reports": [
+      { "id": "non-existent-report-id" }
+    ],
+    "availableFilters": [],
+    "_comment": "here the id of the collection from where you are importing",
+    "collectionId": "cc3ae5fa-5c46-4622-9dec-93e2d87dbaf0"
+  }
+]
+
+> {%
+  client.test("Should not import dashboard with invalid report reference", function () {
+    client.assert(response.status === 200, "Expected status 200 (even if silently failed)");
+
+    const body = response.body;
+    console.log("Response body:", JSON.stringify(body, null, 2));
+
+    // Check if the dashboard is imported without any reports
+    client.assert(Array.isArray(body), "Response is not an array");
+    client.assert(body.length === 1, "Expected 1 entity to be imported");
+
+    const dashboard = body[0];
+    client.assert(dashboard.reports === undefined || dashboard.reports.length === 0, "Expected no reports to be imported with the dashboard");
+  });
+%}
+
+
+
+### Import Dashboard - Missing Authorization Token (Expect 401)
+# @name Import Dashboard Missing Token
+
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/import?collectionId=682d8142-e092-42b3-83d7-1eb9f2640448
+Content-Type: application/json
+Accept: application/json
+# No Authorization header
+
+[
+  {
+    "id": "12345678-abcd-efgh-ijkl-987654321000",
+    "exportEntityType": "dashboard",
+    "name": "Unauthorized Dashboard",
+    "description": "This request is missing the Authorization token",
+    "sourceIndexVersion": 8,
+    "reports": [],
+    "availableFilters": [],
+    "collectionId": "682d8142-e092-42b3-83d7-1eb9f2640448"
+  }
+]
+
+> {%
+  client.test("Missing Authorization should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 Unauthorized but got " + response.status);
+    console.log("Response:", response.body);
+  });
+%}
+
+
+
+
+### Import Dashboard - Invalid Token (Expect 401)
+# @name Import Dashboard with Invalid Token
+
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/import?collectionId=682d8142-e092-42b3-83d7-1eb9f2640448
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalid-token-here
+
+[
+  {
+    "id": "12345678-abcd-efgh-ijkl-987654321000",
+    "exportEntityType": "dashboard",
+    "name": "Invalid Token Dashboard",
+    "description": "This request has an invalid token",
+    "sourceIndexVersion": 8,
+    "reports": [],
+    "availableFilters": [],
+    "collectionId": "682d8142-e092-42b3-83d7-1eb9f2640448"
+  }
+]
+
+> {%
+  client.test("Invalid Token should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 Unauthorized but got " + response.status);
+    console.log("Response:", response.body);
+  });
+%}
+
