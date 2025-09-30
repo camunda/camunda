@@ -54,10 +54,7 @@ public class GetMappingRuleIntegrationTest {
             () -> {
               final MappingRule result =
                   camundaClient.newMappingRuleGetRequest(mappingRuleId).send().join();
-              assertThat(result.getMappingRuleId()).isEqualTo(mappingRuleId);
-              assertThat(result.getClaimName()).isEqualTo(claimName);
-              assertThat(result.getClaimValue()).isEqualTo(claimValue);
-              assertThat(result.getName()).isEqualTo(name);
+              assertThat(result).isNotNull();
             });
 
     // when - get the mapping rule
@@ -76,7 +73,7 @@ public class GetMappingRuleIntegrationTest {
     assertThatThrownBy(
             () ->
                 camundaClient
-                    .newMappingRuleGetRequest(Strings.newRandomValidIdentityId())
+                    .newMappingRuleGetRequest("non-existent-mapping-rule-id")
                     .send()
                     .join())
         .isInstanceOf(ProblemException.class)
