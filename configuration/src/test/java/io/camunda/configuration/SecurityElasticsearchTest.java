@@ -49,7 +49,7 @@ public class SecurityElasticsearchTest {
     final Map<String, Object> args = camundaExporter.getArgs();
     assertThat(args).isNotNull();
 
-    return UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+    return UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
   }
 
   @Nested

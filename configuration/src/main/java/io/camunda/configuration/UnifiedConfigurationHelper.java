@@ -263,7 +263,8 @@ public class UnifiedConfigurationHelper {
 
   /* Helper methods */
 
-  public static ExporterConfiguration argsToExporterConfiguration(final Map<String, Object> args) {
+  public static ExporterConfiguration argsToCamundaExporterConfiguration(
+      final Map<String, Object> args) {
     return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
             "camundaExporter", args)
         .instantiate(ExporterConfiguration.class);
