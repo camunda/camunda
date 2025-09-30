@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class DecisionInstanceDto implements OptimizeDto {
@@ -209,16 +210,54 @@ public class DecisionInstanceDto implements OptimizeDto {
     this.tenantId = tenantId;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionInstanceDto that = (DecisionInstanceDto) o;
+    return Objects.equals(decisionInstanceId, that.decisionInstanceId)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
+        && Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(decisionDefinitionVersion, that.decisionDefinitionVersion)
+        && Objects.equals(evaluationDateTime, that.evaluationDateTime)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(rootProcessInstanceId, that.rootProcessInstanceId)
+        && Objects.equals(activityId, that.activityId)
+        && Objects.equals(collectResultValue, that.collectResultValue)
+        && Objects.equals(rootDecisionInstanceId, that.rootDecisionInstanceId)
+        && Objects.equals(inputs, that.inputs)
+        && Objects.equals(outputs, that.outputs)
+        && Objects.equals(matchedRules, that.matchedRules)
+        && Objects.equals(engine, that.engine)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
-  protected boolean canEqual(final Object other) {
-    return other instanceof DecisionInstanceDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        decisionInstanceId,
+        processDefinitionId,
+        processDefinitionKey,
+        decisionDefinitionId,
+        decisionDefinitionKey,
+        decisionDefinitionVersion,
+        evaluationDateTime,
+        processInstanceId,
+        rootProcessInstanceId,
+        activityId,
+        collectResultValue,
+        rootDecisionInstanceId,
+        inputs,
+        outputs,
+        matchedRules,
+        engine,
+        tenantId);
   }
 
   public String toString() {

@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.zeebe.variable;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeVariableDataDto implements VariableRecordValue {
@@ -97,13 +98,24 @@ public class ZeebeVariableDataDto implements VariableRecordValue {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeVariableDataDto that = (ZeebeVariableDataDto) o;
+    return scopeKey == that.scopeKey
+        && processInstanceKey == that.processInstanceKey
+        && processDefinitionKey == that.processDefinitionKey
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        name, value, scopeKey, processInstanceKey, processDefinitionKey, bpmnProcessId, tenantId);
   }
 
   @Override

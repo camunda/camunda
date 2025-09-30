@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.dashboard;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -68,13 +69,22 @@ public class InstantDashboardDataDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final InstantDashboardDataDto that = (InstantDashboardDataDto) o;
+    return templateHash == that.templateHash
+        && Objects.equals(instantDashboardId, that.instantDashboardId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(templateName, that.templateName)
+        && Objects.equals(dashboardId, that.dashboardId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        instantDashboardId, processDefinitionKey, templateName, templateHash, dashboardId);
   }
 
   @Override

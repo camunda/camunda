@@ -20,6 +20,7 @@ import io.camunda.optimize.service.util.IdGenerator;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
@@ -98,12 +99,26 @@ public class DashboardDefinitionExportDto extends OptimizeEntityExportDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        super.hashCode(), tiles, availableFilters, collectionId, isInstantPreviewDashboard);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardDefinitionExportDto that = (DashboardDefinitionExportDto) o;
+    return isInstantPreviewDashboard == that.isInstantPreviewDashboard
+        && Objects.equals(tiles, that.tiles)
+        && Objects.equals(availableFilters, that.availableFilters)
+        && Objects.equals(collectionId, that.collectionId);
   }
 
   @Override

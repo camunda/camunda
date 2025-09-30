@@ -14,6 +14,7 @@ import static io.camunda.optimize.dto.optimize.query.collection.ScopeComplianceT
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class CollectionScopeEntryDto {
@@ -115,12 +116,22 @@ public class CollectionScopeEntryDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, definitionType, definitionKey, tenants);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionScopeEntryDto that = (CollectionScopeEntryDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(definitionType, that.definitionType)
+        && Objects.equals(definitionKey, that.definitionKey)
+        && Objects.equals(tenants, that.tenants);
   }
 
   @Override

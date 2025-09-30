@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.engine;
 
+import java.util.Objects;
+
 public class AuthenticationResultDto {
 
   private String authenticatedUser;
@@ -65,12 +67,22 @@ public class AuthenticationResultDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(authenticatedUser, isAuthenticated, engineAlias, errorMessage);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AuthenticationResultDto that = (AuthenticationResultDto) o;
+    return isAuthenticated == that.isAuthenticated
+        && Objects.equals(authenticatedUser, that.authenticatedUser)
+        && Objects.equals(engineAlias, that.engineAlias)
+        && Objects.equals(errorMessage, that.errorMessage);
   }
 
   @Override

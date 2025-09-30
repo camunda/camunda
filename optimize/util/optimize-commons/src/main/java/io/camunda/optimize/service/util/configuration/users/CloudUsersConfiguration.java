@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.users;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CloudUsersConfiguration {
@@ -35,13 +36,17 @@ public class CloudUsersConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CloudUsersConfiguration that = (CloudUsersConfiguration) o;
+    return Objects.equals(accountsUrl, that.accountsUrl);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(accountsUrl);
   }
 
   @Override

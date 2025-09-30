@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.importing.page;
 
+import java.util.Objects;
+
 public class PositionBasedImportPage implements ImportPage {
 
   private Long position = 0L;
@@ -44,13 +46,19 @@ public class PositionBasedImportPage implements ImportPage {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PositionBasedImportPage that = (PositionBasedImportPage) o;
+    return hasSeenSequenceField == that.hasSeenSequenceField
+        && Objects.equals(position, that.position)
+        && Objects.equals(sequence, that.sequence);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(position, sequence, hasSeenSequenceField);
   }
 
   @Override

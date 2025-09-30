@@ -12,6 +12,7 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 public class CreateIndexStep extends UpgradeStep {
@@ -43,12 +44,19 @@ public class CreateIndexStep extends UpgradeStep {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final CreateIndexStep that = (CreateIndexStep) o;
+    return Objects.equals(readOnlyAliases, that.readOnlyAliases);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), readOnlyAliases);
   }
 }

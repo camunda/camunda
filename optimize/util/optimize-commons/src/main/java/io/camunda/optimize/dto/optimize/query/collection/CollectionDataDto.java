@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CollectionDataDto {
@@ -51,12 +52,21 @@ public class CollectionDataDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(configuration, roles, scope);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionDataDto that = (CollectionDataDto) o;
+    return Objects.equals(configuration, that.configuration)
+        && Objects.equals(roles, that.roles)
+        && Objects.equals(scope, that.scope);
   }
 
   @Override

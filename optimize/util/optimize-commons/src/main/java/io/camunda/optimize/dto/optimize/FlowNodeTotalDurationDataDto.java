@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize;
 
+import java.util.Objects;
+
 public class FlowNodeTotalDurationDataDto {
 
   String name;
@@ -40,13 +42,17 @@ public class FlowNodeTotalDurationDataDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeTotalDurationDataDto that = (FlowNodeTotalDurationDataDto) o;
+    return value == that.value && Objects.equals(name, that.name);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(name, value);
   }
 
   @Override
