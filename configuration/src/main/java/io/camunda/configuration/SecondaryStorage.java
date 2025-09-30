@@ -37,7 +37,7 @@ public class SecondaryStorage {
   /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
   @NestedConfigurationProperty private Elasticsearch elasticsearch = new Elasticsearch();
 
-  /** Stores the Elasticsearch configuration, when type is set to 'elasticsearch'. */
+  /** Stores the Opensearch configuration, when type is set to 'opensearch'. */
   @NestedConfigurationProperty private Opensearch opensearch = new Opensearch();
 
   public boolean getAutoconfigureCamundaExporter() {

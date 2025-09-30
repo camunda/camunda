@@ -49,6 +49,8 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final int EXPECTED_NUMBER_OF_SHARDS = 3;
 
+  private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -58,7 +60,10 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
         "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
-        "camunda.data.secondary-storage.elasticsearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS
+        "camunda.data.secondary-storage.elasticsearch.number-of-shards="
+            + EXPECTED_NUMBER_OF_SHARDS,
+        "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
+            + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -128,6 +133,8 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
+      assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
+          .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
     }
 
     @Test
