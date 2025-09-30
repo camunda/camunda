@@ -20,6 +20,7 @@ import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -205,16 +206,47 @@ public class ExecutionContext<D extends SingleReportDataDto, P extends Execution
     this.multiIndexAlias = multiIndexAlias;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExecutionContext<?, ?> that = (ExecutionContext<?, ?>) o;
+    return unfilteredTotalInstanceCount == that.unfilteredTotalInstanceCount
+        && isCsvExport == that.isCsvExport
+        && isJsonExport == that.isJsonExport
+        && multiIndexAlias == that.multiIndexAlias
+        && Objects.equals(plan, that.plan)
+        && Objects.equals(reportData, that.reportData)
+        && Objects.equals(timezone, that.timezone)
+        && Objects.equals(pagination, that.pagination)
+        && Objects.equals(combinedRangeMinMaxStats, that.combinedRangeMinMaxStats)
+        && Objects.equals(allDistributedByKeysAndLabels, that.allDistributedByKeysAndLabels)
+        && Objects.equals(allVariablesNames, that.allVariablesNames)
+        && Objects.equals(hiddenFlowNodeIds, that.hiddenFlowNodeIds)
+        && Objects.equals(filterContext, that.filterContext);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        plan,
+        reportData,
+        timezone,
+        unfilteredTotalInstanceCount,
+        pagination,
+        isCsvExport,
+        isJsonExport,
+        combinedRangeMinMaxStats,
+        allDistributedByKeysAndLabels,
+        allVariablesNames,
+        hiddenFlowNodeIds,
+        filterContext,
+        multiIndexAlias);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof ExecutionContext;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

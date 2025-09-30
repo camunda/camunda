@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.rest.report;
 
 import java.util.Map;
+import java.util.Objects;
 
 public class CombinedProcessReportResultDataDto<T> {
 
@@ -45,12 +46,19 @@ public class CombinedProcessReportResultDataDto<T> {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(data, instanceCount);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CombinedProcessReportResultDataDto<?> that = (CombinedProcessReportResultDataDto<?>) o;
+    return instanceCount == that.instanceCount && Objects.equals(data, that.data);
   }
 
   @Override

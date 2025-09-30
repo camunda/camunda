@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration.analytics;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class MixpanelConfiguration {
 
@@ -112,12 +113,24 @@ public class MixpanelConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(apiHost, importPath, token, projectId, properties, serviceAccount);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MixpanelConfiguration that = (MixpanelConfiguration) o;
+    return Objects.equals(apiHost, that.apiHost)
+        && Objects.equals(importPath, that.importPath)
+        && Objects.equals(token, that.token)
+        && Objects.equals(projectId, that.projectId)
+        && Objects.equals(properties, that.properties)
+        && Objects.equals(serviceAccount, that.serviceAccount);
   }
 
   @Override
@@ -190,12 +203,21 @@ public class MixpanelConfiguration {
 
     @Override
     public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+      return Objects.hash(stage, organizationId, clusterId);
     }
 
     @Override
     public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final TrackingProperties that = (TrackingProperties) o;
+      return Objects.equals(stage, that.stage)
+          && Objects.equals(organizationId, that.organizationId)
+          && Objects.equals(clusterId, that.clusterId);
     }
 
     @Override
@@ -249,12 +271,19 @@ public class MixpanelConfiguration {
 
     @Override
     public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+      return Objects.hash(username, secret);
     }
 
     @Override
     public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final ServiceAccount that = (ServiceAccount) o;
+      return Objects.equals(username, that.username) && Objects.equals(secret, that.secret);
     }
 
     @Override

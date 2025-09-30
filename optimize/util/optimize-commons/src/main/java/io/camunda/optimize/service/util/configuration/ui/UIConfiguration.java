@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.util.configuration.ui;
 
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import java.util.Objects;
 
 public class UIConfiguration {
 
@@ -93,13 +94,28 @@ public class UIConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UIConfiguration that = (UIConfiguration) o;
+    return logoutHidden == that.logoutHidden
+        && maxNumDataSourcesForReport == that.maxNumDataSourcesForReport
+        && userTaskAssigneeAnalyticsEnabled == that.userTaskAssigneeAnalyticsEnabled
+        && Objects.equals(mixpanelToken, that.mixpanelToken)
+        && Objects.equals(consoleUrl, that.consoleUrl)
+        && Objects.equals(modelerUrl, that.modelerUrl);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        logoutHidden,
+        mixpanelToken,
+        maxNumDataSourcesForReport,
+        userTaskAssigneeAnalyticsEnabled,
+        consoleUrl,
+        modelerUrl);
   }
 
   @Override

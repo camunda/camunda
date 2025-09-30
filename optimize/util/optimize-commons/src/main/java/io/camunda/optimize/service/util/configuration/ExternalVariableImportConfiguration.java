@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class ExternalVariableImportConfiguration {
 
   private boolean enabled;
@@ -36,12 +38,19 @@ public class ExternalVariableImportConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(enabled, maxPageSize);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExternalVariableImportConfiguration that = (ExternalVariableImportConfiguration) o;
+    return enabled == that.enabled && maxPageSize == that.maxPageSize;
   }
 
   @Override

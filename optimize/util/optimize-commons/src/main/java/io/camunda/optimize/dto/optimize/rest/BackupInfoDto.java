@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.dto.optimize.BackupState;
 import java.util.List;
+import java.util.Objects;
 
 public class BackupInfoDto {
 
@@ -68,12 +69,22 @@ public class BackupInfoDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(backupId, failureReason, state, details);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BackupInfoDto that = (BackupInfoDto) o;
+    return backupId == that.backupId
+        && Objects.equals(failureReason, that.failureReason)
+        && Objects.equals(state, that.state)
+        && Objects.equals(details, that.details);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.analysis;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class BranchAnalysisResponseDto {
 
@@ -53,12 +54,21 @@ public class BranchAnalysisResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(endEvent, total, followingNodes);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BranchAnalysisResponseDto that = (BranchAnalysisResponseDto) o;
+    return Objects.equals(endEvent, that.endEvent)
+        && Objects.equals(total, that.total)
+        && Objects.equals(followingNodes, that.followingNodes);
   }
 
   @Override

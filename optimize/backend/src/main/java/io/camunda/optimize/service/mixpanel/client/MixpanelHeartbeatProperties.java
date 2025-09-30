@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.mixpanel.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
 
@@ -116,13 +117,34 @@ public class MixpanelHeartbeatProperties extends MixpanelEventProperties {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final MixpanelHeartbeatProperties that = (MixpanelHeartbeatProperties) o;
+    return processReportCount == that.processReportCount
+        && decisionReportCount == that.decisionReportCount
+        && dashboardCount == that.dashboardCount
+        && reportShareCount == that.reportShareCount
+        && dashboardShareCount == that.dashboardShareCount
+        && alertCount == that.alertCount
+        && taskReportCount == that.taskReportCount;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        super.hashCode(),
+        processReportCount,
+        decisionReportCount,
+        dashboardCount,
+        reportShareCount,
+        dashboardShareCount,
+        alertCount,
+        taskReportCount);
   }
 
   @Override

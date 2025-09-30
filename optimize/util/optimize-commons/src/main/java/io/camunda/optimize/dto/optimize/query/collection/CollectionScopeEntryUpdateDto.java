@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.collection;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class CollectionScopeEntryUpdateDto {
 
@@ -38,12 +39,19 @@ public class CollectionScopeEntryUpdateDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(tenants);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionScopeEntryUpdateDto that = (CollectionScopeEntryUpdateDto) o;
+    return Objects.equals(tenants, that.tenants);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.cloud;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class CloudUserDto {
@@ -61,12 +62,22 @@ public class CloudUserDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(userId, name, email, roles);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CloudUserDto that = (CloudUserDto) o;
+    return Objects.equals(userId, that.userId)
+        && Objects.equals(name, that.name)
+        && Objects.equals(email, that.email)
+        && Objects.equals(roles, that.roles);
   }
 
   @Override

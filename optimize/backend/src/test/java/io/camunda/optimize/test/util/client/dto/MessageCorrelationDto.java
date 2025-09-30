@@ -9,6 +9,7 @@ package io.camunda.optimize.test.util.client.dto;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 public class MessageCorrelationDto {
 
@@ -47,13 +48,19 @@ public class MessageCorrelationDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MessageCorrelationDto that = (MessageCorrelationDto) o;
+    return all == that.all
+        && Objects.equals(processVariables, that.processVariables)
+        && Objects.equals(messageName, that.messageName);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(processVariables, messageName, all);
   }
 
   @Override

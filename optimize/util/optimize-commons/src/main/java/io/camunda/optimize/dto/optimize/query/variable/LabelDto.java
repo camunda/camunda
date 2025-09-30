@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.variable;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 public class LabelDto implements OptimizeDto {
 
@@ -58,12 +59,21 @@ public class LabelDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(variableLabel, variableName, variableType);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LabelDto that = (LabelDto) o;
+    return Objects.equals(variableLabel, that.variableLabel)
+        && Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableType, that.variableType);
   }
 
   @Override

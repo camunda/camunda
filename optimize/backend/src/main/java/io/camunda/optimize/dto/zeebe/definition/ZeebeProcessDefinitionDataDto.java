@@ -10,6 +10,8 @@ package io.camunda.optimize.dto.zeebe.definition;
 import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DEFAULT_TENANT_ID;
 
 import io.camunda.zeebe.protocol.record.value.deployment.ProcessMetadataValue;
+import java.util.Arrays;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
@@ -126,15 +128,36 @@ public class ZeebeProcessDefinitionDataDto implements ProcessMetadataValue {
         + ")";
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeProcessDefinitionDataDto that = (ZeebeProcessDefinitionDataDto) o;
+    return processDefinitionKey == that.processDefinitionKey
+        && version == that.version
+        && Objects.deepEquals(resource, that.resource)
+        && Objects.deepEquals(checksum, that.checksum)
+        && Objects.equals(resourceName, that.resourceName)
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(versionTag, that.versionTag);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        Arrays.hashCode(resource),
+        processDefinitionKey,
+        version,
+        Arrays.hashCode(checksum),
+        resourceName,
+        bpmnProcessId,
+        tenantId,
+        versionTag);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof ZeebeProcessDefinitionDataDto;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }
