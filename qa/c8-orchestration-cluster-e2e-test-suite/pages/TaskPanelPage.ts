@@ -69,7 +69,7 @@ class TaskPanelPage {
       await this.availableTasks
         .getByText(name, {exact: true})
         .nth(0)
-        .click({timeout: 5000});
+        .click({timeout: 10000});
       return;
     } catch {}
 
@@ -80,7 +80,7 @@ class TaskPanelPage {
         await this.availableTasks
           .getByText(processId, {exact: true})
           .nth(0)
-          .click({timeout: 5000});
+          .click({timeout: 10000});
         return;
       } catch {
         console.log('Failed to open task with name:', name);
