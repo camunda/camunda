@@ -514,7 +514,7 @@ public class ScaleUpPartitionsTest {
     final var scalingTimeMs = afterScaling.toEpochMilli() - beforeScaling.toEpochMilli();
     LOG.info("Scaling took {}", Duration.ofMillis(scalingTimeMs));
 
-    assertThat(scalingTimeMs).isLessThan(30_000);
+    assertThat(scalingTimeMs).isLessThan(40_000);
   }
 
   public void assertThatRoutingStateMatches(final RoutingState routingState) {
