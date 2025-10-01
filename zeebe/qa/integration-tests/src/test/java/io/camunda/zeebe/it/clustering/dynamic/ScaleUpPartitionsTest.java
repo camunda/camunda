@@ -107,6 +107,11 @@ public class ScaleUpPartitionsTest {
                                 .getMembership()
                                 .setSyncInterval(Duration.ofSeconds(1))
                                 .setGossipInterval(Duration.ofMillis(500));
+
+                            final var engineDistribution =
+                                bb.getExperimental().getEngine().getDistribution();
+                            engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                            engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
                           }))
           .build();
 
