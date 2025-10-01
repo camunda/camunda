@@ -10,6 +10,7 @@ package io.camunda.tasklist.it;
 import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_CANCELED_CHECK;
 import static io.camunda.tasklist.util.TestCheck.PROCESS_INSTANCE_IS_COMPLETED_CHECK;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.archiver.ArchiverUtil;
@@ -30,8 +31,10 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
@@ -41,8 +44,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Stream;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -83,6 +91,13 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     processInstanceArchiverJob =
         beanFactory.getBean(ProcessInstanceArchiverJob.class, partitionHolder.getPartitionIds());
     clearMetrics();
+  }
+
+  @Override
+  @AfterEach
+  public void after() {
+    tasklistProperties.getArchiver().setRolloverInterval("1d");
+    super.after();
   }
 
   @Test
@@ -186,6 +201,65 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     // then
     assertTasksInCorrectIndex(count1, ids1, endDate1);
     assertTasksInCorrectIndex(count2, ids2, null);
+  }
+
+  private static Stream<Arguments> archiverTestInputs() {
+    return Stream.of(
+        Arguments.of(
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1w",
+            LocalDate.of(2024, 10, 7).atStartOfDay().toInstant(ZoneOffset.UTC)
+            // 1-week interval so the 10th date will fall in the 7-14 bucket
+            ),
+        Arguments.of(
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1d",
+            LocalDate.of(2024, 10, 10).atStartOfDay().toInstant(ZoneOffset.UTC)),
+        Arguments.of(
+            LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1M",
+            LocalDate.of(2024, 10, 1).atStartOfDay().toInstant(ZoneOffset.UTC)),
+        // 1-month interval so 10th date will fall into 1-31 bucket
+        Arguments.of(
+            LocalDate.of(2024, 10, 16).atTime(13, 13).toInstant(ZoneOffset.UTC),
+            "1w",
+            LocalDate.of(2024, 10, 14).atStartOfDay().toInstant(ZoneOffset.UTC))
+        // 1-week interval so 16th will fall into 14-21 bucket
+        );
+  }
+
+  @ParameterizedTest
+  @MethodSource("archiverTestInputs")
+  public void shouldApplyRolloverIntervalCorrectly(
+      final Instant taskEndTime,
+      final String rolloverInterval,
+      final Instant expectedArchiveBucket) {
+    // given
+    tasklistProperties.getArchiver().setRolloverInterval(rolloverInterval);
+
+    // deploy process
+    final String processId = "demoProcess";
+    final String flowNodeBpmnId = "task1";
+    deployProcessWithOneFlowNode(processId, flowNodeBpmnId);
+
+    // when
+    final List<String> id =
+        startInstancesAndCompleteTasks(processId, flowNodeBpmnId, 1, taskEndTime);
+
+    // Required as a "tick" or the completion time of the above task will be incorrect.
+    startInstances(processId, flowNodeBpmnId, 1, Instant.now());
+
+    assertThat(archiverJob.archiveNextBatch().join().getValue()).isEqualTo(1);
+    databaseTestExtension.refreshIndexesInElasticsearch();
+
+    // 2nd run should not move anything, as the rest of the tasks are completed less then 1 hour ago
+    assertThat(archiverJob.archiveNextBatch().join()).isEqualTo(Map.entry("NothingToArchive", 0));
+    databaseTestExtension.refreshIndexesInElasticsearch();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(() -> assertTasksInCorrectIndex(1, id, expectedArchiveBucket, taskEndTime));
   }
 
   @Test
@@ -308,18 +382,34 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
   private void assertTasksInCorrectIndex(
       final int tasksCount, final List<String> ids, final Instant endDate) throws IOException {
-    assertTaskIndex(tasksCount, ids, endDate);
-    assertDependentIndex(
-        taskVariableTemplate.getFullQualifiedName(), TaskVariableTemplate.TASK_ID, ids, endDate);
+    assertTasksInCorrectIndex(tasksCount, ids, endDate, endDate);
   }
 
-  private void assertTaskIndex(final int tasksCount, final List<String> ids, final Instant endDate)
+  private void assertTasksInCorrectIndex(
+      final int tasksCount,
+      final List<String> ids,
+      final Instant archiveIndexDateStamp,
+      final Instant taskCompletionDate)
+      throws IOException {
+    assertTaskIndex(tasksCount, ids, archiveIndexDateStamp, taskCompletionDate);
+    assertDependentIndex(
+        taskVariableTemplate.getFullQualifiedName(),
+        TaskVariableTemplate.TASK_ID,
+        ids,
+        archiveIndexDateStamp);
+  }
+
+  private void assertTaskIndex(
+      final int tasksCount,
+      final List<String> ids,
+      final Instant archiveIndexDateStamp,
+      final Instant taskCompletionDate)
       throws IOException {
     final String destinationIndexName;
-    if (endDate != null) {
+    if (archiveIndexDateStamp != null) {
       destinationIndexName =
           archiverUtil.getDestinationIndexName(
-              taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate));
+              taskTemplate.getFullQualifiedName(), dateTimeFormatter.format(archiveIndexDateStamp));
     } else {
       destinationIndexName =
           archiverUtil.getDestinationIndexName(taskTemplate.getFullQualifiedName(), "");
@@ -331,10 +421,10 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
 
     assertThat(tasksResponse).hasSize(tasksCount);
     assertThat(tasksResponse).extracting(TaskTemplate.ID).containsExactlyInAnyOrderElementsOf(ids);
-    if (endDate != null) {
+    if (taskCompletionDate != null) {
       assertThat(tasksResponse)
           .extracting(TaskTemplate.COMPLETION_TIME)
-          .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(endDate));
+          .allMatch(ed -> ((OffsetDateTime) ed).toInstant().equals(taskCompletionDate));
     }
   }
 
