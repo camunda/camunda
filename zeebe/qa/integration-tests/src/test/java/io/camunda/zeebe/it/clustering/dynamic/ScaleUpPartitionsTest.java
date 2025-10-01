@@ -355,14 +355,7 @@ public class ScaleUpPartitionsTest {
 
     final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
 
-    // TODO: Remove awaitility after fixing the bug https://github.com/camunda/camunda/issues/37004
-    Awaitility.await()
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofSeconds(10))
-        .untilAsserted(
-            () ->
-                assertThatNoException()
-                    .isThrownBy(() -> backupActuator.take(backupId.incrementAndGet())));
+    assertThatNoException().isThrownBy(() -> backupActuator.take(backupId.incrementAndGet()));
 
     final var successfulBackupId = backupId.get();
     assertBackupIsCompleted(successfulBackupId);
