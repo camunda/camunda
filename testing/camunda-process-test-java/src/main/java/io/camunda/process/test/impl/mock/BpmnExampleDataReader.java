@@ -15,8 +15,6 @@
  */
 package io.camunda.process.test.impl.mock;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -28,8 +26,6 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.io.ByteArrayInputStream;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import org.awaitility.core.ConditionTimeoutException;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 public class BpmnExampleDataReader {
@@ -66,26 +62,17 @@ public class BpmnExampleDataReader {
   private BpmnModelInstance buildModelInstance(
       final String failureMessagePrefix, final long processDefinitionKey) {
 
-    final AtomicReference<BpmnModelInstance> modelInstance = new AtomicReference<>();
-
     try {
-      awaitBehavior.untilAsserted(
-          () -> {
-            final Optional<String> bpmnXml =
-                Optional.ofNullable(
-                    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join());
-
-            assertThat(bpmnXml).isPresent();
-
-            modelInstance.set(
-                Bpmn.readModelFromStream(new ByteArrayInputStream(bpmnXml.get().getBytes())));
-          });
-    } catch (final ConditionTimeoutException t) {
+      return awaitBehavior.untilExists(
+          () ->
+              Optional.ofNullable(
+                  client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join()),
+          bpmnXml -> Bpmn.readModelFromStream(new ByteArrayInputStream(bpmnXml.getBytes())),
+          String.format("%s has no BPMN model available.", failureMessagePrefix));
+    } catch (final AssertionError e) {
       throw new BpmnExampleDataReaderException(
-          String.format("%s failed to parse the BPMN model.", failureMessagePrefix), t);
+          String.format("%s failed to parse the BPMN model.", failureMessagePrefix), e);
     }
-
-    return modelInstance.get();
   }
 
   private String queryParentElementForExampleData(

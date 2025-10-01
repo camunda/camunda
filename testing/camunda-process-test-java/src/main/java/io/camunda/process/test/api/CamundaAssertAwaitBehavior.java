@@ -15,9 +15,15 @@
  */
 package io.camunda.process.test.api;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.Callable;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
 
 /**
@@ -27,6 +33,47 @@ import org.assertj.core.api.SoftAssertionsProvider.ThrowingRunnable;
  * Camunda.
  */
 public interface CamundaAssertAwaitBehavior {
+
+  /**
+   * Wait until a non-null object becomes available.
+   *
+   * @param supplier function that eventually returns a non-null object
+   * @return the object
+   * @param <T> type of the object
+   * @throws AssertionError if no object became available before the timeout threshold was reached
+   */
+  default <T> T untilExists(
+      final Supplier<Optional<T>> supplier, final String assertionErrroMessage) {
+
+    return untilExists(supplier, Function.identity(), assertionErrroMessage);
+  }
+
+  /**
+   * Wait until a non-null object becomes available.
+   *
+   * @param supplier function that eventually returns a non-null object
+   * @param transformer transforms the object to a different type
+   * @return the object
+   * @param <T> type of the object
+   * @param <U> target type of the transformed object
+   * @throws AssertionError if no object became available before the timeout threshold was reached
+   */
+  default <T, U> U untilExists(
+      final Supplier<Optional<T>> supplier,
+      final Function<T, U> transformer,
+      final String assertionErrorMessage) {
+
+    final AtomicReference<U> expectedValue = new AtomicReference<>();
+
+    untilAsserted(
+        () -> {
+          final Optional<T> value = supplier.get();
+          assertThat(value).withFailMessage(assertionErrorMessage).isPresent();
+          expectedValue.set(transformer.apply(value.get()));
+        });
+
+    return expectedValue.get();
+  }
 
   /**
    * Wait until the given assertion is satisfied.
