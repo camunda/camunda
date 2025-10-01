@@ -42,4 +42,68 @@ public interface BackupDBClient extends AutoCloseable {
       String repositoryName, SnapshotNameProvider snapshotNameProvider);
 
   List<String> cat() throws IOException;
+
+  /**
+   * Index a document with the given ID and content to the specified index.
+   *
+   * @param indexName the name of the index
+   * @param documentId the ID of the document
+   * @param document the document content to index
+   * @throws IOException if indexing fails
+   */
+  void index(String indexName, String documentId, Object document) throws IOException;
+
+  /**
+   * Index a document with retry logic for better reliability.
+   *
+   * @param indexName the name of the index
+   * @param documentId the ID of the document
+   * @param document the document content to index
+   * @throws IOException if indexing fails after retries
+   */
+  default void indexWithRetry(String indexName, String documentId, Object document)
+      throws IOException {
+    final int maxRetries = 3;
+    IOException lastException = null;
+
+    for (int attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        index(indexName, documentId, document);
+        return; // Success, exit retry loop
+      } catch (IOException e) {
+        lastException = e;
+        if (attempt < maxRetries - 1) {
+          try {
+            Thread.sleep(100 * (attempt + 1)); // Progressive backoff
+          } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new IOException("Interrupted during retry", ie);
+          }
+        }
+      }
+    }
+
+    throw new IOException(
+        "Failed to index document after " + maxRetries + " attempts", lastException);
+  }
+
+  /**
+   * Refresh the specified index to make recently indexed documents available for search.
+   *
+   * @param indexName the name of the index to refresh
+   * @throws IOException if refresh fails
+   */
+  void refresh(String indexName) throws IOException;
+
+  /**
+   * Bulk index multiple documents for better performance.
+   *
+   * @param indexName the name of the index
+   * @param documents a collection of documents with their IDs
+   * @throws IOException if bulk indexing fails
+   */
+  void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException;
+
+  /** Helper record to represent a document with its ID for bulk operations. */
+  record DocumentWithId(String id, Object document) {}
 }
