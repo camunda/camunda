@@ -14,11 +14,10 @@ import {TabView} from 'modules/components/TabView';
 import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
-import {Listeners} from './Listeners';
+import {Listeners, type ListenerTypeFilter} from './Listeners';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
-import type {ListenerEntity} from 'modules/types/operate';
 
 type Props = {
   setListenerTabVisibility: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,7 +34,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     flowNodeSelectionStore.state.selection?.flowNodeInstanceId;
 
   const [listenerTypeFilter, setListenerTypeFilter] =
-    useState<ListenerEntity['listenerType']>();
+    useState<ListenerTypeFilter>();
 
   const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
   const {

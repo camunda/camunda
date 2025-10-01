@@ -28,11 +28,13 @@ import {
   Stack,
 } from './styled';
 
+type ListenerTypeFilter = 'EXECUTION_LISTENER' | 'TASK_LISTENER';
+
 const FilterLabelMapping = {
   'All listeners': 'ALL_LISTENERS',
   'Execution listeners': 'EXECUTION_LISTENER',
   'User task listeners': 'TASK_LISTENER',
-} as const;
+} as const satisfies Record<string, ListenerTypeFilter | 'ALL_LISTENERS'>;
 
 type FilterLabelMappingType = typeof FilterLabelMapping;
 type FilterLabelMappingKeys = keyof FilterLabelMappingType;
@@ -45,7 +47,7 @@ type UseJobsResult = UseInfiniteQueryResult<Job[], RequestError>;
 type Props = {
   jobs: Job[] | undefined;
   setListenerTypeFilter: React.Dispatch<
-    React.SetStateAction<'EXECUTION_LISTENER' | 'TASK_LISTENER' | undefined>
+    React.SetStateAction<ListenerTypeFilter | undefined>
   >;
   fetchNextPage: UseJobsResult['fetchNextPage'];
   fetchPreviousPage: UseJobsResult['fetchPreviousPage'];
@@ -98,11 +100,7 @@ const Listeners: React.FC<Props> = observer(
                 setSelectedOption(selectedItem);
 
                 if (FilterLabelMapping[selectedItem] !== 'ALL_LISTENERS') {
-                  setListenerTypeFilter(
-                    FilterLabelMapping[selectedItem] as
-                      | 'EXECUTION_LISTENER'
-                      | 'TASK_LISTENER',
-                  );
+                  setListenerTypeFilter(FilterLabelMapping[selectedItem]);
                 } else {
                   setListenerTypeFilter(undefined);
                 }
@@ -194,4 +192,4 @@ const Listeners: React.FC<Props> = observer(
   },
 );
 
-export {Listeners};
+export {Listeners, type ListenerTypeFilter};
