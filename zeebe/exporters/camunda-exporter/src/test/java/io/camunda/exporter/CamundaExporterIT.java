@@ -602,8 +602,11 @@ final class CamundaExporterIT {
       varDocumentIds.add(varHandler.generateIds(variableRecord).getFirst());
     }
 
+    clientAdapter.refresh();
+
     // then
     await()
+        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () ->
                 varDocumentIds.forEach(
