@@ -33,11 +33,12 @@ import org.springframework.test.context.TestExecutionListeners.MergeMode;
  * <p>Example usage:
  *
  * <pre>
+ * &#064;SpringBootTest
  * &#064;CamundaSpringProcessTest
  * public class MyProcessTest {
  *
  *   &#064;Autowired
- *   private ZeebeClient client;
+ *   private CamundaClient client;
  *
  *   &#064;Test
  *   void shouldWork() {
