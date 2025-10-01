@@ -77,14 +77,14 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
           try {
             final String exampleDataVariables =
                 exampleDataReader.readExampleData(
-                    job.getProcessDefinitionKey(), job.getElementId());
+                    job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
 
             LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
             jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
           } catch (final BpmnExampleDataReaderException e) {
 
             LOGGER.warn(
-                "{} without example data due to errors. {}", logMessagePrefix, e.getMessage(), e);
+                "{} without example data due to errors. {}", logMessagePrefix, e.getMessage());
             jobClient.newCompleteCommand(job).send().join();
           }
         });

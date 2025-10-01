@@ -20,15 +20,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.process.test.impl.assertions.util.AwaitilityBehavior;
-import io.camunda.process.test.impl.assertions.util.CamundaAssertJsonMapper;
 import io.camunda.process.test.utils.CamundaAssertExtension;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.Map;
+import java.util.function.Function;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,14 +37,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class BpmnExampleDataReaderTest {
 
   private static final long PROCESS_DEFINITION_KEY = 1L;
+  private static final String PROCESS_ID = "send_email_with_example_data";
 
   private BpmnExampleDataReader reader;
 
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   private CamundaClient client;
 
-  private final CamundaAssertJsonMapper jsonMapper =
-      new CamundaAssertJsonMapper(new CamundaObjectMapper());
+  private final Function<String, String> curriedReadExampleData =
+      elementId -> reader.readExampleData(PROCESS_DEFINITION_KEY, PROCESS_ID, elementId);
 
   @BeforeEach
   public void setup() {
@@ -61,15 +59,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithExampleData());
 
     // when
-    final Map<String, Object> actual =
-        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
+    final String actual = curriedReadExampleData.apply("task_send_email");
 
     // then
-    final Map<String, Object> expected =
-        Collections.singletonMap(
-            "response", Collections.singletonMap("body", Collections.singletonMap("status", 200)));
-
-    assertThat(actual).isEqualTo(expected);
+    assertThat(actual).isEqualTo("{\"response\":{\"body\":{\"status\":200}}}");
   }
 
   @Test
@@ -84,15 +77,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithExampleData());
 
     // when
-    final Map<String, Object> actual =
-        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
+    final String actual = curriedReadExampleData.apply("task_send_email");
 
     // then
-    final Map<String, Object> expected =
-        Collections.singletonMap(
-            "response", Collections.singletonMap("body", Collections.singletonMap("status", 200)));
-
-    assertThat(actual).isEqualTo(expected);
+    assertThat(actual).isEqualTo("{\"response\":{\"body\":{\"status\":200}}}");
   }
 
   @Test
@@ -102,10 +90,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithoutExampleData());
 
     // when/then
-    assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
-        .hasMessageContaining(
-            "BPMN Model [processDefinitionKey: '1', elementId: 'task_send_email'] has no example data. Example data must have the attribute name '%s'",
-            ZeebeConstants.PROPERTY_EXAMPLE_DATA);
+    assertThatThrownBy(() -> curriedReadExampleData.apply("task_send_email"))
+        .hasMessage(
+            "BPMN Model [processId: '%s', elementId: 'task_send_email'] has no example data as a property with the name '%s'.",
+            PROCESS_ID, ZeebeConstants.PROPERTY_EXAMPLE_DATA);
   }
 
   @Test
@@ -115,11 +103,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithEmptyExampleData());
 
     // when
-    final Map<String, Object> actualMap =
-        jsonMapper.fromJsonAsMap(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"));
+    final String actual = curriedReadExampleData.apply("task_send_email");
 
     // then
-    assertThat(actualMap).isEmpty();
+    assertThat(actual).isEqualTo("{}");
   }
 
   @Test
@@ -129,9 +116,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithoutExampleData());
 
     // when/then
-    assertThatThrownBy(() -> reader.readExampleData(PROCESS_DEFINITION_KEY, "task_missing"))
-        .hasMessageContaining(
-            "BPMN Model [processDefinitionKey: '1', elementId: 'task_missing'] does not contain element with id 'task_missing'");
+    assertThatThrownBy(() -> curriedReadExampleData.apply("task_missing"))
+        .hasMessage(
+            "BPMN Model [processId: '%s', elementId: 'task_missing'] does not contain element with id 'task_missing'",
+            PROCESS_ID);
   }
 
   @Test
@@ -141,8 +129,7 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithMalformedExampleData());
 
     // when/then
-    assertThat(reader.readExampleData(PROCESS_DEFINITION_KEY, "task_send_email"))
-        .isEqualTo("this is not valid json");
+    assertThat(curriedReadExampleData.apply("task_send_email")).isEqualTo("this is not valid json");
   }
 
   @Test
@@ -152,11 +139,10 @@ public class BpmnExampleDataReaderTest {
         .thenReturn(bpmnModelWithEmptyExampleDataAttribute());
 
     // when/then
-    assertThatThrownBy(
-            () -> reader.readExampleData(PROCESS_DEFINITION_KEY, "service_task_review_email_c"))
-        .hasMessageContaining(
-            "BPMN Model [processDefinitionKey: '1', elementId: 'service_task_review_email_c'] has no example data. Example data must have the attribute name '%s'",
-            ZeebeConstants.PROPERTY_EXAMPLE_DATA);
+    assertThatThrownBy(() -> curriedReadExampleData.apply("service_task_review_email_c"))
+        .hasMessage(
+            "BPMN Model [processId: '%s', elementId: 'service_task_review_email_c'] has no example data as a property with the name '%s'.",
+            PROCESS_ID, ZeebeConstants.PROPERTY_EXAMPLE_DATA);
   }
 
   private String bpmnModelWithEmptyExampleDataAttribute() {

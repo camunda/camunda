@@ -44,11 +44,11 @@ public class BpmnExampleDataReader {
     this.awaitBehavior = awaitBehavior;
   }
 
-  public String readExampleData(final long processDefinitionKey, final String elementId) {
+  public String readExampleData(
+      final long processDefinitionKey, final String processId, final String elementId) {
+
     final String failureMessagePrefix =
-        String.format(
-            "BPMN Model [processDefinitionKey: '%s', elementId: '%s']",
-            processDefinitionKey, elementId);
+        String.format("BPMN Model [processId: '%s', elementId: '%s']", processId, elementId);
 
     return Optional.<ModelElementInstance>ofNullable(
             buildModelInstance(failureMessagePrefix, processDefinitionKey)
@@ -96,8 +96,7 @@ public class BpmnExampleDataReader {
             () -> {
               final String failureMessage =
                   String.format(
-                      "%s has no example data. Example data must have the attribute name '%s' or "
-                          + "else it won't be recognized. Returning an empty JSON object.",
+                      "%s has no example data as a property with the name '%s'.",
                       failureMessagePrefix, ZeebeConstants.PROPERTY_EXAMPLE_DATA);
               return new BpmnExampleDataReaderException(failureMessage);
             });

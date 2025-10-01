@@ -223,13 +223,14 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     try {
       final String exampleDataVariables =
-          exampleDataReader.readExampleData(job.getProcessDefinitionKey(), job.getElementId());
+          exampleDataReader.readExampleData(
+              job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
 
       LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
       client.newCompleteCommand(job).variables(exampleDataVariables).send().join();
     } catch (final BpmnExampleDataReaderException e) {
 
-      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage(), e);
+      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
       client.newCompleteCommand(job).send().join();
     }
   }
@@ -318,7 +319,9 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     try {
       final String exampleData =
           exampleDataReader.readExampleData(
-              userTask.getProcessDefinitionKey(), userTask.getElementId());
+              userTask.getProcessDefinitionKey(),
+              userTask.getBpmnProcessId(),
+              userTask.getElementId());
 
       LOGGER.debug("{} with example data {}", logPrefix, exampleData);
       client
@@ -328,7 +331,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
           .join();
     } catch (final BpmnExampleDataReaderException e) {
 
-      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage(), e);
+      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
       client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
     }
   }

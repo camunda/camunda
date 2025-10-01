@@ -209,7 +209,7 @@ public interface CamundaProcessTestContext {
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables);
 
   /**
-   * Completes a user task with the given element selector with the variables from the example data
+   * Completes a user task with the given element ID with the variables from the example data
    * property of the related BPMN element. If no property is defined, it completes the user task
    * without variables.
    *

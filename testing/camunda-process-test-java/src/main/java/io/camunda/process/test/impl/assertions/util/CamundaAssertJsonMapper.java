@@ -19,7 +19,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.NullNode;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.InternalClientException;
-import java.util.Map;
 
 public class CamundaAssertJsonMapper {
 
@@ -62,15 +61,6 @@ public class CamundaAssertJsonMapper {
     } catch (final InternalClientException e) {
       throw new JsonMappingException(
           String.format("Failed to transform value to JSON: '%s'", value), e);
-    }
-  }
-
-  public Map<String, Object> fromJsonAsMap(final String json) {
-    try {
-      return jsonMapper.fromJsonAsMap(json);
-    } catch (final InternalClientException e) {
-      throw new JsonMappingException(
-          String.format("Failed to transform JSON to Map: '%s'", json), e);
     }
   }
 

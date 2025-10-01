@@ -12,7 +12,7 @@
           <zeebe:output source="=response.body.status" target="send_status" />
         </zeebe:ioMapping>
         <zeebe:properties>
-          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;    &#34;response&#34;: {&#10;        &#34;body&#34;: {&#10;            &#34;status&#34;: 200&#10;        }&#10;    }&#10;}" />
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#34;response&#34;:{&#34;body&#34;:{&#34;status&#34;:200}}}" />
         </zeebe:properties>
       </bpmn:extensionElements>
       <bpmn:incoming>Flow_0jxw8xo</bpmn:incoming>
