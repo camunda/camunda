@@ -15,6 +15,7 @@ import static org.assertj.core.api.Assertions.fail;
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter.Builder;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCancelProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationCreateProcessor;
 import io.camunda.zeebe.engine.processing.batchoperation.BatchOperationLeadPartitionCompleteProcessor;
@@ -736,7 +737,9 @@ public class CommandDistributionIdempotencyTest {
             () -> {
               // wait for retry mechanism to trigger second distribution
               // (while we intercepted the first acknowledgement)
-              ENGINE.getClock().addTime(CommandRedistributor.COMMAND_REDISTRIBUTION_INTERVAL);
+              ENGINE
+                  .getClock()
+                  .addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
 
               // Make sure we have two records on the target partition
               assertThat(
