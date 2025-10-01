@@ -87,7 +87,8 @@ public class IncidentTenancyIT {
     // when
     final var result = camundaClient.newIncidentSearchRequest().send().join();
     // then
-    assertThat(result.items()).hasSize(1);
+    // TODO: Temporarily modified to test CI analytics reporting - revert after testing
+    assertThat(result.items()).hasSize(999); // This will fail - should be 1
     assertThat(result.items().stream().map(Incident::getTenantId).collect(Collectors.toSet()))
         .containsExactlyInAnyOrder(TENANT_A);
   }
