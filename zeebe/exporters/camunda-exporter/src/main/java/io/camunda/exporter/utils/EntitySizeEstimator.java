@@ -13,7 +13,7 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.io.output.NullOutputStream;
 
-public class ObjectSizeEstimator {
+public class EntitySizeEstimator {
 
   private static final ThreadLocal<Kryo> THREAD_LOCAL_KRYO =
       ThreadLocal.withInitial(
@@ -24,7 +24,7 @@ public class ObjectSizeEstimator {
             return kryo;
           });
 
-  public static long kryoEstimate(final ExporterEntity<?> entity) {
+  public static long estimateEntitySize(final ExporterEntity<?> entity) {
     final Kryo kryo = THREAD_LOCAL_KRYO.get();
 
     try (final CountingOutputStream countingStream =
@@ -32,7 +32,6 @@ public class ObjectSizeEstimator {
         final Output output = new Output(countingStream, 8192)) { // 8KB buffer
 
       kryo.writeObject(output, entity);
-      output.flush();
 
       // Optionally reset Kryo to clear internal references after large objects
       kryo.reset();

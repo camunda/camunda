@@ -11,7 +11,7 @@ import io.camunda.exporter.errorhandling.Error;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
-import io.camunda.exporter.utils.ObjectSizeEstimator;
+import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -77,7 +77,7 @@ public final class ExporterBatchWriter {
     handler.updateEntity(record, entity);
     cachedRecordTimestamps.put(record.getPosition(), record.getTimestamp());
 
-    cachedEntitySizes.put(cacheKey, ObjectSizeEstimator.kryoEstimate(entity));
+    cachedEntitySizes.put(cacheKey, EntitySizeEstimator.estimateEntitySize(entity));
 
     // we store all handlers for an entity to make sure not to miss any flushes
     entityAndHandlers.handlers.add(handler);
@@ -104,7 +104,7 @@ public final class ExporterBatchWriter {
     reset();
   }
 
-  public int getBatchMemoryEstimate() {
+  public int getBatchMemoryEstimateInMb() {
     return (int) cachedEntitySizes.values().stream().mapToLong(Long::longValue).sum()
         / (1024 * 1024);
   }
