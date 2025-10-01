@@ -8,6 +8,7 @@
 
 import {openFile} from '@/utils/openFile';
 import type {Route} from '@playwright/test';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 interface DecisionInstanceEntity {
   id: string;
@@ -192,6 +193,43 @@ const mockEvaluatedLargeXml = openFile(
   './e2e-playwright/mocks/resources/invoiceClassificationEvaluatedLarge.dmn',
 );
 
+// TODO: Apply the transformations of this function to the existing mock data when
+// the GET /api/decision-instances/<key> endpoint related code is removed. This should happen
+// with https://github.com/camunda/camunda/issues/28392
+function mapDecisionInstanceToV2(
+  instance: DecisionInstanceDto,
+): GetDecisionInstanceResponseBody {
+  return {
+    decisionEvaluationInstanceKey: instance.id,
+    decisionEvaluationKey: '29283472932831',
+    tenantId: instance.tenantId,
+    decisionDefinitionKey: instance.decisionDefinitionId,
+    decisionDefinitionId: instance.decisionId,
+    state: instance.state,
+    decisionDefinitionName: instance.decisionName,
+    decisionDefinitionVersion: instance.decisionVersion,
+    evaluationDate: instance.evaluationDate,
+    processInstanceKey: instance.processInstanceId ?? '6755399441062307',
+    processDefinitionKey: instance.processInstanceId ?? '6755399441062307',
+    elementInstanceKey: '2347238947239',
+    evaluationFailure: instance.errorMessage ?? '',
+    evaluatedInputs: instance.evaluatedInputs.map((input) => ({
+      inputId: input.id,
+      inputName: input.name,
+      inputValue: input.value ?? '',
+    })),
+    matchedRules: instance.evaluatedOutputs.map((out) => ({
+      ruleId: out.ruleId,
+      ruleIndex: out.ruleIndex,
+      evaluatedOutputs: [
+        {outputId: out.id, outputName: out.name, outputValue: out.value ?? ''},
+      ],
+    })),
+    decisionDefinitionType: instance.decisionType,
+    result: instance.result ?? '',
+  };
+}
+
 function mockResponses({
   decisionInstanceDetail,
   drdData,
@@ -236,6 +274,21 @@ function mockResponses({
         headers: {
           'content-type': 'application/json',
         },
+      });
+    }
+
+    if (route.request().url().includes('/v2/decision-instances/')) {
+      if (!decisionInstanceDetail) {
+        return route.fulfill({status: 400});
+      }
+
+      const decisionInstanceV2 = mapDecisionInstanceToV2(
+        decisionInstanceDetail,
+      );
+      return route.fulfill({
+        status: 200,
+        body: JSON.stringify(decisionInstanceV2),
+        headers: {'content-type': 'application/json'},
       });
     }
 

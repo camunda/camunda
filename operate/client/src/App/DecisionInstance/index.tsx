@@ -23,11 +23,12 @@ import {DrdPanel} from './DrdPanel';
 import {drdStore} from 'modules/stores/drd';
 import {DecisionInstanceContainer} from './styled';
 import {Drd} from './Drd';
+import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 const DecisionInstance: React.FC = observer(() => {
   const {decisionInstanceId = ''} = useParams<{decisionInstanceId: string}>();
-  const {decisionInstance} = decisionInstanceDetailsStore.state;
-  const decisionName = decisionInstance?.decisionName;
+  const {data, error, isFetchedAfterMount} =
+    useDecisionInstance(decisionInstanceId);
 
   useEffect(() => {
     drdDataStore.init();
@@ -43,31 +44,32 @@ const DecisionInstance: React.FC = observer(() => {
   }, [decisionInstanceId]);
 
   useEffect(() => {
-    if (decisionInstanceId !== '' && decisionName !== undefined) {
+    if (
+      decisionInstanceId !== '' &&
+      data?.decisionDefinitionName !== undefined
+    ) {
       document.title = PAGE_TITLE.DECISION_INSTANCE(
         decisionInstanceId,
-        decisionName,
+        data.decisionDefinitionName,
       );
     }
-  }, [decisionInstanceId, decisionName]);
+  }, [decisionInstanceId, data?.decisionDefinitionName]);
 
   useEffect(() => {
-    if (decisionInstance !== null) {
+    if (isFetchedAfterMount && data?.state !== undefined) {
       tracking.track({
         eventName: 'decision-instance-details-loaded',
-        state: decisionInstance.state,
+        state: data.state,
       });
     }
-  }, [decisionInstance]);
+  }, [isFetchedAfterMount, data?.state]);
 
-  if (decisionInstanceDetailsStore.state.status === 'forbidden') {
+  if (error?.variant === 'unauthorized-error') {
     return <Forbidden />;
   }
 
   if (drdStore.state.panelState === 'maximized') {
-    return (
-      <Drd decisionDefinitionKey={decisionInstance?.decisionDefinitionId} />
-    );
+    return <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />;
   }
 
   return (
@@ -75,16 +77,14 @@ const DecisionInstance: React.FC = observer(() => {
       <VisuallyHiddenH1>Operate Decision Instance</VisuallyHiddenH1>
       <DecisionInstanceContainer>
         <InstanceDetail
-          header={<Header />}
+          header={<Header decisionEvaluationInstanceKey={decisionInstanceId} />}
           topPanel={<DecisionPanel />}
           bottomPanel={<VariablesPanel />}
           type="decision"
           rightPanel={
             drdStore.state.panelState === 'minimized' ? (
               <DrdPanel>
-                <Drd
-                  decisionDefinitionKey={decisionInstance?.decisionDefinitionId}
-                />
+                <Drd decisionDefinitionKey={data?.decisionDefinitionKey} />
               </DrdPanel>
             ) : null
           }

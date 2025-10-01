@@ -9,9 +9,18 @@
 import {fetchDecisionInstance} from 'modules/api/v2/decisionInstances/fetchDecisionInstance';
 import {queryKeys} from '../queryKeys';
 import {useQuery} from '@tanstack/react-query';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {RequestError} from 'modules/request';
+
+type UnauthorizedError = {
+  variant: 'unauthorized-error';
+};
 
 const useDecisionInstance = (decisionEvaluationInstanceKey: string) => {
-  return useQuery({
+  return useQuery<
+    GetDecisionInstanceResponseBody,
+    UnauthorizedError | RequestError
+  >({
     queryKey: queryKeys.decisionInstances.get(decisionEvaluationInstanceKey),
     queryFn: async () => {
       const {response, error} = await fetchDecisionInstance(
@@ -20,6 +29,11 @@ const useDecisionInstance = (decisionEvaluationInstanceKey: string) => {
       if (response !== null) {
         return response;
       }
+
+      if (error?.response?.status === 403) {
+        throw {variant: 'unauthorized-error'} satisfies UnauthorizedError;
+      }
+
       throw error;
     },
   });
