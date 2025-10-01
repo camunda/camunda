@@ -31,7 +31,7 @@ public class ArchiverProperties {
    *     href="https://www.elastic.co/guide/en/elasticsearch/reference/current/search-aggregations-bucket-datehistogram-aggregation.html">Elasticsearch
    *     docs</a>
    */
-  private String rolloverInterval;
+  private String rolloverInterval = "1d";
 
   private int rolloverBatchSize = 100;
 
