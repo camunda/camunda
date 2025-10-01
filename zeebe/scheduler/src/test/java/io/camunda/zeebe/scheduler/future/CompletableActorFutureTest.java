@@ -10,12 +10,12 @@ package io.camunda.zeebe.scheduler.future;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.IntStream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,22 +42,19 @@ public class CompletableActorFutureTest {
     public void shouldRunAllFuturesSequentially() {
       // given
       final var count = 1000;
-      final var map = new CopyOnWriteArrayList<>();
-      final var elements = new ArrayList<Integer>(count);
-      for (int i = 0; i < count; i++) {
-        elements.add(i);
-      }
+      final var list = new ArrayBlockingQueue<>(count);
+      final var elements = IntStream.range(0, count).boxed().toList();
       // when
       CompletableActorFuture.traverseIgnoring(
               elements,
               i -> {
-                map.add(i);
+                list.add(i);
                 return CompletableActorFuture.completed();
               },
               EXECUTOR)
           .join();
       // then
-      assertThat(map).containsExactlyElementsOf(elements);
+      assertThat(list).containsExactlyElementsOf(elements);
     }
 
     @Test
