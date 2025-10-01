@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.it.backup;
 
+import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.broker.system.configuration.backup.FilesystemBackupStoreConfig;
@@ -29,6 +30,16 @@ final class FilesystemRestoreAcceptanceIT implements RestoreAcceptance {
     backup.setStore(BackupStoreType.FILESYSTEM);
 
     final var config = new FilesystemBackupStoreConfig();
+    config.setBasePath(basePath.toAbsolutePath().toString());
+    backup.setFilesystem(config);
+  }
+
+  @Override
+  public void configureBackupStore(final Camunda cfg) {
+    final var backup = cfg.getData().getBackup();
+    backup.setStore(io.camunda.configuration.Backup.BackupStoreType.FILESYSTEM);
+
+    final var config = backup.getFilesystem();
     config.setBasePath(basePath.toAbsolutePath().toString());
     backup.setFilesystem(config);
   }

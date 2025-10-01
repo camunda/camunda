@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.client.api.response.ActivatedJob;
+import io.camunda.configuration.Backup;
+import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.s3.S3BackupConfig;
 import io.camunda.zeebe.backup.s3.S3BackupConfig.Builder;
@@ -231,7 +233,30 @@ class BackupMultiPartitionTest {
   }
 
   private void deleteAndRestore(final TestStandaloneBroker broker, final int backupId) {
-    try (final var restore = new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+    final var unifiedRestoreConfig = new Camunda();
+    unifiedRestoreConfig.getCluster().setNodeId(broker.brokerConfig().getCluster().getNodeId());
+    unifiedRestoreConfig
+        .getCluster()
+        .setPartitionCount(broker.brokerConfig().getCluster().getPartitionsCount());
+    unifiedRestoreConfig
+        .getData()
+        .getPrimaryStorage()
+        .setDirectory(broker.brokerConfig().getData().getDirectory());
+    unifiedRestoreConfig.getCluster().setSize(broker.brokerConfig().getCluster().getClusterSize());
+
+    // backup config s3
+    final var backupConfig = unifiedRestoreConfig.getData().getBackup();
+    backupConfig.setStore(Backup.BackupStoreType.S3);
+    final var s3Config = backupConfig.getS3();
+    final var legacyBackupConfig = broker.brokerConfig().getData().getBackup().getS3();
+    s3Config.setBucketName(legacyBackupConfig.getBucketName());
+    s3Config.setEndpoint(legacyBackupConfig.getEndpoint());
+    s3Config.setRegion(legacyBackupConfig.getRegion());
+    s3Config.setAccessKey(legacyBackupConfig.getAccessKey());
+    s3Config.setSecretKey(legacyBackupConfig.getSecretKey());
+    s3Config.setForcePathStyleAccess(legacyBackupConfig.isForcePathStyleAccess());
+
+    try (final var restore = new TestRestoreApp(unifiedRestoreConfig).withBackupId(backupId)) {
       FileUtil.deleteFolderIfExists(broker.bean(WorkingDirectory.class).path());
       restore.start();
     } catch (final IOException e) {
