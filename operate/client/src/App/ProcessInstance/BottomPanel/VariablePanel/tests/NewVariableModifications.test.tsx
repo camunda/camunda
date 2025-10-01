@@ -26,10 +26,9 @@ import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const editLastNewVariableName = async (
   user: UserEvent,
@@ -144,13 +143,14 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if fields are empty', async () => {
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -180,7 +180,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -214,7 +214,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -294,7 +294,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -331,7 +331,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -516,7 +516,7 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -581,9 +581,9 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -646,9 +646,9 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();

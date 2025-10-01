@@ -35,12 +35,11 @@ import {
   waitForPollingsToBeComplete,
 } from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchFlowNodeInstances} from 'modules/mocks/api/fetchFlowNodeInstances';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {act} from 'react';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const clearPollingStates = () => {
   incidentsStore.isPollRequestRunning = false;
@@ -204,8 +203,8 @@ describe('ProcessInstance - modification mode', () => {
         totalItems: 1,
       },
     });
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     const {user} = render(<ProcessInstance />, {
       wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
@@ -369,7 +368,7 @@ describe('ProcessInstance - modification mode', () => {
     mockModify().withSuccess(
       createBatchOperation({type: 'MODIFY_PROCESS_INSTANCE'}),
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [],
       page: {
@@ -403,8 +402,8 @@ describe('ProcessInstance - modification mode', () => {
 
     mockFetchVariables().withSuccess([]);
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);
     mockFetchFlowNodeInstances().withSuccess(processInstancesMock.level1);

@@ -34,14 +34,13 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init} from 'modules/utils/flowNodeMetadata';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -144,7 +143,7 @@ describe('VariablePanel spinner', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     init('process-instance', statistics);
     flowNodeSelectionStore.init();
@@ -172,7 +171,7 @@ describe('VariablePanel spinner', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchVariables().withDelay([createVariable({name: 'test2'})]);
     mockSearchVariables().withDelay({
       items: [createVariableV2()],
@@ -201,11 +200,14 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withDelay({
       items: [createVariableV2()],
-      page: {
-        totalItems: 1,
-      },
+      page: {totalItems: 1},
+    });
+    mockSearchVariables().withDelay({
+      items: [createVariableV2()],
+      page: {totalItems: 1},
     });
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
@@ -253,7 +255,7 @@ describe('VariablePanel spinner', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     act(() => {
       flowNodeSelectionStore.setSelection({
         flowNodeId: 'non-existing',

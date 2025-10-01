@@ -32,8 +32,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockVariablesV2} from '../index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {VariablePanel} from '../../VariablePanel';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -52,7 +51,7 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess(mockVariablesV2);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
   it.skip('should show/hide edit button next to variable according to it having an active operation', async () => {
