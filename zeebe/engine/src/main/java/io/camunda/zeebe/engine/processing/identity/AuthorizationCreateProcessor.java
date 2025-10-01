@@ -75,9 +75,9 @@ public class AuthorizationCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
-    authorizationEntityChecker
-        .ownerAndResourceExists(command)
-        .flatMap(permissionsBehavior::permissionsAlreadyExist)
+    permissionsBehavior
+        .permissionsAlreadyExist(command.getValue())
+        .flatMap(record -> authorizationEntityChecker.ownerAndResourceExists(command))
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
