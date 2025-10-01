@@ -22,48 +22,42 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /** Contains git-specific information. */
-public final class GitProperties {
-
-  public static final GitProperties INSTANCE = new GitProperties();
+public final class GitPropertiesUtil {
 
   public static final String PROPERTY_NAME_GIT_BRANCH = "git.branch";
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(GitProperties.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(GitPropertiesUtil.class);
 
   private static final String GIT_PROPERTIES_FILE = "git.properties";
 
   /** Current branch */
   private final String branch;
 
-  private GitProperties() {
-    this(readGitProperties(""));
+  public GitPropertiesUtil() {
+    this("");
   }
 
-  GitProperties(final Properties properties) {
+  GitPropertiesUtil(final String directoryOverride) {
+    this(readGitProperties(directoryOverride));
+  }
+
+  GitPropertiesUtil(final Properties properties) {
     branch = PropertiesUtil.getPropertyOrDefault(properties, PROPERTY_NAME_GIT_BRANCH, "");
-  }
-
-  static GitProperties readProperties(final String directoryOverride) {
-    return new GitProperties(readGitProperties(directoryOverride));
   }
 
   private static Properties readGitProperties(final String dir) {
     final String filePath = dir + GIT_PROPERTIES_FILE;
 
     try (final InputStream gitPropertiesFileStream =
-        GitProperties.class.getClassLoader().getResourceAsStream(filePath)) {
+        GitPropertiesUtil.class.getClassLoader().getResourceAsStream(filePath)) {
 
       final Properties properties = new Properties();
       properties.load(gitPropertiesFileStream);
 
       return properties;
     } catch (final Throwable t) {
-      LOGGER.warn("Can't read properties file: {}. Skipping.", filePath, t);
-
-      final Properties properties = new Properties();
-      properties.put(PROPERTY_NAME_GIT_BRANCH, "");
-
-      return properties;
+      LOGGER.warn("Can't read git properties file: {}. Skipping.", filePath, t);
+      return new Properties();
     }
   }
 
