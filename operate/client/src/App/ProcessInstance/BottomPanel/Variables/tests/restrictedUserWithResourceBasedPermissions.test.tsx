@@ -22,8 +22,8 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
 import {VariablePanel} from '../../VariablePanel';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -40,10 +40,7 @@ describe('Restricted user with resource based permissions', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(instanceMock);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockFetchProcessInstanceListeners().withSuccess({
-      listeners: [],
-      totalCount: 0,
-    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
   it('should display add/edit variable buttons when update process instance permission is available', async () => {
