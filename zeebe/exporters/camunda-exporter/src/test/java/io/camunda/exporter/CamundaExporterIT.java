@@ -17,6 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.fail;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
+import static org.awaitility.Awaitility.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -34,12 +35,14 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
+import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.ImportPositionEntity;
+import io.camunda.webapps.schema.entities.VariableEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -52,11 +55,13 @@ import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
+import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +70,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.awaitility.Awaitility;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -132,7 +137,7 @@ final class CamundaExporterIT {
               final var p2ExporterController = new ExporterTestController();
               p2Exporter.open(p2ExporterController);
             });
-    Awaitility.await("Partition one has been opened successfully")
+    await("Partition one has been opened successfully")
         .atMost(Duration.ofSeconds(30))
         .untilAsserted(
             () -> {
@@ -212,7 +217,7 @@ final class CamundaExporterIT {
     // when
     final var currentPort = container.getFirstMappedPort();
     container.stop();
-    Awaitility.await().until(() -> !container.isRunning());
+    await().until(() -> !container.isRunning());
 
     final var record = generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
 
@@ -230,7 +235,7 @@ final class CamundaExporterIT {
         generateRecordWithSupportedBrokerVersion(ValueType.USER, UserIntent.CREATED);
     exporter.export(record2);
 
-    Awaitility.await()
+    await()
         .untilAsserted(() -> assertThat(controller.getPosition()).isEqualTo(record2.getPosition()));
   }
 
@@ -521,7 +526,7 @@ final class CamundaExporterIT {
 
   private ExporterConfiguration getConnectConfigForContainer(final GenericContainer<?> container) {
     container.start();
-    Awaitility.await().until(container::isRunning);
+    await().until(container::isRunning);
 
     final var config = new ExporterConfiguration();
     config.getConnect().setUrl("http://localhost:" + container.getFirstMappedPort());
@@ -546,6 +551,75 @@ final class CamundaExporterIT {
     return new ExporterTestContext()
         .setConfiguration(new ExporterTestConfiguration<>(config.getConnect().getType(), config))
         .setPartitionId(partitionId);
+  }
+
+  @TestTemplate
+  void shouldFlushWhenMemoryLimitReached(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    createSchemas(config);
+    final var exporter = new CamundaExporter();
+
+    final var memoryLimit = 3;
+    config.getBulk().setMemoryLimit(memoryLimit);
+    final var context = getContextFromConfig(config);
+    exporter.configure(context);
+
+    final var exporterController = new ExporterTestController();
+    exporter.open(exporterController);
+
+    // when
+    final var largeString = RandomStringUtils.randomAlphanumeric(250_000);
+    final var varEntity = new VariableEntity();
+    varEntity.setFullValue(largeString);
+    final var variableSize = EntitySizeEstimator.estimateEntitySize(varEntity);
+
+    final var requiredVariableRecordsForFlush =
+        Math.ceil((double) (memoryLimit * 1024 * 1024) / variableSize);
+
+    final var varHandler =
+        getHandlers(config).stream()
+            .filter(handler -> handler.getHandledValueType().equals(ValueType.VARIABLE))
+            .findFirst()
+            .orElseThrow();
+
+    final List<String> varDocumentIds = new ArrayList<>();
+    for (int i = 0; i < requiredVariableRecordsForFlush; i++) {
+      final int finalI = i;
+      final var variableRecord =
+          factory.generateRecord(
+              ValueType.VARIABLE,
+              r ->
+                  r.withValue(
+                          ImmutableVariableRecordValue.builder()
+                              .withValue(largeString)
+                              .withScopeKey(finalI)
+                              .build())
+                      .withBrokerVersion("8.8.0"));
+      exporter.export(variableRecord);
+
+      varDocumentIds.add(varHandler.generateIds(variableRecord).getFirst());
+    }
+
+    clientAdapter.refresh();
+
+    // then
+    await()
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () ->
+                varDocumentIds.forEach(
+                    id -> {
+                      try {
+                        assertThat(
+                                clientAdapter.get(
+                                    id, varHandler.getIndexName(), varHandler.getEntityType()))
+                            .isNotNull();
+                      } catch (final IOException e) {
+                        throw new RuntimeException(e);
+                      }
+                    }));
   }
 
   @Nested
