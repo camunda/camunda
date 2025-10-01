@@ -21,6 +21,7 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 import static io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil.getLatestReleasedVersion;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.GitProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -43,7 +44,9 @@ public class ConnectorsContainerRuntimeProperties {
   private final Map<String, String> connectorsSecrets;
   private final List<Integer> connectorsExposedPorts;
 
-  public ConnectorsContainerRuntimeProperties(final Properties properties) {
+  public ConnectorsContainerRuntimeProperties(
+      final Properties properties, final GitProperties gitProperties) {
+
     // connectors are disabled by default
     isConnectorsEnabled =
         getPropertyOrDefault(properties, PROPERTY_NAME_CONNECTORS_ENABLED, "false")
@@ -57,6 +60,7 @@ public class ConnectorsContainerRuntimeProperties {
     connectorsDockerImageVersion =
         getLatestReleasedVersion(
             properties,
+            gitProperties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
     connectorsEnvVars = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CONNECTORS_ENV_VARS_PREFIX);

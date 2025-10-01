@@ -15,6 +15,7 @@
  */
 package io.camunda.process.test.impl.runtime.util;
 
+import io.camunda.process.test.impl.runtime.GitProperties;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
@@ -26,6 +27,9 @@ import java.util.regex.Pattern;
  */
 public class VersionedPropertiesUtil {
   public static final String SNAPSHOT_VERSION = "SNAPSHOT";
+
+  private static final Pattern STABLE_BRANCH_VERSION_PATTERN =
+      Pattern.compile("(backport-\\d+-to-)?stable/(\\d+)\\.(\\d+)");
   private static final Pattern SEMANTIC_VERSION_PATTERN =
       Pattern.compile("(\\d+)\\.(\\d+)\\.(\\d+)(-.*)?");
   private static final String VERSION_FORMAT = "%d.%d.%d";
@@ -37,7 +41,10 @@ public class VersionedPropertiesUtil {
   private static final String LABELED_VERSION_FORMAT = "%d.%d.%d%s";
 
   public static String getLatestReleasedVersion(
-      final Properties properties, final String propertyName, final String defaultValue) {
+      final Properties properties,
+      final GitProperties gitProperties,
+      final String propertyName,
+      final String defaultValue) {
 
     return PropertiesUtil.getPropertyOrDefault(
         properties,
@@ -52,14 +59,18 @@ public class VersionedPropertiesUtil {
                       final int minor = Integer.parseInt(matcher.group(2));
                       final int patch = Integer.parseInt(matcher.group(3));
                       final String label = matcher.group(4);
-                      return getLatestReleasedVersion(major, minor, patch, label);
+                      return getLatestReleasedVersion(gitProperties, major, minor, patch, label);
                     })
                 .orElse(propertyValue),
         defaultValue);
   }
 
   private static String getLatestReleasedVersion(
-      final int major, final int minor, final int patch, final String label) {
+      final GitProperties gitProperties,
+      final int major,
+      final int minor,
+      final int patch,
+      final String label) {
 
     if (label == null) {
       // release version
@@ -69,11 +80,25 @@ public class VersionedPropertiesUtil {
       return String.format(LABELED_VERSION_FORMAT, major, minor, patch, label);
     } else if (patch == 0) {
       // current dev version
-      return SNAPSHOT_VERSION;
+      return branchBasedSnapshotVersion(gitProperties);
     } else {
       // maintenance dev version
       final int previousPatchVersion = patch - 1;
       return String.format(VERSION_FORMAT, major, minor, previousPatchVersion);
+    }
+  }
+
+  private static String branchBasedSnapshotVersion(final GitProperties gitProperties) {
+    final Matcher stableBranchMatcher =
+        STABLE_BRANCH_VERSION_PATTERN.matcher(gitProperties.getBranch());
+
+    if (stableBranchMatcher.find()) {
+      final String stableBranchMajorVersion = stableBranchMatcher.group(2);
+      final String stableBranchMinorVersion = stableBranchMatcher.group(3);
+      return String.format(
+          "%s.%s-%s", stableBranchMajorVersion, stableBranchMinorVersion, SNAPSHOT_VERSION);
+    } else {
+      return SNAPSHOT_VERSION;
     }
   }
 }
