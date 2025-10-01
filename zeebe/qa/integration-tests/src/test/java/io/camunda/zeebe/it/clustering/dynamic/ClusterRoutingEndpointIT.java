@@ -28,10 +28,7 @@ public class ClusterRoutingEndpointIT {
 
   @SuppressWarnings("unused")
   static void initTestStandaloneBroker() {
-    broker =
-        new TestStandaloneBroker()
-            .withBrokerConfig(
-                cfg -> cfg.getExperimental().getFeatures().setEnablePartitionScaling(true));
+    broker = new TestStandaloneBroker();
   }
 
   @ParameterizedTest

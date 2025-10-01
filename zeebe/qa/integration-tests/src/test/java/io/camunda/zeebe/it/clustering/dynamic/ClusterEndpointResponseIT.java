@@ -29,7 +29,6 @@ final class ClusterEndpointResponseIT {
         new TestStandaloneBroker()
             .withBrokerConfig(
                 cfg -> {
-                  cfg.getExperimental().getFeatures().setEnablePartitionScaling(true);
                   cfg.getCluster().setClusterId("cluster-id");
                 });
   }
