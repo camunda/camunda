@@ -15,15 +15,18 @@ import io.camunda.zeebe.client.api.command.CompleteJobCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1;
 import io.camunda.zeebe.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
+import io.camunda.zeebe.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.zeebe.client.api.command.FailJobCommandStep1.FailJobCommandStep2;
 import io.camunda.zeebe.client.api.response.ActivatedJob;
 import io.camunda.zeebe.client.api.response.DeploymentEvent;
+import io.camunda.zeebe.client.api.response.EvaluateDecisionResponse;
 import io.camunda.zeebe.client.api.response.ProcessInstanceEvent;
 import io.camunda.zeebe.client.api.worker.JobClient;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.BiConsumer;
 import org.slf4j.Logger;
@@ -216,6 +219,29 @@ public abstract class ZeebeTestUtil {
   public static void cancelProcessInstance(
       final ZeebeClient client, final long processInstanceKey) {
     cancelProcessInstance(false, client, processInstanceKey);
+  }
+
+  public static long evaluateDecisionInstance(
+      final ZeebeClient client, final String decisionId, final Map<String, Object> variables) {
+    try {
+      final EvaluateDecisionCommandStep2 evaluateDecisionCommandStep2 =
+          client.newEvaluateDecisionCommand().decisionId(decisionId).variables(variables);
+
+      EvaluateDecisionResponse evaluateDecision = null;
+      try {
+        evaluateDecision = evaluateDecisionCommandStep2.send().join();
+        LOGGER.debug("Evaluate decision created for decision [{}]", decisionId);
+      } catch (final ClientException ex) {
+        // retry once
+        sleepFor(300L);
+        evaluateDecision = evaluateDecisionCommandStep2.send().join();
+        LOGGER.debug("Evaluate decision created for decision [{}]", decisionId);
+      }
+
+      return evaluateDecision.getDecisionInstanceKey();
+    } catch (final Exception e) {
+      throw e;
+    }
   }
 
   public static void completeTask(

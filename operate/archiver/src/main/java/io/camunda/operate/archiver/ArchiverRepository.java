@@ -15,6 +15,8 @@ public interface ArchiverRepository {
 
   CompletableFuture<ArchiveBatch> getProcessInstancesNextBatch(List<Integer> partitionIds);
 
+  CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch(List<Integer> partitionIds);
+
   void setIndexLifeCycle(final String destinationIndexName);
 
   CompletableFuture<Void> deleteDocuments(

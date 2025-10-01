@@ -60,9 +60,13 @@ public class Archiver {
         final List<Integer> partitionIdsSubset =
             CollectionUtil.splitAndGetSublist(partitionIds, threadsCount, i);
         if (!partitionIdsSubset.isEmpty()) {
-          final var archiverJob =
+          final var processInstancesArchiverJob =
               beanFactory.getBean(ProcessInstancesArchiverJob.class, this, partitionIdsSubset);
-          archiverExecutor.execute(archiverJob);
+          archiverExecutor.execute(processInstancesArchiverJob);
+
+          final var standaloneDecisionArchiverJob =
+              beanFactory.getBean(StandaloneDecisionArchiverJob.class, this, partitionIdsSubset);
+          archiverExecutor.execute(standaloneDecisionArchiverJob);
         }
         if (partitionIdsSubset.contains(1)) {
           final var batchOperationArchiverJob =
