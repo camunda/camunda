@@ -39,14 +39,20 @@ public interface JobWorkerMockBuilder {
    *
    * @param variables the variables to include when completing the job.
    */
-  JobWorkerMock thenComplete(Map<String, Object> variables);
+  JobWorkerMock thenComplete(final Map<String, Object> variables);
+
+  /**
+   * Configures the mock worker to complete jobs with variables from the example data property of
+   * the related BPMN elements. If no property is defined, it completes the job without variables.
+   */
+  JobWorkerMock thenCompleteWithExampleData();
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code.
    *
    * @param errorCode the error code to throw.
    */
-  JobWorkerMock thenThrowBpmnError(String errorCode);
+  JobWorkerMock thenThrowBpmnError(final String errorCode);
 
   /**
    * Configures the mock worker to throw a BPMN error with the specified error code and variables.
@@ -54,14 +60,14 @@ public interface JobWorkerMockBuilder {
    * @param errorCode the error code to throw.
    * @param variables the variables to include when throwing the error.
    */
-  JobWorkerMock thenThrowBpmnError(String errorCode, Map<String, Object> variables);
+  JobWorkerMock thenThrowBpmnError(final String errorCode, final Map<String, Object> variables);
 
   /**
    * Configures the mock worker with a custom job handler.
    *
    * @param jobHandler the custom job handler to use for processing jobs.
    */
-  JobWorkerMock withHandler(JobHandler jobHandler);
+  JobWorkerMock withHandler(final JobHandler jobHandler);
 
   /**
    * A JobWorkerMock is used in place of real job workers during camunda process tests. After the

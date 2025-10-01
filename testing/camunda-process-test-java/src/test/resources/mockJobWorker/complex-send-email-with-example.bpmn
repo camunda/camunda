@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Web Modeler" exporterVersion="e2ae5b5" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.6.0">
+  <bpmn:process id="user_task_with_example_data" name="getting-started-c8" isExecutable="true">
+    <bpmn:startEvent id="start_email_request_received" name="Send Email Request Received">
+      <bpmn:outgoing>Flow_0jxw8xo</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_0jxw8xo" sourceRef="start_email_request_received" targetRef="user_task_write_email" />
+    <bpmn:endEvent id="end_email_sent" name="Email Sent">
+      <bpmn:incoming>Flow_09hv1x4</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:userTask id="user_task_write_email" name="Write email">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;    &#34;content&#34;: &#34;Lorem ipsum&#34;&#10;}" />
+        </zeebe:properties>
+        <zeebe:ioMapping>
+          <zeebe:output source="=content" target="email_output" />
+        </zeebe:ioMapping>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0jxw8xo</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dfsxdq</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:userTask id="user_task_print_email" name="Print Email">
+      <bpmn:extensionElements>
+        <zeebe:userTask />
+        <zeebe:ioMapping>
+          <zeebe:output source="=copies" target="printed_copies" />
+        </zeebe:ioMapping>
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;    &#34;copies&#34;: 10&#10;}" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1hsnszd</bpmn:incoming>
+      <bpmn:outgoing>Flow_09hv1x4</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_09hv1x4" sourceRef="user_task_print_email" targetRef="end_email_sent" />
+    <bpmn:sequenceFlow id="Flow_0dfsxdq" sourceRef="user_task_write_email" targetRef="Gateway_00jfmy1" />
+    <bpmn:parallelGateway id="Gateway_00jfmy1">
+      <bpmn:incoming>Flow_0dfsxdq</bpmn:incoming>
+      <bpmn:outgoing>Flow_0d3k2mf</bpmn:outgoing>
+      <bpmn:outgoing>Flow_11557x0</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1s58ibc</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_0d3k2mf" sourceRef="Gateway_00jfmy1" targetRef="service_task_review_email_a" />
+    <bpmn:sequenceFlow id="Flow_11557x0" sourceRef="Gateway_00jfmy1" targetRef="service_task_review_email_b" />
+    <bpmn:sequenceFlow id="Flow_0sbabzm" sourceRef="service_task_review_email_a" targetRef="Gateway_04yqg8a" />
+    <bpmn:sequenceFlow id="Flow_0hy9761" sourceRef="service_task_review_email_b" targetRef="Gateway_04yqg8a" />
+    <bpmn:sequenceFlow id="Flow_1hsnszd" sourceRef="Gateway_04yqg8a" targetRef="user_task_print_email" />
+    <bpmn:serviceTask id="service_task_review_email_b" name="Automated email review">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=reviewer.grade" target="email_quality" />
+        </zeebe:ioMapping>
+        <zeebe:taskDefinition type="email_review" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_11557x0</bpmn:incoming>
+      <bpmn:outgoing>Flow_0hy9761</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="service_task_review_email_a" name="Automated email review">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=reviewer.grade" target="email_quality" />
+        </zeebe:ioMapping>
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="{&#10;&#34;reviewer&#34;: {&#10;&#34;name&#34;: &#34;Josh&#34;,&#10;&#34;grade&#34;: &#34;A-&#34;&#10;}&#10;}" />
+        </zeebe:properties>
+        <zeebe:taskDefinition type="email_review" />
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0d3k2mf</bpmn:incoming>
+      <bpmn:outgoing>Flow_0sbabzm</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="service_task_review_email_c" name="Automated email review">
+      <bpmn:extensionElements>
+        <zeebe:ioMapping>
+          <zeebe:output source="=reviewer.grade" target="email_quality" />
+        </zeebe:ioMapping>
+        <zeebe:taskDefinition type="email_review" />
+        <zeebe:properties>
+          <zeebe:property name="camundaModeler:exampleOutputJson" value="" />
+        </zeebe:properties>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1s58ibc</bpmn:incoming>
+      <bpmn:outgoing>Flow_0mpr8b3</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_1s58ibc" sourceRef="Gateway_00jfmy1" targetRef="service_task_review_email_c" />
+    <bpmn:sequenceFlow id="Flow_0mpr8b3" sourceRef="service_task_review_email_c" targetRef="Gateway_04yqg8a" />
+    <bpmn:parallelGateway id="Gateway_04yqg8a">
+      <bpmn:incoming>Flow_0sbabzm</bpmn:incoming>
+      <bpmn:incoming>Flow_0hy9761</bpmn:incoming>
+      <bpmn:incoming>Flow_0mpr8b3</bpmn:incoming>
+      <bpmn:outgoing>Flow_1hsnszd</bpmn:outgoing>
+    </bpmn:parallelGateway>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="user_task_with_example_data">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="start_email_request_received">
+        <dc:Bounds x="452" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="427" y="143" width="90" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1jxnyu5_di" bpmnElement="user_task_write_email">
+        <dc:Bounds x="580" y="78" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0hv6s1v_di" bpmnElement="Gateway_00jfmy1">
+        <dc:Bounds x="775" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0ikkeof_di" bpmnElement="user_task_print_email">
+        <dc:Bounds x="1270" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_09oboop_di" bpmnElement="end_email_sent">
+        <dc:Bounds x="1432" y="100" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1423" y="143" width="54" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0aux6p0_di" bpmnElement="service_task_review_email_b">
+        <dc:Bounds x="920" y="78" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1kzksam" bpmnElement="service_task_review_email_c">
+        <dc:Bounds x="920" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_1cv2rig_di" bpmnElement="service_task_review_email_a">
+        <dc:Bounds x="920" y="-60" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_0x12y3q_di" bpmnElement="Gateway_04yqg8a">
+        <dc:Bounds x="1135" y="93" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_0jxw8xo_di" bpmnElement="Flow_0jxw8xo">
+        <di:waypoint x="488" y="118" />
+        <di:waypoint x="580" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09hv1x4_di" bpmnElement="Flow_09hv1x4">
+        <di:waypoint x="1370" y="118" />
+        <di:waypoint x="1432" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dfsxdq_di" bpmnElement="Flow_0dfsxdq">
+        <di:waypoint x="680" y="118" />
+        <di:waypoint x="775" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0d3k2mf_di" bpmnElement="Flow_0d3k2mf">
+        <di:waypoint x="800" y="93" />
+        <di:waypoint x="800" y="-20" />
+        <di:waypoint x="920" y="-20" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11557x0_di" bpmnElement="Flow_11557x0">
+        <di:waypoint x="825" y="118" />
+        <di:waypoint x="920" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0sbabzm_di" bpmnElement="Flow_0sbabzm">
+        <di:waypoint x="1020" y="-20" />
+        <di:waypoint x="1160" y="-20" />
+        <di:waypoint x="1160" y="93" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0hy9761_di" bpmnElement="Flow_0hy9761">
+        <di:waypoint x="1020" y="118" />
+        <di:waypoint x="1135" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1hsnszd_di" bpmnElement="Flow_1hsnszd">
+        <di:waypoint x="1185" y="118" />
+        <di:waypoint x="1270" y="118" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1s58ibc_di" bpmnElement="Flow_1s58ibc">
+        <di:waypoint x="800" y="143" />
+        <di:waypoint x="800" y="260" />
+        <di:waypoint x="920" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0mpr8b3_di" bpmnElement="Flow_0mpr8b3">
+        <di:waypoint x="1020" y="260" />
+        <di:waypoint x="1160" y="260" />
+        <di:waypoint x="1160" y="143" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

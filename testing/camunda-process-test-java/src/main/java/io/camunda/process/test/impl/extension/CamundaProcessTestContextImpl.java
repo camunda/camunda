@@ -29,6 +29,8 @@ import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.assertions.UserTaskSelectors;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import io.camunda.process.test.impl.mock.JobWorkerMockBuilderImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.zeebe.client.ZeebeClient;
@@ -171,7 +173,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   @Override
   public JobWorkerMockBuilder mockJobWorker(final String jobType) {
     final CamundaClient client = createClient();
-    return new JobWorkerMockBuilderImpl(jobType, client);
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior);
+
+    return new JobWorkerMockBuilderImpl(jobType, client, exampleDataReader);
   }
 
   @Override
@@ -207,15 +212,39 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void completeJobWithExampleData(final String jobType) {
+    final CamundaClient client = createClient();
+    final ActivatedJob job = getActivatedJob(jobType);
+
+    final String logPrefix =
+        String.format("Mock: Complete job [jobType: '%s', jobKey: '%s']", jobType, job.getKey());
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior);
+
+    try {
+      final String exampleDataVariables =
+          exampleDataReader.readExampleData(
+              job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
+
+      LOGGER.debug("{} with example data {}", logPrefix, exampleDataVariables);
+      client.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+    } catch (final BpmnExampleDataReaderException e) {
+
+      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
+      client.newCompleteCommand(job).send().join();
+    }
+  }
+
+  @Override
   public void completeJob(final String jobType, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
     final ActivatedJob job = getActivatedJob(jobType);
 
     LOGGER.debug(
-        "Complete job with variables {} [job-type: '{}', job-key: '{}']",
-        variables,
+        "Mock: Complete job [jobType: '{}', jobKey: '{}'] with variables {}",
         jobType,
-        job.getKey());
+        job.getKey(),
+        variables);
     client.newCompleteCommand(job).variables(variables).send().join();
   }
 
@@ -231,11 +260,12 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     final ActivatedJob job = getActivatedJob(jobType);
 
     LOGGER.debug(
-        "Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
-        errorCode,
-        variables,
+        "Mock: Throw BPMN error [jobType: '{}', jobKey: '{}'] with error code {} and variables {}",
         jobType,
-        job.getKey());
+        job.getKey(),
+        errorCode,
+        variables);
+
     client.newThrowErrorCommand(job).errorCode(errorCode).variables(variables).send().join();
   }
 
@@ -258,33 +288,52 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   public void completeUserTask(
       final UserTaskSelector userTaskSelector, final Map<String, Object> variables) {
     final CamundaClient client = createClient();
-    final AtomicReference<Long> userTaskKey = new AtomicReference<>();
-
-    awaitBehavior.untilAsserted(
-        () -> {
-          final Optional<UserTask> userTask =
-              client
-                  .newUserTaskSearchRequest()
-                  .filter(userTaskSelector::applyFilter)
-                  .send()
-                  .join()
-                  .items()
-                  .stream()
-                  .filter(userTaskSelector::test)
-                  .findFirst();
-
-          userTask.map(UserTask::getUserTaskKey).ifPresent(userTaskKey::set);
-
-          assertThat(userTask)
-              .withFailMessage(
-                  "Expected to complete user task [%s] but no user task is available.",
-                  userTaskSelector.describe())
-              .isPresent();
-        });
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
 
     LOGGER.debug(
-        "Complete user task with variables {} [user-task-key: '{}']", variables, userTaskKey.get());
-    client.newCompleteUserTaskCommand(userTaskKey.get()).variables(variables).send().join();
+        "Mock: Complete user task [{}, userTaskKey: '{}'] with variables {}",
+        userTaskSelector.describe(),
+        userTask.getUserTaskKey(),
+        variables);
+
+    client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).variables(variables).send().join();
+  }
+
+  @Override
+  public void completeUserTaskWithExampleData(final String elementId) {
+    completeUserTaskWithExampleData(UserTaskSelectors.byElementId(elementId));
+  }
+
+  @Override
+  public void completeUserTaskWithExampleData(final UserTaskSelector userTaskSelector) {
+    final CamundaClient client = createClient();
+    final BpmnExampleDataReader exampleDataReader =
+        new BpmnExampleDataReader(client, awaitBehavior);
+
+    final UserTask userTask = awaitUserTask(userTaskSelector, client);
+    final String logPrefix =
+        String.format(
+            "Mock: Complete user task [%s, userTaskKey: '%s']",
+            userTaskSelector.describe(), userTask.getUserTaskKey());
+
+    try {
+      final String exampleData =
+          exampleDataReader.readExampleData(
+              userTask.getProcessDefinitionKey(),
+              userTask.getBpmnProcessId(),
+              userTask.getElementId());
+
+      LOGGER.debug("{} with example data {}", logPrefix, exampleData);
+      client
+          .newCompleteUserTaskCommand(userTask.getUserTaskKey())
+          .variables(exampleData)
+          .send()
+          .join();
+    } catch (final BpmnExampleDataReaderException e) {
+
+      LOGGER.warn("{} without example data due to errors. {}", logPrefix, e.getMessage());
+      client.newCompleteUserTaskCommand(userTask.getUserTaskKey()).send().join();
+    }
   }
 
   @Override
@@ -313,7 +362,10 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
     literalExpression.setText(text);
     decision.addChildElement(literalExpression);
 
-    LOGGER.debug("Mock: Deploy a DMN '{}' with decision output {}", decisionId, decisionOutput);
+    LOGGER.debug(
+        "Mock: Deploy a DMN [decisionId: '{}'] with decision output {}",
+        decisionId,
+        decisionOutput);
 
     final String resourceName = decisionId + ".dmn";
     client
@@ -322,6 +374,36 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
             new ByteArrayInputStream(Dmn.convertToString(modelInstance).getBytes()), resourceName)
         .send()
         .join();
+  }
+
+  private UserTask awaitUserTask(
+      final UserTaskSelector userTaskSelector, final CamundaClient client) {
+
+    final AtomicReference<UserTask> userTask = new AtomicReference<>();
+
+    awaitBehavior.untilAsserted(
+        () -> {
+          final Optional<UserTask> maybeUserTask =
+              client
+                  .newUserTaskSearchRequest()
+                  .filter(userTaskSelector::applyFilter)
+                  .send()
+                  .join()
+                  .items()
+                  .stream()
+                  .filter(userTaskSelector::test)
+                  .findFirst();
+
+          assertThat(maybeUserTask)
+              .withFailMessage(
+                  "Expected to complete user task [%s] but no user task is available.",
+                  userTaskSelector.describe())
+              .isPresent();
+
+          userTask.set(maybeUserTask.get());
+        });
+
+    return userTask.get();
   }
 
   private ActivatedJob getActivatedJob(final String jobType) {

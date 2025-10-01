@@ -16,10 +16,13 @@
 package io.camunda.process.test.impl.mock;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.process.test.api.mock.JobWorkerMockBuilder;
+import io.camunda.process.test.impl.mock.BpmnExampleDataReader.BpmnExampleDataReaderException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.BiFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,18 +30,26 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(JobWorkerMockBuilderImpl.class);
 
+  private static final String ACTION_COMPLETE_JOB = "Complete job";
+  private static final String ACTION_THROW_BPMN_ERROR = "Throw BPMN Error";
+
   private final String jobType;
   private final CamundaClient client;
+  private final BpmnExampleDataReader exampleDataReader;
 
-  /**
-   * Constructs a `JobWorkerMockBuilder` instance.
-   *
-   * @param jobType the job type to mock, matching the `zeebeJobType` in the BPMN model.
-   * @param client the Camunda client used to create the mock worker.
-   */
-  public JobWorkerMockBuilderImpl(final String jobType, final CamundaClient client) {
+  private final BiFunction<String, ActivatedJob, String> logMessagePrefix;
+
+  public JobWorkerMockBuilderImpl(
+      final String jobType,
+      final CamundaClient client,
+      final BpmnExampleDataReader exampleDataReader) {
+
     this.jobType = jobType;
     this.client = client;
+    this.exampleDataReader = exampleDataReader;
+    logMessagePrefix =
+        (action, job) ->
+            String.format("Mock: %s [jobType: %s, jobKey: %s]", action, jobType, job.getKey());
   }
 
   @Override
@@ -51,11 +62,31 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
     return withHandler(
         (jobClient, job) -> {
           LOGGER.debug(
-              "Mock: Complete job with variables {} [job-type: '{}', job-key: '{}']",
-              variables,
-              jobType,
-              job.getKey());
+              "{} with variables {}", logMessagePrefix.apply(ACTION_COMPLETE_JOB, job), variables);
+
           jobClient.newCompleteCommand(job).variables(variables).send().join();
+        });
+  }
+
+  @Override
+  public JobWorkerMock thenCompleteWithExampleData() {
+    return withHandler(
+        (jobClient, job) -> {
+          final String logMessagePrefix = this.logMessagePrefix.apply(ACTION_COMPLETE_JOB, job);
+
+          try {
+            final String exampleDataVariables =
+                exampleDataReader.readExampleData(
+                    job.getProcessDefinitionKey(), job.getBpmnProcessId(), job.getElementId());
+
+            LOGGER.debug("{} with example data {}", logMessagePrefix, exampleDataVariables);
+            jobClient.newCompleteCommand(job).variables(exampleDataVariables).send().join();
+          } catch (final BpmnExampleDataReaderException e) {
+
+            LOGGER.warn(
+                "{} without example data due to errors. {}", logMessagePrefix, e.getMessage());
+            jobClient.newCompleteCommand(job).send().join();
+          }
         });
   }
 
@@ -70,11 +101,10 @@ public class JobWorkerMockBuilderImpl implements JobWorkerMockBuilder {
     return withHandler(
         (jobClient, job) -> {
           LOGGER.debug(
-              "Mock: Throw BPMN error with error code {} and variables {} [job-type: '{}', job-key: '{}']",
+              "{} with error code {} and variables {}",
+              logMessagePrefix.apply(ACTION_THROW_BPMN_ERROR, job),
               errorCode,
-              variables,
-              jobType,
-              job.getKey());
+              variables);
 
           jobClient
               .newThrowErrorCommand(job)
