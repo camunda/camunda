@@ -17,6 +17,8 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
+import io.camunda.client.api.search.response.Group;
+import io.camunda.client.api.search.response.Role;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -37,11 +39,19 @@ public class AuthorizationIntegrationTest {
 
   private static final String ROLE_ID_1 = Strings.newRandomValidIdentityId();
   private static final String GROUP_ID_1 = Strings.newRandomValidIdentityId();
-  private static final String USER_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String USER_ID_1 = "0" + Strings.newRandomValidIdentityId();
+  private static final String USER_ID_2 = "1" + Strings.newRandomValidIdentityId();
+  private static final String USER_ID_3 = "2" + Strings.newRandomValidIdentityId();
   private static final String MAPPING_RULE_ID_1 = Strings.newRandomValidIdentityId();
 
   @UserDefinition
   private static final TestUser USER_1 = new TestUser(USER_ID_1, "password", List.of());
+
+  @UserDefinition
+  private static final TestUser USER_2 = new TestUser(USER_ID_2, "password", List.of());
+
+  @UserDefinition
+  private static final TestUser USER_3 = new TestUser(USER_ID_3, "password", List.of());
 
   private static CamundaClient camundaClient;
 
@@ -71,6 +81,15 @@ public class AuthorizationIntegrationTest {
         .description(GROUP_ID_1 + " description")
         .send()
         .join();
+    Awaitility.await()
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              final Group group = camundaClient.newGroupGetRequest(GROUP_ID_1).send().join();
+              assertThat(group).isNotNull();
+              final Role role = camundaClient.newRoleGetRequest(ROLE_ID_1).send().join();
+              assertThat(role).isNotNull();
+            });
   }
 
   @ParameterizedTest
@@ -149,16 +168,16 @@ public class AuthorizationIntegrationTest {
               assertThat(retrievedAuthorization).isNotNull();
               assertThat(retrievedAuthorization.getResourceType())
                   .isEqualTo(ResourceType.AUTHORIZATION);
-              camundaClient
-                  .newUpdateAuthorizationCommand(authorizationKey)
-                  .ownerId(ownerId)
-                  .ownerType(ownerType)
-                  .resourceId(resourceId)
-                  .resourceType(resourceType)
-                  .permissionTypes(permissionType)
-                  .send()
-                  .join();
             });
+    camundaClient
+        .newUpdateAuthorizationCommand(authorizationKey)
+        .ownerId(ownerId)
+        .ownerType(ownerType)
+        .resourceId(resourceId)
+        .resourceType(resourceType)
+        .permissionTypes(permissionType)
+        .send()
+        .join();
     Awaitility.await()
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
@@ -221,7 +240,7 @@ public class AuthorizationIntegrationTest {
   @Test
   void searchShouldReturnAuthorizationsFilteredByOwnerId() {
     // when
-    final var ownerId = Strings.newRandomValidIdentityId();
+    final var ownerId = USER_ID_3;
 
     final CreateAuthorizationResponse authorization =
         camundaClient
@@ -237,7 +256,7 @@ public class AuthorizationIntegrationTest {
     // create one more authorization
     camundaClient
         .newCreateAuthorizationCommand()
-        .ownerId("anotherOwnerId")
+        .ownerId(USER_ID_2)
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
@@ -270,7 +289,7 @@ public class AuthorizationIntegrationTest {
     final CreateAuthorizationResponse authorization =
         camundaClient
             .newCreateAuthorizationCommand()
-            .ownerId(Strings.newRandomValidIdentityId())
+            .ownerId(USER_ID_1)
             .ownerType(OwnerType.USER)
             .resourceId(resourceId)
             .resourceType(ResourceType.RESOURCE)
@@ -281,7 +300,7 @@ public class AuthorizationIntegrationTest {
     // create one more authorization
     camundaClient
         .newCreateAuthorizationCommand()
-        .ownerId(Strings.newRandomValidIdentityId())
+        .ownerId(USER_ID_2)
         .ownerType(OwnerType.USER)
         .resourceId("someOtherId")
         .resourceType(ResourceType.RESOURCE)
@@ -311,7 +330,7 @@ public class AuthorizationIntegrationTest {
     // when
     camundaClient
         .newCreateAuthorizationCommand()
-        .ownerId("aOwnerId")
+        .ownerId(USER_ID_1)
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
@@ -323,7 +342,7 @@ public class AuthorizationIntegrationTest {
 
     camundaClient
         .newCreateAuthorizationCommand()
-        .ownerId("bOwnerId")
+        .ownerId(USER_ID_2)
         .ownerType(OwnerType.USER)
         .resourceId(Strings.newRandomValidIdentityId())
         .resourceType(ResourceType.RESOURCE)
@@ -343,7 +362,7 @@ public class AuthorizationIntegrationTest {
                       .join();
               assertThat(authorizationsSearchResponse.items())
                   .map(Authorization::getOwnerId)
-                  .contains("bOwnerId", "aOwnerId");
+                  .contains(USER_ID_1, USER_ID_2);
             });
   }
 
@@ -362,21 +381,10 @@ public class AuthorizationIntegrationTest {
     return Stream.of(
         Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "resource1"),
         Arguments.of(OwnerType.USER, ResourceType.RESOURCE, USER_ID_1, "*"),
-        Arguments.of(
-            OwnerType.USER, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "resource1"),
-        Arguments.of(
-            OwnerType.USER, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
         Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "resource1"),
         Arguments.of(OwnerType.ROLE, ResourceType.RESOURCE, ROLE_ID_1, "*"),
         Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "resource1"),
         Arguments.of(OwnerType.GROUP, ResourceType.RESOURCE, GROUP_ID_1, "*"),
-        Arguments.of(
-            OwnerType.GROUP,
-            ResourceType.RESOURCE,
-            Strings.newRandomValidIdentityId(),
-            "resource1"),
-        Arguments.of(
-            OwnerType.GROUP, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
         Arguments.of(
             OwnerType.CLIENT, ResourceType.RESOURCE, Strings.newRandomValidIdentityId(), "*"),
         Arguments.of(
@@ -388,20 +396,10 @@ public class AuthorizationIntegrationTest {
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.RESOURCE, MAPPING_RULE_ID_1, "*"),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, USER_ID_1),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.USER, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(
-            OwnerType.MAPPING_RULE,
-            ResourceType.USER,
-            MAPPING_RULE_ID_1,
-            Strings.newRandomValidIdentityId()),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, ROLE_ID_1),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.ROLE, MAPPING_RULE_ID_1, "*"),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, GROUP_ID_1),
         Arguments.of(OwnerType.MAPPING_RULE, ResourceType.GROUP, MAPPING_RULE_ID_1, "*"),
-        Arguments.of(
-            OwnerType.MAPPING_RULE,
-            ResourceType.GROUP,
-            MAPPING_RULE_ID_1,
-            Strings.newRandomValidIdentityId()),
         Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, MAPPING_RULE_ID_1),
         Arguments.of(OwnerType.ROLE, ResourceType.MAPPING_RULE, ROLE_ID_1, "*"));
   }
