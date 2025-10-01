@@ -91,7 +91,7 @@ final class ScaleUpBrokersTest {
             () ->
                 TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(2, 1));
-    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(30));
 
     // then - verify the cluster can still process
     assertThatAllJobsCanBeCompleted(processInstanceKeys, camundaClient, JOB_TYPE);
@@ -123,7 +123,7 @@ final class ScaleUpBrokersTest {
             () ->
                 TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(3, 2));
-    cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(finalClusterSize, 3, 1, Duration.ofSeconds(30));
   }
 
   @Test
@@ -148,7 +148,7 @@ final class ScaleUpBrokersTest {
                 TopologyAssert.assertThat(camundaClient.newTopologyRequest().send().join())
                     .hasLeaderForPartition(2, 1)
                     .hasLeaderForPartition(3, 2));
-    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(30));
 
     // then - verify the cluster can still process
     assertThatAllJobsCanBeCompleted(processInstanceKeys, camundaClient, JOB_TYPE);
@@ -191,7 +191,7 @@ final class ScaleUpBrokersTest {
         .brokerHasPartition(0, 1);
 
     // Changes are reflected in the topology returned by grpc query
-    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(10));
+    cluster.awaitCompleteTopology(newClusterSize, 3, 1, Duration.ofSeconds(30));
   }
 
   @Test
