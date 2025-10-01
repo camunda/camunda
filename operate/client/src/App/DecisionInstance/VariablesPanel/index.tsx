@@ -12,10 +12,10 @@ import {InputsAndOutputs} from './InputsAndOutputs';
 import {Result} from './Result';
 import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
-interface VariablesPanelProps {
+type VariablesPanelProps = {
   decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
   decisionDefinitionType: DecisionInstance['decisionDefinitionType'];
-}
+};
 
 const VariablesPanel: React.FC<VariablesPanelProps> = ({
   decisionEvaluationInstanceKey,

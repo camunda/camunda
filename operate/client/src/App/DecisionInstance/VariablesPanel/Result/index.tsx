@@ -19,9 +19,9 @@ const JSONViewer = lazy(async () => {
   return {default: JSONViewer};
 });
 
-interface ResultProps {
+type ResultProps = {
   decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
-}
+};
 
 const Result: React.FC<ResultProps> = ({decisionEvaluationInstanceKey}) => {
   const {data: decisionInstance, status} = useDecisionInstance(

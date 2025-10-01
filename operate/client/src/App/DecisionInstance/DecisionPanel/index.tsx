@@ -15,9 +15,9 @@ import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import {useMemo} from 'react';
 
-interface DecisionPanelProps {
+type DecisionPanelProps = {
   decisionEvaluationInstanceKey: string;
-}
+};
 
 const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
   const {data: decisionInstance} = useDecisionInstance(
