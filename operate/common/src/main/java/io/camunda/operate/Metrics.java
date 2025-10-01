@@ -49,7 +49,10 @@ public class Metrics {
   public static final String COUNTER_NAME_EVENTS_PROCESSED_FINISHED_WI =
       "events.processed.finished.process.instances";
   public static final String COUNTER_NAME_COMMANDS = "commands";
-  public static final String COUNTER_NAME_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_PROCESS_INSTANCES_ARCHIVED = "archived.process.instances";
+  public static final String COUNTER_NAME_BATCH_OPERATIONS_ARCHIVED = "archiver.batch.operations";
+  public static final String COUNTER_NAME_STANDALONE_DECISIONS_ARCHIVED =
+      "archiver.standalone.decisions";
   public static final String COUNTER_NAME_IMPORT_FNI_TREE_PATH_CACHE_RESULT =
       "import.fni.tree.path.cache.result";
   public static final String COUNTER_NAME_REINDEX_FAILURES = "archival.reindex.failures";

@@ -28,6 +28,7 @@ import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.Either;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -85,6 +86,7 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private ListViewTemplate processInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private OperateProperties operateProperties;
   @Autowired private Metrics metrics;
   @Autowired private RestHighLevelClient esClient;
@@ -159,6 +161,20 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
         t ->
             format(
                 "Exception occurred, while obtaining finished batch operations: %s",
+                t.getMessage());
+    return searchAsync(searchRequest, errorMessage);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch(
+      final List<Integer> partitionIds) {
+    final var aggregation = createStandaloneDecisionInstancesAggregation(DATES_AGG, INSTANCES_AGG);
+    final var searchRequest =
+        createStandaloneDecisionInstancesSearchRequest(aggregation, partitionIds);
+    final Function<Throwable, String> errorMessage =
+        t ->
+            format(
+                "Exception occurred, while obtaining finished standalone decision evaluations: %s",
                 t.getMessage());
     return searchAsync(searchRequest, errorMessage);
   }
@@ -350,6 +366,58 @@ public class ElasticsearchArchiverRepository implements ArchiverRepository {
                 .size(operateProperties.getArchiver().getRolloverBatchSize())
                 .sort(ListViewTemplate.ID, SortOrder.ASC)
                 .fetchSource(ListViewTemplate.ID, null));
+  }
+
+  private AggregationBuilder createStandaloneDecisionInstancesAggregation(
+      final String datesAggName, final String instancesAggName) {
+    return dateHistogram(datesAggName)
+        .field(DecisionInstanceTemplate.EVALUATION_DATE)
+        .calendarInterval(
+            new DateHistogramInterval(operateProperties.getArchiver().getRolloverInterval()))
+        .format(operateProperties.getArchiver().getElsRolloverDateFormat())
+        .keyed(true) // get result as a map (not an array)
+        // we want to get only one bucket at a time
+        .subAggregation(
+            bucketSort("datesSortedAgg", Arrays.asList(new FieldSortBuilder("_key"))).size(1))
+        // we need process instance ids, also taking into account batch size
+        .subAggregation(
+            topHits(instancesAggName)
+                .size(operateProperties.getArchiver().getRolloverBatchSize())
+                .sort(DecisionInstanceTemplate.ID, SortOrder.ASC)
+                .fetchSource(DecisionInstanceTemplate.ID, null));
+  }
+
+  private SearchRequest createStandaloneDecisionInstancesSearchRequest(
+      final AggregationBuilder agg, final List<Integer> partitionIds) {
+    final QueryBuilder endDateQ =
+        rangeQuery(DecisionInstanceTemplate.EVALUATION_DATE)
+            .lte(operateProperties.getArchiver().getArchivingTimepoint());
+    final TermsQueryBuilder partitionQ =
+        termsQuery(DecisionInstanceTemplate.PARTITION_ID, partitionIds);
+    // standalone decision instances have processInstanceKey = -1
+    final TermQueryBuilder standaloneDecisionInstanceQ =
+        termQuery(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1);
+
+    final ConstantScoreQueryBuilder q =
+        constantScoreQuery(
+            ElasticsearchUtil.joinWithAnd(endDateQ, partitionQ, standaloneDecisionInstanceQ));
+
+    final SearchRequest searchRequest =
+        new SearchRequest(decisionInstanceTemplate.getFullQualifiedName())
+            .source(
+                new SearchSourceBuilder()
+                    .query(q)
+                    .aggregation(agg)
+                    .fetchSource(false)
+                    .size(0)
+                    .sort(DecisionInstanceTemplate.EVALUATION_DATE, SortOrder.ASC))
+            .requestCache(false); // we don't need to cache this, as each time we need new data
+
+    LOGGER.debug(
+        "Finished standalone decision evaluations for archiving request: \n{}\n and aggregation: \n{}",
+        q,
+        agg.toString());
+    return searchRequest;
   }
 
   private ReindexRequest createReindexRequestWithDefaults() {
