@@ -30,7 +30,7 @@ const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
 
     return Array.from(
       new Set(decisionInstance.matchedRules.map((rule) => rule.ruleIndex)),
-    ).filter((ruleIndex) => ruleIndex !== undefined);
+    );
   }, [decisionInstance?.matchedRules]);
 
   const {
