@@ -179,7 +179,6 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new RoleMemberRemovedHandler(
                 indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
-            new RoleDeletedHandler(indexDescriptors.get(RoleIndex.class).getFullQualifiedName()),
             new UserCreatedUpdatedHandler(
                 indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
             new UserDeletedHandler(indexDescriptors.get(UserIndex.class).getFullQualifiedName()),
