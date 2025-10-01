@@ -78,8 +78,15 @@ const DecisionInstance: React.FC = observer(() => {
       <DecisionInstanceContainer>
         <InstanceDetail
           header={<Header decisionEvaluationInstanceKey={decisionInstanceId} />}
-          topPanel={<DecisionPanel />}
-          bottomPanel={<VariablesPanel />}
+          topPanel={
+            <DecisionPanel decisionEvaluationInstanceKey={decisionInstanceId} />
+          }
+          bottomPanel={
+            <VariablesPanel
+              decisionEvaluationInstanceKey={decisionInstanceId}
+              decisionDefinitionType={data?.decisionDefinitionType ?? 'UNKNOWN'}
+            />
+          }
           type="decision"
           rightPanel={
             drdStore.state.panelState === 'minimized' ? (

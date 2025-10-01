@@ -50,9 +50,9 @@ const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   ];
 };
 
-interface HeaderProps {
+type HeaderProps = {
   decisionEvaluationInstanceKey: string;
-}
+};
 
 const Header: React.FC<HeaderProps> = ({decisionEvaluationInstanceKey}) => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;

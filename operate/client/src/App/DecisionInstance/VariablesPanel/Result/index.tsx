@@ -6,28 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {Container} from './styled';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {ErrorMessage} from 'modules/components/ErrorMessage';
 import {Loading} from '@carbon/react';
 import {lazy, Suspense} from 'react';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 const JSONViewer = lazy(async () => {
   const {JSONViewer} = await import('./JSONViewer');
   return {default: JSONViewer};
 });
 
-const Result: React.FC = observer(() => {
-  const {
-    state: {status, decisionInstance},
-  } = decisionInstanceDetailsStore;
+type ResultProps = {
+  decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
+};
+
+const Result: React.FC<ResultProps> = ({decisionEvaluationInstanceKey}) => {
+  const {data: decisionInstance, status} = useDecisionInstance(
+    decisionEvaluationInstanceKey,
+  );
 
   return (
     <Container>
-      {status === 'initial' && <Loading data-testid="result-loading-spinner" />}
-      {status === 'fetched' &&
+      {status === 'pending' && <Loading data-testid="result-loading-spinner" />}
+      {status === 'success' &&
         decisionInstance !== null &&
         decisionInstance.state !== 'FAILED' && (
           <Suspense>
@@ -37,12 +41,12 @@ const Result: React.FC = observer(() => {
             />
           </Suspense>
         )}
-      {status === 'fetched' && decisionInstance?.state === 'FAILED' && (
+      {status === 'success' && decisionInstance?.state === 'FAILED' && (
         <EmptyMessage message="No result available because the evaluation failed" />
       )}
       {status === 'error' && <ErrorMessage />}
     </Container>
   );
-});
+};
 
 export {Result};

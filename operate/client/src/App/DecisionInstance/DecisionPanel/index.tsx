@@ -6,24 +6,32 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {IncidentBanner, Section} from './styled';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
-import {decisionInstanceDetailsStore} from 'modules/stores/decisionInstanceDetails';
 import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useQuery} from '@tanstack/react-query';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
+import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
+import {useMemo} from 'react';
 
-const DecisionPanel: React.FC = observer(() => {
-  const {decisionInstance} = decisionInstanceDetailsStore.state;
-  const highlightableRules = Array.from(
-    new Set(
-      decisionInstanceDetailsStore.state.decisionInstance?.evaluatedOutputs.map(
-        (output) => output.ruleIndex,
-      ),
-    ),
-  ).filter((item) => item !== undefined);
+type DecisionPanelProps = {
+  decisionEvaluationInstanceKey: string;
+};
+
+const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
+  const {data: decisionInstance} = useDecisionInstance(
+    props.decisionEvaluationInstanceKey,
+  );
+  const highlightableRules = useMemo(() => {
+    if (!decisionInstance?.matchedRules) {
+      return [];
+    }
+
+    return Array.from(
+      new Set(decisionInstance.matchedRules.map((rule) => rule.ruleIndex)),
+    );
+  }, [decisionInstance?.matchedRules]);
 
   const {
     data: decisionDefinitionXml,
@@ -32,8 +40,8 @@ const DecisionPanel: React.FC = observer(() => {
     error,
   } = useQuery(
     useDecisionDefinitionXmlOptions({
-      decisionDefinitionKey: decisionInstance?.decisionDefinitionId ?? '',
-      enabled: decisionInstance !== null,
+      decisionDefinitionKey: decisionInstance?.decisionDefinitionKey ?? '',
+      enabled: !!decisionInstance,
     }),
   );
 
@@ -58,18 +66,18 @@ const DecisionPanel: React.FC = observer(() => {
     >
       {decisionInstance?.state === 'FAILED' && (
         <IncidentBanner data-testid="incident-banner">
-          {decisionInstance.errorMessage}
+          {decisionInstance.evaluationFailure}
         </IncidentBanner>
       )}
       <DiagramShell status={getStatus()}>
         <DecisionViewer
           xml={decisionDefinitionXml ?? null}
-          decisionViewId={decisionInstance?.decisionId ?? null}
+          decisionViewId={decisionInstance?.decisionDefinitionId ?? null}
           highlightableRules={highlightableRules}
         />
       </DiagramShell>
     </Section>
   );
-});
+};
 
 export {DecisionPanel};
