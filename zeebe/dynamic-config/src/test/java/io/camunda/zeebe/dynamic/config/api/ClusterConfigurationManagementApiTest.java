@@ -105,7 +105,7 @@ final class ClusterConfigurationManagementApiTest {
             coordinator.getCommunicationService(),
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                recordingCoordinator, id0, new TestConcurrencyControl(), true));
+                recordingCoordinator, id0, new TestConcurrencyControl()));
 
     requestServer.start();
   }

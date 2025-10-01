@@ -206,7 +206,6 @@ final class ClusterConfigurationInitializerTest {
                 PartitionId.from("test", 1), Set.of(member), Map.of(member, 1), 1, member));
     return new StaticInitializer(
         new StaticConfiguration(
-            false,
             new ControllablePartitionDistributor().withPartitions(partitions),
             Set.of(member),
             member,

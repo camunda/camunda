@@ -235,8 +235,6 @@ final class ClusterEndpointIT {
         .withBrokersCount(BROKER_COUNT)
         .withPartitionsCount(PARTITION_COUNT)
         .withReplicationFactor(replicationFactor)
-        .withBrokerConfig(
-            b -> b.brokerConfig().getExperimental().getFeatures().setEnablePartitionScaling(true))
         .build()
         .start();
   }
