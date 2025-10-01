@@ -27,6 +27,7 @@ import type {OperationConfig} from 'modules/components/Operations/types';
 import {logger} from 'modules/logger';
 import {useOperations} from 'modules/queries/operations/useOperations';
 import {ACTIVE_OPERATION_STATES} from 'modules/constants';
+import {useProcessDefinitionXml} from 'modules/queries/processDefinitions/useProcessDefinitionXml';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -72,6 +73,10 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
         isDismissable: true,
       });
     },
+  });
+
+  const xml = useProcessDefinitionXml({
+    processDefinitionKey: processInstance.processDefinitionKey,
   });
 
   const invalidateQueries = () => {
@@ -149,6 +154,32 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
     }
   };
 
+  const downloadBPMNXML = () => {
+    console.log('Downloading BPMN XML...');
+    console.log(xml.data?.xml);
+
+    // @ts-ignore
+    const blob = new Blob([xml.data.xml], {type: 'application/xml'});
+
+    // Create temporary URL
+    const url = URL.createObjectURL(blob);
+
+    // Create hidden <a> element
+    const a = document.createElement('a');
+    a.href = url;
+    a.download =
+      processInstance.processDefinitionId +
+      '_' +
+      processInstance.processDefinitionVersion +
+      '.bpmn'; // 👈 file extension .xml
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    // Cleanup
+    URL.revokeObjectURL(url);
+  };
+
   const handleModificationModalClose = () => {
     setIsModificationModeHelperModalVisible(false);
   };
@@ -203,6 +234,11 @@ const ProcessInstanceOperations: React.FC<Props> = ({processInstance}) => {
       onExecute: handleEnterModificationMode,
     });
   }
+
+  operations.push({
+    type: 'DOWNLOAD_BPMN_XML',
+    onExecute: downloadBPMNXML,
+  });
 
   const isLoading =
     hasActiveOperationLegacy ||

@@ -10,7 +10,8 @@ type OperationType =
   | 'RESOLVE_INCIDENT'
   | 'CANCEL_PROCESS_INSTANCE'
   | 'DELETE_PROCESS_INSTANCE'
-  | 'ENTER_MODIFICATION_MODE';
+  | 'ENTER_MODIFICATION_MODE'
+  | 'DOWNLOAD_BPMN_XML';
 
 type OperationConfig = {
   type: OperationType;

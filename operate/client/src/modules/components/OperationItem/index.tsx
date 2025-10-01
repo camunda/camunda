@@ -6,14 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Error, Tools, RetryFailed} from '@carbon/react/icons';
+import {Error, Tools, RetryFailed, Calendar} from '@carbon/react/icons';
 import {Button, type ButtonSize, type Icon} from '@carbon/react';
 
 type ItemProps = {
   type:
     | 'RESOLVE_INCIDENT'
     | 'CANCEL_PROCESS_INSTANCE'
-    | 'ENTER_MODIFICATION_MODE';
+    | 'ENTER_MODIFICATION_MODE'
+    | 'DOWNLOAD_BPMN_XML';
   onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
   disabled?: boolean;
@@ -29,6 +30,7 @@ const TYPE_DETAILS: Readonly<
   RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},
   CANCEL_PROCESS_INSTANCE: {icon: Error, testId: 'cancel-operation'},
   ENTER_MODIFICATION_MODE: {icon: Tools, testId: 'enter-modification-mode'},
+  DOWNLOAD_BPMN_XML: {icon: Calendar, testId: 'download-bpmn-xml'},
 };
 
 const OperationItem: React.FC<ItemProps> = ({

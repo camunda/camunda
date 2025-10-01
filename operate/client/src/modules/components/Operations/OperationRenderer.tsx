@@ -44,6 +44,16 @@ const OperationRenderer: React.FC<Props> = ({
           size="sm"
         />
       );
+    case 'DOWNLOAD_BPMN_XML':
+      return (
+        <OperationItem
+          type="DOWNLOAD_BPMN_XML"
+          onClick={operation.onExecute}
+          title={operation.label || `Download Instance ${processInstanceKey}`}
+          disabled={operation.disabled}
+          size="sm"
+        />
+      );
     default:
       return null;
   }
