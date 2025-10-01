@@ -18,8 +18,10 @@ import static org.assertj.core.api.Assertions.fail;
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.CreateUserResponse;
+import io.camunda.configuration.Camunda;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
+import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg.BackupStoreType;
 import io.camunda.zeebe.it.util.ZeebeResourcesHelper;
 import io.camunda.zeebe.management.cluster.ClusterConfigPatchRequest;
@@ -123,6 +125,32 @@ public class ScaleUpPartitionsTest {
     backup.setStore(BackupStoreType.AZURE);
     azure.setBasePath(containerName);
     azure.setConnectionString(AZURITE_CONTAINER.getConnectString());
+  }
+
+  private Camunda getRestoreConfig(final BrokerCfg brokerCfg) {
+    final var unifiedRestoreConfig = new Camunda();
+    unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
+    unifiedRestoreConfig
+        .getCluster()
+        .setPartitionCount(brokerCfg.getCluster().getPartitionsCount());
+    unifiedRestoreConfig
+        .getData()
+        .getPrimaryStorage()
+        .setDirectory(brokerCfg.getData().getDirectory());
+    unifiedRestoreConfig
+        .getCluster()
+        .setReplicationFactor(brokerCfg.getCluster().getReplicationFactor());
+    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
+
+    final var backupConfig = unifiedRestoreConfig.getData().getBackup();
+    // configure azure backup
+    backupConfig.setStore(io.camunda.configuration.Backup.BackupStoreType.AZURE);
+    final var azure = backupConfig.getAzure();
+    // populate azure config from broker config
+    final var brokerAzure = brokerCfg.getData().getBackup().getAzure();
+    azure.setBasePath(brokerAzure.getBasePath());
+    azure.setConnectionString(brokerAzure.getConnectionString());
+    return unifiedRestoreConfig;
   }
 
   @Test
@@ -575,7 +603,7 @@ public class ScaleUpPartitionsTest {
       Files.createDirectories(dataFolder);
       broker.brokerConfig().getCluster().setPartitionsCount(desiredPartitionCount);
       try (final var restoreApp =
-          new TestRestoreApp(broker.brokerConfig()).withBackupId(backupId)) {
+          new TestRestoreApp(getRestoreConfig(broker.brokerConfig())).withBackupId(backupId)) {
         assertThatNoException().isThrownBy(restoreApp::start);
       }
       FileUtil.flushDirectory(dataFolder);
