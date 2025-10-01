@@ -25,6 +25,7 @@ function useDecisionDefinitionXmlOptions({
     {
       queryKey,
       enabled,
+      staleTime: 'static',
     },
   );
 }
