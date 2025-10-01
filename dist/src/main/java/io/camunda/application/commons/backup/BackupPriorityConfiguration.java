@@ -14,7 +14,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.webapps.schema.descriptors.backup.BackupPriorities;
-import io.camunda.webapps.schema.descriptors.backup.Prio1Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
@@ -24,13 +23,11 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
@@ -111,13 +108,6 @@ public class BackupPriorityConfiguration {
 
   public static BackupPriorities getBackupPriorities(
       final String indexPrefix, final boolean isElasticsearch) {
-    final List<Prio1Backup> prio1 =
-        List.of(
-            // OPERATE
-            new ImportPositionIndex(indexPrefix, isElasticsearch),
-            // TASKLIST
-            new TasklistImportPositionIndex(indexPrefix, isElasticsearch));
-
     final List<Prio2Backup> prio2 =
         List.of(
             // OPERATE
@@ -171,12 +161,11 @@ public class BackupPriorityConfiguration {
             new UsageMetricTemplate(indexPrefix, isElasticsearch),
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch));
 
-    LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);
     LOG.debug("Prio3 are {}", prio3);
     LOG.debug("Prio4 are {}", prio4);
     LOG.debug("Prio5 are {}", prio5);
-    return new BackupPriorities(prio1, prio2, prio3, prio4, prio5);
+    return new BackupPriorities(prio2, prio3, prio4, prio5);
   }
 
   private boolean getIsElasticsearch() {

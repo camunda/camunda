@@ -20,7 +20,6 @@ import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
-import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.DeleteAction;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.Alias;
@@ -50,8 +49,6 @@ import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppe
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
@@ -233,33 +230,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
     }
   }
 
-  @Override
-  public boolean importersCompleted(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
-    final var allImportPositionDocuments =
-        allImportPositionDocuments(partitionId, importPositionIndices);
-
-    try {
-      final var allRecordReaderStatuses =
-          client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
-
-      // brand new install no need to wait for importers to complete
-      if (allRecordReaderStatuses.isEmpty()) {
-        return true;
-      }
-
-      return allRecordReaderStatuses.stream().allMatch(status -> status.source().getCompleted());
-
-    } catch (final IOException e) {
-      final var errMsg =
-          String.format(
-              "Failed to search documents in the import position index for partition [%s]",
-              partitionId);
-      LOG.warn(errMsg, e);
-      return false;
-    }
-  }
-
   /**
    * Overwrites the settings of the existing index template with the settings block in the
    * descriptor schema json file.
@@ -339,17 +309,6 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
           e);
       return false;
     }
-  }
-
-  private SearchRequest allImportPositionDocuments(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
-    final var importPositionIndicesNames =
-        importPositionIndices.stream().map(IndexDescriptor::getFullQualifiedName).toList();
-    return new SearchRequest.Builder()
-        .index(importPositionIndicesNames)
-        .size(100)
-        .query(q -> q.match(m -> m.field(ImportPositionIndex.PARTITION_ID).query(partitionId)))
-        .build();
   }
 
   private PutIndicesSettingsRequest putIndexSettingsRequest(

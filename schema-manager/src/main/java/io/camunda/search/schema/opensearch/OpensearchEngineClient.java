@@ -27,8 +27,6 @@ import io.camunda.search.schema.utils.SearchEngineClientUtils.SchemaSettingsAppe
 import io.camunda.search.schema.utils.SuppressLogger;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.io.IOException;
 import java.io.InputStream;
@@ -54,7 +52,6 @@ import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch.cluster.HealthResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.opensearch.client.opensearch.generic.Body;
 import org.opensearch.client.opensearch.generic.Request;
 import org.opensearch.client.opensearch.generic.Requests;
@@ -257,31 +254,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
     }
   }
 
-  @Override
-  public boolean importersCompleted(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
-    final var allImportPositionDocuments =
-        allImportPositionDocuments(partitionId, importPositionIndices);
-    try {
-      final var allRecordReaderStatuses =
-          client.search(allImportPositionDocuments, ImportPositionEntity.class).hits().hits();
-
-      // brand new install no need to wait for importers to complete
-      if (allRecordReaderStatuses.isEmpty()) {
-        return true;
-      }
-
-      return allRecordReaderStatuses.stream().allMatch(status -> status.source().getCompleted());
-    } catch (final IOException e) {
-      final var errMsg =
-          String.format(
-              "Failed to search documents in the import position index for partition [%s]",
-              partitionId);
-      LOG.warn(errMsg, e);
-      return false;
-    }
-  }
-
   /**
    * Overwrites the settings of the existing index template with the settings block in the
    * descriptor schema json file.
@@ -360,22 +332,6 @@ public class OpensearchEngineClient implements SearchEngineClient {
           e);
       return false;
     }
-  }
-
-  private SearchRequest allImportPositionDocuments(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices) {
-    final var importPositionIndicesNames =
-        importPositionIndices.stream().map(IndexDescriptor::getFullQualifiedName).toList();
-    return new SearchRequest.Builder()
-        .index(importPositionIndicesNames)
-        .size(100)
-        .query(
-            q ->
-                q.term(
-                    t ->
-                        t.field(ImportPositionIndex.PARTITION_ID)
-                            .value(v -> v.longValue(partitionId))))
-        .build();
   }
 
   private Request createIndexStateManagementPolicy(

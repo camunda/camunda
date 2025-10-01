@@ -16,8 +16,6 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.Mockito.*;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.core.BulkRequest;
-import co.elastic.clients.elasticsearch.core.UpdateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -26,18 +24,14 @@ import io.camunda.search.schema.elasticsearch.ElasticsearchEngineClient;
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -456,87 +450,5 @@ public class ElasticsearchEngineClientIT {
         .isEqualTo(indexSettings.getNumberOfReplicas().toString());
     assertThat(index.settings().index().numberOfShards())
         .isEqualTo(indexSettings.getNumberOfShards().toString());
-  }
-
-  @Nested
-  class ImportersCompleted {
-    final String indexPrefix = "";
-    final int partitionId = 1;
-    final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);
-
-    @BeforeEach
-    void setup() throws IOException {
-      elsClient
-          .indices()
-          .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
-      elsEngineClient.createIndex(importPositionIndex, new IndexConfiguration());
-    }
-
-    @Test
-    void shouldReturnRecordReadersCompletedIfAllReadersCompletedFieldIsTrue() throws IOException {
-      // given, when
-      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
-      elsClient.indices().refresh();
-
-      // then
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
-
-    @Test
-    void shouldReturnRecordReadersNotCompletedIfSomeReadersCompletedFieldIsFalse()
-        throws IOException {
-      elsClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
-
-      final var decisionEntity =
-          new ImportPositionEntity().setPartitionId(partitionId).setAliasName("decision");
-
-      final var updateRequest =
-          new UpdateRequest.Builder<>()
-              .id(decisionEntity.getId())
-              .index(importPositionIndex.getFullQualifiedName())
-              .doc(Map.of("completed", false))
-              .build();
-
-      elsClient.update(updateRequest, ImportPositionEntity.class);
-
-      elsClient.indices().refresh();
-
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(false);
-    }
-
-    @Test
-    void shouldReturnImportersCompletedForFreshInstall() {
-      final var importersCompleted =
-          elsEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
-
-    private BulkRequest createImportPositionDocuments(
-        final int partitionId, final IndexDescriptor importPositionIndex) {
-      final BulkRequest.Builder br = new BulkRequest.Builder();
-      Stream.of("process-instance", "decision", "job")
-          .map(
-              type ->
-                  new ImportPositionEntity()
-                      .setCompleted(true)
-                      .setPartitionId(partitionId)
-                      .setAliasName(type))
-          .forEach(
-              entity -> {
-                br.operations(
-                    op ->
-                        op.index(
-                            i ->
-                                i.index(importPositionIndex.getFullQualifiedName())
-                                    .id(entity.getId())
-                                    .document(entity)));
-              });
-
-      return br.build();
-    }
   }
 }

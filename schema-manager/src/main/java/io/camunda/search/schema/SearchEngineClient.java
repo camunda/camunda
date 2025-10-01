@@ -45,9 +45,6 @@ public interface SearchEngineClient extends CloseableSilently {
 
   void putIndexMeta(final String indexName, Map<String, Object> meta);
 
-  boolean importersCompleted(
-      final int partitionId, final List<IndexDescriptor> importPositionIndices);
-
   void updateIndexTemplateSettings(
       final IndexTemplateDescriptor indexTemplateDescriptor,
       final IndexConfiguration indexConfiguration);

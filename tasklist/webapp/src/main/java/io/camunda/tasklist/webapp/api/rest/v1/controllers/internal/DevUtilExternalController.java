@@ -15,7 +15,6 @@ import io.camunda.tasklist.webapp.es.cache.ProcessCache;
 import io.camunda.tasklist.webapp.security.TasklistURIs;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -68,7 +67,6 @@ public class DevUtilExternalController {
             getIndexFullQualifiedName(ListViewTemplate::new),
             getIndexFullQualifiedName(SnapshotTaskVariableTemplate::new),
             getIndexFullQualifiedName(TaskTemplate::new),
-            getIndexFullQualifiedName(TasklistImportPositionIndex::new),
             getIndexFullQualifiedName(TasklistMetricIndex::new),
             getIndexFullQualifiedName(UsageMetricTUTemplate::new),
             getIndexFullQualifiedName(VariableTemplate::new));

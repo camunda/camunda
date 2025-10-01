@@ -12,7 +12,6 @@ import static io.camunda.tasklist.property.TasklistProperties.ELASTIC_SEARCH;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -123,19 +122,6 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
       final TasklistProperties tasklistProperties,
       final TasklistIndexPrefixHolder indexPrefixHolder) {
     return new FlowNodeInstanceTemplate(
-        getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
-      @Override
-      public String getIndexPrefix() {
-        return indexPrefixHolder.getIndexPrefix();
-      }
-    };
-  }
-
-  @Bean
-  public TasklistImportPositionIndex tasklistImportPositionIndex(
-      final TasklistProperties tasklistProperties,
-      final TasklistIndexPrefixHolder indexPrefixHolder) {
-    return new TasklistImportPositionIndex(
         getIndexPrefix(tasklistProperties), isElasticsearch(tasklistProperties)) {
       @Override
       public String getIndexPrefix() {
