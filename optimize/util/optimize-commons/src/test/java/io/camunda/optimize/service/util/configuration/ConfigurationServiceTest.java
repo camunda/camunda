@@ -114,9 +114,11 @@ public class ConfigurationServiceTest {
       defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-format-throws-error.yaml"
     };
-    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(
-            () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+            () ->
+                createConfiguration(locations)
+                    .getElasticSearchConfiguration()
+                    .getSecuritySSLCertificateAuthorities())
         .isInstanceOf(MappingException.class);
   }
 
@@ -126,9 +128,11 @@ public class ConfigurationServiceTest {
       defaultConfigFile(),
       "config-samples/certificate-authorities/wrong-ca-auth-list-format-throws-error.yaml"
     };
-    final ConfigurationService underTest = createConfiguration(locations);
     assertThatThrownBy(
-            () -> underTest.getElasticSearchConfiguration().getSecuritySSLCertificateAuthorities())
+            () ->
+                createConfiguration(locations)
+                    .getElasticSearchConfiguration()
+                    .getSecuritySSLCertificateAuthorities())
         .isInstanceOf(MappingException.class);
   }
 
@@ -140,7 +144,7 @@ public class ConfigurationServiceTest {
     for (final String configLocation : possibilitiesToDisableHttpPortConnection) {
       // given
       final ConfigurationService underTest =
-          createConfiguration(new String[] {defaultConfigFile(), configLocation});
+          createConfiguration(defaultConfigFile(), configLocation);
 
       // when
       final Optional<Integer> containerHttpPort = underTest.getContainerHttpPort();
