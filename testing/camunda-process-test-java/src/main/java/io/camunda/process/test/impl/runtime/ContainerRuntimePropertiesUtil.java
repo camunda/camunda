@@ -56,15 +56,19 @@ public final class ContainerRuntimePropertiesUtil {
 
   private final String elasticsearchVersion;
 
-  public ContainerRuntimePropertiesUtil(final Properties properties) {
+  public ContainerRuntimePropertiesUtil(
+      final Properties properties, final GitProperties gitProperties) {
+
     elasticsearchVersion =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_ELASTICSEARCH_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
 
-    camundaContainerRuntimeProperties = new CamundaContainerRuntimeProperties(properties);
-    connectorsContainerRuntimeProperties = new ConnectorsContainerRuntimeProperties(properties);
+    camundaContainerRuntimeProperties =
+        new CamundaContainerRuntimeProperties(properties, gitProperties);
+    connectorsContainerRuntimeProperties =
+        new ConnectorsContainerRuntimeProperties(properties, gitProperties);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
 
@@ -82,12 +86,15 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public static ContainerRuntimePropertiesUtil readProperties() {
-    return new ContainerRuntimePropertiesUtil(readPropertiesFileWithUserOverrides(BASE_DIR));
+    return new ContainerRuntimePropertiesUtil(
+        readPropertiesFileWithUserOverrides(BASE_DIR), GitProperties.INSTANCE);
   }
 
-  static ContainerRuntimePropertiesUtil readProperties(final String directoryOverride) {
+  static ContainerRuntimePropertiesUtil readProperties(
+      final String directoryOverride, final GitProperties gitProperties) {
+
     return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(directoryOverride));
+        readPropertiesFileWithUserOverrides(directoryOverride), gitProperties);
   }
 
   private static Properties readPropertiesFileWithUserOverrides(final String dir) {

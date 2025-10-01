@@ -21,6 +21,7 @@ import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getProper
 import static io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil.getLatestReleasedVersion;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.GitProperties;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -44,10 +45,12 @@ public class CamundaContainerRuntimeProperties {
   private final String camundaLoggerName;
   private final String connectorsLoggerName;
 
-  public CamundaContainerRuntimeProperties(final Properties properties) {
+  public CamundaContainerRuntimeProperties(
+      final Properties properties, final GitProperties gitProperties) {
     camundaVersion =
         getLatestReleasedVersion(
             properties,
+            gitProperties,
             PROPERTY_NAME_CAMUNDA_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
     camundaDockerImageName =
@@ -58,6 +61,7 @@ public class CamundaContainerRuntimeProperties {
     camundaDockerImageVersion =
         getLatestReleasedVersion(
             properties,
+            gitProperties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
     camundaEnvVars = getPropertyMapOrEmpty(properties, PROPERTY_NAME_CAMUNDA_ENV_VARS_PREFIX);
