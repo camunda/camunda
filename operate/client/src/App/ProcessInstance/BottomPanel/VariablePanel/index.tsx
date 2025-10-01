@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useMemo, useState} from 'react';
+import React, {useState} from 'react';
 import {observer} from 'mobx-react';
 
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -16,7 +16,7 @@ import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
 import {Listeners} from './Listeners';
 import {WarningFilled} from './styled';
-import {useJobs, type JobsFilter} from 'modules/queries/jobs/useJobs';
+import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
 import type {ListenerEntity} from 'modules/types/operate';
 
@@ -37,21 +37,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
   const [listenerTypeFilter, setListenerTypeFilter] =
     useState<ListenerEntity['listenerType']>();
 
-  const jobsFilter = useMemo<JobsFilter | undefined>(() => {
-    if (!flowNodeInstanceId && !flowNodeId) {
-      // We cannot meaningfully filter for a flow-node if none is selected.
-      // Therefore, no filter is defined to not trigger a job search.
-      return;
-    }
-
-    return {
-      processInstanceKey: processInstanceId,
-      elementId: flowNodeId,
-      elementInstanceKey: flowNodeInstanceId,
-      kind: listenerTypeFilter,
-    };
-  }, [processInstanceId, flowNodeId, flowNodeInstanceId, listenerTypeFilter]);
-
+  const shouldFetchListeners = flowNodeInstanceId || flowNodeId;
   const {
     data: jobs,
     fetchNextPage,
@@ -59,8 +45,15 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     hasNextPage,
     hasPreviousPage,
   } = useJobs({
-    payload: {filter: jobsFilter},
-    disabled: !jobsFilter,
+    payload: {
+      filter: {
+        processInstanceKey: processInstanceId,
+        elementId: flowNodeId,
+        elementInstanceKey: flowNodeInstanceId,
+        kind: listenerTypeFilter,
+      },
+    },
+    disabled: !shouldFetchListeners,
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
