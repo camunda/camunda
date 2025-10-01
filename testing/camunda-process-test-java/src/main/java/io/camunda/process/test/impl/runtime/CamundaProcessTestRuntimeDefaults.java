@@ -15,13 +15,11 @@
  */
 package io.camunda.process.test.impl.runtime;
 
-import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 
 public class CamundaProcessTestRuntimeDefaults {
 
@@ -36,9 +34,6 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String DEFAULT_ELASTICSEARCH_LOGGER_NAME = "tc.elasticsearch";
   public static final String DEFAULT_CAMUNDA_LOGGER_NAME = "tc.camunda";
   public static final String DEFAULT_CONNECTORS_LOGGER_NAME = "tc.connectors";
-
-  public static final Consumer<CamundaClientBuilder> DEFAULT_CAMUNDA_CLIENT_OVERRIDES =
-      clientBuilder -> {};
 
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);

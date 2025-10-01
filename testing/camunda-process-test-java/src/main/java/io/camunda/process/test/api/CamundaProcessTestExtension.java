@@ -501,7 +501,7 @@ public class CamundaProcessTestExtension
    *
    * @param camundaClientBuilderFactory the client builder to configure the connection
    * @return the extension builder
-   * @deprecated use withCamundaClientBuilderOverrides instead.
+   * @deprecated use {@link #withCamundaClientBuilderOverrides(Consumer)} instead.
    * @since 8.8.0
    */
   @Deprecated
@@ -513,14 +513,14 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Configure the connection to the Camunda runtime using the given client builder.
+   * Override the existing connection configuration to the Camunda runtime.
    *
-   * @param camundaClientBuilderConfigurer consumer that modifies the client builder's configuration
+   * @param camundaClientBuilderOverrides consumer that overrides the client builder's configuration
    * @return the extension builder
    */
   public CamundaProcessTestExtension withCamundaClientBuilderOverrides(
-      final Consumer<CamundaClientBuilder> camundaClientBuilderConfigurer) {
-    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderConfigurer);
+      final Consumer<CamundaClientBuilder> camundaClientBuilderOverrides) {
+    runtimeBuilder.withCamundaClientBuilderOverrides(camundaClientBuilderOverrides);
     return this;
   }
 

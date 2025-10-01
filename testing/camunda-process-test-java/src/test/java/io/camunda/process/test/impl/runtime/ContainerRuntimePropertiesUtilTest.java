@@ -19,9 +19,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
-import io.camunda.process.test.impl.runtime.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaClientWorkerProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
@@ -426,7 +426,8 @@ public class ContainerRuntimePropertiesUtilTest {
       final ContainerRuntimePropertiesUtil propertiesUtil =
           ContainerRuntimePropertiesUtil.readProperties("/containerRuntimePropertiesUtil/");
 
-      final CamundaClientProperties clientProps = propertiesUtil.getCamundaClientProperties();
+      final CamundaProcessTestClientProperties clientProps =
+          propertiesUtil.getCamundaClientProperties();
 
       // then
       assertThat(clientProps.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8090"));

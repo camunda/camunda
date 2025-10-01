@@ -91,8 +91,7 @@ public class CamundaProcessTestRuntimeBuilder {
 
   private CamundaClientBuilderFactory camundaClientBuilderFactory =
       CamundaProcessTestRuntimeDefaults.CAMUNDA_CLIENT_BUILDER_FACTORY;
-  private Consumer<CamundaClientBuilder> camundaClientOverrides =
-      CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_CLIENT_OVERRIDES;
+  private Consumer<CamundaClientBuilder> camundaClientOverrides = cb -> {};
 
   // ============ For testing =================
 

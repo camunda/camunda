@@ -33,13 +33,14 @@ public class CamundaSpringProcessTestRuntimeBuilder {
 
   public static CamundaProcessTestRuntime buildRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration,
+      final CamundaClientProperties clientProperties) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
     runtimeBuilder.withRuntimeMode(runtimeMode);
 
     if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
-      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
+      configureManagedRuntime(runtimeBuilder, runtimeConfiguration, clientProperties);
 
     } else if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
       configureRemoteRuntime(runtimeBuilder, runtimeConfiguration);
@@ -50,7 +51,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
 
   private static void configureManagedRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration,
+      final CamundaClientProperties clientProperties) {
 
     runtimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
@@ -74,9 +76,7 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .forEach(runtimeBuilder::withConnectorsExposedPort);
 
     runtimeBuilder.withCamundaClientBuilderFactory(
-        () ->
-            configureCamundaClientBuilder(
-                runtimeConfiguration.getClientProperties(), CamundaClient.newClientBuilder()));
+        () -> configureCamundaClientBuilder(clientProperties, CamundaClient.newClientBuilder()));
   }
 
   private static void configureRemoteRuntime(

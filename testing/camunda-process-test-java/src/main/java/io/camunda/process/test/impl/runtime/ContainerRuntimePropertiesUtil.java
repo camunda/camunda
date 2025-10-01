@@ -21,8 +21,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
-import io.camunda.process.test.impl.runtime.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
@@ -53,7 +53,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
-  private final CamundaClientProperties camundaClientProperties;
+  private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -71,7 +71,7 @@ public final class ContainerRuntimePropertiesUtil {
     connectorsContainerRuntimeProperties = new ConnectorsContainerRuntimeProperties(properties);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
-    camundaClientProperties = new CamundaClientProperties(properties);
+    camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -213,7 +213,8 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return () -> camundaClientProperties.configureClientBuilder(createCamundaClientBuilder());
+    return () ->
+        camundaProcessTestClientProperties.configureClientBuilder(createCamundaClientBuilder());
   }
 
   private CamundaClientBuilder createCamundaClientBuilder() {
@@ -240,7 +241,7 @@ public final class ContainerRuntimePropertiesUtil {
     return coverageReportProperties;
   }
 
-  public CamundaClientProperties getCamundaClientProperties() {
-    return camundaClientProperties;
+  public CamundaProcessTestClientProperties getCamundaClientProperties() {
+    return camundaProcessTestClientProperties;
   }
 }

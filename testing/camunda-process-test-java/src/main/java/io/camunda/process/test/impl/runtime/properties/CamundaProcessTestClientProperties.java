@@ -25,7 +25,7 @@ import java.util.Properties;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
-public class CamundaClientProperties {
+public class CamundaProcessTestClientProperties {
   public static final String PROPERTY_NAME_REST_ADDRESS = "client.restAddress";
   public static final String PROPERTY_NAME_GRPC_ADDRESS = "client.grpcAddress";
   public static final String PROPERTY_NAME_REQUEST_TIMEOUT = "client.requestTimeout";
@@ -56,7 +56,7 @@ public class CamundaClientProperties {
   private final String overrideAuthority;
   private final Boolean preferRestOverGrpc;
 
-  public CamundaClientProperties(final Properties properties) {
+  public CamundaProcessTestClientProperties(final Properties properties) {
     clientWorkerProps = new CamundaClientWorkerProperties(properties);
 
     restAddress = getPropertyOrNull(properties, PROPERTY_NAME_REST_ADDRESS, URI::create);
