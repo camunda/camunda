@@ -33,8 +33,6 @@ import {
   type ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
@@ -43,6 +41,7 @@ import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'mo
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -143,7 +142,7 @@ describe('VariablePanel', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     initFlowNodeMetadata('process-instance', statistics);
     flowNodeSelectionStore.init();
@@ -284,7 +283,7 @@ describe('VariablePanel', () => {
         totalItems: 0,
       },
     });
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     act(() => {
       selectFlowNode(
@@ -392,7 +391,7 @@ describe('VariablePanel', () => {
         totalItems: 0,
       },
     });
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     act(() => {
       selectFlowNode(
@@ -535,8 +534,7 @@ describe('VariablePanel', () => {
         endDate: null,
       },
     });
-
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     act(() => {
       selectFlowNode(
@@ -598,7 +596,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
     expect(screen.getByTestId('edit-variable-value')).toBeInTheDocument();
 
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchVariables().withSuccess([
       createVariable({name: 'some-other-variable'}),
     ]);

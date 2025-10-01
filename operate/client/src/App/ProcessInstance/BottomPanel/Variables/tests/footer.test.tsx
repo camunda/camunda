@@ -27,10 +27,9 @@ import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockFetchProcessInstanceListeners} from 'modules/mocks/api/processInstances/fetchProcessInstanceListeners';
-import {noListeners} from 'modules/mocks/mockProcessInstanceListeners';
 import {mockVariablesV2} from '../index.setup';
 import {VariablePanel} from '../../VariablePanel';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const instanceMock = createInstance({id: '1'});
 
@@ -60,7 +59,7 @@ describe('Footer', () => {
       ],
     });
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     init('process-instance', [
       {
         elementId: 'start',
@@ -147,8 +146,8 @@ describe('Footer', () => {
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     const mockFetchFlowNodeMetadataPayload = {
       ...singleInstanceMetadata,
       instanceMetadata: {
