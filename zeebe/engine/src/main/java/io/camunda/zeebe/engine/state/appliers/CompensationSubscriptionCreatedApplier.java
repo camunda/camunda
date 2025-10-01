@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableCompensationSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.intent.CompensationSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = CompensationSubscriptionIntent.class, type = "CREATED")
 public class CompensationSubscriptionCreatedApplier
     implements TypedEventApplier<CompensationSubscriptionIntent, CompensationSubscriptionRecord> {
 

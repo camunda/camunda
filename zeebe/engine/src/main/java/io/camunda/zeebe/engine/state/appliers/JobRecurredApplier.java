@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
+@HandlesIntent(intent = JobIntent.class, type = "RECURRED_AFTER_BACKOFF")
 public class JobRecurredApplier implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;

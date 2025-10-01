@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = AdHocSubProcessInstructionIntent.class, type = "COMPLETED")
 public class AdHocSubProcessInstructionCompletedApplier
     implements TypedEventApplier<
         AdHocSubProcessInstructionIntent, AdHocSubProcessInstructionRecord> {

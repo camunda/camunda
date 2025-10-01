@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = DeploymentIntent.class, type = "FULLY_DISTRIBUTED")
 public class DeploymentFullyDistributedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
 

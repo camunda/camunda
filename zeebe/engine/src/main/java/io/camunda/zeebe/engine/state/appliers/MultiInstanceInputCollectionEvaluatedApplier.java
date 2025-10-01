@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.multiinstance.MultiInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MultiInstanceIntent;
 
+@HandlesIntent(intent = MultiInstanceIntent.class, type = "INPUT_COLLECTION_EVALUATED")
 public class MultiInstanceInputCollectionEvaluatedApplier
     implements TypedEventApplier<MultiInstanceIntent, MultiInstanceRecord> {
 

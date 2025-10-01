@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableSignalSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalSubscriptionIntent;
 
+@HandlesIntent(intent = SignalSubscriptionIntent.class, type = "CREATED")
 public final class SignalSubscriptionCreatedApplier
     implements TypedEventApplier<SignalSubscriptionIntent, SignalSubscriptionRecord> {
 

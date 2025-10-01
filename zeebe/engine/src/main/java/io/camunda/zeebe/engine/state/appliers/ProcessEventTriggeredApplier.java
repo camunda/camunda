@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 
+@HandlesIntent(intent = ProcessEventIntent.class, type = "TRIGGERED")
 final class ProcessEventTriggeredApplier
     implements TypedEventApplier<ProcessEventIntent, ProcessEventRecord> {
   private final MutableEventScopeInstanceState eventScopeState;

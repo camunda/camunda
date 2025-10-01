@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableTimerInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 
+@HandlesIntent(intent = TimerIntent.class, type = "CANCELED")
 final class TimerCancelledApplier implements TypedEventApplier<TimerIntent, TimerRecord> {
 
   private final MutableTimerInstanceState timerInstanceState;

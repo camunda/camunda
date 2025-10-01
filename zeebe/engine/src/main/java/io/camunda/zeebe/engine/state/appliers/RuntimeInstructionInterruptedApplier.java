@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.RuntimeInstructionRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.RuntimeInstructionIntent;
 
+@HandlesIntent(intent = RuntimeInstructionIntent.class, type = "INTERRUPTED")
 public class RuntimeInstructionInterruptedApplier
     implements TypedEventApplier<RuntimeInstructionIntent, RuntimeInstructionRecord> {
 

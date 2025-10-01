@@ -235,355 +235,355 @@ Processors in the `zeebe/engine` module that implement `TypedRecordProcessor` in
 
 Event appliers in the `zeebe/engine` module that implement `TypedEventApplier` interface.
 
-- [ ] **AdHocSubProcessInstructionCompletedApplier**
+- [x] **AdHocSubProcessInstructionCompletedApplier**
   - Intent: `AdHocSubProcessInstructionIntent.COMPLETED`
-- [ ] **AsyncRequestProcessedApplier**
+- [x] **AsyncRequestProcessedApplier**
   - Intent: `AsyncRequestIntent.PROCESSED`
-- [ ] **AsyncRequestReceivedApplier**
+- [x] **AsyncRequestReceivedApplier**
   - Intent: `AsyncRequestIntent.RECEIVED`
-- [ ] **AuthorizationCreatedApplier**
+- [x] **AuthorizationCreatedApplier**
   - Intent: `AuthorizationIntent.CREATED`
-- [ ] **AuthorizationDeletedApplier**
+- [x] **AuthorizationDeletedApplier**
   - Intent: `AuthorizationIntent.DELETED`
-- [ ] **AuthorizationUpdatedApplier**
+- [x] **AuthorizationUpdatedApplier**
   - Intent: `AuthorizationIntent.UPDATED`
-- [ ] **BatchOperatioSuspendedApplier**
+- [x] **BatchOperatioSuspendedApplier**
   - Intent: `BatchOperationIntent.SUSPENDED`
-- [ ] **BatchOperationCanceledApplier**
+- [x] **BatchOperationCanceledApplier**
   - Intent: `BatchOperationIntent.CANCELED`
-- [ ] **BatchOperationChunkCreatedApplier**
+- [x] **BatchOperationChunkCreatedApplier**
   - Intent: `BatchOperationChunkIntent.CREATED`
-- [ ] **BatchOperationCompletedApplier**
+- [x] **BatchOperationCompletedApplier**
   - Intent: `BatchOperationIntent.COMPLETED`
-- [ ] **BatchOperationCreatedApplier**
+- [x] **BatchOperationCreatedApplier**
   - Intent: `BatchOperationIntent.CREATED`
-- [ ] **BatchOperationExecutingApplier**
+- [x] **BatchOperationExecutingApplier**
   - Intent: `BatchOperationExecutionIntent.EXECUTING`
-- [ ] **BatchOperationFailedApplier**
+- [x] **BatchOperationFailedApplier**
   - Intent: `BatchOperationIntent.FAILED`
-- [ ] **BatchOperationInitializedApplier**
+- [x] **BatchOperationInitializedApplier**
   - Intent: `BatchOperationIntent.INITIALIZED`
-- [ ] **BatchOperationInitializingApplier**
+- [x] **BatchOperationInitializingApplier**
   - Intent: `BatchOperationIntent.INITIALIZING`
-- [ ] **BatchOperationPartitionCompletedApplier**
+- [x] **BatchOperationPartitionCompletedApplier**
   - Intent: `BatchOperationIntent.PARTITION_COMPLETED`
-- [ ] **BatchOperationPartitionFailedApplier**
+- [x] **BatchOperationPartitionFailedApplier**
   - Intent: `BatchOperationIntent.PARTITION_FAILED`
-- [ ] **BatchOperationResumedApplier**
+- [x] **BatchOperationResumedApplier**
   - Intent: `BatchOperationIntent.RESUMED`
-- [ ] **ClockPinnedApplier**
+- [x] **ClockPinnedApplier**
   - Intent: `ClockIntent.PINNED`
-- [ ] **ClockResettedApplier**
+- [x] **ClockResettedApplier**
   - Intent: `ClockIntent.RESETTED`
-- [ ] **CommandDistributionAcknowledgedApplier**
+- [x] **CommandDistributionAcknowledgedApplier**
   - Intent: `CommandDistributionIntent.ACKNOWLEDGED`
-- [ ] **CommandDistributionContinuationRequestedApplier**
+- [x] **CommandDistributionContinuationRequestedApplier**
   - Intent: `CommandDistributionIntent.CONTINUATION_REQUESTED`
-- [ ] **CommandDistributionContinuedApplier**
+- [x] **CommandDistributionContinuedApplier**
   - Intent: `CommandDistributionIntent.CONTINUED`
-- [ ] **CommandDistributionDistributingApplier**
+- [x] **CommandDistributionDistributingApplier**
   - Intent: `CommandDistributionIntent.DISTRIBUTING`
-- [ ] **CommandDistributionEnqueuedApplier**
+- [x] **CommandDistributionEnqueuedApplier**
   - Intent: `CommandDistributionIntent.ENQUEUED`
-- [ ] **CommandDistributionFinishedApplier**
+- [x] **CommandDistributionFinishedApplier**
   - Intent: `CommandDistributionIntent.FINISHED`
-- [ ] **CommandDistributionStartedApplier**
+- [x] **CommandDistributionStartedApplier**
   - Intent: `CommandDistributionIntent.STARTED`
-- [ ] **CompensationSubscriptionCompletedApplier**
+- [x] **CompensationSubscriptionCompletedApplier**
   - Intent: `CompensationSubscriptionIntent.COMPLETED`
-- [ ] **CompensationSubscriptionCreatedApplier**
+- [x] **CompensationSubscriptionCreatedApplier**
   - Intent: `CompensationSubscriptionIntent.CREATED`
-- [ ] **CompensationSubscriptionDeletedApplier**
+- [x] **CompensationSubscriptionDeletedApplier**
   - Intent: `CompensationSubscriptionIntent.DELETED`
-- [ ] **CompensationSubscriptionMigratedApplier**
+- [x] **CompensationSubscriptionMigratedApplier**
   - Intent: `CompensationSubscriptionIntent.MIGRATED`
-- [ ] **CompensationSubscriptionTriggeredApplier**
+- [x] **CompensationSubscriptionTriggeredApplier**
   - Intent: `CompensationSubscriptionIntent.TRIGGERED`
-- [ ] **DecisionCreatedV1Applier**
+- [x] **DecisionCreatedV1Applier**
   - Intent: `DecisionIntent.CREATED`
-- [ ] **DecisionCreatedV2Applier**
+- [x] **DecisionCreatedV2Applier**
   - Intent: `DecisionIntent.CREATED` (version=2)
-- [ ] **DecisionDeletedApplier**
+- [x] **DecisionDeletedApplier**
   - Intent: `DecisionIntent.DELETED`
-- [ ] **DecisionEvaluationV2Applier**
+- [x] **DecisionEvaluationV2Applier**
   - Intent: `DecisionEvaluationIntent.EVALUATED` (version=2)
-- [ ] **DecisionRequirementsCreatedApplier**
+- [x] **DecisionRequirementsCreatedApplier**
   - Intent: `DecisionRequirementsIntent.CREATED`
-- [ ] **DecisionRequirementsDeletedApplier**
+- [x] **DecisionRequirementsDeletedApplier**
   - Intent: `DecisionRequirementsIntent.DELETED`
-- [ ] **DeploymentCreatedV1Applier**
+- [x] **DeploymentCreatedV1Applier**
   - Intent: `DeploymentIntent.CREATED`
-- [ ] **DeploymentCreatedV3Applier**
+- [x] **DeploymentCreatedV3Applier**
   - Intent: `DeploymentIntent.CREATED` (version=3)
-- [ ] **DeploymentDistributedApplier**
+- [x] **DeploymentDistributedApplier**
   - Intent: `DeploymentIntent.DISTRIBUTED`
-- [ ] **DeploymentDistributionApplier**
+- [x] **DeploymentDistributionApplier**
   - Intent: `DeploymentDistributionIntent.DISTRIBUTING`
-- [ ] **DeploymentDistributionCompletedApplier**
+- [x] **DeploymentDistributionCompletedApplier**
   - Intent: `DeploymentDistributionIntent.COMPLETED`
-- [ ] **DeploymentFullyDistributedApplier**
+- [x] **DeploymentFullyDistributedApplier**
   - Intent: `DeploymentIntent.FULLY_DISTRIBUTED`
-- [ ] **DeploymentReconstructedAllApplier**
+- [x] **DeploymentReconstructedAllApplier**
   - Intent: `DeploymentIntent.RECONSTRUCTED_ALL`
-- [ ] **DeploymentReconstructedApplier**
+- [x] **DeploymentReconstructedApplier**
   - Intent: `DeploymentIntent.RECONSTRUCTED`
-- [ ] **ErrorCreatedApplier**
+- [x] **ErrorCreatedApplier**
   - Intent: `ErrorIntent.CREATED`
-- [ ] **FormCreatedV1Applier**
+- [x] **FormCreatedV1Applier**
   - Intent: `FormIntent.CREATED`
-- [ ] **FormCreatedV2Applier**
+- [x] **FormCreatedV2Applier**
   - Intent: `FormIntent.CREATED` (version=2)
-- [ ] **FormDeletedApplier**
+- [x] **FormDeletedApplier**
   - Intent: `FormIntent.DELETED`
-- [ ] **GroupCreatedApplier**
+- [x] **GroupCreatedApplier**
   - Intent: `GroupIntent.CREATED`
-- [ ] **GroupDeletedApplier**
+- [x] **GroupDeletedApplier**
   - Intent: `GroupIntent.DELETED`
-- [ ] **GroupEntityAddedApplier**
+- [x] **GroupEntityAddedApplier**
   - Intent: `GroupIntent.ENTITY_ADDED`
-- [ ] **GroupEntityRemovedApplier**
+- [x] **GroupEntityRemovedApplier**
   - Intent: `GroupIntent.ENTITY_REMOVED`
-- [ ] **GroupUpdatedApplier**
+- [x] **GroupUpdatedApplier**
   - Intent: `GroupIntent.UPDATED`
-- [ ] **IncidentCreatedApplier**
+- [x] **IncidentCreatedApplier**
   - Intent: `IncidentIntent.CREATED`
-- [ ] **IncidentMigratedApplier**
+- [x] **IncidentMigratedApplier**
   - Intent: `IncidentIntent.MIGRATED`
-- [ ] **IncidentResolvedV1Applier**
+- [x] **IncidentResolvedV1Applier**
   - Intent: `IncidentIntent.RESOLVED`
-- [ ] **IncidentResolvedV2Applier**
+- [x] **IncidentResolvedV2Applier**
   - Intent: `IncidentIntent.RESOLVED` (version=2)
-- [ ] **JobBatchActivatedApplier**
+- [x] **JobBatchActivatedApplier**
   - Intent: `JobBatchIntent.ACTIVATED`
-- [ ] **JobCanceledApplier**
+- [x] **JobCanceledApplier**
   - Intent: `JobIntent.CANCELED`
-- [ ] **JobCompletedV1Applier**
+- [x] **JobCompletedV1Applier**
   - Intent: `JobIntent.COMPLETED`
-- [ ] **JobCreatedApplier**
+- [x] **JobCreatedApplier**
   - Intent: `JobIntent.CREATED`
-- [ ] **JobErrorThrownApplier**
+- [x] **JobErrorThrownApplier**
   - Intent: `JobIntent.ERROR_THROWN`
-- [ ] **JobFailedApplier**
+- [x] **JobFailedApplier**
   - Intent: `JobIntent.FAILED`
-- [ ] **JobMigratedApplier**
+- [x] **JobMigratedApplier**
   - Intent: `JobIntent.MIGRATED`
-- [ ] **JobRecurredApplier**
+- [x] **JobRecurredApplier**
   - Intent: `JobIntent.RECURRED_AFTER_BACKOFF`
-- [ ] **JobRetriesUpdatedApplier**
+- [x] **JobRetriesUpdatedApplier**
   - Intent: `JobIntent.RETRIES_UPDATED`
-- [ ] **JobTimedOutApplier**
+- [x] **JobTimedOutApplier**
   - Intent: `JobIntent.TIMED_OUT`
-- [ ] **JobTimeoutUpdatedApplier**
+- [x] **JobTimeoutUpdatedApplier**
   - Intent: `JobIntent.TIMEOUT_UPDATED`
-- [ ] **JobUpdatedApplier**
+- [x] **JobUpdatedApplier**
   - Intent: `JobIntent.UPDATED`
-- [ ] **JobYieldedApplier**
+- [x] **JobYieldedApplier**
   - Intent: `JobIntent.YIELDED`
-- [ ] **MappingRuleCreatedApplier**
+- [x] **MappingRuleCreatedApplier**
   - Intent: `MappingRuleIntent.CREATED`
-- [ ] **MappingRuleDeletedApplier**
+- [x] **MappingRuleDeletedApplier**
   - Intent: `MappingRuleIntent.DELETED`
-- [ ] **MappingRuleUpdatedApplier**
+- [x] **MappingRuleUpdatedApplier**
   - Intent: `MappingRuleIntent.UPDATED`
-- [ ] **MessageCorrelationCorrelatedApplier**
+- [x] **MessageCorrelationCorrelatedApplier**
   - Intent: `MessageCorrelationIntent.CORRELATED`
-- [ ] **MessageCorrelationCorrelatingApplier**
+- [x] **MessageCorrelationCorrelatingApplier**
   - Intent: `MessageCorrelationIntent.CORRELATING`
-- [ ] **MessageCorrelationNotCorrelatedApplier**
+- [x] **MessageCorrelationNotCorrelatedApplier**
   - Intent: `MessageCorrelationIntent.NOT_CORRELATED`
-- [ ] **MessageExpiredApplier**
+- [x] **MessageExpiredApplier**
   - Intent: `MessageIntent.EXPIRED`
-- [ ] **MessagePublishedApplier**
+- [x] **MessagePublishedApplier**
   - Intent: `MessageIntent.PUBLISHED`
-- [ ] **MessageStartEventSubscriptionCorrelatedApplier**
+- [x] **MessageStartEventSubscriptionCorrelatedApplier**
   - Intent: `MessageStartEventSubscriptionIntent.CORRELATED`
-- [ ] **MessageStartEventSubscriptionCreatedApplier**
+- [x] **MessageStartEventSubscriptionCreatedApplier**
   - Intent: `MessageStartEventSubscriptionIntent.CREATED`
-- [ ] **MessageStartEventSubscriptionDeletedApplier**
+- [x] **MessageStartEventSubscriptionDeletedApplier**
   - Intent: `MessageStartEventSubscriptionIntent.DELETED`
-- [ ] **MessageSubscriptionCorrelatedApplier**
+- [x] **MessageSubscriptionCorrelatedApplier**
   - Intent: `MessageSubscriptionIntent.CORRELATED`
-- [ ] **MessageSubscriptionCorrelatingApplier**
+- [x] **MessageSubscriptionCorrelatingApplier**
   - Intent: `MessageSubscriptionIntent.CORRELATING`
-- [ ] **MessageSubscriptionCreatedApplier**
+- [x] **MessageSubscriptionCreatedApplier**
   - Intent: `MessageSubscriptionIntent.CREATED`
-- [ ] **MessageSubscriptionDeletedApplier**
+- [x] **MessageSubscriptionDeletedApplier**
   - Intent: `MessageSubscriptionIntent.DELETED`
-- [ ] **MessageSubscriptionMigratedApplier**
+- [x] **MessageSubscriptionMigratedApplier**
   - Intent: `MessageSubscriptionIntent.MIGRATED`
-- [ ] **MessageSubscriptionRejectedApplier**
+- [x] **MessageSubscriptionRejectedApplier**
   - Intent: `MessageSubscriptionIntent.REJECTED`
-- [ ] **MultiInstanceInputCollectionEvaluatedApplier**
+- [x] **MultiInstanceInputCollectionEvaluatedApplier**
   - Intent: `MultiInstanceIntent.INPUT_COLLECTION_EVALUATED`
-- [ ] **PartitionBootstrappedApplier**
+- [x] **PartitionBootstrappedApplier**
   - Intent: `ScaleIntent.PARTITION_BOOTSTRAPPED`
-- [ ] **ProcessCreatedV1Applier**
+- [x] **ProcessCreatedV1Applier**
   - Intent: `ProcessIntent.CREATED`
-- [ ] **ProcessCreatedV2Applier**
+- [x] **ProcessCreatedV2Applier**
   - Intent: `ProcessIntent.CREATED` (version=2)
-- [ ] **ProcessDeletedApplier**
+- [x] **ProcessDeletedApplier**
   - Intent: `ProcessIntent.DELETED`
-- [ ] **ProcessDeletingApplier**
+- [x] **ProcessDeletingApplier**
   - Intent: `ProcessIntent.DELETING`
-- [ ] **ProcessEventTriggeredApplier**
+- [x] **ProcessEventTriggeredApplier**
   - Intent: `ProcessEventIntent.TRIGGERED`
-- [ ] **ProcessEventTriggeringApplier**
+- [x] **ProcessEventTriggeringApplier**
   - Intent: `ProcessEventIntent.TRIGGERING`
-- [ ] **ProcessInstanceAncestorMigratedApplier**
+- [x] **ProcessInstanceAncestorMigratedApplier**
   - Intent: `ProcessInstanceIntent.ANCESTOR_MIGRATED`
-- [ ] **ProcessInstanceCreationCreatedV1Applier**
+- [x] **ProcessInstanceCreationCreatedV1Applier**
   - Intent: `ProcessInstanceCreationIntent.CREATED`
-- [ ] **ProcessInstanceCreationCreatedV2Applier**
+- [x] **ProcessInstanceCreationCreatedV2Applier**
   - Intent: `ProcessInstanceCreationIntent.CREATED` (version=2)
-- [ ] **ProcessInstanceElementActivatedApplier**
+- [x] **ProcessInstanceElementActivatedApplier**
   - Intent: `ProcessInstanceIntent.ELEMENT_ACTIVATED`
-- [ ] **ProcessInstanceElementActivatingV1Applier**
+- [x] **ProcessInstanceElementActivatingV1Applier**
   - Intent: `ProcessInstanceIntent.ELEMENT_ACTIVATING`
-- [ ] **ProcessInstanceElementActivatingV2Applier**
+- [x] **ProcessInstanceElementActivatingV2Applier**
   - Intent: `ProcessInstanceIntent.ELEMENT_ACTIVATING` (version=2)
-- [ ] **ProcessInstanceElementCompletedApplier**
+- [x] **ProcessInstanceElementCompletedApplier**
   - Intent: `ProcessInstanceIntent.ELEMENT_COMPLETED`
-- [ ] **ProcessInstanceElementCompletingApplier**
+- [x] **ProcessInstanceElementCompletingApplier**
   - Intent: `ProcessInstanceIntent.ELEMENT_COMPLETING`
-- [ ] **ProcessInstanceElementMigratedV1Applier**
+- [x] **ProcessInstanceElementMigratedV1Applier**
   - Intent: `ProcessInstanceIntent.ELEMENT_MIGRATED`
-- [ ] **ProcessInstanceElementMigratedV2Applier**
+- [x] **ProcessInstanceElementMigratedV2Applier**
   - Intent: `ProcessInstanceIntent.ELEMENT_MIGRATED` (version=2)
-- [ ] **ProcessInstanceElementTerminatedApplier**
+- [x] **ProcessInstanceElementTerminatedApplier**
   - Intent: `ProcessInstanceIntent.ELEMENT_TERMINATED`
-- [ ] **ProcessInstanceElementTerminatingApplier**
+- [x] **ProcessInstanceElementTerminatingApplier**
   - Intent: `ProcessInstanceIntent.ELEMENT_TERMINATING`
-- [ ] **ProcessInstanceModifiedEventApplier**
+- [x] **ProcessInstanceModifiedEventApplier**
   - Intent: `ProcessInstanceModificationIntent.MODIFIED`
-- [ ] **ProcessInstanceSequenceFlowDeletedApplier**
+- [x] **ProcessInstanceSequenceFlowDeletedApplier**
   - Intent: `ProcessInstanceIntent.SEQUENCE_FLOW_DELETED`
-- [ ] **ProcessInstanceSequenceFlowTakenApplier**
+- [x] **ProcessInstanceSequenceFlowTakenApplier**
   - Intent: `ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN`
-- [ ] **ProcessMessageSubscriptionCorrelatedApplier**
+- [x] **ProcessMessageSubscriptionCorrelatedApplier**
   - Intent: `ProcessMessageSubscriptionIntent.CORRELATED`
-- [ ] **ProcessMessageSubscriptionCreatedApplier**
+- [x] **ProcessMessageSubscriptionCreatedApplier**
   - Intent: `ProcessMessageSubscriptionIntent.CREATED`
-- [ ] **ProcessMessageSubscriptionCreatingApplier**
+- [x] **ProcessMessageSubscriptionCreatingApplier**
   - Intent: `ProcessMessageSubscriptionIntent.CREATING`
-- [ ] **ProcessMessageSubscriptionDeletedApplier**
+- [x] **ProcessMessageSubscriptionDeletedApplier**
   - Intent: `ProcessMessageSubscriptionIntent.DELETED`
-- [ ] **ProcessMessageSubscriptionDeletingApplier**
+- [x] **ProcessMessageSubscriptionDeletingApplier**
   - Intent: `ProcessMessageSubscriptionIntent.DELETING`
-- [ ] **ProcessMessageSubscriptionMigratedApplier**
+- [x] **ProcessMessageSubscriptionMigratedApplier**
   - Intent: `ProcessMessageSubscriptionIntent.MIGRATED`
-- [ ] **ResourceCreatedApplier**
+- [x] **ResourceCreatedApplier**
   - Intent: `ResourceIntent.CREATED`
-- [ ] **ResourceDeletedApplier**
+- [x] **ResourceDeletedApplier**
   - Intent: `ResourceIntent.DELETED`
-- [ ] **RoleCreatedApplier**
+- [x] **RoleCreatedApplier**
   - Intent: `RoleIntent.CREATED`
-- [ ] **RoleDeletedApplier**
+- [x] **RoleDeletedApplier**
   - Intent: `RoleIntent.DELETED`
-- [ ] **RoleEntityAddedApplier**
+- [x] **RoleEntityAddedApplier**
   - Intent: `RoleIntent.ENTITY_ADDED`
-- [ ] **RoleEntityRemovedApplier**
+- [x] **RoleEntityRemovedApplier**
   - Intent: `RoleIntent.ENTITY_REMOVED`
-- [ ] **RoleUpdatedApplier**
+- [x] **RoleUpdatedApplier**
   - Intent: `RoleIntent.UPDATED`
-- [ ] **RuntimeInstructionInterruptedApplier**
+- [x] **RuntimeInstructionInterruptedApplier**
   - Intent: `RuntimeInstructionIntent.INTERRUPTED`
-- [ ] **ScaleUpStatusResponseApplier**
+- [x] **ScaleUpStatusResponseApplier**
   - Intent: `ScaleIntent.STATUS_RESPONSE`
-- [ ] **ScaledUpApplier**
+- [x] **ScaledUpApplier**
   - Intent: `ScaleIntent.SCALED_UP`
-- [ ] **ScalingUpApplier**
+- [x] **ScalingUpApplier**
   - Intent: `ScaleIntent.SCALING_UP`
-- [ ] **SignalSubscriptionCreatedApplier**
+- [x] **SignalSubscriptionCreatedApplier**
   - Intent: `SignalSubscriptionIntent.CREATED`
-- [ ] **SignalSubscriptionDeletedApplier**
+- [x] **SignalSubscriptionDeletedApplier**
   - Intent: `SignalSubscriptionIntent.DELETED`
-- [ ] **SignalSubscriptionMigratedApplier**
+- [x] **SignalSubscriptionMigratedApplier**
   - Intent: `SignalSubscriptionIntent.MIGRATED`
-- [ ] **TenantCreatedApplier**
+- [x] **TenantCreatedApplier**
   - Intent: `TenantIntent.CREATED`
-- [ ] **TenantDeletedApplier**
+- [x] **TenantDeletedApplier**
   - Intent: `TenantIntent.DELETED`
-- [ ] **TenantEntityAddedApplier**
+- [x] **TenantEntityAddedApplier**
   - Intent: `TenantIntent.ENTITY_ADDED`
-- [ ] **TenantEntityRemovedApplier**
+- [x] **TenantEntityRemovedApplier**
   - Intent: `TenantIntent.ENTITY_REMOVED`
-- [ ] **TenantUpdatedApplier**
+- [x] **TenantUpdatedApplier**
   - Intent: `TenantIntent.UPDATED`
-- [ ] **TimerCancelledApplier**
+- [x] **TimerCancelledApplier**
   - Intent: `TimerIntent.CANCELED`
-- [ ] **TimerCreatedApplier**
+- [x] **TimerCreatedApplier**
   - Intent: `TimerIntent.CREATED`
-- [ ] **TimerInstanceMigratedApplier**
+- [x] **TimerInstanceMigratedApplier**
   - Intent: `TimerIntent.MIGRATED`
-- [ ] **TimerTriggeredApplier**
+- [x] **TimerTriggeredApplier**
   - Intent: `TimerIntent.TRIGGERED`
-- [ ] **UsageMetricsExportedApplier**
+- [x] **UsageMetricsExportedApplier**
   - Intent: `UsageMetricIntent.EXPORTED`
-- [ ] **UserCreatedApplier**
+- [x] **UserCreatedApplier**
   - Intent: `UserIntent.CREATED`
-- [ ] **UserDeletedApplier**
+- [x] **UserDeletedApplier**
   - Intent: `UserIntent.DELETED`
-- [ ] **UserTaskAssignedV1Applier**
+- [x] **UserTaskAssignedV1Applier**
   - Intent: `UserTaskIntent.ASSIGNED`
-- [ ] **UserTaskAssignedV2Applier**
+- [x] **UserTaskAssignedV2Applier**
   - Intent: `UserTaskIntent.ASSIGNED` (version=2)
-- [ ] **UserTaskAssignedV3Applier**
+- [x] **UserTaskAssignedV3Applier**
   - Intent: `UserTaskIntent.ASSIGNED` (version=3)
-- [ ] **UserTaskAssigningV1Applier**
+- [x] **UserTaskAssigningV1Applier**
   - Intent: `UserTaskIntent.ASSIGNING`
-- [ ] **UserTaskAssigningV2Applier**
+- [x] **UserTaskAssigningV2Applier**
   - Intent: `UserTaskIntent.ASSIGNING` (version=2)
-- [ ] **UserTaskAssignmentDeniedApplier**
+- [x] **UserTaskAssignmentDeniedApplier**
   - Intent: `UserTaskIntent.ASSIGNMENT_DENIED`
-- [ ] **UserTaskCanceledApplier**
+- [x] **UserTaskCanceledApplier**
   - Intent: `UserTaskIntent.CANCELED`
-- [ ] **UserTaskCancelingV1Applier**
+- [x] **UserTaskCancelingV1Applier**
   - Intent: `UserTaskIntent.CANCELING`
-- [ ] **UserTaskCancelingV2Applier**
+- [x] **UserTaskCancelingV2Applier**
   - Intent: `UserTaskIntent.CANCELING` (version=2)
-- [ ] **UserTaskClaimingApplier**
+- [x] **UserTaskClaimingApplier**
   - Intent: `UserTaskIntent.CLAIMING`
-- [ ] **UserTaskCompletedV1Applier**
+- [x] **UserTaskCompletedV1Applier**
   - Intent: `UserTaskIntent.COMPLETED`
-- [ ] **UserTaskCompletedV2Applier**
+- [x] **UserTaskCompletedV2Applier**
   - Intent: `UserTaskIntent.COMPLETED` (version=2)
-- [ ] **UserTaskCompletingV1Applier**
+- [x] **UserTaskCompletingV1Applier**
   - Intent: `UserTaskIntent.COMPLETING`
-- [ ] **UserTaskCompletingV2Applier**
+- [x] **UserTaskCompletingV2Applier**
   - Intent: `UserTaskIntent.COMPLETING` (version=2)
-- [ ] **UserTaskCompletionDeniedApplier**
+- [x] **UserTaskCompletionDeniedApplier**
   - Intent: `UserTaskIntent.COMPLETION_DENIED`
-- [ ] **UserTaskCorrectedApplier**
+- [x] **UserTaskCorrectedApplier**
   - Intent: `UserTaskIntent.CORRECTED`
-- [ ] **UserTaskCreatedApplier**
+- [x] **UserTaskCreatedApplier**
   - Intent: `UserTaskIntent.CREATED`
-- [ ] **UserTaskCreatedV2Applier**
+- [x] **UserTaskCreatedV2Applier**
   - Intent: `UserTaskIntent.CREATED` (version=2)
-- [ ] **UserTaskCreatingApplier**
+- [x] **UserTaskCreatingApplier**
   - Intent: `UserTaskIntent.CREATING`
-- [ ] **UserTaskCreatingV2Applier**
+- [x] **UserTaskCreatingV2Applier**
   - Intent: `UserTaskIntent.CREATING` (version=2)
-- [ ] **UserTaskMigratedApplier**
+- [x] **UserTaskMigratedApplier**
   - Intent: `UserTaskIntent.MIGRATED`
-- [ ] **UserTaskUpdateDeniedApplier**
+- [x] **UserTaskUpdateDeniedApplier**
   - Intent: `UserTaskIntent.UPDATE_DENIED`
-- [ ] **UserTaskUpdatedV1Applier**
+- [x] **UserTaskUpdatedV1Applier**
   - Intent: `UserTaskIntent.UPDATED`
-- [ ] **UserTaskUpdatedV2Applier**
+- [x] **UserTaskUpdatedV2Applier**
   - Intent: `UserTaskIntent.UPDATED` (version=2)
-- [ ] **UserTaskUpdatingV1Applier**
+- [x] **UserTaskUpdatingV1Applier**
   - Intent: `UserTaskIntent.UPDATING`
-- [ ] **UserTaskUpdatingV2Applier**
+- [x] **UserTaskUpdatingV2Applier**
   - Intent: `UserTaskIntent.UPDATING` (version=2)
-- [ ] **UserUpdatedApplier**
+- [x] **UserUpdatedApplier**
   - Intent: `UserIntent.UPDATED`
-- [ ] **VariableDocumentUpdateDeniedApplier**
+- [x] **VariableDocumentUpdateDeniedApplier**
   - Intent: `VariableDocumentIntent.UPDATE_DENIED`
-- [ ] **VariableDocumentUpdatedApplier**
+- [x] **VariableDocumentUpdatedApplier**
   - Intent: `VariableDocumentIntent.UPDATED`
-- [ ] **VariableDocumentUpdatingApplier**
+- [x] **VariableDocumentUpdatingApplier**
   - Intent: `VariableDocumentIntent.UPDATING`
-- [ ] **VariableMigratedApplier**
+- [x] **VariableMigratedApplier**
   - Intent: `VariableIntent.MIGRATED`
 
 **Total Event Appliers: 175**

@@ -12,7 +12,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableDeploymentState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = DeploymentDistributionIntent.class, type = "DISTRIBUTING")
 public class DeploymentDistributionApplier
     implements TypedEventApplier<DeploymentDistributionIntent, DeploymentDistributionRecord> {
 

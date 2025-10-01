@@ -15,11 +15,13 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = ProcessInstanceCreationIntent.class, type = "CREATED", version = 2)
 final class ProcessInstanceCreationCreatedV2Applier
     implements TypedEventApplier<ProcessInstanceCreationIntent, ProcessInstanceCreationRecord> {
 

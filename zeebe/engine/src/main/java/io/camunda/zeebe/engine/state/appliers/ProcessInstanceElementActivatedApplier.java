@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 
 /** Applies state changes for `ProcessInstance:Element_Activated` */
+@HandlesIntent(intent = ProcessInstanceIntent.class, type = "ELEMENT_ACTIVATED")
 final class ProcessInstanceElementActivatedApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 

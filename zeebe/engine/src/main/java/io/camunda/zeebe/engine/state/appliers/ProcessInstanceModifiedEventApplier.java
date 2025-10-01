@@ -13,11 +13,13 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collections;
 import java.util.Objects;
 
+@HandlesIntent(intent = ProcessInstanceModificationIntent.class, type = "MODIFIED")
 final class ProcessInstanceModifiedEventApplier
     implements TypedEventApplier<
         ProcessInstanceModificationIntent, ProcessInstanceModificationRecord> {
