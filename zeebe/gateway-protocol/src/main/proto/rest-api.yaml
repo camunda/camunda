@@ -7188,7 +7188,6 @@ components:
         - tenantId
         - processInstanceKey
         - processDefinitionKey
-        - tags
       properties:
         processDefinitionId:
           $ref: "#/components/schemas/ProcessDefinitionId"
