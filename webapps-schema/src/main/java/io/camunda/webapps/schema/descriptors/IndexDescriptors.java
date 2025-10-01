@@ -10,6 +10,7 @@ package io.camunda.webapps.schema.descriptors;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
+import io.camunda.webapps.schema.descriptors.index.DeleteHistoryIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
@@ -58,6 +59,7 @@ public class IndexDescriptors {
                 new DecisionIndex(indexPrefix, isElasticsearch),
                 new DecisionInstanceTemplate(indexPrefix, isElasticsearch),
                 new DecisionRequirementsIndex(indexPrefix, isElasticsearch),
+                new DeleteHistoryIndex(indexPrefix, isElasticsearch),
                 new DraftTaskVariableTemplate(indexPrefix, isElasticsearch),
                 new EventTemplate(indexPrefix, isElasticsearch),
                 new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
