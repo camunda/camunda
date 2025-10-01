@@ -40,6 +40,8 @@ import org.junit.jupiter.params.provider.CsvSource;
 
 public class ContainerRuntimePropertiesUtilTest {
 
+  private final GitPropertiesUtil emptyGitProperties = new GitPropertiesUtil(new Properties());
+
   @Test
   void shouldReturnDefaults() {
     // given
@@ -47,7 +49,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
@@ -86,7 +88,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
@@ -144,12 +146,12 @@ public class ContainerRuntimePropertiesUtilTest {
 
     final Properties gitProperties = new Properties();
     if (branchName != null) {
-      gitProperties.put(GitProperties.PROPERTY_NAME_GIT_BRANCH, branchName);
+      gitProperties.put(GitPropertiesUtil.PROPERTY_NAME_GIT_BRANCH, branchName);
     }
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, new GitProperties(gitProperties));
+        new ContainerRuntimePropertiesUtil(properties, new GitPropertiesUtil(gitProperties));
 
     // then
     assertThat(propertiesUtil.getCamundaVersion()).isEqualTo(expectedVersion);
@@ -171,7 +173,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo(expectedVersion);
@@ -192,7 +194,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo(expectedName);
@@ -235,12 +237,12 @@ public class ContainerRuntimePropertiesUtilTest {
 
     final Properties gitProperties = new Properties();
     if (branchName != null) {
-      gitProperties.put(GitProperties.PROPERTY_NAME_GIT_BRANCH, branchName);
+      gitProperties.put(GitPropertiesUtil.PROPERTY_NAME_GIT_BRANCH, branchName);
     }
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, new GitProperties(gitProperties));
+        new ContainerRuntimePropertiesUtil(properties, new GitPropertiesUtil(gitProperties));
 
     // then
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo(expectedVersion);
@@ -262,7 +264,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageName()).isEqualTo(expectedName);
@@ -292,7 +294,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
@@ -311,7 +313,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     final Map<String, String> expected = new HashMap<>();
@@ -334,7 +336,7 @@ public class ContainerRuntimePropertiesUtilTest {
 
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, GitProperties.INSTANCE);
+        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
     final List<Integer> expected = Arrays.asList(8080, 8081, 8088);
@@ -350,7 +352,7 @@ public class ContainerRuntimePropertiesUtilTest {
       // when
       final ContainerRuntimePropertiesUtil propertiesUtil =
           ContainerRuntimePropertiesUtil.readProperties(
-              "/containerRuntimePropertiesUtil/", GitProperties.INSTANCE);
+              "/containerRuntimePropertiesUtil/", emptyGitProperties);
 
       // then
       assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
@@ -406,7 +408,7 @@ public class ContainerRuntimePropertiesUtilTest {
     public void shouldHaveCustomConfigurationParams() {
       final ContainerRuntimePropertiesUtil propertiesUtil =
           ContainerRuntimePropertiesUtil.readProperties(
-              "/containerRuntimePropertiesUtil/", GitProperties.INSTANCE);
+              "/containerRuntimePropertiesUtil/", emptyGitProperties);
 
       // then
       final Map<String, String> expectedCamundaEnvVars = new HashMap<>();

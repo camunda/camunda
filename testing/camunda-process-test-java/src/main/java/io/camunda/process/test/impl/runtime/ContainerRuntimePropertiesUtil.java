@@ -23,6 +23,7 @@ import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimePr
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
+import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -57,7 +58,9 @@ public final class ContainerRuntimePropertiesUtil {
   private final String elasticsearchVersion;
 
   public ContainerRuntimePropertiesUtil(
-      final Properties properties, final GitProperties gitProperties) {
+      final Properties properties, final GitPropertiesUtil gitProperties) {
+
+    final VersionedPropertiesUtil versionedPropsReader = new VersionedPropertiesUtil(gitProperties);
 
     elasticsearchVersion =
         getPropertyOrDefault(
@@ -66,9 +69,9 @@ public final class ContainerRuntimePropertiesUtil {
             CamundaProcessTestRuntimeDefaults.DEFAULT_ELASTICSEARCH_VERSION);
 
     camundaContainerRuntimeProperties =
-        new CamundaContainerRuntimeProperties(properties, gitProperties);
+        new CamundaContainerRuntimeProperties(properties, versionedPropsReader);
     connectorsContainerRuntimeProperties =
-        new ConnectorsContainerRuntimeProperties(properties, gitProperties);
+        new ConnectorsContainerRuntimeProperties(properties, versionedPropsReader);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
 
@@ -87,11 +90,11 @@ public final class ContainerRuntimePropertiesUtil {
 
   public static ContainerRuntimePropertiesUtil readProperties() {
     return new ContainerRuntimePropertiesUtil(
-        readPropertiesFileWithUserOverrides(BASE_DIR), GitProperties.INSTANCE);
+        readPropertiesFileWithUserOverrides(BASE_DIR), new GitPropertiesUtil());
   }
 
   static ContainerRuntimePropertiesUtil readProperties(
-      final String directoryOverride, final GitProperties gitProperties) {
+      final String directoryOverride, final GitPropertiesUtil gitProperties) {
 
     return new ContainerRuntimePropertiesUtil(
         readPropertiesFileWithUserOverrides(directoryOverride), gitProperties);

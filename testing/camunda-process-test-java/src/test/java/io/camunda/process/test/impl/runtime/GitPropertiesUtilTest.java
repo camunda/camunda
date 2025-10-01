@@ -19,18 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.junit.jupiter.api.Test;
 
-public class GitPropertiesTest {
+public class GitPropertiesUtilTest {
 
   @Test
   public void shouldReadPropertiesFromFile() {
-    final GitProperties props = GitProperties.readProperties("./gitProperties/");
+    final GitPropertiesUtil props = new GitPropertiesUtil("./gitProperties/");
 
     assertThat(props.getBranch()).isEqualTo("stable/8.8");
   }
 
   @Test
   public void shouldIgnoreExceptions() {
-    final GitProperties props = GitProperties.readProperties("./unknown/");
+    final GitPropertiesUtil props = new GitPropertiesUtil("./unknown/");
 
     assertThat(props.getBranch()).isEqualTo("");
   }
