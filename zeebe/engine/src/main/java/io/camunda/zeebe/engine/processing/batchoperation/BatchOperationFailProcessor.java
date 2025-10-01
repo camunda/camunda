@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /** Local command processor which sends the FAIL_PARTITION command to the lead partition. */
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = BatchOperationIntent.class, type = "FAIL")
 public final class BatchOperationFailProcessor
     implements TypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 

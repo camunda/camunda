@@ -33,6 +33,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -45,6 +46,7 @@ import io.camunda.zeebe.util.Either;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = JobIntent.class, type = "FAIL")
 public final class JobFailProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");

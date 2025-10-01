@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -28,6 +29,7 @@ import java.util.HashSet;
 import java.util.Optional;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = ScaleIntent.class, type = "SCALE_UP")
 public class ScaleUpProcessor implements DistributedTypedRecordProcessor<ScaleRecord> {
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;

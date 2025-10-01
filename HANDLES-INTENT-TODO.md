@@ -53,170 +53,170 @@ public class BpmnStreamProcessor implements TypedRecordProcessor<UnifiedRecordVa
 
 Processors in the `zeebe/engine` module that implement `TypedRecordProcessor` interface.
 
-- [ ] **AdHocSubProcessInstructionActivateProcessor**
+- [x] **AdHocSubProcessInstructionActivateProcessor**
   - Intent: `AdHocSubProcessInstructionIntent.ACTIVATE`
-- [ ] **AdHocSubProcessInstructionCompleteProcessor**
+- [x] **AdHocSubProcessInstructionCompleteProcessor**
   - Intent: `AdHocSubProcessInstructionIntent.COMPLETE`
-- [ ] **AuthorizationCreateProcessor**
+- [x] **AuthorizationCreateProcessor**
   - Intent: `AuthorizationIntent.CREATE`
-- [ ] **AuthorizationDeleteProcessor**
+- [x] **AuthorizationDeleteProcessor**
   - Intent: `AuthorizationIntent.DELETE`
-- [ ] **AuthorizationUpdateProcessor**
+- [x] **AuthorizationUpdateProcessor**
   - Intent: `AuthorizationIntent.UPDATE`
-- [ ] **BatchOperationCancelProcessor**
+- [x] **BatchOperationCancelProcessor**
   - Intent: `BatchOperationIntent.CANCEL`
-- [ ] **BatchOperationCreateChunkProcessor**
+- [x] **BatchOperationCreateChunkProcessor**
   - Intent: `BatchOperationChunkIntent.CREATE`
-- [ ] **BatchOperationCreateProcessor**
+- [x] **BatchOperationCreateProcessor**
   - Intent: `BatchOperationIntent.CREATE`
-- [ ] **BatchOperationExecuteProcessor**
+- [x] **BatchOperationExecuteProcessor**
   - Intent: `BatchOperationExecutionIntent.EXECUTE`
-- [ ] **BatchOperationFailProcessor**
+- [x] **BatchOperationFailProcessor**
   - Intent: `BatchOperationIntent.FAIL`
-- [ ] **BatchOperationFinishInitializationProcessor**
+- [x] **BatchOperationFinishInitializationProcessor**
   - Intent: `BatchOperationIntent.FINISH_INITIALIZATION`
-- [ ] **BatchOperationInitializeProcessor**
+- [x] **BatchOperationInitializeProcessor**
   - Intent: `BatchOperationIntent.INITIALIZE`
-- [ ] **BatchOperationLeadPartitionCompleteProcessor**
+- [x] **BatchOperationLeadPartitionCompleteProcessor**
   - Intent: `BatchOperationIntent.COMPLETE_PARTITION`
-- [ ] **BatchOperationLeadPartitionFailProcessor**
+- [x] **BatchOperationLeadPartitionFailProcessor**
   - Intent: `BatchOperationIntent.FAIL_PARTITION`
-- [ ] **BatchOperationResumeProcessor**
+- [x] **BatchOperationResumeProcessor**
   - Intent: `BatchOperationIntent.RESUME`
-- [ ] **BatchOperationSuspendProcessor**
+- [x] **BatchOperationSuspendProcessor**
   - Intent: `BatchOperationIntent.SUSPEND`
-- [ ] **BpmnStreamProcessor**
+- [x] **BpmnStreamProcessor**
   - Intent: `ProcessInstanceIntent.ACTIVATE_ELEMENT`
   - Intent: `ProcessInstanceIntent.COMPLETE_ELEMENT`
   - Intent: `ProcessInstanceIntent.TERMINATE_ELEMENT`
   - Intent: `ProcessInstanceIntent.COMPLETE_EXECUTION_LISTENER`
   - Intent: `ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT`
   - Note: This processor handles multiple BPMN element commands dynamically
-- [ ] **ClockProcessor**
+- [x] **ClockProcessor**
   - Intent: `ClockIntent.PIN`
   - Intent: `ClockIntent.RESET`
   - Note: Same processor instance handles both clock intents
-- [ ] **CommandDistributionAcknowledgeProcessor**
+- [x] **CommandDistributionAcknowledgeProcessor**
   - Intent: `CommandDistributionIntent.ACKNOWLEDGE`
-- [ ] **CommandDistributionContinueProcessor**
+- [x] **CommandDistributionContinueProcessor**
   - Intent: `CommandDistributionIntent.CONTINUE`
-- [ ] **CommandDistributionFinishProcessor**
+- [x] **CommandDistributionFinishProcessor**
   - Intent: `CommandDistributionIntent.FINISH`
-- [ ] **GroupAddEntityProcessor**
+- [x] **GroupAddEntityProcessor**
   - Intent: `GroupIntent.ADD_ENTITY`
-- [ ] **GroupCreateProcessor**
+- [x] **GroupCreateProcessor**
   - Intent: `GroupIntent.CREATE`
-- [ ] **GroupDeleteProcessor**
+- [x] **GroupDeleteProcessor**
   - Intent: `GroupIntent.DELETE`
-- [ ] **GroupRemoveEntityProcessor**
+- [x] **GroupRemoveEntityProcessor**
   - Intent: `GroupIntent.REMOVE_ENTITY`
-- [ ] **GroupUpdateProcessor**
+- [x] **GroupUpdateProcessor**
   - Intent: `GroupIntent.UPDATE`
-- [ ] **IdentitySetupInitializeProcessor**
+- [x] **IdentitySetupInitializeProcessor**
   - Intent: `IdentitySetupIntent.INITIALIZE`
-- [ ] **IncidentResolveProcessor**
+- [x] **IncidentResolveProcessor**
   - Intent: `IncidentIntent.RESOLVE`
-- [ ] **JobBatchActivateProcessor**
+- [x] **JobBatchActivateProcessor**
   - Intent: `JobBatchIntent.ACTIVATE`
-- [ ] **JobCancelProcessor**
+- [x] **JobCancelProcessor**
   - Intent: `JobIntent.CANCEL`
-- [ ] **JobCompleteProcessor**
+- [x] **JobCompleteProcessor**
   - Intent: `JobIntent.COMPLETE`
-- [ ] **JobFailProcessor**
+- [x] **JobFailProcessor**
   - Intent: `JobIntent.FAIL`
-- [ ] **JobRecurProcessor**
+- [x] **JobRecurProcessor**
   - Intent: `JobIntent.RECUR_AFTER_BACKOFF`
-- [ ] **JobThrowErrorProcessor**
+- [x] **JobThrowErrorProcessor**
   - Intent: `JobIntent.THROW_ERROR`
-- [ ] **JobTimeOutProcessor**
+- [x] **JobTimeOutProcessor**
   - Intent: `JobIntent.TIME_OUT`
-- [ ] **JobUpdateProcessor**
+- [x] **JobUpdateProcessor**
   - Intent: `JobIntent.UPDATE`
-- [ ] **JobUpdateRetriesProcessor**
+- [x] **JobUpdateRetriesProcessor**
   - Intent: `JobIntent.UPDATE_RETRIES`
-- [ ] **JobUpdateTimeoutProcessor**
+- [x] **JobUpdateTimeoutProcessor**
   - Intent: `JobIntent.UPDATE_TIMEOUT`
-- [ ] **JobYieldProcessor**
+- [x] **JobYieldProcessor**
   - Intent: `JobIntent.YIELD`
-- [ ] **MappingRuleCreateProcessor**
+- [x] **MappingRuleCreateProcessor**
   - Intent: `MappingRuleIntent.CREATE`
-- [ ] **MappingRuleDeleteProcessor**
+- [x] **MappingRuleDeleteProcessor**
   - Intent: `MappingRuleIntent.DELETE`
-- [ ] **MappingRuleUpdateProcessor**
+- [x] **MappingRuleUpdateProcessor**
   - Intent: `MappingRuleIntent.UPDATE`
-- [ ] **MarkPartitionBootstrappedProcessor**
+- [x] **MarkPartitionBootstrappedProcessor**
   - Intent: `ScaleIntent.MARK_PARTITION_BOOTSTRAPPED`
-- [ ] **MessageBatchExpireProcessor**
+- [x] **MessageBatchExpireProcessor**
   - Intent: `MessageBatchIntent.EXPIRE`
-- [ ] **MessageCorrelationCorrelateProcessor**
+- [x] **MessageCorrelationCorrelateProcessor**
   - Intent: `MessageCorrelationIntent.CORRELATE`
-- [ ] **MessageExpireProcessor**
+- [x] **MessageExpireProcessor**
   - Intent: `MessageIntent.EXPIRE`
-- [ ] **MessagePublishProcessor**
+- [x] **MessagePublishProcessor**
   - Intent: `MessageIntent.PUBLISH`
-- [ ] **MessageSubscriptionCorrelateProcessor**
+- [x] **MessageSubscriptionCorrelateProcessor**
   - Intent: `MessageSubscriptionIntent.CORRELATE`
-- [ ] **MessageSubscriptionCreateProcessor**
+- [x] **MessageSubscriptionCreateProcessor**
   - Intent: `MessageSubscriptionIntent.CREATE`
-- [ ] **MessageSubscriptionDeleteProcessor**
+- [x] **MessageSubscriptionDeleteProcessor**
   - Intent: `MessageSubscriptionIntent.DELETE`
-- [ ] **MessageSubscriptionMigrateProcessor**
+- [x] **MessageSubscriptionMigrateProcessor**
   - Intent: `MessageSubscriptionIntent.MIGRATE`
-- [ ] **MessageSubscriptionRejectProcessor**
+- [x] **MessageSubscriptionRejectProcessor**
   - Intent: `MessageSubscriptionIntent.REJECT`
-- [ ] **ProcessInstanceBatchActivateProcessor**
+- [x] **ProcessInstanceBatchActivateProcessor**
   - Intent: `ProcessInstanceBatchIntent.ACTIVATE`
-- [ ] **ProcessInstanceBatchTerminateProcessor**
+- [x] **ProcessInstanceBatchTerminateProcessor**
   - Intent: `ProcessInstanceBatchIntent.TERMINATE`
-- [ ] **ProcessInstanceCancelProcessor**
+- [x] **ProcessInstanceCancelProcessor**
   - Intent: `ProcessInstanceIntent.CANCEL`
-- [ ] **ProcessInstanceCreationCreateWithResultProcessor**
+- [x] **ProcessInstanceCreationCreateWithResultProcessor**
   - Intent: `ProcessInstanceCreationIntent.CREATE_WITH_AWAITING_RESULT`
-- [ ] **ProcessInstanceMigrationMigrateProcessor**
+- [x] **ProcessInstanceMigrationMigrateProcessor**
   - Intent: `ProcessInstanceMigrationIntent.MIGRATE`
-- [ ] **ProcessMessageSubscriptionCorrelateProcessor**
+- [x] **ProcessMessageSubscriptionCorrelateProcessor**
   - Intent: `ProcessMessageSubscriptionIntent.CORRELATE`
-- [ ] **ProcessMessageSubscriptionCreateProcessor**
+- [x] **ProcessMessageSubscriptionCreateProcessor**
   - Intent: `ProcessMessageSubscriptionIntent.CREATE`
-- [ ] **ProcessMessageSubscriptionDeleteProcessor**
+- [x] **ProcessMessageSubscriptionDeleteProcessor**
   - Intent: `ProcessMessageSubscriptionIntent.DELETE`
-- [ ] **RoleAddEntityProcessor**
+- [x] **RoleAddEntityProcessor**
   - Intent: `RoleIntent.ADD_ENTITY`
-- [ ] **RoleCreateProcessor**
+- [x] **RoleCreateProcessor**
   - Intent: `RoleIntent.CREATE`
-- [ ] **RoleDeleteProcessor**
+- [x] **RoleDeleteProcessor**
   - Intent: `RoleIntent.DELETE`
-- [ ] **RoleRemoveEntityProcessor**
+- [x] **RoleRemoveEntityProcessor**
   - Intent: `RoleIntent.REMOVE_ENTITY`
-- [ ] **RoleUpdateProcessor**
+- [x] **RoleUpdateProcessor**
   - Intent: `RoleIntent.UPDATE`
-- [ ] **ScaleUpProcessor**
+- [x] **ScaleUpProcessor**
   - Intent: `ScaleIntent.SCALE_UP`
-- [ ] **ScaleUpStatusProcessor**
+- [x] **ScaleUpStatusProcessor**
   - Intent: `ScaleIntent.STATUS`
-- [ ] **TenantAddEntityProcessor**
+- [x] **TenantAddEntityProcessor**
   - Intent: `TenantIntent.ADD_ENTITY`
-- [ ] **TenantCreateProcessor**
+- [x] **TenantCreateProcessor**
   - Intent: `TenantIntent.CREATE`
-- [ ] **TenantDeleteProcessor**
+- [x] **TenantDeleteProcessor**
   - Intent: `TenantIntent.DELETE`
-- [ ] **TenantRemoveEntityProcessor**
+- [x] **TenantRemoveEntityProcessor**
   - Intent: `TenantIntent.REMOVE_ENTITY`
-- [ ] **TenantUpdateProcessor**
+- [x] **TenantUpdateProcessor**
   - Intent: `TenantIntent.UPDATE`
-- [ ] **TimerCancelProcessor**
+- [x] **TimerCancelProcessor**
   - Intent: `TimerIntent.CANCEL`
-- [ ] **TimerTriggerProcessor**
+- [x] **TimerTriggerProcessor**
   - Intent: `TimerIntent.TRIGGER`
-- [ ] **UsageMetricsExportProcessor**
+- [x] **UsageMetricsExportProcessor**
   - Intent: `UsageMetricIntent.EXPORT`
-- [ ] **UserCreateInitialAdminProcessor**
+- [x] **UserCreateInitialAdminProcessor**
   - Intent: `UserIntent.CREATE_INITIAL_ADMIN`
-- [ ] **UserCreateProcessor**
+- [x] **UserCreateProcessor**
   - Intent: `UserIntent.CREATE`
-- [ ] **UserDeleteProcessor**
+- [x] **UserDeleteProcessor**
   - Intent: `UserIntent.DELETE`
-- [ ] **UserTaskProcessor**
+- [x] **UserTaskProcessor**
   - Intent: `UserTaskIntent.COMPLETE`
   - Intent: `UserTaskIntent.ASSIGN`
   - Intent: `UserTaskIntent.CLAIM`
@@ -224,9 +224,9 @@ Processors in the `zeebe/engine` module that implement `TypedRecordProcessor` in
   - Intent: `UserTaskIntent.COMPLETE_TASK_LISTENER`
   - Intent: `UserTaskIntent.DENY_TASK_LISTENER`
   - Note: Handles all UserTaskIntent command intents (non-event intents)
-- [ ] **UserUpdateProcessor**
+- [x] **UserUpdateProcessor**
   - Intent: `UserIntent.UPDATE`
-- [ ] **VariableDocumentUpdateProcessor**
+- [x] **VariableDocumentUpdateProcessor**
   - Intent: `VariableDocumentIntent.UPDATE`
 
 **Total Processors: 81** (78 regular processors + 1 BpmnStreamProcessor handling 5 intents + 1 ClockProcessor handling 2 intents + 1 UserTaskProcessor handling 6 intents)

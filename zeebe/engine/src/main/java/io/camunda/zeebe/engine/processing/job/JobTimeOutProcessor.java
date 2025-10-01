@@ -20,11 +20,13 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = JobIntent.class, type = "TIME_OUT")
 public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord> {
   public static final String NOT_ACTIVATED_JOB_MESSAGE =
       "Expected to time out activated job with key '%d', but %s";

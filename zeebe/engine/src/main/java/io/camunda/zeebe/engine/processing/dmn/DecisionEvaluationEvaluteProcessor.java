@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.deployment.PersistedDecision;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -30,6 +31,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import io.camunda.zeebe.util.collection.Tuple;
 
+@HandlesIntent(intent = DecisionEvaluationIntent.class, type = "EVALUATE")
 public class DecisionEvaluationEvaluteProcessor
     implements TypedRecordProcessor<DecisionEvaluationRecord> {
 

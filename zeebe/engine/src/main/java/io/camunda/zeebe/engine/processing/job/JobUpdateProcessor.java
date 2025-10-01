@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
 
+@HandlesIntent(intent = JobIntent.class, type = "UPDATE")
 public class JobUpdateProcessor implements TypedRecordProcessor<JobRecord> {
 
   private final JobUpdateBehaviour jobUpdateBehaviour;

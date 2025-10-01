@@ -30,6 +30,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -42,6 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = JobIntent.class, type = "THROW_ERROR")
 public class JobThrowErrorProcessor implements CommandProcessor<JobRecord> {
 
   /**

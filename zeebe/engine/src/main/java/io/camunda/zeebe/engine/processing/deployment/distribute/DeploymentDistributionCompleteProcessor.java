@@ -18,9 +18,11 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.DeploymentDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = DeploymentDistributionIntent.class, type = "COMPLETE")
 public class DeploymentDistributionCompleteProcessor
     implements TypedRecordProcessor<DeploymentDistributionRecord> {
 

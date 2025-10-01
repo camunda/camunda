@@ -27,6 +27,7 @@ import io.camunda.zeebe.model.bpmn.util.time.RepeatingInterval;
 import io.camunda.zeebe.model.bpmn.util.time.Timer;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -37,6 +38,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = TimerIntent.class, type = "TRIGGER")
 public final class TimerTriggerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private static final String NO_TIMER_FOUND_MESSAGE =

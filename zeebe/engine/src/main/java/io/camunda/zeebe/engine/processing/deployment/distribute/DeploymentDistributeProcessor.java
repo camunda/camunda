@@ -15,10 +15,12 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = DeploymentIntent.class, type = "DISTRIBUTE")
 public final class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final StartEventSubscriptionManager startEventSubscriptionManager;

@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.SignalIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -34,6 +35,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = SignalIntent.class, type = "BROADCAST")
 public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor<SignalRecord> {
 
   private final StateWriter stateWriter;

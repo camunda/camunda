@@ -18,11 +18,13 @@ import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState.PendingSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.message.ProcessMessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = ProcessMessageSubscriptionIntent.class, type = "DELETE")
 public final class ProcessMessageSubscriptionDeleteProcessor
     implements TypedRecordProcessor<ProcessMessageSubscriptionRecord> {
 

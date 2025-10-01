@@ -25,6 +25,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * authorization. The SUSPEND command is then distributed to all other partitions.
  */
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = BatchOperationIntent.class, type = "SUSPEND")
 public final class BatchOperationSuspendProcessor
     implements DistributedTypedRecordProcessor<BatchOperationLifecycleManagementRecord> {
 

@@ -18,11 +18,13 @@ import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = JobIntent.class, type = "RECUR_AFTER_BACKOFF")
 public class JobRecurProcessor implements TypedRecordProcessor<JobRecord> {
 
   private static final String NOT_FAILED_JOB_MESSAGE =

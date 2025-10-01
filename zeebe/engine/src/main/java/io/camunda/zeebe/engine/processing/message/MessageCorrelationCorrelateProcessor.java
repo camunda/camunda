@@ -29,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -38,6 +39,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+@HandlesIntent(intent = MessageCorrelationIntent.class, type = "CORRELATE")
 public final class MessageCorrelationCorrelateProcessor
     implements TypedRecordProcessor<MessageCorrelationRecord> {
 

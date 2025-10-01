@@ -31,6 +31,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntents;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -45,6 +47,13 @@ import java.util.function.Function;
 import org.slf4j.Logger;
 
 @ExcludeAuthorizationCheck
+@HandlesIntents({
+  @HandlesIntent(intent = ProcessInstanceIntent.class, type = "ACTIVATE_ELEMENT"),
+  @HandlesIntent(intent = ProcessInstanceIntent.class, type = "COMPLETE_ELEMENT"),
+  @HandlesIntent(intent = ProcessInstanceIntent.class, type = "TERMINATE_ELEMENT"),
+  @HandlesIntent(intent = ProcessInstanceIntent.class, type = "COMPLETE_EXECUTION_LISTENER"),
+  @HandlesIntent(intent = ProcessInstanceIntent.class, type = "CONTINUE_TERMINATING_ELEMENT")
+})
 public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessInstanceRecord> {
 
   private static final Logger LOGGER = Loggers.PROCESS_PROCESSOR_LOGGER;

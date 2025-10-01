@@ -17,10 +17,13 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = ProcessInstanceCreationIntent.class, type = "CREATE_WITH_AWAITING_RESULT")
 public final class ProcessInstanceCreationCreateWithResultProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
 
