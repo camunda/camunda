@@ -686,7 +686,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 7
+    timeout-minutes: 10
     runs-on: gcp-perf-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
