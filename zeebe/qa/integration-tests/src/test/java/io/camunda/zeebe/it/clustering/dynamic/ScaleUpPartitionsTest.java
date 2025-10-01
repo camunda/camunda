@@ -98,7 +98,6 @@ public class ScaleUpPartitionsTest {
                   b.withBrokerConfig(this::configureBackupStore)
                       .withBrokerConfig(
                           bb -> {
-                            bb.getExperimental().getFeatures().setEnablePartitionScaling(true);
                             bb.getCluster()
                                 .getMembership()
                                 .setSyncInterval(Duration.ofSeconds(1))

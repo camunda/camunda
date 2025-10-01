@@ -56,7 +56,7 @@ class ConfigurationUtilTest {
 
     // when
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
@@ -246,7 +246,7 @@ class ConfigurationUtilTest {
 
     // when
     final var topology =
-        ConfigurationUtil.getClusterConfigFrom(true, partitionDistribution, partitionConfig);
+        ConfigurationUtil.getClusterConfigFrom(partitionDistribution, partitionConfig);
 
     // then
     ClusterConfigurationAssert.assertThatClusterTopology(topology)
