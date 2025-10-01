@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.archiver.os;
 
+import static java.lang.String.format;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.tasklist.Metrics;
@@ -19,10 +20,10 @@ import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
 import io.camunda.tasklist.util.Either;
 import io.camunda.tasklist.util.OpenSearchUtil;
 import io.micrometer.core.instrument.Timer;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -138,7 +139,7 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
       final SearchResponse searchResponse, final Throwable error) {
     if (error != null) {
       final var message =
-          String.format(
+          format(
               "Exception occurred, while obtaining finished batch operations: %s",
               error.getMessage());
       return Either.left(new TasklistRuntimeException(message, error));
@@ -187,6 +188,23 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
     return builder.build();
   }
 
+  private CalendarInterval calendarIntervalByAlias(final String alias) {
+    return Arrays.stream(CalendarInterval.values())
+        .filter(ci -> Arrays.asList(ci.aliases()).contains(alias))
+        .findFirst()
+        .orElseThrow(
+            () -> {
+              final List<String> legalAliases =
+                  Arrays.stream(CalendarInterval.values())
+                      .flatMap(v -> Arrays.stream(v.aliases()))
+                      .sorted()
+                      .toList();
+              return new TasklistRuntimeException(
+                  format(
+                      "Unknown CalendarInterval alias %s! Legal aliases: %s", alias, legalAliases));
+            });
+  }
+
   private Aggregation createFinishedTasksAggregation(
       final String datesAggName, final String instancesAggName) {
 
@@ -196,10 +214,8 @@ public class TaskArchiverJobOpenSearch extends AbstractArchiverJobOpenSearch
                 d ->
                     d.field(TaskTemplate.COMPLETION_TIME)
                         .calendarInterval(
-                            CalendarInterval.valueOf(
-                                Optional.ofNullable(
-                                        tasklistProperties.getArchiver().getRolloverInterval())
-                                    .orElse("Day")))
+                            calendarIntervalByAlias(
+                                tasklistProperties.getArchiver().getRolloverInterval()))
                         .format(tasklistProperties.getArchiver().getElsRolloverDateFormat())
                         .keyed(true))
             .aggregations(

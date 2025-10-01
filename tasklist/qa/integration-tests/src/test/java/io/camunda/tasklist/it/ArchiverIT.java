@@ -18,7 +18,6 @@ import io.camunda.tasklist.archiver.ProcessInstanceArchiverJob;
 import io.camunda.tasklist.archiver.TaskArchiverJob;
 import io.camunda.tasklist.entities.TaskEntity;
 import io.camunda.tasklist.exceptions.ArchiverException;
-import io.camunda.tasklist.qa.util.TestUtil;
 import io.camunda.tasklist.schema.indices.ProcessInstanceIndex;
 import io.camunda.tasklist.schema.templates.TaskTemplate;
 import io.camunda.tasklist.schema.templates.TaskVariableTemplate;
@@ -97,7 +96,7 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
   @Override
   @AfterEach
   public void after() {
-    tasklistProperties.getArchiver().setRolloverInterval(TestUtil.isElasticSearch() ? "1d" : "Day");
+    tasklistProperties.getArchiver().setRolloverInterval("1d");
     super.after();
   }
 
@@ -208,22 +207,22 @@ public class ArchiverIT extends TasklistZeebeIntegrationTest {
     return Stream.of(
         Arguments.of(
             LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
-            TestUtil.isElasticSearch() ? "1w" : "Week",
+            "1w",
             LocalDate.of(2024, 10, 7).atStartOfDay().toInstant(ZoneOffset.UTC)
             // 1-week interval so the 10th date will fall in the 7-14 bucket
             ),
         Arguments.of(
             LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
-            TestUtil.isElasticSearch() ? "1d" : "Day",
+            "1d",
             LocalDate.of(2024, 10, 10).atStartOfDay().toInstant(ZoneOffset.UTC)),
         Arguments.of(
             LocalDate.of(2024, 10, 10).atTime(13, 13).toInstant(ZoneOffset.UTC),
-            TestUtil.isElasticSearch() ? "1M" : "Month",
+            "1M",
             LocalDate.of(2024, 10, 1).atStartOfDay().toInstant(ZoneOffset.UTC)),
         // 1-month interval so 10th date will fall into 1-31 bucket
         Arguments.of(
             LocalDate.of(2024, 10, 16).atTime(13, 13).toInstant(ZoneOffset.UTC),
-            TestUtil.isElasticSearch() ? "1w" : "Week",
+            "1w",
             LocalDate.of(2024, 10, 14).atStartOfDay().toInstant(ZoneOffset.UTC))
         // 1-week interval so 16th will fall into 14-21 bucket
         );
