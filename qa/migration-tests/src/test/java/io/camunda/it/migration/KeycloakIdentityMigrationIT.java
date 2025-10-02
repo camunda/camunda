@@ -322,19 +322,13 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     final var zeebeUsers = client.newUsersByRoleSearchRequest("zeebe").send().join().items();
     assertThat(zeebeUsers)
         .extracting(RoleUser::getUsername)
-        .containsExactlyInAnyOrder("user0@email.com", "user1@email.com");
+        .containsExactlyInAnyOrder("user0", "user1");
     final var operateUsers = client.newUsersByRoleSearchRequest("operate").send().join().items();
-    assertThat(operateUsers)
-        .extracting(RoleUser::getUsername)
-        .containsExactlyInAnyOrder("user0@email.com");
+    assertThat(operateUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
     final var tasklistUsers = client.newUsersByRoleSearchRequest("tasklist").send().join().items();
-    assertThat(tasklistUsers)
-        .extracting(RoleUser::getUsername)
-        .containsExactlyInAnyOrder("user0@email.com");
+    assertThat(tasklistUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
     final var identityUsers = client.newUsersByRoleSearchRequest("identity").send().join().items();
-    assertThat(identityUsers)
-        .extracting(RoleUser::getUsername)
-        .containsExactlyInAnyOrder("user0@email.com");
+    assertThat(identityUsers).extracting(RoleUser::getUsername).containsExactlyInAnyOrder("user0");
   }
 
   @Test
@@ -350,7 +344,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
               final var authorizations = client.newAuthorizationSearchRequest().send().join();
               assertThat(authorizations.items())
                   .extracting(Authorization::getOwnerId)
-                  .contains("user0@email.com", "user1@email.com");
+                  .contains("user0", "user1");
             });
 
     final var authorizations = client.newAuthorizationSearchRequest().send().join();
@@ -363,7 +357,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             a -> new HashSet<>(a.getPermissionTypes()))
         .contains(
             tuple(
-                "user0@email.com",
+                "user0",
                 OwnerType.USER,
                 "*",
                 ResourceType.PROCESS_DEFINITION,
@@ -372,7 +366,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
                     PermissionType.READ_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE)),
             tuple(
-                "user1@email.com",
+                "user1",
                 OwnerType.USER,
                 "*",
                 ResourceType.DECISION_DEFINITION,
