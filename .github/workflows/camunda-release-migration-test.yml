@@ -205,14 +205,18 @@ jobs:
         with:
           cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
           location: ${{ inputs.cluster-region || 'europe-west1-b' }}
-      - name: Add load
+      - name: Port-forward to gateway
+        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-zeebe-gateway 26500 &
+      - name: Port-forward to Keycloak
+        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-keycloak 18080:80 &
+      - name: Install zbctl
         run: |
-          release=${{ inputs.name || 'release-migration-test' }}
-          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
-          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
           wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
           chmod +x zbctl
+      - name: Add load
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
           # Get secret for connectors - to communicate with the cluster
           export CONNECTOR_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
@@ -341,14 +345,18 @@ jobs:
         with:
           cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
           location: ${{ inputs.cluster-region || 'europe-west1-b' }}
-      - name: Add load
+      - name: Port-forward to gateway
+        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-zeebe-gateway 26500 &
+      - name: Port-forward to Keycloak
+        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-keycloak 18080:80 &
+      - name: Install zbctl
         run: |
-          release=${{ inputs.name || 'release-migration-test' }}
-          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
-          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
           wget https://github.com/camunda/camunda/releases/download/8.5.8/zbctl
           chmod +x zbctl
+      - name: Add load
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
           # Get client secret from camunda credentials - which has been extracted during the upgrade
           export ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
@@ -359,7 +367,6 @@ jobs:
           ./zbctl status --insecure
           # Activate job
           key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq '.jobs[0].key')
-
           # Complete job from 8.7 version
           ./zbctl complete job $key --insecure
       - name: Summarize deployment
