@@ -99,6 +99,14 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder().usernameClaim("sub1").build(),
             true),
         Arguments.of(
+            "preferUsernameClaim is set",
+            OidcAuthenticationConfiguration.builder().preferUsernameClaim(true).build(),
+            true),
+        Arguments.of(
+            "preferUsernameClaim is not set",
+            OidcAuthenticationConfiguration.builder().build(),
+            false),
+        Arguments.of(
             "issuerUri is set",
             OidcAuthenticationConfiguration.builder().issuerUri("issuer").build(),
             true),
