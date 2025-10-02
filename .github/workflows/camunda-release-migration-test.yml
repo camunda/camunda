@@ -271,13 +271,13 @@ jobs:
         id: extract-secrets
         run: |
           release=${{ inputs.name || 'release-migration-test' }}
-          export OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
-          export CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
-          export ORCHESTRATION_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
-          export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
-          export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
-          export POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "ck-update-test-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
-          export POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "ck-update-test-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
+          export OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "$release-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+          export CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "$release-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
+          export ORCHESTRATION_SECRET=$(kubectl get secret --namespace "$release" "$release-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
+          export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
+          export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret --namespace "$release" "$release-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
+          export POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
+          export POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
           kubectl create secret generic camunda-credentials \
           --from-literal=identity-optimize-client-token=$OPTIMIZE_SECRET \
           --from-literal=identity-connectors-client-token=$CONNECTORS_SECRET \
