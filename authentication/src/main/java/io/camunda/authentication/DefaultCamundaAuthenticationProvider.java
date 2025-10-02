@@ -12,10 +12,15 @@ import io.camunda.security.auth.CamundaAuthenticationConverter;
 import io.camunda.security.auth.CamundaAuthenticationHolder;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticationProvider {
+
+  private static final Logger LOG =
+      LoggerFactory.getLogger(DefaultCamundaAuthenticationProvider.class);
 
   private final CamundaAuthenticationHolder holder;
   private final CamundaAuthenticationConverter<Authentication> converter;
@@ -30,16 +35,18 @@ public class DefaultCamundaAuthenticationProvider implements CamundaAuthenticati
   @Override
   public CamundaAuthentication getCamundaAuthentication() {
     final var springBasedAuthentication = SecurityContextHolder.getContext().getAuthentication();
-    return Optional.ofNullable(getFromHolderIfPresent(springBasedAuthentication))
+    return getFromHolderIfPresent(springBasedAuthentication)
         .orElseGet(() -> convertAndSetInHolder(springBasedAuthentication));
   }
 
-  private CamundaAuthentication getFromHolderIfPresent(final Authentication authentication) {
-    return Optional.ofNullable(authentication).map(principal -> holder.get()).orElse(null);
+  private Optional<CamundaAuthentication> getFromHolderIfPresent(
+      final Authentication authentication) {
+    return Optional.ofNullable(authentication).map(principal -> holder.get());
   }
 
   private CamundaAuthentication convertAndSetInHolder(final Authentication authentication) {
     final var result = converter.convert(authentication);
+    LOG.debug("Created camunda authentication: {}", result);
     Optional.ofNullable(result).filter(a -> !a.isAnonymous()).ifPresent(p -> holder.set(result));
     return result;
   }
