@@ -62,6 +62,7 @@ import {
 	queryMappingRules,
 } from './mapping-rule';
 import {publishMessage, correlateMessage} from './message';
+import {queryMessageSubscriptions} from './message-subscriptions';
 import {
 	createProcessInstance,
 	getProcessInstance,
@@ -204,6 +205,7 @@ const endpoints = {
 	queryMappingRules,
 	publishMessage,
 	correlateMessage,
+	queryMessageSubscriptions,
 	getUserTask,
 	queryUserTasks,
 	getUserTaskForm,
@@ -526,6 +528,15 @@ export {
 	type CorrelateMessageRequestBody,
 	type CorrelateMessageResponseBody,
 } from './message';
+export {
+	messageSubscriptionSchema,
+	queryMessageSubscriptionRequestBodySchema,
+	queryMessageSubscriptionsResponseBodySchema,
+	type MessageSubscriptionState,
+	type MessageSubscription,
+	type QueryMessageSubscriptionsRequestBody,
+	type QueryMessageSubscriptionsResponseBody,
+} from './message-subscriptions';
 export {
 	createMappingRuleRequestBodySchema,
 	createMappingRuleResponseBodySchema,
