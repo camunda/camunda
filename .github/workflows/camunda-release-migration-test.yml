@@ -214,6 +214,8 @@ jobs:
           release=${{ inputs.name || 'release-migration-test' }}
           kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
           kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
+          # Wait for port-forward to be ready
+          sleep 5
           # Get secret for connectors - to communicate with the cluster
           export CONNECTOR_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
@@ -351,6 +353,8 @@ jobs:
           release=${{ inputs.name || 'release-migration-test' }}
           kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
           kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
+          # Wait for port-forward to be ready
+          sleep 5
           # Get client secret from camunda credentials - which has been extracted during the upgrade
           export ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
