@@ -28,6 +28,11 @@ public class DeleteHistoryIndex extends AbstractIndexDescriptor implements Prio5
   }
 
   @Override
+  public String getVersion() {
+    return "8.9.0";
+  }
+
+  @Override
   public String getComponentName() {
     return CAMUNDA.toString();
   }

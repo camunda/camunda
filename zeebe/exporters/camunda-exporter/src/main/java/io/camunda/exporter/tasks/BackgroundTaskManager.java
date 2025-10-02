@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks;
 
 import io.camunda.exporter.tasks.archiver.ArchiverRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deleter.DeleterRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -32,6 +33,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
   private final Duration closeTimeout;
 
   private int submittedTasks = 0;
+  private final DeleterRepository deleterRepository;
 
   @VisibleForTesting
   BackgroundTaskManager(
@@ -42,7 +44,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
       final Logger logger,
       final @WillCloseWhenClosed ScheduledThreadPoolExecutor executor,
       final List<RunnableTask> tasks,
-      final Duration closeTimeout) {
+      final Duration closeTimeout,
+      final @WillCloseWhenClosed DeleterRepository deleterRepository) {
     this.partitionId = partitionId;
     this.archiverRepository =
         Objects.requireNonNull(archiverRepository, "must specify an archiver repository");
@@ -51,6 +54,8 @@ public final class BackgroundTaskManager implements CloseableSilently {
     this.batchOperationUpdateRepository =
         Objects.requireNonNull(
             batchOperationUpdateRepository, "must specify a batch operation update repository");
+    this.deleterRepository =
+        Objects.requireNonNull(deleterRepository, "must specify a deleter repository");
     this.logger = Objects.requireNonNull(logger, "must specify a logger");
     this.executor = Objects.requireNonNull(executor, "must specify an executor");
     this.tasks = Objects.requireNonNull(tasks, "must specify tasks");
@@ -76,7 +81,7 @@ public final class BackgroundTaskManager implements CloseableSilently {
         error -> logger.warn("Failed to close resource for partition {}", partitionId, error),
         archiverRepository,
         incidentRepository,
-        batchOperationUpdateRepository);
+        batchOperationUpdateRepository); // TODO add closing to deleter repository
   }
 
   public void start() {
