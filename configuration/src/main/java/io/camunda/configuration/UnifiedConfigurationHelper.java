@@ -270,6 +270,12 @@ public class UnifiedConfigurationHelper {
         .instantiate(ExporterConfiguration.class);
   }
 
+  public static io.camunda.exporter.rdbms.ExporterConfiguration argsToRdbmsExporterConfiguration(
+      final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration("rdbms", args)
+        .instantiate(io.camunda.exporter.rdbms.ExporterConfiguration.class);
+  }
+
   /* Setters used by tests to inject the mock objects */
 
   public static void setCustomEnvironment(final Environment environment) {

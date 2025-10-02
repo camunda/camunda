@@ -22,6 +22,8 @@ import io.camunda.configuration.InternalApi;
 import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.PrimaryStorage;
+import io.camunda.configuration.Rdbms;
+import io.camunda.configuration.RdbmsHistory;
 import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
@@ -76,6 +78,8 @@ public class BrokerBasedPropertiesOverride {
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
+  private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
+  private static final String RDBMS_EXPORTER_NAME = "rdbms";
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
@@ -111,7 +115,11 @@ public class BrokerBasedPropertiesOverride {
     // from camunda.data.* sections
     populateFromData(override);
 
-    populateCamundaExporter(override);
+    switch (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()) {
+      case elasticsearch, opensearch -> populateCamundaExporter(override);
+      case rdbms -> populateRdbmsExporter(override);
+      default -> {}
+    }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration
     //  override.setSampleField(unifiedConfiguration.getSampleField());
@@ -571,6 +579,91 @@ public class BrokerBasedPropertiesOverride {
         args,
         "history.processInstanceEnabled",
         ((DocumentBasedHistory) database.getHistory()).isProcessInstanceEnabled());
+  }
+
+  private void populateRdbmsExporter(final BrokerBasedProperties override) {
+    final SecondaryStorage secondaryStorage =
+        unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
+
+    final Rdbms database = secondaryStorage.getRdbms();
+
+    /* Load exporter config map */
+
+    var exporter = override.getRdbmsExporter();
+    if (exporter == null) {
+      exporter = new ExporterCfg();
+      exporter.setClassName(RDBMS_EXPORTER_CLASS_NAME);
+      exporter.setArgs(new LinkedHashMap<>());
+      override.getExporters().put(RDBMS_EXPORTER_NAME, exporter);
+    }
+
+    /* Override config map values */
+
+    // https://github.com/camunda/camunda/issues/37880
+    // it is possible to have an exporter with no args defined
+    final Map<String, Object> args =
+        exporter.getArgs() == null ? new LinkedHashMap<>() : exporter.getArgs();
+    setArgIfNotNull(args, "queueSize", database.getQueueSize());
+    setArgIfNotNull(args, "flushInterval", database.getFlushInterval());
+
+    if (database.getHistory() != null) {
+      final var history = (RdbmsHistory) database.getHistory();
+
+      setArgIfNotNull(args, "history.defaultHistoryTTL", history.getDefaultHistoryTTL());
+      setArgIfNotNull(
+          args,
+          "history.defaultBatchOperationHistoryTTL",
+          history.getDefaultBatchOperationHistoryTTL());
+      setArgIfNotNull(
+          args,
+          "history.batchOperationCancelProcessInstanceHistoryTTL",
+          history.getBatchOperationCancelProcessInstanceHistoryTTL());
+      setArgIfNotNull(
+          args,
+          "history.batchOperationMigrateProcessInstanceHistoryTTL",
+          history.getBatchOperationMigrateProcessInstanceHistoryTTL());
+      setArgIfNotNull(
+          args,
+          "history.batchOperationModifyProcessInstanceHistoryTTL",
+          history.getBatchOperationModifyProcessInstanceHistoryTTL());
+      setArgIfNotNull(
+          args,
+          "history.batchOperationResolveIncidentHistoryTTL",
+          history.getBatchOperationResolveIncidentHistoryTTL());
+      setArgIfNotNull(
+          args, "history.minHistoryCleanupInterval", history.getMinHistoryCleanupInterval());
+      setArgIfNotNull(
+          args, "history.maxHistoryCleanupInterval", history.getMaxHistoryCleanupInterval());
+      setArgIfNotNull(
+          args, "history.historyCleanupBatchSize", history.getHistoryCleanupBatchSize());
+      setArgIfNotNull(args, "history.usageMetricsCleanup", history.getUsageMetricsCleanup());
+      setArgIfNotNull(args, "history.usageMetricsTTL", history.getUsageMetricsTTL());
+    }
+
+    if (database.getProcessCache() != null) {
+      setArgIfNotNull(args, "processCache.maxSize", database.getProcessCache().getMaxSize());
+    }
+
+    if (database.getBatchOperationCache() != null) {
+      setArgIfNotNull(
+          args, "batchOperationCache.maxSize", database.getBatchOperationCache().getMaxSize());
+    }
+
+    setArgIfNotNull(
+        args,
+        "exportBatchOperationItemsOnCreation",
+        database.isExportBatchOperationItemsOnCreation());
+    setArgIfNotNull(
+        args, "batchOperationItemInsertBlockSize", database.getBatchOperationItemInsertBlockSize());
+
+    exporter.setArgs(args);
+  }
+
+  private void setArgIfNotNull(
+      final Map<String, Object> args, final String breadcrumb, final Object value) {
+    if (value != null) {
+      setArg(args, breadcrumb, value);
+    }
   }
 
   @SuppressWarnings("unchecked")

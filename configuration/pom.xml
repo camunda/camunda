@@ -73,6 +73,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-db-rdbms</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>zeebe-gateway-rest</artifactId>
     </dependency>
 
@@ -125,6 +130,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-exporter</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>rdbms-exporter</artifactId>
     </dependency>
 
     <dependency>
