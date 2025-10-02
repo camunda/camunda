@@ -49,6 +49,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableVariableRecordValue;
@@ -83,10 +84,10 @@ import org.testcontainers.containers.GenericContainer;
 @TestInstance(Lifecycle.PER_CLASS)
 final class CamundaExporterIT {
 
-  @RegisterExtension private static SearchDBExtension searchDB = SearchDBExtension.create();
+  @RegisterExtension private static final SearchDBExtension searchDB = SearchDBExtension.create();
 
   @RegisterExtension
-  private static CamundaExporterITTemplateExtension templateExtension =
+  private static final CamundaExporterITTemplateExtension templateExtension =
       new CamundaExporterITTemplateExtension(searchDB);
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -262,6 +263,63 @@ final class CamundaExporterIT {
     final var valueType = ValueType.VARIABLE;
     final Record record =
         generateRecordWithSupportedBrokerVersion(valueType, VariableIntent.CREATED);
+    final var resourceProvider = new DefaultExporterResourceProvider();
+    resourceProvider.init(
+        config,
+        mock(ExporterEntityCacheProvider.class),
+        new SimpleMeterRegistry(),
+        new ExporterMetadata(TestObjectMapper.objectMapper()),
+        TestObjectMapper.objectMapper());
+    final var expectedHandlers =
+        resourceProvider.getExportHandlers().stream()
+            .filter(exportHandler -> exportHandler.getHandledValueType() == valueType)
+            .filter(exportHandler -> exportHandler.handlesRecord(record))
+            .toList();
+
+    final CamundaExporter camundaExporter = new CamundaExporter();
+    final ExporterTestContext exporterTestContext =
+        new ExporterTestContext()
+            .setConfiguration(new ExporterTestConfiguration<>("camundaExporter", config));
+
+    camundaExporter.configure(exporterTestContext);
+    camundaExporter.open(new ExporterTestController());
+
+    // when
+    camundaExporter.export(record);
+
+    // then
+    assertThat(expectedHandlers).isNotEmpty();
+    expectedHandlers.forEach(
+        exportHandler -> {
+          final ExporterEntity expectedEntity = getExpectedEntity(record, exportHandler);
+          final ExporterEntity<?> responseEntity;
+          try {
+            responseEntity =
+                clientAdapter.get(
+                    expectedEntity.getId(),
+                    exportHandler.getIndexName(),
+                    exportHandler.getEntityType());
+          } catch (final IOException e) {
+            fail("Failed to find expected entity " + expectedEntity, e);
+            return;
+          }
+
+          assertThat(responseEntity)
+              .describedAs(
+                  "Handler [%s] correctly handles a [%s] record",
+                  exportHandler.getClass().getSimpleName(), exportHandler.getHandledValueType())
+              .isEqualTo(expectedEntity);
+        });
+  }
+
+  @TestTemplate
+  void shouldAuditLogRecord(
+      final ExporterConfiguration config, final SearchClientAdapter clientAdapter)
+      throws IOException {
+    // given
+    createSchemas(config);
+    final var valueType = ValueType.ROLE;
+    final Record record = generateRecordWithSupportedBrokerVersion(valueType, RoleIntent.CREATED);
     final var resourceProvider = new DefaultExporterResourceProvider();
     resourceProvider.init(
         config,
