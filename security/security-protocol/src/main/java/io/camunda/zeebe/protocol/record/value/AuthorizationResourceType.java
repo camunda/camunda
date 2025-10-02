@@ -60,7 +60,8 @@ public enum AuthorizationResourceType {
   SYSTEM(PermissionType.READ, PermissionType.READ_USAGE_METRIC, PermissionType.UPDATE),
   TENANT(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
   UNSPECIFIED(),
-  USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE);
+  USER(PermissionType.CREATE, PermissionType.READ, PermissionType.UPDATE, PermissionType.DELETE),
+  USER_TASK(PermissionType.READ, PermissionType.UPDATE);
 
   private final Set<PermissionType> supportedPermissionTypes;
 
