@@ -7,6 +7,7 @@
  */
 package io.camunda.it.client;
 
+import static io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker.DEFAULT_MAPPING_RULE_CLAIM_NAME;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -17,8 +18,12 @@ import io.camunda.client.api.search.enums.OwnerType;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
 import io.camunda.client.api.search.response.Authorization;
-import io.camunda.client.api.search.response.Group;
-import io.camunda.client.api.search.response.Role;
+import io.camunda.qa.util.auth.GroupDefinition;
+import io.camunda.qa.util.auth.MappingRuleDefinition;
+import io.camunda.qa.util.auth.RoleDefinition;
+import io.camunda.qa.util.auth.TestGroup;
+import io.camunda.qa.util.auth.TestMappingRule;
+import io.camunda.qa.util.auth.TestRole;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -26,7 +31,6 @@ import io.camunda.zeebe.test.util.Strings;
 import java.util.List;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -53,44 +57,23 @@ public class AuthorizationIntegrationTest {
   @UserDefinition
   private static final TestUser USER_3 = new TestUser(USER_ID_3, "password", List.of());
 
+  @MappingRuleDefinition
+  private static final TestMappingRule MAPPING_RULE_1 =
+      new TestMappingRule(
+          MAPPING_RULE_ID_1,
+          DEFAULT_MAPPING_RULE_CLAIM_NAME,
+          Strings.newRandomValidIdentityId(),
+          List.of());
+
+  @GroupDefinition
+  private static final TestGroup GROUP_1 =
+      TestGroup.withoutPermissions(GROUP_ID_1, GROUP_ID_1, List.of());
+
+  @RoleDefinition
+  private static final TestRole ROLE_1 =
+      TestRole.withoutPermissions(ROLE_ID_1, ROLE_ID_1, List.of());
+
   private static CamundaClient camundaClient;
-
-  @BeforeAll
-  public static void setup() {
-    camundaClient
-        .newCreateRoleCommand()
-        .roleId(ROLE_ID_1)
-        .name(ROLE_ID_1)
-        .description(ROLE_ID_1 + " description")
-        .send()
-        .join();
-
-    camundaClient
-        .newCreateMappingRuleCommand()
-        .mappingRuleId(MAPPING_RULE_ID_1)
-        .claimName(MAPPING_RULE_ID_1 + "-cn")
-        .claimValue(MAPPING_RULE_ID_1 + "-cv")
-        .name(MAPPING_RULE_ID_1)
-        .send()
-        .join();
-
-    camundaClient
-        .newCreateGroupCommand()
-        .groupId(GROUP_ID_1)
-        .name(GROUP_ID_1)
-        .description(GROUP_ID_1 + " description")
-        .send()
-        .join();
-    Awaitility.await()
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final Group group = camundaClient.newGroupGetRequest(GROUP_ID_1).send().join();
-              assertThat(group).isNotNull();
-              final Role role = camundaClient.newRoleGetRequest(ROLE_ID_1).send().join();
-              assertThat(role).isNotNull();
-            });
-  }
 
   @ParameterizedTest
   @MethodSource("getValidAuthorizationRequest")
