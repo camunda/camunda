@@ -26,6 +26,7 @@
         <includes>
           <include>**/*.proto</include>
           <include>internal/generation-spec.yaml</include>
+          <include>rest-api.yaml</include>
         </includes>
       </resource>
     </resources>
