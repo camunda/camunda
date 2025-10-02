@@ -16,21 +16,24 @@ import {themeStore} from 'common/theme/theme';
 import Editor from '@monaco-editor/react';
 import styles from './styles.module.scss';
 
-const getEditorOptions = (readOnly: boolean): React.ComponentProps<typeof Editor>['options'] => ({
-  minimap: {
-    enabled: false,
-  },
-  fontSize: 13,
-  lineHeight: 20,
-  fontFamily:
-    '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
-  formatOnPaste: !readOnly,
-  formatOnType: !readOnly,
-  tabSize: 2,
-  wordWrap: 'on',
-  scrollBeyondLastLine: false,
-  readOnly,
-} as const);
+const getEditorOptions = (
+  readOnly: boolean,
+): React.ComponentProps<typeof Editor>['options'] =>
+  ({
+    minimap: {
+      enabled: false,
+    },
+    fontSize: 13,
+    lineHeight: 20,
+    fontFamily:
+      '"IBM Plex Mono", "Droid Sans Mono", "monospace", monospace, "Droid Sans Fallback"',
+    formatOnPaste: !readOnly,
+    formatOnType: !readOnly,
+    tabSize: 2,
+    wordWrap: 'on',
+    scrollBeyondLastLine: false,
+    readOnly,
+  }) as const;
 
 function beautifyJSON(value: string) {
   try {
@@ -67,26 +70,36 @@ const JSONEditorModal: React.FC<Props> = observer(
         open={isOpen}
         modalHeading={title}
         onRequestClose={onClose}
-        onRequestSubmit={readOnly ? undefined : () => {
-          if (isValid) {
-            onSave?.(editedValue);
-          } else {
-            editorRef.current?.trigger(
-              '',
-              'editor.action.marker.next',
-              undefined,
-            );
-            editorRef.current?.trigger(
-              '',
-              'editor.action.marker.prev',
-              undefined,
-            );
-          }
-        }}
+        onRequestSubmit={
+          readOnly
+            ? undefined
+            : () => {
+                if (isValid) {
+                  onSave?.(editedValue);
+                } else {
+                  editorRef.current?.trigger(
+                    '',
+                    'editor.action.marker.next',
+                    undefined,
+                  );
+                  editorRef.current?.trigger(
+                    '',
+                    'editor.action.marker.prev',
+                    undefined,
+                  );
+                }
+              }
+        }
         primaryButtonDisabled={readOnly ? undefined : !isValid}
         preventCloseOnClickOutside
-        primaryButtonText={readOnly ? undefined : t('jsonEditorApplyButtonLabel')}
-        secondaryButtonText={readOnly ? t('jsonEditorCloseButtonLabel') : t('jsonEditorCancelButtonLabel')}
+        primaryButtonText={
+          readOnly ? undefined : t('jsonEditorApplyButtonLabel')
+        }
+        secondaryButtonText={
+          readOnly
+            ? t('jsonEditorCloseButtonLabel')
+            : t('jsonEditorCancelButtonLabel')
+        }
         size="lg"
         passiveModal={readOnly}
       >
@@ -96,11 +109,15 @@ const JSONEditorModal: React.FC<Props> = observer(
             options={getEditorOptions(readOnly)}
             language="json"
             value={editedValue}
-            onChange={readOnly ? undefined : (value) => {
-              const newValue = value ?? '';
-              setEditedValue(newValue);
-              setIsValid(isValidJSON(newValue));
-            }}
+            onChange={
+              readOnly
+                ? undefined
+                : (value) => {
+                    const newValue = value ?? '';
+                    setEditedValue(newValue);
+                    setIsValid(isValidJSON(newValue));
+                  }
+            }
             onMount={(editor, monaco) => {
               editor.focus();
               editorRef.current = editor;
