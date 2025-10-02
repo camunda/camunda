@@ -56,7 +56,7 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
           }
         : skipToken,
     select,
-    staleTime: Infinity,
+    staleTime: 'static',
     refetchOnWindowFocus: false,
     retryOnMount: false,
     refetchOnMount: (query) => {
