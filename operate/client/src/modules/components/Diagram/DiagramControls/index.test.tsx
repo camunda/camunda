@@ -8,6 +8,16 @@
 
 import {render, screen} from 'modules/testing-library';
 import DiagramControls from './index';
+import {vi} from 'vitest';
+
+vi.mock('modules/queries/processDefinitions/useProcessDefinitionXml', () => ({
+  useProcessDefinitionXml: () => ({isLoading: false, data: '<xml />'}),
+}));
+vi.mock('modules/queries/processDefinitions/useProcessDefinition', () => ({
+  useProcessDefinition: () => ({
+    data: {name: 'Test', processDefinitionId: 'test-id', version: 1},
+  }),
+}));
 
 describe('<DiagramControls />', () => {
   it('should render diagram controls', async () => {

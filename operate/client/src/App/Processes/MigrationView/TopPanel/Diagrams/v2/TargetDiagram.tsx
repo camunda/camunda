@@ -22,8 +22,6 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {useProcessInstancesFlowNodeStates} from 'modules/queries/processInstancesStatistics/useFlowNodeStates';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
-import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
-import {getFullyQualifiedProcessDefinitionNameBy} from 'modules/utils/processDefinition';
 
 const OVERLAY_TYPE = 'migrationTargetSummary';
 
@@ -35,7 +33,7 @@ const TargetDiagram: React.FC = observer(() => {
   const isVersionSelected = selectedTargetVersion !== null;
   const {
     isSummaryStep,
-    state: {sourceProcessDefinitionKey, targetProcessDefinitionKey},
+    state: {sourceProcessDefinitionKey},
   } = processInstanceMigrationStore;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE,
@@ -64,8 +62,6 @@ const TargetDiagram: React.FC = observer(() => {
     sourceProcessDefinitionKey!,
     processInstancesSelectionStore.selectedProcessInstanceIds.length > 0,
   );
-
-  const {data: processDefinition} = useProcessDefinition(selectedTargetProcessId);
 
   const getStatus = () => {
     if (isMigrationTargetXmlLoading) {
@@ -126,7 +122,7 @@ const TargetDiagram: React.FC = observer(() => {
         {data?.xml !== undefined && (
           <Diagram
             xml={data.xml}
-            name={getFullyQualifiedProcessDefinitionNameBy(processDefinition)}
+            processDefinitionKey={selectedTargetProcessId}
             selectableFlowNodes={[
               ...data.selectableFlowNodes,
               ...data.selectableSequenceFlows,
