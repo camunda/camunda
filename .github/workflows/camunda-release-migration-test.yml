@@ -59,6 +59,9 @@ on:
         type: string
         required: false
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{ inputs.name }}
 
 jobs:
   calculate-image-tag:
