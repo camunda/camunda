@@ -24,6 +24,9 @@ import org.springframework.lang.Nullable;
  *     default value from {@link ActorSchedulerBuilder#DEFAULT_MIN_PARK_PERIOD_NS}
  * @param maxParkPeriod the maximum duration the strategy will park a thread. If null, uses the
  *     default value from {@link ActorSchedulerBuilder#DEFAULT_MAX_PARK_PERIOD_NS}
+ *     <p>NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ *     Configuration system, from the object
+ *     io.camunda.configuration.beanoverrides.IdleStrategyPropertiesOverride
  */
 public record IdleStrategyBasedProperties(
     @Nullable Long maxSpins,
