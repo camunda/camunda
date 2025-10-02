@@ -35,4 +35,9 @@ const ZoomOutButton = styled(IconButton)`
   border-top: none;
 `;
 
-export {ButtonContainer, ZoomResetButton, ZoomInButton, ZoomOutButton};
+const DownloadButton = styled(IconButton)`
+  ${buttonStyles}
+  margin-top: var(--cds-spacing-02);
+`;
+
+export {ButtonContainer, ZoomResetButton, ZoomInButton, ZoomOutButton, DownloadButton};

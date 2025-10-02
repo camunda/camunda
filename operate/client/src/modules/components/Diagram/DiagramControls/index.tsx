@@ -6,24 +6,27 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {Add, CenterCircle, Subtract} from '@carbon/react/icons';
+import {Add, CenterCircle, Download, Subtract} from '@carbon/react/icons';
 import {
   ButtonContainer,
   ZoomResetButton,
   ZoomOutButton,
   ZoomInButton,
+  DownloadButton,
 } from './styled';
 
 type Props = {
   handleZoomReset: () => void;
   handleZoomIn: () => void;
   handleZoomOut: () => void;
+  handleDownload: () => void;
 };
 
 const DiagramControls: React.FC<Props> = ({
   handleZoomReset,
   handleZoomIn,
   handleZoomOut,
+  handleDownload,
 }) => {
   return (
     <ButtonContainer>
@@ -57,6 +60,16 @@ const DiagramControls: React.FC<Props> = ({
       >
         <Subtract />
       </ZoomOutButton>
+      <DownloadButton
+        size="sm"
+        kind="tertiary"
+        align="left"
+        label="Download diagram XML"
+        aria-label="Download diagram XML"
+        onClick={handleDownload}
+      >
+        <Download />
+      </DownloadButton>
     </ButtonContainer>
   );
 };
