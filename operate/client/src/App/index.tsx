@@ -30,6 +30,7 @@ import {currentTheme} from 'modules/stores/currentTheme';
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
+import {IS_AUDIT_LOG_ENABLED} from 'modules/feature-flags';
 
 const Wrapper: React.FC = () => {
   return (
@@ -102,6 +103,15 @@ const routes = createRoutesFromElements(
           return {Component: DecisionInstance};
         }}
       />
+      {IS_AUDIT_LOG_ENABLED && (
+        <Route
+          path={Paths.auditLog()}
+          lazy={async () => {
+            const {AuditLog} = await import('./AuditLog/index');
+            return {Component: AuditLog};
+          }}
+        />
+      )}
     </Route>
   </Route>,
 );
