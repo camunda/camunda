@@ -101,7 +101,6 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
         );
       }).toPass(defaultAssertionOptions);
 
-      await cancelProcessInstance(localState.childProcessInstanceKey as string);
       await cancelProcessInstance(localState.processInstanceKey as string);
     });
   });
