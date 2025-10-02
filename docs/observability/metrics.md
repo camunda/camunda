@@ -339,6 +339,24 @@ java -jar dist/target/camunda-zeebe-*.jar \
 
 Access metrics at: http://localhost:9600/actuator/prometheus
 
+#### Local Dashboard Development
+
+To serve and test dashboards locally with [Grizzly](https://grafana.github.io/grizzly/):
+
+```bash
+make grizzly
+```
+
+This uses the grr CLI to serve dashboards from grafana/dashboards on http://localhost:8093
+.
+Make sure to set your Grafana credentials in a .env file:
+
+```env
+GRAFANA_URL=http://localhost:3000
+GRAFANA_USER=admin
+GRAFANA_TOKEN=your-token
+```
+
 ### Future Improvements
 
 #### Planned Enhancements
