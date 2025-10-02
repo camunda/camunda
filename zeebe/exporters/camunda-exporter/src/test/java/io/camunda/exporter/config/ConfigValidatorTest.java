@@ -35,13 +35,40 @@ public class ConfigValidatorTest {
             "CamundaExporter connect.type must be one of the supported types '[ELASTICSEARCH, OPENSEARCH]', but was: 'mysql'");
   }
 
-  @Test
-  void shouldNotAllowUnderscoreInIndexPrefix() {
+  @ParameterizedTest
+  @ValueSource(strings = {"prefix", "hyphenated-prefix", "char+prefix"})
+  void shouldAllowValidIndexPrefixes(final String testPrefix) {
     // given
-    config.getConnect().setIndexPrefix("i_am_invalid");
+    config.getConnect().setIndexPrefix(testPrefix);
 
     // when - then
-    assertThatCode(() -> ConfigValidator.validate(config)).isInstanceOf(ExporterException.class);
+    assertThatCode(() -> ConfigValidator.validate(config)).doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", "_"})
+  void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
+    // given
+    config.getConnect().setIndexPrefix("test-prefix" + testCharacter);
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            "CamundaExporter index.prefix must not contain invalid characters [\\ / * ? \" < > | space _].")
+        .isInstanceOf(ExporterException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {".", "+"})
+  void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+    // given
+    config.getConnect().setIndexPrefix(testCharacter + "test-prefix");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .hasMessageContaining(
+            "CamundaExporter index.prefix must not begin with invalid characters [. +].")
+        .isInstanceOf(ExporterException.class);
   }
 
   @ParameterizedTest(name = "{0}")
