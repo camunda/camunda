@@ -11,13 +11,13 @@ import {queryKeys} from '../queryKeys';
 import {searchDecisionInstances} from 'modules/api/v2/decisionInstances/searchDecisionInstances';
 import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
-interface DrdData {
+type DrdData = {
   [decisionDefinitionId: DecisionInstance['decisionDefinitionId']]: {
     decisionDefinitionId: DecisionInstance['decisionDefinitionId'];
     decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
     state: DecisionInstance['state'];
   };
-}
+};
 
 const useDrdData = (decisionEvaluationKey?: string) => {
   return useQuery({

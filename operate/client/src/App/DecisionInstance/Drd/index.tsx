@@ -23,13 +23,13 @@ import {useDrdData} from 'modules/queries/decisionInstances/useDrdData';
 import {useDrdStateOverlay} from 'modules/queries/decisionInstances/useDrdStateOverlay';
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 
-interface DrdProps {
+type DrdProps = {
   decisionEvaluationInstanceKey: string;
   decisionDefinitionKey?: string;
   decisionEvaluationKey?: string;
   drdPanelState: DrdPanelState;
   onChangeDrdPanelState(state: DrdPanelState): void;
-}
+};
 
 const Drd: React.FC<DrdProps> = observer((props) => {
   const drdViewer = useRef<DrdViewer | null>(null);

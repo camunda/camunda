@@ -9,17 +9,17 @@
 import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useMemo, useState} from 'react';
 
-interface DecisionStateOverlay {
+type DecisionStateOverlay = {
   state: DecisionInstanceState;
   decisionDefinitionId: string;
   container: HTMLDivElement;
-}
+};
 
-interface DecisionStateOverlayActions {
+type DecisionStateOverlayActions = {
   replaceOverlays(overlays: DecisionStateOverlay[]): void;
   addOverlay(overlay: DecisionStateOverlay): void;
   clearOverlays(): void;
-}
+};
 
 function useDrdStateOverlay(): [
   state: DecisionStateOverlay[],

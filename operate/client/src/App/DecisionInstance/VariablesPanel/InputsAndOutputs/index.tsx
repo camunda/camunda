@@ -51,9 +51,9 @@ const outputMappingsColumns = [
   },
 ];
 
-interface InputAndOutputProps {
+type InputAndOutputProps = {
   decisionEvaluationInstanceKey: DecisionInstance['decisionEvaluationInstanceKey'];
-}
+};
 
 const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
   decisionEvaluationInstanceKey,
