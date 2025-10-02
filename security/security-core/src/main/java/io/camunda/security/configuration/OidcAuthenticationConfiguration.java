@@ -44,6 +44,7 @@ public class OidcAuthenticationConfiguration {
   private String usernameClaim = "sub";
   private String clientIdClaim;
   private String groupsClaim;
+  private boolean preferUsernameClaim;
   private String organizationId;
   private List<String> resource;
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
@@ -196,6 +197,14 @@ public class OidcAuthenticationConfiguration {
     return groupsClaim != null && !groupsClaim.isBlank();
   }
 
+  public boolean isPreferUsernameClaim() {
+    return preferUsernameClaim;
+  }
+
+  public void setPreferUsernameClaim(final boolean preferUsernameClaim) {
+    this.preferUsernameClaim = preferUsernameClaim;
+  }
+
   public String getClientAuthenticationMethod() {
     return clientAuthenticationMethod;
   }
@@ -262,6 +271,7 @@ public class OidcAuthenticationConfiguration {
     private String usernameClaim = "sub";
     private String clientIdClaim;
     private String groupsClaim;
+    private boolean preferUsernameClaim;
     private String organizationId;
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
@@ -340,6 +350,11 @@ public class OidcAuthenticationConfiguration {
     public Builder groupsClaim(final String groupsClaim) {
       new OidcGroupsLoader(groupsClaim); // Validation from original setter
       this.groupsClaim = groupsClaim;
+      return this;
+    }
+
+    public Builder preferUsernameClaim(final boolean preferUsernameClaim) {
+      this.preferUsernameClaim = preferUsernameClaim;
       return this;
     }
 
