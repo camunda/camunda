@@ -149,6 +149,7 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${CAMUNDA_HOME}/data
 VOLUME ${CAMUNDA_HOME}/logs
+VOLUME /driver-lib
 
 RUN groupadd --gid 1001 camunda && \
     useradd --system --gid 1001 --uid 1001 --home ${CAMUNDA_HOME} camunda && \
@@ -161,6 +162,8 @@ RUN groupadd --gid 1001 camunda && \
     chmod -R 0775 ${CAMUNDA_HOME}
 
 COPY --from=dist --chown=1001:0 /camunda/camunda-zeebe ${CAMUNDA_HOME}
+
+RUN ln -s /driver-lib ${CAMUNDA_HOME}/driver-lib
 
 USER 1001:1001
 

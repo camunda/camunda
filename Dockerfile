@@ -150,6 +150,7 @@ EXPOSE 8080 26500 26501 26502
 VOLUME /tmp
 VOLUME ${ZB_HOME}/data
 VOLUME ${ZB_HOME}/logs
+VOLUME /driver-lib
 
 RUN groupadd --gid 1001 camunda && \
     useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
@@ -163,6 +164,8 @@ RUN groupadd --gid 1001 camunda && \
 
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
+
+RUN ln -s /driver-lib ${ZB_HOME}/driver-lib
 
 USER 1001:1001
 

@@ -335,6 +335,7 @@
     <dependency>
       <groupId>com.oracle.database.jdbc</groupId>
       <artifactId>ojdbc8</artifactId>
+      <scope>provided</scope>
     </dependency>
 
     <dependency>
@@ -775,6 +776,8 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8 -Xshare:auto</extraJvmArguments>
+          <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
+          <endorsedDir>driver-lib</endorsedDir>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
           <platforms>
             <platform>windows</platform>
