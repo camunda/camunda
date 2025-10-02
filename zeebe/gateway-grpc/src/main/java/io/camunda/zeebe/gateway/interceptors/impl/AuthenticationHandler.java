@@ -106,26 +106,27 @@ public sealed interface AuthenticationHandler {
                 .withCause(e));
       }
 
-      if (principals.clientId() != null) {
+      if (principals.username() == null && principals.clientId() == null) {
+        return Either.left(
+            Status.UNAUTHENTICATED.augmentDescription(
+                "Expected either a username (claim: %s) or client ID (claim: %s) on the token, but no matching claim found"
+                    .formatted(
+                        oidcAuthenticationConfiguration.getUsernameClaim(),
+                        oidcAuthenticationConfiguration.getClientIdClaim())));
+      }
+
+      final var preferUsernameClaim = oidcAuthenticationConfiguration.isPreferUsernameClaim();
+      if ((preferUsernameClaim && principals.username() != null) || principals.clientId() == null) {
+        return Either.right(
+            context
+                .withValue(USERNAME, principals.username())
+                .withValue(USER_CLAIMS, token.getClaims()));
+      } else {
         return Either.right(
             context
                 .withValue(CLIENT_ID, principals.clientId())
                 .withValue(USER_CLAIMS, token.getClaims()));
       }
-
-      if (principals.username() != null) {
-        return Either.right(
-            context
-                .withValue(USERNAME, principals.username())
-                .withValue(USER_CLAIMS, token.getClaims()));
-      }
-
-      return Either.left(
-          Status.UNAUTHENTICATED.augmentDescription(
-              "Expected either a username (claim: %s) or client ID (claim: %s) on the token, but no matching claim found"
-                  .formatted(
-                      oidcAuthenticationConfiguration.getUsernameClaim(),
-                      oidcAuthenticationConfiguration.getClientIdClaim())));
     }
   }
 
