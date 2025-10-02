@@ -390,6 +390,7 @@ public class OidcAuthenticationConfiguration {
       config.setUsernameClaim(usernameClaim);
       config.setClientIdClaim(clientIdClaim);
       config.setGroupsClaim(groupsClaim);
+      config.setPreferUsernameClaim(preferUsernameClaim);
       config.setOrganizationId(organizationId);
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
       config.setAssertion(assertionConfiguration);
