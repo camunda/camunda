@@ -40,8 +40,6 @@ public final class StaticConfigurationGenerator {
   public static StaticConfiguration getStaticConfiguration(
       final BrokerCfg brokerCfg, final MemberId localMemberId) {
     final var clusterCfg = brokerCfg.getCluster();
-    final var enablePartitionScaling =
-        brokerCfg.getExperimental().getFeatures().isEnablePartitionScaling();
     final var partitioningCfg = brokerCfg.getExperimental().getPartitioning();
     final var partitionCount = clusterCfg.getPartitionsCount();
     final var replicationFactor = clusterCfg.getReplicationFactor();
@@ -52,7 +50,6 @@ public final class StaticConfigurationGenerator {
     final var partitionConfig = generatePartitionConfig(brokerCfg);
 
     return new StaticConfiguration(
-        enablePartitionScaling,
         partitionDistributor,
         clusterMembers,
         localMemberId,

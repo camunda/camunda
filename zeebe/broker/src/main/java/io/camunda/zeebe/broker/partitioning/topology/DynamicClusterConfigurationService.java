@@ -160,11 +160,6 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
         brokerStartupContext.getClusterServices().getCommunicationService(),
         brokerStartupContext.getClusterServices().getMembershipService(),
         brokerStartupContext.getBrokerConfiguration().getCluster().getConfigManager().gossip(),
-        brokerStartupContext
-            .getBrokerConfiguration()
-            .getExperimental()
-            .getFeatures()
-            .isEnablePartitionScaling(),
         clusterChangeExecutor,
         brokerStartupContext.getMeterRegistry());
   }
