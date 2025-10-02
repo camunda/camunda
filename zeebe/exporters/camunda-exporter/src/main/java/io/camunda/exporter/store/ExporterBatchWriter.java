@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -144,7 +145,17 @@ public final class ExporterBatchWriter {
 
     public <T extends ExporterEntity<T>, R extends RecordValue> Builder withHandler(
         final ExportHandler<T, R> handler) {
-      handlers.computeIfAbsent(handler.getHandledValueType(), k -> new ArrayList<>()).add(handler);
+      final Set<ValueType> valueTypes = new HashSet<>();
+      final var handledValueTypes = handler.getHandledValueTypes();
+      if (!handledValueTypes.isEmpty()) {
+        valueTypes.addAll(handledValueTypes);
+      }
+      final var handledValueType = handler.getHandledValueType();
+      if (handledValueType != null && handledValueType != ValueType.NULL_VAL) {
+        valueTypes.add(handledValueType);
+      }
+      valueTypes.forEach(
+          valueType -> handlers.computeIfAbsent(valueType, k -> new ArrayList<>()).add(handler));
 
       return this;
     }

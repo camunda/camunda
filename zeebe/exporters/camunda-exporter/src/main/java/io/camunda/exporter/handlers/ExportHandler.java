@@ -13,7 +13,9 @@ import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Converts one type of Zeebe record to exporter entity (entities) of specific type.
@@ -27,6 +29,13 @@ public interface ExportHandler<T extends ExporterEntity<T>, R extends RecordValu
    * @return the value type of the record that the handler can process
    */
   ValueType getHandledValueType();
+
+  /**
+   * @return the record value types that the handler can process
+   */
+  default Set<ValueType> getHandledValueTypes() {
+    return Collections.EMPTY_SET;
+  }
 
   /**
    * @return the entity type that the handler creates or updates
