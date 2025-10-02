@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
+import java.util.Objects;
 
 public class CsvConfiguration {
 
@@ -56,12 +57,21 @@ public class CsvConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(exportCsvDelimiter, exportCsvLimit, authorizedUserType);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CsvConfiguration that = (CsvConfiguration) o;
+    return Objects.equals(exportCsvDelimiter, that.exportCsvDelimiter)
+        && Objects.equals(exportCsvLimit, that.exportCsvLimit)
+        && Objects.equals(authorizedUserType, that.authorizedUserType);
   }
 
   @Override

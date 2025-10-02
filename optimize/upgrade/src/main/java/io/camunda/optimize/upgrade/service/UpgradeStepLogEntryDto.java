@@ -10,6 +10,7 @@ package io.camunda.optimize.upgrade.service;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.time.Instant;
+import java.util.Objects;
 
 public class UpgradeStepLogEntryDto {
 
@@ -116,13 +117,21 @@ public class UpgradeStepLogEntryDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UpgradeStepLogEntryDto that = (UpgradeStepLogEntryDto) o;
+    return Objects.equals(indexName, that.indexName)
+        && Objects.equals(optimizeVersion, that.optimizeVersion)
+        && stepType == that.stepType
+        && Objects.equals(stepNumber, that.stepNumber)
+        && Objects.equals(appliedDate, that.appliedDate);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(indexName, optimizeVersion, stepType, stepNumber, appliedDate);
   }
 
   @Override

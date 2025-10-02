@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration.users;
 
+import java.util.Objects;
+
 public class UsersConfiguration {
 
   private CloudUsersConfiguration cloud;
@@ -26,13 +28,17 @@ public class UsersConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UsersConfiguration that = (UsersConfiguration) o;
+    return Objects.equals(cloud, that.cloud);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(cloud);
   }
 
   @Override

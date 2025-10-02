@@ -18,6 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
 import io.camunda.optimize.dto.optimize.query.report.single.result.ResultType;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -92,16 +93,26 @@ public class MeasureResponseDto<T> {
     this.type = type;
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MeasureResponseDto<?> that = (MeasureResponseDto<?>) o;
+    return Objects.equals(property, that.property)
+        && Objects.equals(aggregationType, that.aggregationType)
+        && userTaskDurationTime == that.userTaskDurationTime
+        && Objects.equals(data, that.data)
+        && type == that.type;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(property, aggregationType, userTaskDurationTime, data, type);
   }
 
   protected boolean canEqual(final Object other) {
     return other instanceof MeasureResponseDto;
-  }
-
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   public String toString() {

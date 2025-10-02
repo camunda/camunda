@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
+import java.util.Objects;
 
 public class MetadataDto implements OptimizeDto, Serializable {
 
@@ -43,13 +44,18 @@ public class MetadataDto implements OptimizeDto, Serializable {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MetadataDto that = (MetadataDto) o;
+    return Objects.equals(schemaVersion, that.schemaVersion)
+        && Objects.equals(installationId, that.installationId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(schemaVersion, installationId);
   }
 
   @Override

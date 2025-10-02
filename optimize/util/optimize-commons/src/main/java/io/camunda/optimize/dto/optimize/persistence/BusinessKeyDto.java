@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.persistence;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
+import java.util.Objects;
 
 public class BusinessKeyDto implements OptimizeDto {
 
@@ -35,12 +36,20 @@ public class BusinessKeyDto implements OptimizeDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(processInstanceId, businessKey);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BusinessKeyDto that = (BusinessKeyDto) o;
+    return Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(businessKey, that.businessKey);
   }
 
   @Override

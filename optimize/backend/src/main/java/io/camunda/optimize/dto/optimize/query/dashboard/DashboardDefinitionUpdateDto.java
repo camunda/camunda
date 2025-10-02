@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.query.dashboard.tile.DashboardReportTile
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DashboardDefinitionUpdateDto {
@@ -97,13 +98,35 @@ public class DashboardDefinitionUpdateDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DashboardDefinitionUpdateDto that = (DashboardDefinitionUpdateDto) o;
+    return Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(tiles, that.tiles)
+        && Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(availableFilters, that.availableFilters)
+        && Objects.equals(refreshRateSeconds, that.refreshRateSeconds);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        name,
+        description,
+        lastModified,
+        lastModifier,
+        tiles,
+        collectionId,
+        availableFilters,
+        refreshRateSeconds);
   }
 
   @Override

@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.index;
 
 import io.camunda.optimize.dto.optimize.datasource.ZeebeDataSourceDto;
+import java.util.Objects;
 
 public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceDto> {
 
@@ -49,12 +50,25 @@ public class PositionBasedImportIndexDto extends ImportIndexDto<ZeebeDataSourceD
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        super.hashCode(), positionOfLastEntity, sequenceOfLastEntity, hasSeenSequenceField);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final PositionBasedImportIndexDto that = (PositionBasedImportIndexDto) o;
+    return positionOfLastEntity == that.positionOfLastEntity
+        && sequenceOfLastEntity == that.sequenceOfLastEntity
+        && hasSeenSequenceField == that.hasSeenSequenceField;
   }
 
   @Override

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.entity;
 
+import java.util.Objects;
+
 public class EntityNameRequestDto {
 
   private String collectionId;
@@ -53,13 +55,19 @@ public class EntityNameRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityNameRequestDto that = (EntityNameRequestDto) o;
+    return Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(dashboardId, that.dashboardId)
+        && Objects.equals(reportId, that.reportId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(collectionId, dashboardId, reportId);
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.List;
+import java.util.Objects;
 
 public class DatabaseSSLConfiguration {
 
@@ -59,13 +60,20 @@ public class DatabaseSSLConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseSSLConfiguration that = (DatabaseSSLConfiguration) o;
+    return Objects.equals(enabled, that.enabled)
+        && Objects.equals(selfSigned, that.selfSigned)
+        && Objects.equals(certificate, that.certificate)
+        && Objects.equals(certificateAuthorities, that.certificateAuthorities);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(enabled, selfSigned, certificate, certificateAuthorities);
   }
 
   @Override

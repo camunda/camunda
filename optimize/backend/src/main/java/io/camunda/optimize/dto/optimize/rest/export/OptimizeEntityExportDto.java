@@ -19,6 +19,7 @@ import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReport
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import jakarta.validation.constraints.NotNull;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -105,13 +106,21 @@ public abstract class OptimizeEntityExportDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OptimizeEntityExportDto that = (OptimizeEntityExportDto) o;
+    return sourceIndexVersion == that.sourceIndexVersion
+        && Objects.equals(id, that.id)
+        && exportEntityType == that.exportEntityType
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, exportEntityType, name, description, sourceIndexVersion);
   }
 
   @Override

@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
@@ -85,13 +86,20 @@ public class SingleReportEvaluationResult<T> extends ReportEvaluationResult {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final SingleReportEvaluationResult<?> that = (SingleReportEvaluationResult<?>) o;
+    return Objects.equals(commandEvaluationResults, that.commandEvaluationResults);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), commandEvaluationResults);
   }
 
   @Override

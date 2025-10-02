@@ -13,6 +13,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public class ReportDataDefinitionDto {
@@ -158,13 +159,22 @@ public class ReportDataDefinitionDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportDataDefinitionDto that = (ReportDataDefinitionDto) o;
+    return Objects.equals(identifier, that.identifier)
+        && Objects.equals(key, that.key)
+        && Objects.equals(name, that.name)
+        && Objects.equals(displayName, that.displayName)
+        && Objects.equals(versions, that.versions)
+        && Objects.equals(tenantIds, that.tenantIds);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(identifier, key, name, displayName, versions, tenantIds);
   }
 
   @Override

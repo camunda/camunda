@@ -11,6 +11,7 @@ import static io.camunda.optimize.service.util.configuration.ConfigurationServic
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import java.util.Objects;
 
 public class EmailAuthenticationConfiguration {
 
@@ -77,12 +78,22 @@ public class EmailAuthenticationConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(enabled, username, password, securityProtocol);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EmailAuthenticationConfiguration that = (EmailAuthenticationConfiguration) o;
+    return Objects.equals(enabled, that.enabled)
+        && Objects.equals(username, that.username)
+        && Objects.equals(password, that.password)
+        && Objects.equals(securityProtocol, that.securityProtocol);
   }
 
   @Override

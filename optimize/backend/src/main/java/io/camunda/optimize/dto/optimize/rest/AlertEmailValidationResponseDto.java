@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.rest;
 
 import io.camunda.optimize.service.exceptions.OptimizeAlertEmailValidationException;
+import java.util.Objects;
 
 public class AlertEmailValidationResponseDto extends ErrorResponseDto {
 
@@ -33,17 +34,24 @@ public class AlertEmailValidationResponseDto extends ErrorResponseDto {
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AlertEmailValidationResponseDto that = (AlertEmailValidationResponseDto) o;
+    return Objects.equals(invalidAlertEmails, that.invalidAlertEmails);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), invalidAlertEmails);
   }
 
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof AlertEmailValidationResponseDto;
-  }
-
-  @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 
   @SuppressWarnings("checkstyle:ConstantName")

@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.util.Map;
+import java.util.Objects;
 
 public class ProcessOverviewDto implements OptimizeDto {
 
@@ -67,13 +68,20 @@ public class ProcessOverviewDto implements OptimizeDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessOverviewDto that = (ProcessOverviewDto) o;
+    return Objects.equals(owner, that.owner)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(digest, that.digest)
+        && Objects.equals(lastKpiEvaluationResults, that.lastKpiEvaluationResults);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(owner, processDefinitionKey, digest, lastKpiEvaluationResults);
   }
 
   @Override

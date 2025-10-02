@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.entity;
 import io.camunda.optimize.dto.optimize.ReportType;
 import io.camunda.optimize.dto.optimize.RoleType;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class EntityResponseDto {
 
@@ -209,13 +210,40 @@ public class EntityResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityResponseDto that = (EntityResponseDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(created, that.created)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && entityType == that.entityType
+        && Objects.equals(data, that.data)
+        && Objects.equals(combined, that.combined)
+        && reportType == that.reportType
+        && currentUserRole == that.currentUserRole;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        id,
+        name,
+        description,
+        lastModified,
+        created,
+        owner,
+        lastModifier,
+        entityType,
+        data,
+        combined,
+        reportType,
+        currentUserRole);
   }
 
   @Override

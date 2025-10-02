@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.service.util.configuration.users.AuthorizedUserType;
+import java.util.Objects;
 
 public class EntityConfiguration {
 
@@ -52,12 +53,21 @@ public class EntityConfiguration {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(authorizedUserType, kpiRefreshInterval, createOnStartup);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final EntityConfiguration that = (EntityConfiguration) o;
+    return Objects.equals(authorizedUserType, that.authorizedUserType)
+        && Objects.equals(kpiRefreshInterval, that.kpiRefreshInterval)
+        && Objects.equals(createOnStartup, that.createOnStartup);
   }
 
   @Override

@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
+import java.util.Objects;
+
 public class VariableTermDto {
 
   private String variableName;
@@ -86,13 +88,28 @@ public class VariableTermDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariableTermDto that = (VariableTermDto) o;
+    return Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableTerm, that.variableTerm)
+        && Objects.equals(instanceCount, that.instanceCount)
+        && Objects.equals(outlierRatio, that.outlierRatio)
+        && Objects.equals(nonOutlierRatio, that.nonOutlierRatio)
+        && Objects.equals(outlierToAllInstancesRatio, that.outlierToAllInstancesRatio);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        variableName,
+        variableTerm,
+        instanceCount,
+        outlierRatio,
+        nonOutlierRatio,
+        outlierToAllInstancesRatio);
   }
 
   @Override
