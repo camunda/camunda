@@ -8,9 +8,11 @@
 package io.camunda.exporter.tasks.deleter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.github.benmanes.caffeine.cache.Cache;
@@ -62,11 +64,22 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
   }
 
   @Override
-  public CompletableFuture<Void> deleteDocuments(
+  public CompletableFuture<Boolean> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys) {
-    return null;
+    final var deleteRequest =
+        createDeleteRequest(sourceIndexName, idFieldName, processInstanceKeys);
+    return client
+        .deleteByQuery(deleteRequest)
+        .thenComposeAsync(
+            (response) -> {
+              if (!response.failures().isEmpty()) {
+                return CompletableFuture.completedFuture(false);
+              }
+
+              return CompletableFuture.completedFuture(true);
+            });
   }
 
   @Override
@@ -76,6 +89,7 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
     final var timer = Timer.start();
     return client
         .search(searchRequest, Object.class)
+        // TODO fix metrics for deletion
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) -> {
@@ -89,6 +103,22 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
               return CompletableFuture.completedFuture(new DeleteBatch("todo", ids));
             },
             executor);
+  }
+
+  private DeleteByQueryRequest createDeleteRequest(
+      final String indexName, final String idFieldName, final List<String> ids) {
+    // TODO add multiple indices. It probably won't work, but it seems the API supports it.
+    return new DeleteByQueryRequest.Builder()
+        .index(indexName)
+        .allowNoIndices(true)
+        .ignoreUnavailable(true)
+        .query(
+            q ->
+                q.terms(
+                    t ->
+                        t.field(idFieldName)
+                            .terms(v -> v.value(ids.stream().map(FieldValue::of).toList()))))
+        .build();
   }
 
   private SearchRequest createSearchRequest() {

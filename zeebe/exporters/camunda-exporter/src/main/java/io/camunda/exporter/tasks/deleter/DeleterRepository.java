@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 public interface DeleterRepository {
-  CompletableFuture<Void> deleteDocuments(
+  CompletableFuture<Boolean> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
       final List<String> processInstanceKeys);

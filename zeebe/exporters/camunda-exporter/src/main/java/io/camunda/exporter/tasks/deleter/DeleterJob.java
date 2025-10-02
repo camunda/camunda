@@ -9,6 +9,7 @@ package io.camunda.exporter.tasks.deleter;
 
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.Comparator;
 import java.util.List;
@@ -44,7 +45,7 @@ public class DeleterJob implements BackgroundTask {
         // measure the time it takes all in all, including searching, reindexing, deletion
         // There is some overhead with the scheduling at the executor, but this
         // should be negligible
-        .thenComposeAsync(CompletableFuture::completedFuture, executor);
+        .thenComposeAsync((ok) -> CompletableFuture.completedFuture(1), executor);
   }
 
   @Override
@@ -57,8 +58,23 @@ public class DeleterJob implements BackgroundTask {
     BackgroundTask.super.close();
   }
 
-  private CompletionStage<Integer> deleteBatch(final DeleteBatch batch) {
-    // TODO delete stuff from secondary storage
-    return null;
+  private CompletionStage<Void> deleteBatch(final DeleteBatch batch) {
+    final var deleteDependentDocuments =
+        processInstanceDependants.stream()
+            .filter(t -> !(t instanceof OperationTemplate))
+            .map(
+                dependant -> {
+                  final var dependentSourceIdx = dependant.getFullQualifiedName();
+                  final var dependentIdFieldName = dependant.getProcessInstanceDependantField();
+                  return deleterRepository.deleteDocuments(
+                      dependentSourceIdx, dependentIdFieldName, batch.ids());
+                })
+            .toList();
+
+    // TODO delete from list_view index
+    // TODO delete from delete-history index once all completed
+
+    // TODO fix the return here
+    return CompletableFuture.allOf();
   }
 }
