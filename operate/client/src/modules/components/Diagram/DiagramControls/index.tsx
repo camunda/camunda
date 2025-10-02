@@ -64,8 +64,8 @@ const DiagramControls: React.FC<Props> = ({
         size="sm"
         kind="tertiary"
         align="left"
-        label="Download diagram XML"
-        aria-label="Download diagram XML"
+        label="Download diagram"
+        aria-label="Download diagram"
         onClick={handleDownload}
       >
         <Download />

@@ -27,6 +27,7 @@ import {DiagramHeader} from '../DiagramHeader';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
 import {useProcessDefinitionKeyContext} from '../../processDefinitionKeyContext';
+import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
   getFlowNode,
@@ -34,6 +35,7 @@ import {
 } from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {FlowNodeState} from 'modules/types/operate';
+import {getFullyQualifiedProcessDefinitionNameBy} from 'modules/utils/processDefinition';
 
 const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
 
@@ -82,11 +84,16 @@ const DiagramPanel: React.FC = observer(() => {
   const {selectedTargetElementId} = batchModificationStore.state;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const processDefinition = useListViewXml({
+  const processDefinitionXML = useListViewXml({
     processDefinitionKey,
   });
-  const xml = processDefinition?.data?.xml;
-  const selectableIds = processDefinition?.data?.selectableFlowNodes.map(
+
+  const {data: processDefinition} = useProcessDefinition(
+    processDefinitionKey,
+  );
+
+  const xml = processDefinitionXML?.data?.xml;
+  const selectableIds = processDefinitionXML?.data?.selectableFlowNodes.map(
     (flowNode) => flowNode.id,
   );
 
@@ -128,7 +135,7 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const isDiagramLoading =
-    processDefinition?.isFetching ||
+    processDefinitionXML?.isFetching ||
     !processesStore.isInitialLoadComplete ||
     (processesStore.state.status === 'fetching' &&
       location.state?.refreshContent);
@@ -137,7 +144,7 @@ const DiagramPanel: React.FC = observer(() => {
     if (isDiagramLoading) {
       return 'loading';
     }
-    if (processDefinition?.isError) {
+    if (processDefinitionXML?.isError) {
       return 'error';
     }
     if (!isVersionSelected) {
@@ -170,9 +177,10 @@ const DiagramPanel: React.FC = observer(() => {
               }
         }
       >
-        {xml !== undefined && (
+        {xml !== undefined && processDefinition !== undefined && (
           <Diagram
             xml={xml}
+            name={getFullyQualifiedProcessDefinitionNameBy(processDefinition)}
             {...(batchModificationStore.state.isEnabled
               ? // Props for batch modification mode
                 {
@@ -201,7 +209,7 @@ const DiagramPanel: React.FC = observer(() => {
                       isMoveModificationTarget(
                         getFlowNode({
                           businessObjects:
-                            processDefinition.data?.diagramModel.elementsById,
+                            processDefinitionXML.data?.diagramModel.elementsById,
                           flowNodeId: selectedFlowNodeId,
                         }),
                       ),

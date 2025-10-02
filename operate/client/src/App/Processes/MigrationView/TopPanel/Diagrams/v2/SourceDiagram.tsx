@@ -20,6 +20,7 @@ import {processInstancesSelectionStore} from 'modules/stores/processInstancesSel
 import {getProcessInstanceKey} from 'modules/utils/statistics/processInstances';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import type {FlowNodeState} from 'modules/types/operate';
+import {getFullyQualifiedProcessDefinitionNameBy} from 'modules/utils/processDefinition';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -75,6 +76,7 @@ const SourceDiagram: React.FC = observer(() => {
         {migrationSourceData?.xml !== undefined && (
           <Diagram
             xml={migrationSourceData.xml}
+            name={getFullyQualifiedProcessDefinitionNameBy(processesStore.getSelectedProcessDetails())}
             selectableFlowNodes={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,
