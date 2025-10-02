@@ -12,7 +12,13 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
-/** This class contains all project configuration parameters. */
+/**
+ * This class contains all project configuration parameters.
+ *
+ * <p>NOTE: Some of the fields of this object are overridden with values coming from the Unified
+ * Configuration system, from the object
+ * io.camunda.configuration.beanoverrides.OperatePropertiesOverride
+ */
 public class OperateProperties {
 
   public static final String PREFIX = "camunda.operate";
