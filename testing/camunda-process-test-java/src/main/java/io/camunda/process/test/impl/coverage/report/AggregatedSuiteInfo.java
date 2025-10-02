@@ -13,36 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.process.test.api.coverage.model;
+package io.camunda.process.test.impl.coverage.report;
 
-import java.util.ArrayList;
+import io.camunda.process.test.impl.coverage.model.Coverage;
 import java.util.Collection;
 
-/** A suite includes several Runs and contains the data for the coverage calculation. */
-public class Suite {
-
-  /** The id of the suite */
+public class AggregatedSuiteInfo {
   private final String id;
-
-  /** The name of the suite */
   private final String name;
+  private final Collection<Coverage> coverages;
 
-  /** List of runs that are in the suite */
-  private final Collection<Run> runs;
-
-  public Suite(final String id, final String name) {
-    this(id, name, new ArrayList<>());
-  }
-
-  public Suite(final String id, final String name, final Collection<Run> runs) {
+  public AggregatedSuiteInfo(
+      final String id, final String name, final Collection<Coverage> coverages) {
     this.id = id;
     this.name = name;
-    this.runs = runs;
-  }
-
-  /** Adds a Run to the suite */
-  public void addRun(final Run run) {
-    runs.add(run);
+    this.coverages = coverages;
   }
 
   public String getId() {
@@ -53,7 +38,7 @@ public class Suite {
     return name;
   }
 
-  public Collection<Run> getRuns() {
-    return runs;
+  public Collection<Coverage> getCoverages() {
+    return coverages;
   }
 }
