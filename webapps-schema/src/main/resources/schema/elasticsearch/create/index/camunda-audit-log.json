@@ -1,0 +1,31 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "operationType": {
+        "type": "keyword"
+      },
+      "operationReference": {
+        "type": "keyword"
+      },
+      "entityType": {
+        "type": "keyword"
+      },
+      "entityId": {
+        "type": "keyword"
+      },
+      "timestamp": {
+        "type": "keyword"
+      },
+      "username": {
+        "type": "keyword"
+      },
+      "annotation": {
+        "type": "keyword"
+      }
+    }
+  }
+}
