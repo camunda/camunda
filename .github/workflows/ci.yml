@@ -312,7 +312,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -412,7 +412,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "${{matrix.suite}}"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -507,7 +507,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -608,7 +608,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -677,7 +677,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -714,7 +714,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
-          -P rdbms
+          -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -737,7 +737,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
@@ -911,7 +911,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: ${{ matrix.owner }}
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -978,7 +978,7 @@ jobs:
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
-          detailed_junit_flaky_tests: true
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
@@ -1067,7 +1067,7 @@ jobs:
         run: >
           ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
           -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
-          -P parallel-tests
+          -P parallel-tests,extract-flaky-tests
           -Dcamunda.docker.test.enabled=true
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}"
           -Dcamunda.docker.test.elasticsearch.image="${{ env.TEST_ELASTICSEARCH_IMAGE }}"
@@ -1090,10 +1090,12 @@ jobs:
         uses: ./.github/actions/observe-build-status
         with:
           build_status: ${{ job.status }}
+          detailed_junit_tests: true
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           user_description: "General"
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
 
   utils-flaky-tests-summary:
     name: flaky tests summary comment
