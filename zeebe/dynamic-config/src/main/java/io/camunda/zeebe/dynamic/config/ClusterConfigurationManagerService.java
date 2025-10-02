@@ -67,7 +67,6 @@ public final class ClusterConfigurationManagerService
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
-      final boolean enablePartitionScaling,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
     this.clusterChangeExecutor = clusterChangeExecutor;
@@ -106,10 +105,7 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator,
-                localMemberId,
-                managerActor,
-                enablePartitionScaling));
+                configurationChangeCoordinator, localMemberId, managerActor));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -144,10 +140,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
     // This initializer does not set the cluster ID, as it is not required for non-coordinators.
     // Non-coordinators will receive the cluster ID from the coordinator via gossip.
   }
@@ -171,9 +164,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(), staticConfiguration.partitionCount()))
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()))
         .andThen(new ClusterIdInitializer(staticConfiguration.clusterId()));
   }
 

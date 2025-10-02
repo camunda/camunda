@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Set;
 
 public record StaticConfiguration(
-    boolean enablePartitionScaling,
     PartitionDistributor partitionDistributor,
     Set<MemberId> clusterMembers,
     MemberId localMemberId,
@@ -33,7 +32,7 @@ public record StaticConfiguration(
   public ClusterConfiguration generateTopology() {
     final Set<PartitionMetadata> partitionDistribution = generatePartitionDistribution();
     return ConfigurationUtil.getClusterConfigFrom(
-        enablePartitionScaling, partitionDistribution, partitionConfig, clusterId);
+        partitionDistribution, partitionConfig, clusterId);
   }
 
   public Set<PartitionMetadata> generatePartitionDistribution() {

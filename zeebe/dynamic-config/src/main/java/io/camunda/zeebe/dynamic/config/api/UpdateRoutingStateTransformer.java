@@ -18,22 +18,15 @@ import java.util.Optional;
 
 public class UpdateRoutingStateTransformer implements ConfigurationChangeRequest {
 
-  private final boolean enablePartitionScaling;
   private final Optional<RoutingState> routingState;
 
-  public UpdateRoutingStateTransformer(
-      final boolean enablePartitionScaling, final Optional<RoutingState> routingState) {
-    this.enablePartitionScaling = enablePartitionScaling;
+  public UpdateRoutingStateTransformer(final Optional<RoutingState> routingState) {
     this.routingState = routingState;
   }
 
   @Override
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
-    if (!enablePartitionScaling) {
-      return Either.left(
-          new IllegalStateException("Partition scaling is disabled. Cannot update routing state."));
-    }
     final var coordinatorSupplier =
         ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration);
     final var coordinator = coordinatorSupplier.getDefaultCoordinator();
