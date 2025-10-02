@@ -22,15 +22,16 @@ public class ConfigurationValidator {
   }
 
   private void validateIndexPrefix(final String indexPrefix) {
-    if (indexPrefix != null) {
-      if (INVALID_INDEX_PREFIX_CHARS.matcher(indexPrefix).find()) {
-        throw new OptimizeConfigurationException(
-            "Optimize indexPrefix must not contain invalid characters [\\ / * ? \" < > | space _].");
-      }
-      if (indexPrefix.startsWith(".") || indexPrefix.startsWith("+")) {
-        throw new OptimizeConfigurationException(
-            "Optimize indexPrefix must not begin with invalid characters [. +].");
-      }
+    if (indexPrefix == null) {
+      return;
+    }
+    if (INVALID_INDEX_PREFIX_CHARS.matcher(indexPrefix).find()) {
+      throw new OptimizeConfigurationException(
+          "Optimize indexPrefix must not contain invalid characters [\\ / * ? \" < > | space _].");
+    }
+    if (indexPrefix.startsWith(".") || indexPrefix.startsWith("+")) {
+      throw new OptimizeConfigurationException(
+          "Optimize indexPrefix must not begin with invalid characters [. +].");
     }
   }
 }
