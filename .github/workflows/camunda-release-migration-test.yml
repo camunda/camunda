@@ -3,7 +3,6 @@
 # owner: @Chris
 name: Camunda Release migration test
 on:
-  pull_request:
   schedule:
     # Runs at 04:00. every day https://crontab.guru/#0_4_*_*_*
     - cron: 0 4 * * *
