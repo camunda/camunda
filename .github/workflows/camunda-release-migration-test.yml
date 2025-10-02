@@ -212,10 +212,10 @@ jobs:
       - name: Add load
         run: |
           release=${{ inputs.name || 'release-migration-test' }}
-          kubectl port-forward svc/$release-zeebe-gateway 26500 &
-          kubectl port-forward svc/$release-keycloak 18080:80 &
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
           # Get secret for connectors - to communicate with the cluster
-          export CONNECTOR_SECRET=$(kubectl get secrets $release-zeebe-identity-secret -o json | jq -r '.data."zeebe-secret"' | base64 -d)
+          export CONNECTOR_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
           export ZEEBE_CLIENT_ID=zeebe
@@ -270,13 +270,14 @@ jobs:
       - name: Extract secrets
         id: extract-secrets
         run: |
-          export OPTIMIZE_SECRET=$(kubectl get secret "ck-update-test-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
-          export CONNECTORS_SECRET=$(kubectl get secret "ck-update-test-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
-          export ORCHESTRATION_SECRET=$(kubectl get secret "ck-update-test-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
-          export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret "ck-update-test-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
-          export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret "ck-update-test-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
-          export POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret "ck-update-test-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
-          export POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret "ck-update-test-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
+          release=${{ inputs.name || 'release-migration-test' }}
+          export OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
+          export CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
+          export ORCHESTRATION_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-zeebe-identity-secret" -o jsonpath="{.data.zeebe-secret}" | base64 --decode)
+          export KEYCLOAK_ADMIN_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-keycloak" -o jsonpath="{.data.admin-password}" | base64 --decode)
+          export KEYCLOAK_MANAGEMENT_SECRET=$(kubectl get secret --namespace "$release" "ck-update-test-keycloak" -o jsonpath="{.data.management-password}" | base64 --decode)
+          export POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "ck-update-test-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
+          export POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "ck-update-test-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
           kubectl create secret generic camunda-credentials \
           --from-literal=identity-optimize-client-token=$OPTIMIZE_SECRET \
           --from-literal=identity-connectors-client-token=$CONNECTORS_SECRET \
@@ -348,10 +349,10 @@ jobs:
       - name: Add load
         run: |
           release=${{ inputs.name || 'release-migration-test' }}
-          kubectl port-forward svc/$release-zeebe-gateway 26500 &
-          kubectl port-forward svc/$release-keycloak 18080:80 &
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
           # Get client secret from camunda credentials - which has been extracted during the upgrade
-          export ZEEBE_CLIENT_SECRET=$(kubectl get secrets camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
+          export ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
           export ZEEBE_CLIENT_ID=zeebe
