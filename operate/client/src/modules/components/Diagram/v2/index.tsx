@@ -26,6 +26,7 @@ import {
   useIsRootNodeSelected,
   useRootNode,
 } from 'modules/hooks/flowNodeSelection';
+import _ from 'lodash';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -34,6 +35,7 @@ type SelectedFlowNodeOverlayProps = {
 
 type Props = {
   xml: string;
+  name?: string;
   selectableFlowNodes?: string[];
   selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
@@ -49,6 +51,7 @@ type Props = {
 const Diagram: React.FC<Props> = observer(
   ({
     xml,
+    name,
     selectableFlowNodes,
     selectedFlowNodeIds,
     onFlowNodeSelection,
@@ -150,7 +153,7 @@ const Diagram: React.FC<Props> = observer(
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'diagram.bpmn';
+      link.download = `${_.kebabCase(name || 'diagram')}.bpmn`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

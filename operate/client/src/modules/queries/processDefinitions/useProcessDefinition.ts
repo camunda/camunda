@@ -6,20 +6,22 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useQuery} from '@tanstack/react-query';
+import {skipToken, useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinition} from 'modules/api/v2/processDefinitions/fetchProcessDefinition';
 
 const PROCESS_DEFINITION_QUERY_KEY = 'processDefinition';
 
 const useProcessDefinition = (
-  processDefinitionKey: string,
+  processDefinitionKey?: string,
   options?: {
     enabled?: boolean;
   },
 ) => {
   return useQuery({
     queryKey: [PROCESS_DEFINITION_QUERY_KEY, processDefinitionKey],
-    queryFn: async () => {
+    queryFn: 
+    !!processDefinitionKey ?
+    async () => {
       const {response, error} = await fetchProcessDefinition({
         processDefinitionKey,
       });
@@ -27,7 +29,7 @@ const useProcessDefinition = (
         return response;
       }
       throw error;
-    },
+    } : skipToken,
     enabled: options?.enabled,
   });
 };

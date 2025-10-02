@@ -70,6 +70,7 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
+import {getFullyQualifiedProcessDefinitionNameBy} from 'modules/utils/processDefinition';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -327,6 +328,7 @@ const TopPanel: React.FC = observer(() => {
             processInstance && (
               <Diagram
                 xml={processDefinitionData?.xml}
+                name={getFullyQualifiedProcessDefinitionNameBy(processInstance)}
                 selectableFlowNodes={
                   isModificationModeEnabled
                     ? modifiableFlowNodes
