@@ -228,8 +228,14 @@ jobs:
           export ZEEBE_CLIENT_ID=zeebe
           export ZEEBE_CLIENT_SECRET=$CONNECTOR_SECRET
           export ZEEBE_TOKEN_AUDIENCE=zeebe-api
-          # Check zbctl status
-          ./zbctl status --insecure
+          # Do not exit on error - as the port-forward might not be ready
+          set +e
+          while ./zbctl status --insecure; [[ $? -ne 0 ]];
+          do
+            echo "Result unsuccessful"
+            sleep 1
+          done
+          set -e
           # Deploy load
           ./zbctl deploy load-tests/load-tester/src/main/resources/bpmn/one_task.bpmn --insecure
           ./zbctl create instance benchmark --insecure
@@ -371,8 +377,14 @@ jobs:
           export ZEEBE_AUTHORIZATION_SERVER_URL=http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token
           export ZEEBE_CLIENT_ID=zeebe
           export ZEEBE_TOKEN_AUDIENCE=zeebe-api
-          # Check zbctl status
-          ./zbctl status --insecure
+          # Do not exit on error - as the port-forward might not be ready
+          set +e
+          while ./zbctl status --insecure; [[ $? -ne 0 ]];
+          do
+            echo "Result unsuccessful"
+            sleep 1
+          done
+          set -e
           # Activate job
           key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq '.jobs[0].key')
           # Complete job from 8.7 version
