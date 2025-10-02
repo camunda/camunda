@@ -146,8 +146,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
-      (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
-      (needs.build-benchmark-images.result == 'success' || needs.build-benchmark-images.result == 'skipped')
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
