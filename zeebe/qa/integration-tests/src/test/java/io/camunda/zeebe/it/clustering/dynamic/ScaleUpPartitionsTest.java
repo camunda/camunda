@@ -103,6 +103,11 @@ public class ScaleUpPartitionsTest {
                                 .getMembership()
                                 .setSyncInterval(Duration.ofSeconds(1))
                                 .setGossipInterval(Duration.ofMillis(500));
+
+                            final var engineDistribution =
+                                bb.getExperimental().getEngine().getDistribution();
+                            engineDistribution.setMaxBackoffDuration(Duration.ofSeconds(1));
+                            engineDistribution.setRedistributionInterval(Duration.ofMillis(200));
                           }))
           .build();
 
@@ -350,14 +355,7 @@ public class ScaleUpPartitionsTest {
 
     final var routingStateAfterScaling = clusterActuator.getTopology().getRouting();
 
-    // TODO: Remove awaitility after fixing the bug https://github.com/camunda/camunda/issues/37004
-    Awaitility.await()
-        .atMost(Duration.ofMinutes(1))
-        .pollInterval(Duration.ofSeconds(10))
-        .untilAsserted(
-            () ->
-                assertThatNoException()
-                    .isThrownBy(() -> backupActuator.take(backupId.incrementAndGet())));
+    assertThatNoException().isThrownBy(() -> backupActuator.take(backupId.incrementAndGet()));
 
     final var successfulBackupId = backupId.get();
     assertBackupIsCompleted(successfulBackupId);
