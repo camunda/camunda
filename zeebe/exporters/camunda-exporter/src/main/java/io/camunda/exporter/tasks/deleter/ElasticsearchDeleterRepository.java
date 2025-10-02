@@ -12,6 +12,7 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.ExporterResourceProvider;
@@ -78,8 +79,14 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
         .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
         .thenComposeAsync(
             (response) -> {
-              System.out.println(response.hits().hits().size());
-              return CompletableFuture.completedFuture(new DeleteBatch("todo", List.of()));
+              final var hits = response.hits().hits();
+              if (hits.isEmpty()) {
+                return CompletableFuture.completedFuture(new DeleteBatch(null, List.of()));
+              }
+
+              final var ids = hits.stream().map(Hit::id).toList();
+
+              return CompletableFuture.completedFuture(new DeleteBatch("todo", ids));
             },
             executor);
   }
