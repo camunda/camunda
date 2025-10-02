@@ -6,19 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const getFullyQualifiedProcessDefinitionName = (processName: string, processVersion: any) => {
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+
+const getFullyQualifiedProcessDefinitionName = (
+  processName: string,
+  processVersion: string,
+) => {
   return `${processName} v${processVersion}`;
 };
 
-const getFullyQualifiedProcessDefinitionNameBy = (definition: any) => {
-  if(!definition) return undefined;
+const getDiagramNameByProcessDefinition = (definition: ProcessDefinition) => {
+  const processName = definition.name || definition.processDefinitionId;
+  const processVersion = definition.version;
 
-  // for now the definition can be of different types, so we try to get the name and version from different properties
-  // later we should standardize this when we refactor the types
-  const processName = definition.name || definition.processName || definition.processDefinitionId || definition.bpmnProcessId || definition.processDefinitionName || definition.processDefinitionId;
-  const processVersion = definition.version || definition.processDefinitionVersion;
-
-  return getFullyQualifiedProcessDefinitionName(processName, processVersion);
+  return getFullyQualifiedProcessDefinitionName(
+    processName,
+    processVersion.toString(),
+  );
 };
 
-export {getFullyQualifiedProcessDefinitionName, getFullyQualifiedProcessDefinitionNameBy};
+export {getDiagramNameByProcessDefinition};

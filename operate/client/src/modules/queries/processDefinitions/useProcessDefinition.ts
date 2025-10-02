@@ -19,17 +19,17 @@ const useProcessDefinition = (
 ) => {
   return useQuery({
     queryKey: [PROCESS_DEFINITION_QUERY_KEY, processDefinitionKey],
-    queryFn: 
-    !!processDefinitionKey ?
-    async () => {
-      const {response, error} = await fetchProcessDefinition({
-        processDefinitionKey,
-      });
-      if (response !== null) {
-        return response;
-      }
-      throw error;
-    } : skipToken,
+    queryFn: processDefinitionKey
+      ? async () => {
+          const {response, error} = await fetchProcessDefinition({
+            processDefinitionKey,
+          });
+          if (response !== null) {
+            return response;
+          }
+          throw error;
+        }
+      : skipToken,
     enabled: options?.enabled,
   });
 };
