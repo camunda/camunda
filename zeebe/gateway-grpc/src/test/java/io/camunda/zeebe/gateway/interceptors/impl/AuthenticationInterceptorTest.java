@@ -426,42 +426,6 @@ public class AuthenticationInterceptorTest {
   }
 
   @Test
-  public void addsUsernameInPreferenceToClientIdWhenPreferUsernameClaimIsTrue() {
-    // given
-    final Metadata metadata = createAuthHeader();
-    final CloseStatusCapturingServerCall closeStatusCapturingServerCall =
-        new CloseStatusCapturingServerCall();
-
-    // Create a mock JWT with claims
-    final var jwt = mock(org.springframework.security.oauth2.jwt.Jwt.class);
-    final Map<String, Object> claims = Map.of("username", "test-user", "application_id", "app-id");
-    when(jwt.getClaims()).thenReturn(claims);
-
-    // Configure the JwtDecoder to return our mock JWT
-    final var jwtDecoder = mock(JwtDecoder.class);
-    when(jwtDecoder.decode(anyString())).thenReturn(jwt);
-
-    final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
-    oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setPreferUsernameClaim(true);
-
-    // when
-    new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
-        .interceptCall(
-            closeStatusCapturingServerCall,
-            metadata,
-            (call, headers) -> {
-              // then
-              assertUsername().isEqualTo("test-user");
-              assertClientId().isNull();
-
-              call.close(Status.OK, headers);
-              return null;
-            });
-  }
-
-  @Test
   public void
       addsUsernameToOidcContextWhenPreferUsernameClaimIsTrueWhenUsernameAndClientIdClaimsArePresent() {
     // given
@@ -516,8 +480,7 @@ public class AuthenticationInterceptorTest {
 
     final var oidcAuthenticationConfiguration = new OidcAuthenticationConfiguration();
     oidcAuthenticationConfiguration.setUsernameClaim("username");
-    oidcAuthenticationConfiguration.setClientIdClaim("application_id");
-    oidcAuthenticationConfiguration.setPreferUsernameClaim(true);
+    oidcAuthenticationConfiguration.setClientIdClaim("missing_claim");
 
     // when
     new AuthenticationInterceptor(new Oidc(jwtDecoder, oidcAuthenticationConfiguration))
