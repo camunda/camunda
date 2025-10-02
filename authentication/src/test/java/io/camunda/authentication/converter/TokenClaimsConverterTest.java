@@ -144,15 +144,28 @@ public class TokenClaimsConverterTest {
     }
 
     @Test
-    public void shouldPreferClientIdOverUsername() {
+    public void
+        shouldExtractClientIdWhenPreferUsernameClaimIsFalseAndBothUsernameClaimAndClientIdClaimArePresent() {
       final Map<String, Object> claims =
-          Map.of(USERNAME_CLAIM, "ignored", APPLICATION_ID_CLAIM, "preferred");
+          Map.of(USERNAME_CLAIM, "skipped", APPLICATION_ID_CLAIM, "preferred");
 
       final var camundaAuthentication = converter.convert(claims);
 
       assertThat(camundaAuthentication).isNotNull();
       assertThat(camundaAuthentication.authenticatedClientId()).isEqualTo("preferred");
       assertThat(camundaAuthentication.authenticatedUsername()).isNull();
+    }
+
+    @Test
+    public void shouldExtractUsernameWhenPreferUsernameClaimIsFalseAndClientIdIsNotPresent() {
+      final Map<String, Object> claims =
+          Map.of(USERNAME_CLAIM, "my-user", "differentClaim", "preferred");
+
+      final var camundaAuthentication = converter.convert(claims);
+
+      assertThat(camundaAuthentication).isNotNull();
+      assertThat(camundaAuthentication.authenticatedClientId()).isNull();
+      assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("my-user");
     }
   }
 
@@ -174,7 +187,7 @@ public class TokenClaimsConverterTest {
       when(securityConfiguration.getAuthentication()).thenReturn(authenticationConfiguration);
       when(authenticationConfiguration.getOidc()).thenReturn(oidcAuthenticationConfiguration);
       when(oidcAuthenticationConfiguration.getUsernameClaim()).thenReturn(USERNAME_CLAIM);
-      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn("not-tested");
+      when(oidcAuthenticationConfiguration.getClientIdClaim()).thenReturn(APPLICATION_ID_CLAIM);
       when(mappingRuleServices.withAuthentication(any(CamundaAuthentication.class)))
           .thenReturn(mappingRuleServices);
       when(tenantServices.withAuthentication(any(CamundaAuthentication.class)))
@@ -209,7 +222,7 @@ public class TokenClaimsConverterTest {
       assertThat(exception.getMessage())
           .isEqualTo(
               "Neither username claim (%s) nor clientId claim (%s) could be found in the claims. Please check your OIDC configuration."
-                  .formatted(USERNAME_CLAIM, "not-tested"));
+                  .formatted(USERNAME_CLAIM, APPLICATION_ID_CLAIM));
     }
 
     @Test
@@ -351,6 +364,35 @@ public class TokenClaimsConverterTest {
       assertThat(authentication.authenticatedGroupIds()).containsExactly("group-g1");
       assertThat(authentication.authenticatedTenantIds())
           .containsExactlyInAnyOrder(tenantEntity1.tenantId(), tenantEntity2.tenantId());
+    }
+
+    @Test
+    public void shouldExtractUsernameWhenPreferUsernameClaimIsTrueAndClientIdIsPresent() {
+      when(oidcAuthenticationConfiguration.isPreferUsernameClaim()).thenReturn(true);
+      final var tokenConverter = new TokenClaimsConverter(securityConfiguration, membershipService);
+
+      final Map<String, Object> claims =
+          Map.of(USERNAME_CLAIM, "my-user", APPLICATION_ID_CLAIM, "preferred");
+
+      final var camundaAuthentication = tokenConverter.convert(claims);
+
+      assertThat(camundaAuthentication).isNotNull();
+      assertThat(camundaAuthentication.authenticatedClientId()).isNull();
+      assertThat(camundaAuthentication.authenticatedUsername()).isEqualTo("my-user");
+    }
+
+    @Test
+    public void shouldExtractClientIdWhenPreferUsernameClaimIsTrueAndUsernameIsNotPresent() {
+      when(oidcAuthenticationConfiguration.isPreferUsernameClaim()).thenReturn(true);
+      final var tokenConverter = new TokenClaimsConverter(securityConfiguration, membershipService);
+      final Map<String, Object> claims =
+          Map.of("differentUsernameClaim", "my-user", APPLICATION_ID_CLAIM, "preferred");
+
+      final var camundaAuthentication = tokenConverter.convert(claims);
+
+      assertThat(camundaAuthentication).isNotNull();
+      assertThat(camundaAuthentication.authenticatedClientId()).isEqualTo("preferred");
+      assertThat(camundaAuthentication.authenticatedUsername()).isNull();
     }
   }
 
