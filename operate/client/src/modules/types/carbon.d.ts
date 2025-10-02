@@ -29,6 +29,7 @@ type PolymorphicComponentPropWithRef<
 declare module '@carbon/react' {
   import type {TooltipProps as BaseTooltipProps} from '@carbon/react';
 
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface TooltipProps extends BaseTooltipProps {
     align:
       | 'bottom-left'

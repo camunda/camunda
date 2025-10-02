@@ -24,6 +24,7 @@ type Appcues = {
 };
 
 export declare global {
+  // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
   interface Window {
     clientConfig?: {
       isEnterprise?: boolean;
@@ -54,6 +55,7 @@ export declare global {
   }
 
   namespace NodeJS {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-definitions
     interface ProcessEnv {
       REACT_APP_DEV_ENV_URL: string;
       REACT_APP_INT_ENV_URL: string;

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-interface VariableEntity {
+type VariableEntity = {
   isFirst: boolean;
   hasActiveOperation: boolean;
   id?: string;
@@ -14,7 +14,7 @@ interface VariableEntity {
   value: string;
   sortValues: [string] | null;
   isPreview: boolean;
-}
+};
 
 type OperationEntityType =
   | 'RESOLVE_INCIDENT'
@@ -39,7 +39,7 @@ type InstanceEntityState =
 
 type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
 
-interface OperationEntity {
+type OperationEntity = {
   id: string;
   name: null | string;
   type: OperationEntityType;
@@ -51,16 +51,16 @@ interface OperationEntity {
   sortValues?: [string, string];
   failedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
   completedOperationsCount?: number; // Should become required when BE issue #6294 gets resolved
-}
+};
 
-interface InstanceOperationEntity {
+type InstanceOperationEntity = {
   id?: string;
   batchOperationId?: string;
   type: OperationEntityType;
   state: 'SENT' | 'COMPLETED' | 'SCHEDULED' | 'LOCKED' | 'FAILED';
   errorMessage: null | string;
   completedDate: null | string;
-}
+};
 
 type ResourceBasedPermissionDto =
   | 'READ'
@@ -68,7 +68,7 @@ type ResourceBasedPermissionDto =
   | 'UPDATE_PROCESS_INSTANCE'
   | 'DELETE_PROCESS_INSTANCE';
 
-interface ProcessInstanceEntity {
+type ProcessInstanceEntity = {
   id: string;
   processId: string;
   processName: string;
@@ -88,9 +88,9 @@ interface ProcessInstanceEntity {
   }>;
   permissions?: ResourceBasedPermissionDto[] | null;
   tenantId: string;
-}
+};
 
-interface DecisionInstanceEntity {
+type DecisionInstanceEntity = {
   id: string;
   decisionName: string;
   decisionVersion: number;
@@ -99,7 +99,7 @@ interface DecisionInstanceEntity {
   processInstanceId: string | null;
   state: DecisionInstanceEntityState;
   sortValues: [string, string];
-}
+};
 
 type SortOrder = 'asc' | 'desc';
 

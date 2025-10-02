@@ -11,11 +11,11 @@ import {OverflowMenuItem} from '@carbon/react';
 import {Filter} from '@carbon/react/icons';
 import {ButtonStack, OverflowMenu, Container} from './styled';
 
-interface Props<T> {
+type Props<T> = {
   visibleFilters: T[];
   optionalFilters: {id: T; label: string}[];
   onFilterSelect: (filter: T) => void;
-}
+};
 
 const OptionalFiltersMenu = <T extends string>({
   visibleFilters,

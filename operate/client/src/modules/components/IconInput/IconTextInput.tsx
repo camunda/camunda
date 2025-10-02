@@ -13,13 +13,13 @@ import {
 } from '@carbon/react';
 import {Container, IconContainer, TextInput, IconButton} from './styled';
 
-interface Props extends React.ComponentProps<typeof BaseTextInput> {
+type Props = {
   Icon: Icon;
   invalid?: boolean;
   onIconClick: () => void;
   buttonLabel: string;
   tooltipPosition?: React.ComponentProps<typeof BaseIconButton>['align'];
-}
+} & React.ComponentProps<typeof BaseTextInput>;
 
 const IconTextInput: React.FC<Props> = ({
   Icon,
