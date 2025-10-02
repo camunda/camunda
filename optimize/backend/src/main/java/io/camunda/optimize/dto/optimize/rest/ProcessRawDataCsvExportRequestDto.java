@@ -13,6 +13,7 @@ import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessRawDataCsvExportRequestDto {
 
@@ -82,13 +83,22 @@ public class ProcessRawDataCsvExportRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessRawDataCsvExportRequestDto that = (ProcessRawDataCsvExportRequestDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(includedColumns, that.includedColumns);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey, processDefinitionVersions, tenantIds, filter, includedColumns);
   }
 
   @Override

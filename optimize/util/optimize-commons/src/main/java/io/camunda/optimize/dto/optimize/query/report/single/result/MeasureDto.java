@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.result;
 import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.AggregationDto;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.UserTaskDurationTime;
+import java.util.Objects;
 
 public class MeasureDto<T> {
 
@@ -84,13 +85,20 @@ public class MeasureDto<T> {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MeasureDto<?> that = (MeasureDto<?>) o;
+    return Objects.equals(property, that.property)
+        && Objects.equals(aggregationType, that.aggregationType)
+        && userTaskDurationTime == that.userTaskDurationTime
+        && Objects.equals(data, that.data);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(property, aggregationType, userTaskDurationTime, data);
   }
 
   @Override

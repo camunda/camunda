@@ -10,6 +10,7 @@ package io.camunda.optimize.service.util.configuration.engine;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.util.CronNormalizerUtil;
+import java.util.Objects;
 import java.util.Optional;
 
 public abstract class IdentityCacheConfiguration {
@@ -78,13 +79,22 @@ public abstract class IdentityCacheConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IdentityCacheConfiguration that = (IdentityCacheConfiguration) o;
+    return includeUserMetaData == that.includeUserMetaData
+        && collectionRoleCleanupEnabled == that.collectionRoleCleanupEnabled
+        && maxPageSize == that.maxPageSize
+        && maxEntryLimit == that.maxEntryLimit
+        && Objects.equals(cronTrigger, that.cronTrigger);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        includeUserMetaData, collectionRoleCleanupEnabled, cronTrigger, maxPageSize, maxEntryLimit);
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.RawDataInstanceDto;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public class RawDataProcessInstanceDto implements RawDataInstanceDto {
 
@@ -177,13 +178,42 @@ public class RawDataProcessInstanceDto implements RawDataInstanceDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RawDataProcessInstanceDto that = (RawDataProcessInstanceDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionId, that.processDefinitionId)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(counts, that.counts)
+        && Objects.equals(flowNodeDurations, that.flowNodeDurations)
+        && Objects.equals(businessKey, that.businessKey)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(duration, that.duration)
+        && Objects.equals(engineName, that.engineName)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(variables, that.variables)
+        && Objects.equals(flowNodeInstances, that.flowNodeInstances);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey,
+        processDefinitionId,
+        processInstanceId,
+        counts,
+        flowNodeDurations,
+        businessKey,
+        startDate,
+        endDate,
+        duration,
+        engineName,
+        tenantId,
+        variables,
+        flowNodeInstances);
   }
 
   @Override

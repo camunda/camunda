@@ -12,6 +12,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -56,12 +57,19 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(type, name);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DataSourceDto that = (DataSourceDto) o;
+    return Objects.equals(type, that.type) && Objects.equals(name, that.name);
   }
 
   @Override

@@ -17,6 +17,7 @@ import java.io.Serializable;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
 
@@ -416,13 +417,58 @@ public class FlowNodeInstanceDto implements Serializable, OptimizeDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FlowNodeInstanceDto that = (FlowNodeInstanceDto) o;
+    return Objects.equals(flowNodeInstanceId, that.flowNodeInstanceId)
+        && Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(flowNodeType, that.flowNodeType)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(totalDurationInMs, that.totalDurationInMs)
+        && Objects.equals(startDate, that.startDate)
+        && Objects.equals(endDate, that.endDate)
+        && Objects.equals(canceled, that.canceled)
+        && Objects.equals(definitionKey, that.definitionKey)
+        && Objects.equals(definitionVersion, that.definitionVersion)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(engine, that.engine)
+        && Objects.equals(userTaskInstanceId, that.userTaskInstanceId)
+        && Objects.equals(dueDate, that.dueDate)
+        && Objects.equals(deleteReason, that.deleteReason)
+        && Objects.equals(assignee, that.assignee)
+        && Objects.equals(candidateGroups, that.candidateGroups)
+        && Objects.equals(assigneeOperations, that.assigneeOperations)
+        && Objects.equals(candidateGroupOperations, that.candidateGroupOperations)
+        && Objects.equals(idleDurationInMs, that.idleDurationInMs)
+        && Objects.equals(workDurationInMs, that.workDurationInMs);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        flowNodeInstanceId,
+        flowNodeId,
+        flowNodeType,
+        processInstanceId,
+        totalDurationInMs,
+        startDate,
+        endDate,
+        canceled,
+        definitionKey,
+        definitionVersion,
+        tenantId,
+        engine,
+        userTaskInstanceId,
+        dueDate,
+        deleteReason,
+        assignee,
+        candidateGroups,
+        assigneeOperations,
+        candidateGroupOperations,
+        idleDurationInMs,
+        workDurationInMs);
   }
 
   @Override

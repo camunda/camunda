@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.alert;
 
 import io.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
+import java.util.Objects;
 
 public class AlertNotificationDto {
 
@@ -55,13 +56,21 @@ public class AlertNotificationDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AlertNotificationDto that = (AlertNotificationDto) o;
+    return Objects.equals(alert, that.alert)
+        && Objects.equals(currentValue, that.currentValue)
+        && type == that.type
+        && Objects.equals(alertMessage, that.alertMessage)
+        && Objects.equals(reportLink, that.reportLink);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(alert, currentValue, type, alertMessage, reportLink);
   }
 
   @Override

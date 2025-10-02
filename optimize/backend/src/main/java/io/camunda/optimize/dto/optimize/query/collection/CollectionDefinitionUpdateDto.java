@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.collection;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class CollectionDefinitionUpdateDto {
@@ -67,12 +68,23 @@ public class CollectionDefinitionUpdateDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(name, lastModified, owner, lastModifier, data);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionDefinitionUpdateDto that = (CollectionDefinitionUpdateDto) o;
+    return Objects.equals(name, that.name)
+        && Objects.equals(lastModified, that.lastModified)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(lastModifier, that.lastModifier)
+        && Objects.equals(data, that.data);
   }
 
   @Override

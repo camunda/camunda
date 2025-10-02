@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.persistence;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
 import java.time.OffsetDateTime;
+import java.util.Objects;
 
 public class AssigneeOperationDto implements OptimizeDto, Serializable {
 
@@ -76,16 +77,24 @@ public class AssigneeOperationDto implements OptimizeDto, Serializable {
         + ")";
   }
 
+  @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AssigneeOperationDto that = (AssigneeOperationDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(userId, that.userId)
+        && Objects.equals(operationType, that.operationType)
+        && Objects.equals(timestamp, that.timestamp);
   }
 
-  protected boolean canEqual(final Object other) {
-    return other instanceof AssigneeOperationDto;
-  }
-
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, userId, operationType, timestamp);
   }
 
   @SuppressWarnings("checkstyle:ConstantName")

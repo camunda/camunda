@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class ProcessDigestRequestDto {
 
@@ -34,13 +35,17 @@ public class ProcessDigestRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDigestRequestDto that = (ProcessDigestRequestDto) o;
+    return enabled == that.enabled;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(enabled);
   }
 
   @Override

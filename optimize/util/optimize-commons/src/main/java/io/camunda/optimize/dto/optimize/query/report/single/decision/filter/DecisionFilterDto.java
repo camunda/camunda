@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.ReportConstants;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
+import java.util.Objects;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.PROPERTY, property = "type")
 @JsonSubTypes({
@@ -58,13 +59,17 @@ public abstract class DecisionFilterDto<DATA extends FilterDataDto> {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionFilterDto<?> that = (DecisionFilterDto<?>) o;
+    return Objects.equals(data, that.data) && Objects.equals(appliedTo, that.appliedTo);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(data, appliedTo);
   }
 
   @Override

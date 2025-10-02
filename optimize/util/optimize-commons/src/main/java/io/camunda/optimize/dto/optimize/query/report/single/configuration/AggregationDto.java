@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
+import java.util.Objects;
 
 public class AggregationDto implements OptimizeDto {
 
@@ -46,13 +47,17 @@ public class AggregationDto implements OptimizeDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AggregationDto that = (AggregationDto) o;
+    return type == that.type && Objects.equals(value, that.value);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(type, value);
   }
 
   @Override

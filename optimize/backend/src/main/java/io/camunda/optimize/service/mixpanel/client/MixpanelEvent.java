@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.mixpanel.client;
 
+import java.util.Objects;
+
 public class MixpanelEvent {
 
   public static final String EVENT_NAME_PREFIX = "optimize:";
@@ -48,13 +50,17 @@ public class MixpanelEvent {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MixpanelEvent that = (MixpanelEvent) o;
+    return Objects.equals(event, that.event) && Objects.equals(properties, that.properties);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(event, properties);
   }
 
   @Override
