@@ -320,10 +320,11 @@ jobs:
           --set orchestration.migration.data.enabled=true \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
-          -f charts/camunda-platform-8.8/values-digest.yaml \
           --set orchestration.image.registry=gcr.io
           --set orchestration.image.repository=zeebe-io/zeebe
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set connectors.image.tag=SNAPSHOT
+          --set identity.image.tag=8.8-SNAPSHOT
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
           --set-string "orchestration.env[0].value=false"
       - name: Summarize deployment
