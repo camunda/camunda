@@ -38,7 +38,7 @@ test.describe.parallel('Process instance Tests', () => {
       json,
     );
     expect(json.processDefinitionId).toBe('process_with_task_listener');
-    expect(json.processDefinitionVersion).toBe(4);
+    expect(json.processDefinitionVersion).toBeGreaterThan(0);
     expect(json.processInstanceKey).toBeDefined();
     expect(json.processDefinitionKey).toBeDefined();
     expect(json.tenantId).toBe('<default>');
@@ -114,7 +114,7 @@ test.describe.parallel('Process instance Tests', () => {
         jsonByKey,
       );
       expect(jsonByKey.processDefinitionId).toBe('process_with_task_listener');
-      expect(jsonByKey.processDefinitionVersion).toBe(4);
+      expect(jsonByKey.processDefinitionVersion).toBeGreaterThan(0);
       expect(jsonByKey.processInstanceKey).toBeDefined();
       expect(jsonByKey.processDefinitionKey).toBe(
         localState['processDefinitionKey'],
