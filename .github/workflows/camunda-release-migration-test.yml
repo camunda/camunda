@@ -292,6 +292,7 @@ jobs:
           export POSTGRESQL_ADMIN_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.postgres-password}" | base64 --decode)
           export POSTGRESQL_KEYCLOAK_PASSWORD=$(kubectl get secret --namespace "$release" "$release-postgresql" -o jsonpath="{.data.password}" | base64 --decode)
           kubectl create secret generic camunda-credentials \
+          --namespace $release \
           --from-literal=identity-optimize-client-token=$OPTIMIZE_SECRET \
           --from-literal=identity-connectors-client-token=$CONNECTORS_SECRET \
           --from-literal=identity-orchestration-client-token=$ORCHESTRATION_SECRET \
