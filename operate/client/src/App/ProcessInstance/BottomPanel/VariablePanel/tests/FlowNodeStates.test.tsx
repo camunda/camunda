@@ -782,7 +782,6 @@ describe('VariablePanel', () => {
     // select only one of the scopes
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchProcessInstanceListeners().withSuccess(noListeners);
 
     act(() => {
       selectFlowNode(
