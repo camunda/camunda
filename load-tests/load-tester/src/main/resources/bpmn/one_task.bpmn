@@ -4,25 +4,17 @@
     <bpmn:startEvent id="start" name="start">
       <bpmn:outgoing>SequenceFlow_0xll35j</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:serviceTask id="task" name="task">
-      <bpmn:extensionElements>
-        <zeebe:taskDefinition type="benchmark-task" />
-      </bpmn:extensionElements>
-      <bpmn:incoming>SequenceFlow_0xll35j</bpmn:incoming>
-      <bpmn:outgoing>Flow_0ev3ti6</bpmn:outgoing>
-    </bpmn:serviceTask>
-    <bpmn:sequenceFlow id="SequenceFlow_0xll35j" sourceRef="start" targetRef="task" />
+    <bpmn:sequenceFlow id="SequenceFlow_0xll35j" sourceRef="start" targetRef="user_task" />
     <bpmn:endEvent id="end" name="end">
       <bpmn:incoming>SequenceFlow_1wkb5x5</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1wkb5x5" sourceRef="user_task" targetRef="end" />
-    <bpmn:sequenceFlow id="Flow_0ev3ti6" sourceRef="task" targetRef="user_task" />
     <bpmn:userTask id="user_task" name="user_task">
       <bpmn:extensionElements>
         <zeebe:userTask />
         <zeebe:assignmentDefinition assignee="" />
       </bpmn:extensionElements>
-      <bpmn:incoming>Flow_0ev3ti6</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0xll35j</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1wkb5x5</bpmn:outgoing>
     </bpmn:userTask>
   </bpmn:process>
@@ -34,17 +26,14 @@
           <dc:Bounds x="186" y="146" width="23" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_060uah3_di" bpmnElement="task">
-        <dc:Bounds x="292" y="81" width="100" height="80" />
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="EndEvent_0hz2fmb_di" bpmnElement="end">
-        <dc:Bounds x="662" y="103" width="36" height="36" />
+        <dc:Bounds x="470" y="103" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="670" y="79" width="19" height="14" />
+          <dc:Bounds x="478" y="79" width="19" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_16xmzm5_di" bpmnElement="user_task">
-        <dc:Bounds x="470" y="81" width="100" height="80" />
+        <dc:Bounds x="292" y="81" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0xll35j_di" bpmnElement="SequenceFlow_0xll35j">
@@ -52,10 +41,6 @@
         <di:waypoint x="292" y="121" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_1wkb5x5_di" bpmnElement="SequenceFlow_1wkb5x5">
-        <di:waypoint x="570" y="121" />
-        <di:waypoint x="662" y="121" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_0ev3ti6_di" bpmnElement="Flow_0ev3ti6">
         <di:waypoint x="392" y="121" />
         <di:waypoint x="470" y="121" />
       </bpmndi:BPMNEdge>
