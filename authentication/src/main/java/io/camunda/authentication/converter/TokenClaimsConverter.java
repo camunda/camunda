@@ -22,6 +22,7 @@ public class TokenClaimsConverter {
   private final OidcPrincipalLoader oidcPrincipalLoader;
   private final String usernameClaim;
   private final String clientIdClaim;
+  private final boolean preferUsernameClaim;
   private final MembershipService membershipService;
 
   public TokenClaimsConverter(
@@ -30,6 +31,8 @@ public class TokenClaimsConverter {
     this.membershipService = membershipService;
     usernameClaim = securityConfiguration.getAuthentication().getOidc().getUsernameClaim();
     clientIdClaim = securityConfiguration.getAuthentication().getOidc().getClientIdClaim();
+    preferUsernameClaim =
+        securityConfiguration.getAuthentication().getOidc().isPreferUsernameClaim();
     oidcPrincipalLoader = new OidcPrincipalLoader(usernameClaim, clientIdClaim);
   }
 
@@ -47,12 +50,13 @@ public class TokenClaimsConverter {
 
     final String principalName;
     final PrincipalType principalType;
-    if (clientId != null) {
-      principalName = clientId;
-      principalType = PrincipalType.CLIENT;
-    } else {
+
+    if ((preferUsernameClaim && username != null) || clientId == null) {
       principalName = username;
       principalType = PrincipalType.USER;
+    } else {
+      principalName = clientId;
+      principalType = PrincipalType.CLIENT;
     }
 
     return membershipService.resolveMemberships(tokenClaims, principalName, principalType);
