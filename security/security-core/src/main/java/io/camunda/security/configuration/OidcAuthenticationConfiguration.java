@@ -238,6 +238,7 @@ public class OidcAuthenticationConfiguration {
         || audiences != null
         || clientIdClaim != null
         || groupsClaim != null
+        || preferUsernameClaim
         || organizationId != null
         || !CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC.equals(clientAuthenticationMethod)
         || assertionConfiguration.getKeystore().getPath() != null
