@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.6
+
+### 🚀 Enhancements
+
+- add message subscription endpoints ([#39031](https://github.com/camunda/camunda/pull/39031))
+
+### ❤️ Contributors
+
+- Yuliia Saienko ([@juliasaienko](https://github.com/juliasaienko))
+
 ## v0.0.5
 
 ### 🩹 Fixes

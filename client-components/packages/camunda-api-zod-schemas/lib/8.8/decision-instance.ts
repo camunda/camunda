@@ -65,7 +65,7 @@ const queryDecisionInstancesRequestBodySchema = getQueryRequestBodySchema({
 			evaluationDate: advancedDateTimeFilterSchema,
 			decisionDefinitionKey: basicStringFilterSchema,
 			...decisionInstanceSchema.pick({
-        decisionEvaluationInstanceKey: true,
+				decisionEvaluationInstanceKey: true,
 				state: true,
 				evaluationFailure: true,
 				decisionDefinitionId: true,
