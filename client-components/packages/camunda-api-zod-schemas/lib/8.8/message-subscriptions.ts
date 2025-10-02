@@ -9,6 +9,7 @@
 import {z} from 'zod';
 import {
 	advancedDateTimeFilterSchema,
+	advancedIntegerFilterSchema,
 	advancedStringFilterSchema,
 	API_VERSION,
 	type Endpoint,
@@ -76,11 +77,83 @@ const queryMessageSubscriptions: Endpoint = {
 	},
 };
 
+const correlatedMessageSubscriptionSchema = z.object({
+	subscriptionKey: z.string(),
+	processDefinitionId: z.string(),
+	processDefinitionKey: z.string(),
+	processInstanceKey: z.string(),
+	elementId: z.string(),
+	elementInstanceKey: z.string(),
+	messageSubscriptionState: messageSubscriptionStateSchema,
+	correlationTime: z.string(),
+	messageName: z.string(),
+	correlationKey: z.string(),
+	messageKey: z.string(),
+	partitionId: z.number().int(),
+	tenantId: z.string(),
+});
+type CorrelatedMessageSubscription = z.infer<typeof correlatedMessageSubscriptionSchema>;
+
+const queryCorrelatedMessageSubscriptionRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: [
+		'correlationKey',
+		'correlationTime',
+		'elementId',
+		'elementInstanceKey',
+		'messageKey',
+		'messageName',
+		'partitionId',
+		'processDefinitionId',
+		'processDefinitionKey',
+		'processInstanceKey',
+		'subscriptionKey',
+		'tenantId',
+	] as const,
+	filter: z
+		.object({
+			correlationKey: advancedStringFilterSchema,
+			correlationTime: advancedDateTimeFilterSchema,
+			elementId: advancedStringFilterSchema,
+			elementInstanceKey: advancedStringFilterSchema,
+			messageKey: advancedStringFilterSchema,
+			messageName: advancedStringFilterSchema,
+			partitionId: advancedIntegerFilterSchema,
+			processDefinitionId: advancedStringFilterSchema,
+			processDefinitionKey: advancedStringFilterSchema,
+			processInstanceKey: advancedStringFilterSchema,
+			subscriptionKey: advancedStringFilterSchema,
+			tenantId: advancedStringFilterSchema,
+		})
+		.partial(),
+});
+
+type QueryCorrelatedMessageSubscriptionsRequestBody = z.infer<
+	typeof queryCorrelatedMessageSubscriptionRequestBodySchema
+>;
+
+const queryCorrelatedMessageSubscriptionsResponseBodySchema = getQueryResponseBodySchema(
+	correlatedMessageSubscriptionSchema,
+);
+type QueryCorrelatedMessageSubscriptionsResponseBody = z.infer<
+	typeof queryCorrelatedMessageSubscriptionsResponseBodySchema
+>;
+
+const queryCorrelatedMessageSubscriptions: Endpoint = {
+	method: 'POST',
+	getUrl() {
+		return `/${API_VERSION}/correlated-message-subscriptions/search`;
+	},
+};
+
 export {
 	queryMessageSubscriptions,
 	queryMessageSubscriptionRequestBodySchema,
 	queryMessageSubscriptionsResponseBodySchema,
 	messageSubscriptionSchema,
+	correlatedMessageSubscriptionSchema,
+	queryCorrelatedMessageSubscriptionRequestBodySchema,
+	queryCorrelatedMessageSubscriptionsResponseBodySchema,
+	queryCorrelatedMessageSubscriptions,
 };
 
 export type {
@@ -88,4 +161,7 @@ export type {
 	MessageSubscription,
 	QueryMessageSubscriptionsRequestBody,
 	QueryMessageSubscriptionsResponseBody,
+	CorrelatedMessageSubscription,
+	QueryCorrelatedMessageSubscriptionsRequestBody,
+	QueryCorrelatedMessageSubscriptionsResponseBody,
 };
