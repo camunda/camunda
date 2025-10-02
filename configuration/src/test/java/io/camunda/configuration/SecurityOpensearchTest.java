@@ -32,7 +32,6 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 @ActiveProfiles({"broker"})
 @SpringJUnitConfig({
   UnifiedConfiguration.class,
-  UnifiedConfigurationHelper.class,
   SearchEngineConnectPropertiesOverride.class,
   BrokerBasedPropertiesOverride.class,
   TasklistPropertiesOverride.class,
@@ -49,7 +48,13 @@ public class SecurityOpensearchTest {
     final Map<String, Object> args = camundaExporter.getArgs();
     assertThat(args).isNotNull();
 
-    return UnifiedConfigurationHelper.argsToCamundaExporterConfiguration(args);
+    return fromArgs(args);
+  }
+
+  private static ExporterConfiguration fromArgs(final Map<String, Object> args) {
+    return new io.camunda.zeebe.broker.exporter.context.ExporterConfiguration(
+            "camundaexporter", args)
+        .instantiate(ExporterConfiguration.class);
   }
 
   @Nested

@@ -7,19 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class System {
-  private static final String PREFIX = "camunda.system";
-
-  private static final Set<String> LEGACY_CPU_THREAD_COUNT_PROPERTIES =
-      Set.of("zeebe.broker.threads.cpuThreadCount");
-  private static final Set<String> LEGACY_IO_THREAD_COUNT_PROPERTIES =
-      Set.of("zeebe.broker.threads.ioThreadCount");
-  private static final Set<String> LEGACY_CLOCK_CONTROLLED_PROPERTIES =
-      Set.of("zeebe.clock.controlled");
 
   /**
    * Controls the number of non-blocking CPU threads to be used. WARNING: You should never specify a
@@ -45,12 +35,7 @@ public class System {
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
 
   public int getCpuThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".cpu-thread-count",
-        cpuThreadCount,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CPU_THREAD_COUNT_PROPERTIES);
+    return cpuThreadCount;
   }
 
   public void setCpuThreadCount(final int cpuThreadCount) {
@@ -58,12 +43,7 @@ public class System {
   }
 
   public int getIoThreadCount() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".io-thread-count",
-        ioThreadCount,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_IO_THREAD_COUNT_PROPERTIES);
+    return ioThreadCount;
   }
 
   public void setIoThreadCount(final int ioThreadCount) {
@@ -71,12 +51,7 @@ public class System {
   }
 
   public boolean getClockControlled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".clock-controlled",
-        clockControlled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CLOCK_CONTROLLED_PROPERTIES);
+    return clockControlled;
   }
 
   public void setClockControlled(final boolean clockControlled) {

@@ -7,20 +7,9 @@
  */
 package io.camunda.configuration;
 
-import static io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH;
-
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class SecondaryStorage {
-
-  private static final String PREFIX = "camunda.data.secondary-storage";
-  private static final Set<String> LEGACY_TYPE_PROPERTIES =
-      Set.of(
-          "camunda.database.type",
-          "camunda.operate.database",
-          "camunda.tasklist.database",
-          "zeebe.broker.exporters.camundaexporter.args.connect.type");
 
   /**
    * When enabled, the default exporter camundaexporter is automatically configured using the
@@ -49,12 +38,7 @@ public class SecondaryStorage {
   }
 
   public SecondaryStorageType getType() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".type",
-        type,
-        SecondaryStorageType.class,
-        SUPPORTED_ONLY_IF_VALUES_MATCH,
-        LEGACY_TYPE_PROPERTIES);
+    return type;
   }
 
   public void setType(final SecondaryStorageType type) {

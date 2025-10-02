@@ -17,16 +17,12 @@ import java.time.Duration;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 import org.springframework.util.unit.DataSize;
 
-@SpringJUnitConfig({
-  UnifiedConfiguration.class,
-  BrokerBasedPropertiesOverride.class,
-  UnifiedConfigurationHelper.class
-})
+@SpringBootTest(classes = {UnifiedConfiguration.class, BrokerBasedPropertiesOverride.class})
 @ActiveProfiles("broker")
 public class ClusterRaftTest {
   @Nested
@@ -109,7 +105,7 @@ public class ClusterRaftTest {
         "zeebe.broker.cluster.electionTimeout=20s",
         "zeebe.broker.cluster.raft.enablePriorityElection=false",
         "zeebe.broker.cluster.raft.flush.enabled=false",
-        "zeebe.broker.cluster.raft.flush.delay=10s",
+        "zeebe.broker.cluster.raft.flush.delayTime=10s",
         "zeebe.broker.experimental.maxAppendsPerFollower=8",
         "zeebe.broker.experimental.maxAppendBatchSize=96",
         "zeebe.broker.experimental.raft.requestTimeout=10s",

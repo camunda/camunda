@@ -7,25 +7,9 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Azure {
-  private static final String PREFIX = "camunda.data.backup.azure";
-  private static final Set<String> LEGACY_ENDPOINT_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.endpoint");
-  private static final Set<String> LEGACY_ACCOUNTNAME_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.accountName");
-  private static final Set<String> LEGACY_ACCOUNTKEY_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.accountKey");
-  private static final Set<String> LEGACY_CONNECTIONSTRING_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.connectionString");
-  private static final Set<String> LEGACY_BASEPATH_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.basePath");
-  private static final Set<String> LEGACY_CREATECONTAINER_PROPERTIES =
-      Set.of("zeebe.broker.data.backup.azure.createContainer");
-
   /** Azure endpoint to connect to. Required unless a connection string is specified. */
   private String endpoint;
 
@@ -70,12 +54,7 @@ public class Azure {
   @NestedConfigurationProperty private SasToken sasToken;
 
   public String getEndpoint() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".endpoint",
-        endpoint,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENDPOINT_PROPERTIES);
+    return endpoint;
   }
 
   public void setEndpoint(final String endpoint) {
@@ -83,12 +62,7 @@ public class Azure {
   }
 
   public String getAccountName() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".account-name",
-        accountName,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ACCOUNTNAME_PROPERTIES);
+    return accountName;
   }
 
   public void setAccountName(final String accountName) {
@@ -96,12 +70,7 @@ public class Azure {
   }
 
   public String getAccountKey() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".account-key",
-        accountKey,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ACCOUNTKEY_PROPERTIES);
+    return accountKey;
   }
 
   public void setAccountKey(final String accountKey) {
@@ -109,12 +78,7 @@ public class Azure {
   }
 
   public String getConnectionString() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".connection-string",
-        connectionString,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CONNECTIONSTRING_PROPERTIES);
+    return connectionString;
   }
 
   public void setConnectionString(final String connectionString) {
@@ -122,12 +86,7 @@ public class Azure {
   }
 
   public String getBasePath() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".base-path",
-        basePath,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_BASEPATH_PROPERTIES);
+    return basePath;
   }
 
   public void setBasePath(final String basePath) {
@@ -135,12 +94,7 @@ public class Azure {
   }
 
   public boolean isCreateContainer() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".create-container",
-        createContainer,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_CREATECONTAINER_PROPERTIES);
+    return createContainer;
   }
 
   public void setCreateContainer(final boolean createContainer) {

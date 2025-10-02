@@ -7,20 +7,10 @@
  */
 package io.camunda.configuration;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
-import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Disk {
-
-  private static final String PREFIX = "camunda.data.primary-storage.disk";
-
-  private static final Set<String> LEGACY_ENABLE_MONITORING_PROPERTIES =
-      Set.of("zeebe.broker.data.disk.enableMonitoring");
-  private static final Set<String> LEGACY_MONITORING_INTERVAL_PROPERTIES =
-      Set.of("zeebe.broker.data.disk.monitoringInterval");
-
   /**
    * Configure disk monitoring to prevent getting into a non-recoverable state due to out of disk
    * space. When monitoring is enabled, the broker rejects commands and pause replication when the
@@ -42,12 +32,7 @@ public class Disk {
   }
 
   public boolean isMonitoringEnabled() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".monitoring-enabled",
-        monitoringEnabled,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_ENABLE_MONITORING_PROPERTIES);
+    return monitoringEnabled;
   }
 
   public void setMonitoringEnabled(final boolean monitoringEnabled) {
@@ -55,12 +40,7 @@ public class Disk {
   }
 
   public Duration getMonitoringInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".monitoring-interval",
-        monitoringInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_MONITORING_INTERVAL_PROPERTIES);
+    return monitoringInterval;
   }
 
   public void setMonitoringInterval(final Duration monitoringInterval) {

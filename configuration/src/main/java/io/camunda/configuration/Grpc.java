@@ -11,29 +11,11 @@ import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MANAGEMENT_THREADS;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 
-import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 public class Grpc {
-  private static final String PREFIX = "camunda.api.grpc";
-  private static final Map<String, String> LEGACY_GATEWAY_PROPERTIES =
-      Map.of(
-          "host", "zeebe.gateway.network.host",
-          "port", "zeebe.gateway.network.port",
-          "minKeepAliveInterval", "zeebe.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.gateway.threads.managementThreads");
-  private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
-      Map.of(
-          "host", "zeebe.broker.gateway.network.host",
-          "port", "zeebe.broker.gateway.network.port",
-          "minKeepAliveInterval", "zeebe.broker.gateway.network.minKeepAliveInterval",
-          "managementThreads", "zeebe.broker.gateway.threads.managementThreads");
-
-  private Map<String, String> legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
 
   /** Sets the address the gateway binds to */
   private String address = DEFAULT_HOST;
@@ -58,12 +40,7 @@ public class Grpc {
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
 
   public String getAddress() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".address",
-        address,
-        String.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("host")));
+    return address;
   }
 
   public void setAddress(final String address) {
@@ -71,12 +48,7 @@ public class Grpc {
   }
 
   public int getPort() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".port",
-        port,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("port")));
+    return port;
   }
 
   public void setPort(final int port) {
@@ -84,12 +56,7 @@ public class Grpc {
   }
 
   public Duration getMinKeepAliveInterval() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".min-keep-alive-interval",
-        minKeepAliveInterval,
-        Duration.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("minKeepAliveInterval")));
+    return minKeepAliveInterval;
   }
 
   public void setMinKeepAliveInterval(final Duration minKeepAliveInterval) {
@@ -105,12 +72,7 @@ public class Grpc {
   }
 
   public int getManagementThreads() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".management-threads",
-        managementThreads,
-        Integer.class,
-        BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("managementThreads")));
+    return managementThreads;
   }
 
   public void setManagementThreads(final int managementThreads) {
@@ -135,18 +97,6 @@ public class Grpc {
     copy.interceptors = interceptors;
     copy.managementThreads = managementThreads;
 
-    return copy;
-  }
-
-  public Grpc withBrokerNetworkProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_BROKER_PROPERTIES;
-    return copy;
-  }
-
-  public Grpc withGatewayNetworkProperties() {
-    final var copy = clone();
-    copy.legacyPropertiesMap = LEGACY_GATEWAY_PROPERTIES;
     return copy;
   }
 }

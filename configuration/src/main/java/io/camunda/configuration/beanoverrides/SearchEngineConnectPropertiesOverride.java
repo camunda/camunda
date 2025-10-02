@@ -20,16 +20,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Primary;
 
 @Configuration
-@EnableConfigurationProperties(LegacySearchEngineConnectProperties.class)
-@DependsOn("unifiedConfigurationHelper")
 @ConditionalOnSecondaryStorageType({
   SecondaryStorageType.elasticsearch,
   SecondaryStorageType.opensearch
 })
+@EnableConfigurationProperties(LegacySearchEngineConnectProperties.class)
 public class SearchEngineConnectPropertiesOverride {
 
   private final UnifiedConfiguration unifiedConfiguration;
@@ -47,7 +45,6 @@ public class SearchEngineConnectPropertiesOverride {
   public SearchEngineConnectProperties searchEngineConnectProperties() {
     final SearchEngineConnectProperties override = new SearchEngineConnectProperties();
     BeanUtils.copyProperties(legacySearchEngineConnectProperties, override);
-
     final SecondaryStorage secondaryStorage =
         unifiedConfiguration.getCamunda().getData().getSecondaryStorage();
 
