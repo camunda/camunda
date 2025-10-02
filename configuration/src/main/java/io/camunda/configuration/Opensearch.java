@@ -7,7 +7,7 @@
  */
 package io.camunda.configuration;
 
-public class Opensearch extends SecondaryStorageDatabase {
+public class Opensearch extends DocumentBasedSecondaryStorageDatabase {
 
   @Override
   protected String databaseName() {

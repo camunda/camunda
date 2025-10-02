@@ -11,6 +11,8 @@ import io.camunda.configuration.Azure;
 import io.camunda.configuration.Backup;
 import io.camunda.configuration.CommandApi;
 import io.camunda.configuration.Data;
+import io.camunda.configuration.DocumentBasedHistory;
+import io.camunda.configuration.DocumentBasedSecondaryStorageDatabase;
 import io.camunda.configuration.Export;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.Filter;
@@ -24,7 +26,6 @@ import io.camunda.configuration.S3;
 import io.camunda.configuration.SasToken;
 import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
-import io.camunda.configuration.SecondaryStorageDatabase;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.beans.BrokerBasedProperties;
@@ -518,7 +519,7 @@ public class BrokerBasedPropertiesOverride {
       return;
     }
 
-    final SecondaryStorageDatabase database;
+    final DocumentBasedSecondaryStorageDatabase database;
     if (SecondaryStorageType.elasticsearch == secondaryStorage.getType()) {
       database =
           unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getElasticsearch();
@@ -567,7 +568,9 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
 
     setArg(
-        args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+        args,
+        "history.processInstanceEnabled",
+        ((DocumentBasedHistory) database.getHistory()).isProcessInstanceEnabled());
   }
 
   @SuppressWarnings("unchecked")
