@@ -206,9 +206,13 @@ jobs:
           cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
           location: ${{ inputs.cluster-region || 'europe-west1-b' }}
       - name: Port-forward to gateway
-        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-zeebe-gateway 26500 &
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
       - name: Port-forward to Keycloak
-        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-keycloak 18080:80 &
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
       - name: Install zbctl
         run: |
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
@@ -346,9 +350,13 @@ jobs:
           cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
           location: ${{ inputs.cluster-region || 'europe-west1-b' }}
       - name: Port-forward to gateway
-        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-zeebe-gateway 26500 &
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
+          kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
       - name: Port-forward to Keycloak
-        run: kubectl port-forward --namespace "${{ inputs.name || 'release-migration-test' }}" svc/$release-keycloak 18080:80 &
+        run: |
+          release="${{ inputs.name || 'release-migration-test' }}"
+          kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
       - name: Install zbctl
         run: |
           # Install zbctl after port-forward - allowing wait for port-forward to be ready
