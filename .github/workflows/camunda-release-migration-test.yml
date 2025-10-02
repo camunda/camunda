@@ -159,6 +159,9 @@ jobs:
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
+      - name: Clean up existing namespace
+        run: |
+          kubectl delete namespace ${{ inputs.name }} --ignore-not-found=true
       - name: Add camunda helm repo
         run: |
           helm repo add camunda https://helm.camunda.io
