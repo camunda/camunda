@@ -19,7 +19,8 @@ const stateIconsMap = {
   EVALUATED: CheckmarkOutline,
   CANCELED: Error,
   TERMINATED: Error,
-  // FIXME: What icons should be used for these new states?
+  // TODO: The following icon states are temporary and will be addressed
+  // with https://github.com/camunda/camunda/issues/38966.
   UNSPECIFIED: Error,
   UNKNOWN: Error,
 } as const satisfies Record<Props['state'], unknown>;

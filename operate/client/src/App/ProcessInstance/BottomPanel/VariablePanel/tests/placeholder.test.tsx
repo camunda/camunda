@@ -140,7 +140,6 @@ describe('VariablePanel', () => {
       mockProcessWithInputOutputMappingsXML,
     );
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    // FIXME: Can we optimize the rendering so jobs are only queries once for listeners?
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     init('process-instance', statistics);
