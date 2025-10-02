@@ -68,7 +68,6 @@ public final class ClusterConfigurationManagerService
       final ClusterCommunicationService communicationService,
       final ClusterMembershipService memberShipService,
       final ClusterConfigurationGossiperConfig config,
-      final boolean enablePartitionScaling,
       final ClusterChangeExecutor clusterChangeExecutor,
       final MeterRegistry meterRegistry) {
     this.clusterChangeExecutor = clusterChangeExecutor;
@@ -108,10 +107,7 @@ public final class ClusterConfigurationManagerService
             communicationService,
             new ProtoBufSerializer(),
             new ClusterConfigurationManagementRequestsHandler(
-                configurationChangeCoordinator,
-                localMemberId,
-                managerActor,
-                enablePartitionScaling));
+                configurationChangeCoordinator, localMemberId, managerActor));
 
     clusterConfigurationManager.setConfigurationGossiper(
         clusterConfigurationGossiper::updateClusterConfiguration);
@@ -147,10 +143,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
   }
 
   private ClusterConfigurationInitializer getCoordinatorInitializer(
@@ -172,10 +165,7 @@ public final class ClusterConfigurationManagerService
                 staticConfiguration.partitionConfig().exporting().exporters().keySet(),
                 staticConfiguration.localMemberId(),
                 managerActor))
-        .andThen(
-            new RoutingStateInitializer(
-                staticConfiguration.enablePartitionScaling(),
-                staticConfiguration.partitionCount()));
+        .andThen(new RoutingStateInitializer(staticConfiguration.partitionCount()));
   }
 
   /** Starts ClusterConfigurationManager which initializes ClusterConfiguration */

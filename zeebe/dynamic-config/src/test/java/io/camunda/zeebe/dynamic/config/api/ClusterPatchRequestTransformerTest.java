@@ -166,7 +166,7 @@ final class ClusterPatchRequestTransformerTest {
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-    currentTopology = new RoutingStateInitializer(true, 2).modify(currentTopology).join();
+    currentTopology = new RoutingStateInitializer(2).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
@@ -197,7 +197,7 @@ final class ClusterPatchRequestTransformerTest {
             .addMember(id1, MemberState.initializeAsActive(Map.of()))
             .updateMember(id0, m -> m.addPartition(1, PartitionState.active(1, partitionConfig)))
             .updateMember(id1, m -> m.addPartition(2, PartitionState.active(1, partitionConfig)));
-    currentTopology = new RoutingStateInitializer(true, 2).modify(currentTopology).join();
+    currentTopology = new RoutingStateInitializer(2).modify(currentTopology).join();
 
     // when
     final int newPartitionCount = 4;
