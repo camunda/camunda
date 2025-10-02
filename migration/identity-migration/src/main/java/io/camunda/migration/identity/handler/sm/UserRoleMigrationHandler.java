@@ -48,7 +48,7 @@ public class UserRoleMigrationHandler extends MigrationHandler<User> {
   protected void process(final List<User> batch) {
     batch.forEach(
         user -> {
-          final var userId = user.getEmail();
+          final var userId = user.getUsername();
           final var userRoles = managementIdentityClient.fetchUserRoles(user.getId());
           totalRoleCount.addAndGet(userRoles.size());
 

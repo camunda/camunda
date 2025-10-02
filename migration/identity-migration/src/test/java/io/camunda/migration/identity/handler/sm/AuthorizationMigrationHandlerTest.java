@@ -124,7 +124,7 @@ final class AuthorizationMigrationHandlerTest {
             .sorted(Comparator.comparing(CreateAuthorizationRequest::ownerId))
             .toList();
     assertThat(requests, Matchers.hasSize(4));
-    assertThat(requests.getFirst().ownerId(), Matchers.is("email1"));
+    assertThat(requests.getFirst().ownerId(), Matchers.is("username1"));
     assertThat(requests.getFirst().ownerType(), Matchers.is(AuthorizationOwnerType.USER));
     assertThat(requests.getFirst().resourceId(), Matchers.is("process"));
     assertThat(
@@ -137,7 +137,7 @@ final class AuthorizationMigrationHandlerTest {
             PermissionType.READ_PROCESS_INSTANCE,
             PermissionType.UPDATE_PROCESS_INSTANCE,
             PermissionType.CREATE_PROCESS_INSTANCE));
-    assertThat(requests.get(1).ownerId(), Matchers.is("email1"));
+    assertThat(requests.get(1).ownerId(), Matchers.is("username1"));
     assertThat(requests.get(1).ownerType(), Matchers.is(AuthorizationOwnerType.USER));
     assertThat(requests.get(1).resourceId(), Matchers.is("*"));
     assertThat(
@@ -148,12 +148,12 @@ final class AuthorizationMigrationHandlerTest {
             PermissionType.READ_DECISION_DEFINITION,
             PermissionType.READ_DECISION_INSTANCE,
             PermissionType.DELETE_DECISION_INSTANCE));
-    assertThat(requests.get(2).ownerId(), Matchers.is("email2"));
+    assertThat(requests.get(2).ownerId(), Matchers.is("username2"));
     assertThat(requests.get(2).ownerType(), Matchers.is(AuthorizationOwnerType.USER));
     assertThat(requests.get(2).resourceId(), Matchers.is("process"));
     assertThat(requests.get(2).resourceType(), Matchers.is(AuthorizationResourceType.UNSPECIFIED));
     assertThat(requests.get(2).permissionTypes(), Matchers.empty());
-    assertThat(requests.get(3).ownerId(), Matchers.is("email2"));
+    assertThat(requests.get(3).ownerId(), Matchers.is("username2"));
     assertThat(requests.get(3).ownerType(), Matchers.is(AuthorizationOwnerType.USER));
     assertThat(requests.get(3).resourceId(), Matchers.is("*"));
     assertThat(
