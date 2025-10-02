@@ -391,7 +391,7 @@ jobs:
           done
           set -e
           # Activate job
-          key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq '.jobs[0].key')
+          key=$(./zbctl  activate jobs benchmark-task --insecure --timeout 1s | jq -r '.jobs[0].key')
           # Complete job from 8.7 version
           ./zbctl complete job $key --insecure
       - name: Summarize deployment
