@@ -32,7 +32,7 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/log/apt,sharing=locked \
     apt-get -qq update && \
     apt-get install -yqq --no-install-recommends tini ca-certificates systemd perl && \
-    apt-get upgrade -yqq --no-install-recommends systemd perl
+    apt-get upgrade -yqq --no-install-recommends systemd perl openssl
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006

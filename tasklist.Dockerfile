@@ -57,7 +57,7 @@ LABEL io.k8s.description="Tasklist is a ready-to-use application to rapidly impl
 EXPOSE 8080
 
 RUN apk update && apk upgrade && \
-    apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat
+    apk add --no-cache bash openjdk21-jre tzdata gcompat libgcc libc6-compat openssl
 
 ENV TASKLIST_HOME=/usr/local/tasklist
 
