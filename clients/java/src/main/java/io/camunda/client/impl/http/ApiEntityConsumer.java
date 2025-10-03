@@ -19,9 +19,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.JsonApiEntityConsumer;
 import io.camunda.client.impl.http.TypedApiEntityConsumer.RawApiEntityConsumer;
 import io.camunda.client.protocol.rest.ProblemDetail;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
-import io.opentelemetry.context.Context;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -59,10 +56,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
-  ApiEntityConsumer(
-      final ObjectMapper json,
-      final Class<T> type,
-      final int chunkSize) {
+  ApiEntityConsumer(final ObjectMapper json, final Class<T> type, final int chunkSize) {
     this.json = json;
     this.type = type;
     this.chunkSize = chunkSize;
@@ -86,8 +80,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected ApiEntity<T> generateContent() throws IOException {
-    final ApiEntity<T> tApiEntity = entityConsumer.generateContent();
-    return tApiEntity;
+    return entityConsumer.generateContent();
   }
 
   @Override

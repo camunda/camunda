@@ -9,7 +9,6 @@ package io.camunda.it;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.common.Attributes;
 import io.opentelemetry.api.trace.Span;
@@ -24,8 +23,10 @@ import io.opentelemetry.sdk.trace.export.BatchSpanProcessor;
 import io.opentelemetry.semconv.ServiceAttributes;
 import java.net.URI;
 import java.net.URISyntaxException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+@Disabled
 public class TemporaryTest {
 
   @Test
@@ -41,9 +42,9 @@ public class TemporaryTest {
             .build();
 
     for (int i = 0; i < 3; i++) {
-    final Span span = openTelemetry.getTracer("TEST").spanBuilder("test").startSpan();
+      final Span span = openTelemetry.getTracer("TEST").spanBuilder("test").startSpan();
 
-    try (final Scope scope = span.makeCurrent()) {
+      try (final Scope scope = span.makeCurrent()) {
         client
             .newDeployResourceCommand()
             .addProcessModel(
@@ -52,10 +53,10 @@ public class TemporaryTest {
             .send()
             .join();
 
-      client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
-    } finally {
-      span.end();
-    }
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+      } finally {
+        span.end();
+      }
     }
     Thread.sleep(5000);
   }

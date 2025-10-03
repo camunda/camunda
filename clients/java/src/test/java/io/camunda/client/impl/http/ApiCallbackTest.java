@@ -20,8 +20,6 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.Tracer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Predicate;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,12 +44,7 @@ class ApiCallbackTest {
     retryAction = mock(Runnable.class);
     apiCallback =
         new ApiCallback<>(
-            response,
-            transformer,
-            null,
-            retryPredicate,
-            retryAction,
-            DEFAULT_REMAINING_RETRIES);
+            response, transformer, null, retryPredicate, retryAction, DEFAULT_REMAINING_RETRIES);
   }
 
   @Test

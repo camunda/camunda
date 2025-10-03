@@ -42,12 +42,15 @@ public class OpenTelemetryInterceptor implements ClientInterceptor {
 
   @Override
   public <ReqT, RespT> ClientCall<ReqT, RespT> interceptCall(
-      final MethodDescriptor<ReqT, RespT> methodDescriptor, final CallOptions callOptions,
+      final MethodDescriptor<ReqT, RespT> methodDescriptor,
+      final CallOptions callOptions,
       final Channel channel) {
-    final Span span = tracer.spanBuilder(methodDescriptor.getBareMethodName())
-        .setSpanKind(SpanKind.CLIENT)
-        .setParent(Context.current())
-        .startSpan();
+    final Span span =
+        tracer
+            .spanBuilder(methodDescriptor.getBareMethodName())
+            .setSpanKind(SpanKind.CLIENT)
+            .setParent(Context.current())
+            .startSpan();
 
     // Create the call with tracing context
     try (final Scope scope = span.makeCurrent()) {
@@ -68,7 +71,8 @@ public class OpenTelemetryInterceptor implements ClientInterceptor {
 
     @Override
     public void start(final Listener<RespT> responseListener, final Metadata headers) {
-      final Listener<RespT> tracingListener = new TracingClientCallListener<>(responseListener, span);
+      final Listener<RespT> tracingListener =
+          new TracingClientCallListener<>(responseListener, span);
       super.start(tracingListener, headers);
     }
 
@@ -92,9 +96,7 @@ public class OpenTelemetryInterceptor implements ClientInterceptor {
     }
   }
 
-  /**
-   * Forwarding client call listener that handles response events and span completion.
-   */
+  /** Forwarding client call listener that handles response events and span completion. */
   private static class TracingClientCallListener<RespT>
       extends ForwardingClientCallListener.SimpleForwardingClientCallListener<RespT> {
 

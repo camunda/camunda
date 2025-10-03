@@ -362,7 +362,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
-import io.opentelemetry.api.OpenTelemetry;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;

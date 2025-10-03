@@ -21,7 +21,6 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.grpc.ClientInterceptor;
-import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;

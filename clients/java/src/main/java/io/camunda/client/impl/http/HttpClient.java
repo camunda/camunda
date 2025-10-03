@@ -393,10 +393,14 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
     final Span span =
-        tracer.spanBuilder(httpMethod.name() + " " + path).setParent(Context.current().with(Span.current())).startSpan();
+        tracer
+            .spanBuilder(httpMethod.name() + " " + path)
+            .setParent(Context.current().with(Span.current()))
+            .startSpan();
 
     try (final Scope scope = span.makeCurrent()) {
-      final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
+      final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback =
+          new AtomicReference<>(callback);
       // Create retry action to re-execute the same request
       final Runnable retryAction =
           () -> {
@@ -443,7 +447,7 @@ public final class HttpClient implements AutoCloseable {
               SimpleRequestProducer.create(request),
               new ApiResponseConsumer<>(entityConsumer),
               apiCallback.get()));
-    } finally{
+    } finally {
       result.whenComplete((resp, throwable) -> span.end());
     }
   }

@@ -43,7 +43,6 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.KEEP_ALIV
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.MAX_HTTP_CONNECTIONS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_ID;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OAUTH_ENV_CLIENT_SECRET;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OPENTELEMETRY_EXPORTER;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.OVERRIDE_AUTHORITY_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.PREFER_REST_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.REST_ADDRESS_VAR;
