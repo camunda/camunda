@@ -274,7 +274,7 @@ public final class ElasticsearchUsageMetricMigrationClient implements UsageMetri
           retryDecorator.decorate(
               operationName,
               () -> client.reindex(request),
-              res -> res.task() == null || res.failures() != null);
+              res -> res.task() == null || (res.failures() != null && !res.failures().isEmpty()));
       return response.task();
     } catch (final Exception e) {
       throw new MigrationException(e);
