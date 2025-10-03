@@ -157,6 +157,42 @@ public class DeploymentPostProcessorTest {
   }
 
   @Test
+  public void shouldDeployDistinctResources() {
+    // given
+    final ClassInfo classInfo = ClassInfo.builder().bean(new WithDoubleClassPathResource()).build();
+    final Resource resource = mock(FileSystemResource.class);
+    final Resource[] resources = {resource, resource};
+
+    when(resources[0].getFilename()).thenReturn("1.bpmn");
+    when(resources[1].getFilename()).thenReturn("1.bpmn");
+
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+
+    when(deploymentPostProcessor.getResources("classpath*:/1.bpmn"))
+        .thenReturn(new Resource[] {resources[0]});
+
+    when(deploymentPostProcessor.getResources("classpath*:/2.bpmn"))
+        .thenReturn(new Resource[] {resources[1]});
+
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+
+    when(deployStep2.send()).thenReturn(zeebeFuture);
+
+    when(zeebeFuture.join()).thenReturn(deploymentEvent);
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when
+    deploymentPostProcessor.configureFor(classInfo);
+    deploymentPostProcessor.start(client);
+
+    // then
+    verify(deployStep1, times(1)).addResourceStream(any(), eq("1.bpmn"));
+
+    verify(deployStep2).send();
+    verify(zeebeFuture).join();
+  }
+
+  @Test
   public void shouldThrowExceptionOnNoResourcesToDeploy() {
     assertThatExceptionOfType(IllegalArgumentException.class)
         .isThrownBy(
