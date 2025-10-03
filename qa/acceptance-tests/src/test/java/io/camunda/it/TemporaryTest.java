@@ -60,6 +60,38 @@ public class TemporaryTest {
     Thread.sleep(5000);
   }
 
+  @Test
+  void grpc() throws URISyntaxException, InterruptedException {
+
+    final OpenTelemetry openTelemetry = create("http://localhost:4317");
+
+    final CamundaClient client =
+        CamundaClient.newClientBuilder()
+            .restAddress(new URI("http://localhost:8080"))
+            .grpcAddress(new URI("http://localhost:26500"))
+            .preferRestOverGrpc(false)
+            .build();
+
+    for (int i = 0; i < 3; i++) {
+      final Span span = openTelemetry.getTracer("TEST").spanBuilder("test").startSpan();
+
+      try (final Scope scope = span.makeCurrent()) {
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(
+                Bpmn.createExecutableProcess("process").startEvent().endEvent().done(),
+                "process.bpmn")
+            .send()
+            .join();
+
+        client.newCreateInstanceCommand().bpmnProcessId("process").latestVersion().send().join();
+      } finally {
+        span.end();
+      }
+    }
+    Thread.sleep(5000);
+  }
+
   public static OpenTelemetry create(final String exporter) {
     final Resource resource =
         Resource.create(Attributes.of(ServiceAttributes.SERVICE_NAME, "client-java"));
