@@ -26,6 +26,7 @@ import java.lang.annotation.*;
 @Inherited // has to be inherited to work on spring aop beans
 @Deprecated(forRemoval = true, since = "8.8")
 public @interface Deployment {
-
   String[] resources() default {};
+
+  String tenantId() default "";
 }

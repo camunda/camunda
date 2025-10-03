@@ -16,7 +16,8 @@
 package io.camunda.client.event;
 
 import io.camunda.client.api.response.DeploymentEvent;
+import java.util.List;
 
 public interface CamundaPostDeploymentEvent {
-  DeploymentEvent getDeployment();
+  List<DeploymentEvent> getDeployments();
 }

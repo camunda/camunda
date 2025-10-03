@@ -22,7 +22,6 @@ import static org.mockito.Mockito.*;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.Deployment;
-import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
@@ -47,8 +46,6 @@ public class DeploymentPostProcessorTest {
   @Mock private DeployResourceCommandStep1 deployStep1;
 
   @Mock private DeployResourceCommandStep1.DeployResourceCommandStep2 deployStep2;
-
-  @Mock private CamundaFuture<DeploymentEvent> camundaFuture;
 
   @Mock private DeploymentEvent deploymentEvent;
 
@@ -76,9 +73,7 @@ public class DeploymentPostProcessorTest {
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
-    when(deployStep2.send()).thenReturn(camundaFuture);
-
-    when(camundaFuture.join()).thenReturn(deploymentEvent);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
 
     when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
@@ -88,8 +83,7 @@ public class DeploymentPostProcessorTest {
 
     // then
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
-    verify(deployStep2).send();
-    verify(camundaFuture).join();
+    verify(deployStep2).execute();
   }
 
   @Test
@@ -113,9 +107,7 @@ public class DeploymentPostProcessorTest {
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
     when(deployStep2.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
-    when(deployStep2.send()).thenReturn(camundaFuture);
-
-    when(camundaFuture.join()).thenReturn(deploymentEvent);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
 
     when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
@@ -127,8 +119,7 @@ public class DeploymentPostProcessorTest {
     verify(deployStep1).addResourceStream(any(), eq("1.bpmn"));
     verify(deployStep2).addResourceStream(any(), eq("2.bpmn"));
 
-    verify(deployStep2).send();
-    verify(camundaFuture).join();
+    verify(deployStep2).execute();
   }
 
   @Test
@@ -151,9 +142,7 @@ public class DeploymentPostProcessorTest {
 
     when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
 
-    when(deployStep2.send()).thenReturn(camundaFuture);
-
-    when(camundaFuture.join()).thenReturn(deploymentEvent);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
 
     when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
 
@@ -164,8 +153,7 @@ public class DeploymentPostProcessorTest {
     // then
     verify(deployStep1, times(1)).addResourceStream(any(), eq("1.bpmn"));
 
-    verify(deployStep2).send();
-    verify(camundaFuture).join();
+    verify(deployStep2).execute();
   }
 
   @Test
