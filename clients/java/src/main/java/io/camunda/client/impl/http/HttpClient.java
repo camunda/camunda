@@ -393,7 +393,7 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
     final Span span =
-        tracer.spanBuilder(path).setAttribute("method", httpMethod.toString()).setParent(Context.current().with(Span.current())).startSpan();
+        tracer.spanBuilder(httpMethod.name() + " " + path).setParent(Context.current().with(Span.current())).startSpan();
 
     try (final Scope scope = span.makeCurrent()) {
       final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
@@ -417,19 +417,15 @@ public final class HttpClient implements AutoCloseable {
                 apiCallback.get());
           };
 
-      final Span buildRequestSpan =
-          tracer.spanBuilder("buildRequest").setParent(Context.current().with(span)).startSpan();
       final SimpleHttpRequest request =
           buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
       if (request == null) {
         return;
       }
-      buildRequestSpan.end();
-
       request.setConfig(requestConfig);
 
       final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
-          createEntityConsumer(responseType, tracer, span);
+          createEntityConsumer(responseType);
 
       if (apiCallback.get() == null) {
         apiCallback.set(
@@ -453,11 +449,11 @@ public final class HttpClient implements AutoCloseable {
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
-      final Class<HttpT> responseType, final Tracer tracer, final Span span) {
+      final Class<HttpT> responseType) {
     if (responseType == InputStream.class) {
       return new DocumentDataConsumer<>(maxMessageSize, jsonMapper);
     } else {
-      return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize, tracer, span);
+      return new ApiEntityConsumer<>(jsonMapper, responseType, maxMessageSize);
     }
   }
 

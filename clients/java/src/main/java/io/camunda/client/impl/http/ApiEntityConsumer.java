@@ -56,22 +56,16 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
   private final ObjectMapper json;
   private final Class<T> type;
   private final int chunkSize;
-  private final Tracer tracer;
-  private final Span rootSpan;
 
   private TypedApiEntityConsumer<T> entityConsumer;
 
   ApiEntityConsumer(
       final ObjectMapper json,
       final Class<T> type,
-      final int chunkSize,
-      final Tracer tracer,
-      final Span span) {
+      final int chunkSize) {
     this.json = json;
     this.type = type;
     this.chunkSize = chunkSize;
-    this.tracer = tracer;
-    rootSpan = span;
   }
 
   @Override
@@ -92,13 +86,7 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected ApiEntity<T> generateContent() throws IOException {
-    final Span span =
-        tracer
-            .spanBuilder("ApiEntityConsumer.generateContent")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     final ApiEntity<T> tApiEntity = entityConsumer.generateContent();
-    span.end();
     return tApiEntity;
   }
 

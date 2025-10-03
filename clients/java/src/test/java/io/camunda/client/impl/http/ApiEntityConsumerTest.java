@@ -47,7 +47,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(jsonResponse.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with the correct content type
@@ -109,7 +109,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
     final ApiEntityConsumer<ProblemDetail> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, ProblemDetail.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, ProblemDetail.class, 2048);
 
     // when
     // Start the stream with content type application/problem+json
@@ -137,7 +137,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -159,7 +159,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(textXmlResponse.getBytes());
     final ApiEntityConsumer<String> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported text content type (text/xml)
@@ -182,7 +182,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes(StandardCharsets.UTF_8));
     final ApiEntityConsumer<TestEntity> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with a supported content type (application/json)
@@ -209,7 +209,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with a supported content type (text/xml)
@@ -235,7 +235,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer2 = ByteBuffer.wrap(part2.getBytes());
     final ApiEntityConsumer<String> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with an unsupported content type
@@ -259,7 +259,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(plain.getBytes());
     final ApiEntityConsumer<String> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, String.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, String.class, 2048);
 
     // when
     // Start the stream with an unsupported content type
@@ -280,7 +280,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(unsupportedData.getBytes());
     final ApiEntityConsumer<TestEntity> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, TestEntity.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, TestEntity.class, 2048);
 
     // when
     // Start the stream with a supported content type
@@ -302,7 +302,7 @@ class ApiEntityConsumerTest {
 
     final ApiEntityConsumer<Void> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, Void.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, Void.class, 2048);
 
     // when
     // Start the stream with application/json content type
@@ -322,7 +322,7 @@ class ApiEntityConsumerTest {
     final ByteBuffer byteBuffer = ByteBuffer.wrap(problemDetailResponse.getBytes());
     final ApiEntityConsumer<Void> consumer =
         new ApiEntityConsumer<>(
-            JSON_MAPPER, Void.class, 2048, mock(Tracer.class), mock(Span.class));
+            JSON_MAPPER, Void.class, 2048);
 
     // when
     // Start the stream with application/problem+json content type
