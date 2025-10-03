@@ -91,6 +91,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -110,6 +111,7 @@ import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.event.Level;
 
 /** Netty based MessagingService. */
 public final class NettyMessagingService implements ManagedMessagingService {
@@ -1250,12 +1252,21 @@ public final class NettyMessagingService implements ManagedMessagingService {
       } catch (final RejectedExecutionException e) {
         log.warn("Unable to dispatch message due to {}", e.getMessage());
       } catch (final ClassCastException e) {
-        final var logger = getLogger(message.getClass());
-        String subject = "UNKNOWN";
-        if (message instanceof final ProtocolRequest protocolMessage) {
-          subject = protocolMessage.subject();
-        }
-        logger.error("Failed to dispatch message with subject {}", subject, e);
+        logClassCastException(message, e);
+      }
+    }
+
+    private void logClassCastException(final Object message, final ClassCastException e) {
+      final var logger = getLogger(message.getClass());
+      if (message instanceof final ProtocolRequest protocolMessage) {
+        final var subject = protocolMessage.subject();
+        final var level =
+            Objects.equals(subject, HeartbeatHandler.HEARTBEAT_SUBJECT) ? Level.WARN : Level.ERROR;
+        logger
+            .atLevel(level)
+            .log("Failed to dispatch message with subject {} because {}", subject, e.getMessage());
+      } else {
+        logger.error("Failed to dispatch message because {}", e.getMessage());
       }
     }
 
