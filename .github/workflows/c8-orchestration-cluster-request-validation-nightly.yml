@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [37654-api-test-generator] # TODO: Change back to [stable/8.8, main] before merging
+        branch: [stable/8.8, main]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
