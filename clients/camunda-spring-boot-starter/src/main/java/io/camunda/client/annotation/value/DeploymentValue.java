@@ -15,72 +15,42 @@
  */
 package io.camunda.client.annotation.value;
 
-import io.camunda.client.bean.BeanInfo;
 import java.util.List;
 import java.util.Objects;
 
 public final class DeploymentValue {
   private final List<String> resources;
-  private final BeanInfo beanInfo;
+  private final String tenantId;
 
-  private DeploymentValue(final List<String> resources, final BeanInfo beanInfo) {
+  public DeploymentValue(final List<String> resources, final String tenantId) {
     this.resources = resources;
-    this.beanInfo = beanInfo;
+    this.tenantId = tenantId;
   }
 
   public List<String> getResources() {
     return resources;
   }
 
-  public BeanInfo getClassInfo() {
-    return beanInfo;
+  public String getTenantId() {
+    return tenantId;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(resources, beanInfo);
+    return Objects.hash(resources, tenantId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final DeploymentValue that = (DeploymentValue) o;
-    return Objects.equals(resources, that.resources) && Objects.equals(beanInfo, that.beanInfo);
+    return Objects.equals(resources, that.resources) && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
-    return "DeploymentValue{" + "resources=" + resources + ", beanInfo=" + beanInfo + '}';
-  }
-
-  public static DeploymentValueBuilder builder() {
-    return new DeploymentValueBuilder();
-  }
-
-  public static final class DeploymentValueBuilder {
-
-    private List<String> resources;
-    private BeanInfo beanInfo;
-
-    private DeploymentValueBuilder() {}
-
-    public DeploymentValueBuilder resources(final List<String> resources) {
-      this.resources = resources;
-      return this;
-    }
-
-    public DeploymentValueBuilder beanInfo(final BeanInfo beanInfo) {
-      this.beanInfo = beanInfo;
-      return this;
-    }
-
-    public DeploymentValue build() {
-      return new DeploymentValue(resources, beanInfo);
-    }
+    return "DeploymentValue{" + "resources=" + resources + ", tenantId='" + tenantId + '\'' + '}';
   }
 }

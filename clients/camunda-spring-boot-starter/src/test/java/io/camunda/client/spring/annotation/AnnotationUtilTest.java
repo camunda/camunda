@@ -107,7 +107,7 @@ public class AnnotationUtilTest {
       // given
       final BeanInfo classInfo = beanInfo(new DeployingBean());
       // when
-      final DeploymentValue deploymentValue = AnnotationUtil.getDeploymentValue(classInfo).get();
+      final DeploymentValue deploymentValue = AnnotationUtil.getDeploymentValues(classInfo).get(0);
       // then
       assertThat(deploymentValue.getResources()).hasSize(1);
       assertThat(deploymentValue.getResources().get(0)).isEqualTo("classpath*:*.bpmn");
