@@ -44,6 +44,7 @@ public class OidcAuthenticationConfiguration {
   private String usernameClaim = "sub";
   private String clientIdClaim;
   private String groupsClaim;
+  private boolean preferUsernameClaim;
   private String organizationId;
   private List<String> resource;
   private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
@@ -196,6 +197,14 @@ public class OidcAuthenticationConfiguration {
     return groupsClaim != null && !groupsClaim.isBlank();
   }
 
+  public boolean isPreferUsernameClaim() {
+    return preferUsernameClaim;
+  }
+
+  public void setPreferUsernameClaim(final boolean preferUsernameClaim) {
+    this.preferUsernameClaim = preferUsernameClaim;
+  }
+
   public String getClientAuthenticationMethod() {
     return clientAuthenticationMethod;
   }
@@ -229,6 +238,7 @@ public class OidcAuthenticationConfiguration {
         || audiences != null
         || clientIdClaim != null
         || groupsClaim != null
+        || preferUsernameClaim
         || organizationId != null
         || !CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC.equals(clientAuthenticationMethod)
         || assertionConfiguration.getKeystore().getPath() != null
@@ -262,6 +272,7 @@ public class OidcAuthenticationConfiguration {
     private String usernameClaim = "sub";
     private String clientIdClaim;
     private String groupsClaim;
+    private boolean preferUsernameClaim;
     private String organizationId;
     private String clientAuthenticationMethod = CLIENT_AUTHENTICATION_METHOD_CLIENT_SECRET_BASIC;
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
@@ -343,6 +354,11 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder preferUsernameClaim(final boolean preferUsernameClaim) {
+      this.preferUsernameClaim = preferUsernameClaim;
+      return this;
+    }
+
     public Builder organizationId(final String organizationId) {
       this.organizationId = organizationId;
       return this;
@@ -375,6 +391,7 @@ public class OidcAuthenticationConfiguration {
       config.setUsernameClaim(usernameClaim);
       config.setClientIdClaim(clientIdClaim);
       config.setGroupsClaim(groupsClaim);
+      config.setPreferUsernameClaim(preferUsernameClaim);
       config.setOrganizationId(organizationId);
       config.setClientAuthenticationMethod(clientAuthenticationMethod);
       config.setAssertion(assertionConfiguration);
