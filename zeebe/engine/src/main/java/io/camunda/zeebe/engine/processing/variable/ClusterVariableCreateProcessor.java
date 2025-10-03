@@ -112,7 +112,20 @@ public class ClusterVariableCreateProcessor
   }
 
   @Override
-  public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {}
+  public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
+    final var clusterVariableRecord = command.getValue();
+    if (globallyScopedVariableExists(clusterVariableRecord)
+        || tenantScopedVariableExists(clusterVariableRecord)) {
+      final var errorMessage = "The variable already exists in this scope";
+      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, errorMessage);
+    } else {
+      writers
+          .state()
+          .appendFollowUpEvent(
+              command.getKey(), ClusterVariableIntent.CREATED, clusterVariableRecord);
+    }
+    commandDistributionBehavior.acknowledgeCommand(command);
+  }
 
   private boolean tenantScopedVariableExists(final ClusterVariableRecord clusterVariableRecord) {
     return !clusterVariableRecord.getTenantId().isBlank()
