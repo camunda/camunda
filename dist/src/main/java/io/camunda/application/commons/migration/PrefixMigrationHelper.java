@@ -58,6 +58,7 @@ import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.StringUtils;
 
 public final class PrefixMigrationHelper {
   @VisibleForTesting
@@ -185,27 +186,31 @@ public final class PrefixMigrationHelper {
 
     final var cloneOperations = new ArrayList<AliasCloneTargets>();
 
-    TASKLIST_INDICES_TO_MIGRATE.forEach(
-        cls ->
-            buildCloneTargets(
-                    tasklistPrefix,
-                    targetPrefix,
-                    isElasticsearch,
-                    prefixMigrationClient,
-                    cls,
-                    descriptors)
-                .map(cloneOperations::add));
+    if (StringUtils.hasText(tasklistPrefix)) {
+      TASKLIST_INDICES_TO_MIGRATE.forEach(
+          cls ->
+              buildCloneTargets(
+                      tasklistPrefix,
+                      targetPrefix,
+                      isElasticsearch,
+                      prefixMigrationClient,
+                      cls,
+                      descriptors)
+                  .map(cloneOperations::add));
+    }
 
-    OPERATE_INDICES_TO_MIGRATE.forEach(
-        cls ->
-            buildCloneTargets(
-                    operatePrefix,
-                    targetPrefix,
-                    isElasticsearch,
-                    prefixMigrationClient,
-                    cls,
-                    descriptors)
-                .map(cloneOperations::add));
+    if (StringUtils.hasText(operatePrefix)) {
+      OPERATE_INDICES_TO_MIGRATE.forEach(
+          cls ->
+              buildCloneTargets(
+                      operatePrefix,
+                      targetPrefix,
+                      isElasticsearch,
+                      prefixMigrationClient,
+                      cls,
+                      descriptors)
+                  .map(cloneOperations::add));
+    }
 
     return () ->
         cloneOperations.stream()
@@ -240,21 +245,25 @@ public final class PrefixMigrationHelper {
 
     final var deleteOperations = new ArrayList<String>();
 
-    OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
-        .flatMap(
-            cls ->
-                indicesToDelete(
-                    operatePrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
-                    .stream())
-        .forEach(deleteOperations::add);
+    if (StringUtils.hasText(operatePrefix)) {
+      OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
+          .flatMap(
+              cls ->
+                  indicesToDelete(
+                      operatePrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
+                      .stream())
+          .forEach(deleteOperations::add);
+    }
 
-    TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
-        .flatMap(
-            cls ->
-                indicesToDelete(
-                    tasklistPrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
-                    .stream())
-        .forEach(deleteOperations::add);
+    if (StringUtils.hasText(tasklistPrefix)) {
+      TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
+          .flatMap(
+              cls ->
+                  indicesToDelete(
+                      tasklistPrefix, isElasticsearch, prefixMigrationClient, cls, descriptors)
+                      .stream())
+          .forEach(deleteOperations::add);
+    }
 
     return () ->
         deleteOperations.isEmpty()
@@ -277,25 +286,29 @@ public final class PrefixMigrationHelper {
     final String indexTemplateFormat = "%s-%s-%s_template";
     final var targetTemplates = new ArrayList<AbstractIndexDescriptor>();
 
-    OPERATE_INDICES_TO_MIGRATE.stream()
-        .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
-        .filter(AbstractTemplateDescriptor.class::isInstance)
-        .forEach(targetTemplates::add);
+    if (StringUtils.hasText(operatePrefix)) {
+      OPERATE_INDICES_TO_MIGRATE.stream()
+          .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
+          .filter(AbstractTemplateDescriptor.class::isInstance)
+          .forEach(targetTemplates::add);
 
-    TASKLIST_INDICES_TO_MIGRATE.stream()
-        .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
-        .filter(AbstractTemplateDescriptor.class::isInstance)
-        .forEach(targetTemplates::add);
+      OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
+          .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
+          .filter(AbstractTemplateDescriptor.class::isInstance)
+          .forEach(targetTemplates::add);
+    }
 
-    OPERATE_DEPRECATED_INDICES_TO_DELETE.stream()
-        .map(cls -> getDescriptor(cls, descriptors, operatePrefix, isElasticsearch))
-        .filter(AbstractTemplateDescriptor.class::isInstance)
-        .forEach(targetTemplates::add);
+    if (StringUtils.hasText(tasklistPrefix)) {
+      TASKLIST_INDICES_TO_MIGRATE.stream()
+          .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
+          .filter(AbstractTemplateDescriptor.class::isInstance)
+          .forEach(targetTemplates::add);
 
-    TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
-        .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
-        .filter(AbstractTemplateDescriptor.class::isInstance)
-        .forEach(targetTemplates::add);
+      TASKLIST_DEPRECATED_INDICES_TO_DELETE.stream()
+          .map(cls -> getDescriptor(cls, descriptors, tasklistPrefix, isElasticsearch))
+          .filter(AbstractTemplateDescriptor.class::isInstance)
+          .forEach(targetTemplates::add);
+    }
 
     return () ->
         targetTemplates.stream()
@@ -326,14 +339,18 @@ public final class PrefixMigrationHelper {
     final String tasklistComponentTemplate = "%s_template".formatted(tasklistPrefix);
 
     return () -> {
-      final var futures = new CompletableFuture[2];
-      futures[0] =
-          CompletableFuture.supplyAsync(
-              () -> prefixMigrationClient.deleteComponentTemplate(operateComponentTemplate));
-      futures[1] =
-          CompletableFuture.supplyAsync(
-              () -> prefixMigrationClient.deleteComponentTemplate(tasklistComponentTemplate));
-      return futures;
+      final var futures = new ArrayList<CompletableFuture<?>>();
+      if (StringUtils.hasText(operatePrefix)) {
+        futures.add(
+            CompletableFuture.supplyAsync(
+                () -> prefixMigrationClient.deleteComponentTemplate(operateComponentTemplate)));
+      }
+      if (StringUtils.hasText(tasklistPrefix)) {
+        futures.add(
+            CompletableFuture.supplyAsync(
+                () -> prefixMigrationClient.deleteComponentTemplate(tasklistComponentTemplate)));
+      }
+      return futures.toArray(CompletableFuture[]::new);
     };
   }
 
