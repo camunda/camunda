@@ -31,6 +31,7 @@ import io.grpc.ServerInterceptors;
 import io.grpc.Status;
 import io.grpc.internal.GrpcUtil;
 import io.grpc.testing.GrpcServerRule;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.After;
 import org.junit.Before;
@@ -55,6 +56,7 @@ public final class CredentialsTest {
         .getServiceRegistry()
         .addService(ServerInterceptors.intercept(gatewayService, recordingInterceptor));
 
+    builder.openTelemetry(GlobalOpenTelemetry.get());
     builder.preferRestOverGrpc(false);
   }
 
