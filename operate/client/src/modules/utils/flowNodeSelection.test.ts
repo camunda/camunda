@@ -117,7 +117,7 @@ describe('flowNodeSelection', () => {
     expect(result).toBe('Start Event');
   });
 
-  it('should not change selection when no children exist', () => {
+  it('should select inner instance even when no children exist, then update anchor when child loads', async () => {
     const rootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
     const innerInstance = {
       id: 'inner-1',
@@ -130,6 +130,7 @@ describe('flowNodeSelection', () => {
       sortValues: ['1606300828415', 'inner-1'] as [string, string],
     };
 
+    // pre-existing different selection
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'existing',
       flowNodeInstanceId: 'existing-1',
@@ -137,13 +138,45 @@ describe('flowNodeSelection', () => {
 
     selectAdHocSubProcessInnerInstance(rootNode, innerInstance);
 
+    // selection should immediately switch to inner instance without anchor
     expect(flowNodeSelectionStore.state.selection).toEqual({
-      flowNodeId: 'existing',
-      flowNodeInstanceId: 'existing-1',
+      flowNodeId: 'adhoc-subprocess',
+      flowNodeInstanceId: 'inner-1',
+      flowNodeType: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+      anchorFlowNodeId: undefined,
+    });
+
+    // now load children (first child becomes anchor)
+    flowNodeInstanceStore.handleFetchSuccess({
+      'some-tree-path': {
+        children: [
+          {
+            id: 'child-1',
+            type: 'SERVICE_TASK' as const,
+            state: 'ACTIVE' as const,
+            flowNodeId: 'task-1',
+            startDate: '2020-08-18T12:07:33.953+0000',
+            endDate: null,
+            treePath: 'child-tree-path',
+            sortValues: ['1606300828416', 'child-1'] as [string, string],
+          },
+        ],
+        running: false,
+      },
+    });
+
+    // wait microtask queue for when() to resolve
+    await Promise.resolve();
+
+    expect(flowNodeSelectionStore.state.selection).toEqual({
+      flowNodeId: 'adhoc-subprocess',
+      flowNodeInstanceId: 'inner-1',
+      flowNodeType: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+      anchorFlowNodeId: 'task-1',
     });
   });
 
-  it('should select first child when children exist', () => {
+  it('should select first child as anchor when children exist at selection time', () => {
     const rootNode = {flowNodeId: 'root', flowNodeInstanceId: 'root-1'};
     const innerInstance = {
       id: 'inner-1',
@@ -179,8 +212,10 @@ describe('flowNodeSelection', () => {
     selectAdHocSubProcessInnerInstance(rootNode, innerInstance);
 
     expect(flowNodeSelectionStore.state.selection).toEqual({
-      flowNodeId: 'task-1',
-      flowNodeInstanceId: 'child-1',
+      flowNodeId: 'adhoc-subprocess',
+      flowNodeInstanceId: 'inner-1',
+      flowNodeType: 'AD_HOC_SUB_PROCESS_INNER_INSTANCE',
+      anchorFlowNodeId: 'task-1',
     });
   });
 });
