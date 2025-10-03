@@ -39,28 +39,15 @@ import org.apache.hc.core5.http.protocol.HttpContext;
 final class ApiResponseConsumer<T>
     extends AbstractAsyncResponseConsumer<ApiResponse<T>, ApiEntity<T>> {
 
-  private final Tracer tracer;
-  private final Span rootSpan;
-
   ApiResponseConsumer(
-      final AsyncEntityConsumer<ApiEntity<T>> entityConsumer,
-      final Tracer tracer,
-      final Span span) {
+      final AsyncEntityConsumer<ApiEntity<T>> entityConsumer) {
     super(entityConsumer);
-    this.tracer = tracer;
-    rootSpan = span;
   }
 
   @Override
   protected ApiResponse<T> buildResult(
       final HttpResponse response, final ApiEntity<T> entity, final ContentType contentType) {
-    final Span span =
-        tracer
-            .spanBuilder("buildApiResponse")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     final ApiResponse<T> apiResponse = new ApiResponse<>(response.getCode(), entity);
-    span.end();
     return apiResponse;
   }
 

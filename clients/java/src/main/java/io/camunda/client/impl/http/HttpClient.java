@@ -425,23 +425,13 @@ public final class HttpClient implements AutoCloseable {
       return;
     }
     buildRequestSpan.end();
-    final Span setConfigSpan =
-        tracer.spanBuilder("setConfigSpan").setParent(Context.current().with(span)).startSpan();
-    request.setConfig(requestConfig);
-    setConfigSpan.end();
 
-    final Span createEntityConsumerSpan =
-        tracer
-            .spanBuilder("createEntityConsumerSpan")
-            .setParent(Context.current().with(span))
-            .startSpan();
+    request.setConfig(requestConfig);
+
     final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
         createEntityConsumer(responseType, tracer, span);
-    createEntityConsumerSpan.end();
 
     if (apiCallback.get() == null) {
-      final Span setCallbackSpan =
-          tracer.spanBuilder("setCallbackSpan").setParent(Context.current().with(span)).startSpan();
       apiCallback.set(
           new ApiCallback<>(
               result,
@@ -452,20 +442,13 @@ public final class HttpClient implements AutoCloseable {
               maxRetries,
               tracer,
               span));
-      setCallbackSpan.end();
     }
 
-    final Span transportFutureSpan =
-        tracer
-            .spanBuilder("transportFutureSpan")
-            .setParent(Context.current().with(span))
-            .startSpan();
     result.transportFuture(
         client.execute(
             SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(entityConsumer, tracer, span),
+            new ApiResponseConsumer<>(entityConsumer),
             apiCallback.get()));
-    transportFutureSpan.end();
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(
