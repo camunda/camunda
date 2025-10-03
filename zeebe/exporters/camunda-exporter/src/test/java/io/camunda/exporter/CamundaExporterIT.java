@@ -34,6 +34,7 @@ import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.exceptions.PersistenceException;
 import io.camunda.exporter.handlers.ExportHandler;
+import io.camunda.exporter.handlers.VariableHandler;
 import io.camunda.exporter.utils.CamundaExporterITTemplateExtension;
 import io.camunda.exporter.utils.EntitySizeEstimator;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -580,7 +581,7 @@ final class CamundaExporterIT {
 
     final var varHandler =
         getHandlers(config).stream()
-            .filter(handler -> handler.getHandledValueType().equals(ValueType.VARIABLE))
+            .filter(handler -> VariableHandler.class.isAssignableFrom(handler.getClass()))
             .findFirst()
             .orElseThrow();
 
@@ -606,20 +607,23 @@ final class CamundaExporterIT {
 
     // then
     await()
-        .atMost(Duration.ofSeconds(30))
         .untilAsserted(
-            () ->
-                varDocumentIds.forEach(
-                    id -> {
-                      try {
-                        assertThat(
-                                clientAdapter.get(
-                                    id, varHandler.getIndexName(), varHandler.getEntityType()))
-                            .isNotNull();
-                      } catch (final IOException e) {
-                        throw new RuntimeException(e);
-                      }
-                    }));
+            () -> {
+              final var varDocs =
+                  varDocumentIds.stream()
+                      .map(
+                          id -> {
+                            try {
+                              return clientAdapter.get(
+                                  id, varHandler.getIndexName(), varHandler.getEntityType());
+                            } catch (final IOException e) {
+                              throw new RuntimeException(e);
+                            }
+                          })
+                      .toList();
+
+              assertThat(varDocs).isNotNull().isNotEmpty().doesNotContainNull();
+            });
   }
 
   @Nested
