@@ -68,7 +68,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                 authorization -> {
                   final var request =
                       new CreateAuthorizationRequest(
-                          user.getEmail(),
+                          user.getUsername(),
                           AuthorizationOwnerType.USER,
                           authorization.resourceKey(),
                           convertResourceType(authorization.resourceType()),
@@ -80,7 +80,7 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                         "Failed to create authorization for entity with ID: "
                             + authorization.entityId()
                             + " and owner with ID: "
-                            + user.getEmail());
+                            + user.getUsername());
                     createdAuthorizationsCount.incrementAndGet();
                     logger.debug(
                         "Migrated authorization: {} to an Authorization with ownerId: {}",
@@ -92,14 +92,14 @@ public class AuthorizationMigrationHandler extends MigrationHandler<Authorizatio
                           "Failed to migrate authorization for entity with ID: "
                               + authorization.entityId()
                               + " and owner with ID: "
-                              + user.getEmail(),
+                              + user.getUsername(),
                           e);
                     }
                     skippedAuthorizationsCount.incrementAndGet();
                     logger.debug(
                         "Authorization already exists for entity with ID: {} and owner with ID {}. Skipping creation.",
                         authorization.entityId(),
-                        user.getEmail());
+                        user.getUsername());
                   }
                 });
           });
