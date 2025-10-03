@@ -102,28 +102,42 @@ const selectAdHocSubProcessInnerInstance = (
 ) => {
   const children = flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
 
-  if (children.length > 0) {
-    const firstChild = children[0];
-    if (firstChild !== undefined) {
-      selectFlowNode(rootNode, {
-        flowNodeId: firstChild.flowNodeId,
-        flowNodeInstanceId: firstChild.id,
+  const applySelection = (
+    anchorChild: FlowNodeInstance | undefined,
+    {isAnchorUpdate} = {isAnchorUpdate: false},
+  ) => {
+    if (isAnchorUpdate) {
+      const current = flowNodeSelectionStore.state.selection;
+      if (current?.flowNodeInstanceId !== flowNodeInstance.id) {
+        return; // user changed selection
+      }
+      flowNodeSelectionStore.setSelection({
+        ...current,
+        anchorFlowNodeId: anchorChild?.flowNodeId,
       });
+      return;
     }
+
+    selectFlowNode(rootNode, {
+      flowNodeId: flowNodeInstance.flowNodeId,
+      flowNodeInstanceId: flowNodeInstance.id,
+      flowNodeType: flowNodeInstance.type,
+      anchorFlowNodeId: anchorChild?.flowNodeId,
+    });
+  };
+
+  if (children.length > 0) {
+    applySelection(children[0]);
   } else {
+    // initial selection without anchor
+    applySelection(undefined);
     const disposer = when(
       () =>
         flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance).length > 0,
       () => {
-        const children =
+        const updatedChildren =
           flowNodeInstanceStore.getVisibleChildNodes(flowNodeInstance);
-        const firstChild = children[0];
-        if (firstChild !== undefined) {
-          selectFlowNode(rootNode, {
-            flowNodeId: firstChild.flowNodeId,
-            flowNodeInstanceId: firstChild.id,
-          });
-        }
+        applySelection(updatedChildren[0], {isAnchorUpdate: true});
         disposer();
       },
     );
