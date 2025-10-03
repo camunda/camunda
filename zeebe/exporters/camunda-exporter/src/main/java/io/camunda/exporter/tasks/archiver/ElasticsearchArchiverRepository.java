@@ -32,11 +32,13 @@ import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsResponse;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -44,6 +46,7 @@ import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.micrometer.core.instrument.Timer;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -67,8 +70,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
-  private final Cache<String, String> lifeCyclePolicyApplied =
-      Caffeine.newBuilder().maximumSize(200).build();
+  private final Cache<String, String> lifeCyclePolicyApplied;
 
   public ElasticsearchArchiverRepository(
       final int partitionId,
@@ -93,6 +95,29 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
+    lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+  }
+
+  private static Cache<String, String> buildLifeCycleAppliedCache(
+      final RetentionConfiguration config, final Logger logger) {
+    return Caffeine.newBuilder()
+        .maximumSize(200)
+        .expireAfter(
+            Expiry.creating(
+                (k, v) -> {
+                  if (v == null) {
+                    return Duration.ZERO;
+                  }
+                  return DateOfArchivedDocumentsUtil.getRetentionPolicyMinimumAge(
+                          config, v.toString())
+                      .orElseGet(
+                          () -> {
+                            logger.debug(
+                                "Unknown retention policy '{}', using default cache expiration", v);
+                            return Duration.ofHours(1);
+                          });
+                }))
+        .build();
   }
 
   @Override
