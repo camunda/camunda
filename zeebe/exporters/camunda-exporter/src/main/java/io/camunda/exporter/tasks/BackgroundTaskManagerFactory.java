@@ -233,7 +233,7 @@ public final class BackgroundTaskManagerFactory {
   private ElasticsearchDeleterRepository createDeleterRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchDeleterRepository(
-        partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
+        config.getHistory(), resourceProvider, asyncClient, executor, logger);
   }
 
   private List<RunnableTask> buildTasks() {

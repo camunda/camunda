@@ -16,5 +16,9 @@ public interface DeleterRepository {
       final String idFieldName,
       final List<String> processInstanceKeys);
 
+  CompletableFuture<Boolean> deleteFromListView(final List<String> processInstanceKeys);
+
+  CompletableFuture<Boolean> deleteFromDeleteIndex(final List<String> processInstanceKeys);
+
   CompletableFuture<DeleteBatch> getNextBatch();
 }

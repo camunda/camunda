@@ -71,8 +71,8 @@ public class DeleterJob implements BackgroundTask {
                 })
             .toList();
 
-    // TODO delete from list_view index
-    // TODO delete from delete-history index once all completed
+    deleterRepository.deleteFromListView(batch.ids());
+    deleterRepository.deleteFromDeleteIndex(batch.ids());
 
     // TODO fix the return here
     return CompletableFuture.allOf();

@@ -9,20 +9,15 @@ package io.camunda.exporter.tasks.deleter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.FieldValue;
-import co.elastic.clients.elasticsearch._types.Slices;
-import co.elastic.clients.elasticsearch._types.SlicesCalculation;
-import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
-import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.DeleteHistoryIndex;
+import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.micrometer.core.instrument.Timer;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -32,35 +27,25 @@ import org.slf4j.Logger;
 
 public class ElasticsearchDeleterRepository extends ElasticsearchRepository
     implements DeleterRepository {
-  private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
-  private static final Slices AUTO_SLICES =
-      Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
-  private final int partitionId;
   private final HistoryConfiguration config;
-  private final IndexDescriptor indexDescriptor;
-  private final CamundaExporterMetrics metrics;
-  private final String lastHistoricalArchiverDate = null;
-  private final Cache<String, String> lifeCyclePolicyApplied =
-      Caffeine.newBuilder().maximumSize(200).build();
+  private final IndexDescriptor deleteIndexDescriptor;
+  private final ListViewTemplate listViewTemplateDescriptor;
 
   public ElasticsearchDeleterRepository(
-      final int partitionId,
       final HistoryConfiguration config,
       final ExporterResourceProvider resourceProvider,
       @WillCloseWhenClosed final ElasticsearchAsyncClient client,
       final Executor executor,
-      final CamundaExporterMetrics metrics,
       final Logger logger) {
     super(client, executor, logger);
-    this.partitionId = partitionId;
     this.config = config;
-    indexDescriptor =
+    deleteIndexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
             .filter(DeleteHistoryIndex.class::isInstance)
             .findFirst()
             .orElseThrow(() -> new IllegalStateException("No DeleteHistoryIndex descriptor found"));
-
-    this.metrics = metrics;
+    listViewTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
   }
 
   @Override
@@ -83,6 +68,20 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
   }
 
   @Override
+  public CompletableFuture<Boolean> deleteFromListView(final List<String> processInstanceKeys) {
+    return deleteDocuments(
+        listViewTemplateDescriptor.getFullQualifiedName(),
+        ListViewTemplate.PROCESS_INSTANCE_KEY,
+        processInstanceKeys);
+  }
+
+  @Override
+  public CompletableFuture<Boolean> deleteFromDeleteIndex(final List<String> processInstanceKeys) {
+    return deleteDocuments(
+        deleteIndexDescriptor.getFullQualifiedName(), DeleteHistoryIndex.ID, processInstanceKeys);
+  }
+
+  @Override
   public CompletableFuture<DeleteBatch> getNextBatch() {
     final var searchRequest = createSearchRequest();
 
@@ -90,7 +89,8 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
     return client
         .search(searchRequest, Object.class)
         // TODO fix metrics for deletion
-        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        //        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer),
+        // executor)
         .thenComposeAsync(
             (response) -> {
               final var hits = response.hits().hits();
@@ -107,7 +107,6 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
 
   private DeleteByQueryRequest createDeleteRequest(
       final String indexName, final String idFieldName, final List<String> ids) {
-    // TODO add multiple indices. It probably won't work, but it seems the API supports it.
     return new DeleteByQueryRequest.Builder()
         .index(indexName)
         .allowNoIndices(true)
@@ -122,9 +121,7 @@ public class ElasticsearchDeleterRepository extends ElasticsearchRepository
   }
 
   private SearchRequest createSearchRequest() {
-    return createSearchRequest(
-        indexDescriptor.getFullQualifiedName() // TODO change to our delete index
-        );
+    return createSearchRequest(deleteIndexDescriptor.getFullQualifiedName());
   }
 
   private SearchRequest createSearchRequest(final String indexName) {
