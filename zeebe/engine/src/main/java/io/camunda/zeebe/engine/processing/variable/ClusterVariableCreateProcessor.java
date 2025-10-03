@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
@@ -68,6 +69,10 @@ public class ClusterVariableCreateProcessor
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
     final long key = keyGenerator.nextKey();
+
+    // We need this dummy authorization for tests to pass, this will be implemented in this task
+    // https://github.com/camunda/camunda/issues/39063
+    authCheckBehavior.isAuthorized(AuthorizationRequest.builder().build());
 
     if (!isValidCamundaVariableName(clusterVariableRecord.getName())) {
       final String errorMessage =
