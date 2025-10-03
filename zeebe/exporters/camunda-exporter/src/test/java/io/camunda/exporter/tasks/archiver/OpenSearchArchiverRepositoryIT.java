@@ -785,6 +785,56 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldReapplyILMPolicyAfterRetentionPeriodExpiration() throws Exception {
+    // given
+    retention.setEnabled(true);
+    final int minimumAgeSeconds = 2;
+    retention.setMinimumAge("%ds".formatted(minimumAgeSeconds));
+    final var indexName1 = processInstanceIndex + UUID.randomUUID();
+    final var indexName2 = processInstanceIndex + UUID.randomUUID();
+
+    final var asyncClient = createOpenSearchAsyncClient();
+    final var genericClientSpy =
+        Mockito.spy(
+            new OpenSearchGenericClient(asyncClient._transport(), asyncClient._transportOptions()));
+
+    final var repository = createRepository(genericClientSpy);
+
+    // when - first setting policy for indexName1 and indexName2
+    repository
+        .setIndexLifeCycle(indexName1)
+        .thenApply(
+            ignore -> {
+              // wait for the cache of indexName1 to expire
+              Awaitility.await().pollDelay(Duration.ofSeconds(minimumAgeSeconds)).until(() -> true);
+              return repository.setIndexLifeCycle(indexName2);
+            })
+        .get();
+
+    final ArgumentCaptor<Request> captor = ArgumentCaptor.forClass(Request.class);
+
+    verify(genericClientSpy, times(2)).executeAsync(captor.capture());
+
+    final var requests = captor.getAllValues();
+    assertThat(requests)
+        .map(Request::getEndpoint)
+        .containsExactly("_plugins/_ism/add/" + indexName1, "_plugins/_ism/add/" + indexName2);
+
+    // we reset the spy to ensure that we only capture the next calls
+    reset(genericClientSpy);
+
+    // setting policy second time for indexName1 and indexName2
+    repository.setIndexLifeCycle(indexName1).get();
+    repository.setIndexLifeCycle(indexName2).get();
+
+    // then - only indexName1 should be included in the request, since the cache for it has expired
+    final var captor2 = ArgumentCaptor.forClass(Request.class);
+    verify(genericClientSpy, times(1)).executeAsync(captor2.capture());
+    final var request2 = captor2.getValue();
+    assertThat(request2.getEndpoint()).isEqualTo("_plugins/_ism/add/" + indexName1);
+  }
+
+  @Test
   void shouldApplyIlmToAllHistoricalIndices() throws Exception {
     // given
     retention.setEnabled(true);

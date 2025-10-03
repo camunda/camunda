@@ -13,11 +13,13 @@ import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Expiry;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.config.ExporterConfiguration.HistoryConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.util.DateOfArchivedDocumentsUtil;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
+import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -28,6 +30,7 @@ import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.micrometer.core.instrument.Timer;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -75,8 +78,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
   private String lastHistoricalArchiverDate = null;
-  private final Cache<String, String> lifeCyclePolicyApplied =
-      Caffeine.newBuilder().maximumSize(200).build();
+  private final Cache<String, String> lifeCyclePolicyApplied;
 
   public OpenSearchArchiverRepository(
       final int partitionId,
@@ -107,6 +109,29 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
     this.genericClient = genericClient;
+    lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
+  }
+
+  private static Cache<String, String> buildLifeCycleAppliedCache(
+      final RetentionConfiguration config, final Logger logger) {
+    return Caffeine.newBuilder()
+        .maximumSize(200)
+        .expireAfter(
+            Expiry.creating(
+                (k, v) -> {
+                  if (v == null) {
+                    return Duration.ZERO;
+                  }
+                  return DateOfArchivedDocumentsUtil.getRetentionPolicyMinimumAge(
+                          config, v.toString())
+                      .orElseGet(
+                          () -> {
+                            logger.debug(
+                                "Unknown retention policy '{}', using default cache expiration", v);
+                            return Duration.ofHours(1);
+                          });
+                }))
+        .build();
   }
 
   @Override
