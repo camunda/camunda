@@ -342,8 +342,8 @@ jobs:
         if: always()
         with:
           name: Playwright report
-          path: e2e-playwright/docs-screenshots
-          retention-days: 30
+          path: ./operate/client/e2e-playwright/docs-screenshots
+          retention-days: 3
       - name: Observe build status
         if: always()
         continue-on-error: true
