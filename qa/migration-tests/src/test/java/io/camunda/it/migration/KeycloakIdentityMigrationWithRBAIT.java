@@ -75,6 +75,10 @@ public class KeycloakIdentityMigrationWithRBAIT extends AbstractKeycloakIdentity
             tuple("zeebe", ResourceType.SYSTEM, Set.of(PermissionType.READ, PermissionType.UPDATE)),
             tuple("tasklist", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)),
             tuple(
+                "tasklist",
+                ResourceType.PROCESS_DEFINITION,
+                Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)),
+            tuple(
                 "identity",
                 ResourceType.GROUP,
                 Set.of(
