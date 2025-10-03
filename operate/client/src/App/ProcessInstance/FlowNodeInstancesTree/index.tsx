@@ -31,7 +31,10 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
-import {selectAdHocSubProcessInnerInstance, selectFlowNode} from 'modules/utils/flowNodeSelection';
+import {
+  selectAdHocSubProcessInnerInstance,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const TREE_NODE_HEIGHT = 32;
