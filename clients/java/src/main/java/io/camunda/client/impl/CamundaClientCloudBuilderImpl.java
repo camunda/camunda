@@ -37,6 +37,7 @@ import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -325,8 +326,9 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder openTelemetryEndpoint(final String openTelemetryEndpoint) {
-    return null;
+  public CamundaClientBuilder openTelemetry(final OpenTelemetry openTelemetry) {
+    innerBuilder.openTelemetry(openTelemetry);
+    return this;
   }
 
   @Override

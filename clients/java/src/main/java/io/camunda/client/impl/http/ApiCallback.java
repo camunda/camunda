@@ -37,8 +37,6 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       code -> code >= 200 && code < 400;
   private final CompletableFuture<RespT> response;
   private final JsonResponseAndStatusCodeTransformer<HttpT, RespT> transformer;
-  private final Tracer tracer;
-  private final Span rootSpan;
   private final Predicate<Integer> successPredicate;
   private final Predicate<StatusCode> retryPredicate;
   private final Runnable retryAction;
@@ -50,13 +48,9 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
       final Predicate<Integer> successPredicate,
       final Predicate<StatusCode> retryPredicate,
       final Runnable retryAction,
-      final int maxRetries,
-      final Tracer tracer,
-      final Span rootSpan) {
+      final int maxRetries) {
     this.response = response;
     this.transformer = transformer;
-    this.tracer = tracer;
-    this.rootSpan = rootSpan;
     if (successPredicate != null) {
       this.successPredicate = successPredicate;
     } else {
@@ -69,51 +63,31 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
   @Override
   public void completed(final ApiResponse<HttpT> result) {
-    final Span span =
-        tracer
-            .spanBuilder("ApiCallback.completed")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     final ApiEntity<HttpT> body = result.entity();
     final int code = result.getCode();
     final String reason = result.getReasonPhrase();
 
     if (wasSuccessful(code)) {
       handleSuccessResponse(body, code, reason);
-      span.end();
       return;
     }
 
     handleErrorResponse(body, code, reason);
-    span.end();
   }
 
   @Override
   public void failed(final Exception ex) {
-    final Span span =
-        tracer
-            .spanBuilder("ApiCallback.failed")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     if (ex instanceof ClientException) {
       response.completeExceptionally(ex);
-      span.end();
       return;
     }
 
     response.completeExceptionally(new ClientException(ex));
-    span.end();
   }
 
   @Override
   public void cancelled() {
-    final Span span =
-        tracer
-            .spanBuilder("ApiCallback.cancelled")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     response.cancel(true);
-    span.end();
   }
 
   private void handleErrorResponse(

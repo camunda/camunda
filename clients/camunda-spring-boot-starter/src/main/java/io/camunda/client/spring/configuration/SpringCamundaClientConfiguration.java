@@ -24,6 +24,7 @@ import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -225,8 +226,8 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
-  public String getOpenTelemetryEndpoint() {
-    return "";
+  public OpenTelemetry getOpenTelemetry() {
+    throw new UnsupportedOperationException("OpenTelemetry is not supported yet.");
   }
 
   @Override

@@ -67,6 +67,8 @@ import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -103,7 +105,6 @@ public final class CamundaClientBuilderImpl
   public static final int DEFAULT_MAX_HTTP_CONNECTIONS = 100;
   public static final JobExceptionHandler DEFAULT_JOB_EXCEPTION_HANDLER =
       JobExceptionHandler.createDefault();
-  public static final String DEFAULT_OPENTELEMETRY_ENDPOINT = "http://localhost:4317";
   private static final String TENANT_ID_LIST_SEPARATOR = ",";
   private boolean applyEnvironmentVariableOverrides = true;
 
@@ -138,7 +139,7 @@ public final class CamundaClientBuilderImpl
   private boolean useDefaultRetryPolicy;
   private int maxHttpConnections = DEFAULT_MAX_HTTP_CONNECTIONS;
   private JobExceptionHandler jobExceptionHandler = DEFAULT_JOB_EXCEPTION_HANDLER;
-  private String openTelemetryEndpoint = DEFAULT_OPENTELEMETRY_ENDPOINT;
+  private OpenTelemetry openTelemetry;
 
   @Override
   public URI getRestAddress() {
@@ -301,8 +302,8 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public String getOpenTelemetryEndpoint() {
-    return openTelemetryEndpoint;
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   private void gatewayAddress(final String gatewayAddress) {
@@ -457,9 +458,6 @@ public final class CamundaClientBuilderImpl
         value -> useDefaultRetryPolicy(Boolean.parseBoolean(value)),
         USE_DEFAULT_RETRY_POLICY,
         LegacyZeebeClientProperties.USE_DEFAULT_RETRY_POLICY);
-
-    BuilderUtils.applyPropertyValueIfNotNull(
-        properties, this::openTelemetryEndpoint, OPENTELEMETRY_EXPORTER);
 
     return this;
   }
@@ -646,8 +644,8 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder openTelemetryEndpoint(final String openTelemetryEndpoint) {
-    this.openTelemetryEndpoint = openTelemetryEndpoint;
+  public CamundaClientBuilder openTelemetry(final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
     return this;
   }
 
@@ -668,6 +666,9 @@ public final class CamundaClientBuilderImpl
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
+    }
+    if (openTelemetry == null) {
+      openTelemetry = GlobalOpenTelemetry.get();
     }
     return new CamundaClientImpl(this);
   }

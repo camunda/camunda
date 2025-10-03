@@ -51,9 +51,7 @@ class ApiCallbackTest {
             null,
             retryPredicate,
             retryAction,
-            DEFAULT_REMAINING_RETRIES,
-            mock(Tracer.class),
-            mock(Span.class));
+            DEFAULT_REMAINING_RETRIES);
   }
 
   @Test
@@ -156,9 +154,7 @@ class ApiCallbackTest {
             successPredicate,
             retryPredicate,
             retryAction,
-            DEFAULT_REMAINING_RETRIES,
-            mock(Tracer.class),
-            mock(Span.class));
+            DEFAULT_REMAINING_RETRIES);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(503);
@@ -186,9 +182,7 @@ class ApiCallbackTest {
             successPredicate,
             retryPredicate,
             retryAction,
-            DEFAULT_REMAINING_RETRIES,
-            mock(Tracer.class),
-            mock(Span.class));
+            DEFAULT_REMAINING_RETRIES);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(500);
@@ -215,9 +209,7 @@ class ApiCallbackTest {
             successPredicate,
             retryPredicate,
             retryAction,
-            DEFAULT_REMAINING_RETRIES,
-            mock(Tracer.class),
-            mock(Span.class));
+            DEFAULT_REMAINING_RETRIES);
 
     final ApiResponse<String> apiResponse = mock(ApiResponse.class);
     when(apiResponse.getCode()).thenReturn(400);

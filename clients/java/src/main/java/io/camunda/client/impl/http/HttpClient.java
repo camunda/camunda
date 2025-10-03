@@ -17,13 +17,13 @@ package io.camunda.client.impl.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.client.OpenTelemetrySdkConfig;
 import io.camunda.client.api.command.ClientException;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
+import io.opentelemetry.context.Scope;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -66,7 +66,6 @@ public final class HttpClient implements AutoCloseable {
   private final int maxMessageSize;
   private final TimeValue shutdownTimeout;
   private final CredentialsProvider credentialsProvider;
-  private final OpenTelemetry openTelemetry;
   private final Tracer tracer;
 
   public HttpClient(
@@ -77,7 +76,7 @@ public final class HttpClient implements AutoCloseable {
       final int maxMessageSize,
       final TimeValue shutdownTimeout,
       final CredentialsProvider credentialsProvider,
-      final String opentelemetryExporter) {
+      final OpenTelemetry opentelemetry) {
     this.client = client;
     this.jsonMapper = jsonMapper;
     this.address = address;
@@ -85,8 +84,7 @@ public final class HttpClient implements AutoCloseable {
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
-    openTelemetry = OpenTelemetrySdkConfig.create(opentelemetryExporter);
-    tracer = openTelemetry.getTracer("CamundaClientTracer");
+    tracer = opentelemetry.getTracer("CamundaClientTracer");
   }
 
   public void start() {
@@ -394,61 +392,63 @@ public final class HttpClient implements AutoCloseable {
       final HttpCamundaFuture<RespT> result,
       final ApiCallback<HttpT, RespT> callback) {
     final Span span =
-        tracer.spanBuilder(path).setAttribute("method", httpMethod.toString()).startSpan();
-    result.whenComplete((resp, throwable) -> span.end());
-    final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
-    // Create retry action to re-execute the same request
-    final Runnable retryAction =
-        () -> {
-          if (result.isCancelled()) {
-            return;
-          }
-          sendRequest(
-              httpMethod,
-              path,
-              queryParams,
-              body,
-              requestConfig,
-              maxRetries,
-              responseType,
-              successPredicate,
-              transformer,
-              result,
-              apiCallback.get());
-        };
+        tracer.spanBuilder(path).setAttribute("method", httpMethod.toString()).setParent(Context.current().with(Span.current())).startSpan();
 
-    final Span buildRequestSpan =
-        tracer.spanBuilder("buildRequest").setParent(Context.current().with(span)).startSpan();
-    final SimpleHttpRequest request =
-        buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
-    if (request == null) {
-      return;
+    try (final Scope scope = span.makeCurrent()) {
+      final AtomicReference<ApiCallback<HttpT, RespT>> apiCallback = new AtomicReference<>(callback);
+      // Create retry action to re-execute the same request
+      final Runnable retryAction =
+          () -> {
+            if (result.isCancelled()) {
+              return;
+            }
+            sendRequest(
+                httpMethod,
+                path,
+                queryParams,
+                body,
+                requestConfig,
+                maxRetries,
+                responseType,
+                successPredicate,
+                transformer,
+                result,
+                apiCallback.get());
+          };
+
+      final Span buildRequestSpan =
+          tracer.spanBuilder("buildRequest").setParent(Context.current().with(span)).startSpan();
+      final SimpleHttpRequest request =
+          buildRequest(httpMethod, queryParams, body, result, buildRequestURI(path), span);
+      if (request == null) {
+        return;
+      }
+      buildRequestSpan.end();
+
+      request.setConfig(requestConfig);
+
+      final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
+          createEntityConsumer(responseType, tracer, span);
+
+      if (apiCallback.get() == null) {
+        apiCallback.set(
+            new ApiCallback<>(
+                result,
+                transformer,
+                successPredicate,
+                credentialsProvider::shouldRetryRequest,
+                retryAction,
+                maxRetries));
+      }
+
+      result.transportFuture(
+          client.execute(
+              SimpleRequestProducer.create(request),
+              new ApiResponseConsumer<>(entityConsumer),
+              apiCallback.get()));
+    } finally{
+      result.whenComplete((resp, throwable) -> span.end());
     }
-    buildRequestSpan.end();
-
-    request.setConfig(requestConfig);
-
-    final AsyncEntityConsumer<ApiEntity<HttpT>> entityConsumer =
-        createEntityConsumer(responseType, tracer, span);
-
-    if (apiCallback.get() == null) {
-      apiCallback.set(
-          new ApiCallback<>(
-              result,
-              transformer,
-              successPredicate,
-              credentialsProvider::shouldRetryRequest,
-              retryAction,
-              maxRetries,
-              tracer,
-              span));
-    }
-
-    result.transportFuture(
-        client.execute(
-            SimpleRequestProducer.create(request),
-            new ApiResponseConsumer<>(entityConsumer),
-            apiCallback.get()));
   }
 
   private <HttpT> AsyncEntityConsumer<ApiEntity<HttpT>> createEntityConsumer(

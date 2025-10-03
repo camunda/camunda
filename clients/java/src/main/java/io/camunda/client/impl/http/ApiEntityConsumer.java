@@ -76,11 +76,6 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected void streamStart(final ContentType contentType) throws IOException {
-    final Span span =
-        tracer
-            .spanBuilder("ApiEntityConsumer.streamStart")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     if (ContentType.APPLICATION_PROBLEM_JSON.isSameMimeType(contentType)) {
       entityConsumer = new JsonApiEntityConsumer<>(json, type, false);
     } else if (Void.class.equals(type)) {
@@ -93,7 +88,6 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
               && SUPPORTED_TEXT_CONTENT_TYPES.stream().anyMatch(t -> t.isSameMimeType(contentType));
       entityConsumer = new RawApiEntityConsumer<>(isResponse, chunkSize);
     }
-    span.end();
   }
 
   @Override
@@ -115,25 +109,13 @@ final class ApiEntityConsumer<T> extends AbstractBinAsyncEntityConsumer<ApiEntit
 
   @Override
   protected void data(final ByteBuffer src, final boolean endOfStream) throws IOException {
-    final Span span =
-        tracer
-            .spanBuilder("ApiEntityConsumer.data")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     entityConsumer.consumeData(src, endOfStream);
-    span.end();
   }
 
   @Override
   public void releaseResources() {
-    final Span span =
-        tracer
-            .spanBuilder("ApiEntityConsumer.releaseResources")
-            .setParent(Context.current().with(rootSpan))
-            .startSpan();
     if (entityConsumer != null) {
       entityConsumer.releaseResources();
     }
-    span.end();
   }
 }
