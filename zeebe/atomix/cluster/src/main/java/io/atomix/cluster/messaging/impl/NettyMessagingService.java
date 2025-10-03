@@ -91,6 +91,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
@@ -1260,7 +1261,7 @@ public final class NettyMessagingService implements ManagedMessagingService {
       if (message instanceof final ProtocolRequest protocolMessage) {
         final var subject = protocolMessage.subject();
         final var level =
-            subject.equals(HeartbeatHandler.HEARTBEAT_SUBJECT) ? Level.WARN : Level.ERROR;
+            Objects.equals(subject, HeartbeatHandler.HEARTBEAT_SUBJECT) ? Level.WARN : Level.ERROR;
         logger
             .atLevel(level)
             .log("Failed to dispatch message with subject {} because {}", subject, e.getMessage());
