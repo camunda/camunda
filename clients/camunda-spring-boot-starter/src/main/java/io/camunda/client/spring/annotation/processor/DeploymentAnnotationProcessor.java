@@ -15,7 +15,7 @@
  */
 package io.camunda.client.spring.annotation.processor;
 
-import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValue;
+import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValues;
 import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
@@ -58,29 +58,40 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
   @Override
   public void configureFor(final BeanInfo beanInfo) {
-    final Optional<DeploymentValue> zeebeDeploymentValue = getDeploymentValue(beanInfo);
-    if (zeebeDeploymentValue.isPresent()) {
-      LOGGER.info("Configuring deployment: {}", zeebeDeploymentValue.get());
-      deploymentValues.add(zeebeDeploymentValue.get());
+    final List<DeploymentValue> zeebeDeploymentValue = getDeploymentValues(beanInfo);
+    if (!zeebeDeploymentValue.isEmpty()) {
+      LOGGER.info("Configuring deployments: {}", zeebeDeploymentValue);
+      deploymentValues.addAll(zeebeDeploymentValue);
     }
   }
 
   @Override
   public void start(final CamundaClient client) {
+    if (deploymentValues.isEmpty()) {
+      return;
+    }
+    final List<DeploymentEvent> deploymentEvents =
+        deploymentValues.stream().map(d -> deploy(client, d)).toList();
+    publisher.publishEvent(new CamundaPostDeploymentSpringEvent(this, deploymentEvents));
+  }
+
+  @Override
+  public void stop(final CamundaClient client) {
+    // noop for deployment
+  }
+
+  private DeploymentEvent deploy(
+      final CamundaClient camundaClient, final DeploymentValue deploymentValue) {
+    final String tenantId = deploymentValue.getTenantId();
     final List<Resource> resources =
-        deploymentValues.stream()
-            .flatMap(d -> d.getResources().stream())
+        deploymentValue.getResources().stream()
             .flatMap(r -> Arrays.stream(getResources(r)))
             .distinct()
             .toList();
     if (resources.isEmpty()) {
-      if (deploymentValues.isEmpty()) {
-        return;
-      }
       throw new IllegalArgumentException("No resources found to deploy");
     }
-
-    final DeployResourceCommandStep1 command = client.newDeployResourceCommand();
+    final DeployResourceCommandStep1 command = camundaClient.newDeployResourceCommand();
     DeployResourceCommandStep2 commandStep2 = null;
     for (final Resource resource : resources) {
       try (final InputStream inputStream = resource.getInputStream()) {
@@ -93,7 +104,10 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
         throw new RuntimeException("Error reading resource: " + e.getMessage(), e);
       }
     }
-    final DeploymentEvent deploymentEvent = commandStep2.send().join();
+    if (tenantId != null) {
+      commandStep2.tenantId(tenantId);
+    }
+    final DeploymentEvent deploymentEvent = commandStep2.execute();
     LOGGER.info(
         "Deployed: {}",
         Stream.concat(
@@ -105,12 +119,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
                 deploymentEvent.getProcesses().stream()
                     .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
             .collect(Collectors.joining(",")));
-    publisher.publishEvent(new CamundaPostDeploymentSpringEvent(this, deploymentEvent));
-  }
-
-  @Override
-  public void stop(final CamundaClient client) {
-    // noop for deployment
+    return deploymentEvent;
   }
 
   public Resource[] getResources(final String resources) {
