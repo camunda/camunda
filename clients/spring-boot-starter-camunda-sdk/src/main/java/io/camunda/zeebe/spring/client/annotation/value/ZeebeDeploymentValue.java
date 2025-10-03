@@ -20,14 +20,15 @@ import java.util.List;
 import java.util.Objects;
 
 public final class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInfo> {
-
   private final List<String> resources;
-
   private final ClassInfo beanInfo;
+  private final String tenantId;
 
-  private ZeebeDeploymentValue(final List<String> resources, final ClassInfo beanInfo) {
+  private ZeebeDeploymentValue(
+      final List<String> resources, final ClassInfo beanInfo, final String tenantId) {
     this.resources = resources;
     this.beanInfo = beanInfo;
+    this.tenantId = tenantId;
   }
 
   public List<String> getResources() {
@@ -39,26 +40,37 @@ public final class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInf
     return beanInfo;
   }
 
+  public String getTenantId() {
+    return tenantId;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(resources, beanInfo);
+    return Objects.hash(resources, beanInfo, tenantId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
     final ZeebeDeploymentValue that = (ZeebeDeploymentValue) o;
-    return Objects.equals(resources, that.resources) && Objects.equals(beanInfo, that.beanInfo);
+    return Objects.equals(resources, that.resources)
+        && Objects.equals(beanInfo, that.beanInfo)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override
   public String toString() {
-    return "ZeebeDeploymentValue{" + "resources=" + resources + ", beanInfo=" + beanInfo + '}';
+    return "ZeebeDeploymentValue{"
+        + "resources="
+        + resources
+        + ", beanInfo="
+        + beanInfo
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + '}';
   }
 
   public static ZeebeDeploymentValueBuilder builder() {
@@ -69,6 +81,7 @@ public final class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInf
 
     private List<String> resources;
     private ClassInfo beanInfo;
+    private String tenantId;
 
     private ZeebeDeploymentValueBuilder() {}
 
@@ -82,8 +95,13 @@ public final class ZeebeDeploymentValue implements ZeebeAnnotationValue<ClassInf
       return this;
     }
 
+    public ZeebeDeploymentValueBuilder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
     public ZeebeDeploymentValue build() {
-      return new ZeebeDeploymentValue(resources, beanInfo);
+      return new ZeebeDeploymentValue(resources, beanInfo, tenantId);
     }
   }
 }
