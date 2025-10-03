@@ -18,6 +18,7 @@ package io.camunda.client.impl.http;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.impl.util.VersionUtil;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.OpenTelemetry;
 import io.opentelemetry.api.trace.Span;
@@ -84,7 +85,7 @@ public final class HttpClient implements AutoCloseable {
     this.maxMessageSize = maxMessageSize;
     this.shutdownTimeout = shutdownTimeout;
     this.credentialsProvider = credentialsProvider;
-    tracer = opentelemetry.getTracer("CamundaClientTracer");
+    tracer = opentelemetry.getTracer("io.camunda.camunda-client-java", VersionUtil.getVersion());
   }
 
   public void start() {
