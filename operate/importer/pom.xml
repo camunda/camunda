@@ -38,7 +38,6 @@
       <artifactId>operate-importer-8_5</artifactId>
       <scope>runtime</scope>
     </dependency>
-
     <dependency>
       <groupId>org.elasticsearch</groupId>
       <artifactId>elasticsearch-core</artifactId>
