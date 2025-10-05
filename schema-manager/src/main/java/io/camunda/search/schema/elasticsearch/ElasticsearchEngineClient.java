@@ -20,6 +20,8 @@ import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.mapping.TypeMapping;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
+import co.elastic.clients.elasticsearch.core.GetResponse;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.ilm.DeleteAction;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
@@ -338,6 +340,49 @@ public class ElasticsearchEngineClient implements SearchEngineClient {
               e.getMessage()),
           e);
       return false;
+    }
+  }
+
+  @Override
+  public boolean indexExists(final String indexName) {
+    try {
+      return client.indices().exists(r -> r.index(indexName)).value();
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg = String.format("Failed to check existence of index %s", indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public Map<String, Object> getDocument(final String indexName, final String documentId) {
+    try {
+      final GetResponse<Map> response =
+          client.get(g -> g.index(indexName).id(documentId), Map.class);
+      if (response.found()) {
+        return response.source();
+      } else {
+        LOG.debug("Document with ID [{}] not found in index [{}]", documentId, indexName);
+        return null;
+      }
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg =
+          String.format("Failed to get document [%s] from index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
+    }
+  }
+
+  @Override
+  public void upsertDocument(
+      final String indexName, final String documentId, final Map<String, Object> document) {
+    final IndexRequest<Map<String, Object>> request =
+        IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
+    try {
+      client.index(request);
+      LOG.debug("Document [{}] was successfully upserted in index [{}]]", documentId, indexName);
+    } catch (final IOException | ElasticsearchException ex) {
+      final var errMsg =
+          String.format("Failed to upsert document [%s] in index [%s]", documentId, indexName);
+      throw new SearchEngineException(errMsg, ex);
     }
   }
 

@@ -57,4 +57,31 @@ public interface SearchEngineClient extends CloseableSilently {
   void truncateIndex(final String indexName);
 
   boolean isHealthy();
+
+  /**
+   * Check if an index exists
+   *
+   * @param indexName the name of the index to check
+   * @return true if the index exists, false otherwise
+   */
+  boolean indexExists(final String indexName);
+
+  /**
+   * Retrieve a document from an index
+   *
+   * @param indexName the name of the index
+   * @param documentId the ID of the document to retrieve
+   * @return the document as a Map, or null if not found
+   */
+  Map<String, Object> getDocument(final String indexName, final String documentId);
+
+  /**
+   * Insert or update a document in an index
+   *
+   * @param indexName the name of the index
+   * @param documentId the ID of the document
+   * @param document the document content as a Map
+   */
+  void upsertDocument(
+      final String indexName, final String documentId, final Map<String, Object> document);
 }

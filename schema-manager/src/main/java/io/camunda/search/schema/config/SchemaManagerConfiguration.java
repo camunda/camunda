@@ -14,6 +14,7 @@ public class SchemaManagerConfiguration {
 
   private boolean isCreateSchema = true;
   private SchemaManagerRetryConfiguration retry = new SchemaManagerRetryConfiguration();
+  private boolean versionCheckRestrictionEnabled = true;
 
   public boolean isCreateSchema() {
     return isCreateSchema;
@@ -29,6 +30,14 @@ public class SchemaManagerConfiguration {
 
   public void setRetry(final SchemaManagerRetryConfiguration retry) {
     this.retry = retry;
+  }
+
+  public boolean isVersionCheckRestrictionEnabled() {
+    return versionCheckRestrictionEnabled;
+  }
+
+  public void setVersionCheckRestrictionEnabled(final boolean versionCheckRestrictionEnabled) {
+    this.versionCheckRestrictionEnabled = versionCheckRestrictionEnabled;
   }
 
   public static class SchemaManagerRetryConfiguration extends RetryConfiguration {

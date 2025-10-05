@@ -18,6 +18,7 @@ import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
@@ -74,6 +75,7 @@ public class IndexDescriptors {
                 new PostImporterQueueTemplate(indexPrefix, isElasticsearch),
                 new ProcessIndex(indexPrefix, isElasticsearch),
                 new RoleIndex(indexPrefix, isElasticsearch),
+                new SchemaMetadataIndex(indexPrefix, isElasticsearch),
                 new SequenceFlowTemplate(indexPrefix, isElasticsearch),
                 new SnapshotTaskVariableTemplate(indexPrefix, isElasticsearch),
                 new TaskTemplate(indexPrefix, isElasticsearch),
