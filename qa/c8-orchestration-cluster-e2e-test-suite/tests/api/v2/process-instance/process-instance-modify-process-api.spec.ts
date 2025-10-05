@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
+import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -105,7 +105,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await cancelProcessInstance(localStorage['processInstanceKey'] as string);
+    // await cancelProcessInstance(localStorage['processInstanceKey'] as string);
   });
 
   test('Modify process instance - bad request - invalid payload', async ({
@@ -144,7 +144,7 @@ test.describe.parallel('Process Instance Modify Process API', () => {
       'Request property [activateInstructions] cannot be parsed',
     );
 
-    await cancelProcessInstance(localStorage['processInstanceKey'] as string);
+    // await cancelProcessInstance(localStorage['processInstanceKey'] as string);
   });
 
   test('Modify process instance - bad request - path parameter', async ({

@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
+import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertStatusCode,
@@ -59,7 +59,7 @@ test.describe.parallel('Get Process instance Tests', () => {
         expect(json.page.totalItems).toBeGreaterThan(1);
       }).toPass(defaultAssertionOptions);
     });
-    await cancelProcessInstance(localState.processInstanceKey as string);
+    // await cancelProcessInstance(localState.processInstanceKey as string);
   });
 
   test('Search Process Instance With Filter - Success', async ({request}) => {
@@ -106,7 +106,7 @@ test.describe.parallel('Get Process instance Tests', () => {
         );
       }).toPass(defaultAssertionOptions);
     });
-    await cancelProcessInstance(localState.processInstanceKey as string);
+    // await cancelProcessInstance(localState.processInstanceKey as string);
   });
 
   test('Search Process Instance With Multiple Filters - Success', async ({
@@ -176,8 +176,8 @@ test.describe.parallel('Get Process instance Tests', () => {
       }).toPass(defaultAssertionOptions);
     });
 
-    await cancelProcessInstance(localState.processInstanceKey1 as string);
-    await cancelProcessInstance(localState.processInstanceKey2 as string);
+    // await cancelProcessInstance(localState.processInstanceKey1 as string);
+    // await cancelProcessInstance(localState.processInstanceKey2 as string);
   });
 
   test('Search Process Instances - Unauthorized', async ({request}) => {
