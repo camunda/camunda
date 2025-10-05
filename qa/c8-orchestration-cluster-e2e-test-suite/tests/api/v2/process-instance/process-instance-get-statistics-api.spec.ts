@@ -7,7 +7,7 @@
  */
 
 import {APIResponse, expect, test} from '@playwright/test';
-import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
+import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertStatusCode,
@@ -72,7 +72,7 @@ test.describe.parallel('Get Process Instance Statistics Tests', () => {
         expect(json.items[1].completed).toBe(1);
         expect(json.items[1].incidents).toBe(0);
       }).toPass(defaultAssertionOptions);
-      await cancelProcessInstance(localState.processInstanceKey as string);
+      // await cancelProcessInstance(localState.processInstanceKey as string);
     });
   });
 
