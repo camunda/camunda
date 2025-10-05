@@ -30,6 +30,7 @@ import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
+import io.camunda.webapps.schema.descriptors.index.SchemaMetadataIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
@@ -113,6 +114,8 @@ public class BackupPriorityConfiguration {
       final String indexPrefix, final boolean isElasticsearch) {
     final List<Prio1Backup> prio1 =
         List.of(
+            // CAMUNDA
+            new SchemaMetadataIndex(indexPrefix, isElasticsearch),
             // OPERATE
             new ImportPositionIndex(indexPrefix, isElasticsearch),
             // TASKLIST
