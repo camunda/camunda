@@ -5,15 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.engine.state.migration;
+package io.camunda.zeebe.util.migration;
 
-import static io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.check;
+import static io.camunda.zeebe.util.migration.VersionCompatibilityCheck.check;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Compatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Incompatible.UseOfPreReleaseVersion;
-import io.camunda.zeebe.engine.state.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Compatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible.UseOfPreReleaseVersion;
+import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
