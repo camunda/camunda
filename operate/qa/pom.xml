@@ -24,9 +24,9 @@
   </modules>
 
   <properties>
-    <version.zeebe.old>8.6-SNAPSHOT</version.zeebe.old>
-    <version.zeebe.docker.current>8.7-SNAPSHOT</version.zeebe.docker.current>
-    <version.identity.docker.current>8.7.0</version.identity.docker.current>
+    <version.zeebe.old>8.5.25</version.zeebe.old>
+    <version.zeebe.docker.current>8.6-SNAPSHOT</version.zeebe.docker.current>
+    <version.identity.docker.current>8.6.0</version.identity.docker.current>
   </properties>
 
 </project>
