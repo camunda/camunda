@@ -48,12 +48,12 @@ test.describe.parallel('Process instance Tests', () => {
   });
 
   test('Create Process with Variables - Success', async ({request}) => {
-    await deploy(['./resources/Start_Form_Process.bpmn']);
+    await deploy(['./resources/process_instance_api_test.bpmn']);
     const variables = {key1: 'value1', key2: 'value2'};
     const res = await request.post(buildUrl(PROCESS_INSTANCE_ENDPOINT), {
       headers: jsonHeaders(),
       data: {
-        processDefinitionId: 'Start_Form_Process',
+        processDefinitionId: 'process_instance_api_test',
         variables,
         awaitCompletion: true,
       },
@@ -129,13 +129,13 @@ test.describe.parallel('Process instance Tests', () => {
   test('Create Process Instance by Process Definition Key with Variables - Success', async ({
     request,
   }) => {
-    await deploy(['./resources/Start_Form_Process.bpmn']);
+    await deploy(['./resources/process_instance_api_test.bpmn']);
     const localState: Record<string, unknown> = {};
     await test.step('Create Process Instance by Process Definition Id to get the Key', async () => {
       const res = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
         data: {
-          processDefinitionId: 'Start_Form_Process',
+          processDefinitionId: 'process_instance_api_test',
         },
       });
       await assertStatusCode(res, 200);
