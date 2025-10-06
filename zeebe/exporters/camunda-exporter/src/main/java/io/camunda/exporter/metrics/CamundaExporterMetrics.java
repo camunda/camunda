@@ -40,12 +40,30 @@ public class CamundaExporterMetrics implements AutoCloseable {
    */
   private final Counter processInstancesArchiving;
 
-  /**
-   * Count of completed batch operations that have been found, and are now in progress of archiving.
-   */
+  /** Count of completed batch operations that are in progress of archiving. */
   private final Counter batchOperationsArchiving;
 
+  /** Count of completed batch operations that have been archived. */
   private final Counter batchOperationsArchived;
+
+  /** Count of usage-metrics that are in progress of archiving. */
+  private final Counter usageMetricsArchiving;
+
+  /** Count of usage-metrics that have been archived. */
+  private final Counter usageMetricsArchived;
+
+  /** Count of usage-metrics-task-users that are in progress of archiving. */
+  private final Counter usageMetricsTUArchiving;
+
+  /** Count of usage-metrics-task-users that have been archived. */
+  private final Counter usageMetricsTUArchived;
+
+  /** Count of standalone-decisions that are in progress of archiving. */
+  private final Counter standaloneDecisionsArchiving;
+
+  /** Count of standalone-decisions that have been archived. */
+  private final Counter standaloneDecisionsArchived;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -96,6 +114,39 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tag("state", "archiving")
             .description(
                 "Count of completed batch operations that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    usageMetricsArchived =
+        Counter.builder(meterName("archiver.usage.metrics"))
+            .tag("state", "archived")
+            .description("Count of completed usage-metrics, that have been archived.")
+            .register(meterRegistry);
+    usageMetricsArchiving =
+        Counter.builder(meterName("archiver.usage.metrics"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed usage-metrics that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    usageMetricsTUArchived =
+        Counter.builder(meterName("archiver.usage.metrics.tu"))
+            .tag("state", "archived")
+            .description("Count of completed usage-metrics-task-users, that have been archived.")
+            .register(meterRegistry);
+    usageMetricsTUArchiving =
+        Counter.builder(meterName("archiver.usage.metrics.tu"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed usage-metrics-task-users that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
+    standaloneDecisionsArchived =
+        Counter.builder(meterName("archiver.standalone.decisions"))
+            .tag("state", "archived")
+            .description("Count of completed standalone-decisions, that have been archived.")
+            .register(meterRegistry);
+    standaloneDecisionsArchiving =
+        Counter.builder(meterName("archiver.standalone.decisions"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed standalone-decisions that have been found, and are now in progress of archiving.")
             .register(meterRegistry);
     archiverSearchTimer =
         Timer.builder(meterName("archiver.request.duration"))
@@ -199,6 +250,30 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordBatchOperationsArchiving(final int count) {
     batchOperationsArchiving.increment(count);
+  }
+
+  public void recordUsageMetricsArchived(final int count) {
+    usageMetricsArchived.increment(count);
+  }
+
+  public void recordUsageMetricsArchiving(final int count) {
+    usageMetricsArchiving.increment(count);
+  }
+
+  public void recordUsageMetricsTUArchived(final int count) {
+    usageMetricsTUArchived.increment(count);
+  }
+
+  public void recordUsageMetricsTUArchiving(final int count) {
+    usageMetricsTUArchiving.increment(count);
+  }
+
+  public void recordStandaloneDecisionsArchived(final int count) {
+    standaloneDecisionsArchived.increment(count);
+  }
+
+  public void recordStandaloneDecisionsArchiving(final int count) {
+    standaloneDecisionsArchiving.increment(count);
   }
 
   public void recordFlushFailureType(final String failureType) {

@@ -44,6 +44,8 @@ public class SecondaryStorageElasticsearchTest {
   private static final String EXPECTED_USERNAME = "testUsername";
   private static final String EXPECTED_PASSWORD = "testPassword";
 
+  private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -52,7 +54,9 @@ public class SecondaryStorageElasticsearchTest {
         "camunda.data.secondary-storage.elasticsearch.username=" + EXPECTED_USERNAME,
         "camunda.data.secondary-storage.elasticsearch.password=" + EXPECTED_PASSWORD,
         "camunda.data.secondary-storage.elasticsearch.cluster-name=" + EXPECTED_CLUSTER_NAME,
-        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX
+        "camunda.data.secondary-storage.elasticsearch.index-prefix=" + EXPECTED_INDEX_PREFIX,
+        "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
+            + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -117,6 +121,8 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
+          .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
     }
 
     @Test
@@ -281,8 +287,13 @@ public class SecondaryStorageElasticsearchTest {
     void testSecondaryStorageExporterCanWorkWithoutArgs() {
       final ExporterCfg camundaExporter = brokerBasedProperties.getCamundaExporter();
       assertThat(camundaExporter).isNotNull();
+
       final Map<String, Object> args = camundaExporter.getArgs();
-      assertThat(args).isNull();
+      assertThat(args).isNotNull();
+
+      final ExporterConfiguration exporterConfiguration =
+          UnifiedConfigurationHelper.argsToExporterConfiguration(args);
+      assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo("http://matching-url:4321");
     }
   }
 

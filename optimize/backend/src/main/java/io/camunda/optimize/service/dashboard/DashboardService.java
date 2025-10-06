@@ -530,28 +530,30 @@ public class DashboardService implements ReportReferencingService, CollectionRef
       final Map<String, List<DashboardFilterDto<?>>> filtersByClass) {
     final List<DashboardFilterDto<?>> variableFilters =
         filtersByClass.get(DashboardVariableFilterDto.class.getSimpleName());
-    if (!CollectionUtils.isEmpty(variableFilters)) {
-      final List<String> reportIdsInDashboard =
-          reportsInDashboard.stream()
-              .map(DashboardReportTileDto::getId)
-              .filter(IdGenerator::isValidId)
-              .toList();
-      final Map<String, List<VariableType>> possibleVarTypesByName =
-          processVariableService
-              .getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
-              .stream()
-              .collect(
-                  groupingBy(
-                      ProcessVariableNameResponseDto::getName,
-                      Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())));
-      final List<DashboardFilterDto<?>> invalidFilters =
-          variableFilters.stream().filter(isInvalidVariableFilter(possibleVarTypesByName)).toList();
-      if (!invalidFilters.isEmpty()) {
-        throw new InvalidDashboardVariableFilterException(
-            String.format(
-                "The following variable filter names/types do not exist in any report in dashboard: [%s]",
-                invalidFilters));
-      }
+    if (CollectionUtils.isEmpty(variableFilters)) {
+      return;
+    }
+
+    final List<String> reportIdsInDashboard =
+        reportsInDashboard.stream()
+            .map(DashboardReportTileDto::getId)
+            .filter(IdGenerator::isValidId)
+            .toList();
+    final Map<String, List<VariableType>> possibleVarTypesByName =
+        processVariableService
+            .getVariableNamesForAuthorizedReports(userId, reportIdsInDashboard)
+            .stream()
+            .collect(
+                groupingBy(
+                    ProcessVariableNameResponseDto::getName,
+                    Collectors.mapping(ProcessVariableNameResponseDto::getType, toList())));
+    final List<DashboardFilterDto<?>> invalidFilters =
+        variableFilters.stream().filter(isInvalidVariableFilter(possibleVarTypesByName)).toList();
+    if (!invalidFilters.isEmpty()) {
+      throw new InvalidDashboardVariableFilterException(
+          String.format(
+              "The following variable filter names/types do not exist in any report in dashboard: [%s]",
+              invalidFilters));
     }
   }
 

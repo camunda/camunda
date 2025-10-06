@@ -22,6 +22,7 @@ import io.camunda.exporter.adapters.ClientAdapter;
 import io.camunda.it.migration.util.PrefixMigrationUtils;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
+import io.camunda.qa.util.multidb.CamundaMultiDBExtension;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.ElasticOpenSearchSetupHelper;
 import io.camunda.qa.util.multidb.MultiDbTest;
@@ -49,6 +50,7 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
+import org.springframework.util.StringUtils;
 import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
@@ -87,7 +89,7 @@ public class PrefixMigrationIT {
   }
 
   @Test
-  void shouldMigrateCorrectIndicesDuringPrefixMigration() throws IOException, InterruptedException {
+  void shouldMigrateCorrectIndicesDuringPrefixMigration() throws IOException {
     // given
     final var camundaContainer = createCamundaContainer();
     // to avoid collisions with other tests
@@ -139,11 +141,14 @@ public class PrefixMigrationIT {
 
     assertIndices(connectConfig, oldTasklistPrefix, oldOperatePrefix, newPrefix);
 
-    assertOldIndicesAreRemoved(searchEngineClient, oldTasklistPrefix, oldOperatePrefix);
+    assertIndices(searchEngineClient, oldOperatePrefix, false);
+    assertIndices(searchEngineClient, oldTasklistPrefix, false);
 
-    assertOldIndexTemplatesAreRemoved(searchEngineClient, oldTasklistPrefix, oldOperatePrefix);
+    assertIndexTemplates(searchEngineClient, oldOperatePrefix, false);
+    assertIndexTemplates(searchEngineClient, oldTasklistPrefix, false);
 
-    assertOldComponentTemplatesAreRemoved(connectConfig, oldTasklistPrefix, oldOperatePrefix);
+    assertComponentTemplates(connectConfig, oldOperatePrefix, false);
+    assertComponentTemplates(connectConfig, oldTasklistPrefix, false);
 
     final var schemaManager =
         new SchemaManager(
@@ -161,6 +166,128 @@ public class PrefixMigrationIT {
 
     setupHelper.cleanup(shortUUID);
     setupHelper.close();
+  }
+
+  @Test
+  void shouldNotAffectOperateIndices() {
+    // given
+    final var camundaContainer = createCamundaContainer();
+    // to avoid collisions with other tests
+    final var shortUUID = UUID.randomUUID().toString().substring(0, 8).toLowerCase();
+    final var oldOperatePrefix = shortUUID + "-old-operate-prefix";
+    final var oldTasklistPrefix = shortUUID + "-old-tasklist-prefix";
+    final var newPrefix = shortUUID + "-new-prefix";
+
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      addElasticsearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS
+        || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
+      addOpensearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
+    }
+
+    // creates the 8.7 operate/tasklist indices
+    camundaContainer.start();
+
+    final var setupHelper =
+        new ElasticOpenSearchSetupHelper(
+            "http://localhost:9200",
+            Collections.nCopies(TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION, null));
+
+    // validate all 8.7 operate/tasklist indices have been created
+    await("Await schema readiness")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
+        .until(() -> setupHelper.validateSchemaCreation(shortUUID));
+
+    camundaContainer.stop();
+
+    final var connectConfig = new ConnectConfiguration();
+    if (currentMultiDbDatabaseType() == DatabaseType.OS
+        || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
+      connectConfig.setType("opensearch");
+    }
+
+    final var expectedDescriptors =
+        new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ES);
+
+    // generate 2 dated indices for each index template of interest
+    generateDatedIndices(connectConfig, expectedDescriptors, oldTasklistPrefix, oldOperatePrefix);
+
+    // when
+    prefixMigration(null, oldTasklistPrefix, newPrefix);
+
+    // then
+    final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
+
+    assertIndices(searchEngineClient, oldOperatePrefix, true);
+    assertIndices(searchEngineClient, oldTasklistPrefix, false);
+
+    assertIndexTemplates(searchEngineClient, oldOperatePrefix, true);
+    assertIndexTemplates(searchEngineClient, oldTasklistPrefix, false);
+
+    assertComponentTemplates(connectConfig, oldOperatePrefix, true);
+    assertComponentTemplates(connectConfig, oldTasklistPrefix, false);
+  }
+
+  @Test
+  void shouldNotAffectTasklistIndices() {
+    // given
+    final var camundaContainer = createCamundaContainer();
+    // to avoid collisions with other tests
+    final var shortUUID = UUID.randomUUID().toString().substring(0, 8).toLowerCase();
+    final var oldOperatePrefix = shortUUID + "-old-operate-prefix";
+    final var oldTasklistPrefix = shortUUID + "-old-tasklist-prefix";
+    final var newPrefix = shortUUID + "-new-prefix";
+
+    if (currentMultiDbDatabaseType() == DatabaseType.ES) {
+      addElasticsearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
+    } else if (currentMultiDbDatabaseType() == DatabaseType.OS
+        || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
+      addOpensearchProperties(camundaContainer, oldOperatePrefix, oldTasklistPrefix);
+    }
+
+    // creates the 8.7 operate/tasklist indices
+    camundaContainer.start();
+
+    final var setupHelper =
+        new ElasticOpenSearchSetupHelper(
+            "http://localhost:9200",
+            Collections.nCopies(TOTAL_NUMBER_OPERATE_TASKLIST_INDICES_BEFORE_HARMONISATION, null));
+
+    // validate all 8.7 operate/tasklist indices have been created
+    await("Await schema readiness")
+        .timeout(Duration.ofMinutes(1))
+        .pollInterval(Duration.ofMillis(500))
+        .until(() -> setupHelper.validateSchemaCreation(shortUUID));
+
+    camundaContainer.stop();
+
+    final var connectConfig = new ConnectConfiguration();
+    if (currentMultiDbDatabaseType() == DatabaseType.OS
+        || currentMultiDbDatabaseType() == DatabaseType.AWS_OS) {
+      connectConfig.setType("opensearch");
+    }
+
+    final var expectedDescriptors =
+        new IndexDescriptors(newPrefix, currentMultiDbDatabaseType() == DatabaseType.ES);
+
+    // generate 2 dated indices for each index template of interest
+    generateDatedIndices(connectConfig, expectedDescriptors, oldTasklistPrefix, oldOperatePrefix);
+
+    // when
+    prefixMigration(oldOperatePrefix, null, newPrefix);
+
+    // then
+    final var searchEngineClient = ClientAdapter.of(connectConfig).getSearchEngineClient();
+
+    assertIndices(searchEngineClient, oldOperatePrefix, false);
+    assertIndices(searchEngineClient, oldTasklistPrefix, true);
+
+    assertIndexTemplates(searchEngineClient, oldOperatePrefix, false);
+    assertIndexTemplates(searchEngineClient, oldTasklistPrefix, true);
+
+    assertComponentTemplates(connectConfig, oldOperatePrefix, false);
+    assertComponentTemplates(connectConfig, oldTasklistPrefix, true);
   }
 
   @Test
@@ -283,13 +410,21 @@ public class PrefixMigrationIT {
         .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
         // ---
-        .withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", operatePrefix)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", tasklistPrefix)
-        .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", tasklistPrefix)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_OPENSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.opensearch.OpensearchExporter")
         .withEnv("ZEEBE_BROKER_EXPORTERS_OPENSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
+
+    if (StringUtils.hasText(operatePrefix)) {
+      container.withEnv("CAMUNDA_OPERATE_OPENSEARCH_INDEX_PREFIX", operatePrefix);
+    }
+
+    if (StringUtils.hasText(tasklistPrefix)) {
+
+      container
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEX_PREFIX", tasklistPrefix)
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_INDEXPREFIX", tasklistPrefix);
+    }
   }
 
   private void addElasticsearchProperties(
@@ -297,8 +432,6 @@ public class PrefixMigrationIT {
       final String operatePrefix,
       final String tasklistPrefix) {
     container
-        .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", operatePrefix)
-        .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", tasklistPrefix)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_CLASSNAME",
             "io.camunda.zeebe.exporter.ElasticsearchExporter")
@@ -308,6 +441,14 @@ public class PrefixMigrationIT {
         .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
         .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB)
         .withEnv("ZEEBE_BROKER_EXPORTERS_ELASTICSEARCH_ARGS_URL", DEFAULT_ES_OS_URL_FOR_MULTI_DB);
+
+    if (StringUtils.hasText(operatePrefix)) {
+      container.withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_INDEX_PREFIX", operatePrefix);
+    }
+
+    if (StringUtils.hasText(tasklistPrefix)) {
+      container.withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_INDEX_PREFIX", tasklistPrefix);
+    }
   }
 
   private void prefixMigration(
@@ -441,69 +582,71 @@ public class PrefixMigrationIT {
         oldOperateAliases);
   }
 
-  private void assertOldIndicesAreRemoved(
-      final SearchEngineClient searchEngineClient,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix) {
-
-    assertThat(searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX))
-        .isEmpty();
-
-    assertThat(searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX))
-        .isEmpty();
+  private void assertIndices(
+      final SearchEngineClient searchEngineClient, final String prefix, final boolean present) {
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var assertion =
+                  assertThat(searchEngineClient.getMappings(prefix + "-*", MappingSource.INDEX));
+              if (present) {
+                assertion.isNotEmpty();
+              } else {
+                assertion.isEmpty();
+              }
+            });
   }
 
-  private void assertOldIndexTemplatesAreRemoved(
-      final SearchEngineClient searchEngineClient,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix) {
-
-    assertThat(
-            searchEngineClient.getMappings(oldTasklistPrefix + "-*", MappingSource.INDEX_TEMPLATE))
-        .isEmpty();
-
-    assertThat(
-            searchEngineClient.getMappings(oldOperatePrefix + "-*", MappingSource.INDEX_TEMPLATE))
-        .isEmpty();
+  private void assertIndexTemplates(
+      final SearchEngineClient searchEngineClient, final String prefix, final boolean present) {
+    await()
+        .atMost(Duration.ofSeconds(5))
+        .pollInterval(Duration.ofMillis(500))
+        .untilAsserted(
+            () -> {
+              final var assertion =
+                  assertThat(
+                      searchEngineClient.getMappings(prefix + "-*", MappingSource.INDEX_TEMPLATE));
+              if (present) {
+                assertion.isNotEmpty();
+              } else {
+                assertion.isEmpty();
+              }
+            });
   }
 
-  private void assertOldComponentTemplatesAreRemoved(
-      final ConnectConfiguration connectConfig,
-      final String oldTasklistPrefix,
-      final String oldOperatePrefix)
-      throws IOException, InterruptedException {
+  private void assertComponentTemplates(
+      final ConnectConfiguration connectConfig, final String prefix, final boolean present) {
 
-    final var oldTasklistComponentTemplate = oldTasklistPrefix + "_template";
-    final var oldOperateComponentTemplate = oldOperatePrefix + "_template";
+    final var componentTemplate = prefix + "_template";
 
     try (final var httpClient = HttpClient.newHttpClient()) {
-      var req =
-          HttpRequest.newBuilder()
-              .uri(
-                  URI.create(
-                      connectConfig.getUrl()
-                          + "/_component_template/"
-                          + oldTasklistComponentTemplate))
-              .GET()
-              .build();
+      await()
+          .atMost(Duration.ofSeconds(5))
+          .pollInterval(Duration.ofMillis(500))
+          .untilAsserted(
+              () -> {
+                final var req =
+                    HttpRequest.newBuilder()
+                        .uri(
+                            URI.create(
+                                connectConfig.getUrl()
+                                    + "/_component_template/"
+                                    + componentTemplate))
+                        .GET()
+                        .build();
 
-      assertThat(httpClient.send(req, BodyHandlers.discarding()))
-          .extracting(HttpResponse::statusCode)
-          .isEqualTo(404);
-
-      req =
-          HttpRequest.newBuilder()
-              .uri(
-                  URI.create(
-                      connectConfig.getUrl()
-                          + "/_component_template/"
-                          + oldOperateComponentTemplate))
-              .GET()
-              .build();
-
-      assertThat(httpClient.send(req, BodyHandlers.discarding()))
-          .extracting(HttpResponse::statusCode)
-          .isEqualTo(404);
+                final var assertion =
+                    assertThat(httpClient.send(req, BodyHandlers.discarding()))
+                        .extracting(HttpResponse::statusCode);
+                if (present) {
+                  assertion.isEqualTo(200);
+                } else {
+                  assertion.isEqualTo(404);
+                }
+              });
     }
   }
 }

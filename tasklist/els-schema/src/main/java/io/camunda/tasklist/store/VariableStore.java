@@ -33,17 +33,14 @@ public interface VariableStore {
 
   public void persistTaskVariables(final Collection<SnapshotTaskVariableEntity> finalVariables);
 
-  public List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<String> processInstanceIds);
+  List<FlowNodeInstanceEntity> getFlowNodeInstances(final List<Long> processInstanceKeys);
 
   public VariableEntity getRuntimeVariable(final String variableId, Set<String> fieldNames);
 
   public SnapshotTaskVariableEntity getTaskVariable(
       final String variableId, Set<String> fieldNames);
 
-  void refreshMaxTermsCount();
-
-  public List<String> getProcessInstanceIdsWithMatchingVars(
-      List<String> varNames, List<String> varValues);
+  List<Long> getProcessInstanceKeysWithMatchingVars(List<String> varNames, List<String> varValues);
 
   private static Optional<String> getTaskVariableElsFieldByGraphqlField(final String fieldName) {
     switch (fieldName) {

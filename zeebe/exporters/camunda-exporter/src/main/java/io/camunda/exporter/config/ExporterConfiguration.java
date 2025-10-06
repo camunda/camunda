@@ -144,6 +144,8 @@ public class ExporterConfiguration {
     private int delay = 5;
     // bulk size before flush
     private int size = 1_000;
+    // bulk memory utilisation before flush (in Mb)
+    private int memoryLimit = 20;
 
     public int getDelay() {
       return delay;
@@ -163,11 +165,27 @@ public class ExporterConfiguration {
 
     @Override
     public String toString() {
-      return "BulkConfiguration{" + "delay=" + delay + ", size=" + size + '}';
+      return "BulkConfiguration{"
+          + "delay="
+          + delay
+          + ", size="
+          + size
+          + ", memoryLimit="
+          + memoryLimit
+          + '}';
+    }
+
+    public int getMemoryLimit() {
+      return memoryLimit;
+    }
+
+    public void setMemoryLimit(final int memoryLimit) {
+      this.memoryLimit = memoryLimit;
     }
   }
 
   public static class HistoryConfiguration {
+    private boolean processInstanceEnabled = true;
     private String elsRolloverDateFormat = "date";
     private String rolloverInterval = "1d";
     private int rolloverBatchSize = 100;
@@ -176,6 +194,14 @@ public class ExporterConfiguration {
     private int maxDelayBetweenRuns = 60000;
     private RetentionConfiguration retention = new RetentionConfiguration();
     private boolean trackArchivalMetricsForProcessInstance = true;
+
+    public boolean isProcessInstanceEnabled() {
+      return processInstanceEnabled;
+    }
+
+    public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
+      this.processInstanceEnabled = processInstanceEnabled;
+    }
 
     public String getElsRolloverDateFormat() {
       return elsRolloverDateFormat;

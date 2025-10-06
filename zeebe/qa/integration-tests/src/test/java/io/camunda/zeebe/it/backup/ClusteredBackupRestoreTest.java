@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 
 import com.google.cloud.storage.BucketInfo;
+import io.camunda.configuration.Backup;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.Gcs;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
@@ -99,12 +102,12 @@ public class ClusteredBackupRestoreTest {
     // then -- restoring with one broker is successful
     try (final var restoreApp =
         new TestRestoreApp()
-            .withBrokerConfig(
-                brokerCfg -> {
-                  configureBackupStore(brokerCfg);
-                  brokerCfg.getCluster().setClusterSize(1);
-                  brokerCfg.getCluster().setPartitionsCount(3);
-                  brokerCfg.getCluster().setReplicationFactor(1);
+            .withConfig(
+                config -> {
+                  configureBackupStore(config);
+                  config.getCluster().setSize(1);
+                  config.getCluster().setPartitionCount(3);
+                  config.getCluster().setReplicationFactor(1);
                 })
             .withBackupId(backupId)) {
 
@@ -121,6 +124,18 @@ public class ClusteredBackupRestoreTest {
     storeConfig.setHost(GCS.externalEndpoint());
 
     backup.setStore(BackupStoreType.GCS);
+    backup.setGcs(storeConfig);
+  }
+
+  private static void configureBackupStore(final Camunda config) {
+    final var backup = config.getData().getBackup();
+
+    final var storeConfig = new Gcs();
+    storeConfig.setAuth(Gcs.GcsBackupStoreAuth.NONE);
+    storeConfig.setBucketName(BUCKET_NAME);
+    storeConfig.setHost(GCS.externalEndpoint());
+
+    backup.setStore(Backup.BackupStoreType.GCS);
     backup.setGcs(storeConfig);
   }
 }

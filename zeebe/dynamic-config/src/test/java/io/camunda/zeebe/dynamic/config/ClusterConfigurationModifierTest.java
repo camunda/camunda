@@ -49,21 +49,9 @@ final class ClusterConfigurationModifierTest {
                             1, new DynamicPartitionConfig(new ExportersConfig(Map.of()))))));
 
     @Test
-    void shouldNotInitializeRoutingStateIfPartitionScalingIsDisabled() {
-      // given
-      final var routingStateInitializer = new RoutingStateInitializer(false, 3);
-
-      // when
-      final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();
-
-      // then
-      ClusterConfigurationAssert.assertThatClusterTopology(newConfiguration).hasNoRoutingState();
-    }
-
-    @Test
     void shouldInitializeRoutingStateIfPartitionScalingIsEnabled() {
       // given
-      final var routingStateInitializer = new RoutingStateInitializer(true, 5);
+      final var routingStateInitializer = new RoutingStateInitializer(5);
 
       // when
       final var newConfiguration = routingStateInitializer.modify(currentConfiguration).join();

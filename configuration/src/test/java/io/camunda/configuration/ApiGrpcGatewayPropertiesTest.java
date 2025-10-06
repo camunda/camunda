@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_MANAGEMENT_THREADS;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -88,7 +89,7 @@ public class ApiGrpcGatewayPropertiesTest {
 
     @Test
     void shouldNotSetAddressFromLegacyBrokerNetwork() {
-      assertThat(gatewayCfg.getNetwork().getHost()).isNull();
+      assertThat(gatewayCfg.getNetwork().getHost()).isEqualTo(DEFAULT_HOST);
     }
 
     @Test

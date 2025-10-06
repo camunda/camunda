@@ -48,7 +48,7 @@ class ManifestManagerTest {
 
   @BeforeEach
   void setUp() {
-    manifestManager = new ManifestManager(tempDir.toString());
+    manifestManager = new ManifestManager(tempDir);
     backupIdentifier = new BackupIdentifierImpl(1337, 0, 42L);
     backup = createBackup(backupIdentifier);
   }
@@ -61,14 +61,14 @@ class ManifestManagerTest {
   void shouldCreateInitialManifest() throws IOException {
     final var manifest = createInitialManifest();
 
-    final var manifestPath = tempDir.resolve("manifests/0/42/1337/manifest.json");
+    final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     assertThat(Files.exists(manifestPath)).isTrue();
     assertThat(manifest.statusCode()).isEqualTo(Manifest.StatusCode.IN_PROGRESS);
   }
 
   @Test
   void shouldFailToCreateManifestIfAlreadyExists() throws IOException {
-    final var manifestPath = tempDir.resolve("manifests/0/42/1337/manifest.json");
+    final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     Files.createDirectories(manifestPath.getParent());
     Files.write(manifestPath, "existing content".getBytes(), StandardOpenOption.CREATE_NEW);
 
@@ -79,7 +79,7 @@ class ManifestManagerTest {
 
   @Test
   void shouldFailToCreateManifestIfNotValidJson() throws IOException {
-    final var manifestPath = tempDir.resolve("manifests/0/42/1337/manifest.json");
+    final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     Files.createDirectories(manifestPath.getParent());
     Files.write(manifestPath, "invalid json".getBytes(), StandardOpenOption.CREATE_NEW);
 
@@ -93,7 +93,7 @@ class ManifestManagerTest {
     final var inProgressManifest = createInitialManifest();
     manifestManager.completeManifest(inProgressManifest);
 
-    final var manifestPath = tempDir.resolve("manifests/0/42/1337/manifest.json");
+    final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     final var completedManifest = manifestManager.getManifest(backupIdentifier);
     assertThat(Files.exists(manifestPath)).isTrue();
     assertThat(completedManifest.statusCode()).isEqualTo(Manifest.StatusCode.COMPLETED);
@@ -116,7 +116,7 @@ class ManifestManagerTest {
 
     manifestManager.deleteManifest(backupIdentifier);
 
-    final var manifestPath = tempDir.resolve("manifests/0/42/1337/manifest.json");
+    final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     assertThat(Files.exists(manifestPath)).isFalse();
   }
 

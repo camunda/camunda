@@ -7,26 +7,47 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 public class ConfigurationValidatorTest {
+
+  private ConfigurationService configurationService;
+  private EmailAuthenticationConfiguration emailAuthConfig;
+  private ElasticSearchConfiguration elasticSearchConfiguration;
+  private OpenSearchConfiguration openSearchConfiguration;
+
+  private ConfigurationValidator configurationValidator;
+
+  @BeforeEach
+  public void setup() {
+    configurationService = mock(ConfigurationService.class);
+    emailAuthConfig = mock(EmailAuthenticationConfiguration.class);
+    elasticSearchConfiguration = mock(ElasticSearchConfiguration.class);
+    openSearchConfiguration = mock(OpenSearchConfiguration.class);
+    when(configurationService.getElasticSearchConfiguration())
+        .thenReturn(elasticSearchConfiguration);
+    when(configurationService.getOpenSearchConfiguration()).thenReturn(openSearchConfiguration);
+
+    configurationValidator = new ConfigurationValidator();
+  }
 
   @Test
   public void validateShouldCallEmailAuthenticationConfigurationValidate() {
     // given
-    final ConfigurationService configurationService = mock(ConfigurationService.class);
-    final EmailAuthenticationConfiguration emailAuthConfig =
-        mock(EmailAuthenticationConfiguration.class);
     when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
-    final ConfigurationValidator validator = new ConfigurationValidator();
 
     // when
-    validator.validate(configurationService);
+    configurationValidator.validate(configurationService);
 
     // then
     verify(emailAuthConfig).validate();
@@ -35,12 +56,52 @@ public class ConfigurationValidatorTest {
   @Test
   public void validateShouldThrowExceptionWhenEmailAuthenticationConfigurationIsNull() {
     // given
-    final ConfigurationService configurationService = mock(ConfigurationService.class);
     when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(null);
-    final ConfigurationValidator validator = new ConfigurationValidator();
 
     // when / then
     assertThatExceptionOfType(NullPointerException.class)
-        .isThrownBy(() -> validator.validate(configurationService));
+        .isThrownBy(() -> configurationValidator.validate(configurationService));
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"prefix", "hyphenated-prefix", "char+prefix"})
+  void shouldAllowValidIndexPrefixes(final String testPrefix) {
+    // given
+    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
+    when(elasticSearchConfiguration.getIndexPrefix()).thenReturn(testPrefix);
+    when(openSearchConfiguration.getIndexPrefix()).thenReturn(testPrefix);
+
+    // when / then
+    assertThatCode(() -> configurationValidator.validate(configurationService))
+        .doesNotThrowAnyException();
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {"\\", "/", "*", "?", "\"", ">", "<", "|", " ", "_"})
+  void shouldNotAllowInvalidCharactersInIndexPrefix(final String testCharacter) {
+    // given
+    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
+    when(elasticSearchConfiguration.getIndexPrefix()).thenReturn("testPrefix" + testCharacter);
+    when(openSearchConfiguration.getIndexPrefix()).thenReturn("testPrefix" + testCharacter);
+
+    // when / then
+    assertThatCode(() -> configurationValidator.validate(configurationService))
+        .hasMessageContaining(
+            "Optimize indexPrefix must not contain invalid characters [\\ / * ? \" < > | space _].")
+        .isInstanceOf(OptimizeConfigurationException.class);
+  }
+
+  @ParameterizedTest
+  @ValueSource(strings = {".", "+"})
+  void shouldNotAllowInvalidCharactersAtStartOfIndexPrefix(final String testCharacter) {
+    // given
+    when(configurationService.getEmailAuthenticationConfiguration()).thenReturn(emailAuthConfig);
+    when(elasticSearchConfiguration.getIndexPrefix()).thenReturn(testCharacter + "testPrefix");
+    when(openSearchConfiguration.getIndexPrefix()).thenReturn(testCharacter + "testPrefix");
+
+    // when - then
+    assertThatCode(() -> configurationValidator.validate(configurationService))
+        .hasMessageContaining("Optimize indexPrefix must not begin with invalid characters [. +].")
+        .isInstanceOf(OptimizeConfigurationException.class);
   }
 }

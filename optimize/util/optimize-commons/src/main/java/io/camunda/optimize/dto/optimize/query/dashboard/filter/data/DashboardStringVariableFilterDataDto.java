@@ -57,6 +57,15 @@ public class DashboardStringVariableFilterDataDto extends DashboardVariableFilte
 
   @Override
   public String toString() {
-    return "DashboardStringVariableFilterDataDto(defaultValues=" + getDefaultValues() + ")";
+    return "DashboardStringVariableFilterDataDto("
+        + "defaultValues="
+        + getDefaultValues()
+        + ", type="
+        + getType()
+        + ", name="
+        + getName()
+        + ", data="
+        + getData()
+        + ")";
   }
 }

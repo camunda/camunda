@@ -39,7 +39,6 @@ public class StandaloneUsageMetricMigration implements ApplicationListener<Migra
         "optional:classpath:/,optional:classpath:/config/,optional:file:./,optional:file:./config/");
     MainSupport.putSystemPropertyIfAbsent(
         "management.endpoints.web.exposure.include", "health, prometheus, loggers");
-    MainSupport.putSystemPropertyIfAbsent("management.server.port", "9600");
 
     final SpringApplication application =
         new SpringApplicationBuilder()

@@ -4,8 +4,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - 'gateway-protocol/src/main/proto/rest-api.yaml'
-      - 'gateway-protocol/src/main/proto/internal/generation-spec.yaml'
+      - 'zeebe/gateway-protocol/src/main/proto/rest-api.yaml'
+      - 'zeebe/gateway-protocol/src/main/proto/internal/generation-spec.yaml'
 
 jobs:
   comment-pr:

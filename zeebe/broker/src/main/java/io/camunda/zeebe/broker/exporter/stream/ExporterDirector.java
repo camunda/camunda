@@ -551,7 +551,15 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
               .runWithRetry(
                   () -> {
                     try {
-                      container.openExporter();
+                      // If the exporter was disable or removed concurrently, then don't retry
+                      // opening.
+                      if (containers.contains(container)) {
+                        container.openExporter();
+                      } else {
+                        LOG.debug(
+                            "Exporter '{}' was disabled or removed before it could be opened.",
+                            container.getId());
+                      }
                       return true;
                     } catch (final Exception e) {
                       LOG.warn("Failed to open exporter '{}'. Retrying...", container.getId());

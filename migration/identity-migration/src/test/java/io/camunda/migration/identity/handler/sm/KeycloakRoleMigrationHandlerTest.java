@@ -299,7 +299,8 @@ public class KeycloakRoleMigrationHandlerTest {
                 new Permission("read:users", "camunda-identity-resource-server"),
                 new Permission("write", "camunda-identity-resource-server"),
                 new Permission("read:*", "operate-api"),
-                new Permission("write:*", "operate-api")))
+                new Permission("write:*", "operate-api"),
+                new Permission("read:*", "tasklist-api")))
         .thenReturn(
             List.of(
                 new Permission("read:*", "tasklist-api"),
@@ -313,7 +314,7 @@ public class KeycloakRoleMigrationHandlerTest {
 
     // then
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(9)).createAuthorization(results.capture());
+    verify(authorizationServices, times(12)).createAuthorization(results.capture());
     final var authorizationRequests = results.getAllValues();
     assertThat(authorizationRequests)
         .extracting(
@@ -322,16 +323,17 @@ public class KeycloakRoleMigrationHandlerTest {
             CreateAuthorizationRequest::resourceType,
             CreateAuthorizationRequest::permissionTypes)
         .containsExactlyInAnyOrder(
-            tuple(
-                "role_1",
-                AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.USER,
-                Set.of(PermissionType.READ)),
+            // Identity read/write
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.COMPONENT,
                 Set.of(PermissionType.ACCESS)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.USER,
+                Set.of(PermissionType.READ)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -341,11 +343,6 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.UPDATE,
                     PermissionType.DELETE,
                     PermissionType.CREATE)),
-            tuple(
-                "role_1",
-                AuthorizationOwnerType.ROLE,
-                AuthorizationResourceType.COMPONENT,
-                Set.of(PermissionType.ACCESS)),
             tuple(
                 "role_1",
                 AuthorizationOwnerType.ROLE,
@@ -373,16 +370,40 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.CREATE,
                     PermissionType.UPDATE,
                     PermissionType.DELETE)),
+            // Operate read/write
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            // Tasklist read
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.COMPONENT,
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                Set.of(PermissionType.READ_USER_TASK)),
+            // zeebe write
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.SYSTEM,
                 Set.of(PermissionType.READ, PermissionType.UPDATE)),
+            // tasklist read/write
             tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.COMPONENT,
-                Set.of(PermissionType.ACCESS)));
+                Set.of(PermissionType.ACCESS)),
+            tuple(
+                "role@name_with_special_chars",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
   }
 
   @Test

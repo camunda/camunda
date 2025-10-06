@@ -13,6 +13,8 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import feign.FeignException.NotFound;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
+import io.camunda.configuration.Backup;
+import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupHistoryResponse;
 import io.camunda.qa.util.cluster.HistoryBackupClient;
@@ -242,8 +244,25 @@ public class BackupRestoreIT {
   }
 
   private void restoreZeebe() {
-    try (final var restoreApp =
-        new TestRestoreApp(testStandaloneApplication.brokerConfig()).withBackupId(BACKUP_ID)) {
+    final var unifiedRestoreConfig = new Camunda();
+    final var backup = unifiedRestoreConfig.getData().getBackup();
+
+    backup.setStore(Backup.BackupStoreType.AZURE); // We are configuring Azure always
+    backup.getAzure().setBasePath(containerName);
+    backup.getAzure().setConnectionString(AZURITE_CONTAINER.getConnectString());
+
+    final var brokerCfg = testStandaloneApplication.brokerConfig();
+    unifiedRestoreConfig.getCluster().setNodeId(brokerCfg.getCluster().getNodeId());
+    unifiedRestoreConfig
+        .getCluster()
+        .setPartitionCount(brokerCfg.getCluster().getPartitionsCount());
+    unifiedRestoreConfig
+        .getData()
+        .getPrimaryStorage()
+        .setDirectory(brokerCfg.getData().getDirectory());
+    unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
+
+    try (final var restoreApp = new TestRestoreApp(unifiedRestoreConfig).withBackupId(BACKUP_ID)) {
       assertThatNoException().isThrownBy(restoreApp::start);
     }
   }

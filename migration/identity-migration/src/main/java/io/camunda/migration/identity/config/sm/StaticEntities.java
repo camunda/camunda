@@ -236,7 +236,7 @@ public class StaticEntities {
                         AuthorizationResourceType.DECISION_DEFINITION
                             .getSupportedPermissionTypes()))),
             new AuthEntry(
-                audiences.getTasklist() + ":read:*",
+                createTasklistReadPermissionString(audiences),
                 List.of(
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -253,7 +253,7 @@ public class StaticEntities {
                             PermissionType.READ_PROCESS_DEFINITION,
                             PermissionType.READ_USER_TASK)))),
             new AuthEntry(
-                audiences.getTasklist() + ":write:*",
+                createTasklistWritePermissionString(audiences),
                 List.of(
                     new CreateAuthorizationRequest(
                         ownerId,
@@ -319,5 +319,13 @@ public class StaticEntities {
         .filter(a -> a.key().equals(permission))
         .flatMap(a -> a.value().stream())
         .collect(Collectors.toSet());
+  }
+
+  public static String createTasklistReadPermissionString(final Audiences audiences) {
+    return audiences.getTasklist() + ":read:*";
+  }
+
+  public static String createTasklistWritePermissionString(final Audiences audiences) {
+    return audiences.getTasklist() + ":write:*";
   }
 }

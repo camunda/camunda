@@ -18,19 +18,23 @@ import {
   tenantRequiredFields,
   userRequiredFields,
   decisionDefinitionRequiredFields,
+  userTaskSearchPageResponseRequiredFields,
 } from './beans/requestBeans';
 import {
   assertEqualsForKeys,
   assertRequiredFields,
+  assertStatusCode,
   buildUrl,
   jsonHeaders,
+  paginatedResponseFields,
 } from './http';
 import {expect} from '@playwright/test';
 import type {APIRequestContext} from 'playwright-core';
 import {defaultAssertionOptions, generateUniqueId} from './constants';
 import {Serializable} from 'playwright-core/types/structs';
-import {deploy} from './zeebeClient';
+import {cancelProcessInstance, createInstances, deploy} from './zeebeClient';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 export async function createGroupAndStoreResponseFields(
   request: APIRequestContext,
@@ -685,4 +689,89 @@ export function roleDescriptionFromState(
   nth: number = 1,
 ): string {
   return state[`roleDescription${state[group]}${nth}`] as string;
+}
+
+export async function activateJobToObtainAValidJobKey(
+  request: APIRequestContext,
+  jobType: string,
+): Promise<number> {
+  const activateRes = await request.post(buildUrl('/jobs/activation'), {
+    headers: jsonHeaders(),
+    data: {
+      type: jobType,
+      timeout: 10000,
+      maxJobsToActivate: 1,
+    },
+  });
+  await assertStatusCode(activateRes, 200);
+  const activateJson = await activateRes.json();
+  expect(activateJson.jobs.length).toBe(1);
+  return activateJson.jobs[0].jobKey;
+}
+
+export function setupProcessInstanceTests(
+  processFileName: string,
+  processName?: string,
+  variables?: JSONDoc,
+) {
+  const state: Record<string, unknown> = {};
+
+  return {
+    state,
+    beforeAll: async () => {
+      await deploy([`./resources/${processFileName}.bpmn`]);
+    },
+    beforeEach: async () => {
+      const processInstance = await createInstances(
+        processName ? processName : processFileName,
+        1,
+        1,
+        variables,
+      );
+      state['processInstanceKey'] = processInstance[0].processInstanceKey;
+    },
+    afterEach: async () => {
+      if (!state['processCompleted']) {
+        await cancelProcessInstance(state['processInstanceKey'] as string);
+      }
+    },
+  };
+}
+
+export async function findUserTask(
+  request: APIRequestContext,
+  procKey: string,
+  state: string,
+) {
+  const localState: Record<string, unknown> = {};
+  await expect(async () => {
+    const searchRes = await request.post(buildUrl('/user-tasks/search'), {
+      headers: jsonHeaders(),
+      data: {filter: {processInstanceKey: procKey}},
+    });
+    await assertStatusCode(searchRes, 200);
+    const searchJson = await searchRes.json();
+
+    assertRequiredFields(searchJson, paginatedResponseFields);
+    assertRequiredFields(
+      searchJson.page,
+      userTaskSearchPageResponseRequiredFields,
+    );
+    expect(searchJson.page.totalItems).toBe(1);
+    expect(searchJson.items.length).toBe(1);
+    expect(searchJson.items[0].state).toBe(state);
+    localState['userTaskKey'] = searchJson.items[0].userTaskKey;
+  }).toPass(defaultAssertionOptions);
+  return localState['userTaskKey'] as string;
+}
+
+export async function completeUserTask(
+  request: APIRequestContext,
+  userTaskKey: string,
+  payload: unknown = {},
+) {
+  return await request.post(buildUrl(`/user-tasks/${userTaskKey}/completion`), {
+    headers: jsonHeaders(),
+    data: payload,
+  });
 }

@@ -32,6 +32,7 @@ import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
@@ -87,7 +88,7 @@ import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 final class OpenSearchArchiverRepositoryIT {
   private static final Logger LOGGER =
       LoggerFactory.getLogger(OpenSearchArchiverRepositoryIT.class);
-  @RegisterExtension private static SearchDBExtension searchDB = create();
+  @RegisterExtension private static final SearchDBExtension SEARCH_DB = create();
   private static final ObjectMapper MAPPER = TestObjectMapper.objectMapper();
   @AutoClose private final RestClientTransport transport = createRestClient();
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
@@ -478,6 +479,45 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   @Test
+  void shouldGetStandaloneDecisionNextBatch() throws IOException {
+    // given - 5 documents, two of which were created over an hour ago and should be archived,
+    // one of which was created recently, one on a different partition and one with a different
+    // process instance key
+    final var now = Instant.now();
+    final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestStandaloneDecision("1", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("2", twoHoursAgo, 1, -1),
+            new TestStandaloneDecision("3", twoHoursAgo, 2, -1),
+            new TestStandaloneDecision("4", twoHoursAgo, 1, 12345),
+            new TestStandaloneDecision("5", now.toString(), 1, -1));
+
+    // create the index template first to ensure ID is a keyword, otherwise the surrounding
+    // aggregation will fail
+    final var standaloneDecisionIndex =
+        resourceProvider
+            .getIndexTemplateDescriptor(DecisionInstanceTemplate.class)
+            .getFullQualifiedName();
+    createStandaloneDecisionIndex(standaloneDecisionIndex);
+    documents.forEach(doc -> index(standaloneDecisionIndex, doc));
+    testClient.indices().refresh(r -> r.index(standaloneDecisionIndex));
+    config.setRolloverBatchSize(3);
+
+    // when
+    final var result = repository.getStandaloneDecisionNextBatch();
+
+    // then - we expect only the first two documents created two hours ago to be returned
+    final var dateFormatter =
+        DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    final var batch = result.join();
+    assertThat(batch.ids()).containsExactly("1", "2");
+    assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
+  }
+
+  @Test
   void shouldSetTheCorrectFinishDateWithRollover() throws IOException {
     // given a rollover of 3 days:
     config.setRolloverInterval("3d");
@@ -620,12 +660,13 @@ final class OpenSearchArchiverRepositoryIT {
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofDays(1))));
   }
 
-  @Test
-  void shouldGetUsageMetricNextBatch() throws IOException {
-    // given - 3 documents, two older than archive threshold, one recent
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void shouldGetUsageMetricNextBatch(final int partitionId) throws IOException {
+    // given
     final var now = Instant.now();
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
+    final var repository = createRepository(partitionId);
     final var usageMetricIndex =
         resourceProvider
             .getIndexTemplateDescriptor(UsageMetricTemplate.class)
@@ -633,9 +674,12 @@ final class OpenSearchArchiverRepositoryIT {
     createUsageMetricIndex(usageMetricIndex);
     final var documents =
         List.of(
-            new TestUsageMetric("1", twoHoursAgo),
-            new TestUsageMetric("2", twoHoursAgo),
-            new TestUsageMetric("3", now.toString()));
+            new TestUsageMetric("1", twoHoursAgo, 1),
+            new TestUsageMetric("2", twoHoursAgo, 1),
+            new TestUsageMetric("3", twoHoursAgo, -1),
+            new TestUsageMetric("4", twoHoursAgo, 21),
+            new TestUsageMetric("20", now.toString(), 2),
+            new TestUsageMetric("21", twoHoursAgo, 2));
     documents.forEach(doc -> index(usageMetricIndex, doc));
     testClient.indices().refresh(r -> r.index(usageMetricIndex));
     config.setRolloverBatchSize(5);
@@ -648,16 +692,21 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("1", "2");
+    if (partitionId == 1) {
+      assertThat(batch.ids()).containsExactly("1", "2", "3");
+    } else {
+      assertThat(batch.ids()).containsExactly("21");
+    }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
-  @Test
-  void shouldGetUsageMetricTUNextBatch() throws IOException {
-    // given - 3 TU documents, two older than archive threshold, one recent
+  @ParameterizedTest
+  @ValueSource(ints = {1, 2})
+  void shouldGetUsageMetricTUNextBatch(final int partitionId) throws IOException {
+    // given
     final var now = Instant.now();
     final var twoHoursAgo = now.minus(Duration.ofHours(2)).toString();
-    final var repository = createRepository();
+    final var repository = createRepository(partitionId);
     final var usageMetricTUIndex =
         resourceProvider
             .getIndexTemplateDescriptor(UsageMetricTUTemplate.class)
@@ -665,9 +714,12 @@ final class OpenSearchArchiverRepositoryIT {
     createUsageMetricTUIndex(usageMetricTUIndex);
     final var documents =
         List.of(
-            new TestUsageMetricTU("10", twoHoursAgo),
-            new TestUsageMetricTU("11", twoHoursAgo),
-            new TestUsageMetricTU("12", now.toString()));
+            new TestUsageMetricTU("10", twoHoursAgo, 1),
+            new TestUsageMetricTU("11", twoHoursAgo, 1),
+            new TestUsageMetricTU("12", twoHoursAgo, -1),
+            new TestUsageMetricTU("14", now.toString(), 1),
+            new TestUsageMetricTU("20", now.toString(), 2),
+            new TestUsageMetricTU("21", twoHoursAgo, 2));
     documents.forEach(doc -> index(usageMetricTUIndex, doc));
     testClient.indices().refresh(r -> r.index(usageMetricTUIndex));
     config.setRolloverBatchSize(5);
@@ -680,7 +732,11 @@ final class OpenSearchArchiverRepositoryIT {
         DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneId.systemDefault());
     assertThat(result).succeedsWithin(Duration.ofSeconds(30));
     final var batch = result.join();
-    assertThat(batch.ids()).containsExactly("10", "11");
+    if (partitionId == 1) {
+      assertThat(batch.ids()).containsExactly("10", "11", "12");
+    } else {
+      assertThat(batch.ids()).containsExactly("21");
+    }
     assertThat(batch.finishDate()).isEqualTo(dateFormatter.format(now.minus(Duration.ofHours(2))));
   }
 
@@ -819,7 +875,7 @@ final class OpenSearchArchiverRepositoryIT {
     final var searchEngineClient = new OpensearchEngineClient(testClient, objectMapper);
     final var connectConfig = new ConnectConfiguration();
     connectConfig.setIndexPrefix(indexPrefix);
-    connectConfig.setUrl(searchDB.esUrl());
+    connectConfig.setUrl(SEARCH_DB.esUrl());
     connectConfig.setType(DatabaseType.OPENSEARCH.toString());
     final var schemaManagerConfig = new SchemaManagerConfiguration();
     schemaManagerConfig.getRetry().setMaxRetries(1);
@@ -905,6 +961,29 @@ final class OpenSearchArchiverRepositoryIT {
                     .aliases(usageMetricTUIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+  private void createStandaloneDecisionIndex(final String standaloneDecisionIndex)
+      throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var evaluationDateProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        DecisionInstanceTemplate.ID,
+                        idProp,
+                        DecisionInstanceTemplate.EVALUATION_DATE,
+                        evaluationDateProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(standaloneDecisionIndex)
+                    .mappings(properties)
+                    .aliases(standaloneDecisionIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
   private <T extends TDocument> void index(final String index, final T document) {
     try {
       testClient.index(b -> b.index(index).document(document).id(document.id()));
@@ -959,19 +1038,35 @@ final class OpenSearchArchiverRepositoryIT {
 
   // no need to close resource returned here, since the transport is closed above anyway
   private OpenSearchArchiverRepository createRepository() {
+    return createRepository(1);
+  }
+
+  private OpenSearchArchiverRepository createRepository(final int partitionId) {
     final var client = createOpenSearchAsyncClient();
 
     return createRepository(
-        new OpenSearchGenericClient(client._transport(), client._transportOptions()));
+        new OpenSearchGenericClient(client._transport(), client._transportOptions()), partitionId);
   }
 
   private OpenSearchArchiverRepository createRepository(
       final OpenSearchGenericClient genericClient) {
+    return createRepository(genericClient, 1);
+  }
+
+  private OpenSearchArchiverRepository createRepository(
+      final OpenSearchGenericClient genericClient, final int partitionId) {
     final var client = createOpenSearchAsyncClient();
     final var metrics = new CamundaExporterMetrics(meterRegistry);
 
     return new OpenSearchArchiverRepository(
-        1, config, resourceProvider, client, genericClient, Runnable::run, metrics, LOGGER);
+        partitionId,
+        config,
+        resourceProvider,
+        client,
+        genericClient,
+        Runnable::run,
+        metrics,
+        LOGGER);
   }
 
   private void createProcessInstanceIndex() throws IOException {
@@ -1001,7 +1096,7 @@ final class OpenSearchArchiverRepositoryIT {
   }
 
   private RestClientTransport createRestClient() {
-    final var restClient = RestClient.builder(HttpHost.create(searchDB.osUrl())).build();
+    final var restClient = RestClient.builder(HttpHost.create(SEARCH_DB.osUrl())).build();
     return new RestClientTransport(restClient, new JacksonJsonpMapper());
   }
 
@@ -1087,9 +1182,14 @@ final class OpenSearchArchiverRepositoryIT {
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
 
-  private record TestUsageMetric(String id, String endTime) implements TDocument {}
+  private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
 
-  private record TestUsageMetricTU(String id, String endTime) implements TDocument {}
+  private record TestUsageMetricTU(String id, String endTime, int partitionId)
+      implements TDocument {}
+
+  private record TestStandaloneDecision(
+      String id, String evaluationDate, int partitionId, int processInstanceKey)
+      implements TDocument {}
 
   private interface TDocument {
     String id();

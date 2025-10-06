@@ -315,7 +315,10 @@ test.describe.parallel('Users API Tests', () => {
     const res = await request.get(buildUrl('/users/{username}', p), {
       headers: jsonHeaders(),
     });
-    await assertNotFoundRequest(res, `User with id '${p.username}' not found`);
+    await assertNotFoundRequest(
+      res,
+      `User with username '${p.username}' not found`,
+    );
   });
 
   test('Update User', async ({request}) => {
@@ -453,7 +456,7 @@ test.describe.parallel('Users API Tests', () => {
         });
         await assertNotFoundRequest(
           after,
-          `User with id '${p.username}' not found`,
+          `User with username '${p.username}' not found`,
         );
       }).toPass(defaultAssertionOptions);
     });

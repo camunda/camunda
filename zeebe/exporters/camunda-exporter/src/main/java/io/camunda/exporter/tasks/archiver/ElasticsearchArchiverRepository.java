@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.archiver;
 
 import static io.camunda.search.schema.SchemaManager.PI_ARCHIVING_BLOCKED_META_KEY;
+import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch._types.Conflicts;
@@ -16,6 +17,7 @@ import co.elastic.clients.elasticsearch._types.Slices;
 import co.elastic.clients.elasticsearch._types.SlicesCalculation;
 import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch._types.Time;
+import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery.Builder;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermsQuery;
@@ -40,6 +42,7 @@ import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
+import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTUTemplate;
 import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
@@ -65,6 +68,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+  private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
@@ -95,6 +99,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+    decisionInstanceTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
     this.metrics = metrics;
   }
 
@@ -132,10 +138,31 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+            executor);
+  }
+
+  @Override
   public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
-            usageMetricTemplateDescriptor.getFullQualifiedName(), UsageMetricTemplate.END_TIME);
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
 
     final var timer = Timer.start();
     return client
@@ -149,10 +176,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
-  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
-    final var searchRequest =
-        createUsageMetricSearchRequest(
-            usageMetricTUTemplateDescriptor.getFullQualifiedName(), UsageMetricTUTemplate.END_TIME);
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch() {
+    final var searchRequest = createStandaloneDecisionSearchRequest();
 
     final var timer = Timer.start();
     return client
@@ -161,7 +186,9 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .thenComposeAsync(
             response ->
                 createArchiveBatch(
-                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+                    response,
+                    DecisionInstanceTemplate.EVALUATION_DATE,
+                    decisionInstanceTemplateDescriptor),
             executor);
   }
 
@@ -398,11 +425,50 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   private SearchRequest createUsageMetricSearchRequest(
-      final String indexName, final String endTimeField) {
+      final String indexName, final String endTimeField, final String partitionIdField) {
     final var endDateQ =
         QueryBuilders.range(
             q -> q.date(d -> d.field(endTimeField).lte(config.getArchivingTimePoint())));
-    return createSearchRequest(indexName, endDateQ, endTimeField);
+
+    final Builder boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+
+    if (partitionId == START_PARTITION_ID) {
+      // Include -1 for migrated documents without partitionId
+      final List<FieldValue> partitionIds = List.of(FieldValue.of(-1), FieldValue.of(partitionId));
+      final var termsQ =
+          QueryBuilders.terms(q -> q.field(partitionIdField).terms(t -> t.value(partitionIds)));
+      boolBuilder.must(termsQ);
+    } else {
+      final var termQ = QueryBuilders.term(q -> q.field(partitionIdField).value(partitionId));
+      boolBuilder.must(termQ);
+    }
+
+    return createSearchRequest(indexName, boolBuilder.build()._toQuery(), endTimeField);
+  }
+
+  private SearchRequest createStandaloneDecisionSearchRequest() {
+    return createSearchRequest(
+        decisionInstanceTemplateDescriptor.getFullQualifiedName(),
+        standaloneDecisionInstancesSearchQuery(config.getArchivingTimePoint(), partitionId),
+        DecisionInstanceTemplate.EVALUATION_DATE);
+  }
+
+  private Query standaloneDecisionInstancesSearchQuery(
+      final String archivingTimePoint, final int partitionId) {
+    final var endDateQ =
+        QueryBuilders.range(
+            q ->
+                q.date(
+                    d ->
+                        d.field(DecisionInstanceTemplate.EVALUATION_DATE).lte(archivingTimePoint)));
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(DecisionInstanceTemplate.PARTITION_ID).value(partitionId));
+    // standalone decision instances have processInstanceKey = -1
+    final var standaloneDecisionInstanceQ =
+        QueryBuilders.term(q -> q.field(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY).value(-1));
+    return QueryBuilders.bool(
+        q -> q.filter(endDateQ).filter(partitionQ).filter(standaloneDecisionInstanceQ));
   }
 
   private SearchRequest createSearchRequest(
