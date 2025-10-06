@@ -28,7 +28,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.operate.JacksonConfig;
-import io.camunda.operate.Metrics;
 import io.camunda.operate.conditions.DatabaseInfo;
 import io.camunda.operate.connect.ElasticsearchConnector;
 import io.camunda.operate.connect.OperateDateTimeFormatter;
@@ -57,8 +56,6 @@ import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.operate.zeebeimport.post.PostImportAction;
 import io.camunda.operate.zeebeimport.post.elasticsearch.ElasticsearchIncidentPostImportAction;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
-import io.micrometer.core.instrument.Gauge;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -99,9 +96,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       DatabaseInfo.class,
       ElasticsearchSchemaTestHelper.class,
       ElasticsearchClientTestHelper.class,
-      ElasticsearchIncidentPostImportAction.class,
-      Metrics.class,
-      SimpleMeterRegistry.class
+      ElasticsearchIncidentPostImportAction.class
     },
     properties = {"spring.profiles.active=", OperateProperties.PREFIX + ".database=elasticsearch"})
 @EnableConfigurationProperties(OperateProperties.class)
@@ -118,7 +113,6 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
   @Autowired protected FlowNodeInstanceTemplate flowNodeInstanceTemplate;
   @Autowired protected PostImporterQueueTemplate postImporterQueueTemplate;
   @Autowired protected IncidentTemplate incidentTemplate;
-  @Autowired protected Metrics metrics;
 
   // not needed for the test but to satisfy our auto wirings
   @MockBean(name = "postImportThreadPoolScheduler")
@@ -143,8 +137,7 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
     schemaTestHelper.dropSchema();
   }
 
-  private void createProcessInstance(
-      final String key, final Consumer<Map<String, Object>> propertiesCreator) {
+  private void createProcessInstance(String key, Consumer<Map<String, Object>> propertiesCreator) {
 
     final Map<String, Object> processInstance = new HashMap<String, Object>();
     propertiesCreator.accept(processInstance);
@@ -159,10 +152,10 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
   }
 
   private void createFlowNodeInstance(
-      final String key,
-      final String processInstanceKey,
-      final Consumer<Map<String, Object>> listViewPropertiesCreator,
-      final Consumer<Map<String, Object>> flowNodeInstancePropertiesCreator) {
+      String key,
+      String processInstanceKey,
+      Consumer<Map<String, Object>> listViewPropertiesCreator,
+      Consumer<Map<String, Object>> flowNodeInstancePropertiesCreator) {
 
     final Map<String, Object> listViewFlowNodeInstance = new HashMap<String, Object>();
     listViewPropertiesCreator.accept(listViewFlowNodeInstance);
@@ -282,10 +275,10 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
   }
 
   private void assertUpdateWasRoutedTo(
-      final List<JsonNode> bulkActions,
-      final IndexDescriptor index,
-      final String documentId,
-      final String expectedRountingKey) {
+      List<JsonNode> bulkActions,
+      IndexDescriptor index,
+      String documentId,
+      String expectedRountingKey) {
     final List<JsonNode> updatesForDocument =
         filterUpdatesToIndexAndDocument(bulkActions, index, documentId);
 
@@ -303,7 +296,7 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
   }
 
   private List<JsonNode> filterUpdatesToIndexAndDocument(
-      final List<JsonNode> bulkActions, final IndexDescriptor index, final String documentId) {
+      List<JsonNode> bulkActions, IndexDescriptor index, String documentId) {
     return bulkActions.stream()
         .filter(n -> n.has("update")) // only updates
         .map(n -> n.get("update"))
@@ -314,7 +307,7 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
         .collect(Collectors.toList());
   }
 
-  private List<JsonNode> parseActions(final String bulkRequestBody) throws IOException {
+  private List<JsonNode> parseActions(String bulkRequestBody) throws IOException {
     final ObjectMapper objectMapper = new ObjectMapper();
     final ObjectReader reader = objectMapper.readerFor(JsonNode.class);
 
@@ -337,37 +330,5 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
     }
 
     return actions;
-  }
-
-  @Test
-  public void shouldEmitPostImporterQueueSizeMetrics() throws IOException {
-    // given
-    schemaManager.createSchema();
-
-    final String postImporterQueueKey = "1";
-    final Map<String, Object> postImporterQueueEntry = new HashMap<String, Object>();
-    postImporterQueueEntry.put("key", 123L);
-    postImporterQueueEntry.put("position", 1L);
-    postImporterQueueEntry.put("actionType", PostImporterActionType.INCIDENT);
-    postImporterQueueEntry.put("intent", IncidentIntent.CREATED);
-    postImporterQueueEntry.put("partitionId", PARTITION_ID);
-
-    searchClientTestHelper.createDocument(
-        postImporterQueueTemplate.getFullQualifiedName(),
-        postImporterQueueKey,
-        postImporterQueueEntry);
-
-    // refresh so that the post importer sees the queue entry
-    searchClientTestHelper.refreshAllIndexes();
-
-    // when
-    postImportAction.performOneRound();
-
-    // then - verify that the post importer queue size metric is registered and has correct value
-    final Gauge queueSizeGauge =
-        metrics.getMeterRegistry().find(Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE).gauge();
-    assertThat(queueSizeGauge).isNotNull();
-    assertThat(queueSizeGauge.getId().getTag("partition")).isEqualTo(String.valueOf(PARTITION_ID));
-    assertThat(queueSizeGauge.value()).isEqualTo(1.0); // One entry in the queue
   }
 }

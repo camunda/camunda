@@ -91,13 +91,6 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
     super(partitionId);
   }
 
-  @Override
-  public void run() {
-    // Initialize metrics when the component is fully loaded
-    initializeMetrics();
-    super.run();
-  }
-
   /**
    * Returns map incident key -> intent (CRAETED|RESOLVED)
    *
@@ -130,11 +123,6 @@ public class OpensearchIncidentPostImportAction extends AbstractIncidentPostImpo
             .size(operateProperties.getZeebeOpensearch().getBatchSize());
 
     final var response = richOpenSearchClient.doc().search(postImporterQueueRequest, Result.class);
-
-    // Update the queue size metric with the total hits count
-    final long queueSize = response.hits().total().value();
-    updateQueueSizeMetric(queueSize);
-
     incidents2Process =
         response.hits().hits().stream()
             .map(Hit::source)

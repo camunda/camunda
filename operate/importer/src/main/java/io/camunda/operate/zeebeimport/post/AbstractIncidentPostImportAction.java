@@ -18,7 +18,6 @@ package io.camunda.operate.zeebeimport.post;
 
 import static java.time.temporal.ChronoUnit.MILLIS;
 
-import io.camunda.operate.Metrics;
 import io.camunda.operate.entities.IncidentEntity;
 import io.camunda.operate.entities.meta.ImportPositionEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -31,7 +30,6 @@ import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,33 +51,12 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
   @Autowired protected OperateProperties operateProperties;
 
   @Autowired protected ImportPositionHolder importPositionHolder;
-
-  @Autowired protected Metrics metrics;
-
   protected ImportPositionEntity lastProcessedPosition;
   private final BackoffIdleStrategy errorStrategy;
-  private final AtomicLong lastKnownQueueSize = new AtomicLong(0);
 
   public AbstractIncidentPostImportAction(final int partitionId) {
     this.partitionId = partitionId;
     errorStrategy = new BackoffIdleStrategy(BACKOFF, 1.2f, 10_000);
-  }
-
-  protected void initializeMetrics() {
-    final var metricDoc = Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE;
-    final var description =
-        "Current size of the post importer queue for processing pending incidents";
-
-    metrics.registerGaugeSupplier(
-        metricDoc,
-        description,
-        () -> lastKnownQueueSize,
-        Metrics.TAG_KEY_PARTITION,
-        String.valueOf(partitionId));
-  }
-
-  protected void updateQueueSizeMetric(final long queueSize) {
-    lastKnownQueueSize.set(queueSize);
   }
 
   @Override
