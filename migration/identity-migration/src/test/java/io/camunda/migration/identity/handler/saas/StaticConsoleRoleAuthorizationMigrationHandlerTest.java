@@ -23,7 +23,13 @@ import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.ErrorCode;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -76,11 +82,20 @@ public class StaticConsoleRoleAuthorizationMigrationHandlerTest {
 
     // then
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(6)).createAuthorization(results.capture());
+    verify(authorizationServices, times(7)).createAuthorization(results.capture());
     final var requests = results.getAllValues();
-    assertThat(requests)
-        .containsExactlyElementsOf(
-            ROLE_PERMISSIONS.stream().filter(entry -> !"*".equals(entry.resourceId())).toList());
+    final List<CreateAuthorizationRequest> expectedAuthorizations =
+        ROLE_PERMISSIONS.stream()
+            .filter(entry -> !"*".equals(entry.resourceId()))
+            .collect(Collectors.toList());
+    expectedAuthorizations.add(
+        new CreateAuthorizationRequest(
+            "taskuser",
+            AuthorizationOwnerType.ROLE,
+            "*",
+            AuthorizationResourceType.PROCESS_DEFINITION,
+            Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
+    assertThat(requests).containsExactlyInAnyOrderElementsOf(expectedAuthorizations);
   }
 
   @Test

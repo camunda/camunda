@@ -10,6 +10,8 @@ package io.camunda.migration.identity.handler.sm;
 import static io.camunda.migration.identity.MigrationUtil.extractCombinedPermissions;
 import static io.camunda.migration.identity.MigrationUtil.normalizeID;
 import static io.camunda.migration.identity.config.ResourceBasedAuthorizationConstants.RBA_IRRELEVANT_RESOURCE_TYPES;
+import static io.camunda.migration.identity.config.sm.StaticEntities.createTasklistReadPermissionString;
+import static io.camunda.migration.identity.config.sm.StaticEntities.createTasklistWritePermissionString;
 import static io.camunda.migration.identity.config.sm.StaticEntities.getAuthorizationsByAudience;
 
 import io.camunda.migration.api.MigrationException;
@@ -24,6 +26,8 @@ import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
 import io.camunda.service.RoleServices;
 import io.camunda.service.RoleServices.CreateRoleRequest;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -150,6 +154,26 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
         getAuthorizationsByAudience(audiences, permission, roleId, AuthorizationOwnerType.ROLE);
     if (migrationProperties.isResourceAuthorizationsEnabled()) {
       authorizations.removeIf(auth -> !RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()));
+
+      // for the Tasklist role there were no RBA restrictions on task access, thus adding task
+      // permissions still
+      if (permission.equals(createTasklistReadPermissionString(audiences))) {
+        authorizations.add(
+            new CreateAuthorizationRequest(
+                roleId,
+                AuthorizationOwnerType.ROLE,
+                "*",
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                Set.of(PermissionType.READ_USER_TASK)));
+      } else if (permission.equals(createTasklistWritePermissionString(audiences))) {
+        authorizations.add(
+            new CreateAuthorizationRequest(
+                roleId,
+                AuthorizationOwnerType.ROLE,
+                "*",
+                AuthorizationResourceType.PROCESS_DEFINITION,
+                Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
+      }
     }
     return authorizations;
   }

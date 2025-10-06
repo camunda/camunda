@@ -9,6 +9,7 @@ package io.camunda.migration.identity.handler.saas;
 
 import static io.camunda.migration.identity.config.ResourceBasedAuthorizationConstants.RBA_IRRELEVANT_RESOURCE_TYPES;
 import static io.camunda.migration.identity.config.saas.StaticEntities.ROLE_PERMISSIONS;
+import static io.camunda.migration.identity.config.saas.StaticEntities.TASK_USER_ROLE_ID;
 
 import io.camunda.migration.api.MigrationException;
 import io.camunda.migration.identity.config.IdentityMigrationProperties;
@@ -17,7 +18,11 @@ import io.camunda.migration.identity.handler.MigrationHandler;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.AuthorizationServices;
 import io.camunda.service.AuthorizationServices.CreateAuthorizationRequest;
+import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -54,6 +59,16 @@ public class StaticConsoleRoleAuthorizationMigrationHandler extends MigrationHan
           ROLE_PERMISSIONS.stream()
               .filter(auth -> RBA_IRRELEVANT_RESOURCE_TYPES.contains(auth.resourceType()))
               .collect(Collectors.toList());
+
+      // for the Tasklist role there were no RBA restrictions on task access, thus adding task
+      // permissions still
+      rolePermissionsToCreate.add(
+          new CreateAuthorizationRequest(
+              TASK_USER_ROLE_ID,
+              AuthorizationOwnerType.ROLE,
+              "*",
+              AuthorizationResourceType.PROCESS_DEFINITION,
+              Set.of(PermissionType.READ_USER_TASK, PermissionType.UPDATE_USER_TASK)));
     }
 
     totalRolePermissions.set(rolePermissionsToCreate.size());
