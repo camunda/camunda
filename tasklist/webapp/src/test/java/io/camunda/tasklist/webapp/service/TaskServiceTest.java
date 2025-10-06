@@ -70,7 +70,7 @@ class TaskServiceTest {
   @Mock private ZeebeClient zeebeClient;
   @Mock private TaskStore taskStore;
   @Mock private VariableService variableService;
-  @Spy private ObjectMapper objectMapper = CommonUtils.getObjectMapper();
+  @Spy private final ObjectMapper objectMapper = CommonUtils.getObjectMapper();
   @Mock private Metrics metrics;
   @Mock private TaskMetricsStore taskMetricsStore;
   @Mock private AssigneeMigrator assigneeMigrator;
