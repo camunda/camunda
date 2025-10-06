@@ -23,9 +23,4 @@ public class TasklistLegacyTaskTemplate extends TaskTemplate {
   public String getVersion() {
     return "8.5.0";
   }
-
-  @Override
-  public String getSchemaClasspathFilename() {
-    return super.getSchemaClasspathFilename();
-  }
 }
