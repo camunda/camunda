@@ -11,6 +11,7 @@ import static io.camunda.zeebe.protocol.record.intent.DeploymentIntent.CREATE;
 
 import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.metrics.BatchOperationMetrics;
@@ -136,6 +137,7 @@ public final class EngineProcessors {
         typedRecordProcessorContext.getTransientProcessMessageSubscriptionState();
     final BpmnBehaviorsImpl bpmnBehaviors =
         createBehaviors(
+            securityConfig,
             processingState,
             writers,
             subscriptionCommandSender,
@@ -224,7 +226,12 @@ public final class EngineProcessors {
 
     final var userTaskProcessor =
         createUserTaskProcessor(
-            processingState, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+            securityConfig,
+            processingState,
+            bpmnBehaviors,
+            writers,
+            asyncRequestBehavior,
+            authCheckBehavior);
     addUserTaskProcessors(typedRecordProcessors, userTaskProcessor);
 
     addIncidentProcessors(
@@ -349,12 +356,14 @@ public final class EngineProcessors {
   }
 
   private static TypedRecordProcessor<UserTaskRecord> createUserTaskProcessor(
+      final SecurityConfiguration securityConfig,
       final MutableProcessingState processingState,
       final BpmnBehaviorsImpl bpmnBehaviors,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
       final AuthorizationCheckBehavior authCheckBehavior) {
     return new UserTaskProcessor(
+        securityConfig,
         processingState,
         processingState.getUserTaskState(),
         processingState.getKeyGenerator(),
@@ -365,6 +374,7 @@ public final class EngineProcessors {
   }
 
   private static BpmnBehaviorsImpl createBehaviors(
+      final SecurityConfiguration securityConfig,
       final MutableProcessingState processingState,
       final Writers writers,
       final SubscriptionCommandSender subscriptionCommandSender,
@@ -377,6 +387,7 @@ public final class EngineProcessors {
       final AuthorizationCheckBehavior authCheckBehavior,
       final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
     return new BpmnBehaviorsImpl(
+        securityConfig,
         processingState,
         writers,
         jobMetrics,

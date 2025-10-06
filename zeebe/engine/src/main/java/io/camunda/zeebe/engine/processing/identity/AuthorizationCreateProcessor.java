@@ -48,7 +48,8 @@ public class AuthorizationCreateProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    permissionsBehavior =
+        new PermissionsBehavior(processingState.getAuthorizationState(), authCheckBehavior);
     authorizationEntityChecker = new AuthorizationEntityChecker(processingState);
   }
 

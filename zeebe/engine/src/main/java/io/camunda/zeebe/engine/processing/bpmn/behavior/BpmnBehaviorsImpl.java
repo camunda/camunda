@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.bpmn.behavior;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.metrics.JobProcessingMetrics;
 import io.camunda.zeebe.engine.processing.bpmn.ProcessInstanceStateTransitionGuard;
@@ -56,6 +57,7 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
   private final BpmnAdHocSubProcessBehavior adHocSubProcessBehavior;
 
   public BpmnBehaviorsImpl(
+      final SecurityConfiguration securityConfig,
       final MutableProcessingState processingState,
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
@@ -176,10 +178,13 @@ public final class BpmnBehaviorsImpl implements BpmnBehaviors {
 
     userTaskBehavior =
         new BpmnUserTaskBehavior(
+            securityConfig,
             processingState.getKeyGenerator(),
             writers,
             expressionBehavior,
             stateBehavior,
+            authCheckBehavior,
+            processingState.getAuthorizationState(),
             processingState.getFormState(),
             processingState.getUserTaskState(),
             processingState.getVariableState(),

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
@@ -73,6 +74,7 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
   private final StateWriter stateWriter;
 
   public UserTaskProcessor(
+      final SecurityConfiguration securityConfig,
       final ProcessingState state,
       final MutableUserTaskState userTaskState,
       final KeyGenerator keyGenerator,
@@ -82,7 +84,13 @@ public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
       final AuthorizationCheckBehavior authCheckBehavior) {
     commandProcessors =
         new UserTaskCommandProcessors(
-            state, keyGenerator, bpmnBehaviors, writers, asyncRequestBehavior, authCheckBehavior);
+            securityConfig,
+            state,
+            keyGenerator,
+            bpmnBehaviors,
+            writers,
+            asyncRequestBehavior,
+            authCheckBehavior);
     processState = state.getProcessState();
     this.userTaskState = userTaskState;
     elementInstanceState = state.getElementInstanceState();
