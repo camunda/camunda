@@ -88,7 +88,7 @@ public class DataGenerator {
             .build();
     esClient = testContext.getEsClient();
     operateRestClient = testContext.getOperateRestClient();
-    indexPrefix = testContext.getZeebeIndexPrefix();
+    indexPrefix = testContext.getIndexPrefix();
   }
 
   public void createData(final BackupRestoreTestContext testContext) {

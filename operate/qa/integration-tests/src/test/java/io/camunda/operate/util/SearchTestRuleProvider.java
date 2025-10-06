@@ -8,15 +8,10 @@
 package io.camunda.operate.util;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.zeebe.ImportValueType;
-import io.camunda.operate.zeebeimport.RecordsReader;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 import org.junit.runner.Description;
 
 public interface SearchTestRuleProvider {
@@ -30,31 +25,9 @@ public interface SearchTestRuleProvider {
 
   void refreshSearchIndices();
 
-  void refreshZeebeIndices();
-
   void refreshOperateSearchIndices();
 
-  void processAllRecordsAndWait(
-      Integer maxWaitingRounds, Predicate<Object[]> predicate, Object... arguments);
-
-  void processAllRecordsAndWait(Predicate<Object[]> predicate, Object... arguments);
-
-  void processAllRecordsAndWait(
-      Predicate<Object[]> predicate, Supplier<Object> supplier, Object... arguments);
-
-  void processRecordsWithTypeAndWait(
-      ImportValueType importValueType, Predicate<Object[]> predicate, Object... arguments);
-
-  void processRecordsAndWaitFor(
-      Collection<RecordsReader> readers,
-      Integer maxWaitingRounds,
-      Predicate<Object[]> predicate,
-      Supplier<Object> supplier,
-      Object... arguments);
-
   boolean areIndicesCreatedAfterChecks(String indexPrefix, int minCountOfIndices, int maxChecks);
-
-  List<RecordsReader> getRecordsReaders(ImportValueType importValueType);
 
   void persistNew(ExporterEntity... entitiesToPersist);
 

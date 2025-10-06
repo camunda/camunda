@@ -54,7 +54,6 @@ import org.elasticsearch.action.admin.cluster.health.ClusterHealthResponse;
 import org.elasticsearch.client.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -66,7 +65,6 @@ public class ElasticsearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchConnector.class);
 
   private PluginRepository esClientRepository = new PluginRepository();
-  private PluginRepository zeebeEsClientRepository = new PluginRepository();
   private final OperateProperties operateProperties;
   private ElasticsearchClient elasticsearchClient;
 
@@ -77,27 +75,6 @@ public class ElasticsearchConnector {
   @VisibleForTesting
   public void setEsClientRepository(final PluginRepository esClientRepository) {
     this.esClientRepository = esClientRepository;
-  }
-
-  @VisibleForTesting
-  public void setZeebeEsClientRepository(final PluginRepository zeebeEsClientRepository) {
-    this.zeebeEsClientRepository = zeebeEsClientRepository;
-  }
-
-  public static void closeEsClient(final RestHighLevelClient esClient) {
-    if (esClient != null) {
-      try {
-        esClient.close();
-      } catch (final IOException e) {
-        LOGGER.error("Could not close esClient", e);
-      }
-    }
-  }
-
-  public static void closeEsClient(final ElasticsearchClient esClient) {
-    if (esClient != null) {
-      esClient.shutdown();
-    }
   }
 
   @Bean
@@ -172,16 +149,6 @@ public class ElasticsearchConnector {
     System.setProperty("es.set.netty.runtime.available.processors", "false");
     esClientRepository.load(operateProperties.getElasticsearch().getInterceptorPlugins());
     return createEsClient(operateProperties.getElasticsearch(), esClientRepository);
-  }
-
-  @Bean("zeebeEsClient")
-  @ConditionalOnProperty(value = "camunda.operate.importer-enabled", havingValue = "true")
-  public RestHighLevelClient zeebeEsClient() {
-    // some weird error when ELS sets available processors number for Netty - see
-    // https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeEsClientRepository.load(operateProperties.getZeebeElasticsearch().getInterceptorPlugins());
-    return createEsClient(operateProperties.getZeebeElasticsearch(), zeebeEsClientRepository);
   }
 
   @PreDestroy

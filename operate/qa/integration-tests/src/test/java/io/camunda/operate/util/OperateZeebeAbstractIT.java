@@ -32,11 +32,8 @@ import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
-import io.camunda.operate.zeebe.PartitionHolder;
-import io.camunda.operate.zeebeimport.ImportPositionHolder;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
-import io.camunda.webapps.zeebe.StandalonePartitionSupplier;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.micrometer.core.instrument.Meter;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -67,8 +64,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected CamundaClient camundaClient;
   protected OperateServicesAdapter operateServicesAdapter;
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
-  @Autowired protected PartitionHolder partitionHolder;
-  @Autowired protected ImportPositionHolder importPositionHolder;
   @Autowired protected ProcessCache processCache;
   @Autowired protected ObjectMapper objectMapper;
 
@@ -196,18 +191,11 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
         beanFactory.getBean(OperateTester.class, camundaClient, mockMvcTestRule, searchTestRule);
 
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
-    importPositionHolder.scheduleImportPositionUpdateTask();
-    final var partitionSupplier = new StandalonePartitionSupplier(getClient());
-    partitionHolder.setPartitionSupplier(partitionSupplier);
   }
 
   @After
   public void after() {
     processCache.clearCache();
-    importPositionHolder.cancelScheduledImportPositionUpdateTask().join();
-    importPositionHolder.clearCache();
   }
 
   public CamundaClient getClient() {
@@ -226,7 +214,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     final Long jobKey =
         ZeebeTestUtil.failTask(
             getClient(), taskName, getWorkerName(), numberOfFailure, errorMessage);
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.waitFor(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
@@ -234,7 +222,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       final String taskName, final long processInstanceKey, final String errorMessage) {
     final Long jobKey =
         ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3, errorMessage);
-    searchTestRule.processAllRecordsAndWait(incidentIsActiveCheck, processInstanceKey);
+    searchTestRule.waitFor(incidentIsActiveCheck, processInstanceKey);
     return jobKey;
   }
 
@@ -243,20 +231,20 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     final Long jobKey =
         ZeebeTestUtil.failTaskWithRetriesLeft(
             getClient(), taskName, getWorkerName(), 1, errorMessage);
-    searchTestRule.processAllRecordsAndWait(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
+    searchTestRule.waitFor(jobWithRetriesCheck, processInstanceKey, jobKey, 1);
     return jobKey;
   }
 
   protected Long deployProcess(final String... classpathResources) {
     final Long processDefinitionKey =
         ZeebeTestUtil.deployProcess(getClient(), null, classpathResources);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processDefinitionKey);
+    searchTestRule.waitFor(processIsDeployedCheck, processDefinitionKey);
     return processDefinitionKey;
   }
 
   protected Long deployProcess(final BpmnModelInstance process, final String resourceName) {
     final Long processId = ZeebeTestUtil.deployProcess(getClient(), null, process, resourceName);
-    searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
+    searchTestRule.waitFor(processIsDeployedCheck, processId);
     return processId;
   }
 
@@ -267,7 +255,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected void cancelProcessInstance(final long processInstanceKey, final boolean waitForData) {
     ZeebeTestUtil.cancelProcessInstance(getClient(), processInstanceKey);
     if (waitForData) {
-      searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+      searchTestRule.waitFor(processInstanceIsCanceledCheck, processInstanceKey);
     }
   }
 
@@ -283,8 +271,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       final boolean waitForData) {
     ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     if (waitForData) {
-      searchTestRule.processAllRecordsAndWait(
-          flowNodeIsCompletedCheck, processInstanceKey, activityId);
+      searchTestRule.waitFor(flowNodeIsCompletedCheck, processInstanceKey, activityId);
     }
   }
 

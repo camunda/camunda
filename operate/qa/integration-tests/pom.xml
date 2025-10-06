@@ -20,12 +20,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-importer</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>operate-qa-util</artifactId>
       <scope>test</scope>
     </dependency>
@@ -134,16 +128,6 @@
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-autoconfigure</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-common</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>operate-importer-8_7</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -415,38 +399,8 @@
     </dependency>
 
     <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-elasticsearch-exporter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-protocol-test-util</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-exporter-api</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>zeebe-opensearch-exporter</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -457,9 +411,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.tomcat</groupId>
-      <artifactId>tomcat-annotations-api</artifactId>
-      <version>11.0.9</version>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -529,7 +482,6 @@
             <dependency>org.springframework.boot:spring-boot-starter-test</dependency>
             <dependency>org.glassfish:jakarta.json</dependency>
             <dependency>com.unboundid:unboundid-ldapsdk</dependency>
-            <dependency>org.apache.tomcat:tomcat-annotations-api</dependency>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

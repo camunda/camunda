@@ -17,6 +17,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -37,7 +38,7 @@ public class RichOpenSearchClient {
 
   public RichOpenSearchClient(
       final BeanFactory beanFactory,
-      final OpenSearchClient openSearchClient,
+      @Qualifier("openSearchClient") final OpenSearchClient openSearchClient,
       final OpenSearchAsyncClient openSearchAsyncClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;

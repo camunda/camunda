@@ -9,11 +9,9 @@ package io.camunda.operate.modules;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.operate.ImportModuleConfiguration;
 import io.camunda.operate.WebappModuleConfiguration;
 import io.camunda.operate.webapp.controllers.OperateIndexController;
 import org.junit.Test;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 
 public class OnlyWebappIT extends ModuleAbstractIT {
 
@@ -21,10 +19,5 @@ public class OnlyWebappIT extends ModuleAbstractIT {
   public void testWebappModuleIsPresent() {
     assertThat(applicationContext.getBean(WebappModuleConfiguration.class)).isNotNull();
     assertThat(applicationContext.getBean(OperateIndexController.class)).isNotNull();
-  }
-
-  @Test(expected = NoSuchBeanDefinitionException.class)
-  public void testImportModuleIsNotPresent() {
-    applicationContext.getBean(ImportModuleConfiguration.class);
   }
 }

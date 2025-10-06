@@ -17,11 +17,6 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>operate-schema</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.camunda</groupId>
       <artifactId>webapps-schema</artifactId>
     </dependency>
 
@@ -128,10 +123,6 @@
     <dependency>
       <groupId>org.elasticsearch.client</groupId>
       <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.security</groupId>
-      <artifactId>spring-security-oauth2-jose</artifactId>
     </dependency>
     <dependency>
       <groupId>org.elasticsearch</groupId>
