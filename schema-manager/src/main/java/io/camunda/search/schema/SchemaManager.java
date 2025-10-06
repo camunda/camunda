@@ -50,7 +50,7 @@ public class SchemaManager implements CloseableSilently {
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
-  private boolean isGreenfield = true;
+  private boolean shouldDisableArchiver = false;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -208,13 +208,13 @@ public class SchemaManager implements CloseableSilently {
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
-    if (isGreenfield) {
-      joinOnFutures(futures);
-    } else {
+    if (shouldDisableArchiver) {
       // If it's not a greenfield installation (i.e. not all indices are missing),
-      // we need to make sure that the archiverBlocked meta is set on the ListView index
-      // if it's missing
+      // we need to make sure that the archiverBlocked meta is set on the TasklistImportPosition
+      // index if it's missing
       joinOnFutures(futures, applyArchiverBlockedMetaIfMissing());
+    } else {
+      joinOnFutures(futures);
     }
   }
 
@@ -236,7 +236,9 @@ public class SchemaManager implements CloseableSilently {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
-    isGreenfield = missingIndexTemplates.size() == indexTemplateDescriptors.size();
+    shouldDisableArchiver =
+        !missingIndexTemplates.isEmpty()
+            && missingIndexTemplates.size() != indexTemplateDescriptors.size();
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
@@ -290,7 +292,8 @@ public class SchemaManager implements CloseableSilently {
 
   private Supplier<CompletableFuture<?>> applyArchiverBlockedMetaIfMissing() {
     return () -> {
-      // only apply if ListViewTemplate is part of the descriptors
+      // only apply if TasklistImportPositionIndex is part of the descriptors -
+      // it's mostly relevant for test setups which might not have this index
       if (allIndexDescriptors.stream().noneMatch(TasklistImportPositionIndex.class::isInstance)) {
         return CompletableFuture.completedFuture(null);
       }
@@ -301,7 +304,7 @@ public class SchemaManager implements CloseableSilently {
 
       if (tasklistImportPositionIndex.isEmpty()) {
         return CompletableFuture.failedFuture(
-            new IllegalStateException("No ImportPositionIndex found."));
+            new IllegalStateException("No TasklistImportPositionIndex found."));
       }
       final var indexName = tasklistImportPositionIndex.get().getFullQualifiedName();
       if (blockedArchiverMetaIsMissing(indexName)) {
