@@ -7,14 +7,15 @@
  */
 package io.camunda.operate;
 
+import io.camunda.operate.webapp.controllers.OperateIndexController;
+import io.camunda.operate.webapp.rest.ClientConfig;
+import io.camunda.operate.webapp.rest.ClientConfigRestService;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.camunda.zeebe.broker.Broker;
 import io.camunda.zeebe.gateway.Gateway;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.FilterType;
-import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Profile;
 
 /**
@@ -23,18 +24,14 @@ import org.springframework.context.annotation.Profile;
  * properties are applied.
  */
 @Configuration(proxyBeanMethods = false)
-@ComponentScan(
-    basePackages = "io.camunda.operate",
-    excludeFilters = {
-      @ComponentScan.Filter(
-          type = FilterType.REGEX,
-          pattern = "io\\.camunda\\.operate\\.webapp\\..*")
-    },
-    // use fully qualified names as bean name, as we have classes with same names for different
-    // versions of importer
-    nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 @Profile("operate")
 @ConditionalOnSecondaryStorageEnabled
+@Import({
+  OperateIndexController.class,
+  ClientConfigRestService.class,
+  ClientConfig.class,
+  OperateProfileService.class
+})
 public class OperateModuleConfiguration {
 
   // if present, then it will ensure

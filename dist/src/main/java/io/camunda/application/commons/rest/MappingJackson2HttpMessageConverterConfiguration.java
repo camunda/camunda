@@ -41,7 +41,7 @@ public class MappingJackson2HttpMessageConverterConfiguration {
   @Order(2)
   @Profile("operate")
   public MappingJackson2HttpMessageConverter operateV1MappingJackson2HttpMessageConverter(
-      @Qualifier("operateObjectMapper") final ObjectMapper objectMapper) {
+      final ObjectMapper objectMapper) {
     final PackageSpecificJackson2HttpMessageConverter messageConverter =
         new PackageSpecificJackson2HttpMessageConverter("io.camunda.operate");
     messageConverter.setObjectMapper(objectMapper);
