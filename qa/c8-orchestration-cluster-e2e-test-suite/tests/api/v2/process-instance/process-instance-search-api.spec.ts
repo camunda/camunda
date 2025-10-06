@@ -23,7 +23,7 @@ test.describe.parallel('Get Process instance Tests', () => {
   test.beforeAll(async () => {
     await deploy([
       './resources/process_with_task_listener.bpmn',
-      './resources/usertask_with_variables.bpmn',
+      './resources/user_task_api_test_process.bpmn',
     ]);
   });
 
@@ -132,7 +132,7 @@ test.describe.parallel('Get Process instance Tests', () => {
       const res2 = await request.post(buildUrl('/process-instances'), {
         headers: jsonHeaders(),
         data: {
-          processDefinitionId: 'usertask_with_variables',
+          processDefinitionId: 'user_task_api_test_process',
           variables: {
             firstname: 'jane',
             lastname: 'doe',
@@ -171,7 +171,7 @@ test.describe.parallel('Get Process instance Tests', () => {
           'process_with_task_listener',
         );
         expect(json.items[1].processDefinitionId).toBe(
-          'usertask_with_variables',
+          'user_task_api_test_process',
         );
       }).toPass(defaultAssertionOptions);
     });

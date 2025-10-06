@@ -22,7 +22,7 @@ import {validateResponseShape} from '../../../../json-body-assertions';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'usertask_with_variables',
+    'user_task_api_test_process',
   );
   test.beforeAll(beforeAll);
   test.beforeEach(beforeEach);
