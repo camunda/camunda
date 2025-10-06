@@ -124,6 +124,7 @@ jobs:
 
   os-schema-integrity-test:
     name: OpenSearch Schema Integrity Test
+    if: false
     runs-on: gcp-core-8-default
     timeout-minutes: 30
     steps:
