@@ -1084,7 +1084,14 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(final long userTaskKey) {
-    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
+    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey, false);
+  }
+
+  @Override
+  public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(
+      final long userTaskKey, final boolean includeFullValues) {
+    return new UserTaskVariableSearchRequestImpl(
+        httpClient, jsonMapper, userTaskKey, includeFullValues);
   }
 
   @Override

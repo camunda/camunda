@@ -47,12 +47,17 @@ public class UserTaskVariableSearchRequestImpl
   private final RequestConfig.Builder httpRequestConfig;
   private final JsonMapper jsonMapper;
   private final long userTaskKey;
+  private final boolean includeFullValues;
 
   public UserTaskVariableSearchRequestImpl(
-      final HttpClient httpClient, final JsonMapper jsonMapper, final long userTaskKey) {
+      final HttpClient httpClient,
+      final JsonMapper jsonMapper,
+      final long userTaskKey,
+      final boolean includeFullValues) {
     this.httpClient = httpClient;
     this.jsonMapper = jsonMapper;
     this.userTaskKey = userTaskKey;
+    this.includeFullValues = includeFullValues;
     httpRequestConfig = httpClient.newRequestConfig();
     request = new UserTaskVariableSearchQueryRequest();
   }
@@ -67,7 +72,8 @@ public class UserTaskVariableSearchRequestImpl
   public CamundaFuture<SearchResponse<Variable>> send() {
     final HttpCamundaFuture<SearchResponse<Variable>> result = new HttpCamundaFuture<>();
     httpClient.post(
-        String.format("/user-tasks/%d/variables/search", userTaskKey),
+        String.format(
+            "/user-tasks/%d/variables/search?includeFullValues=%s", userTaskKey, includeFullValues),
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         VariableSearchQueryResult.class,

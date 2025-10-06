@@ -1850,6 +1850,25 @@ public interface CamundaClient extends AutoCloseable, JobClient {
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
 
   /**
+   * Executes a search request to query variables related to a user task.
+   *
+   * <pre>
+   *   long variableKey = ...;
+   *
+   *  camundaClient
+   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .sort((s) -> s.value().asc())
+   *   .page((p) -> p.limit(100))
+   *   .send();
+   *
+   *  @param userTaskKey the key of the user task
+   *  @param includeFullValues whether to include full variable values in the response
+   *  @return a builder for the user task variable search request
+   */
+  UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(
+      long userTaskKey, boolean includeFullValues);
+
+  /**
    * <strong>Experimental: This method is under development. The respective API on compatible
    * clusters cannot be considered production-ready. Thus, this method doesn't work out of the box
    * with all clusters. Until this warning is removed, anything described below may not yet have
