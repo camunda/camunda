@@ -94,13 +94,6 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     super(partitionId);
   }
 
-  @Override
-  public void run() {
-    // Initialize metrics when the component is fully loaded
-    initializeMetrics();
-    super.run();
-  }
-
   /**
    * Returns map incident key -> intent (CRAETED|RESOLVED)
    *
@@ -136,11 +129,6 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
                     .size(operateProperties.getZeebeElasticsearch().getBatchSize()));
     try {
       final SearchResponse response = esClient.search(listViewRequest, RequestOptions.DEFAULT);
-
-      // Update the queue size metric with the total hits count
-      final long queueSize = response.getHits().getTotalHits().value;
-      updateQueueSizeMetric(queueSize);
-
       incidents2Process =
           Arrays.stream(response.getHits().getHits())
               .map(sh -> sh.getSourceAsMap())
