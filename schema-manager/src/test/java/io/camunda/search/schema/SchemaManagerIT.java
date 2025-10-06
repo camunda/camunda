@@ -45,7 +45,7 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -1582,8 +1582,8 @@ public class SchemaManagerIT {
     final var tasklistImportPositionIndex =
         new TasklistImportPositionIndex(
             CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
-    final var taskTemplate =
-        new TaskTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+    final var metricsTemplate =
+        new UsageMetricTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
     searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
     searchEngineClient.createIndex(tasklistImportPositionIndex, new IndexConfiguration());
 
@@ -1593,7 +1593,7 @@ public class SchemaManagerIT {
         new SchemaManager(
             spySearchEngineClient,
             Set.of(tasklistImportPositionIndex),
-            Set.of(indexTemplate, taskTemplate),
+            Set.of(indexTemplate, metricsTemplate),
             config,
             objectMapper);
 
@@ -1626,8 +1626,8 @@ public class SchemaManagerIT {
     final var tasklistImportPositionIndex =
         new TasklistImportPositionIndex(
             CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
-    final var taskTemplate =
-        new TaskTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+    final var metricsTemplate =
+        new UsageMetricTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
     searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
     searchEngineClient.createIndex(tasklistImportPositionIndex, new IndexConfiguration());
 
@@ -1637,7 +1637,7 @@ public class SchemaManagerIT {
         new SchemaManager(
             spySearchEngineClient,
             Set.of(tasklistImportPositionIndex),
-            Set.of(indexTemplate, taskTemplate),
+            Set.of(indexTemplate, metricsTemplate),
             config,
             objectMapper);
 

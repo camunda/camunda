@@ -18,6 +18,7 @@ import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
+import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
@@ -50,7 +51,7 @@ public class SchemaManager implements CloseableSilently {
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
-  private boolean shouldDisableArchiver = false;
+  private boolean updateInProgress = false;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -208,7 +209,7 @@ public class SchemaManager implements CloseableSilently {
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
-    if (shouldDisableArchiver) {
+    if (updateInProgress) {
       // If it's not a greenfield installation (i.e. not all indices are missing),
       // we need to make sure that the archiverBlocked meta is set on the TasklistImportPosition
       // index if it's missing
@@ -236,9 +237,7 @@ public class SchemaManager implements CloseableSilently {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
-    shouldDisableArchiver =
-        !missingIndexTemplates.isEmpty()
-            && missingIndexTemplates.size() != indexTemplateDescriptors.size();
+    updateInProgress = checkUpdateInProgress(missingIndexTemplates);
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
@@ -253,6 +252,19 @@ public class SchemaManager implements CloseableSilently {
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+  }
+
+  /**
+   * An update is in progress if the {@link UsageMetricTemplate} is missing, but not all templates
+   * are missing (which would indicate a greenfield installation). This is only relevant for the 8.8
+   * release, as this is when the UsageMetricTemplate was added. We need this to determine whether
+   * the archiver should be blocked for the migration process.
+   *
+   * @param missingIndexTemplates the list of currently missing index templates
+   */
+  private boolean checkUpdateInProgress(final List<IndexTemplateDescriptor> missingIndexTemplates) {
+    return missingIndexTemplates.stream().anyMatch(UsageMetricTemplate.class::isInstance)
+        && missingIndexTemplates.size() != indexTemplateDescriptors.size();
   }
 
   private List<IndexTemplateDescriptor> getMissingIndexTemplates(
