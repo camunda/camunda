@@ -1125,7 +1125,12 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public VariableSearchRequest newVariableSearchRequest() {
-    return new VariableSearchRequestImpl(httpClient, jsonMapper);
+    return new VariableSearchRequestImpl(httpClient, jsonMapper, true);
+  }
+
+  @Override
+  public VariableSearchRequest newVariableSearchRequest(final boolean truncateValues) {
+    return new VariableSearchRequestImpl(httpClient, jsonMapper, truncateValues);
   }
 
   @Override
@@ -1135,7 +1140,14 @@ public final class CamundaClientImpl implements CamundaClient {
 
   @Override
   public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(final long userTaskKey) {
-    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey);
+    return new UserTaskVariableSearchRequestImpl(httpClient, jsonMapper, userTaskKey, false);
+  }
+
+  @Override
+  public UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(
+      final long userTaskKey, final boolean truncateValues) {
+    return new UserTaskVariableSearchRequestImpl(
+        httpClient, jsonMapper, userTaskKey, truncateValues);
   }
 
   @Override
