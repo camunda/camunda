@@ -36,6 +36,7 @@ import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
 import io.camunda.search.schema.utils.SchemaManagerITInvocationProvider;
+import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.search.schema.utils.TestIndexDescriptor;
 import io.camunda.search.schema.utils.TestTemplateDescriptor;
 import io.camunda.search.test.utils.SearchClientAdapter;
@@ -45,7 +46,6 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.test.util.junit.RegressionTestTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -1582,10 +1582,14 @@ public class SchemaManagerIT {
     final var tasklistImportPositionIndex =
         new TasklistImportPositionIndex(
             CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
-    final var metricsTemplate =
-        new UsageMetricTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+    final var tasklistLegacyTaskTemplate =
+        new TasklistLegacyTaskTemplate(
+            CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
     searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
+    searchEngineClient.createIndexTemplate(
+        tasklistLegacyTaskTemplate, new IndexConfiguration(), true);
     searchEngineClient.createIndex(tasklistImportPositionIndex, new IndexConfiguration());
+    searchEngineClient.createIndex(tasklistLegacyTaskTemplate, new IndexConfiguration());
 
     // when - start schema manager with spy to track index creation
     final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
@@ -1593,7 +1597,7 @@ public class SchemaManagerIT {
         new SchemaManager(
             spySearchEngineClient,
             Set.of(tasklistImportPositionIndex),
-            Set.of(indexTemplate, metricsTemplate),
+            Set.of(indexTemplate),
             config,
             objectMapper);
 
@@ -1626,10 +1630,14 @@ public class SchemaManagerIT {
     final var tasklistImportPositionIndex =
         new TasklistImportPositionIndex(
             CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
-    final var metricsTemplate =
-        new UsageMetricTemplate(CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
+    final var tasklistLegacyTaskTemplate =
+        new TasklistLegacyTaskTemplate(
+            CONFIG_PREFIX, config.connect().getTypeEnum().isElasticSearch());
     searchEngineClient.createIndexTemplate(indexTemplate, new IndexConfiguration(), true);
+    searchEngineClient.createIndexTemplate(
+        tasklistLegacyTaskTemplate, new IndexConfiguration(), true);
     searchEngineClient.createIndex(tasklistImportPositionIndex, new IndexConfiguration());
+    searchEngineClient.createIndex(tasklistLegacyTaskTemplate, new IndexConfiguration());
 
     // when - start schema manager with spy to track index creation
     final SearchEngineClient spySearchEngineClient = spy(searchEngineClientFromConfig(config));
@@ -1637,7 +1645,7 @@ public class SchemaManagerIT {
         new SchemaManager(
             spySearchEngineClient,
             Set.of(tasklistImportPositionIndex),
-            Set.of(indexTemplate, metricsTemplate),
+            Set.of(indexTemplate),
             config,
             objectMapper);
 

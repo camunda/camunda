@@ -15,10 +15,10 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.util.Collection;
@@ -51,7 +51,7 @@ public class SchemaManager implements CloseableSilently {
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
-  private boolean updateInProgress = false;
+  private boolean shouldDisableArchiver = false;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -209,7 +209,7 @@ public class SchemaManager implements CloseableSilently {
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
-    if (updateInProgress) {
+    if (shouldDisableArchiver) {
       // If it's not a greenfield installation (i.e. not all indices are missing),
       // we need to make sure that the archiverBlocked meta is set on the TasklistImportPosition
       // index if it's missing
@@ -237,7 +237,7 @@ public class SchemaManager implements CloseableSilently {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
-    updateInProgress = checkUpdateInProgress(missingIndexTemplates);
+    shouldDisableArchiver = shouldDisableArchiver();
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
@@ -255,16 +255,20 @@ public class SchemaManager implements CloseableSilently {
   }
 
   /**
-   * An update is in progress if the {@link UsageMetricTemplate} is missing, but not all templates
-   * are missing (which would indicate a greenfield installation). This is only relevant for the 8.8
-   * release, as this is when the UsageMetricTemplate was added. We need this to determine whether
-   * the archiver should be blocked for the migration process.
+   * Check whether the Archiver should be flagged as disabled by checking the existence of the
+   * legacy `tasklist-task-8.5.0` index alias. If it doesn't exist, it's a greenfield installation.
    *
-   * @param missingIndexTemplates the list of currently missing index templates
+   * <p>This is only relevant for the 8.8 release
+   *
+   * @return true if it's a greenfield installation, false otherwise
    */
-  private boolean checkUpdateInProgress(final List<IndexTemplateDescriptor> missingIndexTemplates) {
-    return missingIndexTemplates.stream().anyMatch(UsageMetricTemplate.class::isInstance)
-        && missingIndexTemplates.size() != indexTemplateDescriptors.size();
+  private boolean shouldDisableArchiver() {
+    final var legacyTasklistIndex =
+        new TasklistLegacyTaskTemplate(
+            config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    return !searchEngineClient
+        .getMappings(legacyTasklistIndex.getAlias(), MappingSource.INDEX)
+        .isEmpty();
   }
 
   private List<IndexTemplateDescriptor> getMissingIndexTemplates(
