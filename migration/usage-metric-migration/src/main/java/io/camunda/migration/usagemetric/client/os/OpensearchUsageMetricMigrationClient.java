@@ -286,7 +286,7 @@ public final class OpensearchUsageMetricMigrationClient implements UsageMetricMi
           retryDecorator.decorate(
               operationName,
               () -> client.reindex(reindexRequest),
-              res -> res.task() == null || res.failures() != null);
+              res -> res.task() == null || (res.failures() != null && !res.failures().isEmpty()));
       return response.task();
     } catch (final Exception e) {
       throw new MigrationException(e);
