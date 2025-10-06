@@ -176,7 +176,7 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
       throw new ForbiddenActionException("Not allowed to complete user task.");
     }
 
-    executeCamundaServiceAnonymously(
+    executeCamundaServiceAuthenticated(
         (authentication) ->
             jobServices
                 .withAuthentication(authentication)
