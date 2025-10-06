@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {deploy} from '../../../../utils/zeebeClient';
+import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -101,7 +101,7 @@ test.describe.parallel('Get Process Instance Call Hierarchy Tests', () => {
         );
       }).toPass(defaultAssertionOptions);
 
-      // await cancelProcessInstance(localState.processInstanceKey as string);
+      await cancelProcessInstance(localState.processInstanceKey as string);
     });
   });
 

@@ -8,7 +8,7 @@
 
 import {expect, test} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from '../../../../utils/http';
-import {deploy} from '../../../../utils/zeebeClient';
+import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {getProcessDefinitionKey} from '../../../../utils/requestHelpers';
 import {validateResponseShape} from '../../../../json-body-assertions';
 
@@ -44,7 +44,7 @@ test.describe.parallel('Process instance Tests', () => {
     expect(json.tenantId).toBe('<default>');
     expect(json.variables).toEqual({});
 
-    // await cancelProcessInstance(json.processInstanceKey);
+    await cancelProcessInstance(json.processInstanceKey);
   });
 
   test('Create Process with Variables - Success', async ({request}) => {
@@ -75,7 +75,7 @@ test.describe.parallel('Process instance Tests', () => {
     await assertStatusCode(res, 200);
     const json = await res.json();
     expect(json.tags).toEqual(tags);
-    // await cancelProcessInstance(json.processInstanceKey);
+    await cancelProcessInstance(json.processInstanceKey);
   });
 
   test('Create Process Instance by Process Definition Key - Success', async ({
@@ -92,7 +92,7 @@ test.describe.parallel('Process instance Tests', () => {
       await assertStatusCode(res, 200);
       const json = await res.json();
       localState['processDefinitionKey'] = json.processDefinitionKey;
-      // await cancelProcessInstance(json.processInstanceKey);
+      await cancelProcessInstance(json.processInstanceKey);
     });
 
     await test.step('Create Process Instance by Process Definition Key', async () => {
@@ -122,7 +122,7 @@ test.describe.parallel('Process instance Tests', () => {
       expect(jsonByKey.tenantId).toBe('<default>');
       expect(jsonByKey.variables).toEqual({});
 
-      // await cancelProcessInstance(jsonByKey.processInstanceKey);
+      await cancelProcessInstance(jsonByKey.processInstanceKey);
     });
   });
 
@@ -182,7 +182,7 @@ test.describe.parallel('Process instance Tests', () => {
       const jsonByKey = await resByKey.json();
       expect(jsonByKey.tags).toEqual(['tag1', 'tag2']);
 
-      // await cancelProcessInstance(jsonByKey.processInstanceKey);
+      await cancelProcessInstance(jsonByKey.processInstanceKey);
     });
   });
 
@@ -201,8 +201,8 @@ test.describe.parallel('Process instance Tests', () => {
     });
 
     await assertStatusCode(res, 200);
-    //const json = await res.json();
-    // await cancelProcessInstance(json.processInstanceKey);
+    const json = await res.json();
+    await cancelProcessInstance(json.processInstanceKey);
   });
 
   test('Create Process Instance - Failure - Missing process definition id and key', async ({
