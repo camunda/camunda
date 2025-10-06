@@ -15,6 +15,7 @@ import io.camunda.search.schema.config.RetentionConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.search.schema.exceptions.SearchEngineException;
 import io.camunda.search.schema.metrics.SchemaManagerMetrics;
+import io.camunda.search.schema.utils.TasklistLegacyTaskTemplate;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
 import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
@@ -50,7 +51,7 @@ public class SchemaManager implements CloseableSilently {
   private final ExecutorService virtualThreadExecutor;
   private final RetryDecorator retryDecorator;
   private final SchemaManagerMetrics schemaManagerMetrics;
-  private boolean isGreenfield = true;
+  private boolean shouldDisableArchiver = false;
 
   public SchemaManager(
       final SearchEngineClient searchEngineClient,
@@ -208,13 +209,13 @@ public class SchemaManager implements CloseableSilently {
                         virtualThreadExecutor))
             .toArray(CompletableFuture[]::new);
 
-    if (isGreenfield) {
-      joinOnFutures(futures);
-    } else {
+    if (shouldDisableArchiver) {
       // If it's not a greenfield installation (i.e. not all indices are missing),
-      // we need to make sure that the archiverBlocked meta is set on the ListView index
-      // if it's missing
+      // we need to make sure that the archiverBlocked meta is set on the TasklistImportPosition
+      // index if it's missing
       joinOnFutures(futures, applyArchiverBlockedMetaIfMissing());
+    } else {
+      joinOnFutures(futures);
     }
   }
 
@@ -236,7 +237,7 @@ public class SchemaManager implements CloseableSilently {
       return;
     }
     final var missingIndexTemplates = getMissingIndexTemplates(indexTemplateDescriptors);
-    isGreenfield = missingIndexTemplates.size() == indexTemplateDescriptors.size();
+    shouldDisableArchiver = shouldDisableArchiver();
     LOG.info("Found '{}' missing index templates", missingIndexTemplates.size());
     final var futures =
         missingIndexTemplates.stream()
@@ -251,6 +252,23 @@ public class SchemaManager implements CloseableSilently {
     // successfully
     // Doing this in parallel is still speeding up the bootstrap time
     joinOnFutures(futures);
+  }
+
+  /**
+   * Check whether the Archiver should be flagged as disabled by checking the existence of the
+   * legacy `tasklist-task-8.5.0` index alias. If it doesn't exist, it's a greenfield installation.
+   *
+   * <p>This is only relevant for the 8.8 release
+   *
+   * @return true if it's a greenfield installation, false otherwise
+   */
+  private boolean shouldDisableArchiver() {
+    final var legacyTasklistIndex =
+        new TasklistLegacyTaskTemplate(
+            config.connect().getIndexPrefix(), config.connect().getTypeEnum().isElasticSearch());
+    return !searchEngineClient
+        .getMappings(legacyTasklistIndex.getAlias(), MappingSource.INDEX)
+        .isEmpty();
   }
 
   private List<IndexTemplateDescriptor> getMissingIndexTemplates(
@@ -290,7 +308,8 @@ public class SchemaManager implements CloseableSilently {
 
   private Supplier<CompletableFuture<?>> applyArchiverBlockedMetaIfMissing() {
     return () -> {
-      // only apply if ListViewTemplate is part of the descriptors
+      // only apply if TasklistImportPositionIndex is part of the descriptors -
+      // it's mostly relevant for test setups which might not have this index
       if (allIndexDescriptors.stream().noneMatch(TasklistImportPositionIndex.class::isInstance)) {
         return CompletableFuture.completedFuture(null);
       }
@@ -301,7 +320,7 @@ public class SchemaManager implements CloseableSilently {
 
       if (tasklistImportPositionIndex.isEmpty()) {
         return CompletableFuture.failedFuture(
-            new IllegalStateException("No ImportPositionIndex found."));
+            new IllegalStateException("No TasklistImportPositionIndex found."));
       }
       final var indexName = tasklistImportPositionIndex.get().getFullQualifiedName();
       if (blockedArchiverMetaIsMissing(indexName)) {
@@ -316,10 +335,10 @@ public class SchemaManager implements CloseableSilently {
     };
   }
 
-  private boolean blockedArchiverMetaIsMissing(final String operateImportPositionIndex) {
+  private boolean blockedArchiverMetaIsMissing(final String tasklistImportPositionIndex) {
     final var mappings =
-        searchEngineClient.getMappings(operateImportPositionIndex, MappingSource.INDEX);
-    return Optional.ofNullable(mappings.get(operateImportPositionIndex).metaProperties())
+        searchEngineClient.getMappings(tasklistImportPositionIndex, MappingSource.INDEX);
+    return Optional.ofNullable(mappings.get(tasklistImportPositionIndex).metaProperties())
         .map(map -> map.get(PI_ARCHIVING_BLOCKED_META_KEY))
         .isEmpty();
   }
