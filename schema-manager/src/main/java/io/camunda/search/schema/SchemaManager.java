@@ -319,10 +319,10 @@ public class SchemaManager implements CloseableSilently {
     };
   }
 
-  private boolean blockedArchiverMetaIsMissing(final String operateImportPositionIndex) {
+  private boolean blockedArchiverMetaIsMissing(final String tasklistImportPositionIndex) {
     final var mappings =
-        searchEngineClient.getMappings(operateImportPositionIndex, MappingSource.INDEX);
-    return Optional.ofNullable(mappings.get(operateImportPositionIndex).metaProperties())
+        searchEngineClient.getMappings(tasklistImportPositionIndex, MappingSource.INDEX);
+    return Optional.ofNullable(mappings.get(tasklistImportPositionIndex).metaProperties())
         .map(map -> map.get(PI_ARCHIVING_BLOCKED_META_KEY))
         .isEmpty();
   }
