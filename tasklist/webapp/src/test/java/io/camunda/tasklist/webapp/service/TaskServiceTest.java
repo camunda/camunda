@@ -47,7 +47,6 @@ import io.camunda.tasklist.webapp.rest.exception.InvalidRequestException;
 import io.camunda.tasklist.webapp.security.AssigneeMigrator;
 import io.camunda.tasklist.webapp.security.UserReader;
 import io.camunda.zeebe.client.ZeebeClient;
-import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -515,11 +514,8 @@ class TaskServiceTest {
     final var taskId = "123";
     final var taskBefore = mock(TaskEntity.class);
     final var user = mock(UserDTO.class);
-    final var problemDetail = new ProblemDetail();
     final var providedAssignee = "expectedAssignee";
     final var providedAllowOverrideAssignment = false;
-
-    problemDetail.setDetail("detail");
 
     when(taskStore.getTask(taskId)).thenReturn(taskBefore);
     when(userReader.getCurrentUser()).thenReturn(user);
