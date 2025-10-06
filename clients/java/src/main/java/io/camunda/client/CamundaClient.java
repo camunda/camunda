@@ -1864,7 +1864,9 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .filter((f) -> f.variableKey(variableKey))
    *  .sort((s) -> s.value().asc())
    *  .page((p) -> p.limit(100))
+   *  .truncateValues(false)
    *  .send();
+   * </pre>
    *
    * @return a builder for the variable search request
    */
@@ -1879,9 +1881,10 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  camundaClient
    * .newVariableGetRequest(variableKey)
    * .send();
+   * </pre>
    *
-   *  @param variableKey the key of the variable
-   *  @return a builder for the request to get a variable
+   * @param variableKey the key of the variable
+   * @return a builder for the request to get a variable
    */
   VariableGetRequest newVariableGetRequest(long variableKey);
 
@@ -1889,16 +1892,18 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * Executes a search request to query variables related to a user task.
    *
    * <pre>
-   *   long variableKey = ...;
+   *   long userTaskKey = ...;
    *
    *  camundaClient
-   *   .newUserTaskVariableSearchRequest(variableKey)
+   *   .newUserTaskVariableSearchRequest(userTaskKey)
    *   .sort((s) -> s.value().asc())
    *   .page((p) -> p.limit(100))
+   *   .truncateValues(false)
    *   .send();
+   * </pre>
    *
-   *  @param userTaskKey the key of the user task
-   *  @return a builder for the user task variable search request
+   * @param userTaskKey the key of the user task
+   * @return a builder for the user task variable search request
    */
   UserTaskVariableSearchRequest newUserTaskVariableSearchRequest(long userTaskKey);
 
@@ -1917,7 +1922,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *   .fileName("file.txt")
    *   .timeToLive(Duration.ofDays(1))
    *   .send();
-   *   </pre>
+   * </pre>
    *
    * @return a builder for the command
    */
