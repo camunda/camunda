@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnUserTaskBehavior;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.processors.auth.UserTaskPermissionsBehavior;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -33,18 +34,21 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
   private final UserTaskState userTaskState;
   private final BpmnJobBehavior jobBehavior;
   private final BpmnUserTaskBehavior userTaskBehavior;
+  private final UserTaskPermissionsBehavior taskPermissionsBehavior;
 
   public UserTaskCreateProcessor(
       final ProcessingState state,
       final Writers writers,
       final BpmnUserTaskBehavior userTaskBehavior,
-      final BpmnJobBehavior jobBehavior) {
+      final BpmnJobBehavior jobBehavior,
+      final UserTaskPermissionsBehavior taskPermissionsBehavior) {
     elementInstanceState = state.getElementInstanceState();
     processState = state.getProcessState();
     userTaskState = state.getUserTaskState();
     stateWriter = writers.state();
     this.userTaskBehavior = userTaskBehavior;
     this.jobBehavior = jobBehavior;
+    this.taskPermissionsBehavior = taskPermissionsBehavior;
   }
 
   @Override
@@ -69,11 +73,14 @@ public class UserTaskCreateProcessor implements UserTaskCommandProcessor {
               valueWithoutAssignee.resetChangedAttributes();
               assignUserTask(valueWithoutAssignee, initialAssignee);
             },
-            () ->
-                // if no initial assignee -> keep the assignee on the UT record in CREATED event
-                // it could be a corrected assignee or no assignee at all
-                stateWriter.appendFollowUpEvent(
-                    userTaskKey, UserTaskIntent.CREATED, userTaskRecord));
+            () -> {
+              // grant task permissions to the corrected assignee if any
+              taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
+
+              // if no initial assignee -> keep the assignee on the UT record in CREATED event
+              // it could be a corrected assignee or no assignee at all
+              stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.CREATED, userTaskRecord);
+            });
   }
 
   private void assignUserTask(final UserTaskRecord userTaskRecord, final String assignee) {

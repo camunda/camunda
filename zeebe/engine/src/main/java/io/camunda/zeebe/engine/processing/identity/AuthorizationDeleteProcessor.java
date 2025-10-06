@@ -51,7 +51,8 @@ public class AuthorizationDeleteProcessor
     rejectionWriter = writers.rejection();
     sideEffectWriter = writers.sideEffect();
     authorizationCheckBehavior = authCheckBehavior;
-    permissionsBehavior = new PermissionsBehavior(processingState, authCheckBehavior);
+    permissionsBehavior =
+        new PermissionsBehavior(processingState.getAuthorizationState(), authCheckBehavior);
   }
 
   @Override

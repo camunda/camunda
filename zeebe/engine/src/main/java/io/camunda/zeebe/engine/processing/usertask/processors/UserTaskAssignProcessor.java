@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.processors.auth.UserTaskPermissionsBehavior;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
@@ -32,17 +33,20 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
   private final TypedResponseWriter responseWriter;
   private final AsyncRequestState asyncRequestState;
   private final AsyncRequestBehavior asyncRequestBehavior;
+  private final UserTaskPermissionsBehavior taskPermissionsBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
 
   public UserTaskAssignProcessor(
       final ProcessingState state,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final UserTaskPermissionsBehavior taskPermissionsBehavior) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     asyncRequestState = state.getAsyncRequestState();
     this.asyncRequestBehavior = asyncRequestBehavior;
+    this.taskPermissionsBehavior = taskPermissionsBehavior;
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
             List.of(LifecycleState.CREATED), "assign", state.getUserTaskState(), authCheckBehavior);
@@ -81,6 +85,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     if (asyncRequest.isEmpty()) {
       // Async request might be absent if the assignment transition was triggered internally
       // by Zeebe due to an assignee configured in the process model.
+      taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
+
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord, command);
@@ -88,6 +94,7 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     }
 
     final var request = asyncRequest.get();
+    taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
     responseWriter.writeResponse(
         userTaskKey,

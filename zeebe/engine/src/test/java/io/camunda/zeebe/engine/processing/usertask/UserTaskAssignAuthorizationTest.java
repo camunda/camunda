@@ -12,8 +12,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
+import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
@@ -87,6 +94,128 @@ public class UserTaskAssignAuthorizationTest {
                 .withProcessInstanceKey(processInstanceKey)
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldNotDuplicateAssigneePermissionsOnReassignmentToSameUser() {
+    // given
+    final var processInstanceKey = createProcessInstance();
+    final var userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(processInstanceKey)
+            .withElementId(USER_TASK_ID)
+            .getFirst()
+            .getKey();
+
+    // when
+    engine
+        .userTask()
+        .ofInstance(processInstanceKey)
+        .withAssignee("my_assignee")
+        .assign(DEFAULT_USER.getUsername());
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+
+    final var createUserTaskPermissionsForAssigneeAuthRecord =
+        RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+            .withOwnerId("my_assignee")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(createUserTaskPermissionsForAssigneeAuthRecord)
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceId(Long.toString(userTaskKey))
+        .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE);
+
+    // unassign the task
+    engine.userTask().ofInstance(processInstanceKey).unassign(DEFAULT_USER.getUsername());
+
+    // reassign to the same user
+    final var userTaskReassigningRecord =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee("my_assignee")
+            .assign(DEFAULT_USER.getUsername());
+
+    final var userTaskReassignedRecord =
+        RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+            .withProcessInstanceKey(processInstanceKey)
+            .filter(r -> r.getPosition() > userTaskReassigningRecord.getPosition())
+            .getFirst();
+    // user task is reassigned to the same user
+    Assertions.assertThat(userTaskReassignedRecord)
+        .hasIntent(UserTaskIntent.ASSIGNED)
+        .hasRecordType(RecordType.EVENT);
+
+    Assertions.assertThat(userTaskReassignedRecord.getValue())
+        .hasAssignee("my_assignee")
+        .hasOnlyChangedAttributes(UserTaskRecord.ASSIGNEE);
+
+    // no new authorization record is created
+    assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId("my_assignee")
+                .limit(r -> r.getPosition() < userTaskReassignedRecord.getPosition()))
+        .hasSize(1)
+        .first()
+        .satisfies(
+            r ->
+                Assertions.assertThat(r.getValue())
+                    .isEqualTo(createUserTaskPermissionsForAssigneeAuthRecord));
+  }
+
+  @Test
+  public void shouldAddUserTaskPermissionsToCorrectedAssigneeOnTaskUpdate() {
+    // given
+    final String processId = PROCESS_ID + "_with_assigning_listener";
+    deployProcess(
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask(
+                USER_TASK_ID,
+                t -> t.zeebeTaskListener(l -> l.assigning().type("correct_assignee_job")))
+            .zeebeUserTask()
+            .endEvent()
+            .done());
+    final var pik = createProcessInstance(processId);
+
+    // when
+    final var assigningRecord =
+        engine.userTask().ofInstance(pik).withAssignee("sam").assign(DEFAULT_USER.getUsername());
+    final long userTaskKey = assigningRecord.getValue().getUserTaskKey();
+
+    RecordingExporter.jobRecords(JobIntent.CREATED)
+        .withProcessInstanceKey(pik)
+        .withType("correct_assignee_job")
+        .await();
+
+    engine
+        .job()
+        .ofInstance(pik)
+        .withType("correct_assignee_job")
+        .withResult(
+            new JobResult()
+                .setCorrections(new JobResultCorrections().setAssignee("frodo"))
+                .setCorrectedAttributes(List.of("assignee")))
+        .complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+                .withOwnerId("frodo")
+                .withResourceType(AuthorizationResourceType.USER_TASK)
+                .getFirst()
+                .getValue())
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceId(Long.toString(userTaskKey))
+        .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE);
   }
 
   @Test
@@ -169,6 +298,17 @@ public class UserTaskAssignAuthorizationTest {
   }
 
   private long createProcessInstance() {
-    return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+    return createProcessInstance(PROCESS_ID);
+  }
+
+  private long createProcessInstance(final String processId) {
+    return engine.processInstance().ofBpmnProcessId(processId).create(DEFAULT_USER.getUsername());
+  }
+
+  private void deployProcess(final BpmnModelInstance modelInstance) {
+    engine
+        .deployment()
+        .withXmlResource("process.bpmn", modelInstance)
+        .deploy(DEFAULT_USER.getUsername());
   }
 }

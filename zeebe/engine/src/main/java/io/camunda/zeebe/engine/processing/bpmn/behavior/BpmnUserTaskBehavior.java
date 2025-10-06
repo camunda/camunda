@@ -10,14 +10,18 @@ package io.camunda.zeebe.engine.processing.bpmn.behavior;
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_LOWER_BOUND;
 import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefinitionValidator.PRIORITY_UPPER_BOUND;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
+import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.processors.auth.UserTaskPermissionsBehavior;
 import io.camunda.zeebe.engine.state.deployment.PersistedForm;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.FormState;
@@ -25,6 +29,7 @@ import io.camunda.zeebe.engine.state.immutable.UserTaskState;
 import io.camunda.zeebe.engine.state.immutable.UserTaskState.LifecycleState;
 import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
+import io.camunda.zeebe.engine.state.mutable.MutableAuthorizationState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
@@ -64,12 +69,16 @@ public final class BpmnUserTaskBehavior {
   private final VariableState variableState;
   private final AsyncRequestState asyncRequestState;
   private final InstantSource clock;
+  private final UserTaskPermissionsBehavior taskPermissionsBehavior;
 
   public BpmnUserTaskBehavior(
+      final SecurityConfiguration securityConfig,
       final KeyGenerator keyGenerator,
       final Writers writers,
       final ExpressionProcessor expressionBehavior,
       final BpmnStateBehavior stateBehavior,
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final MutableAuthorizationState authorizationState,
       final FormState formState,
       final UserTaskState userTaskState,
       final VariableState variableState,
@@ -85,6 +94,12 @@ public final class BpmnUserTaskBehavior {
     this.variableState = variableState;
     this.asyncRequestState = asyncRequestState;
     this.clock = clock;
+    taskPermissionsBehavior =
+        new UserTaskPermissionsBehavior(
+            keyGenerator,
+            writers.command(),
+            new PermissionsBehavior(authorizationState, authCheckBehavior),
+            securityConfig);
   }
 
   public Either<Failure, UserTaskProperties> evaluateUserTaskExpressions(
@@ -418,6 +433,7 @@ public final class BpmnUserTaskBehavior {
   public void userTaskAssigned(final UserTaskRecord userTaskRecord, final String assignee) {
     final long userTaskKey = userTaskRecord.getUserTaskKey();
     userTaskRecord.setAssignee(assignee);
+    taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
     stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.ASSIGNED, userTaskRecord);
   }
 

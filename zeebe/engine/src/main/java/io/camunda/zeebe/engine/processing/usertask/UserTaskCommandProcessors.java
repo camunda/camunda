@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.usertask;
 
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.engine.processing.AsyncRequestBehavior;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.EventHandle;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.PermissionsBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAssignProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCancelProcessor;
@@ -19,6 +21,7 @@ import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandPro
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCompleteProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCreateProcessor;
 import io.camunda.zeebe.engine.processing.usertask.processors.UserTaskUpdateProcessor;
+import io.camunda.zeebe.engine.processing.usertask.processors.auth.UserTaskPermissionsBehavior;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -32,6 +35,7 @@ public final class UserTaskCommandProcessors {
   private final Map<UserTaskIntent, UserTaskCommandProcessor> commandToProcessor;
 
   public UserTaskCommandProcessors(
+      final SecurityConfiguration securityConfig,
       final ProcessingState processingState,
       final KeyGenerator keyGenerator,
       final BpmnBehaviors bpmnBehaviors,
@@ -47,6 +51,13 @@ public final class UserTaskCommandProcessors {
             bpmnBehaviors.eventTriggerBehavior(),
             bpmnBehaviors.stateBehavior());
 
+    final UserTaskPermissionsBehavior taskPermissionsBehavior =
+        new UserTaskPermissionsBehavior(
+            keyGenerator,
+            writers.command(),
+            new PermissionsBehavior(processingState.getAuthorizationState(), authCheckBehavior),
+            securityConfig);
+
     commandToProcessor =
         new EnumMap<>(
             Map.of(
@@ -55,10 +66,15 @@ public final class UserTaskCommandProcessors {
                     processingState,
                     writers,
                     bpmnBehaviors.userTaskBehavior(),
-                    bpmnBehaviors.jobBehavior()),
+                    bpmnBehaviors.jobBehavior(),
+                    taskPermissionsBehavior),
                 UserTaskIntent.ASSIGN,
                 new UserTaskAssignProcessor(
-                    processingState, writers, asyncRequestBehavior, authCheckBehavior),
+                    processingState,
+                    writers,
+                    asyncRequestBehavior,
+                    authCheckBehavior,
+                    taskPermissionsBehavior),
                 UserTaskIntent.CLAIM,
                 new UserTaskClaimProcessor(
                     processingState, writers, asyncRequestBehavior, authCheckBehavior),
