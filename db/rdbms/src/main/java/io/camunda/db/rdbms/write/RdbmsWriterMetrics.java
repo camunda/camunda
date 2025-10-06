@@ -94,7 +94,8 @@ public class RdbmsWriterMetrics {
 
   public void recordMergedQueueItem(final ContextType contextType, final String statementId) {
     Counter.builder(meterName("merged.queue.item"))
-        .tags("contextType", contextType.name(), "statementId", statementId)
+        .tags(
+            "contextType", contextType.name(), "statementId", stripDefaultPackageName(statementId))
         .description("Queue item merged into another item")
         .register(meterRegistry)
         .increment();
@@ -102,7 +103,7 @@ public class RdbmsWriterMetrics {
 
   public void recordEnqueuedStatement(final String statementId) {
     Counter.builder(meterName("enqueued.statements"))
-        .tags("statementId", statementId)
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Number of enqueued statements")
         .register(meterRegistry)
         .increment();
@@ -110,13 +111,19 @@ public class RdbmsWriterMetrics {
 
   public void recordExecutedStatement(final String statementId, final int batchCount) {
     Counter.builder(meterName("executed.statements"))
-        .tags("statementId", statementId, "numBatches", String.valueOf(batchCount))
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Number of executed statements")
         .register(meterRegistry)
         .increment();
 
+    Counter.builder(meterName("executed.queue.item"))
+        .tags("statementId", stripDefaultPackageName(statementId))
+        .description("Number of executed queue items")
+        .register(meterRegistry)
+        .increment(batchCount);
+
     DistributionSummary.builder(meterName("num.batches"))
-        .tags("statementId", statementId)
+        .tags("statementId", stripDefaultPackageName(statementId))
         .description("Exporter batch count")
         .maximumExpectedValue(100.0)
         .scale(100)
@@ -137,5 +144,12 @@ public class RdbmsWriterMetrics {
 
   private String meterName(final String name) {
     return NAMESPACE + "." + name;
+  }
+
+  private static String stripDefaultPackageName(final String statementId) {
+    if (statementId.startsWith("io.camunda.db.rdbms.sql")) {
+      return statementId.substring("io.camunda.db.rdbms.sql.".length());
+    }
+    return statementId;
   }
 }
