@@ -7,13 +7,15 @@
  */
 package io.camunda.configuration;
 
+import io.camunda.exporter.rdbms.ExporterConfiguration;
+
 public class RdbmsCache {
 
   /**
    * The maximum number of entries the cache may contain. When the size of the cache exceeds this,
    * the oldest entries are removed.
    */
-  private int maxSize;
+  private int maxSize = ExporterConfiguration.DEFAULT_MAX_CACHE_SIZE;
 
   public int getMaxSize() {
     return maxSize;

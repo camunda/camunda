@@ -7,6 +7,9 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.exporter.rdbms.ExporterConfiguration.DEFAULT_CLEANUP_BATCH_SIZE;
+
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import java.time.Duration;
 
 public class RdbmsHistory {
@@ -15,55 +18,63 @@ public class RdbmsHistory {
    * The default time to live for all camunda entities that support history time to live. Specified
    * in Java Duration format.
    */
-  private Duration defaultHistoryTTL;
+  private Duration defaultHistoryTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_HISTORY_TTL;
 
   /** The default time to live for all batch operations. Specified in Java Duration format. */
-  private Duration defaultBatchOperationHistoryTTL;
+  private Duration defaultBatchOperationHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
 
   /**
    * The default time to live for cancel process instance batch operations. Specified in Java
    * Duration format.
    */
-  private Duration batchOperationCancelProcessInstanceHistoryTTL;
+  private Duration batchOperationCancelProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
 
   /**
    * The default time to live for migrate process instance batch operations. Specified in Java
    * Duration format.
    */
-  private Duration batchOperationMigrateProcessInstanceHistoryTTL;
+  private Duration batchOperationMigrateProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
 
   /**
    * The default time to live for modify process instance batch operations. Specified in Java
    * Duration format.
    */
-  private Duration batchOperationModifyProcessInstanceHistoryTTL;
+  private Duration batchOperationModifyProcessInstanceHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
 
   /**
    * The default time to live for resolve incident batch operations. Specified in Java Duration
    * format.
    */
-  private Duration batchOperationResolveIncidentHistoryTTL;
+  private Duration batchOperationResolveIncidentHistoryTTL =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_BATCH_OPERATION_HISTORY_TTL;
 
   /**
    * The min interval between two history cleanup runs. This will be reached when the system is
    * constantly finding data to clean up. Specified in Java Duration format.
    */
-  private Duration minHistoryCleanupInterval;
+  private Duration minHistoryCleanupInterval =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MIN_HISTORY_CLEANUP_INTERVAL;
 
   /**
    * The max interval between two history cleanup runs. This will be reached when the system is
    * constantly finding no data to clean up. Specified in Java Duration format.
    */
-  private Duration maxHistoryCleanupInterval;
+  private Duration maxHistoryCleanupInterval =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL;
 
   /** The number of history records to delete in one batch. */
-  private Integer historyCleanupBatchSize;
+  private Integer historyCleanupBatchSize = DEFAULT_CLEANUP_BATCH_SIZE;
 
   /** Interval how often usage metrics cleanup is performed. Specified in Java Duration format. */
-  private Duration usageMetricsCleanup;
+  private Duration usageMetricsCleanup =
+      RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
 
   /** The default time to live for usage metrics. Specified in Java Duration format. */
-  private Duration usageMetricsTTL;
+  private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
 
   public Integer getHistoryCleanupBatchSize() {
     return historyCleanupBatchSize;
