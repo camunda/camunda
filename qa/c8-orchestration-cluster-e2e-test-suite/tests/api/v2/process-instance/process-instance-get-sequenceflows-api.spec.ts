@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {deploy} from '../../../../utils/zeebeClient';
+import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertStatusCode,
@@ -71,7 +71,7 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
         );
         expect(json.items[0].processDefinitionKey).toBeDefined();
       }).toPass(defaultAssertionOptions);
-      // await cancelProcessInstance(localState.processInstanceKey as string);
+      await cancelProcessInstance(localState.processInstanceKey as string);
     });
   });
 

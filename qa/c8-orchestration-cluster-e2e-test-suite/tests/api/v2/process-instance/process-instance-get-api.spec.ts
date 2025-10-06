@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {deploy} from '../../../../utils/zeebeClient';
+import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
@@ -71,7 +71,7 @@ test.describe.parallel('Get Process instance Tests', () => {
       expect(json.processDefinitionVersion).toBeGreaterThan(0);
       expect(json.processDefinitionKey).toBeDefined();
 
-      // await cancelProcessInstance(localState.processInstanceKey as string);
+      await cancelProcessInstance(localState.processInstanceKey as string);
     });
   });
 
@@ -127,6 +127,6 @@ test.describe.parallel('Get Process instance Tests', () => {
       await assertUnauthorizedRequest(authRes);
     });
 
-    // await cancelProcessInstance(localState['processInstanceKey'] as string);
+    await cancelProcessInstance(localState['processInstanceKey'] as string);
   });
 });
