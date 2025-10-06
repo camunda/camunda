@@ -12,7 +12,13 @@ import styles from './styles.module.scss';
 import cn from 'classnames';
 import {useTranslation} from 'react-i18next';
 
-const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
+type Props = {
+  className?: string;
+  title?: string;
+  message?: string;
+};
+
+const SomethingWentWrong: React.FC<Props> = ({className, title, message}) => {
   const {t} = useTranslation();
 
   return (
@@ -21,8 +27,8 @@ const SomethingWentWrong: React.FC<{className?: string}> = ({className}) => {
         <Stack gap={6} orientation="horizontal">
           <ErrorRobot />
           <Stack gap={4}>
-            <Heading>{t('errorGenericErrorTitle')}</Heading>
-            <p>{t('errorGenericErrorMessage')}</p>
+            <Heading>{title ?? t('errorGenericErrorTitle')}</Heading>
+            <p>{message ?? t('errorGenericErrorMessage')}</p>
             <Button kind="primary" onClick={() => window.location.reload()}>
               {t('errorGenericErrorButtonLabel')}
             </Button>
