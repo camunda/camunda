@@ -149,7 +149,7 @@
     </profile>
 
     <profile>
-      <id>operateItStage2</id>
+      <id>operateItZeebe</id>
       <properties>
         <includeITNames>**/*ZeebeIT.java</includeITNames>
         <excludeITNames>none</excludeITNames>
