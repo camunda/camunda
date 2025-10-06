@@ -40,6 +40,9 @@ public class SecondaryStorage {
   /** Stores the Opensearch configuration, when type is set to 'opensearch'. */
   @NestedConfigurationProperty private Opensearch opensearch = new Opensearch();
 
+  /** Stores the RDBMS configuration, when type is set to 'rdbms'. */
+  @NestedConfigurationProperty private Rdbms rdbms = new Rdbms();
+
   public boolean getAutoconfigureCamundaExporter() {
     return autoconfigureCamundaExporter;
   }
@@ -75,6 +78,14 @@ public class SecondaryStorage {
 
   public void setOpensearch(final Opensearch opensearch) {
     this.opensearch = opensearch;
+  }
+
+  public Rdbms getRdbms() {
+    return rdbms;
+  }
+
+  public void setRdbms(final Rdbms rdbms) {
+    this.rdbms = rdbms;
   }
 
   public enum SecondaryStorageType {
