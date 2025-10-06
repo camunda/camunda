@@ -775,3 +775,19 @@ export async function completeUserTask(
     data: payload,
   });
 }
+
+export async function getProcessDefinitionKey(
+  request: APIRequestContext,
+  processDefinitionId: string,
+) {
+  const res = await request.post(buildUrl('/process-instances'), {
+    headers: jsonHeaders(),
+    data: {
+      processDefinitionId: processDefinitionId,
+    },
+  });
+  await assertStatusCode(res, 200);
+  const json = await res.json();
+  await cancelProcessInstance(json.processInstanceKey);
+  return json.processDefinitionKey;
+}

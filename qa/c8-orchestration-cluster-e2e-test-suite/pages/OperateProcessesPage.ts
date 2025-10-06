@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {OperateDiagramPage} from './OperateDiagramPage';
+import {sleep} from '../utils/sleep';
 
 class OperateProcessesPage {
   private page: Page;
@@ -118,6 +119,7 @@ class OperateProcessesPage {
     let retryCount = 0;
     while (retryCount < maxRetries) {
       try {
+        await sleep(5_000);
         await this.processInstanceLink.click();
         return;
       } catch {
