@@ -7,61 +7,63 @@
  */
 package io.camunda.configuration;
 
+import java.time.Duration;
+
 public class RdbmsHistory {
 
   /**
    * The default time to live for all camunda entities that support history time to live. Specified
    * in Java Duration format.
    */
-  private String defaultHistoryTTL;
+  private Duration defaultHistoryTTL;
 
   /** The default time to live for all batch operations. Specified in Java Duration format. */
-  private String defaultBatchOperationHistoryTTL;
+  private Duration defaultBatchOperationHistoryTTL;
 
   /**
    * The default time to live for cancel process instance batch operations. Specified in Java
    * Duration format.
    */
-  private String batchOperationCancelProcessInstanceHistoryTTL;
+  private Duration batchOperationCancelProcessInstanceHistoryTTL;
 
   /**
    * The default time to live for migrate process instance batch operations. Specified in Java
    * Duration format.
    */
-  private String batchOperationMigrateProcessInstanceHistoryTTL;
+  private Duration batchOperationMigrateProcessInstanceHistoryTTL;
 
   /**
    * The default time to live for modify process instance batch operations. Specified in Java
    * Duration format.
    */
-  private String batchOperationModifyProcessInstanceHistoryTTL;
+  private Duration batchOperationModifyProcessInstanceHistoryTTL;
 
   /**
    * The default time to live for resolve incident batch operations. Specified in Java Duration
    * format.
    */
-  private String batchOperationResolveIncidentHistoryTTL;
+  private Duration batchOperationResolveIncidentHistoryTTL;
 
   /**
    * The min interval between two history cleanup runs. This will be reached when the system is
    * constantly finding data to clean up. Specified in Java Duration format.
    */
-  private String minHistoryCleanupInterval;
+  private Duration minHistoryCleanupInterval;
 
   /**
    * The max interval between two history cleanup runs. This will be reached when the system is
    * constantly finding no data to clean up. Specified in Java Duration format.
    */
-  private String maxHistoryCleanupInterval;
+  private Duration maxHistoryCleanupInterval;
 
   /** The number of history records to delete in one batch. */
   private Integer historyCleanupBatchSize;
 
   /** Interval how often usage metrics cleanup is performed. Specified in Java Duration format. */
-  private String usageMetricsCleanup;
+  private Duration usageMetricsCleanup;
 
   /** The default time to live for usage metrics. Specified in Java Duration format. */
-  private String usageMetricsTTL;
+  private Duration usageMetricsTTL;
 
   public Integer getHistoryCleanupBatchSize() {
     return historyCleanupBatchSize;
@@ -71,90 +73,90 @@ public class RdbmsHistory {
     this.historyCleanupBatchSize = historyCleanupBatchSize;
   }
 
-  public String getMaxHistoryCleanupInterval() {
+  public Duration getMaxHistoryCleanupInterval() {
     return maxHistoryCleanupInterval;
   }
 
-  public void setMaxHistoryCleanupInterval(final String maxHistoryCleanupInterval) {
+  public void setMaxHistoryCleanupInterval(final Duration maxHistoryCleanupInterval) {
     this.maxHistoryCleanupInterval = maxHistoryCleanupInterval;
   }
 
-  public String getMinHistoryCleanupInterval() {
+  public Duration getMinHistoryCleanupInterval() {
     return minHistoryCleanupInterval;
   }
 
-  public void setMinHistoryCleanupInterval(final String minHistoryCleanupInterval) {
+  public void setMinHistoryCleanupInterval(final Duration minHistoryCleanupInterval) {
     this.minHistoryCleanupInterval = minHistoryCleanupInterval;
   }
 
-  public String getBatchOperationResolveIncidentHistoryTTL() {
+  public Duration getBatchOperationResolveIncidentHistoryTTL() {
     return batchOperationResolveIncidentHistoryTTL;
   }
 
   public void setBatchOperationResolveIncidentHistoryTTL(
-      final String batchOperationResolveIncidentHistoryTTL) {
+      final Duration batchOperationResolveIncidentHistoryTTL) {
     this.batchOperationResolveIncidentHistoryTTL = batchOperationResolveIncidentHistoryTTL;
   }
 
-  public String getBatchOperationModifyProcessInstanceHistoryTTL() {
+  public Duration getBatchOperationModifyProcessInstanceHistoryTTL() {
     return batchOperationModifyProcessInstanceHistoryTTL;
   }
 
   public void setBatchOperationModifyProcessInstanceHistoryTTL(
-      final String batchOperationModifyProcessInstanceHistoryTTL) {
+      final Duration batchOperationModifyProcessInstanceHistoryTTL) {
     this.batchOperationModifyProcessInstanceHistoryTTL =
         batchOperationModifyProcessInstanceHistoryTTL;
   }
 
-  public String getBatchOperationMigrateProcessInstanceHistoryTTL() {
+  public Duration getBatchOperationMigrateProcessInstanceHistoryTTL() {
     return batchOperationMigrateProcessInstanceHistoryTTL;
   }
 
   public void setBatchOperationMigrateProcessInstanceHistoryTTL(
-      final String batchOperationMigrateProcessInstanceHistoryTTL) {
+      final Duration batchOperationMigrateProcessInstanceHistoryTTL) {
     this.batchOperationMigrateProcessInstanceHistoryTTL =
         batchOperationMigrateProcessInstanceHistoryTTL;
   }
 
-  public String getBatchOperationCancelProcessInstanceHistoryTTL() {
+  public Duration getBatchOperationCancelProcessInstanceHistoryTTL() {
     return batchOperationCancelProcessInstanceHistoryTTL;
   }
 
   public void setBatchOperationCancelProcessInstanceHistoryTTL(
-      final String batchOperationCancelProcessInstanceHistoryTTL) {
+      final Duration batchOperationCancelProcessInstanceHistoryTTL) {
     this.batchOperationCancelProcessInstanceHistoryTTL =
         batchOperationCancelProcessInstanceHistoryTTL;
   }
 
-  public String getDefaultBatchOperationHistoryTTL() {
+  public Duration getDefaultBatchOperationHistoryTTL() {
     return defaultBatchOperationHistoryTTL;
   }
 
-  public void setDefaultBatchOperationHistoryTTL(final String defaultBatchOperationHistoryTTL) {
+  public void setDefaultBatchOperationHistoryTTL(final Duration defaultBatchOperationHistoryTTL) {
     this.defaultBatchOperationHistoryTTL = defaultBatchOperationHistoryTTL;
   }
 
-  public String getDefaultHistoryTTL() {
+  public Duration getDefaultHistoryTTL() {
     return defaultHistoryTTL;
   }
 
-  public void setDefaultHistoryTTL(final String defaultHistoryTTL) {
+  public void setDefaultHistoryTTL(final Duration defaultHistoryTTL) {
     this.defaultHistoryTTL = defaultHistoryTTL;
   }
 
-  public String getUsageMetricsCleanup() {
+  public Duration getUsageMetricsCleanup() {
     return usageMetricsCleanup;
   }
 
-  public void setUsageMetricsCleanup(final String usageMetricsCleanup) {
+  public void setUsageMetricsCleanup(final Duration usageMetricsCleanup) {
     this.usageMetricsCleanup = usageMetricsCleanup;
   }
 
-  public String getUsageMetricsTTL() {
+  public Duration getUsageMetricsTTL() {
     return usageMetricsTTL;
   }
 
-  public void setUsageMetricsTTL(final String usageMetricsTTL) {
+  public void setUsageMetricsTTL(final Duration usageMetricsTTL) {
     this.usageMetricsTTL = usageMetricsTTL;
   }
 }

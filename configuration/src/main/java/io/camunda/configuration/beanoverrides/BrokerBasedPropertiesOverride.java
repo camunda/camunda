@@ -115,10 +115,11 @@ public class BrokerBasedPropertiesOverride {
     // from camunda.data.* sections
     populateFromData(override);
 
-    switch (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()) {
-      case elasticsearch, opensearch -> populateCamundaExporter(override);
-      case rdbms -> populateRdbmsExporter(override);
-      default -> {}
+    if (unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType()
+        == SecondaryStorageType.rdbms) {
+      populateRdbmsExporter(override);
+    } else {
+      populateCamundaExporter(override);
     }
 
     // TODO: Populate the rest of the bean using unifiedConfiguration

@@ -198,7 +198,7 @@ public class SecondaryStorageRdbmsTest {
       assertThat(exporter).isNotNull();
       final Map<String, Object> args = exporter.getArgs();
       assertThat(args.get("queueSize")).isEqualTo(QUEUE_SIZE);
-      assertThat(args.get("flushInterval")).isEqualTo(FLUSH_INTERVAL);
+      assertThat(args.get("flushInterval")).isEqualTo(Duration.parse(FLUSH_INTERVAL));
       assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
       assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
     }

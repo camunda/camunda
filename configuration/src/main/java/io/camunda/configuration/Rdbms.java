@@ -9,6 +9,7 @@ package io.camunda.configuration;
 
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
+import java.time.Duration;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
@@ -25,7 +26,7 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   private String prefix;
 
   /** The interval at which the exporters execution queue is flushed. */
-  private String flushInterval = ExporterConfiguration.DEFAULT_FLUSH_INTERVAL.toString();
+  private Duration flushInterval = ExporterConfiguration.DEFAULT_FLUSH_INTERVAL;
 
   /** The maximum size of the exporters execution queue before it is flushed to the database. */
   private Integer queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
@@ -64,11 +65,11 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
     this.prefix = prefix;
   }
 
-  public String getFlushInterval() {
+  public Duration getFlushInterval() {
     return flushInterval;
   }
 
-  public void setFlushInterval(final String flushInterval) {
+  public void setFlushInterval(final Duration flushInterval) {
     this.flushInterval = flushInterval;
   }
 
