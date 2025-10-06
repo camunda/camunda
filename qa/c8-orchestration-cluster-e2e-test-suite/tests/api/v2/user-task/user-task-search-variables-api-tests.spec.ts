@@ -23,8 +23,8 @@ import {validateResponseShape} from 'assert-json-body';
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search User Task Variables Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'usertask_with_variables',
-    'usertask_with_variables',
+    'user_task_api_test_process',
+    'user_task_api_test_process',
     {testset1: 'something', testset2: 'something else', zip: 123},
   );
 

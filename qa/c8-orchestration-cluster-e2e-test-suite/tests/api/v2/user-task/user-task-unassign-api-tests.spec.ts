@@ -23,7 +23,7 @@ import {
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Unassign User Task Tests', () => {
   const {state, beforeAll, beforeEach, afterEach} = setupProcessInstanceTests(
-    'usertask_with_variables',
+    'user_task_api_test_process',
   );
 
   test.beforeAll(beforeAll);
