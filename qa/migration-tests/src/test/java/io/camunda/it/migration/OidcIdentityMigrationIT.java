@@ -81,40 +81,51 @@ public class OidcIdentityMigrationIT {
   @Container
   private static final KeycloakContainer KEYCLOAK = IdentityMigrationTestUtil.getKeycloak();
 
-  private static final GenericContainer<?> IDENTITY =
-      IdentityMigrationTestUtil.getManagementIdentitySMOidc(KEYCLOAK, POSTGRES)
+  private static final GenericContainer<?> IDENTITY_87 =
+      IdentityMigrationTestUtil.getManagementIdentitySMOidc87(KEYCLOAK, POSTGRES)
           .withEnv("IDENTITY_TENANTS_0_NAME", "tenant 1")
           .withEnv("IDENTITY_TENANTS_0_TENANT-ID", "tenant1")
           .withEnv("IDENTITY_TENANTS_1_NAME", "tenant 2")
           .withEnv("IDENTITY_TENANTS_1_TENANT-ID", "tenant2")
+          .withEnv("IDENTITY_MAPPING_RULES_0_NAME", "Rule 1")
+          .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_NAME", "claim1")
+          .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_VALUE", "value1")
+          .withEnv("IDENTITY_MAPPING_RULES_0_OPERATOR", "EQUALS")
+          .withEnv("IDENTITY_MAPPING_RULES_0_RULE_TYPE", "ROLE")
+          .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_0", "Operate")
+          .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_1", "Zeebe")
+          .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_2", "Tasklist")
           .withEnv("IDENTITY_MAPPING_RULES_1_NAME", "Rule 2")
-          .withEnv("IDENTITY_MAPPING_RULES_1_CLAIM_NAME", "claim1")
-          .withEnv("IDENTITY_MAPPING_RULES_1_CLAIM_VALUE", "value1")
+          .withEnv("IDENTITY_MAPPING_RULES_1_CLAIM_NAME", "claim2")
+          .withEnv("IDENTITY_MAPPING_RULES_1_CLAIM_VALUE", "value2")
           .withEnv("IDENTITY_MAPPING_RULES_1_OPERATOR", "EQUALS")
-          .withEnv("IDENTITY_MAPPING_RULES_1_RULE_TYPE", "ROLE")
-          .withEnv("IDENTITY_MAPPING_RULES_1_APPLIED_ROLE_NAMES_0", "Operate")
-          .withEnv("IDENTITY_MAPPING_RULES_1_APPLIED_ROLE_NAMES_1", "Zeebe")
-          .withEnv("IDENTITY_MAPPING_RULES_1_APPLIED_ROLE_NAMES_2", "Tasklist")
-          .withEnv("IDENTITY_MAPPING_RULES_2_NAME", "Rule 3")
-          .withEnv("IDENTITY_MAPPING_RULES_2_CLAIM_NAME", "claim2")
-          .withEnv("IDENTITY_MAPPING_RULES_2_CLAIM_VALUE", "value2")
+          .withEnv("IDENTITY_MAPPING_RULES_1_RULE_TYPE", "TENANT")
+          .withEnv("IDENTITY_MAPPING_RULES_1_APPLIED_TENANT_IDS_0", "tenant1")
+          .withEnv("IDENTITY_MAPPING_RULES_1_APPLIED_TENANT_IDS_1", "tenant2")
+          .withEnv("IDENTITY_MAPPING_RULES_2_NAME", "Duplicate Claim Rule 1")
+          .withEnv("IDENTITY_MAPPING_RULES_2_CLAIM_NAME", "dup-claim")
+          .withEnv("IDENTITY_MAPPING_RULES_2_CLAIM_VALUE", "dup-value")
           .withEnv("IDENTITY_MAPPING_RULES_2_OPERATOR", "EQUALS")
-          .withEnv("IDENTITY_MAPPING_RULES_2_RULE_TYPE", "TENANT")
-          .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_TENANT_IDS_0", "tenant1")
-          .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_TENANT_IDS_1", "tenant2")
-          .withEnv("IDENTITY_MAPPING_RULES_3_NAME", "Duplicate Claim Rule 1")
+          .withEnv("IDENTITY_MAPPING_RULES_2_RULE_TYPE", "ROLE")
+          .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_ROLE_NAMES_0", "Operate")
+          .withEnv("IDENTITY_MAPPING_RULES_2_APPLIED_ROLE_NAMES_1", "Tasklist")
+          .withEnv("IDENTITY_MAPPING_RULES_3_NAME", "Duplicate Claim Rule 2")
           .withEnv("IDENTITY_MAPPING_RULES_3_CLAIM_NAME", "dup-claim")
           .withEnv("IDENTITY_MAPPING_RULES_3_CLAIM_VALUE", "dup-value")
           .withEnv("IDENTITY_MAPPING_RULES_3_OPERATOR", "EQUALS")
-          .withEnv("IDENTITY_MAPPING_RULES_3_RULE_TYPE", "ROLE")
-          .withEnv("IDENTITY_MAPPING_RULES_3_APPLIED_ROLE_NAMES_0", "Operate")
-          .withEnv("IDENTITY_MAPPING_RULES_3_APPLIED_ROLE_NAMES_1", "Tasklist")
-          .withEnv("IDENTITY_MAPPING_RULES_4_NAME", "Duplicate Claim Rule 2")
-          .withEnv("IDENTITY_MAPPING_RULES_4_CLAIM_NAME", "dup-claim")
-          .withEnv("IDENTITY_MAPPING_RULES_4_CLAIM_VALUE", "dup-value")
-          .withEnv("IDENTITY_MAPPING_RULES_4_OPERATOR", "EQUALS")
-          .withEnv("IDENTITY_MAPPING_RULES_4_RULE_TYPE", "TENANT")
-          .withEnv("IDENTITY_MAPPING_RULES_4_APPLIED_TENANT_IDS_0", "tenant2")
+          .withEnv("IDENTITY_MAPPING_RULES_3_RULE_TYPE", "TENANT")
+          .withEnv("IDENTITY_MAPPING_RULES_3_APPLIED_TENANT_IDS_0", "tenant2")
+          .waitingFor(
+              new HttpWaitStrategy()
+                  .forPort(8082)
+                  .forPath("/actuator/health/readiness")
+                  .allowInsecure()
+                  .forStatusCode(200)
+                  .withReadTimeout(Duration.ofSeconds(10))
+                  .withStartupTimeout(Duration.ofMinutes(5)));
+
+  private static final GenericContainer<?> IDENTITY_88 =
+      IdentityMigrationTestUtil.getManagementIdentitySMOidc88(KEYCLOAK, POSTGRES)
           .waitingFor(
               new HttpWaitStrategy()
                   .forPort(8082)
@@ -139,7 +150,9 @@ public class OidcIdentityMigrationIT {
       keycloak.realms().create(realm);
     }
 
-    IDENTITY.start();
+    IDENTITY_87.start();
+    IDENTITY_87.stop();
+    IDENTITY_88.start();
     BROKER
         .withCamundaExporter("http://" + ELASTIC.getHttpHostAddress())
         .withProperty(
@@ -153,7 +166,7 @@ public class OidcIdentityMigrationIT {
     // given
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     migrationProperties.setMode(Mode.OIDC);
-    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
+    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY_88));
     migrationProperties
         .getManagementIdentity()
         .setIssuerBackendUrl(externalKeycloakUrl(KEYCLOAK) + "/realms/oidc-camunda-platform/");
@@ -180,7 +193,8 @@ public class OidcIdentityMigrationIT {
   @AfterAll
   static void afterAll() {
     BROKER.stop();
-    IDENTITY.stop();
+    IDENTITY_87.stop();
+    IDENTITY_88.stop();
   }
 
   @Test
@@ -378,7 +392,7 @@ public class OidcIdentityMigrationIT {
               final var mappingRules = searchMappingRules(restAddress);
               assertThat(mappingRules.items())
                   .extracting(MappingRuleResponse::mappingRuleId)
-                  .contains("rule_2", "rule_3");
+                  .contains("rule_1", "rule_2", "duplicate_claim_rule_1");
             });
 
     // then
@@ -392,33 +406,33 @@ public class OidcIdentityMigrationIT {
             MappingRuleResponse::claimName,
             MappingRuleResponse::claimValue)
         .contains(
-            tuple("rule_2", "Rule 2", "claim1", "value1"),
-            tuple("rule_3", "Rule 3", "claim2", "value2"));
+            tuple("rule_1", "Rule 1", "claim1", "value1"),
+            tuple("rule_2", "Rule 2", "claim2", "value2"));
 
     final var mappingRuleByRoleOperate =
         client.newMappingRulesByRoleSearchRequest("operate").send().join();
     assertThat(mappingRuleByRoleOperate.items())
         .extracting(MappingRule::getMappingRuleId)
-        .contains("rule_2");
+        .contains("rule_1");
     final var mappingRuleByRoleZeebe =
         client.newMappingRulesByRoleSearchRequest("zeebe").send().join();
     assertThat(mappingRuleByRoleZeebe.items())
         .extracting(MappingRule::getMappingRuleId)
-        .contains("rule_2");
+        .contains("rule_1");
     final var mappingRuleByRoleTasklist =
         client.newMappingRulesByRoleSearchRequest("tasklist").send().join();
     assertThat(mappingRuleByRoleTasklist.items())
         .extracting(MappingRule::getMappingRuleId)
-        .contains("rule_2");
+        .contains("rule_1");
 
     final var mappingRuleByTenant1 = searchMappingRulesInTenant(restAddress, "tenant1");
     assertThat(mappingRuleByTenant1.items())
         .extracting(MappingRuleResponse::mappingRuleId)
-        .contains("rule_3");
+        .contains("rule_2");
     final var mappingRuleByTenant2 = searchMappingRulesInTenant(restAddress, "tenant2");
     assertThat(mappingRuleByTenant2.items())
         .extracting(MappingRuleResponse::mappingRuleId)
-        .contains("rule_3");
+        .contains("rule_2");
 
     // There should be a merged mapping rule for (dup-claim, dup-value)
     assertThat(mappingRules)
