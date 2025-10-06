@@ -252,7 +252,7 @@ public final class BackgroundTaskManagerFactory {
       tasks.add(buildBatchOperationUpdateTask());
     }
 
-    tasks.add(buildProcessInstanceDeleterTask());
+    //    tasks.add(buildProcessInstanceDeleterTask());
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
