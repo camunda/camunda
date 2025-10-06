@@ -26,19 +26,6 @@ const definitionsMock = getQueryProcessDefinitionsResponseMock([
   getProcessDefinitionMock(),
 ]);
 
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig() {
-      return {
-        ...actual.getClientConfig(),
-        clientMode: 'v2',
-      };
-    },
-  };
-});
-
 const createWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
