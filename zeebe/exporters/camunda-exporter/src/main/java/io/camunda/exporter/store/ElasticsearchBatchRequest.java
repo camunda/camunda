@@ -234,6 +234,21 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest deleteByField(final String index, final String field, final String value) {
+    LOGGER.debug("Add delete request for index {}, field {} and value {}", index, field, value);
+    try {
+      esClient.deleteByQuery(
+          r -> r.index(index + "*").query(q -> q.term(t -> t.field(field).value(value))));
+    } catch (final IOException e) {
+      // TODO we need to somehow handle exceptions properly here. It doesn't matter for the POC
+      //  right now, but it's a must later on. We can look at how we do it with the other requests
+      // to ES.
+      throw new RuntimeException(e);
+    }
+    return this;
+  }
+
+  @Override
   public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     execute(customErrorHandlers, false);

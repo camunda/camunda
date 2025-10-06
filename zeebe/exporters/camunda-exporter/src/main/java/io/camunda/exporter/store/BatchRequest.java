@@ -63,6 +63,12 @@ public interface BatchRequest {
   BatchRequest deleteWithRouting(String index, String id, String routing);
 
   /**
+   * Deletes documents by a specific field value. Note that this can delete multiple documents if
+   * more than 1 document matches the field value.
+   */
+  BatchRequest deleteByField(String index, String field, String value);
+
+  /**
    * Applies all updates in this batch.
    *
    * @param customErrorHandlers possible custom error handlers to be used if certain indices threw
