@@ -227,6 +227,11 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
+  public BatchRequest deleteByField(final String index, final String field, final String value) {
+    throw new UnsupportedOperationException("Not relevant for the POC we're building");
+  }
+
+  @Override
   public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
     execute(customErrorHandlers, false);

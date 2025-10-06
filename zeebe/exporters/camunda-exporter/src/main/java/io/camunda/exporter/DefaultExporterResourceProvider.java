@@ -73,7 +73,6 @@ import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOp
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
-import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncidentResolutionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
@@ -321,7 +320,8 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
                     .get(CorrelatedMessageSubscriptionTemplate.class)
                     .getFullQualifiedName()),
             new ProcessInstanceDeletedHandler(
-                indexDescriptors.get(DeleteHistoryIndex.class).getFullQualifiedName())));
+                indexDescriptors.get(DeleteHistoryIndex.class).getFullQualifiedName(),
+                indexDescriptors)));
 
     if (configuration.getBatchOperation().isExportItemsOnCreation()) {
       // only add this handler when the items are exported on creation
@@ -329,9 +329,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           new BatchOperationChunkCreatedItemHandler(
               indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
               batchOperationCache));
-      exportHandlers.add(
-          new ListViewFromChunkItemHandler(
-              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
+      // TODO: we can't update the list view document after we've deleted it. We should put some
+      //  metadata in the batch record so we can ignore this handler if it's a deletion.
+      //      exportHandlers.add(
+      //          new ListViewFromChunkItemHandler(
+      //              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
     }
 
     indicesWithCustomErrorHandlers =
