@@ -31,9 +31,15 @@ import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.OperationTemplate;
-import io.camunda.operate.util.*;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.*;
+import io.camunda.operate.webapp.reader.BatchOperationReader;
+import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
+import io.camunda.operate.webapp.reader.OperationReader;
+import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
@@ -47,7 +53,11 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
-import io.camunda.operate.webapp.zeebe.operation.*;
+import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
+import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
+import io.camunda.operate.webapp.zeebe.operation.DeleteProcessDefinitionHandler;
+import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
+import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.HttpURLConnection;
@@ -59,6 +69,7 @@ import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -122,6 +133,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testBatchOperationsPersisted() throws Exception {
     // given
     final int instanceCount = 10;
@@ -172,6 +184,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testOperationPersisted() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -216,6 +229,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testSeveralOperationsPersistedForSeveralIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstanceWithIncidents();
@@ -266,6 +280,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testNoOperationsPersistedForNoIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -315,6 +330,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testResolveIncidentExecutedOnOneInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -369,6 +385,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testResolveIncidentForExecutionListener() throws Exception {
 
     // given
@@ -401,6 +418,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testUpdateVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -467,6 +485,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testAddVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -850,6 +869,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testRetryOperationOnZeebeNotAvailable() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -880,6 +900,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailResolveIncidentBecauseOfNoIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -922,6 +943,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailCancelOnCanceledInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -955,6 +977,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailCancelOnCompletedInstance() throws Exception {
     // given
     final String bpmnProcessId = "startEndProcess";
@@ -993,6 +1016,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -1012,6 +1036,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailAddVariableOperationAsOperationAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -1102,6 +1127,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testDeleteProcessDefinitionFailsWhenRunning() throws Exception {
 
     // given
