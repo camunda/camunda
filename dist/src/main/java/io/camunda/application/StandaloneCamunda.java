@@ -11,7 +11,6 @@ import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_P
 
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.initializers.DefaultAuthenticationInitializer;
-import io.camunda.application.initializers.HealthConfigurationInitializer;
 import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.application.listeners.ApplicationErrorListener;
 import io.camunda.configuration.UnifiedConfiguration;
@@ -82,7 +81,7 @@ public class StandaloneCamunda {
             .properties(defaultProperties)
             .initializers(
                 new DefaultAuthenticationInitializer(),
-                new HealthConfigurationInitializer(),
+                // new HealthConfigurationInitializer(),
                 new WebappsConfigurationInitializer())
             .listeners(new ApplicationErrorListener())
             .build(args);
