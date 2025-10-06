@@ -200,11 +200,10 @@ public class MigrationITExtension
         final ElasticsearchContainer elasticsearchContainer =
             TestSearchContainers.createDefeaultElasticsearchContainer();
         elasticsearchContainer.setPortBindings(List.of("9200:9200"));
-        // elasticsearchContainer.withEnv("logger.org.elasticsearch.deprecation", "ERROR");
         elasticsearchContainer.start();
         closables.add(elasticsearchContainer);
         databaseUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
-        // suppressEsWarnings();
+        suppressEsWarnings();
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
       case ES -> {
