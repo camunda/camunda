@@ -38,7 +38,7 @@ public class ProcessInstanceToBeArchivedCountJob implements BackgroundTask {
               if (err == null) {
                 metrics.setProcessInstancesAwaitingArchival(res);
               } else {
-                logger.error("Failed to count number of process instances awaiting archival", err);
+                logger.warn("Failed to count number of process instances awaiting archival", err);
               }
             });
   }
