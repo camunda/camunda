@@ -6,5 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 package io.camunda.operate.opensearch;
-public class OpensearchStatisticsIT {
-}
+
+import io.camunda.operate.elasticsearch.IncidentStatisticsIT;
+import org.springframework.test.context.TestPropertySource;
+
+@TestPropertySource(
+    properties = {
+      "camunda.data.secondary-storage.type=opensearch",
+      "camunda.database.type=opensearch",
+      "camunda.tasklist.database=opensearch",
+      "camunda.operate.database=opensearch",
+    })
+public class OpensearchStatisticsIT extends IncidentStatisticsIT {}
