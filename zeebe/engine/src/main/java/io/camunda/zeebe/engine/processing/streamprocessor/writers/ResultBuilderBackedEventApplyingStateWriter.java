@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
 import io.camunda.zeebe.engine.processing.streamprocessor.FollowUpEventMetadata;
 import io.camunda.zeebe.engine.state.EventApplier;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -67,6 +68,7 @@ final class ResultBuilderBackedEventApplyingStateWriter extends AbstractResultBu
             .recordVersion(recordVersion)
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
+            .authorization(new AuthInfo().setClaims(metadata.getClaims()))
             .operationReference(metadata.getOperationReference())
             .batchOperationReference(metadata.getBatchOperationReference());
 
