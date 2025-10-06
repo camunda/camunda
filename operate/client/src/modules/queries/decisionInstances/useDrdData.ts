@@ -31,19 +31,39 @@ const useDrdData = (decisionEvaluationKey?: string) => {
         throw error;
       }
 
-      let drdData = {} as DrdData;
-      for (const item of response.items) {
-        // Displaying DRD data always works with the last decisionDefinitionId
-        // if multiple exists for the same `decisionEvaluationKey`.
-        drdData[item.decisionDefinitionId] = {
-          decisionDefinitionId: item.decisionDefinitionId,
-          decisionEvaluationInstanceKey: item.decisionEvaluationInstanceKey,
-          state: item.state,
-        };
+      const drdData = mapDecisionInstancesToDrdData(response.items);
+      if (response.page.totalItems <= response.items.length) {
+        return drdData;
       }
-      return drdData;
+
+      const {response: remaining, error: remainingError} =
+        await searchDecisionInstances({
+          filter: {decisionEvaluationKey},
+          page: {from: response.items.length, limit: response.page.totalItems},
+        });
+      if (remainingError) {
+        throw remainingError;
+      }
+
+      return mapDecisionInstancesToDrdData(remaining.items, drdData);
     },
   });
+};
+
+const mapDecisionInstancesToDrdData = (
+  instances: DecisionInstance[],
+  drdData: DrdData = {},
+): DrdData => {
+  for (const instance of instances) {
+    // Displaying DRD data always works with the last decisionDefinitionId
+    // if multiple exists for the same `decisionEvaluationKey`.
+    drdData[instance.decisionDefinitionId] = {
+      decisionDefinitionId: instance.decisionDefinitionId,
+      decisionEvaluationInstanceKey: instance.decisionEvaluationInstanceKey,
+      state: instance.state,
+    };
+  }
+  return drdData;
 };
 
 export {useDrdData, type DrdData};
