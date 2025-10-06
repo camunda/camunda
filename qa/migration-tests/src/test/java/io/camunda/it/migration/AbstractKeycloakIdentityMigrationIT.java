@@ -64,8 +64,8 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
   @Container
   private static final GenericContainer<?> POSTGRES = IdentityMigrationTestUtil.getPostgres();
 
-  private static final GenericContainer<?> IDENTITY =
-      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak(KEYCLOAK, POSTGRES)
+  private static final GenericContainer<?> IDENTITY_87 =
+      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak87(KEYCLOAK, POSTGRES)
           // this triggers the setup of the default roles for operate, tasklist and zeebe
           .withEnv("KEYCLOAK_INIT_OPERATE_SECRET", "operate")
           .withEnv("KEYCLOAK_INIT_OPERATE_ROOT_URL", "http://localhost:8081")
@@ -148,6 +148,9 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
                   .withReadTimeout(Duration.ofSeconds(10))
                   .withStartupTimeout(Duration.ofMinutes(5)));
 
+  private static final GenericContainer<?> IDENTITY_88 =
+      IdentityMigrationTestUtil.getManagementIdentitySMKeycloak88(KEYCLOAK, POSTGRES);
+
   private static final ObjectMapper OBJECT_MAPPER =
       new ObjectMapper().configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
   protected TestStandaloneIdentityMigration migration;
@@ -163,7 +166,13 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
             "http://" + ELASTIC.getHttpHostAddress())
         .start();
 
-    IDENTITY
+    IDENTITY_87
+        .withEnv(
+            "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
+            "http://localhost:%d/realms/camunda-platform".formatted(KEYCLOAK.getMappedPort(8080)))
+        .start();
+    IDENTITY_87.stop();
+    IDENTITY_88
         .withEnv(
             "IDENTITY_AUTH_PROVIDER_ISSUER_URL",
             "http://localhost:%d/realms/camunda-platform".formatted(KEYCLOAK.getMappedPort(8080)))
@@ -173,7 +182,8 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
   @AfterAll
   static void afterAll() {
     BROKER.stop();
-    IDENTITY.stop();
+    IDENTITY_87.stop();
+    IDENTITY_88.stop();
   }
 
   @BeforeEach
@@ -181,7 +191,7 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
     // given
     final IdentityMigrationProperties migrationProperties = new IdentityMigrationProperties();
     migrationProperties.setMode(Mode.KEYCLOAK);
-    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY));
+    migrationProperties.getManagementIdentity().setBaseUrl(externalIdentityUrl(IDENTITY_88));
     migrationProperties
         .getManagementIdentity()
         .setIssuerBackendUrl(externalKeycloakUrl(KEYCLOAK) + "/realms/camunda-platform/");

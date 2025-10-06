@@ -28,6 +28,7 @@ final class IdentityMigrationTestUtil {
   public static final String ZEEBE_CLIENT_AUDIENCE = "zeebe-api";
   public static final int IDENTITY_PORT = 8080;
   public static final String LATEST_87 = "8.7.6";
+  public static final String LATEST_88 = "8.8-SNAPSHOT";
   private static final String KEYCLOAK_HOST = "keycloak";
   private static final int KEYCLOAK_PORT = 8080;
   private static final String KEYCLOAK_USER = "admin";
@@ -73,7 +74,7 @@ final class IdentityMigrationTestUtil {
                 .withStartupTimeout(Duration.ofMinutes(2)));
   }
 
-  static GenericContainer<?> getManagementIdentitySMKeycloak(
+  static GenericContainer<?> getManagementIdentitySMKeycloak87(
       final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
     return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
         .withImagePullPolicy(PullPolicy.alwaysPull())
@@ -115,7 +116,17 @@ final class IdentityMigrationTestUtil {
             new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)));
   }
 
-  static GenericContainer<?> getManagementIdentitySMOidc(
+  static GenericContainer<?> getManagementIdentitySMKeycloak88(
+      final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
+    // base on 8.7 setup
+    final GenericContainer<?> managementIdentity =
+        getManagementIdentitySMKeycloak87(keycloak, postgres);
+    // overwrite the image name to 8.8
+    managementIdentity.setDockerImageName("camunda/identity:" + LATEST_88);
+    return managementIdentity;
+  }
+
+  static GenericContainer<?> getManagementIdentitySMOidc87(
       final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
     return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
         .withImagePullPolicy(PullPolicy.alwaysPull())
@@ -146,12 +157,6 @@ final class IdentityMigrationTestUtil {
         .withEnv("IDENTITY_DATABASE_PASSWORD", IDENTITY_DATABASE_PASSWORD)
         .withEnv("IDENTITY_DATABASE_PORT", Integer.toString(POSTGRES_PORT))
         .withEnv("IDENTITY_DATABASE_USERNAME", IDENTITY_DATABASE_USERNAME)
-        .withEnv("IDENTITY_MAPPING_RULES_0_NAME", "Rule 1")
-        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_NAME", "client_id")
-        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_VALUE", IDENTITY_CLIENT)
-        .withEnv("IDENTITY_MAPPING_RULES_0_OPERATOR", "EQUALS")
-        .withEnv("IDENTITY_MAPPING_RULES_0_RULE_TYPE", "ROLE")
-        .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_0", "Identity")
         .withNetworkAliases("identity")
         .withNetwork(NETWORK)
         .withExposedPorts(IDENTITY_PORT, 8082)
@@ -159,8 +164,25 @@ final class IdentityMigrationTestUtil {
             new Slf4jLogConsumer(LoggerFactory.getLogger(IdentityMigrationTestUtil.class)));
   }
 
+  static GenericContainer<?> getManagementIdentitySMOidc88(
+      final KeycloakContainer keycloak, final GenericContainer<?> postgres) {
+    // base on 8.7 setup
+    final GenericContainer<?> managementIdentitySMOid =
+        getManagementIdentitySMOidc87(keycloak, postgres);
+    // overwrite the image name to 8.8
+    managementIdentitySMOid.setDockerImageName("camunda/identity:" + LATEST_88);
+    // and setup the client used for migration
+    return managementIdentitySMOid
+        .withEnv("IDENTITY_MAPPING_RULES_0_NAME", "Migration Client Rule")
+        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_NAME", "client_id")
+        .withEnv("IDENTITY_MAPPING_RULES_0_CLAIM_VALUE", IDENTITY_CLIENT)
+        .withEnv("IDENTITY_MAPPING_RULES_0_OPERATOR", "EQUALS")
+        .withEnv("IDENTITY_MAPPING_RULES_0_RULE_TYPE", "ROLE")
+        .withEnv("IDENTITY_MAPPING_RULES_0_APPLIED_ROLE_NAMES_0", "ManagementIdentity");
+  }
+
   static GenericContainer<?> getManagementIdentitySaaS(final GenericContainer<?> postgres) {
-    return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_87))
+    return new GenericContainer<>(DockerImageName.parse("camunda/identity:" + LATEST_88))
         .withImagePullPolicy(PullPolicy.alwaysPull())
         .dependsOn(postgres)
         .withEnv("SERVER_PORT", Integer.toString(IDENTITY_PORT))
