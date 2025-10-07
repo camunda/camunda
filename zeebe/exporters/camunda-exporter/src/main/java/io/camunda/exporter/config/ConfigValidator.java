@@ -134,5 +134,13 @@ public final class ConfigValidator {
       throw new ExporterException(
           "CamundaExporter maxCacheSize must be >= 1. Current value: " + formCacheMaxCacheSize);
     }
+
+    final int applyPolicyJobIntervalMinutes =
+        configuration.getHistory().getRetention().getApplyPolicyJobIntervalMinutes();
+    if (applyPolicyJobIntervalMinutes < 1) {
+      throw new ExporterException(
+          "CamundaExporter retention.applyPolicyJobIntervalMinutes must be >= 1. Current value: "
+              + applyPolicyJobIntervalMinutes);
+    }
   }
 }

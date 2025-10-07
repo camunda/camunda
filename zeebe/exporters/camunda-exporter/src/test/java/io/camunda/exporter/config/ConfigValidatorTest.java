@@ -202,4 +202,20 @@ public class ConfigValidatorTest {
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining("CamundaExporter batchOperationCache.maxCacheSize must be >= 1.");
   }
+
+  @ParameterizedTest(name = "{0}")
+  @ValueSource(ints = {-1, 0})
+  void shouldForbidNonStrictlyPositiveApplyPolicyJobIntervalMinutes(
+      final int applyPolicyJobIntervalMinutes) {
+    // given
+    config
+        .getHistory()
+        .getRetention()
+        .setApplyPolicyJobIntervalMinutes(applyPolicyJobIntervalMinutes);
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter retention.applyPolicyJobIntervalMinutes must be >= 1.");
+  }
 }
