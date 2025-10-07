@@ -143,6 +143,7 @@ public class WebSecurityConfig {
           "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
+          "/tasklist/new/**",
           "/favicon.ico");
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
