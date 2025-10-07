@@ -52,7 +52,6 @@ public class ContainerRuntimePropertiesUtilTest {
         new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
-    assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
@@ -91,7 +90,6 @@ public class ContainerRuntimePropertiesUtilTest {
         new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
 
     // then
-    assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
     assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("8.13.0");
     assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/camunda");
     assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("SNAPSHOT");
@@ -111,38 +109,16 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    "8.6.0, main, 8.6.0",
-    "8.6.0,, 8.6.0",
-    "8.6.0, stable/8.8, 8.6.0",
-    "8.6.1, main, 8.6.1",
-    "8.6.0-SNAPSHOT, main, SNAPSHOT",
-    "8.6.0-SNAPSHOT, stable/8.6, 8.6-SNAPSHOT",
-    "8.6.0-SNAPSHOT, backport-123456-to-stable/8.6, 8.6-SNAPSHOT",
-    "8.6.0-SNAPSHOT,, SNAPSHOT",
-    "8.5.1-SNAPSHOT, main, 8.5.0",
-    "8.5.1-SNAPSHOT, stable/8.5, 8.5.0",
-    "8.5.2-SNAPSHOT, main, 8.5.1",
-    "8.5.2-SNAPSHOT, stable/8.5, 8.5.1",
-    "8.5.2-rc1, main, 8.5.2-rc1",
-    "8.5.2-rc1, stable/8.8, 8.5.2-rc1",
-    "8.7.1-alpha4-rc1, main, 8.7.1-alpha4-rc1",
-    "8.7.1-alpha4-rc1, stable/8.7, 8.7.1-alpha4-rc1",
-    "8.8.0-alpha4.1, main, 8.8.0-alpha4.1",
-    "8.8.0-alpha4.1, stable/8.8, 8.8.0-alpha4.1",
-    "8.8.0-alpha4-optimize, main, 8.8.0-alpha4-optimize",
-    "8.8.0-alpha4-optimize, stable/8.8, 8.8.0-alpha4-optimize",
-    "8.7.1-optimize, main, 8.7.1-optimize",
-    "8.7.1-optimize, stable/8.8, 8.7.1-optimize",
-    "custom-version, main, custom-version",
-    "custom-version, stable/8.8, custom-version"
+    "main, SNAPSHOT",
+    "stable/8.8, 8.8-SNAPSHOT",
+    "backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    " , SNAPSHOT",
+    "feature-123, SNAPSHOT"
   })
-  void shouldReturnCamundaVersion(
-      final String propertyVersion, final String branchName, final String expectedVersion) {
-
+  void shouldReturnDefaultVersionsBasedOnGitBranch(
+      final String branchName, final String expectedVersion) {
     // given
     final Properties properties = new Properties();
-    properties.put(
-        CamundaContainerRuntimeProperties.PROPERTY_NAME_CAMUNDA_VERSION, propertyVersion);
 
     final Properties gitProperties = new Properties();
     if (branchName != null) {
@@ -154,7 +130,8 @@ public class ContainerRuntimePropertiesUtilTest {
         new ContainerRuntimePropertiesUtil(properties, new GitPropertiesUtil(gitProperties));
 
     // then
-    assertThat(propertiesUtil.getCamundaVersion()).isEqualTo(expectedVersion);
+    assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo(expectedVersion);
+    assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
   }
 
   @ParameterizedTest
@@ -202,30 +179,55 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    "8.6.0, main, 8.6.0",
-    "8.6.0,, 8.6.0",
-    "8.6.0, stable/8.8, 8.6.0",
-    "8.6.1, main, 8.6.1",
-    "8.6.0-SNAPSHOT, main, SNAPSHOT",
-    "8.6.0-SNAPSHOT, stable/8.6, 8.6-SNAPSHOT",
-    "8.6.0-SNAPSHOT,, SNAPSHOT",
-    "8.6.0-SNAPSHOT, backport-123456-to-stable/8.6, 8.6-SNAPSHOT",
-    "8.5.1-SNAPSHOT, main, 8.5.0",
-    "8.5.1-SNAPSHOT, stable/8.5, 8.5.0",
-    "8.5.2-SNAPSHOT, main, 8.5.1",
-    "8.5.2-SNAPSHOT, stable/8.5, 8.5.1",
-    "8.5.2-rc1, main, 8.5.2-rc1",
-    "8.5.2-rc1, stable/8.8, 8.5.2-rc1",
-    "8.7.1-alpha4-rc1, main, 8.7.1-alpha4-rc1",
-    "8.7.1-alpha4-rc1, stable/8.7, 8.7.1-alpha4-rc1",
-    "8.8.0-alpha4.1, main, 8.8.0-alpha4.1",
-    "8.8.0-alpha4.1, stable/8.8, 8.8.0-alpha4.1",
-    "8.8.0-alpha4-optimize, main, 8.8.0-alpha4-optimize",
-    "8.8.0-alpha4-optimize, stable/8.8, 8.8.0-alpha4-optimize",
-    "8.7.1-optimize, main, 8.7.1-optimize",
-    "8.7.1-optimize, stable/8.8, 8.7.1-optimize",
+    // minor releases
+    "8.8.0, main, 8.8.0",
+    "8.8.0, stable/8.8, 8.8.0",
+    "8.8.0, backport-123-to-stable/8.8, 8.8.0",
+    "8.8.0, , 8.8.0",
+    // patch releases
+    "8.8.1, main, 8.8.1",
+    "8.8.1, stable/8.8, 8.8.1",
+    "8.8.1, backport-123-to-stable/8.8, 8.8.1",
+    "8.8.1, , 8.8.1",
+    // SNAPSHOT versions
+    "8.9.0-SNAPSHOT, main, SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, , SNAPSHOT",
+    "8.8.1-SNAPSHOT, main, SNAPSHOT",
+    "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, , SNAPSHOT",
+    "8.8.2-SNAPSHOT, main, SNAPSHOT",
+    "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, , SNAPSHOT",
+    // rc/alpha versions
+    "8.8.0-rc1, main, 8.8.0-rc1",
+    "8.8.0-rc1, stable/8.8, 8.8.0-rc1",
+    "8.8.0-rc1, backport-123-to-stable/8.8, 8.8.0-rc1",
+    "8.8.0-rc1, , 8.8.0-rc1",
+    "8.8.0-alpha1, main, 8.8.0-alpha1",
+    "8.8.0-alpha1, stable/8.8, 8.8.0-alpha1",
+    "8.8.0-alpha1, backport-123-to-stable/8.8, 8.8.0-alpha1",
+    "8.8.0-alpha1, , 8.8.0-alpha1",
+    "8.8.0-alpha1.1, main, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, stable/8.8, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, backport-123-to-stable/8.8, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, , 8.8.0-alpha1.1",
+    "8.8.0-alpha1-rc1, main, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, stable/8.8, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, backport-123-to-stable/8.8, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, , 8.8.0-alpha1-rc1",
+    // custom versions
+    "8.8.0-optimize, main, 8.8.0-optimize",
+    "8.8.0-optimize, stable/8.8, 8.8.0-optimize",
+    "8.8.0-optimize, backport-123-to-stable/8.8, 8.8.0-optimize",
+    "8.8.0-optimize, , 8.8.0-optimize",
     "custom-version, main, custom-version",
-    "custom-version, stable/8.8, custom-version"
+    "custom-version, stable/8.8, custom-version",
+    "custom-version, backport-123-to-stable/8.8, custom-version",
+    "custom-version, , custom-version",
   })
   void shouldReturnCamundaDockerImageVersion(
       final String propertyVersion, final String branchName, final String expectedVersion) {
@@ -272,29 +274,72 @@ public class ContainerRuntimePropertiesUtilTest {
 
   @ParameterizedTest
   @CsvSource({
-    "8.6.0, 8.6.0",
-    "8.6.1, 8.6.1",
-    "8.6.0-SNAPSHOT, SNAPSHOT",
-    "8.5.1-SNAPSHOT, 8.5.0",
-    "8.5.2-SNAPSHOT, 8.5.1",
-    "8.5.2-rc1, 8.5.2-rc1",
-    "8.7.1-alpha4-rc1, 8.7.1-alpha4-rc1",
-    "8.8.0-alpha4.1, 8.8.0-alpha4.1",
-    "8.8.0-alpha4-optimize, 8.8.0-alpha4-optimize",
-    "8.7.1-optimize, 8.7.1-optimize",
-    "custom-version, custom-version"
+    // minor releases
+    "8.8.0, main, 8.8.0",
+    "8.8.0, stable/8.8, 8.8.0",
+    "8.8.0, backport-123-to-stable/8.8, 8.8.0",
+    "8.8.0, , 8.8.0",
+    // patch releases
+    "8.8.1, main, 8.8.1",
+    "8.8.1, stable/8.8, 8.8.1",
+    "8.8.1, backport-123-to-stable/8.8, 8.8.1",
+    "8.8.1, , 8.8.1",
+    // SNAPSHOT versions
+    "8.9.0-SNAPSHOT, main, SNAPSHOT",
+    "8.9.0-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.9.0-SNAPSHOT, , SNAPSHOT",
+    "8.8.1-SNAPSHOT, main, SNAPSHOT",
+    "8.8.1-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.1-SNAPSHOT, , SNAPSHOT",
+    "8.8.2-SNAPSHOT, main, SNAPSHOT",
+    "8.8.2-SNAPSHOT, stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, backport-123-to-stable/8.8, 8.8-SNAPSHOT",
+    "8.8.2-SNAPSHOT, , SNAPSHOT",
+    // rc/alpha versions
+    "8.8.0-rc1, main, 8.8.0-rc1",
+    "8.8.0-rc1, stable/8.8, 8.8.0-rc1",
+    "8.8.0-rc1, backport-123-to-stable/8.8, 8.8.0-rc1",
+    "8.8.0-rc1, , 8.8.0-rc1",
+    "8.8.0-alpha1, main, 8.8.0-alpha1",
+    "8.8.0-alpha1, stable/8.8, 8.8.0-alpha1",
+    "8.8.0-alpha1, backport-123-to-stable/8.8, 8.8.0-alpha1",
+    "8.8.0-alpha1, , 8.8.0-alpha1",
+    "8.8.0-alpha1.1, main, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, stable/8.8, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, backport-123-to-stable/8.8, 8.8.0-alpha1.1",
+    "8.8.0-alpha1.1, , 8.8.0-alpha1.1",
+    "8.8.0-alpha1-rc1, main, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, stable/8.8, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, backport-123-to-stable/8.8, 8.8.0-alpha1-rc1",
+    "8.8.0-alpha1-rc1, , 8.8.0-alpha1-rc1",
+    // custom versions
+    "8.8.0-optimize, main, 8.8.0-optimize",
+    "8.8.0-optimize, stable/8.8, 8.8.0-optimize",
+    "8.8.0-optimize, backport-123-to-stable/8.8, 8.8.0-optimize",
+    "8.8.0-optimize, , 8.8.0-optimize",
+    "custom-version, main, custom-version",
+    "custom-version, stable/8.8, custom-version",
+    "custom-version, backport-123-to-stable/8.8, custom-version",
+    "custom-version, , custom-version",
   })
   void shouldReturnConnectorsDockerImageVersion(
-      final String propertyVersion, final String expectedVersion) {
+      final String propertyVersion, final String branchName, final String expectedVersion) {
     // given
     final Properties properties = new Properties();
     properties.put(
         ConnectorsContainerRuntimeProperties.PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
         propertyVersion);
 
+    final Properties gitProperties = new Properties();
+    if (branchName != null) {
+      gitProperties.put(GitPropertiesUtil.PROPERTY_NAME_GIT_BRANCH, branchName);
+    }
+
     // when
     final ContainerRuntimePropertiesUtil propertiesUtil =
-        new ContainerRuntimePropertiesUtil(properties, emptyGitProperties);
+        new ContainerRuntimePropertiesUtil(properties, new GitPropertiesUtil(gitProperties));
 
     // then
     assertThat(propertiesUtil.getConnectorsDockerImageVersion()).isEqualTo(expectedVersion);
@@ -355,7 +400,6 @@ public class ContainerRuntimePropertiesUtilTest {
               "/containerRuntimePropertiesUtil/", emptyGitProperties);
 
       // then
-      assertThat(propertiesUtil.getCamundaVersion()).isEqualTo("SNAPSHOT");
       assertThat(propertiesUtil.getElasticsearchVersion()).isEqualTo("1.1.0");
       assertThat(propertiesUtil.getCamundaDockerImageName()).isEqualTo("camunda/custom-camunda");
       assertThat(propertiesUtil.getCamundaDockerImageVersion()).isEqualTo("8.8.0-rc1");
@@ -378,6 +422,7 @@ public class ContainerRuntimePropertiesUtilTest {
               .getRemoteRuntimeProperties()
               .getRemoteClientProperties()
               .getAuthProperties();
+
       assertThat(authProps.getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(authProps.getUsername()).isEqualTo("username");
       assertThat(authProps.getPassword()).isEqualTo("password");

@@ -141,10 +141,6 @@ public final class ContainerRuntimePropertiesUtil {
     }
   }
 
-  public String getCamundaVersion() {
-    return camundaContainerRuntimeProperties.getCamundaVersion();
-  }
-
   public String getElasticsearchVersion() {
     return elasticsearchVersion;
   }

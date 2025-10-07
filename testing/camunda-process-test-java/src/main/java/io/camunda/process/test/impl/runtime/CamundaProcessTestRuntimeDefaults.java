@@ -50,8 +50,6 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final String ELASTICSEARCH_DOCKER_IMAGE_VERSION =
       PROPERTIES_UTIL.getElasticsearchVersion();
 
-  public static final String CAMUNDA_VERSION = PROPERTIES_UTIL.getCamundaVersion();
-
   public static final String CAMUNDA_DOCKER_IMAGE_NAME =
       PROPERTIES_UTIL.getCamundaDockerImageName();
   public static final String CAMUNDA_DOCKER_IMAGE_VERSION =

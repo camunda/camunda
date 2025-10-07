@@ -35,7 +35,6 @@ public class CamundaContainerRuntimeProperties {
   public static final String PROPERTY_NAME_CAMUNDA_LOGGER_NAME = "camundaLoggerName";
   public static final String PROPERTY_NAME_CONNECTORS_LOGGER_NAME = "connectorsLoggerName";
 
-  private final String camundaVersion;
   private final String camundaDockerImageName;
   private final String camundaDockerImageVersion;
   private final Map<String, String> camundaEnvVars;
@@ -46,18 +45,13 @@ public class CamundaContainerRuntimeProperties {
 
   public CamundaContainerRuntimeProperties(
       final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
-    camundaVersion =
-        versionedPropertiesReader.getLatestReleasedVersion(
-            properties,
-            PROPERTY_NAME_CAMUNDA_VERSION,
-            CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
     camundaDockerImageName =
         getPropertyOrDefault(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_NAME);
     camundaDockerImageVersion =
-        versionedPropertiesReader.getLatestReleasedVersion(
+        versionedPropertiesReader.getVersion(
             properties,
             PROPERTY_NAME_CAMUNDA_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CAMUNDA_DOCKER_IMAGE_VERSION);
@@ -75,10 +69,6 @@ public class CamundaContainerRuntimeProperties {
             properties,
             PROPERTY_NAME_CONNECTORS_LOGGER_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_LOGGER_NAME);
-  }
-
-  public String getCamundaVersion() {
-    return camundaVersion;
   }
 
   public String getCamundaDockerImageName() {
