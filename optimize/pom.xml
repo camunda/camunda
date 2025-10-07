@@ -98,7 +98,6 @@
     <module>backend</module>
     <module>../optimize-distro</module>
     <module>upgrade</module>
-    <module>qa</module>
   </modules>
 
   <dependencyManagement>
