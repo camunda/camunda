@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableCat
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableStartEvent;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableUserTask;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
@@ -1142,6 +1143,73 @@ public final class ProcessInstanceMigrationPreconditions {
   }
 
   /**
+   * Checks whether the target sequence flow ids of the given sequence flows are not null. If any of
+   * them is null, it throws an exception. This is used to ensure that the taken sequence flow ids
+   * are mapped when migrating a process instance.
+   *
+   * @param sequenceFlows the sequence flows to check
+   * @param sourceElementIdToTargetElementId the mapping instructions
+   * @param processInstanceKey process instance key to be logged
+   */
+  public static void requireNonNullTargetSequenceFlowIds(
+      final Set<ExecutableSequenceFlow> sequenceFlows,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final long processInstanceKey) {
+    sequenceFlows.forEach(
+        sequenceFlow -> {
+          final var sourceSequenceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+          final var targetSequenceFlowId =
+              sourceElementIdToTargetElementId.get(sourceSequenceFlowId);
+          final String sourceGatewayElementId =
+              BufferUtil.bufferAsString(sequenceFlow.getTarget().getId());
+
+          if (targetSequenceFlowId == null) {
+            final String reason =
+                String.format(
+                    ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
+                    processInstanceKey,
+                    sourceGatewayElementId,
+                    sourceSequenceFlowId);
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                reason, RejectionType.INVALID_ARGUMENT);
+          }
+        });
+  }
+
+  public static void requireNoMultipleActiveSequenceFlowsMappedToSameTarget(
+      final Set<ExecutableSequenceFlow> sequenceFlows,
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final long processInstanceKey) {
+    final var targetElementIdToSourceElementIds = new HashMap<String, List<String>>();
+    for (final var sequenceFlow : sequenceFlows) {
+      final var sourceFlowId = BufferUtil.bufferAsString(sequenceFlow.getId());
+
+      // no need to check for null because it is expected to be validated before
+      final var targetFlowId = sourceElementIdToTargetElementId.get(sourceFlowId);
+      targetElementIdToSourceElementIds
+          .computeIfAbsent(targetFlowId, k -> new ArrayList<>())
+          .add(sourceFlowId);
+    }
+
+    targetElementIdToSourceElementIds.forEach(
+        (targetElementId, sourceElementIds) -> {
+          if (sourceElementIds.size() > 1) {
+            final var reason =
+                String.format(
+                    """
+                    Expected to migrate process instance '%s' \
+                    but active sequence flows '%s' are mapped to the same target sequence flow '%s'. \
+                    Each active sequence flow must be mapped to a different sequence flow in the target process definition.""",
+                    processInstanceKey,
+                    sourceElementIds.stream().sorted().collect(Collectors.joining(", ")),
+                    targetElementId);
+            throw new ProcessInstanceMigrationPreconditionFailedException(
+                reason, RejectionType.INVALID_ARGUMENT);
+          }
+        });
+  }
+
+  /**
    * This precondition checks whether the given distribution is pending to prevent the scenario:
    *
    * <p>Partition 1 migrates a process instance that is subscribed to a message catch even. It
@@ -1176,33 +1244,6 @@ public final class ProcessInstanceMigrationPreconditions {
       // We can't migrate until the previous migration has completed
       throw new ProcessInstanceMigrationPreconditionFailedException(
           message, RejectionType.INVALID_STATE);
-    }
-  }
-
-  /**
-   * Checks whether the target sequence flow id is not null. If it is null, it throws an exception.
-   * This is used to ensure that the taken sequence flow id is mapped when migrating a process
-   * instance.
-   *
-   * @param targetSequenceFlowId target sequence flow id to check
-   * @param sourceSequenceFlowId source sequence flow id to be logged
-   * @param sourceGatewayElementId source gateway element id to be logged
-   * @param processInstanceKey process instance key to be logged
-   */
-  public static void requireNonNullTargetSequenceFlowId(
-      final String targetSequenceFlowId,
-      final String sourceSequenceFlowId,
-      final String sourceGatewayElementId,
-      final long processInstanceKey) {
-    if (targetSequenceFlowId == null) {
-      final String reason =
-          String.format(
-              ERROR_TAKEN_SEQUENCE_FLOW_NOT_MAPPED,
-              processInstanceKey,
-              sourceGatewayElementId,
-              sourceSequenceFlowId);
-      throw new ProcessInstanceMigrationPreconditionFailedException(
-          reason, RejectionType.INVALID_ARGUMENT);
     }
   }
 
