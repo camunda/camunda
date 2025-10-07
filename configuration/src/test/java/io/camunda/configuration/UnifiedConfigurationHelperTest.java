@@ -80,7 +80,9 @@ class UnifiedConfigurationHelperTest {
             () ->
                 UnifiedConfigurationHelper.validateLegacyConfiguration(
                     NEW_PROPERTY, newValue, String.class, mode, MULTIPLE_LEGACY_PROPERTIES))
-        .withMessageContaining("Ambiguous legacy configuration");
+        .withMessageContaining("Ambiguous legacy configuration")
+        .withMessageContaining("legacy.prop1=legacyValue1")
+        .withMessageContaining("legacy.prop2=legacyValue2");
   }
 
   @Test
