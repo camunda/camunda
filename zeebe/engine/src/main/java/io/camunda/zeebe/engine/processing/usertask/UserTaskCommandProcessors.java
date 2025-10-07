@@ -84,7 +84,8 @@ public final class UserTaskCommandProcessors {
                     writers,
                     bpmnBehaviors.variableBehavior(),
                     asyncRequestBehavior,
-                    authCheckBehavior),
+                    authCheckBehavior,
+                    taskPermissionsBehavior),
                 UserTaskIntent.COMPLETE,
                 new UserTaskCompleteProcessor(
                     processingState, eventHandle, writers, asyncRequestBehavior, authCheckBehavior),

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.usertask.processors.auth.UserTaskPermissionsBehavior;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -43,18 +44,21 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
   private final VariableBehavior variableBehavior;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final UserTaskCommandPreconditionChecker preconditionChecker;
+  private final UserTaskPermissionsBehavior taskPermissionsBehavior;
 
   public UserTaskUpdateProcessor(
       final ProcessingState state,
       final Writers writers,
       final VariableBehavior variableBehavior,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final UserTaskPermissionsBehavior taskPermissionsBehavior) {
     stateWriter = writers.state();
     variableState = state.getVariableState();
     asyncRequestState = state.getAsyncRequestState();
     this.variableBehavior = variableBehavior;
     this.asyncRequestBehavior = asyncRequestBehavior;
+    this.taskPermissionsBehavior = taskPermissionsBehavior;
     responseWriter = writers.response();
     preconditionChecker =
         new UserTaskCommandPreconditionChecker(
@@ -102,6 +106,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
               + "If the update was triggered by a user task variables update, variables will not be merged. "
               + "Please report this as a bug.",
           userTaskKey);
+      taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
       stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
       responseWriter.writeEventOnCommand(
           userTaskKey, UserTaskIntent.UPDATED, userTaskRecord, command);
@@ -111,6 +116,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
     final var request = asyncRequest.get();
     switch (request.valueType()) {
       case USER_TASK -> {
+        taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         responseWriter.writeResponse(
             userTaskKey,
@@ -142,6 +148,7 @@ public final class UserTaskUpdateProcessor implements UserTaskCommandProcessor {
         mergeVariables(userTaskRecord, variableDocumentRecord);
 
         // Write follow-up events
+        taskPermissionsBehavior.grantTaskPermissions(userTaskRecord);
         stateWriter.appendFollowUpEvent(userTaskKey, UserTaskIntent.UPDATED, userTaskRecord);
         final long variableDocumentKey = variableDocumentState.getKey();
         stateWriter.appendFollowUpEvent(
