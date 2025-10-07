@@ -26,10 +26,9 @@ import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicReference;
-import org.awaitility.core.ConditionTimeoutException;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
 
 public class BpmnExampleDataReader {
@@ -66,26 +65,23 @@ public class BpmnExampleDataReader {
   private BpmnModelInstance buildModelInstance(
       final String failureMessagePrefix, final long processDefinitionKey) {
 
-    final AtomicReference<BpmnModelInstance> modelInstance = new AtomicReference<>();
-
     try {
-      awaitBehavior.untilAsserted(
-          () -> {
-            final Optional<String> bpmnXml =
-                Optional.ofNullable(
-                    client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join());
-
-            assertThat(bpmnXml).isPresent();
-
-            modelInstance.set(
-                Bpmn.readModelFromStream(new ByteArrayInputStream(bpmnXml.get().getBytes())));
-          });
-    } catch (final ConditionTimeoutException t) {
+      return awaitBehavior.until(
+          () ->
+              Optional.ofNullable(
+                      client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join())
+                  .map(response -> response.getBytes(StandardCharsets.UTF_8))
+                  .map(ByteArrayInputStream::new)
+                  .map(Bpmn::readModelFromStream)
+                  .orElse(null),
+          process ->
+              assertThat(process)
+                  .withFailMessage("%s has no BPMN model available.", failureMessagePrefix)
+                  .isNotNull());
+    } catch (final AssertionError e) {
       throw new BpmnExampleDataReaderException(
-          String.format("%s failed to parse the BPMN model.", failureMessagePrefix), t);
+          String.format("%s failed to parse the BPMN model.", failureMessagePrefix), e);
     }
-
-    return modelInstance.get();
   }
 
   private String queryParentElementForExampleData(
