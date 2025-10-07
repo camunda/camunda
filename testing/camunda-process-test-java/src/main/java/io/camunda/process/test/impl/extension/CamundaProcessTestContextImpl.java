@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.extension;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
@@ -374,8 +376,7 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
   private UserTask awaitUserTask(
       final UserTaskSelector userTaskSelector, final CamundaClient client) {
-
-    return awaitBehavior.untilExists(
+    return awaitBehavior.until(
         () ->
             client
                 .newUserTaskSearchRequest()
@@ -385,14 +386,18 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 .items()
                 .stream()
                 .filter(userTaskSelector::test)
-                .findFirst(),
-        String.format(
-            "Expected to complete user task [%s] but no user task is available.",
-            userTaskSelector.describe()));
+                .findFirst()
+                .orElse(null),
+        userTask ->
+            assertThat(userTask)
+                .withFailMessage(
+                    "Expected to complete user task [%s] but no user task is available.",
+                    userTaskSelector.describe())
+                .isNotNull());
   }
 
   private ActivatedJob getActivatedJob(final String jobType, final CamundaClient client) {
-    return awaitBehavior.untilExists(
+    return awaitBehavior.until(
         () ->
             client
                 .newActivateJobsCommand()
@@ -403,8 +408,13 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
                 .join()
                 .getJobs()
                 .stream()
-                .findFirst(),
-        String.format(
-            "Expected to complete a job with the type '%s' but no job is available.", jobType));
+                .findFirst()
+                .orElse(null),
+        job ->
+            assertThat(job)
+                .withFailMessage(
+                    "Expected to complete a job with the type '%s' but no job is available.",
+                    jobType)
+                .isNotNull());
   }
 }

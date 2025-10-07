@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.impl.mock;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaAssertAwaitBehavior;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -24,6 +26,7 @@ import io.camunda.zeebe.model.bpmn.instance.BaseElement;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperties;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeProperty;
 import java.io.ByteArrayInputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 import java.util.Optional;
 import org.camunda.bpm.model.xml.instance.ModelElementInstance;
@@ -63,12 +66,18 @@ public class BpmnExampleDataReader {
       final String failureMessagePrefix, final long processDefinitionKey) {
 
     try {
-      return awaitBehavior.untilExists(
+      return awaitBehavior.until(
           () ->
               Optional.ofNullable(
-                  client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join()),
-          bpmnXml -> Bpmn.readModelFromStream(new ByteArrayInputStream(bpmnXml.getBytes())),
-          String.format("%s has no BPMN model available.", failureMessagePrefix));
+                      client.newProcessDefinitionGetXmlRequest(processDefinitionKey).send().join())
+                  .map(response -> response.getBytes(StandardCharsets.UTF_8))
+                  .map(ByteArrayInputStream::new)
+                  .map(Bpmn::readModelFromStream)
+                  .orElse(null),
+          process ->
+              assertThat(process)
+                  .withFailMessage("%s has no BPMN model available.", failureMessagePrefix)
+                  .isNotNull());
     } catch (final AssertionError e) {
       throw new BpmnExampleDataReaderException(
           String.format("%s failed to parse the BPMN model.", failureMessagePrefix), e);
