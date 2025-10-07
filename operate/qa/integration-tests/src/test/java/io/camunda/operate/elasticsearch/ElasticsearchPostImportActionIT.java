@@ -177,8 +177,7 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
   }
 
   @Test
-  public void shouldUseCorrectRoutingValueWhenUpdatingFlowNodeInstance()
-      throws IOException, InterruptedException {
+  public void shouldUseCorrectRoutingValueWhenUpdatingFlowNodeInstance() throws IOException {
 
     // given
     schemaManager.createSchema();
@@ -272,6 +271,13 @@ public class ElasticsearchPostImportActionIT extends AbstractElasticsearchConnec
     assertUpdateWasRoutedTo(
         bulkActions, listViewTemplate, calledFlowNodeInstanceKey, calledProcessInstanceKey);
     assertUpdateWasRoutedTo(bulkActions, flowNodeInstanceTemplate, calledFlowNodeInstanceKey, null);
+
+    // then - verify that the post importer queue size metric is registered and has correct value
+    final Gauge queueSizeGauge =
+        metrics.getMeterRegistry().find(Metrics.GAUGE_POST_IMPORTER_QUEUE_SIZE).gauge();
+    assertThat(queueSizeGauge).isNotNull();
+    assertThat(queueSizeGauge.getId().getTag("partition")).isEqualTo(String.valueOf(PARTITION_ID));
+    assertThat(queueSizeGauge.value()).isEqualTo(1.0); // One entry in the queue
   }
 
   private void assertUpdateWasRoutedTo(
