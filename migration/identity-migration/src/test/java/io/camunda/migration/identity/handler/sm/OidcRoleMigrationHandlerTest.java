@@ -65,7 +65,7 @@ public class OidcRoleMigrationHandlerTest {
     this.authorizationServices = authorizationServices;
     final IdentityMigrationProperties identityMigrationProperties =
         new IdentityMigrationProperties();
-    final var audience = identityMigrationProperties.getOidc().getAudience();
+    final var audience = identityMigrationProperties.getOidc().getAudiences();
     audience.setIdentity("identity");
     audience.setZeebe("zeebe");
     identityMigrationProperties.setBackpressureDelay(100);
@@ -429,7 +429,7 @@ public class OidcRoleMigrationHandlerTest {
     // when
     final IdentityMigrationProperties identityMigrationProperties =
         new IdentityMigrationProperties();
-    final var audience = identityMigrationProperties.getOidc().getAudience();
+    final var audience = identityMigrationProperties.getOidc().getAudiences();
     audience.setIdentity("same-audience");
     audience.setZeebe("same-audience");
     final var updatedMigrationHandler =

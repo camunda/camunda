@@ -67,7 +67,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
 
     logger.debug(
         "Running role migration with this default audiences: {}",
-        migrationProperties.getOidc().getAudience());
+        migrationProperties.getOidc().getAudiences());
 
     roles.forEach(
         role -> {
@@ -87,7 +87,7 @@ public class RoleMigrationHandler extends MigrationHandler<Role> {
             logger.debug("Role with name '{}' already exists, skipping creation.", role.name());
           }
           createAuthorizationsForRole(
-              migrationProperties.getOidc().getAudience(), roleId, roleName);
+              migrationProperties.getOidc().getAudiences(), roleId, roleName);
         });
   }
 
