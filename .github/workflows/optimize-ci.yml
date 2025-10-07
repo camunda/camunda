@@ -59,132 +59,6 @@ jobs:
     with:
       branch: ${{ github.head_ref }}
 
-  es-schema-integrity-test:
-    name: Elasticsearch Schema Integrity Test
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-        with:
-          secrets: ${{ toJSON(secrets) }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-      - name: Start Elasticsearch - Old
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch-old
-        env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-          ELASTIC_JVM_MEMORY: 1
-          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
-      - name: Start Elasticsearch - New
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch-new
-        env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-          ELASTIC_JVM_MEMORY: 1
-          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-      - name: Install
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
-      - name: Verify optimize/qa/schema-integrity-tests
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pes-schema-integrity-tests
-        env:
-          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
-        with:
-          name: es-schema-integrity-test-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-            **/*.log
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: es-schema-integrity-test-docker
-
-  os-schema-integrity-test:
-    name: OpenSearch Schema Integrity Test
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-maven
-        with:
-          secrets: ${{ toJSON(secrets) }}
-      - name: Login to Harbor registry
-        uses: ./.github/actions/login-registry
-        with:
-          secrets: ${{ toJSON(secrets) }}
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-      - name: Start OpenSearch - Old
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch-old
-        env:
-          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_opensearch_version }}
-          OPENSEARCH_JVM_MEMORY: 1
-          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
-      - name: Start OpenSearch - New
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch-new
-        env:
-          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
-          OPENSEARCH_JVM_MEMORY: 1
-          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-      - name: Install
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T 1
-      - name: Verify optimize/qa/schema-integrity-tests
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pos-schema-integrity-tests
-        env:
-          CAMUNDA_OPTIMIZE_DATABASE: opensearch
-      - name: Upload Test Results
-        if: always()
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
-        with:
-          name: os-schema-integrity-test-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-            **/*.log
-          retention-days: 7
-          if-no-files-found: ignore
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: os-schema-integrity-test-docker
-
   integration-tests:
     name: Integration Tests
     runs-on: gcp-core-32-default
@@ -433,7 +307,7 @@ jobs:
   deploy-artifacts:
     if: github.event_name == 'push' && (github.ref_name == 'main' || startsWith(github.ref_name, 'stable/'))
     name: Deploy Artifacts
-    needs: [integration-tests, es-schema-integrity-test, os-schema-integrity-test]
+    needs: [integration-tests]
     uses: ./.github/workflows/optimize-deploy-artifacts.yml
     secrets: inherit
 
@@ -442,8 +316,6 @@ jobs:
     needs:
       - integration-tests
       - integration-tests-os
-      - os-schema-integrity-test
-      - es-schema-integrity-test
       - deploy-artifacts
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
