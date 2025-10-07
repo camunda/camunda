@@ -361,7 +361,6 @@ import io.grpc.ManagedChannel;
 import io.grpc.netty.GrpcSslContexts;
 import io.grpc.netty.NettyChannelBuilder;
 import io.netty.handler.ssl.SslContext;
-import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
 import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -451,8 +450,7 @@ public final class CamundaClientImpl implements CamundaClient {
     channelBuilder.maxInboundMessageSize(config.getMaxMessageSize());
     channelBuilder.maxInboundMetadataSize(config.getMaxMetadataSize());
 
-    final GrpcTelemetry grpcTelemetry = GrpcTelemetry.create(config.getOpenTelemetry());
-    channelBuilder.intercept(grpcTelemetry.newClientInterceptor());
+    channelBuilder.intercept(new OpenTelemetryInterceptor(config.getOpenTelemetry()));
 
     if (config.useDefaultRetryPolicy()) {
       final Map<String, Object> serviceConfig = defaultServiceConfig();

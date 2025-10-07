@@ -1183,12 +1183,6 @@
 
       <dependency>
         <groupId>io.opentelemetry.instrumentation</groupId>
-        <artifactId>opentelemetry-grpc-1.6</artifactId>
-        <version>2.20.1-alpha</version>
-      </dependency>
-
-      <dependency>
-        <groupId>io.opentelemetry.instrumentation</groupId>
         <artifactId>opentelemetry-instrumentation-bom</artifactId>
         <version>${version.opentelemetry}</version>
         <type>pom</type>
