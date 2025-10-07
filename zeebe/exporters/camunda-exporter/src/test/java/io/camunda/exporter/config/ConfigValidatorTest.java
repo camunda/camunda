@@ -10,6 +10,7 @@ package io.camunda.exporter.config;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.zeebe.exporter.api.ExporterException;
+import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -204,18 +205,15 @@ public class ConfigValidatorTest {
   }
 
   @ParameterizedTest(name = "{0}")
-  @ValueSource(ints = {-1, 0})
-  void shouldForbidNonStrictlyPositiveApplyPolicyJobIntervalMinutes(
-      final int applyPolicyJobIntervalMinutes) {
+  @ValueSource(strings = {"-PT1M", "PT0S"})
+  void shouldForbidNonStrictlyPositiveApplyPolicyJobInterval(
+      final Duration applyPolicyJobInterval) {
     // given
-    config
-        .getHistory()
-        .getRetention()
-        .setApplyPolicyJobIntervalMinutes(applyPolicyJobIntervalMinutes);
+    config.getHistory().getRetention().setApplyPolicyJobInterval(applyPolicyJobInterval);
     // when - then
     assertThatCode(() -> ConfigValidator.validate(config))
         .isInstanceOf(ExporterException.class)
         .hasMessageContaining(
-            "CamundaExporter retention.applyPolicyJobIntervalMinutes must be >= 1.");
+            "CamundaExporter retention.applyPolicyJobInterval must be strictly positive.");
   }
 }
