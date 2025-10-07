@@ -17,15 +17,18 @@ import io.camunda.optimize.OptimizeRequestExecutor;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.test.optimize.HealthClient;
 import jakarta.ws.rs.ProcessingException;
-import jakarta.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.http.HttpStatus;
 
 public class OptimizeWrapper {
   private static final org.slf4j.Logger log =
@@ -100,6 +103,8 @@ public class OptimizeWrapper {
         new ProcessBuilder()
             .command("bash", "-c", "./optimize-startup.sh")
             .redirectOutput(Redirect.to(new File(outputFilePath)))
+            // Add error stream redirection to capture startup errors
+            .redirectErrorStream(true)
             .directory(new File(optimizeDirectory));
     final Map<String, String> envVars = getEnvVarsMap();
 
@@ -109,6 +114,31 @@ public class OptimizeWrapper {
     try {
       final HealthClient healthClient = new HealthClient(() -> requestExecutor);
       log.info("Waiting for Optimize {} to boot...", optimizeVersion);
+
+      // Add process monitoring to detect if Optimize crashes
+      Thread processMonitor =
+          new Thread(
+              () -> {
+                try {
+                  int exitCode = process.waitFor();
+                  if (exitCode != 0) {
+                    log.error("Optimize process exited with code: {}", exitCode);
+                    // Try to read the output file for error details
+                    try {
+                      List<String> lines = Files.readAllLines(Paths.get(outputFilePath));
+                      log.error("Last 20 lines of startup log:");
+                      lines.stream().skip(Math.max(0, lines.size() - 20)).forEach(log::error);
+                    } catch (Exception e) {
+                      log.error("Could not read startup log: {}", e.getMessage());
+                    }
+                  }
+                } catch (InterruptedException e) {
+                  Thread.currentThread().interrupt();
+                }
+              });
+      processMonitor.setDaemon(true);
+      processMonitor.start();
+
       await()
           // this delay is here for avoiding race conditions of still running initializations
           .pollDelay(20, SECONDS)
@@ -116,11 +146,35 @@ public class OptimizeWrapper {
           .atMost(60, SECONDS)
           .ignoreException(ProcessingException.class)
           .until(
-              healthClient::getReadiness,
-              response -> Response.Status.OK.getStatusCode() == response.getStatus());
+              () -> {
+                // Check if process is still alive
+                if (!process.isAlive()) {
+                  log.error("Optimize process died during startup!");
+                  return healthClient.getReadiness();
+                }
+                return healthClient.getReadiness();
+              },
+              response -> HttpStatus.OK.value() == response.getStatus());
       log.info("Optimize {} is up!", optimizeVersion);
     } catch (final Exception e) {
       log.error("Optimize did not start within 60s.");
+
+      // Enhanced error logging
+      if (process.isAlive()) {
+        log.error("Process is still running but not responding to health checks");
+      } else {
+        log.error("Process has died during startup");
+      }
+
+      // Try to capture the last few lines of the startup log
+      try {
+        List<String> lines = Files.readAllLines(Paths.get(outputFilePath));
+        log.error("Last 10 lines of startup log:");
+        lines.stream().skip(Math.max(0, lines.size() - 10)).forEach(log::error);
+      } catch (Exception logException) {
+        log.error("Could not read startup log: {}", logException.getMessage());
+      }
+
       stop();
       throw e;
     }
