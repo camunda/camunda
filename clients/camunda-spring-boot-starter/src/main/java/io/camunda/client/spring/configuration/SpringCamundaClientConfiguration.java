@@ -31,8 +31,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class SpringCamundaClientConfiguration implements CamundaClientConfiguration {
 

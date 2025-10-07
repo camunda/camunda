@@ -400,18 +400,6 @@ public final class CamundaClientImpl implements CamundaClient {
   public CamundaClientImpl(
       final CamundaClientConfiguration configuration,
       final ManagedChannel channel,
-      final HttpClient httpClient) {
-    this(
-        configuration,
-        channel,
-        buildGatewayStub(channel, configuration),
-        buildExecutorService(configuration),
-        httpClient);
-  }
-
-  public CamundaClientImpl(
-      final CamundaClientConfiguration configuration,
-      final ManagedChannel channel,
       final GatewayStub gatewayStub) {
     this(configuration, channel, gatewayStub, buildExecutorService(configuration));
   }
