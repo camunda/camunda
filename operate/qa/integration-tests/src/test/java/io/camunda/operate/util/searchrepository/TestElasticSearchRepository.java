@@ -22,8 +22,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
@@ -372,6 +374,35 @@ public class TestElasticSearchRepository implements TestSearchRepository {
 
     return ElasticsearchUtil.mapSearchHits(
         response.getHits().getHits(), objectMapper, ProcessInstanceForListViewEntity.class);
+  }
+
+  @Override
+  public List<DecisionInstanceEntity> getDecisionInstances(
+      final String indexName, final List<Long> decisionInstanceKeys, final List<String> ids)
+      throws IOException {
+    final QueryBuilder idsQ =
+        CollectionUtil.isEmpty(ids)
+            ? QueryBuilders.matchAllQuery()
+            : idsQuery().addIds(CollectionUtil.toSafeArrayOfStrings(ids));
+
+    final QueryBuilder decisionInstanceKeysQ =
+        CollectionUtil.isEmpty(decisionInstanceKeys)
+            ? QueryBuilders.matchAllQuery()
+            : termsQuery(DecisionInstanceTemplate.KEY, decisionInstanceKeys);
+
+    final SearchRequest searchRequest =
+        new SearchRequest(indexName)
+            .source(
+                new SearchSourceBuilder()
+                    .query(
+                        constantScoreQuery(
+                            ElasticsearchUtil.joinWithAnd(decisionInstanceKeysQ, idsQ)))
+                    .size(100));
+
+    final SearchResponse response = esClient.search(searchRequest, RequestOptions.DEFAULT);
+
+    return ElasticsearchUtil.mapSearchHits(
+        response.getHits().getHits(), objectMapper, DecisionInstanceEntity.class);
   }
 
   @Override

@@ -24,6 +24,7 @@ import io.camunda.operate.Metrics;
 import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.micrometer.core.instrument.Timer;
@@ -31,11 +32,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.IndicesClient;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.client.indices.GetIndexRequest;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
@@ -57,11 +60,13 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @ExtendWith(MockitoExtension.class)
 public class ElasticsearchArchiveRepositoryTest {
+  private static final List<Integer> PARTITION_IDS = List.of(1, 2);
 
   @Mock protected ThreadPoolTaskScheduler threadPoolTaskScheduler;
   @InjectMocks ElasticsearchArchiverRepository underTest;
   @Mock private BatchOperationTemplate batchOperationTemplate;
   @Mock private ListViewTemplate listViewTemplate;
+  @Mock private DecisionInstanceTemplate decisionInstanceTemplate;
   @Mock private OperateProperties operateProperties;
   @Mock private Metrics metrics;
   @Mock private RestHighLevelClient esClient;
@@ -78,11 +83,11 @@ public class ElasticsearchArchiveRepositoryTest {
     when(archiverProperties.isIlmEnabled()).thenReturn(true);
     underTest.setIndexLifeCycle("destinationIndexName");
 
-    verify(archiverProperties, times(1)).isIlmEnabled();
+    verify(archiverProperties).isIlmEnabled();
     assertThat(archiverProperties.isIlmEnabled()).isTrue();
     verify(esClient, times(2)).indices();
-    verify(indicesClient, times(1)).putSettings(any(), any());
-    verify(indicesClient, times(1)).exists((GetIndexRequest) any(), any());
+    verify(indicesClient).putSettings(any(), any());
+    verify(indicesClient).exists((GetIndexRequest) any(), any());
   }
 
   @Test
@@ -94,9 +99,9 @@ public class ElasticsearchArchiveRepositoryTest {
     when(indicesClient.exists((GetIndexRequest) any(), any())).thenReturn(false);
     underTest.setIndexLifeCycle("destinationIndexName");
 
-    verify(archiverProperties, times(1)).isIlmEnabled();
+    verify(archiverProperties).isIlmEnabled();
     assertThat(archiverProperties.isIlmEnabled()).isTrue();
-    verify(esClient, times(1)).indices();
+    verify(esClient).indices();
     verify(indicesClient, times(0)).putSettings(any(), any());
   }
 
@@ -182,9 +187,71 @@ public class ElasticsearchArchiveRepositoryTest {
   }
 
   @Test
+  public void testGetProcessInstancesNextBatchEmptyBucket() {
+    setProcessInstancesMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termQuery(
+                              ListViewTemplate.JOIN_RELATION,
+                              ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION)),
+                      eq(QueryBuilders.termsQuery(ListViewTemplate.PARTITION_ID, PARTITION_IDS))))
+          .thenCallRealMethod();
+
+      testGetNextBatchEmptyBucket(
+          () -> underTest.getProcessInstancesNextBatch(PARTITION_IDS),
+          "endDate",
+          elasticsearchUtilMockedStatic);
+    }
+  }
+
+  @Test
   public void testGetBatchOperationsNextBatchEmptyBucket() {
     setBatchOperationMocks();
 
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      testGetNextBatchEmptyBucket(
+          underTest::getBatchOperationNextBatch, "endDate", elasticsearchUtilMockedStatic);
+    }
+  }
+
+  @Test
+  public void testGetStandaloneDecisionInstancesNextBatchEmptyBucket() {
+    setDecisionInstanceMocks();
+
+    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
+        mockStatic(ElasticsearchUtil.class)) {
+      elasticsearchUtilMockedStatic
+          .when(
+              () ->
+                  ElasticsearchUtil.joinWithAnd(
+                      any(),
+                      eq(
+                          QueryBuilders.termsQuery(
+                              DecisionInstanceTemplate.PARTITION_ID, PARTITION_IDS)),
+                      eq(
+                          QueryBuilders.termQuery(
+                              DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1))))
+          .thenCallRealMethod();
+
+      testGetNextBatchEmptyBucket(
+          () -> underTest.getStandaloneDecisionNextBatch(PARTITION_IDS),
+          "evaluationDate",
+          elasticsearchUtilMockedStatic);
+    }
+  }
+
+  public void testGetNextBatchEmptyBucket(
+      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
+      final String aggFieldName,
+      final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic) {
     final SearchRequest searchRequest = mock(SearchRequest.class);
     final SearchResponse searchResponse = mock(SearchResponse.class);
     try (final MockedStatic<AggregationBuilders> mockedStatic =
@@ -197,60 +264,70 @@ public class ElasticsearchArchiveRepositoryTest {
                 when(mock.requestCache(false)).thenReturn(searchRequest);
               })) {
         try (final MockedStatic<Timer> mockedTimer = mockStatic(Timer.class)) {
-          testGetBatchOperationsNextBatchEmptyBucketHelper(
-              searchResponse, mockedStatic, mockedTimer);
-          verify(searchRequest, times(1)).requestCache(false);
+          testGetNextBatchEmptyBucketHelper(
+              testMethod,
+              searchResponse,
+              mockedStatic,
+              mockedTimer,
+              elasticsearchUtilMockedStatic,
+              aggFieldName);
+          verify(searchRequest).requestCache(false);
         }
       }
     }
   }
 
-  public void testGetBatchOperationsNextBatchEmptyBucketHelper(
+  public void testGetNextBatchEmptyBucketHelper(
+      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
       final SearchResponse searchResponse,
       final MockedStatic<AggregationBuilders> mockedStatic,
-      final MockedStatic<Timer> mockedTimer) {
+      final MockedStatic<Timer> mockedTimer,
+      final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic,
+      final String aggFieldName) {
 
-    try (final MockedStatic<ElasticsearchUtil> elasticsearchUtilMockedStatic =
-        mockStatic(ElasticsearchUtil.class)) {
-      final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
-          setHistogramMockForBatchOperations(mockedStatic);
-      final TopHitsAggregationBuilder topHitsAggregationBuilder =
-          setTopHitsAggregationBuilder(mockedStatic);
-      mockedStatic
-          .when(() -> AggregationBuilders.topHits(anyString()))
-          .thenReturn(topHitsAggregationBuilder);
-      final Timer.Sample timer = mock(Timer.Sample.class);
-      when(timer.stop(any())).thenReturn(1000L);
-      mockedTimer.when(Timer::start).thenReturn(timer);
-      elasticsearchUtilMockedStatic
-          .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
-          .thenReturn(CompletableFuture.completedFuture(searchResponse));
-      final Aggregations aggregations = mock(Aggregations.class);
-      final Histogram histogram = mock(Histogram.class);
-      final CompletableFuture<SearchResponse> completableFuture = new CompletableFuture<>();
-      when(searchResponse.getAggregations()).thenReturn(aggregations);
-      when(aggregations.get(anyString())).thenReturn(histogram);
-      when(histogram.getBuckets()).thenReturn(new ArrayList<>());
-      completableFuture.complete(searchResponse);
-      final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
-      assertThat(res).isCompleted();
+    final DateHistogramAggregationBuilder dateHistogramAggregationBuilder =
+        setHistogramMockForBatchOperations(mockedStatic);
+    final TopHitsAggregationBuilder topHitsAggregationBuilder =
+        setTopHitsAggregationBuilder(mockedStatic);
+    mockedStatic
+        .when(() -> AggregationBuilders.topHits(anyString()))
+        .thenReturn(topHitsAggregationBuilder);
+    final Timer.Sample timer = mock(Timer.Sample.class);
+    when(timer.stop(any())).thenReturn(1000L);
+    mockedTimer.when(Timer::start).thenReturn(timer);
+    elasticsearchUtilMockedStatic
+        .when(() -> ElasticsearchUtil.searchAsync(any(), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(searchResponse));
+    final Aggregations aggregations = mock(Aggregations.class);
+    final Histogram histogram = mock(Histogram.class);
+    final CompletableFuture<SearchResponse> completableFuture = new CompletableFuture<>();
+    when(searchResponse.getAggregations()).thenReturn(aggregations);
+    when(aggregations.get(anyString())).thenReturn(histogram);
+    when(histogram.getBuckets()).thenReturn(new ArrayList<>());
+    completableFuture.complete(searchResponse);
+    final CompletableFuture<ArchiveBatch> res = testMethod.get();
+    assertThat(res).isCompleted();
 
-      verify(dateHistogramAggregationBuilder, times(1)).field("endDate");
-      verify(dateHistogramAggregationBuilder, times(1))
-          .calendarInterval(new DateHistogramInterval("1m"));
-      verify(dateHistogramAggregationBuilder, times(1)).format("format");
-      verify(dateHistogramAggregationBuilder, times(1)).keyed(true);
-      verify(dateHistogramAggregationBuilder, times(1)).subAggregation((AggregationBuilder) any());
-      verify(dateHistogramAggregationBuilder, times(1))
-          .subAggregation((PipelineAggregationBuilder) any());
-      verify(topHitsAggregationBuilder, times(1)).size(0);
-      verify(topHitsAggregationBuilder, times(1)).sort("id", SortOrder.ASC);
-      verify(topHitsAggregationBuilder, times(1)).fetchSource("id", null);
-      verify(searchResponse, times(1)).getAggregations();
-      verify(timer, times(1)).stop(any());
-      verify(aggregations, times(1)).get("datesAgg");
-      verify(histogram, times(1)).getBuckets();
-    }
+    verify(dateHistogramAggregationBuilder).field(aggFieldName);
+    verify(dateHistogramAggregationBuilder).calendarInterval(new DateHistogramInterval("1m"));
+    verify(dateHistogramAggregationBuilder).format("format");
+    verify(dateHistogramAggregationBuilder).keyed(true);
+    verify(dateHistogramAggregationBuilder).subAggregation((AggregationBuilder) any());
+    verify(dateHistogramAggregationBuilder).subAggregation((PipelineAggregationBuilder) any());
+    verify(topHitsAggregationBuilder).size(0);
+    verify(topHitsAggregationBuilder).sort("id", SortOrder.ASC);
+    verify(topHitsAggregationBuilder).fetchSource("id", null);
+    verify(searchResponse).getAggregations();
+    verify(timer).stop(any());
+    verify(aggregations).get("datesAgg");
+    verify(histogram).getBuckets();
+  }
+
+  private void setProcessInstancesMocks() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(listViewTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
   }
 
   private void setBatchOperationMocks() {
@@ -258,6 +335,14 @@ public class ElasticsearchArchiveRepositoryTest {
     when(archiverProperties.getRolloverInterval()).thenReturn("1m");
     when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
     when(batchOperationTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
+  }
+
+  private void setDecisionInstanceMocks() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(decisionInstanceTemplate.getFullQualifiedName()).thenReturn("decisionsQualifiedName");
   }
 
   private DateHistogramAggregationBuilder setHistogramMockForBatchOperations(

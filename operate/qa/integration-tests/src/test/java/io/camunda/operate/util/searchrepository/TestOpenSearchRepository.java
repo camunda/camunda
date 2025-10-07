@@ -28,11 +28,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.entities.BatchOperationEntity;
 import io.camunda.operate.entities.VariableEntity;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.VariableTemplate;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.store.opensearch.client.sync.ZeebeRichOpenSearchClient;
 import io.camunda.operate.store.opensearch.dsl.RequestDSL;
+import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Convertable;
 import io.camunda.operate.util.MapPath;
 import java.io.IOException;
@@ -368,6 +371,26 @@ public class TestOpenSearchRepository implements TestSearchRepository {
     return richOpenSearchClient
         .doc()
         .searchValues(searchRequestBuilder, ProcessInstanceForListViewEntity.class, true);
+  }
+
+  @Override
+  public List<DecisionInstanceEntity> getDecisionInstances(
+      final String indexName, final List<Long> decisionInstanceKeys, final List<String> ids)
+      throws IOException {
+    final var searchRequestBuilder =
+        searchRequestBuilder(indexName)
+            .query(
+                constantScore(
+                    and(
+                        CollectionUtil.isEmpty(ids) ? matchAll() : ids(toSafeArrayOfStrings(ids)),
+                        CollectionUtil.isEmpty(decisionInstanceKeys)
+                            ? matchAll()
+                            : longTerms(DecisionInstanceTemplate.KEY, decisionInstanceKeys))))
+            .size(100);
+
+    return richOpenSearchClient
+        .doc()
+        .searchValues(searchRequestBuilder, DecisionInstanceEntity.class, true);
   }
 
   @Override

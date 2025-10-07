@@ -10,7 +10,8 @@ package io.camunda.operate.archiver;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,20 +21,22 @@ import org.springframework.stereotype.Component;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
-public class BatchOperationArchiverJob extends AbstractArchiverJob {
+public class StandaloneDecisionArchiverJob extends AbstractArchiverJob {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BatchOperationArchiverJob.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(StandaloneDecisionArchiverJob.class);
 
-  private final Archiver archiver;
-
-  @Autowired private BatchOperationTemplate batchOperationTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired private Metrics metrics;
 
   @Autowired private ArchiverRepository archiverRepository;
 
-  public BatchOperationArchiverJob(final Archiver archiver) {
+  private final Archiver archiver;
+  private final List<Integer> partitionIds;
+
+  public StandaloneDecisionArchiverJob(final Archiver archiver, final List<Integer> partitionIds) {
     this.archiver = archiver;
+    this.partitionIds = partitionIds;
   }
 
   @Override
@@ -41,13 +44,14 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
     final CompletableFuture<Integer> archiveBatchFuture;
 
     if (archiveBatch != null) {
-      LOGGER.debug("Following batch operations are found for archiving: {}", archiveBatch);
+      LOGGER.debug(
+          "Following standalone decision instances are found for archiving: {}", archiveBatch);
 
       archiveBatchFuture = new CompletableFuture<>();
       archiver
           .moveDocuments(
-              batchOperationTemplate.getFullQualifiedName(),
-              BatchOperationTemplate.ID,
+              decisionInstanceTemplate.getFullQualifiedName(),
+              DecisionInstanceTemplate.ID,
               archiveBatch.getFinishDate(),
               archiveBatch.getIds())
           .whenComplete(
@@ -57,7 +61,8 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
                   return;
                 }
                 metrics.recordCounts(
-                    Metrics.COUNTER_NAME_BATCH_OPERATIONS_ARCHIVED, archiveBatch.getIds().size());
+                    Metrics.COUNTER_NAME_STANDALONE_DECISIONS_ARCHIVED,
+                    archiveBatch.getIds().size());
                 archiveBatchFuture.complete(archiveBatch.getIds().size());
               });
     } else {
@@ -70,6 +75,6 @@ public class BatchOperationArchiverJob extends AbstractArchiverJob {
 
   @Override
   public CompletableFuture<ArchiveBatch> getNextBatch() {
-    return archiverRepository.getBatchOperationNextBatch();
+    return archiverRepository.getStandaloneDecisionNextBatch(partitionIds);
   }
 }

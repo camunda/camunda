@@ -17,7 +17,6 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
@@ -28,6 +27,7 @@ import io.camunda.operate.property.ArchiverProperties;
 import io.camunda.operate.property.OperateOpensearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchISMOperations;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchIndexOperations;
@@ -42,6 +42,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 
 @ExtendWith(MockitoExtension.class)
 public class OpensearchArchiverRepositoryTest {
+  private static final List<Integer> PARTITION_IDS = List.of(1, 2);
 
   @Mock protected RichOpenSearchClient richOpenSearchClient;
   @Mock protected OpenSearchAsyncClient openSearchAsyncClient;
@@ -76,6 +78,7 @@ public class OpensearchArchiverRepositoryTest {
   @Mock OperateOpensearchProperties operateOpensearchProperties;
   @Mock private BatchOperationTemplate batchOperationTemplate;
   @Mock private ListViewTemplate processInstanceTemplate;
+  @Mock private DecisionInstanceTemplate decisionInstanceTemplate;
   @Mock private OperateProperties operateProperties;
   @Mock private Metrics metrics;
   private ArchiverProperties archiverProperties;
@@ -99,11 +102,11 @@ public class OpensearchArchiverRepositoryTest {
             "destinationIndexName", OPERATE_DELETE_ARCHIVED_INDICES))
         .thenReturn(null);
     underTest.setIndexLifeCycle("destinationIndexName");
-    verify(archiverProperties, times(1)).isIlmEnabled();
+    verify(archiverProperties).isIlmEnabled();
     assertThat(archiverProperties.isIlmEnabled()).isTrue();
-    verify(openSearchIndexOperations, times(1)).indexExists("destinationIndexName");
+    verify(openSearchIndexOperations).indexExists("destinationIndexName");
     assertThat(openSearchIndexOperations.indexExists("destinationIndexName")).isTrue();
-    verify(richOpenSearchClient, times(1)).ism();
+    verify(richOpenSearchClient).ism();
   }
 
   @Test
@@ -114,9 +117,9 @@ public class OpensearchArchiverRepositoryTest {
     when(archiverProperties.isIlmEnabled()).thenReturn(true);
     when(openSearchIndexOperations.indexExists(anyString())).thenReturn(false);
     underTest.setIndexLifeCycle("destinationIndexName");
-    verify(archiverProperties, times(1)).isIlmEnabled();
+    verify(archiverProperties).isIlmEnabled();
     assertThat(archiverProperties.isIlmEnabled()).isTrue();
-    verify(openSearchIndexOperations, times(1)).indexExists("destinationIndexName");
+    verify(openSearchIndexOperations).indexExists("destinationIndexName");
     assertThat(openSearchIndexOperations.indexExists("destinationIndexName")).isFalse();
   }
 
@@ -227,29 +230,64 @@ public class OpensearchArchiverRepositoryTest {
   }
 
   @Test
-  public void testGetBatchOperationsNextBatch() {
+  public void testGetProcessInstancesNextBatch() {
+    setProcessInstancesMocks();
     try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
       try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
           mockStatic(AggregationDSL.class)) {
-        testGetBatchOperationsNextBatchHelper(queryDSLMockedStatic, aggregationDSLMockedStatic);
+        testGetNextBatchHelper(
+            () -> underTest.getProcessInstancesNextBatch(PARTITION_IDS),
+            queryDSLMockedStatic,
+            aggregationDSLMockedStatic,
+            "endDate");
       }
     }
   }
 
-  public void testGetBatchOperationsNextBatchHelper(
+  @Test
+  public void testGetBatchOperationsNextBatch() {
+    setBatchOperationMocks();
+    try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
+      try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
+          mockStatic(AggregationDSL.class)) {
+        testGetNextBatchHelper(
+            underTest::getBatchOperationNextBatch,
+            queryDSLMockedStatic,
+            aggregationDSLMockedStatic,
+            "endDate");
+      }
+    }
+  }
+
+  @Test
+  public void testGetStandaloneDecisionInstancesNextBatch() {
+    setDecisionInstanceMocks();
+    try (final MockedStatic<QueryDSL> queryDSLMockedStatic = mockStatic(QueryDSL.class)) {
+      try (final MockedStatic<AggregationDSL> aggregationDSLMockedStatic =
+          mockStatic(AggregationDSL.class)) {
+        testGetNextBatchHelper(
+            () -> underTest.getStandaloneDecisionNextBatch(PARTITION_IDS),
+            queryDSLMockedStatic,
+            aggregationDSLMockedStatic,
+            "evaluationDate");
+      }
+    }
+  }
+
+  public void testGetNextBatchHelper(
+      final Supplier<CompletableFuture<ArchiveBatch>> testMethod,
       final MockedStatic<QueryDSL> queryDSLMockedStatic,
-      final MockedStatic<AggregationDSL> aggregationDSLMockedStatic) {
+      final MockedStatic<AggregationDSL> aggregationDSLMockedStatic,
+      final String sortFieldName) {
 
     try (final MockedStatic<RequestDSL> requestDSLMockedStatic = mockStatic(RequestDSL.class)) {
       try (final MockedStatic<Timer> timerMockedStatic = mockStatic(Timer.class)) {
         final Query query = mock(Query.class);
         queryDSLMockedStatic.when(() -> QueryDSL.constantScore(any())).thenReturn(query);
+        queryDSLMockedStatic
+            .when(() -> QueryDSL.sortOptions(sortFieldName, Asc))
+            .thenReturn(mock(SortOptions.class));
         final SearchRequest.Builder searchRequestBuilder = mock(SearchRequest.Builder.class);
-        when(batchOperationTemplate.getFullQualifiedName()).thenReturn("fullQualifiedName");
-        when(operateProperties.getArchiver()).thenReturn(archiverProperties);
-        when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
-        when(archiverProperties.getRolloverInterval()).thenReturn("1m");
-        when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
         final Aggregation aggregation = mock(Aggregation.class);
         final DateHistogramAggregation dateHistogramAggregation =
             mock(DateHistogramAggregation.class);
@@ -269,13 +307,10 @@ public class OpensearchArchiverRepositoryTest {
                         any(), any(), anyString(), anyBoolean()))
             .thenReturn(dateHistogramAggregation);
         aggregationDSLMockedStatic
-            .when(
-                () ->
-                    AggregationDSL.withSubaggregations(
-                        (DateHistogramAggregation) any(), (Map<String, Aggregation>) any()))
+            .when(() -> AggregationDSL.withSubaggregations((DateHistogramAggregation) any(), any()))
             .thenReturn(aggregation);
         aggregationDSLMockedStatic
-            .when(() -> AggregationDSL.topHitsAggregation((List<String>) any(), anyInt(), any()))
+            .when(() -> AggregationDSL.topHitsAggregation(any(), anyInt(), any()))
             .thenReturn(topHitsAggregation);
         requestDSLMockedStatic
             .when(() -> RequestDSL.searchRequestBuilder(anyString()))
@@ -311,21 +346,46 @@ public class OpensearchArchiverRepositoryTest {
           when(metrics.getTimer(any())).thenReturn(timer);
           timerMockedStatic.when(Timer::start).thenReturn(timerSample);
           when(timerSample.stop(any())).thenReturn(5L);
-          final CompletableFuture<ArchiveBatch> res = underTest.getBatchOperationNextBatch();
+          final CompletableFuture<ArchiveBatch> res = testMethod.get();
           assertThat(res).isCompleted();
-          verify(searchRequestBuilder, times(1)).query(query);
-          verify(searchRequestBuilder, times(1)).aggregations(DATES_AGG, aggregation);
-          verify(searchRequestBuilder, times(1)).source((SourceConfig) any());
-          verify(searchRequestBuilder, times(1)).size(0);
-          verify(searchRequestBuilder, times(1)).sort(sortOptions("endDate", Asc));
-          verify(searchRequestBuilder, times(1)).requestCache(false);
-          verify(bucketSortAggregation, times(1))._toAggregation();
-          verify(topHitsAggregation, times(1))._toAggregation();
-          verify(searchResponse, times(1)).aggregations();
-          verify(aggregate, times(1)).dateHistogram();
-          verify(dateHistogramAggregate, times(1)).buckets();
+          verify(searchRequestBuilder).query(query);
+          verify(searchRequestBuilder).aggregations(DATES_AGG, aggregation);
+          verify(searchRequestBuilder).source((SourceConfig) any());
+          verify(searchRequestBuilder).size(0);
+          verify(searchRequestBuilder).sort(any(SortOptions.class));
+          queryDSLMockedStatic.verify(() -> sortOptions(sortFieldName, Asc));
+          verify(searchRequestBuilder).requestCache(false);
+          verify(bucketSortAggregation)._toAggregation();
+          verify(topHitsAggregation)._toAggregation();
+          verify(searchResponse).aggregations();
+          verify(aggregate).dateHistogram();
+          verify(dateHistogramAggregate).buckets();
         }
       }
     }
+  }
+
+  private void setProcessInstancesMocks() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
+    when(processInstanceTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
+  }
+
+  private void setBatchOperationMocks() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(archiverProperties.getRolloverBatchSize()).thenReturn(12);
+    when(batchOperationTemplate.getFullQualifiedName()).thenReturn("qualifiedName");
+  }
+
+  private void setDecisionInstanceMocks() {
+    when(operateProperties.getArchiver()).thenReturn(archiverProperties);
+    when(archiverProperties.getRolloverInterval()).thenReturn("1m");
+    when(archiverProperties.getArchivingTimepoint()).thenReturn("now-1s");
+    when(archiverProperties.getElsRolloverDateFormat()).thenReturn("format");
+    when(decisionInstanceTemplate.getFullQualifiedName()).thenReturn("decisionsQualifiedName");
   }
 }
