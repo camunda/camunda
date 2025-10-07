@@ -285,25 +285,24 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotCompleteUserTaskWithUnauthorizedUser(
+  public void shouldCompleteUserTaskWithAutoPermissions(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given (admin) to create instance
-    // create a process instance - with pre-assigned user task
+    // given
+    // pre-assigned assignee automatically has READ, UPDATE permissions to work on the task
     final var processInstanceKey =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
     final var userTaskKeyPreAssigned =
         awaitUserTaskBeingAvailable(adminClient, processInstanceKey, true);
-    // given (non-admin) user without any authorizations
 
     // when
     final var response =
         tasklistRestClient
             .withAuthentication(TEST_USER_NAME_NO_PERMISSION, TEST_USER_PASSWORD)
             .completeUserTask(userTaskKeyPreAssigned);
-
     // then
     assertThat(response).isNotNull();
-    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskIsCompleted(adminClient, userTaskKeyPreAssigned);
   }
 
   @Test
@@ -333,15 +332,14 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
   }
 
   @Test
-  public void shouldNotUnassignUserTaskWithUnauthorizedUser(
+  public void shouldUnassignUserTaskWithAutoPermissions(
       @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given (admin) to create instance
-    // create a process instance - with pre-assigned user task
+    // given
+    // pre-assigned assignee automatically has READ, UPDATE permissions to work on the task
     final var processInstanceKey =
         createProcessInstance(adminClient, PROCESS_WITH_USER_TASK_PRE_ASSIGNED);
     final var userTaskKeyPreAssigned =
         awaitUserTaskBeingAvailable(adminClient, processInstanceKey, true);
-    // given (non-admin) user without any authorizations
 
     // when
     final var response =
@@ -351,7 +349,8 @@ public class NoCompatibilityModeTasklistUserTaskAuthorizationIT {
 
     // then
     assertThat(response).isNotNull();
-    assertThat(response.statusCode()).isEqualTo(403);
+    assertThat(response.statusCode()).isEqualTo(200);
+    ensureUserTaskIsUnassigned(adminClient, userTaskKeyPreAssigned);
   }
 
   @Test
