@@ -13,24 +13,25 @@ import {
   Stack,
   WarningFilled,
 } from './styled';
-import {incidentsStore} from 'modules/stores/incidents';
-import {observer} from 'mobx-react';
-import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 
 type Props = {
+  processInstanceKey: string;
+  incidentsCount: number;
   onClick: () => void;
   isOpen: boolean;
 };
 
-const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
-  const {processInstanceId} = useProcessInstancePageParams();
-  const {incidentsCount} = incidentsStore;
-
+const IncidentsBanner: React.FC<Props> = ({
+  onClick,
+  isOpen,
+  incidentsCount,
+  processInstanceKey,
+}) => {
   const errorMessage = `${pluralSuffix(incidentsCount, 'Incident')} occurred`;
   const title = `View ${pluralSuffix(
     incidentsCount,
     'Incident',
-  )} in Instance ${processInstanceId}`;
+  )} in Instance ${processInstanceKey}`;
 
   return (
     <StyledIncidentBanner
@@ -46,6 +47,6 @@ const IncidentsBanner: React.FC<Props> = observer(({onClick, isOpen}) => {
       </Stack>
     </StyledIncidentBanner>
   );
-});
+};
 
 export {IncidentsBanner};

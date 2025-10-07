@@ -70,6 +70,7 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
+import {useIncidentsCount} from 'modules/queries/incidents/useIncidentsSearch';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -228,10 +229,10 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
+  const incidentsCount = useIncidentsCount(processInstanceId);
   const {
     setIncidentBarOpen,
     state: {isIncidentBarOpen},
-    incidentsCount,
   } = incidentsStore;
 
   const {isModificationModeEnabled} = modificationsStore;
@@ -270,6 +271,8 @@ const TopPanel: React.FC = observer(() => {
     <Container>
       {incidentsCount > 0 && (
         <IncidentsBanner
+          processInstanceKey={processInstanceId}
+          incidentsCount={incidentsCount}
           onClick={() => {
             if (isInTransition) {
               return;
