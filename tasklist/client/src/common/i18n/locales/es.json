@@ -55,7 +55,7 @@
     "errorGenericErrorButtonLabel": "Intentar de nuevo",
     "taskDetailsFailedToFetchVariablesErrorSubtitle": "No pudimos obtener las variables de la tarea. Intente nuevamente o contacte con su administrador de Tasklist.",
     "taskDetailsTruncatedVariablesErrorTitle": "Las variables son demasiado grandes",
-    "taskDetailsTruncatedVariablesErrorSubtitle": "Por favor, pida a su Operador que mueva su token de proceso o use Tasklist V1",
+    "taskDetailsTruncatedVariablesErrorSubtitle": "Por favor, contacte con su administrador de Tasklist.",
     "taskDetailsFormJSSingleFieldError": "Por favor revise 1 campo",
     "taskDetailsFormJSMultipleFieldError": "Por favor revise {{count}} campos",
     "formJSPoweredByLabel": "Desarrollado por",
