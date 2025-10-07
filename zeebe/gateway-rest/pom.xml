@@ -28,6 +28,12 @@
     <dependency>
       <groupId>io.opentelemetry.instrumentation</groupId>
       <artifactId>opentelemetry-spring-boot-starter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>io.opentelemetry.contrib</groupId>
+          <artifactId>opentelemetry-gcp-resources</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
     <!-- required to guarantee the protocol is processed earlier during the build -->
