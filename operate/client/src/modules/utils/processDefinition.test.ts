@@ -21,7 +21,7 @@ describe('getDiagramNameByProcessDefinition', () => {
     };
     expect(
       getDiagramNameByProcessDefinition(definition as ProcessDefinition),
-    ).toBe('Order Process v5');
+    ).toBe('order-process_v5');
   });
 
   it('uses processDefinitionId if name is missing', () => {
@@ -32,17 +32,10 @@ describe('getDiagramNameByProcessDefinition', () => {
     };
     expect(
       getDiagramNameByProcessDefinition(definition as ProcessDefinition),
-    ).toBe('fallback-id v2');
+    ).toBe('fallback-id_v2');
   });
 
-  it('handles empty name and processDefinitionId', () => {
-    const definition = {
-      name: '',
-      processDefinitionId: '',
-      version: 0,
-    };
-    expect(
-      getDiagramNameByProcessDefinition(definition as ProcessDefinition),
-    ).toBe(' v0');
+  it('returns default name when ProcessDefinition is undefined', () => {
+    expect(getDiagramNameByProcessDefinition(undefined)).toBe('diagram_v0');
   });
 });

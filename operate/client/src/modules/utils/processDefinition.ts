@@ -7,15 +7,20 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import _ from 'lodash';
 
 const getFullyQualifiedProcessDefinitionName = (
   processName: string,
   processVersion: string,
 ) => {
-  return `${processName} v${processVersion}`;
+  return `${_.kebabCase(processName)}_v${processVersion}`;
 };
 
-const getDiagramNameByProcessDefinition = (definition: ProcessDefinition) => {
+const getDiagramNameByProcessDefinition = (definition?: ProcessDefinition) => {
+  if (!definition) {
+    return getFullyQualifiedProcessDefinitionName('diagram', '0');
+  }
+
   const processName = definition.name || definition.processDefinitionId;
   const processVersion = definition.version;
 
