@@ -8,7 +8,10 @@
 
 import {type QueryUserTasksRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {getStateLocally} from 'common/local-storage';
-import {type TaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
+import {
+  numberFiltersSchema,
+  type TaskFilters,
+} from 'v2/features/tasks/filters/useTaskFilters';
 
 const SORT_BY_FIELD: Record<
   TaskFilters['sortBy'],
@@ -115,6 +118,9 @@ function convertFiltersToQueryVariables(
     filter,
     candidateGroup,
     candidateUser,
+    processInstanceKey,
+    processDefinitionKey,
+    userTaskKey,
     dueDateFrom,
     dueDateTo,
     followUpDateFrom,
@@ -122,8 +128,15 @@ function convertFiltersToQueryVariables(
     assigned,
     ...restFilters
   } = filters;
+  const numberFilters =
+    numberFiltersSchema.safeParse({
+      processInstanceKey,
+      processDefinitionKey,
+      userTaskKey,
+    }).data ?? {};
   const updatedFilters: QueryUserTasksRequestBody['filter'] = {
     ...restFilters,
+    ...numberFilters,
   };
   const customFilters = getStateLocally('customFilters')?.[filter];
 

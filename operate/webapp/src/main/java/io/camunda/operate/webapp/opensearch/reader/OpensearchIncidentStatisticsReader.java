@@ -75,10 +75,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
-    final var pisWithReadPermissionQuery = createQueryForProcessInstancesWithReadPermission();
     final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap =
-        updateActiveInstances(
-            getIncidentsByProcess(pisWithReadPermissionQuery), pisWithReadPermissionQuery);
+        updateActiveInstances(getIncidentsByProcess());
     return collectStatisticsForProcessGroups(incidentsByProcessMap);
   }
 
@@ -96,7 +94,9 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
             ProcessIndex.VERSION);
 
     final Query query =
-        and(ACTIVE_INCIDENT_QUERY, createQueryForProcessInstancesWithReadPermission());
+        and(
+            ACTIVE_INCIDENT_QUERY,
+            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
 
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
@@ -150,10 +150,8 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
         .array();
   }
 
-  private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess(
-      final Query permittedProcessInstancesQuery) {
-    return searchAggBuckets(withTenantCheck(and(INCIDENTS_QUERY, permittedProcessInstancesQuery)))
-        .stream()
+  private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess() {
+    return searchAggBuckets(withTenantCheck(INCIDENTS_QUERY)).stream()
         .collect(
             Collectors.toMap(
                 bucket -> Long.valueOf(bucket.key()),
@@ -161,15 +159,13 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
-      final Map<Long, IncidentByProcessStatisticsDto> statistics,
-      final Query permittedProcessInstancesQuery) {
+      final Map<Long, IncidentByProcessStatisticsDto> statistics) {
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     final Query query =
         withTenantCheck(
             and(
                 term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
-                permittedProcessInstancesQuery));
+                term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION)));
 
     searchAggBuckets(query)
         .forEach(
@@ -243,9 +239,9 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     return result;
   }
 
-  private Query createQueryForProcessInstancesWithReadPermission() {
+  private Query createQueryForProcessesByPermission(final PermissionType permission) {
     final PermissionsService.ResourcesAllowed allowed =
-        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
+        permissionsService.getProcessesWithPermission(permission);
     return allowed.isAll()
         ? matchAll()
         : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());

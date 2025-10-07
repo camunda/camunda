@@ -52,6 +52,18 @@ const filtersSchema = z.object({
   ...apiFiltersSchema.shape,
 });
 
+const numberFiltersSchema = z
+  .object({
+    processInstanceKey: z.coerce.number().optional(),
+    processDefinitionKey: z.coerce.number().optional(),
+    userTaskKey: z.coerce.number().optional(),
+  })
+  .transform((result) =>
+    Object.fromEntries(
+      Object.entries(result).filter(([_, value]) => typeof value === 'number'),
+    ),
+  );
+
 const DEFAULT_FILTERS = filtersSchema.parse({});
 
 type TaskFilters = z.infer<typeof filtersSchema>;
@@ -71,5 +83,5 @@ function useTaskFilters(): TaskFilters {
   }, [queryString]);
 }
 
-export {useTaskFilters, filtersSchema};
+export {useTaskFilters, filtersSchema, numberFiltersSchema};
 export type {TaskFilters};

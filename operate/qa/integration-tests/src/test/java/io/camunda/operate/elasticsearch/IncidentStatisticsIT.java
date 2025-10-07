@@ -181,59 +181,16 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
 
     assertThat(response).hasSize(3);
-    final var responseMap =
-        response.stream()
-            .collect(
-                Collectors.toMap(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId, i -> i));
-    assertThat(responseMap)
-        .containsKey(DEMO_BPMN_PROCESS_ID)
-        .containsKey(ORDER_BPMN_PROCESS_ID)
-        .containsKey(LOAN_BPMN_PROCESS_ID);
-    assertThat(responseMap.get(DEMO_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isEqualTo(4);
-    assertThat(responseMap.get(DEMO_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(9);
-    assertThat(responseMap.get(ORDER_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isOne();
-    assertThat(responseMap.get(ORDER_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(8);
-    assertThat(responseMap.get(LOAN_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isZero();
-    assertThat(responseMap.get(LOAN_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(5);
-  }
-
-  @Test
-  public void
-      testIncidentsByProcessWithProcessDefinitionPermissionWhenNoProcessInstancePermissions()
-          throws Exception {
-
-    // given
-    createData();
-
-    // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).hasSize(3);
     assertThat(
             response.stream()
                 .map(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId)
                 .collect(Collectors.toList()))
         .containsExactlyInAnyOrder(
             DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID, LOAN_BPMN_PROCESS_ID);
-    response.forEach(
-        r -> {
-          assertThat(r.getActiveInstancesCount()).isZero();
-          assertThat(r.getInstancesWithActiveIncidentsCount()).isZero();
-        });
   }
 
   @Test
-  public void testIncidentsByProcessWithPermissionWhenPartiallyAllowed() throws Exception {
+  public void testIncidentsByProcessWithPermissionWhenNotAllowed() throws Exception {
 
     // given
     createData();
@@ -254,23 +211,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                 .map(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId)
                 .collect(Collectors.toList()))
         .containsExactlyInAnyOrder(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID);
-  }
-
-  @Test
-  public void testIncidentsByProcessWithPermissionWhenNotAllowed() throws Exception {
-
-    // given
-    createData();
-
-    // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).isEmpty();
   }
 
   @Test
