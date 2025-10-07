@@ -253,8 +253,7 @@ public final class BackgroundTaskManagerFactory {
   private ReschedulingTask buildRolloverPeriodJob() {
     final var applyRolloverPeriodJob = new ApplyRolloverPeriodJob(archiverRepository, logger);
     final long delayBetweenRuns =
-        Duration.ofMinutes(config.getHistory().getRetention().getApplyPolicyJobIntervalMinutes())
-            .toMillis();
+        config.getHistory().getRetention().getApplyPolicyJobInterval().toMillis();
     return new ReschedulingTask(
         applyRolloverPeriodJob, 0, delayBetweenRuns, delayBetweenRuns, executor, logger);
   }
