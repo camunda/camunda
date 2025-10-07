@@ -1,0 +1,93 @@
+# description: This is a reuseable workflow used to run Unit tests for Optimize, Tasklist, and Operate. Uses Junit5 Suite to determine which set of tests to run
+# test location: Optimize, Tasklist, Operate
+# type: CI
+# owner: @camunda/core-features
+---
+name: Webapp Run Unit Tests Reusable
+
+on:
+  workflow_call:
+    inputs:
+      componentName:
+        description: "The name of the component under test"
+        required: true
+        type: string
+      suite:
+        description: "The suite under test. ie, DataLayer or CoreFeatures"
+        required: true
+        type: string
+      suiteName:
+        description: "Well formatted name of the suite under test. ie, 'Data Layer' or 'Core Features'"
+        required: true
+        type: string
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+  TEST_OWNER: Core Features
+  TEST_TYPE: Unit
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+permissions: { }
+
+jobs:
+  build:
+    name: "Unit - Back End - ${{ inputs.suiteName}}"
+    runs-on: gcp-perf-core-8-default
+    timeout-minutes: 10
+    permissions: { }
+    steps:
+      - name: Log Test Details
+        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ inputs.componentName }} owned by ${{ env.TEST_OWNER}}"
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: ut-be-${{inputs.componentName}}
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-zeebe
+        id: build-zeebe
+        with:
+          maven-extra-args: -T1C -Dquickly
+      - name: Create build output log file
+        run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
+      - name: Maven Run Test
+        shell: bash
+        # we use the verify goal here as flaky test extraction is bound to the post-integration-test
+        # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
+        run: >
+          ./mvnw -Dtest=${{inputs.componentName}}${{inputs.suite}}TestSuite
+          -Dsurefire.failIfNoSpecifiedTests=false -B -T 2 --no-snapshot-updates
+          -D forkCount=7 -D skipITs -D skipQaBuild=true -D skipChecks -Dskip.docker
+          -D surefire.rerunFailingTestsCount=3 -D junitThreadCount=16 -P skipFrontendBuild
+          verify
+          | tee "${BUILD_OUTPUT_FILE_PATH}"
+      - name: Analyze Test Runs
+        id: analyze-test-run
+        if: always()
+        uses: ./.github/actions/analyze-test-runs
+        with:
+          buildOutputFilePath: ${{ env.BUILD_OUTPUT_FILE_PATH }}
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
+        with:
+          name: "[UT] ${{inputs.componentName}} - ${{inputs.suite}}"
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          job_name: "${{inputs.componentName}}-unit-tests/${{inputs.suite}}"
+          build_status: ${{ job.status }}
+          user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
+          user_description: "${{inputs.suiteName}}"
+          detailed_junit_tests: true
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}

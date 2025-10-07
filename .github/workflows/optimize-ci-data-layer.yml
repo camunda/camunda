@@ -1,0 +1,147 @@
+# description: Workflow for running CI tests for Optimize. Runs integration tests, database upgrade tests, and deploys a SNAPSHOT of Optimize on a push to main
+# test location: /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
+# type: CI
+# owner: @camunda/core-features
+name: "[Legacy] Optimize / Data Layer"
+on:
+  pull_request:
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+  push:
+    branches:
+      - main
+      - stable/**
+      - release/**
+    paths:
+      - ".github/actions/**"
+      - ".github/workflows/optimize-*"
+      - "bom/*"
+      - "parent/*"
+      - "pom.xml"
+      - "optimize/**"
+      - "optimize.Dockerfile"
+  workflow_dispatch:
+
+# Will limit the workflow to 1 concurrent run per ref (branch / PR)
+# If a new commits occurs, the current run will be canceled
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# set permissions to allow to publish test results
+permissions:
+  contents: read
+  issues: read
+  checks: write
+  pull-requests: write
+
+jobs:
+  detect-changes:
+    name: Get changed directories
+    runs-on: ubuntu-latest
+    outputs:
+      backend-changes: ${{ steps.filter.outputs.optimize-backend-changes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Get list of changed directories
+        id: filter
+        uses: ./.github/actions/paths-filter
+
+  upgrade-tests:
+    name: "Database Upgrade"
+    runs-on: gcp-core-8-default
+    timeout-minutes: 20
+    strategy:
+      matrix:
+        database: [ elasticsearch, opensearch ]
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: optimize
+          maven-version: 3.8.6
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - name: Read Java/version info
+        id: "pom-info"
+        uses: YunaBraska/java-info-action@main
+      - name: Start Database
+        uses: ./.github/actions/compose
+        with:
+          compose_file: .github/actions/compose/docker-compose.${{ matrix.database }}.yml
+          project_name: ${{ matrix.database }}
+        env:
+          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
+          ELASTIC_JVM_MEMORY: 1
+          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
+          OPENSEARCH_JVM_MEMORY: 1
+          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_elasticsearch_port }}
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      - name: Install optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml -pl upgrade -am install -Dquickly -DskipFrontendBuild -PrunAssembly -T1
+
+      - name: Install
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: install -Dskip.fe.build -Dskip.docker -DskipTests -f optimize/pom.xml -pl upgrade -am
+      - name: Verify upgrade tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: verify -U -Dskip.docker -f optimize/pom.xml -pl upgrade -Ddatabase.type=${{ matrix.database }}
+        env:
+          CAMUNDA_OPTIMIZE_DATABASE: ${{ matrix.database }}
+      - name: Upload Test Results
+        if: always()
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: upgrade-${{ matrix.database }}-junit
+          path: |
+            **/failsafe-reports/**/*.xml
+            **/*.log
+            **/*.json
+      - name: Docker log dump
+        uses: ./.github/actions/docker-logs
+        if: always()
+        with:
+          archive_name: upgrade-docker-${{ matrix.database }}
+
+
+  # Rerun failed jobs running on self-hosted runners in case of network issues or node preemption
+  rerun-failed-jobs:
+    needs:
+      - upgrade-tests
+    if: failure() && fromJSON(github.run_attempt) < 3
+    runs-on: ubuntu-latest
+    steps:
+      - name: Retrigger job
+        uses: camunda/infra-global-github-actions/rerun-failed-run@main
+        with:
+          error-messages: |
+            lost communication with the server
+            The runner has received a shutdown signal
+          run-id: ${{ github.run_id }}
+          repository: ${{ github.repository }}
+          vault-addr: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
