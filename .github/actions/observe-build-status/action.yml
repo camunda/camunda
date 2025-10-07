@@ -24,8 +24,8 @@ inputs:
   job_name:
     description: 'Optional string, the job whose status is being observed; defaults to $GITHUB_JOB when omitted'
     required: false
-  detailed_junit_flaky_tests:
-    description: 'Optional boolean, if true search for TEST-*-FLAKY.xml files and submit their details to dedicated analytics endpoint'
+  detailed_junit_tests:
+    description: 'Optional boolean, if true search for TEST-*.xml files and submit their details to dedicated analytics endpoint'
     required: false
     default: 'false'
   secret_vault_address:
@@ -62,6 +62,7 @@ runs:
       shell: bash
       run: echo "::warning::Not sending any CI health metrics since no access to GHA secrets!"
 
+    ######################## Calculate build duration #########################
     - name: Get build duration in milliseconds
       id: get-build-duration-millis
       if: ${{ steps.secrets.outputs.gcloud_sa_key != '' }}
@@ -75,30 +76,25 @@ runs:
         else
           echo "result=" >> $GITHUB_OUTPUT
         fi
-
-    ####################### DETAILED FLAKY JUNIT TESTS #########################
-    - name: Get detailed info on flaky JUnit tests
-      id: get-detailed-flaky-junit-tests
-      if: ${{ inputs.detailed_junit_flaky_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
+    ######################## Report test result #############################  
+    - name: Get detailed info on JUnit tests
+      id: get-detailed-junit-tests
+      if: ${{ inputs.detailed_junit_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
       shell: bash
-      # To support multi-line string in output we have to work with EOF delimiter
-      # https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#example-of-a-multiline-string
       run: |
-        {
-          echo 'result<<EOF'
-          find . -iname 'TEST-*-FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-flaky-to-jsonl.py
-          (find . -iname 'TEST-*.xml' -exec grep -l '</failure>' {} + | grep -v 'FLAKY.xml' | xargs -d '\n' --no-run-if-empty -n1 python3 .github/actions/observe-build-status/junit-failure-to-jsonl.py || true)
-          echo 'EOF'
-        } >> $GITHUB_OUTPUT
+        TEST_RESULTS_FILE=$(mktemp --suffix=.jsonl)
+        echo "test_results_file=${TEST_RESULTS_FILE}" >> $GITHUB_OUTPUT        
+        find . -iname 'TEST-*.xml' | python3 .ci/scripts/ci/observe-build-status/junit-test-results-to-jsonl.py > "${TEST_RESULTS_FILE}"
+        echo "Generated $(wc -l < "${TEST_RESULTS_FILE}") test results"
 
-    - uses: camunda/infra-global-github-actions/submit-test-status@main
-      if: ${{ inputs.detailed_junit_flaky_tests == 'true' && steps.secrets.outputs.gcloud_sa_key != '' }}
+    - name: Submit test results
+      uses: camunda/infra-global-github-actions/submit-test-status@main
+      if: ${{ (inputs.detailed_junit_tests == 'true') && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
-        test_event_record: "${{ steps.get-detailed-flaky-junit-tests.outputs.result }}"  # TODO: what is the size limit?
+        test_results_file_path: "${{ steps.get-detailed-junit-tests.outputs.test_results_file }}"
         job_name_override: "${{ inputs.job_name }}"
-        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"
-    ############################################################################
-
+        gcp_credentials_json: "${{ steps.secrets.outputs.gcloud_sa_key }}"   
+   ######################## Report build result #############################
     - uses: camunda/infra-global-github-actions/submit-build-status@main
       if: ${{ always() && steps.secrets.outputs.gcloud_sa_key != '' }}
       with:
