@@ -9,14 +9,14 @@ package io.camunda.migration.identity.config.sm;
 
 public class OidcProperties {
 
-  private Audiences audience = new Audiences();
+  private Audiences audiences = new Audiences();
 
-  public Audiences getAudience() {
-    return audience;
+  public Audiences getAudiences() {
+    return audiences;
   }
 
-  public void setAudience(final Audiences audience) {
-    this.audience = audience;
+  public void setAudiences(final Audiences audiences) {
+    this.audiences = audiences;
   }
 
   public static class Audiences {

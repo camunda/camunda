@@ -172,6 +172,14 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
                     PermissionType.UPDATE,
                     PermissionType.DELETE,
                     PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.MAPPING_RULE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
             tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
             tuple("identity", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)));
   }
@@ -249,6 +257,14 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
             tuple(
                 "identity",
                 ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.MAPPING_RULE,
                 Set.of(
                     PermissionType.READ,
                     PermissionType.UPDATE,
