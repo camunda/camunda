@@ -22,7 +22,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4.CamundaClientCloudBuilderStep5;
 import io.camunda.client.CredentialsProvider;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import io.camunda.process.test.impl.runtime.util.CptCredentialsProviderConfigurer;
 import java.net.URI;
@@ -104,7 +103,7 @@ public class RemoteRuntimeClientProperties {
     return remoteRuntimeClientAuthProperties;
   }
 
-  public CamundaClientBuilderFactory getClientBuilderFactory() {
+  public CamundaClientBuilder createCamundaClientBuilder() {
     final CamundaClientBuilder camundaClientBuilder = createCamundaClient(mode);
 
     if (CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_GRPC_ADDRESS != null) {
@@ -117,7 +116,7 @@ public class RemoteRuntimeClientProperties {
           CamundaProcessTestRuntimeDefaults.REMOTE_CLIENT_REST_ADDRESS);
     }
 
-    return () -> camundaClientBuilder;
+    return camundaClientBuilder;
   }
 
   private CamundaClientBuilder createCamundaClient(final ClientMode mode) {

@@ -17,6 +17,7 @@ package io.camunda.process.test.impl.runtime.properties;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
 import java.util.Properties;
@@ -72,5 +73,9 @@ public class RemoteRuntimeProperties {
 
   public RemoteRuntimeClientProperties getRemoteClientProperties() {
     return remoteClientProperties;
+  }
+
+  public CamundaClientBuilder createCamundaClientBuilder() {
+    return remoteClientProperties.createCamundaClientBuilder();
   }
 }

@@ -17,9 +17,12 @@ package io.camunda.process.test.impl.runtime;
 
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
 
+import io.camunda.client.CamundaClient;
+import io.camunda.client.CamundaClientBuilder;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeProperties;
@@ -50,6 +53,7 @@ public final class ContainerRuntimePropertiesUtil {
   private final ConnectorsContainerRuntimeProperties connectorsContainerRuntimeProperties;
   private final RemoteRuntimeProperties remoteRuntimeProperties;
   private final CoverageReportProperties coverageReportProperties;
+  private final CamundaProcessTestClientProperties camundaProcessTestClientProperties;
 
   private final CamundaProcessTestRuntimeMode runtimeMode;
   private final boolean multiTenancyEnabled;
@@ -67,6 +71,7 @@ public final class ContainerRuntimePropertiesUtil {
     connectorsContainerRuntimeProperties = new ConnectorsContainerRuntimeProperties(properties);
     remoteRuntimeProperties = new RemoteRuntimeProperties(properties);
     coverageReportProperties = new CoverageReportProperties(properties);
+    camundaProcessTestClientProperties = new CamundaProcessTestClientProperties(properties);
 
     runtimeMode =
         getPropertyOrDefault(
@@ -208,7 +213,20 @@ public final class ContainerRuntimePropertiesUtil {
   }
 
   public CamundaClientBuilderFactory getCamundaClientBuilderFactory() {
-    return remoteRuntimeProperties.getRemoteClientProperties().getClientBuilderFactory();
+    return () ->
+        camundaProcessTestClientProperties.configureClientBuilder(createCamundaClientBuilder());
+  }
+
+  private CamundaClientBuilder createCamundaClientBuilder() {
+    switch (runtimeMode) {
+      case MANAGED:
+        return CamundaClient.newClientBuilder();
+      case REMOTE:
+        return remoteRuntimeProperties.createCamundaClientBuilder();
+      default:
+        LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
+        return CamundaClient.newClientBuilder();
+    }
   }
 
   public RemoteRuntimeProperties getRemoteRuntimeProperties() {
@@ -221,5 +239,9 @@ public final class ContainerRuntimePropertiesUtil {
 
   public CoverageReportProperties getCoverageReportProperties() {
     return coverageReportProperties;
+  }
+
+  public CamundaProcessTestClientProperties getCamundaClientProperties() {
+    return camundaProcessTestClientProperties;
   }
 }

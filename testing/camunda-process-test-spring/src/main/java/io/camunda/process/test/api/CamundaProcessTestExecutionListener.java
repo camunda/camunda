@@ -19,6 +19,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
@@ -115,7 +116,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
         testContext.getApplicationContext().getBean(io.camunda.zeebe.client.api.JsonMapper.class);
 
     // create runtime
-    runtime = buildRuntime(runtimeConfiguration);
+    runtime = buildRuntime(testContext, runtimeConfiguration);
     runtime.start();
 
     camundaManagementClient = createManagementClient(runtimeConfiguration);
@@ -307,10 +308,14 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
   }
 
   private CamundaProcessTestRuntime buildRuntime(
+      final TestContext testContext,
       final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
 
+    final CamundaClientProperties clientProperties =
+        testContext.getApplicationContext().getBean(CamundaClientProperties.class);
+
     return CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
-        containerRuntimeBuilder, runtimeConfiguration);
+        containerRuntimeBuilder, runtimeConfiguration, clientProperties);
   }
 
   private static CamundaClient createClient(

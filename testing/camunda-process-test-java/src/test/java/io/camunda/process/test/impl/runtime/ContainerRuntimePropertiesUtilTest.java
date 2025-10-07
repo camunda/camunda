@@ -17,8 +17,11 @@ package io.camunda.process.test.impl.runtime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
+import io.camunda.process.test.impl.runtime.properties.CamundaClientWorkerProperties;
 import io.camunda.process.test.impl.runtime.properties.CamundaContainerRuntimeProperties;
+import io.camunda.process.test.impl.runtime.properties.CamundaProcessTestClientProperties;
 import io.camunda.process.test.impl.runtime.properties.ConnectorsContainerRuntimeProperties;
 import io.camunda.process.test.impl.runtime.properties.CoverageReportProperties;
 import io.camunda.process.test.impl.runtime.properties.RemoteRuntimeClientAuthProperties;
@@ -337,6 +340,7 @@ public class ContainerRuntimePropertiesUtilTest {
               .getRemoteRuntimeProperties()
               .getRemoteClientProperties()
               .getAuthProperties();
+
       assertThat(authProps.getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(authProps.getUsername()).isEqualTo("username");
       assertThat(authProps.getPassword()).isEqualTo("password");
@@ -414,6 +418,65 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo("custom/coverage-report");
       assertThat(coverageReportProperties.getCoverageExcludedProcesses())
           .containsExactlyInAnyOrder("process1", "process2");
+    }
+
+    @Test
+    public void shouldHaveCustomClientProperties() {
+      // when
+      final ContainerRuntimePropertiesUtil propertiesUtil =
+          ContainerRuntimePropertiesUtil.readProperties("/containerRuntimePropertiesUtil/");
+
+      final CamundaProcessTestClientProperties clientProps =
+          propertiesUtil.getCamundaClientProperties();
+
+      // then
+      assertThat(clientProps.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8090"));
+      assertThat(clientProps.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8091"));
+      assertThat(clientProps.getRequestTimeout()).hasSeconds(60);
+      assertThat(clientProps.getRequestTimeoutOffset()).hasSeconds(59);
+      assertThat(clientProps.getTenantId()).isEqualTo("customTenantId");
+      assertThat(clientProps.getMessageTimeToLive()).hasSeconds(58);
+      assertThat(clientProps.getMaxMessageSize()).isEqualTo(1000);
+      assertThat(clientProps.getMaxMetadataSize()).isEqualTo(2000);
+      assertThat(clientProps.getExecutionThreads()).isEqualTo(8);
+      assertThat(clientProps.getCaCertificatePath()).isEqualTo("/path/to/file/");
+      assertThat(clientProps.getKeepAlive()).hasSeconds(57);
+      assertThat(clientProps.getOverrideAuthority()).isEqualTo("customOverrideAuthority");
+      assertThat(clientProps.getPreferRestOverGrpc()).isFalse();
+
+      final CamundaClientWorkerProperties clientWorkerProps = clientProps.getClientWorkerProps();
+
+      assertThat(clientWorkerProps.getPollInterval()).hasHours(1);
+      assertThat(clientWorkerProps.getTimeout()).hasHours(2);
+      assertThat(clientWorkerProps.getMaxJobsActive()).isEqualTo(10);
+      assertThat(clientWorkerProps.getName()).isEqualTo("customWorkerName");
+      assertThat(clientWorkerProps.getTenantIds()).contains("customTenantA", "customTenantB");
+      assertThat(clientWorkerProps.getStreamEnabled()).isTrue();
+
+      final CamundaClientConfiguration clientBuilder =
+          propertiesUtil.getCamundaClientBuilderFactory().get().build().getConfiguration();
+
+      assertThat(clientBuilder.getRestAddress()).isEqualTo(URI.create("http://0.0.0.0:8090"));
+      assertThat(clientBuilder.getGrpcAddress()).isEqualTo(URI.create("http://0.0.0.0:8091"));
+      assertThat(clientBuilder.getDefaultRequestTimeout()).hasSeconds(60);
+      assertThat(clientBuilder.getDefaultRequestTimeoutOffset()).hasSeconds(59);
+      // The tenantId is not updated when in RuntimeMode.REMOTE
+      // assertThat(clientBuilder.getDefaultTenantId()).isEqualTo("customTenantId");
+      assertThat(clientBuilder.getDefaultMessageTimeToLive()).hasSeconds(58);
+      assertThat(clientBuilder.getMaxMessageSize()).isEqualTo(1000);
+      assertThat(clientBuilder.getMaxMetadataSize()).isEqualTo(2000);
+      assertThat(clientBuilder.getNumJobWorkerExecutionThreads()).isEqualTo(8);
+      assertThat(clientBuilder.getKeepAlive()).hasSeconds(57);
+      assertThat(clientBuilder.getOverrideAuthority()).isEqualTo("customOverrideAuthority");
+      assertThat(clientBuilder.getCaCertificatePath()).isEqualTo("/path/to/file/");
+
+      assertThat(clientBuilder.getDefaultJobPollInterval()).hasHours(1);
+      assertThat(clientBuilder.getDefaultJobTimeout()).hasHours(2);
+      assertThat(clientBuilder.getDefaultJobWorkerMaxJobsActive()).isEqualTo(10);
+      assertThat(clientBuilder.getDefaultJobWorkerName()).isEqualTo("customWorkerName");
+      // The tenantIds are not assigned when in RuntimeMode.REMOTE
+      // assertThat(clientBuilder.getDefaultJobWorkerTenantIds()).containsExactlyInAnyOrder("customTenantA", "customTenantB");
+      assertThat(clientBuilder.getDefaultJobWorkerStreamEnabled()).isTrue();
     }
   }
 }

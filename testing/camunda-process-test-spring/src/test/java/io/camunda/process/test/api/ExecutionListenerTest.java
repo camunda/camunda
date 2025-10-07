@@ -26,6 +26,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
@@ -80,6 +81,7 @@ public class ExecutionListenerTest {
   @Mock private CamundaManagementClient camundaManagementClient;
   @Mock private CamundaProcessTestResultCollector camundaProcessTestResultCollector;
   @Mock private CamundaClientBuilderFactory camundaClientBuilderFactory;
+  @Mock private CamundaClientProperties camundaClientProperties;
 
   @Captor private ArgumentCaptor<CamundaClient> camundaClientArgumentCaptor;
 
@@ -125,6 +127,8 @@ public class ExecutionListenerTest {
         .thenReturn(camundaProcessTestContextProxy);
     when(applicationContext.getBean(CamundaProcessTestRuntimeConfiguration.class))
         .thenReturn(new CamundaProcessTestRuntimeConfiguration());
+    when(applicationContext.getBean(CamundaClientProperties.class))
+        .thenReturn(camundaClientProperties);
   }
 
   @Test

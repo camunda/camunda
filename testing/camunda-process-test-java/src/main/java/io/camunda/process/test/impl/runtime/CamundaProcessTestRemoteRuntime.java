@@ -38,17 +38,17 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   private final URI connectorsRestApiAddress;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
-  public CamundaProcessTestRemoteRuntime(final CamundaProcessTestRuntimeBuilder runtimeBuilder) {
-    camundaClientBuilderFactory = runtimeBuilder.getRemoteCamundaClientBuilderFactory();
-    camundaMonitoringApiAddress = runtimeBuilder.getRemoteCamundaMonitoringApiAddress();
-    connectorsRestApiAddress = runtimeBuilder.getRemoteConnectorsRestApiAddress();
+  public CamundaProcessTestRemoteRuntime(final CamundaProcessTestRuntimeBuilder builder) {
+    camundaClientBuilderFactory = builder.getConfiguredCamundaClientBuilderFactory();
+    camundaMonitoringApiAddress = builder.getRemoteCamundaMonitoringApiAddress();
+    connectorsRestApiAddress = builder.getRemoteConnectorsRestApiAddress();
 
     final CamundaClientConfiguration clientConfiguration =
         getClientConfiguration(camundaClientBuilderFactory);
     camundaRestApiAddress = clientConfiguration.getRestAddress();
     camundaGrpcApiAddress = clientConfiguration.getGrpcAddress();
 
-    if (runtimeBuilder.isMultiTenancyEnabled()) {
+    if (builder.isMultiTenancyEnabled()) {
       LOGGER.warn(
           "Multitenancy detected, but not enabled. Activating multitenancy with a remote "
               + "Camunda runtime has no effect. This feature is only supported for self-managed "

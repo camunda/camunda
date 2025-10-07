@@ -21,23 +21,26 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.spring.configuration.CredentialsProviderConfiguration;
 import io.camunda.client.spring.properties.CamundaClientAuthProperties;
 import io.camunda.client.spring.properties.CamundaClientCloudProperties;
+import io.camunda.client.spring.properties.CamundaClientJobWorkerProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties.ClientMode;
-import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class CamundaSpringProcessTestRuntimeBuilder {
 
   public static CamundaProcessTestRuntime buildRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration,
+      final CamundaClientProperties clientProperties) {
 
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
     runtimeBuilder.withRuntimeMode(runtimeMode);
 
     if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
-      configureManagedRuntime(runtimeBuilder, runtimeConfiguration);
+      configureManagedRuntime(runtimeBuilder, runtimeConfiguration, clientProperties);
 
     } else if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {
       configureRemoteRuntime(runtimeBuilder, runtimeConfiguration);
@@ -48,7 +51,8 @@ public class CamundaSpringProcessTestRuntimeBuilder {
 
   private static void configureManagedRuntime(
       final CamundaProcessTestRuntimeBuilder runtimeBuilder,
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
+      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration,
+      final CamundaClientProperties clientProperties) {
 
     runtimeBuilder
         .withCamundaDockerImageVersion(runtimeConfiguration.getCamundaDockerImageVersion())
@@ -70,6 +74,9 @@ public class CamundaSpringProcessTestRuntimeBuilder {
     runtimeConfiguration
         .getConnectorsExposedPorts()
         .forEach(runtimeBuilder::withConnectorsExposedPort);
+
+    runtimeBuilder.withCamundaClientBuilderFactory(
+        () -> configureCamundaClientBuilder(clientProperties, CamundaClient.newClientBuilder()));
   }
 
   private static void configureRemoteRuntime(
@@ -82,29 +89,63 @@ public class CamundaSpringProcessTestRuntimeBuilder {
         .withRemoteConnectorsRestApiAddress(
             runtimeConfiguration.getRemote().getConnectorsRestApiAddress());
 
-    final CamundaClientBuilderFactory remoteClientBuilderFactory =
-        createRemoteClientBuilderFactory(runtimeConfiguration);
-    runtimeBuilder.withRemoteCamundaClientBuilderFactory(remoteClientBuilderFactory);
+    final CamundaClientProperties clientProperties = runtimeConfiguration.getRemote().getClient();
+
+    runtimeBuilder.withCamundaClientBuilderFactory(
+        () ->
+            configureCamundaClientBuilder(
+                clientProperties, createCamundaClientBuilder(clientProperties)));
   }
 
-  private static CamundaClientBuilderFactory createRemoteClientBuilderFactory(
-      final CamundaProcessTestRuntimeConfiguration runtimeConfiguration) {
-    final CamundaClientProperties remoteClientProperties =
-        runtimeConfiguration.getRemote().getClient();
+  private static CamundaClientBuilder configureCamundaClientBuilder(
+      final CamundaClientProperties clientProperties, final CamundaClientBuilder clientBuilder) {
 
-    final CamundaClientBuilder clientBuilder = createCamundaClientBuilder(remoteClientProperties);
+    clientBuilder.preferRestOverGrpc(clientProperties.getPreferRestOverGrpc());
 
-    if (remoteClientProperties.getRestAddress() != null) {
-      clientBuilder.restAddress(remoteClientProperties.getRestAddress());
-    }
-    if (remoteClientProperties.getGrpcAddress() != null) {
-      clientBuilder.grpcAddress(remoteClientProperties.getGrpcAddress());
-    }
-    if (remoteClientProperties.getRequestTimeout() != null) {
-      clientBuilder.defaultRequestTimeout(remoteClientProperties.getRequestTimeout());
-    }
+    setIfExists(clientProperties.getRestAddress(), clientBuilder::restAddress);
+    setIfExists(clientProperties.getGrpcAddress(), clientBuilder::grpcAddress);
+    setIfExists(clientProperties.getRequestTimeout(), clientBuilder::defaultRequestTimeout);
+    setIfExists(
+        clientProperties.getRequestTimeoutOffset(), clientBuilder::defaultRequestTimeoutOffset);
+    setIfExists(clientProperties.getTenantId(), clientBuilder::defaultTenantId);
+    setIfExists(clientProperties.getMessageTimeToLive(), clientBuilder::defaultMessageTimeToLive);
+    setIfExists(
+        clientProperties.getMaxMessageSize(),
+        clientBuilder::maxMessageSize,
+        (maxMessageSize) -> (int) maxMessageSize.toBytes());
+    setIfExists(
+        clientProperties.getMaxMetadataSize(),
+        clientBuilder::maxMetadataSize,
+        (maxMetadataSize) -> (int) maxMetadataSize.toBytes());
+    setIfExists(
+        clientProperties.getExecutionThreads(), clientBuilder::numJobWorkerExecutionThreads);
+    setIfExists(clientProperties.getCaCertificatePath(), clientBuilder::caCertificatePath);
+    setIfExists(clientProperties.getKeepAlive(), clientBuilder::keepAlive);
+    setIfExists(clientProperties.getOverrideAuthority(), clientBuilder::overrideAuthority);
 
-    return () -> clientBuilder;
+    final CamundaClientJobWorkerProperties jobWorkerProps =
+        clientProperties.getWorker().getDefaults();
+
+    setIfExists(jobWorkerProps.getPollInterval(), clientBuilder::defaultJobPollInterval);
+    setIfExists(jobWorkerProps.getTimeout(), clientBuilder::defaultJobTimeout);
+    setIfExists(jobWorkerProps.getMaxJobsActive(), clientBuilder::defaultJobWorkerMaxJobsActive);
+    setIfExists(jobWorkerProps.getName(), clientBuilder::defaultJobWorkerName);
+    setIfExists(jobWorkerProps.getTenantIds(), clientBuilder::defaultJobWorkerTenantIds);
+    setIfExists(jobWorkerProps.getStreamEnabled(), clientBuilder::defaultJobWorkerStreamEnabled);
+
+    return clientBuilder;
+  }
+
+  private static <T> void setIfExists(final T property, final Consumer<T> setter) {
+    setIfExists(property, setter, Function.identity());
+  }
+
+  private static <T, U> void setIfExists(
+      final T property, final Consumer<U> setter, final Function<T, U> transformer) {
+
+    if (property != null) {
+      setter.accept(transformer.apply(property));
+    }
   }
 
   private static CamundaClientBuilder createCamundaClientBuilder(
