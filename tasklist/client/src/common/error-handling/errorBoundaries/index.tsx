@@ -10,10 +10,24 @@ import type {FallbackProps} from 'react-error-boundary';
 import {useRouteError} from 'react-router-dom';
 import {SomethingWentWrong} from 'common/error-handling/SomethingWentWrong';
 import styles from './styles.module.scss';
+import {TruncatedVariableError} from 'v2/api/useSelectedVariables.query';
+import {useTranslation} from 'react-i18next';
 
 const ErrorWithinLayout: React.FC = () => {
   const error = useRouteError();
+  const isTruncatedVariableError = error instanceof TruncatedVariableError;
+  const {t} = useTranslation();
+
   console.error(error);
+
+  if (isTruncatedVariableError) {
+    return (
+      <SomethingWentWrong
+        title={t('taskDetailsTruncatedVariablesErrorTitle')}
+        message={t('taskDetailsTruncatedVariablesErrorSubtitle')}
+      />
+    );
+  }
 
   return <SomethingWentWrong />;
 };
