@@ -14,12 +14,13 @@ public class RetentionConfiguration {
   private static final String DEFAULT_USAGE_METRICS_MINIMUM_AGE = "730d"; // 2 years
   private static final String DEFAULT_USAGE_METRICS_POLICY_NAME =
       "camunda-usage-metrics-retention-policy";
-
+  private static final int DEFAULT_APPLY_POLICY_JOB_INTERVAL_MINUTES = 60;
   private boolean enabled = false;
   private String minimumAge = DEFAULT_RETENTION_MINIMUM_AGE;
   private String policyName = DEFAULT_RETENTION_POLICY_NAME;
   private String usageMetricsMinimumAge = DEFAULT_USAGE_METRICS_MINIMUM_AGE;
   private String usageMetricsPolicyName = DEFAULT_USAGE_METRICS_POLICY_NAME;
+  private int applyPolicyJobIntervalMinutes = DEFAULT_APPLY_POLICY_JOB_INTERVAL_MINUTES;
 
   public boolean isEnabled() {
     return enabled;
@@ -61,6 +62,14 @@ public class RetentionConfiguration {
     this.usageMetricsPolicyName = usageMetricsPolicyName;
   }
 
+  public int getApplyPolicyJobIntervalMinutes() {
+    return applyPolicyJobIntervalMinutes;
+  }
+
+  public void setApplyPolicyJobIntervalMinutes(final int applyPolicyJobIntervalMinutes) {
+    this.applyPolicyJobIntervalMinutes = applyPolicyJobIntervalMinutes;
+  }
+
   @Override
   public String toString() {
     return "RetentionConfiguration{"
@@ -78,6 +87,8 @@ public class RetentionConfiguration {
         + ", usageMetricsPolicyName='"
         + usageMetricsPolicyName
         + '\''
+        + ", applyPolicyJobIntervalMinutes="
+        + applyPolicyJobIntervalMinutes
         + '}';
   }
 }

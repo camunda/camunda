@@ -248,17 +248,12 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
-    final var retention = config.getRetention();
-    if (!retention.isEnabled()) {
-      return CompletableFuture.completedFuture(null);
-    }
-
     final var requests =
         allTemplatesDescriptors.stream()
             .map(
                 template ->
                     applyPolicyToIndices(
-                        getRetentionPolicyName(template.getIndexName(), retention),
+                        getRetentionPolicyName(template.getIndexName(), config.getRetention()),
                         buildHistoricalIndicesPattern(template)))
             .toList();
 
