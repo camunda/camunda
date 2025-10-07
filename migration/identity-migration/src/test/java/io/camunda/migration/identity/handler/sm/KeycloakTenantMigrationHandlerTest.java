@@ -101,11 +101,11 @@ public class KeycloakTenantMigrationHandlerTest {
     when(managementIdentityClient.fetchTenantGroups("<default>"))
         .thenReturn(List.of(new Group("group3", "Group 3")));
     when(managementIdentityClient.fetchTenantClients("tenant1"))
-        .thenReturn(List.of(new Client("client1", "Client 1"), new Client("client2", "Client 2")));
+        .thenReturn(List.of(new Client("client1", "Client1"), new Client("client2", "Client2")));
     when(managementIdentityClient.fetchTenantClients("tenant2"))
-        .thenReturn(List.of(new Client("client3", "Client 3")));
+        .thenReturn(List.of(new Client("client3", "Client3")));
     when(managementIdentityClient.fetchTenantClients("<default>"))
-        .thenReturn(List.of(new Client("client4", "Client 4")));
+        .thenReturn(List.of(new Client("client4", "Client4")));
 
     // when
     migrationHandler.migrate();
@@ -134,21 +134,21 @@ public class KeycloakTenantMigrationHandlerTest {
             // Groups for tenant1
             tuple("tenant1", "group_1", EntityType.GROUP),
             // Clients for tenant1
-            tuple("tenant1", "client_1", EntityType.CLIENT),
-            tuple("tenant1", "client_2", EntityType.CLIENT),
+            tuple("tenant1", "Client1", EntityType.CLIENT),
+            tuple("tenant1", "Client2", EntityType.CLIENT),
             // Users for tenant2
             tuple("tenant2", "username3", EntityType.USER),
             tuple("tenant2", "username4", EntityType.USER),
             // Groups for tenant2
             tuple("tenant2", "group_2", EntityType.GROUP),
             // Clients for tenant2
-            tuple("tenant2", "client_3", EntityType.CLIENT),
+            tuple("tenant2", "Client3", EntityType.CLIENT),
             // Users for default tenant
             tuple("<default>", "username4", EntityType.USER),
             // Groups for default tenant
             tuple("<default>", "group_3", EntityType.GROUP),
             // Clients for default tenant
-            tuple("<default>", "client_4", EntityType.CLIENT));
+            tuple("<default>", "Client4", EntityType.CLIENT));
   }
 
   @Test
