@@ -54,6 +54,8 @@
     "errorGenericErrorMessage": "Cette page n'a pas pu être chargée. Réessayez plus tard.",
     "errorGenericErrorButtonLabel": "Réessayer",
     "taskDetailsFailedToFetchVariablesErrorSubtitle": "Nous n'avons pas pu récupérer les variables de la tâche. Veuillez réessayer ou contacter votre administrateur de Tasklist.",
+    "taskDetailsTruncatedVariablesErrorTitle": "Les variables sont trop volumineuses",
+    "taskDetailsTruncatedVariablesErrorSubtitle": "Veuillez contacter votre administrateur Tasklist.",
     "taskDetailsFormJSSingleFieldError": "Veuillez vérifier 1 champ",
     "taskDetailsFormJSMultipleFieldError": "Veuillez vérifier {{count}} champs",
     "formJSPoweredByLabel": "Propulsé par",
