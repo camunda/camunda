@@ -316,24 +316,24 @@ jobs:
           --wait --timeout 35m0s \
           --namespace ${{ inputs.name || 'release-migration-test' }} \
           --render-subchart-notes \
-          --set orchestration.migration.identity.enabled=true \
-          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --set identityKeycloak.enabled=true \
-          --set identity.enabled=true \
-          --set identity.firstUser.enabled=false \
-          --set orchestration.security.authentication.method=oidc \
-          --set global.identity.auth.enabled=true \
-          --set orchestration.migration.data.enabled=true \
+          --set connectors.image.tag=SNAPSHOT \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
+          --set identity.enabled=true \
+          --set identity.firstUser.enabled=false \
+          --set identity.image.tag=8.8-SNAPSHOT \
+          --set identityKeycloak.enabled=true \
+          --set global.identity.auth.enabled=true \
+          --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
+          --set-string "orchestration.env[0].value=false" \
           --set orchestration.image.registry=gcr.io \
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
-          --set connectors.image.tag=SNAPSHOT \
-          --set identity.image.tag=8.8-SNAPSHOT \
-          --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
-          --set-string "orchestration.env[0].value=false"
+          --set orchestration.migration.data.enabled=true \
+          --set orchestration.migration.identity.enabled=true \
+          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.method=oidc \
       - name: Summarize deployment
         if: success()
         run: |
