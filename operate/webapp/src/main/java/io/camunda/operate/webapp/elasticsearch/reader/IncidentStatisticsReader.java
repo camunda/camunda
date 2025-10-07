@@ -70,7 +70,7 @@ public class IncidentStatisticsReader extends AbstractReader
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentStatisticsReader.class);
 
-  @Autowired private ListViewTemplate processInstanceTemplate;
+  @Autowired private ListViewTemplate listViewTemplate;
 
   @Autowired private IncidentTemplate incidentTemplate;
 
@@ -80,8 +80,11 @@ public class IncidentStatisticsReader extends AbstractReader
 
   @Override
   public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
+    final QueryBuilder pisWithReadPermissionQuery =
+        createQueryForProcessInstancesWithReadPermission();
     final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap =
-        updateActiveInstances(getIncidentsByProcess());
+        updateActiveInstances(
+            getIncidentsByProcess(pisWithReadPermissionQuery), pisWithReadPermissionQuery);
     return collectStatisticsForProcessGroups(incidentsByProcessMap);
   }
 
@@ -117,9 +120,7 @@ public class IncidentStatisticsReader extends AbstractReader
                             .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
 
     final var query =
-        joinWithAnd(
-            ACTIVE_INCIDENT_QUERY,
-            createQueryForProcessesByPermission(PermissionType.READ_PROCESS_INSTANCE));
+        joinWithAnd(ACTIVE_INCIDENT_QUERY, createQueryForProcessInstancesWithReadPermission());
 
     final SearchRequest searchRequest =
         ElasticsearchUtil.createSearchRequest(incidentTemplate, ONLY_RUNTIME)
@@ -143,14 +144,15 @@ public class IncidentStatisticsReader extends AbstractReader
     return result;
   }
 
-  private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess() {
+  private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess(
+      final QueryBuilder permittedProcessInstancesQuery) {
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
 
     final SearchRequest searchRequest =
-        ElasticsearchUtil.createSearchRequest(processInstanceTemplate, ONLY_RUNTIME)
+        ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
             .source(
                 new SearchSourceBuilder()
-                    .query(INCIDENTS_QUERY)
+                    .query(joinWithAnd(INCIDENTS_QUERY, permittedProcessInstancesQuery))
                     .aggregation(COUNT_PROCESS_KEYS)
                     .size(0));
 
@@ -177,15 +179,17 @@ public class IncidentStatisticsReader extends AbstractReader
   }
 
   private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
-      final Map<Long, IncidentByProcessStatisticsDto> statistics) {
+      final Map<Long, IncidentByProcessStatisticsDto> statistics,
+      final QueryBuilder processInstancePermissionQuery) {
     final QueryBuilder runningInstanceQuery =
         joinWithAnd(
             termQuery(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
+            termQuery(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION),
+            processInstancePermissionQuery);
     final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
     try {
       final SearchRequest searchRequest =
-          ElasticsearchUtil.createSearchRequest(processInstanceTemplate, ONLY_RUNTIME)
+          ElasticsearchUtil.createSearchRequest(listViewTemplate, ONLY_RUNTIME)
               .source(
                   new SearchSourceBuilder()
                       .query(runningInstanceQuery)
@@ -277,9 +281,9 @@ public class IncidentStatisticsReader extends AbstractReader
    *
    * @return query that matches the processes for which the user has the given permission
    */
-  private QueryBuilder createQueryForProcessesByPermission(final PermissionType permission) {
+  private QueryBuilder createQueryForProcessInstancesWithReadPermission() {
     final PermissionsService.ResourcesAllowed allowed =
-        permissionsService.getProcessesWithPermission(permission);
+        permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);
     return allowed.isAll()
         ? QueryBuilders.matchAllQuery()
         : QueryBuilders.termsQuery(ListViewTemplate.BPMN_PROCESS_ID, allowed.getIds());
