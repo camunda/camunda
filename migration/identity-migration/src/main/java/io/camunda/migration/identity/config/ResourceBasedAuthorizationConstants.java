@@ -19,6 +19,7 @@ public final class ResourceBasedAuthorizationConstants {
           AuthorizationResourceType.ROLE,
           AuthorizationResourceType.USER,
           AuthorizationResourceType.TENANT,
+          AuthorizationResourceType.MAPPING_RULE,
           AuthorizationResourceType.SYSTEM);
 
   private ResourceBasedAuthorizationConstants() {}

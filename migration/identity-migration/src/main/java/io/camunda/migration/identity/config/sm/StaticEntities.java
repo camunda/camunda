@@ -70,6 +70,12 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.ROLE,
+                        Set.of(PermissionType.READ)),
+                    new CreateAuthorizationRequest(
+                        ownerId,
+                        ownerType,
+                        "*",
+                        AuthorizationResourceType.MAPPING_RULE,
                         Set.of(PermissionType.READ)))),
             new AuthEntry(
                 audiences.getIdentity() + ":read:users",
@@ -130,7 +136,13 @@ public class StaticEntities {
                         ownerType,
                         "*",
                         AuthorizationResourceType.ROLE,
-                        AuthorizationResourceType.ROLE.getSupportedPermissionTypes()))),
+                        AuthorizationResourceType.ROLE.getSupportedPermissionTypes()),
+                    new CreateAuthorizationRequest(
+                        ownerId,
+                        ownerType,
+                        "*",
+                        AuthorizationResourceType.MAPPING_RULE,
+                        AuthorizationResourceType.MAPPING_RULE.getSupportedPermissionTypes()))),
             new AuthEntry(
                 audiences.getOperate() + ":read:*",
                 List.of(
