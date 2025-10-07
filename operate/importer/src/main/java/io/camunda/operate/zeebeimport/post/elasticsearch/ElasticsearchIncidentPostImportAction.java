@@ -88,13 +88,6 @@ public class ElasticsearchIncidentPostImportAction extends AbstractIncidentPostI
     super(partitionId);
   }
 
-  @Override
-  public void run() {
-    // Initialize metrics when the component is fully loaded
-    initializeMetrics();
-    super.run();
-  }
-
   /**
    * Returns map incident key -> intent (CRAETED|RESOLVED)
    *
