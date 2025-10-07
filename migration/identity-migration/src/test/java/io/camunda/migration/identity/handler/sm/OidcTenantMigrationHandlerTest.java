@@ -69,7 +69,9 @@ public class OidcTenantMigrationHandlerTest {
         .thenReturn(
             List.of(
                 new Tenant("tenant1", "Tenant 1"),
-                new Tenant("tenant2", "Tenant 2"),
+                // Uppercase letter should be migrated as is, this ensures we have no regression
+                // for https://github.com/camunda/camunda/issues/39260
+                new Tenant("Tenant2", "Tenant 2"),
                 new Tenant("<default>", "Default Tenant")));
     when(tenantServices.createTenant(any(TenantRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(null));
@@ -84,7 +86,7 @@ public class OidcTenantMigrationHandlerTest {
     assertThat(capturedTenants).hasSize(2);
     assertThat(capturedTenants.getFirst().tenantId()).isEqualTo("tenant1");
     assertThat(capturedTenants.getFirst().name()).isEqualTo("Tenant 1");
-    assertThat(capturedTenants.getLast().tenantId()).isEqualTo("tenant2");
+    assertThat(capturedTenants.getLast().tenantId()).isEqualTo("Tenant2");
     assertThat(capturedTenants.getLast().name()).isEqualTo("Tenant 2");
     verify(tenantServices, times(0)).addMember(any(TenantMemberRequest.class));
   }
