@@ -55,7 +55,7 @@
     "errorGenericErrorButtonLabel": "Erneut versuchen",
     "taskDetailsFailedToFetchVariablesErrorSubtitle": "Wir konnten die Aufgabenvariablen nicht abrufen. Bitte versuchen Sie es erneut oder kontaktieren Sie Ihren Tasklist-Administrator.",
     "taskDetailsTruncatedVariablesErrorTitle": "Variablen sind zu groß",
-    "taskDetailsTruncatedVariablesErrorSubtitle": "Bitte bitten Sie Ihren Operator, Ihr Prozesstoken zu verschieben oder verwenden Sie Tasklist V1",
+    "taskDetailsTruncatedVariablesErrorSubtitle": "Bitte kontaktieren Sie Ihren Tasklist-Administrator.",
     "taskDetailsFormJSSingleFieldError": "Bitte überprüfen Sie 1 Feld",
     "taskDetailsFormJSMultipleFieldError": "Bitte überprüfen Sie {{count}} Felder",
     "formJSPoweredByLabel": "Bereitgestellt von",
