@@ -97,10 +97,7 @@ public final class JobWorkerImplTest {
 
     client =
         new CamundaClientImpl(
-            new CamundaClientBuilderImpl()
-                .preferRestOverGrpc(false)
-                .build()
-                .getConfiguration(),
+            new CamundaClientBuilderImpl().preferRestOverGrpc(false).build().getConfiguration(),
             channel,
             GatewayGrpc.newStub(channel));
   }
@@ -218,7 +215,10 @@ public final class JobWorkerImplTest {
 
     try (final CamundaClient client =
         new CamundaClientImpl(
-            new CamundaClientBuilderImpl().openTelemetry(GlobalOpenTelemetry.get()).build().getConfiguration(),
+            new CamundaClientBuilderImpl()
+                .openTelemetry(GlobalOpenTelemetry.get())
+                .build()
+                .getConfiguration(),
             channel,
             GatewayGrpc.newStub(channel),
             new JobWorkerExecutors(executor, true))) {
@@ -258,7 +258,10 @@ public final class JobWorkerImplTest {
 
     try (final CamundaClient client =
         new CamundaClientImpl(
-            new CamundaClientBuilderImpl().openTelemetry(GlobalOpenTelemetry.get()).build().getConfiguration(),
+            new CamundaClientBuilderImpl()
+                .openTelemetry(GlobalOpenTelemetry.get())
+                .build()
+                .getConfiguration(),
             channel,
             GatewayGrpc.newStub(channel),
             new JobWorkerExecutors(closedExecutor, true))) {

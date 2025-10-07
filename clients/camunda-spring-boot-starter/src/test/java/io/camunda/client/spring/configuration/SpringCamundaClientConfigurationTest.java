@@ -25,6 +25,7 @@ import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,8 @@ public class SpringCamundaClientConfigurationTest {
         chainHandlers,
         executorService,
         credentialsProvider,
-        jobExceptionHandlerSupplier);
+        jobExceptionHandlerSupplier,
+        GlobalOpenTelemetry.get());
   }
 
   private static CamundaClientProperties properties() {
