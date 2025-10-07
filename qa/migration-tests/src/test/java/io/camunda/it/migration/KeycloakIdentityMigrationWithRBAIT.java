@@ -110,6 +110,14 @@ public class KeycloakIdentityMigrationWithRBAIT extends AbstractKeycloakIdentity
                     PermissionType.UPDATE,
                     PermissionType.DELETE,
                     PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.MAPPING_RULE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
             tuple("identity", ResourceType.USER, Set.of(PermissionType.READ)),
             tuple("identity", ResourceType.COMPONENT, Set.of(PermissionType.ACCESS)));
   }

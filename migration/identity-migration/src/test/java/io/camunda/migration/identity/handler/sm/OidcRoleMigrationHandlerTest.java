@@ -122,10 +122,10 @@ public class OidcRoleMigrationHandlerTest {
         .isEqualTo("Description for Role with special chars");
 
     final var authorizationCaptor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, Mockito.times(19))
+    verify(authorizationServices, Mockito.times(20))
         .createAuthorization(authorizationCaptor.capture());
     final var authorizationRequests = authorizationCaptor.getAllValues();
-    assertThat(authorizationRequests).hasSize(19);
+    assertThat(authorizationRequests).hasSize(20);
     assertThat(authorizationRequests)
         .extracting(
             CreateAuthorizationRequest::ownerId,
@@ -225,6 +225,15 @@ public class OidcRoleMigrationHandlerTest {
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.MAPPING_RULE,
                 Set.of(
                     PermissionType.READ,
                     PermissionType.CREATE,
@@ -323,7 +332,7 @@ public class OidcRoleMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchPermissions(any());
-    verify(authorizationServices, times(19)).createAuthorization(any());
+    verify(authorizationServices, times(20)).createAuthorization(any());
   }
 
   @Test
@@ -386,7 +395,7 @@ public class OidcRoleMigrationHandlerTest {
 
     // then
     verify(roleServices, Mockito.times(2)).createRole(any(CreateRoleRequest.class));
-    verify(authorizationServices, Mockito.times(20))
+    verify(authorizationServices, Mockito.times(21))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 
@@ -446,10 +455,10 @@ public class OidcRoleMigrationHandlerTest {
         .isEqualTo("Description for Role with special chars");
 
     final var authorizationCaptor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, Mockito.times(19))
+    verify(authorizationServices, Mockito.times(20))
         .createAuthorization(authorizationCaptor.capture());
     final var authorizationRequests = authorizationCaptor.getAllValues();
-    assertThat(authorizationRequests).hasSize(19);
+    assertThat(authorizationRequests).hasSize(20);
     assertThat(authorizationRequests)
         .extracting(
             CreateAuthorizationRequest::ownerId,
@@ -549,6 +558,15 @@ public class OidcRoleMigrationHandlerTest {
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.MAPPING_RULE,
                 Set.of(
                     PermissionType.READ,
                     PermissionType.CREATE,

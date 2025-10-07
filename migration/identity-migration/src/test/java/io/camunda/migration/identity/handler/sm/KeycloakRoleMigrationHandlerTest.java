@@ -118,10 +118,10 @@ public class KeycloakRoleMigrationHandlerTest {
         .isEqualTo("Description for Role with special chars");
 
     final var authorizationCaptor = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, Mockito.times(19))
+    verify(authorizationServices, Mockito.times(20))
         .createAuthorization(authorizationCaptor.capture());
     final var authorizationRequests = authorizationCaptor.getAllValues();
-    assertThat(authorizationRequests).hasSize(19);
+    assertThat(authorizationRequests).hasSize(20);
     assertThat(authorizationRequests)
         .extracting(
             CreateAuthorizationRequest::ownerId,
@@ -227,6 +227,15 @@ public class KeycloakRoleMigrationHandlerTest {
                     PermissionType.UPDATE,
                     PermissionType.DELETE)),
             tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.MAPPING_RULE,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
                 "role@name_with_special_chars",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.SYSTEM,
@@ -314,7 +323,7 @@ public class KeycloakRoleMigrationHandlerTest {
 
     // then
     final var results = ArgumentCaptor.forClass(CreateAuthorizationRequest.class);
-    verify(authorizationServices, times(12)).createAuthorization(results.capture());
+    verify(authorizationServices, times(13)).createAuthorization(results.capture());
     final var authorizationRequests = results.getAllValues();
     assertThat(authorizationRequests)
         .extracting(
@@ -365,6 +374,15 @@ public class KeycloakRoleMigrationHandlerTest {
                 "role_1",
                 AuthorizationOwnerType.ROLE,
                 AuthorizationResourceType.TENANT,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.CREATE,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE)),
+            tuple(
+                "role_1",
+                AuthorizationOwnerType.ROLE,
+                AuthorizationResourceType.MAPPING_RULE,
                 Set.of(
                     PermissionType.READ,
                     PermissionType.CREATE,
@@ -454,7 +472,7 @@ public class KeycloakRoleMigrationHandlerTest {
 
     // then
     verify(managementIdentityClient, times(2)).fetchPermissions(any());
-    verify(authorizationServices, times(19)).createAuthorization(any());
+    verify(authorizationServices, times(20)).createAuthorization(any());
   }
 
   @Test
@@ -517,7 +535,7 @@ public class KeycloakRoleMigrationHandlerTest {
 
     // then
     verify(roleServices, Mockito.times(2)).createRole(any(CreateRoleRequest.class));
-    verify(authorizationServices, Mockito.times(20))
+    verify(authorizationServices, Mockito.times(21))
         .createAuthorization(any(CreateAuthorizationRequest.class));
   }
 }
