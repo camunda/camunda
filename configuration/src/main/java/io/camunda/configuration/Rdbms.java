@@ -14,15 +14,7 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
 public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
-  /** Endpoint for the database configured as secondary storage. */
-  private String url;
-
-  /** Username for the database configured as secondary storage. */
-  private String username;
-
-  /** Password for the database configured as secondary storage. */
-  private String password;
-
+  /** The prefix to use for all database artifacts like tables, indexes etc. */
   private String prefix;
 
   /** The interval at which the exporters execution queue is flushed. */
@@ -32,10 +24,10 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   private Integer queueSize = RdbmsWriterConfig.DEFAULT_QUEUE_SIZE;
 
   /** Process definition cache configuration. Defines the size of the process definition cache. */
-  private RdbmsCache processCache;
+  private RdbmsCache processCache = new RdbmsCache();
 
   /** Batch operation cache configuration. Defines the size of the batch operation cache. */
-  private RdbmsCache batchOperationCache;
+  private RdbmsCache batchOperationCache = new RdbmsCache();
 
   /**
    * If true, batch operation items are exported to the database when the batch operation is created
@@ -112,36 +104,6 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setBatchOperationItemInsertBlockSize(final int batchOperationItemInsertBlockSize) {
     this.batchOperationItemInsertBlockSize = batchOperationItemInsertBlockSize;
-  }
-
-  @Override
-  public String getUrl() {
-    return url;
-  }
-
-  @Override
-  public void setUrl(final String url) {
-    this.url = url;
-  }
-
-  @Override
-  public String getUsername() {
-    return username;
-  }
-
-  @Override
-  public void setUsername(final String username) {
-    this.username = username;
-  }
-
-  @Override
-  public String getPassword() {
-    return password;
-  }
-
-  @Override
-  public void setPassword(final String password) {
-    this.password = password;
   }
 
   @Override

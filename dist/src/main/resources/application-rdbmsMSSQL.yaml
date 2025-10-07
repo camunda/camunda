@@ -74,20 +74,15 @@ zeebe:
       rdbms:
         # Classname doesn't matter, since this exporter is present via spring bean
         className: RdbmsExporter
-        args:
-          flushInterval: PT0.5S
-          maxQueueSize: 1000
-          history:
-            defaultHistoryTTL: PT1M
-      #elasticsearch:
-      #  className: io.camunda.zeebe.exporter.ElasticsearchExporter
-      #  args:
-      #    url: http://localhost:9200
 
 camunda:
   data:
     secondary-storage:
       type: rdbms
+      flushInterval: PT0.5S
+      maxQueueSize: 1000
+      history:
+        defaultHistoryTTL: PT1M
   database:
     # Controls which database must be used, possible values: elasticsearch, opensearch
     # This setting can also be overridden using the environment variable CAMUNDA_DATABASE_TYPE

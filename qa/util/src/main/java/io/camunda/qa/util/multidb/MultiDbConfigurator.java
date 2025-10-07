@@ -272,30 +272,33 @@ public class MultiDbConfigurator {
     testApplication.withProperty(
         "spring.datasource.url",
         "jdbc:h2:mem:testdb+" + UUID.randomUUID() + ";DB_CLOSE_DELAY=-1;MODE=PostgreSQL");
-
     testApplication.withProperty("spring.datasource.driver-class-name", "org.h2.Driver");
     testApplication.withProperty("spring.datasource.username", "sa");
     testApplication.withProperty("spring.datasource.password", "");
-    testApplication.withProperty("zeebe.broker.exporters.rdbms.args.flushInterval", "PT0S");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.defaultHistoryTTL",
-        retentionEnabled ? "PT1S" : "PT1H");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.defaultBatchOperationHistoryTTL",
-        retentionEnabled ? "PT1S" : "PT1H");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.minHistoryCleanupInterval",
-        retentionEnabled ? "PT1S" : "PT1H");
-    testApplication.withProperty(
-        "zeebe.broker.exporters.rdbms.args.history.maxHistoryCleanupInterval",
-        retentionEnabled ? "PT5S" : "PT2H");
+    testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
+    testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
+
+    // Since the property override from unified configuration is not applied in this test setup, we
+    // have to build the RDBMS exporter manually
     testApplication.withExporter(
         "rdbms",
         cfg -> {
-          cfg.setClassName("-");
+          cfg.setClassName("io.camunda.db.rdbms.exporter.RdbmsExporter");
+          cfg.setArgs(
+              Map.of(
+                  "flushInterval",
+                  "PT0S",
+                  "history",
+                  Map.of(
+                      "defaultHistoryTTL",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "minHistoryCleanupInterval",
+                      retentionEnabled ? "PT1S" : "PT1H",
+                      "maxHistoryCleanupInterval",
+                      retentionEnabled ? "PT5S" : "PT2H",
+                      "defaultBatchOperationHistoryTTL",
+                      retentionEnabled ? "PT1S" : "PT1H")));
         });
-    testApplication.withProperty("logging.level.io.camunda.db.rdbms", "DEBUG");
-    testApplication.withProperty("logging.level.org.mybatis", "DEBUG");
   }
 
   public String getIndexPrefix() {
