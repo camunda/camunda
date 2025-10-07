@@ -127,7 +127,8 @@ public abstract class AbstractKeycloakIdentityMigrationIT {
           .withEnv("IDENTITY_TENANTS_0_MEMBERS_2_TYPE", "APPLICATION")
           .withEnv("IDENTITY_TENANTS_0_MEMBERS_2_APPLICATION-ID", IDENTITY_CLIENT)
           .withEnv("IDENTITY_TENANTS_1_NAME", "tenant 2")
-          .withEnv("IDENTITY_TENANTS_1_TENANT-ID", "tenant2")
+          // ensures we have no regression for https://github.com/camunda/camunda/issues/39260
+          .withEnv("IDENTITY_TENANTS_1_TENANT-ID", "TenanT2")
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_TYPE", "GROUP")
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_0_GROUP-NAME", "groupB")
           .withEnv("IDENTITY_TENANTS_1_MEMBERS_1_TYPE", "USER")

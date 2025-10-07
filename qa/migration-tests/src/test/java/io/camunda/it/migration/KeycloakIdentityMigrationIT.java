@@ -513,7 +513,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
               final var tenants = client.newTenantsSearchRequest().send().join();
               assertThat(tenants.items())
                   .extracting(Tenant::getTenantId)
-                  .contains("tenant1", "tenant2");
+                  .contains("tenant1", "TenanT2");
             });
 
     // then
@@ -522,13 +522,13 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     final var tenants = client.newTenantsSearchRequest().send().join().items();
     assertThat(tenants)
         .extracting(Tenant::getTenantId, Tenant::getName)
-        .contains(tuple("tenant1", "tenant 1"), tuple("tenant2", "tenant 2"));
+        .contains(tuple("tenant1", "tenant 1"), tuple("TenanT2", "tenant 2"));
 
     final var tenant1Users = client.newUsersByTenantSearchRequest("tenant1").send().join();
     assertThat(tenant1Users.items())
         .extracting(TenantUser::getUsername)
         .containsExactlyInAnyOrder("user0");
-    final var tenant2Users = client.newUsersByTenantSearchRequest("tenant2").send().join();
+    final var tenant2Users = client.newUsersByTenantSearchRequest("TenanT2").send().join();
     assertThat(tenant2Users.items())
         .extracting(TenantUser::getUsername)
         .containsExactlyInAnyOrder("user1");
@@ -538,7 +538,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     assertThat(tenant1Groups.items())
         .extracting(TenantGroup::groupId)
         .containsExactlyInAnyOrder("groupa");
-    final var tenant2Groups = searchGroupsInTenant(restAddress, "tenant2");
+    final var tenant2Groups = searchGroupsInTenant(restAddress, "TenanT2");
     assertThat(tenant2Groups.items())
         .extracting(TenantGroup::groupId)
         .containsExactlyInAnyOrder("groupb");
@@ -546,7 +546,7 @@ public class KeycloakIdentityMigrationIT extends AbstractKeycloakIdentityMigrati
     assertThat(tenant1Clients.items())
         .extracting(TenantClient::clientId)
         .containsExactlyInAnyOrder(IDENTITY_CLIENT);
-    final var tenant2Clients = searchClientsInTenant(restAddress, "tenant2");
+    final var tenant2Clients = searchClientsInTenant(restAddress, "TenanT2");
     assertThat(tenant2Clients.items())
         .extracting(TenantClient::clientId)
         .containsExactlyInAnyOrder(IDENTITY_CLIENT);

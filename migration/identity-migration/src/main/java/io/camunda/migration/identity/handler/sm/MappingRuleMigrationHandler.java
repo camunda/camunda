@@ -151,7 +151,7 @@ public class MappingRuleMigrationHandler extends MigrationHandler<MappingRule> {
       final Set<Tenant> appliedTenants, final String mappingRuleId) {
     appliedTenants.forEach(
         tenant -> {
-          final var tenantId = normalizeID(tenant.tenantId());
+          final var tenantId = tenant.tenantId();
           try {
             final var tenantMember =
                 new TenantMemberRequest(tenantId, mappingRuleId, EntityType.MAPPING_RULE);
