@@ -40,7 +40,6 @@ import org.springframework.test.context.web.WebAppConfiguration;
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfiguration.class, UnifiedConfigurationHelper.class},
     properties = {
-      OperateProperties.PREFIX + ".importer.startLoadingDataOnStartup = false",
       OperateProperties.PREFIX + ".zeebe.compatibility.enabled = true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER",
       OperateProperties.PREFIX + ".multiTenancy.enabled = false"

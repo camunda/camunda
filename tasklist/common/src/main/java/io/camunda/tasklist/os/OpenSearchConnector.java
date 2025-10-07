@@ -66,7 +66,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -86,7 +85,6 @@ public class OpenSearchConnector {
   private static final String AWS_OPENSEARCH_SERVICE_NAME = "es";
 
   private PluginRepository osClientRepository = new PluginRepository();
-  private PluginRepository zeebeOsClientRepository = new PluginRepository();
   @Autowired private TasklistProperties tasklistProperties;
 
   @Autowired
@@ -96,11 +94,6 @@ public class OpenSearchConnector {
   @VisibleForTesting
   public void setOsClientRepository(final PluginRepository osClientRepository) {
     this.osClientRepository = osClientRepository;
-  }
-
-  @VisibleForTesting
-  public void setZeebeOsClientRepository(final PluginRepository zeebeOsClientRepository) {
-    this.zeebeOsClientRepository = zeebeOsClientRepository;
   }
 
   @VisibleForTesting
@@ -128,14 +121,6 @@ public class OpenSearchConnector {
           e);
     }
     return openSearchClient;
-  }
-
-  @Bean
-  @ConditionalOnProperty(value = "camunda.tasklist.importer-enabled", havingValue = "true")
-  public OpenSearchClient tasklistZeebeOsClient() {
-    System.setProperty("es.set.netty.runtime.available.processors", "false");
-    zeebeOsClientRepository.load(tasklistProperties.getZeebeOpenSearch().getInterceptorPlugins());
-    return createOsClient(tasklistProperties.getZeebeOpenSearch(), zeebeOsClientRepository);
   }
 
   @Bean

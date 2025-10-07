@@ -90,10 +90,8 @@ final class SecuredClusteredMessagingIT {
           // unified configuration: url
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           // ---.withEnv("ZEEBE_BROKER_NETWORK_ADVERTISEDHOST", "zeebe")
           .withEnv(
               "ZEEBE_BROKER_EXPORTERS_CAMUNDA_CLASSNAME", "io.camunda.exporter.CamundaExporter")
@@ -131,12 +129,9 @@ final class SecuredClusteredMessagingIT {
           // Unified Configuration: db url
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           // ---
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv("CAMUNDA_LOG_LEVEL", "DEBUG")
           .withExposedPorts(8080, 9600, 26502)
@@ -174,12 +169,9 @@ final class SecuredClusteredMessagingIT {
           // Unified Configuration: db url
           .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_DATABASE_URL", esUrl)
-          .withEnv("CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_URL", esUrl)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
           // ---
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_INDEXPREFIX", testPrefix)
           .withEnv("CAMUNDA_TASKLIST_ZEEBE_GATEWAYADDRESS", zeebe.getInternalGatewayAddress())
           .withEnv(
               "CAMUNDA_TASKLIST_ZEEBE_RESTADDRESS", "http://" + zeebe.getInternalHost() + ":8080")

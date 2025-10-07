@@ -448,14 +448,7 @@ public class TestContainerUtil {
           .withEnv("CAMUNDA_TASKLIST_DATABASE", "opensearch")
           // ---
           .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort))
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_URL", osUrl)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_HOST", osHost)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PORT", String.valueOf(osPort));
-      if (testContext.getZeebeIndexPrefix() != null) {
-        tasklistContainer.withEnv(
-            "CAMUNDA_TASKLIST_ZEEBEOPENSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
-      }
+          .withEnv("CAMUNDA_TASKLIST_OPENSEARCH_PORT", String.valueOf(osPort));
     } else {
       final String elsHost = testContext.getInternalElsHost();
       final Integer elsPort = testContext.getInternalElsPort();
@@ -474,15 +467,7 @@ public class TestContainerUtil {
           // ---
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HOST", elsHost)
           .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_PORT", String.valueOf(elsPort))
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_URL", esUrl)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_HOST", elsHost)
-          .withEnv("CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PORT", String.valueOf(elsPort));
-      if (testContext.getZeebeIndexPrefix() != null) {
-        tasklistContainer.withEnv(
-            "CAMUNDA_TASKLIST_ZEEBEELASTICSEARCH_PREFIX", testContext.getZeebeIndexPrefix());
-      }
-
-      tasklistContainer
+          // ---
           .withEnv("SPRING_PROFILES_ACTIVE", "consolidated-auth")
           .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "false")
           .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
@@ -571,10 +556,10 @@ public class TestContainerUtil {
         .withEnv("ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME", exporterClassName)
         .withEnv(
             "ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_HISTORY_WAITPERIODBEFOREARCHIVING", "1s");
-    if (testContext.getZeebeIndexPrefix() != null) {
+    if (testContext.getIndexPrefix() != null) {
       zeebeBroker.withEnv(
           "CAMUNDA_DATA_SECONDARY_STORAGE_" + type.toUpperCase() + "_INDEX_PREFIX",
-          testContext.getZeebeIndexPrefix());
+          testContext.getIndexPrefix());
     }
   }
 

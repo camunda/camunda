@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -26,7 +25,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -75,7 +73,6 @@ public class OpenSearchTestExtension
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getOpenSearch().setIndexPrefix(indexPrefix);
-      tasklistProperties.getZeebeOpenSearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     schemaManager.createSchema();
@@ -111,24 +108,6 @@ public class OpenSearchTestExtension
   }
 
   @Override
-  public void refreshIndexesInElasticsearch() {
-    refreshZeebeIndices();
-    refreshTasklistIndices();
-  }
-
-  @Override
-  public void refreshZeebeIndices() {
-    try {
-      osClient
-          .indices()
-          .refresh(
-              r -> r.index(List.of(tasklistProperties.getZeebeOpenSearch().getPrefix() + "*")));
-    } catch (final Exception t) {
-      LOGGER.error("Could not refresh Zeebe OpenSearch indices", t);
-    }
-  }
-
-  @Override
   public void refreshTasklistIndices() {
     try {
 
@@ -141,50 +120,6 @@ public class OpenSearchTestExtension
       osClient.indices().flush(flush);
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Opensearch indices", t);
-    }
-  }
-
-  @Override
-  public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(testCheck, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
     }
   }
 

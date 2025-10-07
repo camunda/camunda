@@ -72,8 +72,6 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   @Autowired RestHighLevelClient tasklistEsClient;
 
-  @Autowired RestHighLevelClient tasklistZeebeEsClient;
-
   @BeforeAll
   public static void beforeClass() {
     assumeTrue(TestUtil.isElasticSearch());
@@ -83,7 +81,6 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
   @Test
   public void canConnect() {
     assertThat(tasklistEsClient).isNotNull();
-    assertThat(tasklistZeebeEsClient).isNotNull();
   }
 
   static class ElasticsearchStarter
@@ -103,7 +100,6 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               "camunda.operate.elasticsearch.url=" + elsUrl,
               "camunda.operate.zeebeElasticsearch.url=" + elsUrl,
               "camunda.tasklist.elasticsearch.url=" + elsUrl,
-              "camunda.tasklist.zeebeElasticsearch.url=" + elsUrl,
               // DB type
               "camunda.data.secondary-storage.type=elasticsearch",
               "camunda.database.type=elasticsearch",
@@ -116,16 +112,9 @@ public class ElasticsearchConnectorSSLAuthIT extends TasklistIntegrationTest {
               // "camunda.tasklist.elasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
               // "camunda.tasklist.elasticsearch.ssl.selfSigned=true",
               // "camunda.tasklist.elasticsearch.ssl.verifyHostname=true",
-              "camunda.tasklist.zeebeElasticsearch.username=elastic",
-              "camunda.tasklist.zeebeElasticsearch.password=elastic",
               // Unified config
               "camunda.data.secondary-storage.elasticsearch.username=elastic",
-              "camunda.data.secondary-storage.elasticsearch.password=elastic",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.certificatePath="+certDir+"/elastic-stack-ca.p12",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.selfSigned=true",
-              // "camunda.tasklist.zeebeElasticsearch.ssl.verifyHostname=true",
-              "camunda.tasklist.zeebeElasticsearch.clusterName=docker-cluster",
-              "camunda.tasklist.zeebeElasticsearch.prefix=zeebe-record")
+              "camunda.data.secondary-storage.elasticsearch.password=elastic")
           .applyTo(applicationContext.getEnvironment());
     }
   }

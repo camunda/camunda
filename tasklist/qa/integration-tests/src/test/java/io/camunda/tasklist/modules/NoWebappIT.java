@@ -7,10 +7,8 @@
  */
 package io.camunda.tasklist.modules;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
-import io.camunda.tasklist.ImportModuleConfiguration;
 import io.camunda.tasklist.WebappModuleConfiguration;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.controllers.TasklistIndexController;
@@ -20,15 +18,9 @@ import org.springframework.test.context.TestPropertySource;
 
 @TestPropertySource(
     properties = {
-      TasklistProperties.PREFIX + ".importer-enabled = true",
       TasklistProperties.PREFIX + ".webapp-enabled = false",
     })
-public class OnlyImportIT extends ModuleIntegrationTest {
-
-  @Test
-  public void testImportModuleIsPresent() {
-    assertThat(applicationContext.getBean(ImportModuleConfiguration.class)).isNotNull();
-  }
+public class NoWebappIT extends ModuleIntegrationTest {
 
   @Test
   public void testWebappModuleIsNotPresent() {

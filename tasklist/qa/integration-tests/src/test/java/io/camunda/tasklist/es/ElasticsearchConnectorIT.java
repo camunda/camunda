@@ -49,9 +49,6 @@ import org.testcontainers.utility.DockerImageName;
       TasklistPropertiesOverride.class,
       UnifiedConfiguration.class,
       UnifiedConfigurationHelper.class
-    },
-    properties = {
-      TasklistProperties.PREFIX + ".importer-enabled=true",
     })
 public class ElasticsearchConnectorIT {
 
@@ -112,20 +109,6 @@ public class ElasticsearchConnectorIT {
         WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
   }
 
-  @Test
-  void shouldSetCustomHeaderOnAllZeebeEsClientRequests() throws IOException {
-    // given
-    final var client = connector.tasklistZeebeEsClient();
-
-    // when
-    client.cluster().health(new ClusterHealthRequest(), RequestOptions.DEFAULT);
-
-    // then
-    WIRE_MOCK_SERVER.verify(
-        new CountMatchingStrategy(CountMatchingStrategy.GREATER_THAN, 0),
-        WireMock.anyRequestedFor(WireMock.anyUrl()).withHeader("foo", WireMock.equalTo("bar")));
-  }
-
   @DynamicPropertySource
   public static void setSearchPluginProperties(final DynamicPropertyRegistry registry)
       throws IOException {
@@ -149,7 +132,6 @@ public class ElasticsearchConnectorIT {
                 WireMock.aResponse().proxiedFrom("http://" + elasticsearch.getHttpHostAddress())));
 
     setPluginConfig(registry, TasklistProperties.PREFIX + ".elasticsearch", plugin);
-    setPluginConfig(registry, TasklistProperties.PREFIX + ".zeebeElasticsearch", plugin);
     // URL
     registry.add("camunda.data.secondary-storage.elasticsearch.url", WIRE_MOCK_SERVER::baseUrl);
     registry.add("camunda.database.url", WIRE_MOCK_SERVER::baseUrl);

@@ -7,7 +7,6 @@
  */
 package io.camunda.tasklist.util;
 
-import static io.camunda.tasklist.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
 
@@ -25,9 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import org.elasticsearch.action.admin.indices.flush.FlushRequest;
-import org.elasticsearch.action.admin.indices.refresh.RefreshRequest;
 import org.elasticsearch.action.bulk.BulkRequest;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.support.WriteRequest.RefreshPolicy;
@@ -88,7 +85,6 @@ public class ElasticsearchTestExtension
       indexPrefix =
           Optional.ofNullable(indexPrefixHolder.createNewIndexPrefix()).orElse(indexPrefix);
       tasklistProperties.getElasticsearch().setIndexPrefix(indexPrefix);
-      tasklistProperties.getZeebeElasticsearch().setPrefix(indexPrefix);
       searchEngineConfiguration.connect().setIndexPrefix(indexPrefix);
     }
     schemaManager.createSchema();
@@ -124,23 +120,6 @@ public class ElasticsearchTestExtension
   }
 
   @Override
-  public void refreshIndexesInElasticsearch() {
-    refreshZeebeIndices();
-    refreshTasklistIndices();
-  }
-
-  @Override
-  public void refreshZeebeIndices() {
-    try {
-      final RefreshRequest refreshRequest =
-          new RefreshRequest(tasklistProperties.getZeebeElasticsearch().getPrefix() + "*");
-      esClient.indices().refresh(refreshRequest, RequestOptions.DEFAULT);
-    } catch (final Exception t) {
-      LOGGER.error("Could not refresh Zeebe Elasticsearch indices", t);
-    }
-  }
-
-  @Override
   public void refreshTasklistIndices() {
     try {
 
@@ -151,50 +130,6 @@ public class ElasticsearchTestExtension
           .flush(flush, RequestOptions.DEFAULT.toBuilder().addParameter("force", "true").build());
     } catch (final Exception t) {
       LOGGER.error("Could not refresh Tasklist Elasticsearch indices", t);
-    }
-  }
-
-  @Override
-  public void processAllRecordsAndWait(final TestCheck testCheck, final Object... arguments) {
-    processRecordsAndWaitFor(testCheck, null, arguments);
-  }
-
-  @Override
-  public void processRecordsAndWaitFor(
-      final TestCheck testCheck, final Supplier<Object> supplier, final Object... arguments) {
-    int waitingRound = 0;
-    final int maxRounds = 50;
-    boolean found = testCheck.test(arguments);
-    final long start = System.currentTimeMillis();
-    while (!found && waitingRound < maxRounds) {
-      try {
-        if (supplier != null) {
-          supplier.get();
-        }
-        refreshIndexesInElasticsearch();
-      } catch (final Exception e) {
-        LOGGER.error(e.getMessage(), e);
-      }
-      found = testCheck.test(arguments);
-      if (!found) {
-        sleepFor(500);
-        waitingRound++;
-      }
-    }
-    final long finishedTime = System.currentTimeMillis() - start;
-
-    if (found) {
-      LOGGER.debug(
-          "Condition {} was met in round {} ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
-    } else {
-      LOGGER.error(
-          "Condition {} was not met after {} rounds ({} ms).",
-          testCheck.getName(),
-          waitingRound,
-          finishedTime);
     }
   }
 

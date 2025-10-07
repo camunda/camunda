@@ -157,10 +157,8 @@ public class CamundaContainer extends GenericContainer<CamundaContainer> {
         CAMUNDA_EXPORTER_BULK_SIZE);
 
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_OPERATE_ZEEBEELASTICSEARCH_URL, url);
 
     withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ELASTICSEARCH_URL, url);
-    withEnv(ContainerRuntimeEnvs.CAMUNDA_ENV_TASKLIST_ZEEBEELASTICSEARCH_URL, url);
 
     withEnv(CAMUNDA_ENV_CAMUNDA_DATABASE_URL, url);
     return this;

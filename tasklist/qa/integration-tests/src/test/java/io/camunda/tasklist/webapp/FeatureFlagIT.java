@@ -46,7 +46,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
   }
 
   @DynamicPropertySource
-  static void registerProperties(DynamicPropertyRegistry registry) {
+  static void registerProperties(final DynamicPropertyRegistry registry) {
     registry.add("camunda.tasklist.featureFlag.processPublicEndpoints", () -> false);
   }
 
@@ -57,7 +57,7 @@ public class FeatureFlagIT extends TasklistZeebeIntegrationTest {
     final String bpmnProcessId = "startedByForm";
     final String formId = "testForm";
 
-    databaseTestExtension.processAllRecordsAndWait(processIsDeployedCheck, processId1);
+    databaseTestExtension.waitFor(processIsDeployedCheck, processId1);
 
     // when
     final var result =
