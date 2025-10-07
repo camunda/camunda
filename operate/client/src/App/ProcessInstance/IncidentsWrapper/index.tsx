@@ -6,17 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
-
 import {IncidentsOverlay} from './IncidentsOverlay';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
-import {IncidentsTable} from './IncidentsTable';
+import {IncidentsTable} from './IncidentsTable/v2';
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {getFilteredIncidents, init} from 'modules/utils/incidents';
-import {useIncidents} from 'modules/hooks/incidents';
+import {getFilteredIncidentsV2} from 'modules/utils/incidents';
+import {useIncidentsV2} from 'modules/hooks/incidents';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
@@ -26,18 +24,10 @@ type Props = {
 
 const IncidentsWrapper: React.FC<Props> = observer(
   ({setIsInTransition, processInstance}) => {
-    const incidents = useIncidents();
-    const filteredIncidents = getFilteredIncidents(incidents);
+    const incidents = useIncidentsV2(processInstance.processInstanceKey);
+    const filteredIncidents = getFilteredIncidentsV2(incidents);
 
-    useEffect(() => {
-      init(processInstance);
-
-      return () => {
-        incidentsStore.reset();
-      };
-    }, [processInstance]);
-
-    if (incidentsStore.incidentsCount === 0) {
+    if (incidents.length === 0) {
       return null;
     }
 
@@ -61,7 +51,10 @@ const IncidentsWrapper: React.FC<Props> = observer(
             >
               <IncidentsFilter />
             </PanelHeader>
-            <IncidentsTable />
+            <IncidentsTable
+              processInstanceKey={processInstance.processInstanceKey}
+              incidents={filteredIncidents}
+            />
           </IncidentsOverlay>
         </Transition>
       </>

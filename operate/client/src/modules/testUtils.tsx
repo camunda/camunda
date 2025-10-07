@@ -16,6 +16,7 @@ import type {
   ProcessInstance,
   Variable,
   CurrentUser,
+  Incident,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import type {
   ProcessInstanceEntity,
@@ -58,6 +59,24 @@ export const createIncident = (
     hasActiveOperation: false,
     lastOperation: null,
     rootCauseInstance: null,
+    ...options,
+  };
+};
+
+export const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
+  return {
+    errorMessage: 'Some Condition error has occurred',
+    errorType: 'CONDITION_ERROR',
+    incidentKey: randomIdIterator.next().value,
+    jobKey: randomJobIdIterator.next().value,
+    elementId: 'flowNodeId_alwaysFailingTask',
+    elementInstanceKey: randomFlowNodeInstanceIdIterator.next().value,
+    creationTime: '2019-03-01T14:26:19',
+    processInstanceKey: '2251799813685294',
+    processDefinitionId: 'someKey',
+    processDefinitionKey: '2223894723423800',
+    tenantId: '<default>',
+    state: 'ACTIVE',
     ...options,
   };
 };

@@ -213,7 +213,7 @@ const IncidentsTable: React.FC = observer(function IncidentsTable() {
               hasPermissionForRetryOperation && areOperationsVisible ? (
                 <IncidentOperation
                   instanceId={processInstanceId}
-                  incident={incident}
+                  incidentKey={incident.id}
                   showSpinner={incident.hasActiveOperation}
                 />
               ) : undefined,
