@@ -1,5 +1,5 @@
-# description: Workflow for running CI tests for Optimize. Runs integration tests, schema integrity tests, database upgrade tests, and deploys a SNAPSHOT of Optimize on a push to main
-# test location: /optimize/qa/schema-integrity-tests, /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
+# description: Workflow for running CI tests for Optimize. Runs integration tests, database upgrade tests, and deploys a SNAPSHOT of Optimize on a push to main
+# test location: /optimize/backend/src/it/java, optimize/upgrade/src/test/java/io/camunda/optimize/upgrade
 # type: CI
 # owner: @camunda/core-features
 name: "[Legacy] Optimize / Data Layer"
@@ -53,155 +53,6 @@ jobs:
       - name: Get list of changed directories
         id: filter
         uses: ./.github/actions/paths-filter
-
-  # TODO - re-enable this test. It fails when enabled
-  es-schema-integrity-test:
-    name: "Elasticsearch Schema Integrity"
-    if: false
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          harbor: true
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-      - name: Start Elasticsearch - Old
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch-old
-        env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_elasticsearch_version }}
-          ELASTIC_JVM_MEMORY: 1
-          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
-      - name: Start Elasticsearch - New
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.elasticsearch.yml
-          project_name: elasticsearch-new
-        env:
-          ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-          ELASTIC_JVM_MEMORY: 1
-          ELASTIC_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-
-      - name: Build optimize dependencies
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml -pl backend -am install -T1
-
-      - name: Install
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
-
-      - name: Verify optimize/qa/schema-integrity-tests
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pes-schema-integrity-tests
-        env:
-          CAMUNDA_OPTIMIZE_DATABASE: elasticsearch
-
-      - name: Upload Test Results
-        if: always()
-        uses: ./.github/actions/collect-test-artifacts
-        with:
-          name: es-schema-integrity-test-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-            **/*.log
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: es-schema-integrity-test-docker
-
-  # TODO - re-enable this test. It fails when enabled
-  os-schema-integrity-test:
-    name: "OpenSearch Schema Integrity"
-    if: false
-    runs-on: gcp-core-8-default
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955 # v4
-      - name: Setup Maven
-        uses: ./.github/actions/setup-build
-        with:
-          harbor: true
-          maven-cache-key-modifier: optimize-tests
-          maven-version: 3.8.6
-          time-zone: Europe/Berlin
-          vault-address: ${{ secrets.VAULT_ADDR }}
-          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
-          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - name: "Read Java / Version Info"
-        id: "pom-info"
-        uses: YunaBraska/java-info-action@main
-        with:
-          work-dir: ./optimize
-      - name: Start OpenSearch - Old
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch-old
-        env:
-          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_previous_optimize_opensearch_version }}
-          OPENSEARCH_JVM_MEMORY: 1
-          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_old_database_port }}
-      - name: Start OpenSearch - New
-        uses: ./.github/actions/compose
-        with:
-          compose_file: .github/actions/compose/docker-compose.opensearch.yml
-          project_name: opensearch-new
-        env:
-          OPENSEARCH_VERSION: ${{ steps.pom-info.outputs.x_opensearch_test_version }}
-          OPENSEARCH_JVM_MEMORY: 1
-          OPENSEARCH_HTTP_PORT: ${{ steps.pom-info.outputs.x_new_database_port }}
-
-      - uses: ./.github/actions/build-zeebe
-        id: build-camunda
-        with:
-          maven-extra-args: -PskipFrontendBuild
-
-      - name: Install optimize dependencies
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml -pl upgrade -am install -DskipFrontendBuild -PrunAssembly -T1
-
-      - name: Install
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: -f optimize/pom.xml install -Dskip.fe.build -Dskip.docker -DskipTests -PrunAssembly -T1
-      - name: Verify optimize/qa/schema-integrity-tests
-        uses: ./.github/actions/run-maven
-        with:
-          parameters: verify -Dskip.docker -Dskip.fe.build -f optimize/qa/schema-integrity-tests -Pos-schema-integrity-tests
-        env:
-          CAMUNDA_OPTIMIZE_DATABASE: opensearch
-      - name: Upload Test Results
-        if: always()
-        uses: ./.github/actions/collect-test-artifacts
-        with:
-          name: os-schema-integrity-test-junit
-          path: |
-            **/failsafe-reports/**/*.xml
-            **/*.log
-      - name: Docker log dump
-        uses: ./.github/actions/docker-logs
-        if: always()
-        with:
-          archive_name: os-schema-integrity-test-docker
 
   upgrade-tests:
     name: "Database Upgrade"
@@ -280,8 +131,6 @@ jobs:
   rerun-failed-jobs:
     needs:
       - upgrade-tests
-      - os-schema-integrity-test
-      - es-schema-integrity-test
     if: failure() && fromJSON(github.run_attempt) < 3
     runs-on: ubuntu-latest
     steps:
