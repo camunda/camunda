@@ -55,7 +55,7 @@
     "errorGenericErrorButtonLabel": "Try again",
     "taskDetailsFailedToFetchVariablesErrorSubtitle": "We could not fetch the task variables. Please try again or contact your Tasklist administrator.",
     "taskDetailsTruncatedVariablesErrorTitle": "Variables are too large",
-    "taskDetailsTruncatedVariablesErrorSubtitle": "Please ask your Operator to move your process token or use Tasklist V1",
+    "taskDetailsTruncatedVariablesErrorSubtitle": "Please contact your Tasklist administrator.",
     "taskDetailsFormJSSingleFieldError": "Please review 1 field",
     "taskDetailsFormJSMultipleFieldError": "Please review {{count}} fields",
     "formJSPoweredByLabel": "Powered by",
