@@ -57,7 +57,7 @@ public class ConnectorsContainerRuntimeProperties {
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
     connectorsDockerImageVersion =
-        versionedPropertiesReader.getLatestReleasedVersion(
+        versionedPropertiesReader.getVersion(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
