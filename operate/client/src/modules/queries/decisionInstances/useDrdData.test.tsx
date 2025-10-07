@@ -7,7 +7,7 @@
  */
 
 import {QueryClientProvider} from '@tanstack/react-query';
-import {renderHook, waitFor} from '@testing-library/react';
+import {renderHook, waitFor} from 'modules/testing-library';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {
   assignApproverGroup,
