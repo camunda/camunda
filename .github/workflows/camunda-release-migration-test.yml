@@ -313,7 +313,7 @@ jobs:
         run: |
           helm dependency build charts/camunda-platform-8.8/
           helm upgrade ${{ inputs.name || 'release-migration-test' }} charts/camunda-platform-8.8/ \
-          --wait --timeout 35m0s \
+          --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name || 'release-migration-test' }} \
           --render-subchart-notes \
           --set connectors.image.tag=SNAPSHOT \
