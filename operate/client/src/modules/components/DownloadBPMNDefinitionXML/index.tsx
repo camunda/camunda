@@ -12,36 +12,17 @@ import {Download} from '@carbon/react/icons';
 import {useProcessDefinitionXml} from 'modules/queries/processDefinitions/useProcessDefinitionXml';
 import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
 import {getDiagramNameByProcessDefinition} from 'modules/utils/processDefinition';
-import _ from 'lodash';
 
 interface DownloadBPMNDefinitionXMLProps {
   processDefinitionKey: string | undefined;
   disabled?: boolean;
   className?: string;
-  size?: 'sm' | 'md' | 'lg';
-  kind?: 'primary' | 'secondary' | 'tertiary' | 'ghost';
-  label?: string;
-  ariaLabel?: string;
-  align?:
-    | 'left'
-    | 'right'
-    | 'top'
-    | 'top-left'
-    | 'top-right'
-    | 'bottom'
-    | 'bottom-left'
-    | 'bottom-right';
 }
 
 const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
   processDefinitionKey,
   disabled = false,
   className,
-  size = 'sm',
-  align = 'left',
-  kind = 'tertiary',
-  label = 'Download XML',
-  ariaLabel = 'Download BPMN definition XML',
 }) => {
   const {isLoading, data: xmlData} = useProcessDefinitionXml({
     processDefinitionKey,
@@ -61,12 +42,7 @@ const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-
-      link.download = `${_.kebabCase(
-        processDefinition
-          ? getDiagramNameByProcessDefinition(processDefinition)
-          : 'diagram',
-      )}.bpmn`;
+      link.download = `${getDiagramNameByProcessDefinition(processDefinition)}.bpmn`;
       document.body.appendChild(link);
       link.click();
 
@@ -80,14 +56,14 @@ const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
 
   return (
     <IconButton
-      kind={kind}
-      size={size}
-      align={align}
+      kind="tertiary"
+      size="sm"
+      align="left"
       disabled={disabled || isLoading || !xmlData}
       onClick={handleDownload}
       className={className}
-      label={label}
-      aria-label={ariaLabel}
+      label="Download XML"
+      aria-label="Download BPMN definition XML"
     >
       <Download />
     </IconButton>
