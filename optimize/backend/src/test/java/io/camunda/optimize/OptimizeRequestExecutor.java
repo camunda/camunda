@@ -246,6 +246,7 @@ public class OptimizeRequestExecutor {
         throw new OptimizeIntegrationTestException("Unsupported http method: " + method);
     }
 
+    log.info("Response: {}", response);
     resetBuilder();
     // consume the response entity so the server can write the response
     response.bufferEntity();
@@ -274,13 +275,14 @@ public class OptimizeRequestExecutor {
       builder = builder.cookie(cookieEntry.getKey(), cookieEntry.getValue());
     }
 
-    if (defaultAuthCookie == null) {
-      initAuthCookie();
-    }
-    if (authCookie != null) {
-      builder =
-          builder.cookie(AuthCookieService.getAuthorizationCookieNameWithSuffix(0), authCookie);
-    }
+    //    if (defaultAuthCookie == null) {
+    //      initAuthCookie();
+    //    }
+    //    if (authCookie != null) {
+    //      builder =
+    //          builder.cookie(AuthCookieService.getAuthorizationCookieNameWithSuffix(0),
+    // authCookie);
+    //    }
 
     for (final Map.Entry<String, String> headerEntry : requestHeaders.entrySet()) {
       builder = builder.header(headerEntry.getKey(), headerEntry.getValue());

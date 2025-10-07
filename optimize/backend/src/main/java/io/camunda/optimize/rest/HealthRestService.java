@@ -14,10 +14,12 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.core.Response;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 @AllArgsConstructor
 @Component
+@Slf4j
 @Path(READYZ_PATH)
 public class HealthRestService {
 
@@ -27,7 +29,9 @@ public class HealthRestService {
 
   @GET
   public Response getConnectionStatus() {
+    log.info("Health check request received");
     if (statusCheckingService.isConnectedToDatabase()) {
+      log.info("Database connection established");
       return Response.ok().build();
     }
     return Response.status(Response.Status.SERVICE_UNAVAILABLE).build();

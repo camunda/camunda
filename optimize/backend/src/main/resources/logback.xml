@@ -6,6 +6,13 @@
         <encoder class="net.logstash.logback.encoder.LogstashEncoder" />
       </appender>
       <logger name="io.camunda.optimize" level="debug" />
+      <logger name="org.springframework.boot.SpringApplication" level="info" />
+      <logger name="org.springframework.boot.web.embedded" level="info" />
+      <logger name="org.springframework.context.support" level="info" />
+      <logger name="org.springframework.beans.factory" level="info" />
+      <logger name="org.apache.hc" level="debug" />
+      <logger name="org.opensearch.client" level="debug" />
+      <logger name="io.camunda.optimize.service.db.os" level="debug" />
       <logger name="org.elasticsearch" level="warn" />
       <root level="info">
         <appender-ref ref="STDOUT_JSON"/>
@@ -18,6 +25,13 @@
         </encoder>
       </appender>
       <logger name="io.camunda.optimize" level="debug" />
+      <logger name="org.springframework.boot.SpringApplication" level="info" />
+      <logger name="org.springframework.boot.web.embedded" level="info" />
+      <logger name="org.springframework.context.support" level="info" />
+      <logger name="org.springframework.beans.factory" level="info" />
+      <logger name="org.apache.hc" level="debug" />
+      <logger name="org.opensearch.client" level="debug" />
+      <logger name="io.camunda.optimize.service.db.os" level="debug" />
       <logger name="org.elasticsearch" level="warn" />
       <root level="info">
         <appender-ref ref="STDOUT"/>

@@ -22,13 +22,50 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication(exclude = {FreeMarkerAutoConfiguration.class})
 public class Main {
   public static void main(String[] args) {
-    SpringApplication optimize = new SpringApplication(Main.class);
+    // Early logging before any Spring Boot initialization
+    log.info("[OPTIMIZE-MAIN] Starting Optimize main method at {}", java.time.Instant.now());
+    log.info("[OPTIMIZE-MAIN] Java version: {}", System.getProperty("java.version"));
+    log.info("[OPTIMIZE-MAIN] Java home: {}", System.getProperty("java.home"));
+    log.info("[OPTIMIZE-MAIN] Working directory: {}", System.getProperty("user.dir"));
+    log.info(
+        "[OPTIMIZE-MAIN] Available processors: {}", Runtime.getRuntime().availableProcessors());
+    log.info("[OPTIMIZE-MAIN] Max memory: {} MB", Runtime.getRuntime().maxMemory() / (1024 * 1024));
+    log.info("[OPTIMIZE-MAIN] Command line args: {}", java.util.Arrays.toString(args));
 
-    final ConfigurationService configurationService = ConfigurationService.createDefault();
-    optimize.setDefaultProperties(
-        Collections.singletonMap(
-            ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort()));
+    // Log critical environment variables
+    log.info(
+        "[OPTIMIZE-MAIN] CAMUNDA_OPTIMIZE_DATABASE: {}",
+        System.getenv("CAMUNDA_OPTIMIZE_DATABASE"));
+    log.info(
+        "[OPTIMIZE-MAIN] CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT: {}",
+        System.getenv("CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT"));
+    log.info("[OPTIMIZE-MAIN] SPRING_PROFILES_ACTIVE: {}", System.getenv("SPRING_PROFILES_ACTIVE"));
 
-    optimize.run(args);
+    try {
+      log.info("[OPTIMIZE-MAIN] Creating SpringApplication...");
+      SpringApplication optimize = new SpringApplication(Main.class);
+
+      log.info("[OPTIMIZE-MAIN] Creating ConfigurationService...");
+      final ConfigurationService configurationService = ConfigurationService.createDefault();
+      log.info("[OPTIMIZE-MAIN] ConfigurationService created successfully");
+
+      log.info("[OPTIMIZE-MAIN] Setting default properties...");
+      optimize.setDefaultProperties(
+          Collections.singletonMap(
+              ACTUATOR_PORT_PROPERTY_KEY, configurationService.getActuatorPort()));
+      log.info("[OPTIMIZE-MAIN] Actuator port set to: {}", configurationService.getActuatorPort());
+
+      log.info("[OPTIMIZE-MAIN] Starting Spring Boot application...");
+      optimize.run(args);
+      log.info("[OPTIMIZE-MAIN] Spring Boot application started successfully");
+    } catch (Exception e) {
+      log.error(
+          "[OPTIMIZE-MAIN] FATAL: Exception during startup: {}: {}",
+          e.getClass().getSimpleName(),
+          e.getMessage(),
+          e);
+      log.error("[OPTIMIZE-MAIN] Optimize startup failed, exiting with code 1");
+      System.exit(1);
+    }
   }
 }

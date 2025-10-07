@@ -95,17 +95,23 @@ public class OptimizeWrapper {
     }
 
     log.info("Starting Optimize {}...", optimizeVersion);
-
+    log.info("Optimize will be started with command: bash -c ./optimize-startup.sh in directory: {}", optimizeDirectory);
     final ProcessBuilder processBuilder =
         new ProcessBuilder()
             .command("bash", "-c", "./optimize-startup.sh")
             .redirectOutput(Redirect.to(new File(outputFilePath)))
             .directory(new File(optimizeDirectory));
     final Map<String, String> envVars = getEnvVarsMap();
-
+    log.info("Environment variables: {}", envVars);
     processBuilder.environment().putAll(envVars);
-    process = processBuilder.start();
+    try {
+      process = processBuilder.start();
+    } catch (IOException ioe) {
+      log.error("Failed to start Optimize process: {}", ioe.getMessage(), ioe);
+      throw ioe;
+    }
 
+    boolean startedSuccessfully = false;
     try {
       final HealthClient healthClient = new HealthClient(() -> requestExecutor);
       log.info("Waiting for Optimize {} to boot...", optimizeVersion);
@@ -119,10 +125,52 @@ public class OptimizeWrapper {
               healthClient::getReadiness,
               response -> Response.Status.OK.getStatusCode() == response.getStatus());
       log.info("Optimize {} is up!", optimizeVersion);
+      startedSuccessfully = true;
     } catch (final Exception e) {
       log.error("Optimize did not start within 60s.");
+      if (process != null && !process.isAlive()) {
+        try {
+          int exitCode = process.exitValue();
+          log.error("Optimize process exited prematurely with code: {}", exitCode);
+        } catch (IllegalThreadStateException itse) {
+          log.error("Process is not alive but exit code not available.");
+        }
+      } else if (process != null) {
+        log.error("Optimize process is still running but not responding to health checks");
+      }
+      // Log last 50 lines of output file
+      try {
+        File outFile = new File(outputFilePath);
+        if (outFile.exists()) {
+          java.util.List<String> lines = java.nio.file.Files.readAllLines(outFile.toPath());
+          log.error("Complete startup log ({} lines):", lines.size());
+          for (int i = 0; i < lines.size(); i++) {
+            log.error("[OPTIMIZE START]  {}: {}", i + 1, lines.get(i));
+          }
+        } else {
+          log.error("Startup output file {} does not exist.", outputFilePath);
+        }
+      } catch (Exception logEx) {
+        log.error("Failed to read startup output file: {}", logEx.getMessage(), logEx);
+      }
       stop();
       throw e;
+    } finally {
+      // Always print the output file to the logger for CI visibility
+      try {
+        File outFile = new File(outputFilePath);
+        if (outFile.exists()) {
+          java.util.List<String> lines = java.nio.file.Files.readAllLines(outFile.toPath());
+          int from = Math.max(0, lines.size() - 50);
+          if (startedSuccessfully) {
+            log.info("Last {} lines of startup log (on success):\n{}", lines.size() - from, String.join("\n", lines.subList(from, lines.size())));
+          } // else already logged as error
+        } else {
+          log.warn("Startup output file {} does not exist (on success).", outputFilePath);
+        }
+      } catch (Exception logEx) {
+        log.warn("Failed to read startup output file (on success): {}", logEx.getMessage(), logEx);
+      }
     }
   }
 
