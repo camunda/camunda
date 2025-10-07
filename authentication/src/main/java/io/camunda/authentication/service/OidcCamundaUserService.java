@@ -130,7 +130,7 @@ public class OidcCamundaUserService implements CamundaUserService {
         roles,
         SALES_PLAN_TYPE,
         C8_LINKS,
-        true);
+        false);
   }
 
   protected StandardClaimAccessor getUser() {
