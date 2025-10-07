@@ -19,12 +19,12 @@ on:
         default: ""
         required: false
       ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
         default: 'release-8.8.0'
         type: string
         required: false
       cluster:
-        description: 'Specifies which cluster to deploy the benchmark on'
+        description: 'Specifies which cluster to deploy the test on'
         default: 'zeebe-cluster'
         type: string
         required: false
