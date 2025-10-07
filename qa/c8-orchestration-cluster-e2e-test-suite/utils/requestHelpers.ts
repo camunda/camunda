@@ -791,3 +791,60 @@ export async function getProcessDefinitionKey(
   await cancelProcessInstance(json.processInstanceKey);
   return json.processDefinitionKey;
 }
+
+export async function searchJobKeysForProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+) {
+  const localState: Record<string, unknown> = {};
+  await expect(async () => {
+    const res = await request.post(buildUrl('/jobs/search'), {
+      headers: jsonHeaders(),
+      data: {
+        filter: {
+          processInstanceKey: processInstanceKey,
+        },
+      },
+    });
+
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(json.page.totalItems).toBeGreaterThan(0);
+    localState['jobKeys'] = json.items.map(
+      (job: {jobKey: number}) => job.jobKey,
+    );
+  }).toPass(defaultAssertionOptions);
+  return localState['jobKeys'] as Array<string>;
+}
+
+export async function failJob(
+  request: APIRequestContext,
+  jobKey: string,
+  retries = 0,
+  errorMessage = 'Simulated failure',
+) {
+  const failRes = await request.post(buildUrl(`/jobs/${jobKey}/failure`), {
+    headers: jsonHeaders(),
+    data: {
+      retries: retries,
+      errorMessage: errorMessage,
+    },
+  });
+  await assertStatusCode(failRes, 204);
+}
+
+export async function throwErrorForJob(
+  request: APIRequestContext,
+  jobKey: string,
+  errorCode: string,
+  errorMessage = 'Simulated error',
+) {
+  const throwRes = await request.post(buildUrl(`/jobs/${jobKey}/error`), {
+    headers: jsonHeaders(),
+    data: {
+      errorCode: errorCode,
+      errorMessage: errorMessage,
+    },
+  });
+  await assertStatusCode(throwRes, 204);
+}
