@@ -30,7 +30,7 @@ public class Worker extends App {
   public static final Logger LOGGER = LoggerFactory.getLogger(Worker.class);
   private static final Logger THROTTLED_LOGGER = new ThrottledLogger(LOGGER, Duration.ofSeconds(5));
   private final WorkerCfg workerCfg;
-  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(10);
+  private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(30);
   private volatile boolean running = true;
 
   Worker(final AppCfg config) {
@@ -79,11 +79,12 @@ public class Worker extends App {
 
     try {
       // Search for unassigned user tasks with capacity limit
+      final int randPage = (int) (Math.random() * 1000); // add rand so the 3 workers don't clash
       final SearchResponse<UserTask> searchResponse =
           client
               .newUserTaskSearchRequest()
               .filter(f -> f.state(UserTaskState.CREATED))
-              .page(s -> s.limit(workerCfg.getCapacity()))
+              .page(s -> s.from(randPage).limit(20))
               .send()
               .join();
 
@@ -110,7 +111,7 @@ public class Worker extends App {
 
     try {
       // Assign the user task to a worker
-      final String assignee = workerCfg.getWorkerName() + "-" + Thread.currentThread().getId();
+      final String assignee = hashCode() + "-" + System.nanoTime();
       LOGGER.debug("Assigning user task {} to {}", userTask.getUserTaskKey(), assignee);
 
       final var assignFuture =
