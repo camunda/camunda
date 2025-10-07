@@ -164,7 +164,7 @@ public class OidcIdentityMigrationIT {
     migrationProperties
         .getCluster()
         .setInitialContactPoints(List.of("localhost:" + BROKER.mappedPort(CLUSTER)));
-    migrationProperties.getOidc().getAudience().setIdentity(CAMUNDA_IDENTITY_RESOURCE_SERVER);
+    migrationProperties.getOidc().getAudiences().setIdentity(CAMUNDA_IDENTITY_RESOURCE_SERVER);
     migration = new TestStandaloneIdentityMigration(migrationProperties);
 
     client = BROKER.newClientBuilder().build();
@@ -321,6 +321,14 @@ public class OidcIdentityMigrationIT {
             tuple(
                 "identity",
                 ResourceType.AUTHORIZATION,
+                Set.of(
+                    PermissionType.READ,
+                    PermissionType.UPDATE,
+                    PermissionType.DELETE,
+                    PermissionType.CREATE)),
+            tuple(
+                "identity",
+                ResourceType.MAPPING_RULE,
                 Set.of(
                     PermissionType.READ,
                     PermissionType.UPDATE,

@@ -91,7 +91,7 @@ public class ClientMigrationHandler extends MigrationHandler<Client> {
                       .map(
                           permission ->
                               getAuthorizationsByAudience(
-                                  migrationProperties.getOidc().getAudience(),
+                                  migrationProperties.getOidc().getAudiences(),
                                   permission,
                                   clientId,
                                   AuthorizationOwnerType.CLIENT))
