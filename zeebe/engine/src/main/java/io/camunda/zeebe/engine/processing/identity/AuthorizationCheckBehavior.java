@@ -131,6 +131,57 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  /**
+   * Attempts to authorize the caller against any of the provided authorization requests.
+   *
+   * <p>Use this for logical OR permission checks, e.g. allow operation if the user has
+   * (PROCESS_DEFINITION -> UPDATE_USER_TASK) OR (USER_TASK -> UPDATE) permission.
+   *
+   * <p>At least one request must be provided (the first parameter). As soon as one request
+   * succeeds, this method returns Right(Void). If all are rejected, the first encountered rejection
+   * is returned (to give a deterministic / stable error cause). Null entries cause an
+   * INVALID_ARGUMENT rejection.
+   *
+   * @param first the first (required) authorization request
+   * @param others optional additional authorization requests
+   * @return Either the first rejection (if all fail) or Right(Void) if any succeeds
+   */
+  public Either<Rejection, Void> isAnyAuthorized(
+      final AuthorizationRequestMetadata first, final AuthorizationRequestMetadata... others) {
+    if (first == null) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "First authorization request provided to isAnyAuthorized is null"));
+    }
+
+    Rejection firstRejection;
+    // Evaluate first
+    final var firstResult = isAuthorized(first);
+    if (firstResult.isRight()) {
+      return firstResult;
+    }
+    firstRejection = firstResult.getLeft();
+
+    if (others != null) {
+      for (final AuthorizationRequestMetadata request : others) {
+        if (request == null) {
+          return Either.left(
+              new Rejection(
+                  RejectionType.INVALID_ARGUMENT,
+                  "Null authorization request provided to isAnyAuthorized"));
+        }
+        final var result = isAuthorized(request);
+        if (result.isRight()) {
+          return result;
+        }
+      }
+    }
+
+    // all requests rejected, return the first rejection
+    return Either.left(firstRejection);
+  }
+
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequestMetadata request) {
 
     if (shouldSkipAuthorization(request)) {
