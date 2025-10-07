@@ -35,6 +35,7 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.templates.BatchOperationTemplate;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
@@ -72,6 +73,7 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
   @Autowired private BatchOperationTemplate batchOperationTemplate;
   @Autowired private ListViewTemplate processInstanceTemplate;
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private OperateProperties operateProperties;
   @Autowired private Metrics metrics;
 
@@ -179,7 +181,31 @@ public class OpensearchArchiverRepository implements ArchiverRepository {
 
     return search(
         searchRequestBuilder,
-        e -> "Failed to search in " + batchOperationTemplate.getFullQualifiedName());
+        e -> "Failed to search in " + processInstanceTemplate.getFullQualifiedName());
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch(
+      final List<Integer> partitionIds) {
+    final Query query =
+        constantScore(
+            and(
+                lte(
+                    DecisionInstanceTemplate.EVALUATION_DATE,
+                    operateProperties.getArchiver().getArchivingTimepoint()),
+                term(DecisionInstanceTemplate.PROCESS_INSTANCE_KEY, -1),
+                intTerms(DecisionInstanceTemplate.PARTITION_ID, partitionIds)));
+
+    final var searchRequestBuilder =
+        nextBatchSearchRequestBuilder(
+            decisionInstanceTemplate.getFullQualifiedName(),
+            DecisionInstanceTemplate.ID,
+            DecisionInstanceTemplate.EVALUATION_DATE,
+            query);
+
+    return search(
+        searchRequestBuilder,
+        e -> "Failed to search in " + decisionInstanceTemplate.getFullQualifiedName());
   }
 
   @Override

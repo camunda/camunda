@@ -15,10 +15,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.archiver.Archiver;
 import io.camunda.operate.archiver.ProcessInstancesArchiverJob;
+import io.camunda.operate.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
-import io.camunda.operate.exceptions.ArchiverException;
 import io.camunda.operate.property.OperateProperties;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
 import io.camunda.operate.schema.templates.IncidentTemplate;
 import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.schema.templates.ProcessInstanceDependant;
@@ -44,6 +46,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.Predicate;
 import org.elasticsearch.ElasticsearchStatusException;
@@ -61,8 +64,6 @@ import org.springframework.test.context.TestPropertySource;
     })
 public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
-  private ProcessInstancesArchiverJob archiverJob;
-
   @Autowired private BeanFactory beanFactory;
 
   @Autowired private Archiver archiver;
@@ -70,6 +71,8 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private TestSearchRepository testSearchRepository;
 
   @Autowired private ListViewTemplate listViewTemplate;
+
+  @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
   @Autowired private BatchOperationWriter batchOperationWriter;
 
@@ -85,6 +88,10 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
 
   private DateTimeFormatter dateTimeFormatter;
 
+  private ProcessInstancesArchiverJob processInstancesArchiverJob;
+
+  private StandaloneDecisionArchiverJob standaloneDecisionArchiverJob;
+
   @Override
   @Before
   public void before() {
@@ -92,13 +99,16 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     dateTimeFormatter =
         DateTimeFormatter.ofPattern(operateProperties.getArchiver().getRolloverDateFormat())
             .withZone(ZoneId.systemDefault());
-    archiverJob =
+    processInstancesArchiverJob =
         beanFactory.getBean(
             ProcessInstancesArchiverJob.class, archiver, partitionHolder.getPartitionIds());
+    standaloneDecisionArchiverJob =
+        beanFactory.getBean(
+            StandaloneDecisionArchiverJob.class, archiver, partitionHolder.getPartitionIds());
   }
 
   @Test
-  public void testArchiving() throws ArchiverException, IOException {
+  public void testArchivingProcessInstances() throws IOException {
     final Instant currentTime = pinZeebeTime();
 
     // having
@@ -125,14 +135,44 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
             / operateProperties
                 .getClusterNode()
                 .getNodeCount(); // we're archiving only part of the partitions
-    assertThat(archiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(expectedCount);
+    assertThat(processInstancesArchiverJob.archiveNextBatch().join())
+        .isGreaterThanOrEqualTo(expectedCount);
     searchTestRule.refreshSerchIndexes();
-    assertThat(archiverJob.archiveNextBatch().join()).isLessThanOrEqualTo(expectedCount + 1);
+    assertThat(processInstancesArchiverJob.archiveNextBatch().join())
+        .isLessThanOrEqualTo(expectedCount + 1);
 
     searchTestRule.refreshSerchIndexes();
 
     // then
     assertInstancesInCorrectIndex(expectedCount, endDate);
+  }
+
+  @Test
+  public void testArchivingStandaloneDecisions() throws IOException {
+    final Instant currentTime = pinZeebeTime();
+
+    // having
+    final Instant endDate = currentTime.minus(4, ChronoUnit.DAYS);
+    pinZeebeTime(endDate);
+
+    // deploy process
+    deployDecisionsWithActivities("invoiceBusinessDecisions_v_1.dmn", 2);
+
+    // start instances 4 days ago
+    final long decisionInstanceKey =
+        evaluateDecisionInstance(
+            "invoiceClassification",
+            Map.of("amount", 100, "invoiceCategory", "Misc", "InputClause_0og2hn3", "100"));
+    decisionInstancesAreCreated(1);
+
+    pinZeebeTime(currentTime);
+
+    // when
+    assertThat(standaloneDecisionArchiverJob.archiveNextBatch().join()).isGreaterThanOrEqualTo(1);
+    searchTestRule.refreshSerchIndexes();
+
+    // then
+    assertDecisionInstancesInCorrectIndex(1, endDate, List.of(decisionInstanceKey));
   }
 
   public Predicate<Object[]> getPartOfProcessInstancesAreFinishedCheck() {
@@ -171,6 +211,11 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
     deployProcess(process, processId + ".bpmn");
   }
 
+  private void deployDecisionsWithActivities(final String decision, final int decisionCount) {
+    deployDecision(decision);
+    decisionsAreDeployed(2);
+  }
+
   private void assertInstancesInCorrectIndex(final int instancesCount, final Instant endDate)
       throws IOException {
     final List<Long> ids = assertProcessInstanceIndex(instancesCount, endDate);
@@ -184,6 +229,18 @@ public class OneNodeArchiverZeebeIT extends OperateZeebeAbstractIT {
             true);
       }
     }
+  }
+
+  private void assertDecisionInstancesInCorrectIndex(
+      final int instancesCount, final Instant endDate, final List<Long> decisionInstanceKeys)
+      throws IOException {
+    final List<DecisionInstanceEntity> decisionInstanceEntities =
+        testSearchRepository.getDecisionInstancesByKeys(
+            archiver.getDestinationIndexName(
+                decisionInstanceTemplate.getFullQualifiedName(), dateTimeFormatter.format(endDate)),
+            decisionInstanceKeys);
+
+    assertThat(decisionInstanceEntities).hasSize(instancesCount);
   }
 
   private List<Long> assertProcessInstanceIndex(final int instancesCount, final Instant endDate)

@@ -46,6 +46,7 @@ import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -192,6 +193,15 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected OperationExecutor operationExecutor;
   protected OperateTester tester;
+
+  @Autowired
+  @Qualifier("decisionsAreDeployedCheck")
+  private Predicate<Object[]> decisionsAreDeployedCheck;
+
+  @Autowired
+  @Qualifier("decisionInstancesAreCreated")
+  private Predicate<Object[]> decisionInstancesAreCreated;
+
   private ZeebeContainer zeebeContainer;
   @Autowired private TestSearchRepository testSearchRepository;
   private final HttpClient httpClient = HttpClient.newHttpClient();
@@ -286,6 +296,23 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     final Long processId = ZeebeTestUtil.deployProcess(getClient(), null, process, resourceName);
     searchTestRule.processAllRecordsAndWait(processIsDeployedCheck, processId);
     return processId;
+  }
+
+  protected void deployDecision(final String... classpathResources) {
+    ZeebeTestUtil.deployDecision(getClient(), null, classpathResources);
+  }
+
+  public void decisionsAreDeployed(final int count) {
+    searchTestRule.processAllRecordsAndWait(decisionsAreDeployedCheck, count);
+  }
+
+  public long evaluateDecisionInstance(
+      final String decisionId, final Map<String, Object> variables) {
+    return ZeebeTestUtil.evaluateDecisionInstance(getClient(), decisionId, variables);
+  }
+
+  public void decisionInstancesAreCreated(final int count) {
+    searchTestRule.processAllRecordsAndWait(decisionInstancesAreCreated, count);
   }
 
   protected void cancelProcessInstance(final long processInstanceKey) {
