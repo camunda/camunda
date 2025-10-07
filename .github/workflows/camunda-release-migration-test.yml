@@ -324,7 +324,6 @@ jobs:
           --set identity.firstUser.enabled=false \
           --set orchestration.security.authentication.method=oidc \
           --set global.identity.auth.enabled=true \
-          --set orchestration.importer.enabled=true \
           --set orchestration.migration.data.enabled=true \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
