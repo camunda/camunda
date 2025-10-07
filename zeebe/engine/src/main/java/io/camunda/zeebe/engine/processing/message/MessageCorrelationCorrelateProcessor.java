@@ -28,9 +28,11 @@ import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -104,18 +106,6 @@ public final class MessageCorrelationCorrelateProcessor
         .setRequestId(command.getRequestId())
         .setRequestStreamId(command.getRequestStreamId());
 
-    final var messageRecord =
-        new MessageRecord()
-            .setName(command.getValue().getName())
-            .setCorrelationKey(command.getValue().getCorrelationKey())
-            .setVariables(command.getValue().getVariablesBuffer())
-            .setTenantId(command.getValue().getTenantId())
-            .setTimeToLive(-1L);
-    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
-
-    stateWriter.appendFollowUpEvent(
-        messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
-
     final var correlatingSubscriptions = new Subscriptions();
     final var messageData = createMessageData(messageKey, messageCorrelationRecord);
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
@@ -130,6 +120,33 @@ public final class MessageCorrelationCorrelateProcessor
       responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
       return;
     }
+
+    correlatingSubscriptions.visitSubscriptions(
+        subscription -> {
+          stateWriter.appendFollowUpEvent(
+              subscription.getKey(),
+              MessageSubscriptionIntent.CORRELATING,
+              new MessageSubscriptionRecord()
+                  .setMessageKey(subscription.getMessageKey())
+                  .setProcessInstanceKey(subscription.getProcessInstanceKey())
+                  .setBpmnProcessId(subscription.getBpmnProcessId())
+                  .setElementInstanceKey(subscription.getElementInstanceKey())
+                  .setMessageName(subscription.getMessageName()));
+          return true;
+        },
+        false);
+
+    final var messageRecord =
+        new MessageRecord()
+            .setName(command.getValue().getName())
+            .setCorrelationKey(command.getValue().getCorrelationKey())
+            .setVariables(command.getValue().getVariablesBuffer())
+            .setTenantId(command.getValue().getTenantId())
+            .setTimeToLive(-1L);
+    stateWriter.appendFollowUpEvent(messageKey, MessageIntent.PUBLISHED, messageRecord);
+
+    stateWriter.appendFollowUpEvent(
+        messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
     if (correlatingSubscriptions.isEmpty()) {
       final var errorMessage =

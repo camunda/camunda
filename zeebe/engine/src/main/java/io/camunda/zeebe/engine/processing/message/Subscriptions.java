@@ -37,11 +37,14 @@ public final class Subscriptions {
     return false;
   }
 
-  public void add(final MessageSubscriptionRecord subscription) {
+  public void add(final long key, final MessageSubscriptionRecord subscription) {
     final var newSubscription = subscriptions.add();
     newSubscription.setBpmnProcessId(cloneBuffer(subscription.getBpmnProcessIdBuffer()));
     newSubscription.processInstanceKey = subscription.getProcessInstanceKey();
     newSubscription.elementInstanceKey = subscription.getElementInstanceKey();
+    newSubscription.key = key;
+    newSubscription.messageKey = subscription.getMessageKey();
+    newSubscription.setMessageName(cloneBuffer(subscription.getMessageNameBuffer()));
   }
 
   public void add(final MessageStartEventSubscriptionRecord subscription) {
@@ -110,18 +113,36 @@ public final class Subscriptions {
     private final DirectBuffer bufferView = new UnsafeBuffer(bpmnProcessId);
     private int bufferLength = 0;
 
+    private final MutableDirectBuffer messageName = new ExpandableArrayBuffer();
+    private final DirectBuffer messageNameBufferView = new UnsafeBuffer(messageName);
+    private int messageNameBufferLength = 0;
+
+    private long key;
     private long processInstanceKey;
     private long elementInstanceKey;
+    private long messageKey;
     private boolean isStartEventSubscription;
 
     @Override
     public void reset() {
       bufferLength = 0;
       bufferView.wrap(0, 0);
+      messageNameBufferLength = 0;
+      messageNameBufferView.wrap(0, 0);
 
+      key = -1L;
+      messageKey = -1L;
       processInstanceKey = -1L;
       elementInstanceKey = -1L;
       isStartEventSubscription = false;
+    }
+
+    public long getMessageKey() {
+      return messageKey;
+    }
+
+    public long getKey() {
+      return key;
     }
 
     public DirectBuffer getBpmnProcessId() {
@@ -132,6 +153,16 @@ public final class Subscriptions {
       bufferLength = bpmnProcessId.capacity();
       bpmnProcessId.getBytes(0, this.bpmnProcessId, 0, bufferLength);
       bufferView.wrap(this.bpmnProcessId, 0, bufferLength);
+    }
+
+    public DirectBuffer getMessageName() {
+      return messageNameBufferView;
+    }
+
+    private void setMessageName(final DirectBuffer messageName) {
+      messageNameBufferLength = messageName.capacity();
+      messageName.getBytes(0, this.messageName, 0, messageNameBufferLength);
+      messageNameBufferView.wrap(this.messageName, 0, messageNameBufferLength);
     }
 
     public long getProcessInstanceKey() {
