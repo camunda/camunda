@@ -18,6 +18,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.BackoffIdleStrategy;
 import io.camunda.operate.zeebe.ImportValueType;
 import io.camunda.operate.zeebeimport.ImportPositionHolder;
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -56,6 +57,7 @@ public abstract class AbstractIncidentPostImportAction implements PostImportActi
     errorStrategy = new BackoffIdleStrategy(BACKOFF, 1.2f, 10_000);
   }
 
+  @PostConstruct
   protected void initializeMetrics() {
     final var metricDoc = PostImporterMetricsDoc.POST_IMPORTER_QUEUE_SIZE.getName();
     final var description = PostImporterMetricsDoc.POST_IMPORTER_QUEUE_SIZE.getDescription();
