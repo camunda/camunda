@@ -219,6 +219,52 @@ public class UserTaskAssignAuthorizationTest {
   }
 
   @Test
+  public void taskAssigneeShouldBeAuthorizedToUnassignHimself() {
+    // given
+    createUser("legolas");
+    final String processId = PROCESS_ID + "_" + UUID.randomUUID();
+    deployProcess(
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .userTask(USER_TASK_ID, t -> t.zeebeAssignee("legolas"))
+            .zeebeUserTask()
+            .endEvent()
+            .done());
+    final var pik = createProcessInstance(processId);
+    final var userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withProcessInstanceKey(pik)
+            .withElementId(USER_TASK_ID)
+            .getFirst()
+            .getKey();
+
+    // ensure that the assignee has permissions on the task
+    final var createUserTaskPermissionsForAssigneeAuthRecord =
+        RecordingExporter.authorizationRecords(AuthorizationIntent.CREATED)
+            .withOwnerId("legolas")
+            .withResourceType(AuthorizationResourceType.USER_TASK)
+            .getFirst()
+            .getValue();
+
+    Assertions.assertThat(createUserTaskPermissionsForAssigneeAuthRecord)
+        .hasOwnerType(AuthorizationOwnerType.USER)
+        .hasResourceId(Long.toString(userTaskKey))
+        .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE);
+
+    // when
+    final var userTaskUnassigningRecord = engine.userTask().ofInstance(pik).unassign("legolas");
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(pik)
+                .filter(r -> r.getPosition() > userTaskUnassigningRecord.getPosition())
+                .exists())
+        .as("Expected USER_TASK.ASSIGNED event after the unassign operation")
+        .isTrue();
+  }
+
+  @Test
   public void shouldBeAuthorizedToAssignUserTaskWithUser() {
     // given
     final var processInstanceKey = createProcessInstance();
@@ -269,9 +315,13 @@ public class UserTaskAssignAuthorizationTest {
   }
 
   private UserRecordValue createUser() {
+    return createUser(UUID.randomUUID().toString());
+  }
+
+  private UserRecordValue createUser(final String username) {
     return engine
         .user()
-        .newUser(UUID.randomUUID().toString())
+        .newUser(username)
         .withPassword(UUID.randomUUID().toString())
         .withName(UUID.randomUUID().toString())
         .withEmail(UUID.randomUUID().toString())

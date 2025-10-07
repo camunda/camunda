@@ -155,7 +155,7 @@ public final class AuthorizationCheckBehavior {
               "First authorization request provided to isAnyAuthorized is null"));
     }
 
-    Rejection firstRejection;
+    final Rejection firstRejection;
     // Evaluate first
     final var firstResult = isAuthorized(first);
     if (firstResult.isRight()) {

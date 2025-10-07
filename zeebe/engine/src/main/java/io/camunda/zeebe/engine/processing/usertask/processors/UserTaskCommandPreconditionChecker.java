@@ -72,14 +72,22 @@ public class UserTaskCommandPreconditionChecker {
               String.format(NO_USER_TASK_FOUND_MESSAGE, intent, userTaskKey)));
     }
 
-    final var authRequest =
-        new AuthorizationRequest(
-                command,
-                AuthorizationResourceType.PROCESS_DEFINITION,
-                PermissionType.UPDATE_USER_TASK,
-                persistedRecord.getTenantId())
-            .addResourceId(persistedRecord.getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAnyAuthorized(
+            new AuthorizationRequest(
+                    command,
+                    AuthorizationResourceType.PROCESS_DEFINITION,
+                    PermissionType.UPDATE_USER_TASK,
+                    persistedRecord.getTenantId())
+                .addResourceId(persistedRecord.getBpmnProcessId())
+                .build(),
+            new AuthorizationRequest(
+                    command,
+                    AuthorizationResourceType.USER_TASK,
+                    PermissionType.UPDATE,
+                    persistedRecord.getTenantId())
+                .addResourceId(Long.toString(persistedRecord.getUserTaskKey()))
+                .build());
     if (isAuthorized.isLeft()) {
       return Either.left(isAuthorized.getLeft());
     }
