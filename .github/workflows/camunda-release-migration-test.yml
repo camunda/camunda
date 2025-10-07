@@ -331,6 +331,8 @@ jobs:
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
           --set orchestration.migration.data.enabled=true \
           --set orchestration.migration.identity.enabled=true \
+          --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
+          --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
           --set orchestration.security.authentication.method=oidc \
