@@ -452,13 +452,23 @@ public class OpenSearchClientBuilder {
 
   private static RequestConfig.Builder setTimeouts(
       final RequestConfig.Builder builder, final ConfigurationService configurationService) {
-    builder.setResponseTimeout(Timeout.ofMilliseconds(0));
-    builder.setConnectionRequestTimeout(
-        Timeout.ofMilliseconds(
-            configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
-    builder.setConnectTimeout(
-        Timeout.ofMilliseconds(
-            configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
+    // For CI environments, use reasonable timeouts instead of infinite (0)
+    // Infinite response timeout can cause issues with connection pooling in CI
+    int responseTimeoutMs = 30000; // 30 seconds instead of infinite
+    int connectionTimeout = configurationService.getOpenSearchConfiguration().getConnectionTimeout();
+
+    // Ensure minimum reasonable timeout for CI environments
+    if (connectionTimeout < 5000) {
+      log.warn("Connection timeout {}ms is very low for CI environments, consider increasing to at least 5000ms", connectionTimeout);
+    }
+
+    builder.setResponseTimeout(Timeout.ofMilliseconds(responseTimeoutMs));
+    builder.setConnectionRequestTimeout(Timeout.ofMilliseconds(connectionTimeout));
+    builder.setConnectTimeout(Timeout.ofMilliseconds(connectionTimeout));
+
+    log.debug("OpenSearch client timeouts configured: connect={}ms, connectionRequest={}ms, response={}ms",
+              connectionTimeout, connectionTimeout, responseTimeoutMs);
+
     return builder;
   }
 }

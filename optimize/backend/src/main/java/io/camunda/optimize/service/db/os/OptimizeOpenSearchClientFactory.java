@@ -257,8 +257,48 @@ public class OptimizeOpenSearchClientFactory {
   private static int getNumberOfClusterNodes(final OpenSearchClient openSearchClient)
       throws IOException {
     log.debug("Checking OpenSearch cluster health...");
-    int nodeCount = openSearchClient.cluster().health().numberOfNodes();
-    log.debug("OpenSearch cluster has {} nodes", nodeCount);
-    return nodeCount;
+
+    // Add retry logic for CI environments where connections might be unstable
+    int maxRetries = 3;
+    long baseDelayMs = 1000;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        int nodeCount = openSearchClient.cluster().health().numberOfNodes();
+        log.debug("OpenSearch cluster has {} nodes", nodeCount);
+        return nodeCount;
+      } catch (Exception e) {
+        log.warn("Cluster health check attempt {} failed: {} - {}",
+                 attempt, e.getClass().getSimpleName(), e.getMessage());
+
+        if (attempt == maxRetries) {
+          // On final attempt, provide more detailed error info
+          if (e.getMessage().contains("Connection reset") ||
+              e.getMessage().contains("Connection refused") ||
+              e.getMessage().contains("timeout")) {
+            log.error("Connection issue detected in CI environment. This may be due to:");
+            log.error("1. Network instability in CI containers");
+            log.error("2. OpenSearch container not fully ready despite health checks");
+            log.error("3. Connection pool exhaustion");
+            log.error("Consider increasing connection timeouts or adding container dependencies");
+          }
+          throw e;
+        }
+
+        // Exponential backoff with jitter for CI environments
+        long delay = baseDelayMs * (1L << (attempt - 1)) + (long)(Math.random() * 500);
+        log.info("Retrying cluster health check in {}ms (attempt {} of {})", delay, attempt + 1, maxRetries);
+
+        try {
+          Thread.sleep(delay);
+        } catch (InterruptedException ie) {
+          Thread.currentThread().interrupt();
+          throw new IOException("Interrupted during cluster health check retry", ie);
+        }
+      }
+    }
+
+    // This should never be reached due to the throw in the catch block
+    throw new IOException("Failed to get cluster node count after " + maxRetries + " attempts");
   }
 }
