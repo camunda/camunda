@@ -68,7 +68,13 @@ import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterFactory;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import javax.sql.DataSource;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -77,6 +83,8 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnSecondaryStorageType(SecondaryStorageType.rdbms)
 @Import(MyBatisConfiguration.class)
 public class RdbmsConfiguration {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RdbmsConfiguration.class);
 
   @Bean
   public VariableDbReader variableRdbmsReader(final VariableMapper variableMapper) {
@@ -342,5 +350,16 @@ public class RdbmsConfiguration {
         usageMetricTUDbReader,
         messageSubscriptionReader,
         correlatedMessageSubscriptionReader);
+  }
+
+  @Bean
+  public CommandLineRunner logJdbcDriverInfo(final DataSource dataSource) {
+    return args -> {
+      try (final Connection conn = dataSource.getConnection()) {
+        final DatabaseMetaData meta = conn.getMetaData();
+        LOG.debug("JDBC Driver: {} {}", meta.getDriverName(), meta.getDriverVersion());
+        LOG.debug("JDBC Spec: {}.{}", meta.getJDBCMajorVersion(), meta.getJDBCMinorVersion());
+      }
+    };
   }
 }

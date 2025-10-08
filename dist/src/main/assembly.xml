@@ -16,6 +16,10 @@
     <fileSet>
       <directory>${project.build.directory}/camunda-zeebe</directory>
       <outputDirectory>/</outputDirectory>
+      <excludes>
+        <!-- We need to exclude Oracle driver from the distribution in any case -->
+        <exclude>lib/ojdbc*.jar</exclude>
+      </excludes>
     </fileSet>
     <fileSet>
       <directory>${maven.multiModuleProjectDirectory}/licenses</directory>
