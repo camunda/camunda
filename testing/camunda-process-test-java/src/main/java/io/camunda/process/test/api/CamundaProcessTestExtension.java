@@ -97,10 +97,10 @@ public class CamundaProcessTestExtension
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
+  private final TestDeploymentService testDeploymentService = new TestDeploymentService();
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
-  private final TestDeploymentService testDeploymentService;
   private final ProcessCoverageBuilder processCoverageBuilder;
   private ProcessCoverage processCoverage;
 
@@ -120,7 +120,6 @@ public class CamundaProcessTestExtension
     runtimeBuilder = containerRuntimeBuilder;
     this.processCoverageBuilder = processCoverageBuilder.printStream(testResultPrintStream);
     processTestResultPrinter = new CamundaProcessTestResultPrinter(testResultPrintStream);
-    testDeploymentService = new TestDeploymentService();
   }
 
   /**
