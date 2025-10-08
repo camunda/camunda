@@ -106,6 +106,16 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
         filter(r -> r.getValueType() == ValueType.INCIDENT).map(Record.class::cast));
   }
 
+  public MessageRecordStream messageRecords() {
+    return new MessageRecordStream(
+        filter(r -> r.getValueType() == ValueType.MESSAGE).map(Record.class::cast));
+  }
+
+  public MessageCorrelationRecordStream messageCorrelationRecords() {
+    return new MessageCorrelationRecordStream(
+        filter(r -> r.getValueType() == ValueType.MESSAGE_CORRELATION).map(Record.class::cast));
+  }
+
   public MessageSubscriptionRecordStream messageSubscriptionRecords() {
     return new MessageSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.MESSAGE_SUBSCRIPTION).map(Record.class::cast));
