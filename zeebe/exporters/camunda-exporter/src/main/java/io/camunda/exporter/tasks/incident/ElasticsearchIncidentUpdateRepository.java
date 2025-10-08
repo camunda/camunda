@@ -353,9 +353,8 @@ public final class ElasticsearchIncidentUpdateRepository extends ElasticsearchRe
       if (newState == null) {
         final var errMsg =
             String.format(
-                "Pending incident has a new state of [%s], which is not a valid IncidentState, should be on of %s",
+                "Pending incident has a new state of [%s], which is not a valid IncidentState, should be one of %s",
                 entity.intent(), Arrays.toString(IncidentState.values()));
-        logger.error(errMsg);
         throw new IllegalStateException(errMsg);
       }
 
