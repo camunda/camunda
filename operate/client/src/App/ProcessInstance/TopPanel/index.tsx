@@ -71,6 +71,7 @@ import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useIncidentsCount} from 'modules/queries/incidents/useIncidentsSearch';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -229,7 +230,11 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  const incidentsCount = useIncidentsCount(processInstanceId);
+  // Conditional hook call, but the condition is static during runtime.
+  const incidentsCount = IS_INCIDENTS_PANEL_V2
+    ? useIncidentsCount(processInstanceId)
+    : incidentsStore.incidentsCount;
+
   const {
     setIncidentBarOpen,
     state: {isIncidentBarOpen},
