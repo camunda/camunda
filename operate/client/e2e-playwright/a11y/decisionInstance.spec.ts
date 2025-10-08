@@ -10,13 +10,13 @@ import {test} from '../visual-fixtures';
 import {
   mockEvaluatedDecisionInstance,
   mockResponses,
-  mockEvaluatedDrdData,
+  mockEvaluatedDecisionInstancesSearch,
   mockEvaluatedXml,
   mockFailedDecisionInstance,
-  mockFailedDrdData,
+  mockFailedDecisionInstancesSearch,
   mockFailedXml,
   mockEvaluatedDecisionInstanceWithoutPanels,
-  mockEvaluatedDrdDataWithoutPanels,
+  mockEvaluatedDecisionInstancesSearchWithoutPanels,
   mockEvaluatedXmlWithoutPanels,
 } from '../mocks/decisionInstance.mocks';
 import {validateResults} from './validateResults';
@@ -45,7 +45,7 @@ test.describe('decision detail', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstance,
-        drdData: mockEvaluatedDrdData,
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearch,
         xml: mockEvaluatedXml,
       }),
     );
@@ -70,7 +70,7 @@ test.describe('decision detail', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockFailedDecisionInstance,
-        drdData: mockFailedDrdData,
+        decisionInstancesSearch: mockFailedDecisionInstancesSearch,
         xml: mockFailedXml,
       }),
     );
@@ -95,7 +95,7 @@ test.describe('decision detail', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
-        drdData: mockEvaluatedDrdDataWithoutPanels,
+        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearchWithoutPanels,
         xml: mockEvaluatedXmlWithoutPanels,
       }),
     );

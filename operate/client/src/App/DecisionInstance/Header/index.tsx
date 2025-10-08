@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {drdStore} from 'modules/stores/drd';
 import {Button} from '@carbon/react';
 import {tracking} from 'modules/tracking';
 import {InstanceHeader} from 'modules/components/InstanceHeader';
@@ -16,6 +15,7 @@ import {Locations, Paths} from 'modules/Routes';
 import {formatDate} from 'modules/utils/date';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
+import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
@@ -52,9 +52,13 @@ const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
 
 type HeaderProps = {
   decisionEvaluationInstanceKey: string;
+  onChangeDrdPanelState(state: DrdPanelState): void;
 };
 
-const Header: React.FC<HeaderProps> = ({decisionEvaluationInstanceKey}) => {
+const Header: React.FC<HeaderProps> = ({
+  decisionEvaluationInstanceKey,
+  onChangeDrdPanelState,
+}) => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
@@ -164,7 +168,7 @@ const Header: React.FC<HeaderProps> = ({decisionEvaluationInstanceKey}) => {
             title="Open Decision Requirements Diagram"
             aria-label="Open Decision Requirements Diagram"
             onClick={() => {
-              drdStore.setPanelState('minimized');
+              onChangeDrdPanelState('minimized');
               tracking.track({
                 eventName: 'drd-panel-interaction',
                 action: 'open',

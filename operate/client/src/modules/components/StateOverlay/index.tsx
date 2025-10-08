@@ -17,13 +17,11 @@ import {
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
-import type {
-  FlowNodeState,
-  DecisionInstanceEntityState,
-} from 'modules/types/operate';
+import type {FlowNodeState} from 'modules/types/operate';
+import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.8';
 
 type Props = {
-  state: (FlowNodeState | 'completedEndEvents') | DecisionInstanceEntityState;
+  state: (FlowNodeState | 'completedEndEvents') | DecisionInstanceState;
   container: HTMLElement;
   count?: number;
   isFaded?: boolean;
@@ -41,6 +39,11 @@ const StateOverlay: React.FC<Props> = observer(
     title,
   }) => {
     const showStatistic = count !== undefined;
+
+    // FIXME: What icons and colors should be used for these new states?
+    if (state === 'UNKNOWN' || state === 'UNSPECIFIED') {
+      state = 'FAILED';
+    }
 
     return createPortal(
       <Container

@@ -8,18 +8,11 @@
 
 import {openFile} from '@/utils/openFile';
 import type {Route} from '@playwright/test';
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  GetDecisionInstanceResponseBody,
+  QueryDecisionInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 
-interface DecisionInstanceEntity {
-  id: string;
-  decisionName: string;
-  decisionVersion: number;
-  tenantId: string;
-  evaluationDate: string;
-  processInstanceId: string | null;
-  state: DecisionInstanceEntityState;
-  sortValues: [string, string];
-}
 type DecisionInstanceEntityState = 'EVALUATED' | 'FAILED';
 type DecisionInstanceDto = {
   id: string;
@@ -46,14 +39,6 @@ type DecisionInstanceDto = {
     name: string;
     value: string | null;
   }>;
-};
-type DrdDataDto = {
-  [decisionId: string]: [
-    {
-      decisionInstanceId: DecisionInstanceEntity['id'];
-      state: DecisionInstanceEntityState;
-    },
-  ];
 };
 
 const mockEvaluatedDecisionInstance: DecisionInstanceDto = {
@@ -92,25 +77,25 @@ const mockEvaluatedDecisionInstance: DecisionInstanceDto = {
   ],
 };
 
-const mockEvaluatedDrdData: DrdDataDto = {
-  invoiceAssignApprover: [
-    {
-      decisionInstanceId: '2251799813830820-3',
-      state: 'EVALUATED',
-    },
+const mockEvaluatedDecisionInstancesSearch: QueryDecisionInstancesResponseBody = {
+  items: [
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstance,
+      decisionId: 'invoiceAssignApprover',
+      id: '2251799813830820-3',
+    }),
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstance,
+      decisionId: 'invoiceClassification',
+      id: '2251799813830820-1',
+    }),
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstance,
+      decisionId: 'amountToString',
+      id: '2251799813830820-2',
+    }),
   ],
-  invoiceClassification: [
-    {
-      decisionInstanceId: '2251799813830820-1',
-      state: 'EVALUATED',
-    },
-  ],
-  amountToString: [
-    {
-      decisionInstanceId: '2251799813830820-2',
-      state: 'EVALUATED',
-    },
-  ],
+  page: {totalItems: 3},
 };
 
 const mockEvaluatedXml = openFile(
@@ -134,25 +119,25 @@ const mockEvaluatedDecisionInstanceWithoutPanels: DecisionInstanceDto = {
   evaluatedOutputs: [],
 };
 
-const mockEvaluatedDrdDataWithoutPanels: DrdDataDto = {
-  invoiceAssignApprover: [
-    {
-      decisionInstanceId: '2251799813830820-3',
-      state: 'EVALUATED',
-    },
+const mockEvaluatedDecisionInstancesSearchWithoutPanels: QueryDecisionInstancesResponseBody = {
+  items: [
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstanceWithoutPanels,
+      decisionId: 'invoiceAssignApprover',
+      id: '2251799813830820-3',
+    }),
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstanceWithoutPanels,
+      decisionId: 'invoiceClassification',
+      id: '2251799813830820-1',
+    }),
+    mapDecisionInstanceToV2({
+      ...mockEvaluatedDecisionInstanceWithoutPanels,
+      decisionId: 'amountToString',
+      id: '2251799813830820-2',
+    }),
   ],
-  invoiceClassification: [
-    {
-      decisionInstanceId: '2251799813830820-1',
-      state: 'EVALUATED',
-    },
-  ],
-  amountToString: [
-    {
-      decisionInstanceId: '2251799813830820-2',
-      state: 'EVALUATED',
-    },
-  ],
+  page: {totalItems: 3},
 };
 
 const mockEvaluatedXmlWithoutPanels = openFile(
@@ -177,13 +162,9 @@ const mockFailedDecisionInstance: DecisionInstanceDto = {
   evaluatedOutputs: [],
 };
 
-const mockFailedDrdData: DrdDataDto = {
-  invoiceClassification: [
-    {
-      decisionInstanceId: '6755399441062312-1',
-      state: 'FAILED',
-    },
-  ],
+const mockFailedDecisionInstancesSearch: QueryDecisionInstancesResponseBody = {
+  items: [mapDecisionInstanceToV2(mockFailedDecisionInstance)],
+  page: {totalItems: 1},
 };
 
 const mockFailedXml = openFile(
@@ -232,11 +213,11 @@ function mapDecisionInstanceToV2(
 
 function mockResponses({
   decisionInstanceDetail,
-  drdData,
+  decisionInstancesSearch,
   xml,
 }: {
   decisionInstanceDetail?: DecisionInstanceDto;
-  drdData?: DrdDataDto;
+  decisionInstancesSearch?: QueryDecisionInstancesResponseBody;
   xml?: string;
 }) {
   return (route: Route) => {
@@ -257,20 +238,20 @@ function mockResponses({
       });
     }
 
-    if (route.request().url().includes('drd-data')) {
+    if (route.request().url().includes('/api/decision-instances/')) {
       return route.fulfill({
-        status: drdData === undefined ? 400 : 200,
-        body: JSON.stringify(drdData),
+        status: decisionInstanceDetail === undefined ? 400 : 200,
+        body: JSON.stringify(decisionInstanceDetail),
         headers: {
           'content-type': 'application/json',
         },
       });
     }
 
-    if (route.request().url().includes('/api/decision-instances/')) {
+    if (route.request().url().includes('v2/decision-instances/search')) {
       return route.fulfill({
-        status: decisionInstanceDetail === undefined ? 400 : 200,
-        body: JSON.stringify(decisionInstanceDetail),
+        status: decisionInstancesSearch === undefined ? 400 : 200,
+        body: JSON.stringify(decisionInstancesSearch),
         headers: {
           'content-type': 'application/json',
         },
@@ -313,13 +294,13 @@ function mockResponses({
 
 export {
   mockEvaluatedDecisionInstance,
-  mockEvaluatedDrdData,
+  mockEvaluatedDecisionInstancesSearch,
   mockEvaluatedXml,
   mockEvaluatedDecisionInstanceWithoutPanels,
-  mockEvaluatedDrdDataWithoutPanels,
+  mockEvaluatedDecisionInstancesSearchWithoutPanels,
   mockEvaluatedXmlWithoutPanels,
   mockFailedDecisionInstance,
-  mockFailedDrdData,
+  mockFailedDecisionInstancesSearch,
   mockFailedXml,
   mockEvaluatedLargeXml,
   mockResponses,
