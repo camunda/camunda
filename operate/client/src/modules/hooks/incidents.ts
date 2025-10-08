@@ -11,7 +11,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
-import {useIncidentsSearch} from 'modules/queries/incidents/useIncidentsSearch';
+import {useProcessInstanceIncidentsSearch} from 'modules/queries/incidents/useProcessInstanceIncidentsSearch';
 
 type EnhancedIncident = Incident & {elementName: string; isSelected: boolean};
 
@@ -37,21 +37,24 @@ const useIncidents = () => {
 
 const useIncidentsV2 = (processInstanceKey: string): EnhancedIncident[] => {
   const {data: businessObjects} = useBusinessObjects();
-  const {data: incidents} = useIncidentsSearch(processInstanceKey, {
-    select: (incidents) =>
-      incidents.items.map((incident) => ({
-        ...incident,
-        elementName: getFlowNodeName({
-          businessObjects,
-          flowNodeId: incident.elementId,
-        }),
-        isSelected: flowNodeSelectionStore.isSelected({
-          flowNodeId: incident.elementId,
-          flowNodeInstanceId: incident.elementInstanceKey,
-          isMultiInstance: false,
-        }),
-      })),
-  });
+  const {data: incidents} = useProcessInstanceIncidentsSearch(
+    processInstanceKey,
+    {
+      select: (incidents) =>
+        incidents.items.map((incident) => ({
+          ...incident,
+          elementName: getFlowNodeName({
+            businessObjects,
+            flowNodeId: incident.elementId,
+          }),
+          isSelected: flowNodeSelectionStore.isSelected({
+            flowNodeId: incident.elementId,
+            flowNodeInstanceId: incident.elementInstanceKey,
+            isMultiInstance: false,
+          }),
+        })),
+    },
+  );
 
   return incidents ?? [];
 };
