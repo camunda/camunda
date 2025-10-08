@@ -72,8 +72,8 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * Collects message start event subscriptions without writing state changes.
-   * Used for authorization checks before actual correlation.
+   * Collects message start event subscriptions without writing state changes. Used for
+   * authorization checks before actual correlation.
    */
   public void collectMessageStartEventSubscriptions(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
@@ -130,8 +130,8 @@ public final class MessageCorrelateBehavior {
   }
 
   /**
-   * Collects message event subscriptions without writing state changes.
-   * Used for authorization checks before actual correlation.
+   * Collects message event subscriptions without writing state changes. Used for authorization
+   * checks before actual correlation.
    */
   public void collectMessageEventSubscriptions(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
