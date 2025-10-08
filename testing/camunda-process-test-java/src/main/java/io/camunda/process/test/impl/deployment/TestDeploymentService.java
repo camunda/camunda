@@ -21,6 +21,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.response.ProcessDefinition;
+import io.camunda.process.test.api.TestDeployment;
 import java.lang.reflect.Method;
 import java.time.Duration;
 import java.util.Arrays;

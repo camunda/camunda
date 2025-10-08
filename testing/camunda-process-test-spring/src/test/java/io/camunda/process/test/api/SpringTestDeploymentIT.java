@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.process.test.impl.deployment.TestDeployment;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;

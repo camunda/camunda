@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessDefinition;
-import io.camunda.process.test.impl.deployment.TestDeployment;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 

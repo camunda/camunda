@@ -28,7 +28,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.process.test.impl.deployment.TestDeployment;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import java.lang.reflect.Method;
 import org.junit.jupiter.api.Test;
