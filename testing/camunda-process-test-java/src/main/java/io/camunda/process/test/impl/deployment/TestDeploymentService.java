@@ -20,7 +20,8 @@ import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCo
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.api.TestDeployment;
 import java.lang.reflect.Method;
-import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,10 +44,8 @@ public class TestDeploymentService {
       final Method testMethod, final Class<?> testClass, final CamundaClient client) {
 
     final TestDeployment deployment = findTestDeployment(testMethod, testClass);
-
-    if (deployment != null && deployment.resources().length > 0) {
-      final String methodName = testMethod.getName();
-      performDeployment(deployment, client, methodName);
+    if (deployment != null) {
+      performDeployment(deployment, client);
     }
   }
 
@@ -62,37 +61,40 @@ public class TestDeploymentService {
     return deployment;
   }
 
-  private void performDeployment(
-      final TestDeployment deployment, final CamundaClient client, final String testMethodName) {
+  private void performDeployment(final TestDeployment deployment, final CamundaClient client) {
 
     final String[] resources = deployment.resources();
     if (deployment.resources().length == 0) {
-      LOG.debug("No resources defined for deployment for test method: {}", testMethodName);
+      LOG.warn("No resources defined in @TestDeployment. Skipping.");
       return;
     }
 
     LOG.debug(
-        "Deploying test resources for {}: {}",
-        testMethodName,
-        Arrays.toString(deployment.resources()));
+        "Deploying resources from @TestDeployment: [{}]", String.join(",", deployment.resources()));
 
     try {
       DeployResourceCommandStep2 deployCommand =
           client.newDeployResourceCommand().addResourceFromClasspath(resources[0]);
       for (int i = 1; i < resources.length; i++) {
-        LOG.debug("Adding resource to deployment: {}", resources[i]);
         deployCommand = deployCommand.addResourceFromClasspath(resources[i]);
       }
       final DeploymentEvent deploymentEvent = deployCommand.send().join();
 
-      LOG.debug(
-          "Successfully deployed resources with deployment key: {}", deploymentEvent.getKey());
+      LOG.info("Deployed resources from @TestDeployment: {}", collectDefinitions(deploymentEvent));
     } catch (final Exception e) {
-      throw new RuntimeException(
-          String.format(
-              "Failed to deploy test resources: %s for test method: %s",
-              Arrays.toString(deployment.resources()), testMethodName),
-          e);
+      throw new RuntimeException("Failed to deploy resources from @TestDeployment", e);
     }
+  }
+
+  private static String collectDefinitions(final DeploymentEvent deploymentEvent) {
+    return Stream.concat(
+            deploymentEvent.getDecisionRequirements().stream()
+                .map(
+                    wf ->
+                        String.format(
+                            "<%s:%d>", wf.getDmnDecisionRequirementsId(), wf.getVersion())),
+            deploymentEvent.getProcesses().stream()
+                .map(wf -> String.format("<%s:%d>", wf.getBpmnProcessId(), wf.getVersion())))
+        .collect(Collectors.joining(","));
   }
 }

@@ -16,6 +16,7 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -26,6 +27,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
+import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.process.test.impl.deployment.TestDeploymentService;
@@ -54,18 +56,18 @@ class TestDeploymentServiceTest {
     when(future.join()).thenReturn(deploymentEvent);
   }
 
-  private void enableChainingOnStep2() {
-    when(step2.addResourceFromClasspath(anyString())).thenReturn(step2);
-  }
-
   @Test
-  void deploysResourcesFromMethodAnnotation() throws Exception {
+  void shouldDeploysResourcesFromMethodAnnotation() throws Exception {
+    // given
     stubSuccessfulChain();
+
     final Method method =
         TestClassWithMethodAnnotation.class.getDeclaredMethod("testMethodWithDeployment");
 
+    // when
     service.deployTestResources(method, TestClassWithMethodAnnotation.class, client);
 
+    // then
     verify(client).newDeployResourceCommand();
     verify(step1).addResourceFromClasspath("method-process.bpmn");
     verify(step2).send();
@@ -74,64 +76,121 @@ class TestDeploymentServiceTest {
   }
 
   @Test
-  void deploysResourcesFromClassAnnotation() throws Exception {
+  void shouldDeploysResourcesFromClassAnnotation() throws Exception {
+    // given
     stubSuccessfulChain();
+
     final Method method =
         TestClassWithClassAnnotation.class.getDeclaredMethod("testMethodWithoutAnnotation");
 
+    // when
     service.deployTestResources(method, TestClassWithClassAnnotation.class, client);
 
+    // then
     verify(client).newDeployResourceCommand();
     verify(step1).addResourceFromClasspath("class-process.bpmn");
   }
 
   @Test
-  void methodAnnotationOverridesClassAnnotation() throws Exception {
+  void shouldPreferMethodAnnotationOverClassAnnotation() throws Exception {
+    // given
     stubSuccessfulChain();
+
     final Method method =
         TestClassWithBothAnnotations.class.getDeclaredMethod("testMethodWithDeployment");
 
+    // when
     service.deployTestResources(method, TestClassWithBothAnnotations.class, client);
 
+    // then
     verify(step1).addResourceFromClasspath("method-process.bpmn");
     verify(step1, never()).addResourceFromClasspath("class-process.bpmn");
   }
 
   @Test
-  void noDeploymentWhenNoAnnotation() throws Exception {
+  void shouldIgnoreDeploymentWithoutAnnotation() throws Exception {
+    // given
     final Method method =
         TestClassWithoutAnnotation.class.getDeclaredMethod("testMethodWithoutDeployment");
 
+    // when
     service.deployTestResources(method, TestClassWithoutAnnotation.class, client);
 
+    // then
     verifyNoInteractions(client);
   }
 
   @Test
-  void noDeploymentWhenEmptyResources() throws Exception {
+  void shouldIgnoreDeploymentWithoutResources() throws Exception {
+    // given
     final Method method =
         TestClassWithEmptyResources.class.getDeclaredMethod("testMethodWithEmptyResources");
 
+    // when
     service.deployTestResources(method, TestClassWithEmptyResources.class, client);
 
+    // then
     verifyNoInteractions(client);
   }
 
   @Test
-  void nullMethodSkipsDeployment() {
-    service.deployTestResources(null, TestClassWithMethodAnnotation.class, client);
-    verifyNoInteractions(client);
-  }
-
-  @Test
-  void supportsResourcePaths() throws Exception {
+  void shouldFailIfCommandIsRejected() throws Exception {
+    // given
     stubSuccessfulChain();
-    enableChainingOnStep2();
+    final ClientException clientException = new ClientException("<expected: command rejected>");
+    when(future.join()).thenThrow(clientException);
+
+    final Method method =
+        TestClassWithMethodAnnotation.class.getDeclaredMethod("testMethodWithDeployment");
+
+    // when - then
+    assertThatThrownBy(
+            () -> service.deployTestResources(method, TestClassWithEmptyResources.class, client))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to deploy resources from @TestDeployment")
+        .hasCause(clientException);
+  }
+
+  @Test
+  void shouldFailIfResourceNotFound() throws Exception {
+    // given
+    when(client.newDeployResourceCommand()).thenReturn(step1);
+    final ClientException clientException = new ClientException("<expected: resource not found>");
+    when(step1.addResourceFromClasspath(anyString())).thenThrow(clientException);
+
+    final Method method =
+        TestClassWithMethodAnnotation.class.getDeclaredMethod("testMethodWithDeployment");
+
+    // when - then
+    assertThatThrownBy(
+            () -> service.deployTestResources(method, TestClassWithEmptyResources.class, client))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("Failed to deploy resources from @TestDeployment")
+        .hasCause(clientException);
+  }
+
+  @Test
+  void shouldIgnoreDeploymentIfMethodIsNull() {
+    // when
+    service.deployTestResources(null, TestClassWithMethodAnnotation.class, client);
+
+    // then
+    verifyNoInteractions(client);
+  }
+
+  @Test
+  void shouldDeployResourcesWithPaths() throws Exception {
+    // given
+    stubSuccessfulChain();
+    when(step2.addResourceFromClasspath(anyString())).thenReturn(step2);
+
     final Method method =
         TestClassWithResourcePaths.class.getDeclaredMethod("testMethodWithResourcePaths");
 
+    // when
     service.deployTestResources(method, TestClassWithResourcePaths.class, client);
 
+    // then
     final ArgumentCaptor<String> resources = ArgumentCaptor.forClass(String.class);
     verify(step1, times(1)).addResourceFromClasspath(resources.capture());
     verify(step2, times(2)).addResourceFromClasspath(resources.capture());
