@@ -277,6 +277,23 @@ public class UnifiedConfigurationHelper {
         .instantiate(io.camunda.exporter.rdbms.ExporterConfiguration.class);
   }
 
+  /**
+   * Logs a warning for a legacy list property that is no longer supported and should be replaced by
+   * the specified new list property.
+   *
+   * <p>Normally, legacy properties are logged using {@link #validateLegacyConfiguration}, but that
+   * method cannot handle the logging of list-type properties. This method should be used
+   * specifically for legacy list properties.
+   */
+  public static void logLegacyListPropertyWarning(
+      final String newListPropertyName, final String legacyListPropertyName) {
+    final String warningMessage =
+        String.format(
+            "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
+            newListPropertyName, legacyListPropertyName);
+    LOGGER.warn(warningMessage);
+  }
+
   /* Setters used by tests to inject the mock objects */
 
   public static void setCustomEnvironment(final Environment environment) {
