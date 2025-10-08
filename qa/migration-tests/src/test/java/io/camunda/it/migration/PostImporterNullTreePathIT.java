@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -30,7 +31,7 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class PostImporterNullTreePathIT {
-  static List<Long> PROCESS_INSTANCE_KEYS = new ArrayList<>();
+  static List<Long> processInstanceKeys = new ArrayList<>();
   private static final String TREE_PATH_REGEX =
       "^PI_\\d{16}/FN_call-activity/FNI_\\d{16}/PI_\\d{16}/FN_user-task/FNI_\\d{16}$";
 
@@ -39,6 +40,11 @@ public class PostImporterNullTreePathIT {
       new MigrationITExtension()
           .withInitialEnvOverrides(Map.of("CAMUNDA_OPERATE_IMPORTER_POSTIMPORTENABLED", "false"))
           .withBeforeUpgradeConsumer(PostImporterNullTreePathIT::setup);
+
+  @AfterAll
+  static void cleanUpAfterAll() {
+    processInstanceKeys.clear();
+  }
 
   private static void setup(final DatabaseType databaseType, final CamundaMigrator migrator) {
     migrator
@@ -79,7 +85,7 @@ public class PostImporterNullTreePathIT {
               .join()
               .getProcessInstanceKey();
 
-      PROCESS_INSTANCE_KEYS.add(piKey);
+      processInstanceKeys.add(piKey);
     }
   }
 
@@ -90,7 +96,7 @@ public class PostImporterNullTreePathIT {
     Awaitility.await()
         .untilAsserted(
             () ->
-                PROCESS_INSTANCE_KEYS.forEach(
+                processInstanceKeys.forEach(
                     piKey -> {
                       final var incident =
                           migrator
@@ -110,7 +116,7 @@ public class PostImporterNullTreePathIT {
                 IncidentEntity.class)
             .hits();
 
-    assertThat(hits.size()).isEqualTo(PROCESS_INSTANCE_KEYS.size());
+    assertThat(hits.size()).isEqualTo(processInstanceKeys.size());
 
     hits.stream()
         .map(SearchQueryHit::source)
@@ -119,7 +125,7 @@ public class PostImporterNullTreePathIT {
               assertThat(incident.getState()).isEqualTo(IncidentState.ACTIVE);
               assertThat(incident.getTreePath()).matches(TREE_PATH_REGEX);
               final String piKey = incident.getTreePath().split("/")[0].substring(3);
-              assertThat(PROCESS_INSTANCE_KEYS.contains(Long.parseLong(piKey))).isTrue();
+              assertThat(processInstanceKeys.contains(Long.parseLong(piKey))).isTrue();
             });
   }
 }
