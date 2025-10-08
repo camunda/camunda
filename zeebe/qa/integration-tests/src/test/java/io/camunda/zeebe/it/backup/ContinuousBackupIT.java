@@ -126,7 +126,7 @@ final class ContinuousBackupIT {
 
     // when - restoring from all three backups
     broker.stop();
-    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    final var dataDirectory = Path.of(broker.brokerConfig().getData().getRootDirectory()).getParent();
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =
@@ -169,7 +169,7 @@ final class ContinuousBackupIT {
 
     // when/then - restoring from backup 1 and 3, but skipping backup 2
     broker.stop();
-    final var dataDirectory = Path.of(broker.brokerConfig().getData().getDirectory()).getParent();
+    final var dataDirectory = Path.of(broker.brokerConfig().getData().getRootDirectory()).getParent();
     FileUtil.deleteFolder(dataDirectory);
     FileUtil.ensureDirectoryExists(dataDirectory);
     final var restore =

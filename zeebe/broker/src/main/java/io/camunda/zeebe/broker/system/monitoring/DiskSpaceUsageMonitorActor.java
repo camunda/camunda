@@ -30,7 +30,7 @@ public class DiskSpaceUsageMonitorActor extends Actor implements DiskSpaceUsageM
   public DiskSpaceUsageMonitorActor(final DataCfg dataCfg) {
     final var diskCfg = dataCfg.getDisk();
     monitoringDelay = diskCfg.getMonitoringInterval();
-    final var directory = new File(dataCfg.getDirectory());
+    final var directory = new File(dataCfg.getRootDirectory());
     if (!directory.exists()) {
       throw new UncheckedIOException(new IOException("Folder '" + directory + "' does not exist."));
     }

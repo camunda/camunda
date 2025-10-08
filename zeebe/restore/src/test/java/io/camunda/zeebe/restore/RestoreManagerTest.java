@@ -25,7 +25,7 @@ final class RestoreManagerTest {
   void shouldFailWhenDirectoryIsNotEmpty(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
+    configuration.getData().setRootDirectory(dir.toString());
     final var restoreManager =
         new RestoreManager(
             configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
@@ -42,7 +42,7 @@ final class RestoreManagerTest {
   void shouldIgnoreConfigurableFilesInTarget(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
+    configuration.getData().setRootDirectory(dir.toString());
     final var restoreManager =
         new RestoreManager(
             configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());
@@ -63,7 +63,7 @@ final class RestoreManagerTest {
   void shouldFailWhenNonIgnoredFileExists(@TempDir final Path dir) throws IOException {
     // given
     final var configuration = new BrokerCfg();
-    configuration.getData().setDirectory(dir.toString());
+    configuration.getData().setRootDirectory(dir.toString());
     final var restoreManager =
         new RestoreManager(
             configuration, new TestRestorableBackupStore(), new SimpleMeterRegistry());

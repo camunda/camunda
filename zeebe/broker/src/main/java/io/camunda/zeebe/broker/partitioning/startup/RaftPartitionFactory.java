@@ -23,7 +23,6 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
 import org.slf4j.Logger;
 
@@ -39,7 +38,9 @@ public final class RaftPartitionFactory {
   public RaftPartition createRaftPartition(
       final PartitionMetadata partitionMetadata, final MeterRegistry partitionMeterRegistry) {
     final var partitionDirectory =
-        Paths.get(brokerCfg.getData().getDirectory())
+        brokerCfg
+            .getData()
+            .getBrokerDataDirectory()
             .resolve(GROUP_NAME)
             .resolve("partitions")
             .resolve(partitionMetadata.id().id().toString());

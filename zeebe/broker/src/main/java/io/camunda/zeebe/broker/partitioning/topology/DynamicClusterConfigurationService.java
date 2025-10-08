@@ -19,7 +19,6 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.util.ConfigurationUtil;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import java.nio.file.Path;
 
 public class DynamicClusterConfigurationService implements ClusterConfigurationService {
 
@@ -154,7 +153,7 @@ public class DynamicClusterConfigurationService implements ClusterConfigurationS
   private ClusterConfigurationManagerService getClusterTopologyManagerService(
       final BrokerStartupContext brokerStartupContext) {
     final var rootDirectory =
-        Path.of(brokerStartupContext.getBrokerConfiguration().getData().getDirectory());
+        brokerStartupContext.getBrokerConfiguration().getData().getBrokerDataDirectory();
     return new ClusterConfigurationManagerService(
         rootDirectory,
         brokerStartupContext.getClusterServices().getCommunicationService(),

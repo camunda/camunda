@@ -19,7 +19,7 @@ public class DiskSpaceUsageMonitorTest {
   public void shouldThrowUncheckedIOExceptionIfFolderDoesNotExist() {
     // given
     final var dataCfg = new DataCfg();
-    dataCfg.setDirectory("something-that-does-not-exist");
+    dataCfg.setRootDirectory("something-that-does-not-exist");
 
     // when + then
     assertThatThrownBy(() -> new DiskSpaceUsageMonitorActor(dataCfg))

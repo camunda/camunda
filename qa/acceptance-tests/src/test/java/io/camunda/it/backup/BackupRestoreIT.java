@@ -259,7 +259,7 @@ public class BackupRestoreIT {
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(brokerCfg.getData().getDirectory());
+        .setDirectory(brokerCfg.getData().getRootDirectory());
     unifiedRestoreConfig.getCluster().setSize(brokerCfg.getCluster().getClusterSize());
 
     try (final var restoreApp = new TestRestoreApp(unifiedRestoreConfig).withBackupId(BACKUP_ID)) {

@@ -70,7 +70,9 @@ public class RestoreManager {
   public void restore(
       final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
-    final var dataDirectory = Path.of(configuration.getData().getDirectory());
+
+    // TODO: Restore should also use versioned directories based on configuration.
+    final var dataDirectory = Path.of(configuration.getData().getRootDirectory());
     if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
       LOG.error(
           "Brokers's data directory {} is not empty. Aborting restore to avoid overwriting data. Please restart with a clean directory.",
@@ -108,8 +110,9 @@ public class RestoreManager {
   private void restoreTopologyFile() throws ExecutionException, InterruptedException, IOException {
     final var coordinatorId = MemberId.from("0");
     LOG.info("Restoring topology file");
+    // TODO: Use versioned directory based on configuration.
     final var file =
-        Path.of(configuration.getData().getDirectory())
+        Path.of(configuration.getData().getRootDirectory())
             .resolve(ClusterConfigurationManagerService.TOPOLOGY_FILE_NAME);
     final var staticConfiguration =
         StaticConfigurationGenerator.getStaticConfiguration(configuration, coordinatorId);

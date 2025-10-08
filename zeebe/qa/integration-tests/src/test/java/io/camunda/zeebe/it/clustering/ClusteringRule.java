@@ -811,7 +811,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public Path getSegmentsDirectory(final Broker broker) {
-    final String dataDir = broker.getConfig().getData().getDirectory();
+    final String dataDir = broker.getConfig().getData().getRootDirectory();
     return Paths.get(dataDir).resolve(RAFT_PARTITION_PATH);
   }
 

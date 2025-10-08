@@ -422,7 +422,7 @@ public class BrokerBasedPropertiesOverride {
   private void populateFromPrimaryStorage(final BrokerBasedProperties override) {
     final var primaryStorage = unifiedConfiguration.getCamunda().getData().getPrimaryStorage();
     final var data = override.getData();
-    data.setDirectory(primaryStorage.getDirectory());
+    data.setRootDirectory(primaryStorage.getDirectory());
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
     data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());

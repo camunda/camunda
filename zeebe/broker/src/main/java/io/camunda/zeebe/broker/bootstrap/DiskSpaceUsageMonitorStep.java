@@ -76,7 +76,7 @@ class DiskSpaceUsageMonitorStep extends AbstractBrokerStartupStep {
       final ActorFuture<BrokerStartupContext> startupFuture,
       final DataCfg data) {
     try {
-      FileUtil.ensureDirectoryExists(Paths.get(data.getDirectory()));
+      FileUtil.ensureDirectoryExists(Paths.get(data.getRootDirectory()));
     } catch (final IOException e) {
       startupFuture.completeExceptionally(e);
       return;
