@@ -9,11 +9,35 @@ package io.camunda.optimize.dto.optimize.importing;
 
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
 public class LastKpiEvaluationResultsDto implements OptimizeDto {
+
   final Map<String, String> reportIdToValue;
+
+  public LastKpiEvaluationResultsDto(final Map<String, String> reportIdToValue) {
+    this.reportIdToValue = reportIdToValue;
+  }
+
+  public Map<String, String> getReportIdToValue() {
+    return reportIdToValue;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof LastKpiEvaluationResultsDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LastKpiEvaluationResultsDto that = (LastKpiEvaluationResultsDto) o;
+    return Objects.equals(reportIdToValue, that.reportIdToValue);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(reportIdToValue);
+  }
 }

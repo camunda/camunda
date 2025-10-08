@@ -12,13 +12,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.DataImportSourceType;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import java.io.Serializable;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -33,6 +28,56 @@ public abstract class DataSourceDto implements OptimizeDto, Serializable {
   private DataImportSourceType type;
   private String name;
 
+  public DataSourceDto(final DataImportSourceType type, final String name) {
+    this.type = type;
+    this.name = name;
+  }
+
+  public DataSourceDto() {}
+
+  public DataImportSourceType getType() {
+    return type;
+  }
+
+  public void setType(final DataImportSourceType type) {
+    this.type = type;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DataSourceDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, name);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DataSourceDto that = (DataSourceDto) o;
+    return Objects.equals(type, that.type) && Objects.equals(name, that.name);
+  }
+
+  @Override
+  public String toString() {
+    return "DataSourceDto(type=" + getType() + ", name=" + getName() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String type = "type";

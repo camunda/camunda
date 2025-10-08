@@ -15,17 +15,24 @@ import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class ProcessToQueryDto {
+
   @NotNull private String processDefinitionKey;
   private List<String> processDefinitionVersions = new ArrayList<>();
   private List<String> tenantIds = new ArrayList<>(DEFAULT_TENANT_IDS);
+
+  public ProcessToQueryDto(
+      @NotNull final String processDefinitionKey,
+      final List<String> processDefinitionVersions,
+      final List<String> tenantIds) {
+    this.processDefinitionKey = processDefinitionKey;
+    this.processDefinitionVersions = processDefinitionVersions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ProcessToQueryDto() {}
 
   @JsonIgnore
   public void setProcessDefinitionVersion(final String processDefinitionVersion) {
@@ -34,5 +41,59 @@ public class ProcessToQueryDto {
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  public @NotNull String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(@NotNull final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public List<String> getProcessDefinitionVersions() {
+    return processDefinitionVersions;
+  }
+
+  public void setProcessDefinitionVersions(final List<String> processDefinitionVersions) {
+    this.processDefinitionVersions = processDefinitionVersions;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessToQueryDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(processDefinitionKey, processDefinitionVersions, tenantIds);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessToQueryDto that = (ProcessToQueryDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessToQueryDto(processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", processDefinitionVersions="
+        + getProcessDefinitionVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ")";
   }
 }

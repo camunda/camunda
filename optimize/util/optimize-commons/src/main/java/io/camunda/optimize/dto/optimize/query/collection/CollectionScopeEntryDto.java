@@ -14,24 +14,14 @@ import static io.camunda.optimize.dto.optimize.query.collection.ScopeComplianceT
 import io.camunda.optimize.dto.optimize.DefinitionType;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
 
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class CollectionScopeEntryDto {
 
   private static final String ID_SEGMENT_SEPARATOR = ":";
 
-  @EqualsAndHashCode.Include
-  @Setter(value = AccessLevel.PROTECTED)
   private String id;
-
   private DefinitionType definitionType;
   private String definitionKey;
   private List<String> tenants = ReportConstants.DEFAULT_TENANT_IDS;
@@ -61,9 +51,15 @@ public class CollectionScopeEntryDto {
     this.tenants = tenants;
   }
 
+  protected CollectionScopeEntryDto() {}
+
   public String getId() {
     return Optional.ofNullable(id)
         .orElse(convertTypeAndKeyToScopeEntryId(definitionType, definitionKey));
+  }
+
+  protected void setId(final String id) {
+    this.id = id;
   }
 
   public ScopeComplianceType getComplianceType(
@@ -88,6 +84,67 @@ public class CollectionScopeEntryDto {
   public static String convertTypeAndKeyToScopeEntryId(
       final DefinitionType definitionType, final String definitionKey) {
     return definitionType.getId() + ID_SEGMENT_SEPARATOR + definitionKey;
+  }
+
+  public DefinitionType getDefinitionType() {
+    return definitionType;
+  }
+
+  public void setDefinitionType(final DefinitionType definitionType) {
+    this.definitionType = definitionType;
+  }
+
+  public String getDefinitionKey() {
+    return definitionKey;
+  }
+
+  public void setDefinitionKey(final String definitionKey) {
+    this.definitionKey = definitionKey;
+  }
+
+  public List<String> getTenants() {
+    return tenants;
+  }
+
+  public void setTenants(final List<String> tenants) {
+    this.tenants = tenants;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CollectionScopeEntryDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, definitionType, definitionKey, tenants);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionScopeEntryDto that = (CollectionScopeEntryDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(definitionType, that.definitionType)
+        && Objects.equals(definitionKey, that.definitionKey)
+        && Objects.equals(tenants, that.tenants);
+  }
+
+  @Override
+  public String toString() {
+    return "CollectionScopeEntryDto(id="
+        + getId()
+        + ", definitionType="
+        + getDefinitionType()
+        + ", definitionKey="
+        + getDefinitionKey()
+        + ", tenants="
+        + getTenants()
+        + ")";
   }
 
   public enum Fields {

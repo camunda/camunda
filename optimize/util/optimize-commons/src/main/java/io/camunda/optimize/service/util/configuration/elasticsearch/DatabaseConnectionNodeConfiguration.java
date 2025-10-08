@@ -7,11 +7,55 @@
  */
 package io.camunda.optimize.service.util.configuration.elasticsearch;
 
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class DatabaseConnectionNodeConfiguration {
 
   private String host;
   private Integer httpPort;
+
+  public DatabaseConnectionNodeConfiguration() {}
+
+  public String getHost() {
+    return host;
+  }
+
+  public void setHost(final String host) {
+    this.host = host;
+  }
+
+  public Integer getHttpPort() {
+    return httpPort;
+  }
+
+  public void setHttpPort(final Integer httpPort) {
+    this.httpPort = httpPort;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DatabaseConnectionNodeConfiguration;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseConnectionNodeConfiguration that = (DatabaseConnectionNodeConfiguration) o;
+    return Objects.equals(host, that.host) && Objects.equals(httpPort, that.httpPort);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(host, httpPort);
+  }
+
+  @Override
+  public String toString() {
+    return "DatabaseConnectionNodeConfiguration(host="
+        + getHost()
+        + ", httpPort="
+        + getHttpPort()
+        + ")";
+  }
 }

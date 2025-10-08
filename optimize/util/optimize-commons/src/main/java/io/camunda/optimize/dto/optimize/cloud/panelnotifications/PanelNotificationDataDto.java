@@ -7,17 +7,10 @@
  */
 package io.camunda.optimize.dto.optimize.cloud.panelnotifications;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@AllArgsConstructor(access = AccessLevel.PRIVATE)
-@EqualsAndHashCode
-@Builder
-@Data
-public class PanelNotificationDataDto {
+public final class PanelNotificationDataDto {
+
   private final String uniqueId;
   private final String source;
   private final String type;
@@ -25,4 +18,170 @@ public class PanelNotificationDataDto {
   private final String title;
   private final String description;
   private final PanelNotificationMetaDataDto meta;
+
+  private PanelNotificationDataDto(
+      final String uniqueId,
+      final String source,
+      final String type,
+      final String orgId,
+      final String title,
+      final String description,
+      final PanelNotificationMetaDataDto meta) {
+    this.uniqueId = uniqueId;
+    this.source = source;
+    this.type = type;
+    this.orgId = orgId;
+    this.title = title;
+    this.description = description;
+    this.meta = meta;
+  }
+
+  public String getUniqueId() {
+    return uniqueId;
+  }
+
+  public String getSource() {
+    return source;
+  }
+
+  public String getType() {
+    return type;
+  }
+
+  public String getOrgId() {
+    return orgId;
+  }
+
+  public String getTitle() {
+    return title;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public PanelNotificationMetaDataDto getMeta() {
+    return meta;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof PanelNotificationDataDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(uniqueId, source, type, orgId, title, description, meta);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PanelNotificationDataDto that = (PanelNotificationDataDto) o;
+    return Objects.equals(uniqueId, that.uniqueId)
+        && Objects.equals(source, that.source)
+        && Objects.equals(type, that.type)
+        && Objects.equals(orgId, that.orgId)
+        && Objects.equals(title, that.title)
+        && Objects.equals(description, that.description)
+        && Objects.equals(meta, that.meta);
+  }
+
+  @Override
+  public String toString() {
+    return "PanelNotificationDataDto(uniqueId="
+        + getUniqueId()
+        + ", source="
+        + getSource()
+        + ", type="
+        + getType()
+        + ", orgId="
+        + getOrgId()
+        + ", title="
+        + getTitle()
+        + ", description="
+        + getDescription()
+        + ", meta="
+        + getMeta()
+        + ")";
+  }
+
+  public static PanelNotificationDataDtoBuilder builder() {
+    return new PanelNotificationDataDtoBuilder();
+  }
+
+  public static class PanelNotificationDataDtoBuilder {
+
+    private String uniqueId;
+    private String source;
+    private String type;
+    private String orgId;
+    private String title;
+    private String description;
+    private PanelNotificationMetaDataDto meta;
+
+    PanelNotificationDataDtoBuilder() {}
+
+    public PanelNotificationDataDtoBuilder uniqueId(final String uniqueId) {
+      this.uniqueId = uniqueId;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder source(final String source) {
+      this.source = source;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder type(final String type) {
+      this.type = type;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder orgId(final String orgId) {
+      this.orgId = orgId;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder title(final String title) {
+      this.title = title;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder description(final String description) {
+      this.description = description;
+      return this;
+    }
+
+    public PanelNotificationDataDtoBuilder meta(final PanelNotificationMetaDataDto meta) {
+      this.meta = meta;
+      return this;
+    }
+
+    public PanelNotificationDataDto build() {
+      return new PanelNotificationDataDto(uniqueId, source, type, orgId, title, description, meta);
+    }
+
+    @Override
+    public String toString() {
+      return "PanelNotificationDataDto.PanelNotificationDataDtoBuilder(uniqueId="
+          + uniqueId
+          + ", source="
+          + source
+          + ", type="
+          + type
+          + ", orgId="
+          + orgId
+          + ", title="
+          + title
+          + ", description="
+          + description
+          + ", meta="
+          + meta
+          + ")";
+    }
+  }
 }

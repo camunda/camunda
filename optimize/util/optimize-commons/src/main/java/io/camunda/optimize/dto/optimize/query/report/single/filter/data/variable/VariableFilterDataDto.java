@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
-import lombok.Data;
+import java.util.Objects;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -48,10 +48,9 @@ import lombok.Data;
   @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE),
   @JsonSubTypes.Type(value = DateVariableFilterDataDto.class, name = DATE_TYPE_LOWERCASE)
 })
-@Data
 public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
-  protected VariableType type;
 
+  protected VariableType type;
   protected String name;
   protected DATA data;
 
@@ -59,5 +58,58 @@ public abstract class VariableFilterDataDto<DATA> implements FilterDataDto {
     this.name = name;
     this.type = type;
     this.data = data;
+  }
+
+  public VariableType getType() {
+    return type;
+  }
+
+  public void setType(final VariableType type) {
+    this.type = type;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public DATA getData() {
+    return data;
+  }
+
+  public void setData(final DATA data) {
+    this.data = data;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof VariableFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariableFilterDataDto<?> that = (VariableFilterDataDto<?>) o;
+    return type == that.type && Objects.equals(name, that.name) && Objects.equals(data, that.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, name, data);
+  }
+
+  @Override
+  public String toString() {
+    return "VariableFilterDataDto(type="
+        + getType()
+        + ", name="
+        + getName()
+        + ", data="
+        + getData()
+        + ")";
   }
 }

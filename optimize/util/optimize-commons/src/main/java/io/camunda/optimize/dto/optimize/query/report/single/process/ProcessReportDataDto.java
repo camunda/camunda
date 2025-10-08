@@ -34,34 +34,68 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.experimental.SuperBuilder;
 
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = false)
-@NoArgsConstructor
-@SuperBuilder
 @ProcessFiltersMustReferenceExistingDefinitionsConstraint
 public class ProcessReportDataDto extends SingleReportDataDto implements Combinable {
 
   private static final String COMMAND_KEY_SEPARATOR = "_";
   private static final String MISSING_COMMAND_PART_PLACEHOLDER = "null";
 
-  @Builder.Default @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
+  @Valid protected List<ProcessFilterDto<?>> filter = new ArrayList<>();
   protected ProcessViewDto view;
   protected ProcessGroupByDto<?> groupBy;
 
-  @Builder.Default
   protected ProcessReportDistributedByDto<?> distributedBy = new ProcessReportDistributedByDto<>();
 
   protected ProcessVisualization visualization;
-  @Builder.Default protected boolean managementReport = false;
-  @Builder.Default protected boolean instantPreviewReport = false;
+  protected boolean managementReport = false;
+  protected boolean instantPreviewReport = false;
+
+  public ProcessReportDataDto(
+      @Valid final List<ProcessFilterDto<?>> filter,
+      final ProcessViewDto view,
+      final ProcessGroupByDto<?> groupBy,
+      final ProcessReportDistributedByDto<?> distributedBy,
+      final ProcessVisualization visualization,
+      final boolean managementReport,
+      final boolean instantPreviewReport) {
+    this.filter = filter;
+    this.view = view;
+    this.groupBy = groupBy;
+    this.distributedBy = distributedBy;
+    this.visualization = visualization;
+    this.managementReport = managementReport;
+    this.instantPreviewReport = instantPreviewReport;
+  }
+
+  public ProcessReportDataDto() {}
+
+  protected ProcessReportDataDto(final ProcessReportDataDtoBuilder<?, ?> b) {
+    super(b);
+    if (b.filterSet) {
+      filter = b.filterValue;
+    } else {
+      filter = defaultFilter();
+    }
+    view = b.view;
+    groupBy = b.groupBy;
+    if (b.distributedBySet) {
+      distributedBy = b.distributedByValue;
+    } else {
+      distributedBy = defaultDistributedBy();
+    }
+    visualization = b.visualization;
+    if (b.managementReportSet) {
+      managementReport = b.managementReportValue;
+    } else {
+      managementReport = defaultManagementReport();
+    }
+    if (b.instantPreviewReportSet) {
+      instantPreviewReport = b.instantPreviewReportValue;
+    } else {
+      instantPreviewReport = defaultInstantPreviewReport();
+    }
+  }
 
   public String getProcessDefinitionKey() {
     return getDefinitionKey();
@@ -260,6 +294,134 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
         && ProcessViewEntity.PROCESS_INSTANCE.equals(view.getEntity());
   }
 
+  public @Valid List<ProcessFilterDto<?>> getFilter() {
+    return filter;
+  }
+
+  public void setFilter(@Valid final List<ProcessFilterDto<?>> filter) {
+    this.filter = filter;
+  }
+
+  public ProcessViewDto getView() {
+    return view;
+  }
+
+  public void setView(final ProcessViewDto view) {
+    this.view = view;
+  }
+
+  public ProcessGroupByDto<?> getGroupBy() {
+    return groupBy;
+  }
+
+  public void setGroupBy(final ProcessGroupByDto<?> groupBy) {
+    this.groupBy = groupBy;
+  }
+
+  public ProcessReportDistributedByDto<?> getDistributedBy() {
+    return distributedBy;
+  }
+
+  public void setDistributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
+    this.distributedBy = distributedBy;
+  }
+
+  public ProcessVisualization getVisualization() {
+    return visualization;
+  }
+
+  public void setVisualization(final ProcessVisualization visualization) {
+    this.visualization = visualization;
+  }
+
+  public boolean isManagementReport() {
+    return managementReport;
+  }
+
+  public void setManagementReport(final boolean managementReport) {
+    this.managementReport = managementReport;
+  }
+
+  public boolean isInstantPreviewReport() {
+    return instantPreviewReport;
+  }
+
+  public void setInstantPreviewReport(final boolean instantPreviewReport) {
+    this.instantPreviewReport = instantPreviewReport;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessReportDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessReportDataDto that = (ProcessReportDataDto) o;
+    return managementReport == that.managementReport
+        && instantPreviewReport == that.instantPreviewReport
+        && Objects.equals(filter, that.filter)
+        && Objects.equals(view, that.view)
+        && Objects.equals(groupBy, that.groupBy)
+        && Objects.equals(distributedBy, that.distributedBy)
+        && visualization == that.visualization;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        filter,
+        view,
+        groupBy,
+        distributedBy,
+        visualization,
+        managementReport,
+        instantPreviewReport);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessReportDataDto(filter="
+        + getFilter()
+        + ", view="
+        + getView()
+        + ", groupBy="
+        + getGroupBy()
+        + ", distributedBy="
+        + getDistributedBy()
+        + ", visualization="
+        + getVisualization()
+        + ", managementReport="
+        + isManagementReport()
+        + ", instantPreviewReport="
+        + isInstantPreviewReport()
+        + ")";
+  }
+
+  @Valid
+  private static List<ProcessFilterDto<?>> defaultFilter() {
+    return new ArrayList<>();
+  }
+
+  private static ProcessReportDistributedByDto<?> defaultDistributedBy() {
+    return new ProcessReportDistributedByDto<>();
+  }
+
+  private static boolean defaultManagementReport() {
+    return false;
+  }
+
+  private static boolean defaultInstantPreviewReport() {
+    return false;
+  }
+
+  public static ProcessReportDataDtoBuilder<?, ?> builder() {
+    return new ProcessReportDataDtoBuilderImpl();
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String filter = "filter";
@@ -269,5 +431,104 @@ public class ProcessReportDataDto extends SingleReportDataDto implements Combina
     public static final String visualization = "visualization";
     public static final String managementReport = "managementReport";
     public static final String instantPreviewReport = "instantPreviewReport";
+  }
+
+  public abstract static class ProcessReportDataDtoBuilder<
+          C extends ProcessReportDataDto, B extends ProcessReportDataDtoBuilder<C, B>>
+      extends SingleReportDataDtoBuilder<C, B> {
+
+    private @Valid List<ProcessFilterDto<?>> filterValue;
+    private boolean filterSet;
+    private ProcessViewDto view;
+    private ProcessGroupByDto<?> groupBy;
+    private ProcessReportDistributedByDto<?> distributedByValue;
+    private boolean distributedBySet;
+    private ProcessVisualization visualization;
+    private boolean managementReportValue;
+    private boolean managementReportSet;
+    private boolean instantPreviewReportValue;
+    private boolean instantPreviewReportSet;
+
+    public B filter(@Valid final List<ProcessFilterDto<?>> filter) {
+      filterValue = filter;
+      filterSet = true;
+      return self();
+    }
+
+    public B view(final ProcessViewDto view) {
+      this.view = view;
+      return self();
+    }
+
+    public B groupBy(final ProcessGroupByDto<?> groupBy) {
+      this.groupBy = groupBy;
+      return self();
+    }
+
+    public B distributedBy(final ProcessReportDistributedByDto<?> distributedBy) {
+      distributedByValue = distributedBy;
+      distributedBySet = true;
+      return self();
+    }
+
+    public B visualization(final ProcessVisualization visualization) {
+      this.visualization = visualization;
+      return self();
+    }
+
+    public B managementReport(final boolean managementReport) {
+      managementReportValue = managementReport;
+      managementReportSet = true;
+      return self();
+    }
+
+    public B instantPreviewReport(final boolean instantPreviewReport) {
+      instantPreviewReportValue = instantPreviewReport;
+      instantPreviewReportSet = true;
+      return self();
+    }
+
+    @Override
+    protected abstract B self();
+
+    @Override
+    public abstract C build();
+
+    @Override
+    public String toString() {
+      return "ProcessReportDataDto.ProcessReportDataDtoBuilder(super="
+          + super.toString()
+          + ", filterValue="
+          + filterValue
+          + ", view="
+          + view
+          + ", groupBy="
+          + groupBy
+          + ", distributedByValue="
+          + distributedByValue
+          + ", visualization="
+          + visualization
+          + ", managementReportValue="
+          + managementReportValue
+          + ", instantPreviewReportValue="
+          + instantPreviewReportValue
+          + ")";
+    }
+  }
+
+  private static final class ProcessReportDataDtoBuilderImpl
+      extends ProcessReportDataDtoBuilder<ProcessReportDataDto, ProcessReportDataDtoBuilderImpl> {
+
+    private ProcessReportDataDtoBuilderImpl() {}
+
+    @Override
+    protected ProcessReportDataDtoBuilderImpl self() {
+      return this;
+    }
+
+    @Override
+    public ProcessReportDataDto build() {
+      return new ProcessReportDataDto(this);
+    }
   }
 }
