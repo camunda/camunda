@@ -33,6 +33,8 @@ public sealed interface AuthenticationHandler {
   Context.Key<String> USERNAME = Context.key("io.camunda.zeebe:username");
   Context.Key<String> CLIENT_ID = Context.key("io.camunda.zeebe:client_id");
   Context.Key<List<String>> GROUPS_CLAIMS = Context.key("io.camunda.zeebe:groups_claims");
+  Context.Key<Boolean> IS_CAMUNDA_USERS_ENABLED = Context.key("is_camunda_users_enabled");
+  Context.Key<Boolean> IS_CAMUNDA_GROUPS_ENABLED = Context.key("is_camunda_groups_enabled");
 
   /**
    * Applies authentication logic for the given authorization header. Must not throw exceptions, but
@@ -85,6 +87,11 @@ public sealed interface AuthenticationHandler {
       }
 
       var context = Context.current();
+      context = context.withValue(IS_CAMUNDA_USERS_ENABLED, false);
+      context =
+          context.withValue(
+              IS_CAMUNDA_GROUPS_ENABLED,
+              !oidcAuthenticationConfiguration.isGroupsClaimConfigured());
       if (oidcAuthenticationConfiguration.isGroupsClaimConfigured()) {
         try {
           context = context.withValue(GROUPS_CLAIMS, oidcGroupsLoader.load(token.getClaims()));
@@ -172,7 +179,11 @@ public sealed interface AuthenticationHandler {
         return Either.left(Status.UNAUTHENTICATED.augmentDescription("Invalid credentials"));
       }
 
-      return Either.right(Context.current().withValue(USERNAME, user.username()));
+      return Either.right(
+          Context.current()
+              .withValue(IS_CAMUNDA_GROUPS_ENABLED, true)
+              .withValue(IS_CAMUNDA_USERS_ENABLED, true)
+              .withValue(USERNAME, user.username()));
     }
 
     private Optional<UserEntity> loadUserByUsername(final String username) {

@@ -11,6 +11,8 @@ import static io.camunda.security.entity.AuthenticationMethod.OIDC;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_GROUPS_ENABLED;
+import static io.camunda.zeebe.auth.Authorization.IS_CAMUNDA_USERS_ENABLED;
 import static io.camunda.zeebe.auth.Authorization.USER_GROUPS_CLAIMS;
 import static io.camunda.zeebe.auth.Authorization.USER_TOKEN_CLAIMS;
 
@@ -20,24 +22,35 @@ import java.util.Map;
 
 public class BrokerRequestAuthorizationConverter {
 
-  private final boolean isGroupsClaimConfigured;
+  private final boolean camundaGroupsEnabled;
+  private final boolean camundaUsersEnabled;
 
   public BrokerRequestAuthorizationConverter(final SecurityConfiguration securityConfiguration) {
-    isGroupsClaimConfigured = isGroupsClaimConfigured(securityConfiguration);
+    camundaGroupsEnabled = isCamundaGroupsEnabled(securityConfiguration);
+    camundaUsersEnabled = isCamundaUsersEnabled(securityConfiguration);
   }
 
-  protected boolean isGroupsClaimConfigured(final SecurityConfiguration securityConfiguration) {
+  protected boolean isCamundaGroupsEnabled(final SecurityConfiguration securityConfiguration) {
     final var authenticationConfiguration = securityConfiguration.getAuthentication();
-    return authenticationConfiguration.getMethod() == OIDC
-        && authenticationConfiguration.getOidc().isGroupsClaimConfigured();
+    return !(authenticationConfiguration.getMethod() == OIDC
+        && authenticationConfiguration.getOidc().isGroupsClaimConfigured());
+  }
+
+  protected boolean isCamundaUsersEnabled(final SecurityConfiguration securityConfiguration) {
+    final var authenticationConfiguration = securityConfiguration.getAuthentication();
+    return authenticationConfiguration.getMethod() != OIDC;
   }
 
   public Map<String, Object> convert(final CamundaAuthentication authentication) {
-    if (authentication.isAnonymous()) {
-      return Map.of(AUTHORIZED_ANONYMOUS_USER, true);
-    }
 
     final var authorization = new HashMap<String, Object>();
+    authorization.put(IS_CAMUNDA_GROUPS_ENABLED, camundaGroupsEnabled);
+    authorization.put(IS_CAMUNDA_USERS_ENABLED, camundaUsersEnabled);
+    if (authentication.isAnonymous()) {
+      authorization.put(AUTHORIZED_ANONYMOUS_USER, true);
+      return authorization;
+    }
+
     final var username = authentication.authenticatedUsername();
     final var clientId = authentication.authenticatedClientId();
     final var groups = authentication.authenticatedGroupIds();
@@ -51,7 +64,7 @@ public class BrokerRequestAuthorizationConverter {
       authorization.put(AUTHORIZED_CLIENT_ID, clientId);
     }
 
-    if (isGroupsClaimConfigured) {
+    if (!camundaGroupsEnabled) {
       authorization.put(USER_GROUPS_CLAIMS, groups);
     }
 

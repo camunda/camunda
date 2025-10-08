@@ -78,11 +78,16 @@ public class AuthorizationUpdateProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<AuthorizationRecord> command) {
     permissionsBehavior
+<<<<<<< HEAD
         .mappingRuleExists(command.getValue())
         .flatMap(
             s ->
                 permissionsBehavior.authorizationExists(
                     s, AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE))
+=======
+        .authorizationExists(command.getValue(), AUTHORIZATION_DOES_NOT_EXIST_ERROR_MESSAGE_UPDATE)
+        .flatMap(s -> authorizationEntityChecker.ownerAndResourceExists(command))
+>>>>>>> 91d0b42a (fix: adjust processor and checker to use the correct variable)
         .ifRightOrLeft(
             ignored -> {
               stateWriter.appendFollowUpEvent(
