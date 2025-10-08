@@ -12,7 +12,8 @@ import java.util.Optional;
 
 public enum DatabaseType {
   Elasticsearch("elasticsearch"),
-  Opensearch("opensearch");
+  Opensearch("opensearch"),
+  Rdbms("rdbms");
 
   private final String code;
 
