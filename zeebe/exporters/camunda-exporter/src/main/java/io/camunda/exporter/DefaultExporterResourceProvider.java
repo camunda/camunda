@@ -73,7 +73,6 @@ import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOp
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceModificationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ResolveIncidentOperationHandler;
-import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromChunkItemHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromIncidentResolutionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.listview.ListViewFromProcessInstanceMigrationOperationHandler;
@@ -329,9 +328,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
           new BatchOperationChunkCreatedItemHandler(
               indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
               batchOperationCache));
-      exportHandlers.add(
-          new ListViewFromChunkItemHandler(
-              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName()));
+      //      exportHandlers.add(
+      //          new ListViewFromChunkItemHandler(
+      //              indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName())); // TODO
+      // temporarily don't update this index, as archived indices will be updated instead of just
+      // the runtime
     }
 
     indicesWithCustomErrorHandlers =
