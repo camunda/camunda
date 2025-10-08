@@ -104,6 +104,36 @@ public final class MessageCorrelationCorrelateProcessor
         .setRequestId(command.getRequestId())
         .setRequestStreamId(command.getRequestStreamId());
 
+    // Collect correlations first without writing to state
+    final var correlatingSubscriptions = new Subscriptions();
+    final var messageData = createMessageData(messageKey, messageCorrelationRecord);
+
+    // Create a temporary subscriptions collector to check authorization first
+    final var tempCorrelatingSubscriptions = new Subscriptions();
+    correlateBehavior.collectMessageEventSubscriptions(messageData, tempCorrelatingSubscriptions);
+    correlateBehavior.collectMessageStartEventSubscriptions(messageData, tempCorrelatingSubscriptions);
+
+    // Check authorization before writing anything to state
+    final var authorizationRejectionOptional =
+        isAuthorizedForAllSubscriptions(
+            command, tempCorrelatingSubscriptions, messageCorrelationRecord.getTenantId());
+    if (authorizationRejectionOptional.isPresent()) {
+      final var rejection = authorizationRejectionOptional.get();
+      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+      return;
+    }
+
+    if (tempCorrelatingSubscriptions.isEmpty()) {
+      final var errorMessage =
+          SUBSCRIPTION_NOT_FOUND.formatted(
+              command.getValue().getName(), command.getValue().getCorrelationKey());
+      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
+      return;
+    }
+
+    // Now that authorization passed, write the message and correlations to state
     final var messageRecord =
         new MessageRecord()
             .setName(command.getValue().getName())
@@ -116,44 +146,25 @@ public final class MessageCorrelationCorrelateProcessor
     stateWriter.appendFollowUpEvent(
         messageKey, MessageCorrelationIntent.CORRELATING, messageCorrelationRecord);
 
-    final var correlatingSubscriptions = new Subscriptions();
-    final var messageData = createMessageData(messageKey, messageCorrelationRecord);
+    // Now actually correlate with state writes
     correlateBehavior.correlateToMessageEvents(messageData, correlatingSubscriptions);
     correlateBehavior.correlateToMessageStartEvents(messageData, correlatingSubscriptions);
 
-    final var authorizationRejectionOptional =
-        isAuthorizedForAllSubscriptions(
-            command, correlatingSubscriptions, messageCorrelationRecord.getTenantId());
-    if (authorizationRejectionOptional.isPresent()) {
-      final var rejection = authorizationRejectionOptional.get();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
-    }
+    correlatingSubscriptions
+        .getFirstMessageStartEventSubscription()
+        .ifPresent(
+            subscription -> {
+              messageCorrelationRecord.setProcessInstanceKey(
+                  subscription.getProcessInstanceKey());
 
-    if (correlatingSubscriptions.isEmpty()) {
-      final var errorMessage =
-          SUBSCRIPTION_NOT_FOUND.formatted(
-              command.getValue().getName(), command.getValue().getCorrelationKey());
-      rejectionWriter.appendRejection(command, RejectionType.NOT_FOUND, errorMessage);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_FOUND, errorMessage);
-    } else {
-      correlatingSubscriptions
-          .getFirstMessageStartEventSubscription()
-          .ifPresent(
-              subscription -> {
-                messageCorrelationRecord.setProcessInstanceKey(
-                    subscription.getProcessInstanceKey());
-
-                stateWriter.appendFollowUpEvent(
-                    messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
-                responseWriter.writeEventOnCommand(
-                    messageKey,
-                    MessageCorrelationIntent.CORRELATED,
-                    messageCorrelationRecord,
-                    command);
-              });
-    }
+              stateWriter.appendFollowUpEvent(
+                  messageKey, MessageCorrelationIntent.CORRELATED, messageCorrelationRecord);
+              responseWriter.writeEventOnCommand(
+                  messageKey,
+                  MessageCorrelationIntent.CORRELATED,
+                  messageCorrelationRecord,
+                  command);
+            });
 
     correlateBehavior.sendCorrelateCommands(messageData, correlatingSubscriptions);
 
