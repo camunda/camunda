@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
+import io.camunda.zeebe.broker.system.configuration.DataDirectoryInitializationMode;
 import java.util.Set;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -33,7 +34,8 @@ public class PrimaryStorage {
    * disk i/o or performance during snapshotting.
    */
   private String runtimeDirectory;
-
+  // TODO Javadoc
+  private DataDirectoryInitializationMode initializationMode = DataDirectoryInitializationMode.USE_PRECONFIGURED_DIRECTORY;
   @NestedConfigurationProperty private Disk disk = new Disk();
   @NestedConfigurationProperty private LogStream logStream = new LogStream();
   @NestedConfigurationProperty private RocksDb rocksDb = new RocksDb();
@@ -95,5 +97,13 @@ public class PrimaryStorage {
 
   public void setBackup(final PrimaryStorageBackup primaryStorageBackup) {
     backup = primaryStorageBackup;
+  }
+
+  public DataDirectoryInitializationMode getInitializationMode() {
+    return initializationMode;
+  }
+
+  public void setInitializationMode(final DataDirectoryInitializationMode initializationMode) {
+    this.initializationMode = initializationMode;
   }
 }

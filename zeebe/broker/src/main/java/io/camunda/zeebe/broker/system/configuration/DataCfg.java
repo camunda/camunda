@@ -25,6 +25,9 @@ public final class DataCfg implements ConfigurationEntry {
 
   private String runtimeDirectory = null;
 
+  private DataDirectoryInitializationMode initializationMode =
+      DataDirectoryInitializationMode.USE_PRECONFIGURED_DIRECTORY;
+
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
   private Duration snapshotPeriod = Duration.ofMinutes(5);
@@ -162,6 +165,14 @@ public final class DataCfg implements ConfigurationEntry {
 
   public void setBackup(final BackupCfg backup) {
     this.backup = backup;
+  }
+
+  public DataDirectoryInitializationMode getInitializationMode() {
+    return initializationMode;
+  }
+
+  public void setInitializationMode(final DataDirectoryInitializationMode initializationMode) {
+    this.initializationMode = initializationMode;
   }
 
   @Override

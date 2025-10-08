@@ -649,6 +649,7 @@ public class BrokerBasedPropertiesOverride {
     final var data = override.getData();
     data.setDirectory(primaryStorage.getDirectory());
     data.setRuntimeDirectory(primaryStorage.getRuntimeDirectory());
+    data.setInitializationMode(primaryStorage.getInitializationMode());
     data.setLogIndexDensity(primaryStorage.getLogStream().getLogIndexDensity());
     data.setLogSegmentSize(primaryStorage.getLogStream().getLogSegmentSize());
 
