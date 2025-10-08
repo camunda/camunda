@@ -116,24 +116,22 @@ public class ResourceDeletionDeleteProcessor
   public void processNewCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
     final long eventKey = keyGenerator.nextKey();
-    stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
 
-    tryDeleteResources(command);
+    tryDeleteResources(command, eventKey);
 
     stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior
         .withKey(eventKey)
         .inQueue(DistributionQueue.DEPLOYMENT)
         .distribute(command);
-    responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETING, value, command);
+    responseWriter.writeEventOnCommand(eventKey, ResourceDeletionIntent.DELETED, value, command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<ResourceDeletionRecord> command) {
     final var value = command.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETING, value);
 
-    tryDeleteResources(command);
+    tryDeleteResources(command, command.getKey());
 
     stateWriter.appendFollowUpEvent(command.getKey(), ResourceDeletionIntent.DELETED, value);
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -170,11 +168,12 @@ public class ResourceDeletionDeleteProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private void tryDeleteResources(final TypedRecord<ResourceDeletionRecord> command) {
+  private void tryDeleteResources(
+      final TypedRecord<ResourceDeletionRecord> command, final long eventKey) {
     final var value = command.getValue();
 
     final var resourceDeleted =
-        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId));
+        untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
       throw new NoSuchResourceException(value.getResourceKey());
@@ -182,7 +181,9 @@ public class ResourceDeletionDeleteProcessor
   }
 
   private boolean tryDeleteResource(
-      final TypedRecord<ResourceDeletionRecord> command, final String tenantId) {
+      final TypedRecord<ResourceDeletionRecord> command,
+      final String tenantId,
+      final long eventKey) {
     final var value = command.getValue();
     final var processOptional =
         Optional.ofNullable(
@@ -195,6 +196,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_PROCESS,
           bufferAsString(process.getBpmnProcessId()),
           process.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
       setTenantId(command, tenantId);
       deleteProcess(process);
       return true;
@@ -210,6 +212,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
           drg.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
       setTenantId(command, tenantId);
       deleteDecisionRequirements(drg);
       return true;
@@ -224,6 +227,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_FORM,
           bufferAsString(form.getFormId()),
           form.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
       setTenantId(command, tenantId);
       deleteForm(form);
       return true;
@@ -238,6 +242,7 @@ public class ResourceDeletionDeleteProcessor
           PermissionType.DELETE_RESOURCE,
           bufferAsString(resource.getResourceId()),
           resource.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
       setTenantId(command, tenantId);
       deleteResource(resource);
       return true;

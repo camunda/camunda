@@ -125,6 +125,7 @@ public class SignalBroadcastAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'CREATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                 .formatted(PROCESS_ID));
+    assertThatNoSignalIsBroadcasted();
   }
 
   @Test
@@ -176,5 +177,17 @@ public class SignalBroadcastAuthorizationTest {
 
   private long createProcessInstance() {
     return engine.processInstance().ofBpmnProcessId(PROCESS_ID).create(DEFAULT_USER.getUsername());
+  }
+
+  private void assertThatNoSignalIsBroadcasted() {
+    final var limitPosition =
+        engine.signal().withSignalName("limitingRecord").broadcast().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .signalRecords()
+                .withIntent(SignalIntent.BROADCASTED)
+                .withSignalName(SIGNAL_NAME))
+        .isEmpty();
   }
 }
