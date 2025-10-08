@@ -15,14 +15,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto {
 
   private String bpmn20Xml;
@@ -59,7 +53,6 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     this.userTaskNames = userTaskNames;
   }
 
-  @Builder
   public ProcessDefinitionOptimizeDto(
       final String id,
       final String key,
@@ -81,8 +74,23 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     this.onboarded = onboarded;
   }
 
+  public ProcessDefinitionOptimizeDto(
+      final String bpmn20Xml,
+      final List<FlowNodeDataDto> flowNodeData,
+      final Map<String, String> userTaskNames,
+      final boolean onboarded) {
+    this.bpmn20Xml = bpmn20Xml;
+    this.flowNodeData = flowNodeData;
+    this.userTaskNames = userTaskNames;
+    this.onboarded = onboarded;
+  }
+
   public final List<FlowNodeDataDto> getFlowNodeData() {
     return flowNodeData == null ? new ArrayList<>() : flowNodeData;
+  }
+
+  public void setFlowNodeData(final List<FlowNodeDataDto> flowNodeData) {
+    this.flowNodeData = flowNodeData;
   }
 
   @JsonIgnore
@@ -98,6 +106,72 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     return userTaskNames == null ? new HashMap<>() : new HashMap<>(userTaskNames);
   }
 
+  public void setUserTaskNames(final Map<String, String> userTaskNames) {
+    this.userTaskNames = userTaskNames;
+  }
+
+  public String getBpmn20Xml() {
+    return bpmn20Xml;
+  }
+
+  public void setBpmn20Xml(final String bpmn20Xml) {
+    this.bpmn20Xml = bpmn20Xml;
+  }
+
+  public boolean isOnboarded() {
+    return onboarded;
+  }
+
+  public void setOnboarded(final boolean onboarded) {
+    this.onboarded = onboarded;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessDefinitionOptimizeDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), bpmn20Xml, flowNodeData, userTaskNames, onboarded);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ProcessDefinitionOptimizeDto that = (ProcessDefinitionOptimizeDto) o;
+    return onboarded == that.onboarded
+        && Objects.equals(bpmn20Xml, that.bpmn20Xml)
+        && Objects.equals(flowNodeData, that.flowNodeData)
+        && Objects.equals(userTaskNames, that.userTaskNames);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessDefinitionOptimizeDto(bpmn20Xml="
+        + getBpmn20Xml()
+        + ", flowNodeData="
+        + getFlowNodeData()
+        + ", userTaskNames="
+        + getUserTaskNames()
+        + ", onboarded="
+        + isOnboarded()
+        + ")";
+  }
+
+  public static ProcessDefinitionOptimizeDtoBuilder builder() {
+    return new ProcessDefinitionOptimizeDtoBuilder();
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String bpmn20Xml = "bpmn20Xml";
@@ -105,5 +179,130 @@ public class ProcessDefinitionOptimizeDto extends DefinitionOptimizeResponseDto 
     public static final String userTaskNames = "userTaskNames";
     public static final String onboarded = "onboarded";
     public static final String eventBased = "eventBased";
+  }
+
+  public static class ProcessDefinitionOptimizeDtoBuilder {
+
+    private String id;
+    private String key;
+    private String version;
+    private String versionTag;
+    private String name;
+    private DataSourceDto dataSource;
+    private String tenantId;
+    private String bpmn20Xml;
+    private boolean deleted;
+    private boolean onboarded;
+    private List<FlowNodeDataDto> flowNodeData;
+    private Map<String, String> userTaskNames;
+
+    ProcessDefinitionOptimizeDtoBuilder() {}
+
+    public ProcessDefinitionOptimizeDtoBuilder id(final String id) {
+      this.id = id;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder key(final String key) {
+      this.key = key;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder version(final String version) {
+      this.version = version;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder versionTag(final String versionTag) {
+      this.versionTag = versionTag;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder name(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder dataSource(final DataSourceDto dataSource) {
+      this.dataSource = dataSource;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder tenantId(final String tenantId) {
+      this.tenantId = tenantId;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder bpmn20Xml(final String bpmn20Xml) {
+      this.bpmn20Xml = bpmn20Xml;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder deleted(final boolean deleted) {
+      this.deleted = deleted;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder onboarded(final boolean onboarded) {
+      this.onboarded = onboarded;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder flowNodeData(
+        final List<FlowNodeDataDto> flowNodeData) {
+      this.flowNodeData = flowNodeData;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDtoBuilder userTaskNames(
+        final Map<String, String> userTaskNames) {
+      this.userTaskNames = userTaskNames;
+      return this;
+    }
+
+    public ProcessDefinitionOptimizeDto build() {
+      return new ProcessDefinitionOptimizeDto(
+          id,
+          key,
+          version,
+          versionTag,
+          name,
+          dataSource,
+          tenantId,
+          bpmn20Xml,
+          deleted,
+          onboarded,
+          flowNodeData,
+          userTaskNames);
+    }
+
+    @Override
+    public String toString() {
+      return "ProcessDefinitionOptimizeDto.ProcessDefinitionOptimizeDtoBuilder(id="
+          + id
+          + ", key="
+          + key
+          + ", version="
+          + version
+          + ", versionTag="
+          + versionTag
+          + ", name="
+          + name
+          + ", dataSource="
+          + dataSource
+          + ", tenantId="
+          + tenantId
+          + ", bpmn20Xml="
+          + bpmn20Xml
+          + ", deleted="
+          + deleted
+          + ", onboarded="
+          + onboarded
+          + ", flowNodeData="
+          + flowNodeData
+          + ", userTaskNames="
+          + userTaskNames
+          + ")";
+    }
   }
 }

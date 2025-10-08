@@ -9,29 +9,94 @@ package io.camunda.optimize.dto.optimize.query;
 
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PageResultDto<T> {
+
   private String pagingState;
   private int limit;
-  @NonNull private List<T> entities = new ArrayList<>();
+  private List<T> entities = new ArrayList<>();
 
   public PageResultDto(final int limit) {
     this.limit = limit;
   }
 
+  public PageResultDto(final String pagingState, final int limit, final List<T> entities) {
+    if (entities == null) {
+      throw new IllegalArgumentException("entities cannot be null");
+    }
+
+    this.pagingState = pagingState;
+    this.limit = limit;
+    this.entities = entities;
+  }
+
+  protected PageResultDto() {}
+
   public boolean isEmpty() {
-    return this.entities.isEmpty();
+    return entities.isEmpty();
   }
 
   public boolean isLastPage() {
     return pagingState == null;
+  }
+
+  public String getPagingState() {
+    return pagingState;
+  }
+
+  public void setPagingState(final String pagingState) {
+    this.pagingState = pagingState;
+  }
+
+  public int getLimit() {
+    return limit;
+  }
+
+  public void setLimit(final int limit) {
+    this.limit = limit;
+  }
+
+  public List<T> getEntities() {
+    return entities;
+  }
+
+  public void setEntities(final List<T> entities) {
+    if (entities == null) {
+      throw new IllegalArgumentException("entities cannot be null");
+    }
+
+    this.entities = entities;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof PageResultDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final PageResultDto<?> that = (PageResultDto<?>) o;
+    return limit == that.limit
+        && Objects.equals(pagingState, that.pagingState)
+        && Objects.equals(entities, that.entities);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(pagingState, limit, entities);
+  }
+
+  @Override
+  public String toString() {
+    return "PageResultDto(pagingState="
+        + getPagingState()
+        + ", limit="
+        + getLimit()
+        + ", entities="
+        + getEntities()
+        + ")";
   }
 }

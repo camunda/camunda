@@ -11,10 +11,10 @@ import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
 public class InsertDataStep extends UpgradeStep {
+
   private final String data;
 
   public InsertDataStep(final IndexMappingCreator index, final String data) {
@@ -28,7 +28,29 @@ public class InsertDataStep extends UpgradeStep {
   }
 
   @Override
-  public void performUpgradeStep(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     schemaUpgradeClient.insertDataByIndexName(index, data);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof InsertDataStep;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final InsertDataStep that = (InsertDataStep) o;
+    return Objects.equals(data, that.data);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), data);
   }
 }

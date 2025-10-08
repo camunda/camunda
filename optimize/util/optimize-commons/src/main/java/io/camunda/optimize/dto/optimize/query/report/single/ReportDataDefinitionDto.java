@@ -13,14 +13,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.ReportConstants;
 import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@AllArgsConstructor
-@Data
-@NoArgsConstructor
 public class ReportDataDefinitionDto {
 
   @NotEmpty private String identifier = UUID.randomUUID().toString();
@@ -89,11 +84,117 @@ public class ReportDataDefinitionDto {
     this.versions = versions;
   }
 
+  public ReportDataDefinitionDto(
+      @NotEmpty final String identifier,
+      final String key,
+      final String name,
+      final String displayName,
+      final List<String> versions,
+      final List<String> tenantIds) {
+    this.identifier = identifier;
+    this.key = key;
+    this.name = name;
+    this.displayName = displayName;
+    this.versions = versions;
+    this.tenantIds = tenantIds;
+  }
+
+  public ReportDataDefinitionDto() {}
+
   @JsonIgnore
   public void setVersion(final String version) {
     versions = List.of(version);
   }
 
+  public @NotEmpty String getIdentifier() {
+    return identifier;
+  }
+
+  public void setIdentifier(@NotEmpty final String identifier) {
+    this.identifier = identifier;
+  }
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(final String key) {
+    this.key = key;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public String getDisplayName() {
+    return displayName;
+  }
+
+  public void setDisplayName(final String displayName) {
+    this.displayName = displayName;
+  }
+
+  public List<String> getVersions() {
+    return versions;
+  }
+
+  public void setVersions(final List<String> versions) {
+    this.versions = versions;
+  }
+
+  public List<String> getTenantIds() {
+    return tenantIds;
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ReportDataDefinitionDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ReportDataDefinitionDto that = (ReportDataDefinitionDto) o;
+    return Objects.equals(identifier, that.identifier)
+        && Objects.equals(key, that.key)
+        && Objects.equals(name, that.name)
+        && Objects.equals(displayName, that.displayName)
+        && Objects.equals(versions, that.versions)
+        && Objects.equals(tenantIds, that.tenantIds);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(identifier, key, name, displayName, versions, tenantIds);
+  }
+
+  @Override
+  public String toString() {
+    return "ReportDataDefinitionDto(identifier="
+        + getIdentifier()
+        + ", key="
+        + getKey()
+        + ", name="
+        + getName()
+        + ", displayName="
+        + getDisplayName()
+        + ", versions="
+        + getVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String identifier = "identifier";

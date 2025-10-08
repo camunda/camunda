@@ -14,13 +14,8 @@ import io.camunda.optimize.dto.optimize.query.report.single.decision.SingleDecis
 import io.camunda.optimize.dto.optimize.query.report.single.process.SingleProcessReportDefinitionRequestDto;
 import io.camunda.optimize.dto.optimize.rest.export.ExportEntityType;
 import io.camunda.optimize.dto.optimize.rest.export.OptimizeEntityExportDto;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@Data
-@EqualsAndHashCode(callSuper = true)
 public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto {
 
   private String collectionId;
@@ -35,6 +30,8 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
     super(id, exportEntityType, name, description, sourceIndexVersion);
     this.collectionId = collectionId;
   }
+
+  public ReportDefinitionExportDto() {}
 
   public static ReportDefinitionExportDto mapReportDefinitionToExportDto(
       final ReportDefinitionDto<?> reportDef) {
@@ -51,6 +48,42 @@ public abstract class ReportDefinitionExportDto extends OptimizeEntityExportDto 
     }
   }
 
+  public String getCollectionId() {
+    return collectionId;
+  }
+
+  public void setCollectionId(final String collectionId) {
+    this.collectionId = collectionId;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof ReportDefinitionExportDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final ReportDefinitionExportDto that = (ReportDefinitionExportDto) o;
+    return Objects.equals(collectionId, that.collectionId);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), collectionId);
+  }
+
+  @Override
+  public String toString() {
+    return "ReportDefinitionExportDto(collectionId=" + getCollectionId() + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String collectionId = "collectionId";

@@ -42,26 +42,24 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
-import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
 import org.springframework.stereotype.Component;
 
-@RequiredArgsConstructor
 @Component
-@Slf4j
 public class DigestService implements ConfigurationReloadable {
 
   private static final String DIGEST_EMAIL_TEMPLATE = "digestEmailTemplate.ftl";
   private static final String UTM_SOURCE = "digest";
   private static final String UTM_MEDIUM = "email";
   private static final String DEFAULT_LOCALE = "en";
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(DigestService.class);
   private final ConfigurationService configurationService;
   private final EmailService emailService;
   private final AbstractIdentityService identityService;
@@ -73,6 +71,27 @@ public class DigestService implements ConfigurationReloadable {
   private final RootUrlGenerator rootUrlGenerator;
   private final Map<String, ScheduledFuture<?>> scheduledDigestTasks = new HashMap<>();
   private ThreadPoolTaskScheduler digestTaskScheduler;
+
+  public DigestService(
+      final ConfigurationService configurationService,
+      final EmailService emailService,
+      final AbstractIdentityService identityService,
+      final KpiService kpiService,
+      final DefinitionService definitionService,
+      final ProcessOverviewWriter processOverviewWriter,
+      final ProcessOverviewReader processOverviewReader,
+      final ReportReader reportReader,
+      final RootUrlGenerator rootUrlGenerator) {
+    this.configurationService = configurationService;
+    this.emailService = emailService;
+    this.identityService = identityService;
+    this.kpiService = kpiService;
+    this.definitionService = definitionService;
+    this.processOverviewWriter = processOverviewWriter;
+    this.processOverviewReader = processOverviewReader;
+    this.reportReader = reportReader;
+    this.rootUrlGenerator = rootUrlGenerator;
+  }
 
   @PostConstruct
   public void init() {
@@ -95,7 +114,7 @@ public class DigestService implements ConfigurationReloadable {
   }
 
   public void handleDigestTask(final String processDefinitionKey) {
-    log.debug("Checking for active digests on process [{}].", processDefinitionKey);
+    LOG.debug("Checking for active digests on process [{}].", processDefinitionKey);
     final ProcessOverviewDto overviewDto =
         processOverviewReader
             .getProcessOverviewByKey(processDefinitionKey)
@@ -110,10 +129,10 @@ public class DigestService implements ConfigurationReloadable {
                 });
 
     if (overviewDto.getDigest().isEnabled()) {
-      log.info("Creating KPI digest for process [{}].", processDefinitionKey);
+      LOG.info("Creating KPI digest for process [{}].", processDefinitionKey);
       sendDigestAndUpdateLatestKpiResults(overviewDto);
     } else {
-      log.info("Digest on process [{}] is disabled.", processDefinitionKey);
+      LOG.info("Digest on process [{}] is disabled.", processDefinitionKey);
     }
   }
 
@@ -146,7 +165,7 @@ public class DigestService implements ConfigurationReloadable {
   }
 
   private void initExistingDigests() {
-    log.debug("Scheduling digest tasks for all existing enabled process digests.");
+    LOG.debug("Scheduling digest tasks for all existing enabled process digests.");
     processOverviewReader
         .getAllActiveProcessDigestsByKey()
         .forEach((processDefinitionKey, digest) -> scheduleDigest(processDefinitionKey));
@@ -173,7 +192,7 @@ public class DigestService implements ConfigurationReloadable {
     try {
       composeAndSendDigestEmail(overviewDto, mostRecentKpiReportResults);
     } catch (final Exception e) {
-      log.error("Failed to send digest email", e);
+      LOG.error("Failed to send digest email", e);
     } finally {
       // The most recent results are then set as the baseline for the digest
       updateBaselineKpiReportResults(
@@ -284,7 +303,7 @@ public class DigestService implements ConfigurationReloadable {
               final Optional<ReportDefinitionDto> reportDefinition =
                   reportReader.getReport(kpiResult.getReportId());
               if (reportDefinition.isEmpty()) {
-                log.error(
+                LOG.error(
                     "Report [{}] could not be retrieved for creation of digest email for process [{}] because report no longer exists. "
                         + "This report will be excluded from the digest.",
                     kpiResult.getReportId(),
@@ -307,14 +326,20 @@ public class DigestService implements ConfigurationReloadable {
         .toList();
   }
 
-  public enum KpiChangeType {
-    GOOD, // compared to previous report value, new value is closer to KPI target
-    NEUTRAL, // no change
-    BAD // compared to previous report value, new value is further away from KPI target
+  private static double calculatePercentageChange(
+      final KpiResultDto kpiResult, final double previousValueAsDouble) {
+    try {
+      return 100
+          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
+              / previousValueAsDouble);
+    } catch (final NumberFormatException exception) {
+      throw new OptimizeRuntimeException(
+          "Value could not be parsed to number: " + kpiResult.getValue());
+    }
   }
 
-  @Data
   public static class DigestTemplateKpiSummaryDto {
+
     private final String reportName;
     private final String reportLink;
     private final String kpiType;
@@ -360,7 +385,7 @@ public class DigestService implements ConfigurationReloadable {
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
         try {
           targetString = String.format("%.2f %%", Double.parseDouble(target));
-        } catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
           throw new OptimizeRuntimeException("Value could not be parsed to number: " + target, e);
         }
       } else {
@@ -383,7 +408,7 @@ public class DigestService implements ConfigurationReloadable {
       } else if (ViewProperty.PERCENTAGE.equals(kpiMeasure)) {
         try {
           return String.format("%.2f %%", Double.parseDouble(value));
-        } catch (NumberFormatException e) {
+        } catch (final NumberFormatException e) {
           throw new OptimizeRuntimeException("Value could not be parsed to number: " + value, e);
         }
       } else {
@@ -397,7 +422,7 @@ public class DigestService implements ConfigurationReloadable {
       try {
         previousValueAsDouble =
             previousValue == null ? Double.NaN : Double.parseDouble(previousValue);
-      } catch (NumberFormatException e) {
+      } catch (final NumberFormatException e) {
         throw new OptimizeRuntimeException(
             "Unable to correctly parse previousValue in kpi result: " + previousValue);
       }
@@ -417,17 +442,90 @@ public class DigestService implements ConfigurationReloadable {
         return changeInPercent > 0. ? KpiChangeType.GOOD : KpiChangeType.BAD;
       }
     }
+
+    public String getReportName() {
+      return reportName;
+    }
+
+    public String getReportLink() {
+      return reportLink;
+    }
+
+    public String getKpiType() {
+      return kpiType;
+    }
+
+    public boolean isTargetMet() {
+      return targetMet;
+    }
+
+    public String getTarget() {
+      return target;
+    }
+
+    public String getCurrent() {
+      return current;
+    }
+
+    public Double getChangeInPercent() {
+      return changeInPercent;
+    }
+
+    public KpiChangeType getChangeType() {
+      return changeType;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof DigestTemplateKpiSummaryDto;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final DigestTemplateKpiSummaryDto that = (DigestTemplateKpiSummaryDto) o;
+      return targetMet == that.targetMet
+          && Objects.equals(reportName, that.reportName)
+          && Objects.equals(reportLink, that.reportLink)
+          && Objects.equals(kpiType, that.kpiType)
+          && Objects.equals(target, that.target)
+          && Objects.equals(current, that.current)
+          && Objects.equals(changeInPercent, that.changeInPercent)
+          && changeType == that.changeType;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(
+          reportName, reportLink, kpiType, targetMet, target, current, changeInPercent, changeType);
+    }
+
+    @Override
+    public String toString() {
+      return "DigestService.DigestTemplateKpiSummaryDto(reportName="
+          + getReportName()
+          + ", reportLink="
+          + getReportLink()
+          + ", kpiType="
+          + getKpiType()
+          + ", targetMet="
+          + isTargetMet()
+          + ", target="
+          + getTarget()
+          + ", current="
+          + getCurrent()
+          + ", changeInPercent="
+          + getChangeInPercent()
+          + ", changeType="
+          + getChangeType()
+          + ")";
+    }
   }
 
-  private static double calculatePercentageChange(
-      KpiResultDto kpiResult, double previousValueAsDouble) {
-    try {
-      return 100
-          * ((Double.parseDouble(kpiResult.getValue()) - previousValueAsDouble)
-              / previousValueAsDouble);
-    } catch (final NumberFormatException exception) {
-      throw new OptimizeRuntimeException(
-          "Value could not be parsed to number: " + kpiResult.getValue());
-    }
+  public enum KpiChangeType {
+    GOOD, // compared to previous report value, new value is closer to KPI target
+    NEUTRAL, // no change
+    BAD // compared to previous report value, new value is further away from KPI target
   }
 }

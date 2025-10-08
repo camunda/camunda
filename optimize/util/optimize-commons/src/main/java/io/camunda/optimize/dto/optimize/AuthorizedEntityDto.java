@@ -7,15 +7,47 @@
  */
 package io.camunda.optimize.dto.optimize;
 
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
 // supposed to be called from entity specific subclasses only
-@AllArgsConstructor(access = AccessLevel.PROTECTED)
 public class AuthorizedEntityDto {
+
   private RoleType currentUserRole;
+
+  protected AuthorizedEntityDto(final RoleType currentUserRole) {
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected AuthorizedEntityDto() {}
+
+  public RoleType getCurrentUserRole() {
+    return currentUserRole;
+  }
+
+  public void setCurrentUserRole(final RoleType currentUserRole) {
+    this.currentUserRole = currentUserRole;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof AuthorizedEntityDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final AuthorizedEntityDto that = (AuthorizedEntityDto) o;
+    return currentUserRole == that.currentUserRole;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(currentUserRole);
+  }
+
+  @Override
+  public String toString() {
+    return "AuthorizedEntityDto(currentUserRole=" + getCurrentUserRole() + ")";
+  }
 }

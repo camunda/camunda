@@ -48,21 +48,28 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.stereotype.Component;
 
 @Component
-@Slf4j
-@AllArgsConstructor
 public class KpiService {
 
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(KpiService.class);
   private final ReportService reportService;
   private final LocalizationService localizationService;
   private final PlainReportEvaluationHandler reportEvaluationHandler;
+
+  public KpiService(
+      final ReportService reportService,
+      final LocalizationService localizationService,
+      final PlainReportEvaluationHandler reportEvaluationHandler) {
+    this.reportService = reportService;
+    this.localizationService = localizationService;
+    this.reportEvaluationHandler = reportEvaluationHandler;
+  }
 
   public List<KpiResultDto> evaluateKpiReports(final String processDefinitionKey) {
     final List<SingleProcessReportDefinitionRequestDto> kpiReports =
@@ -235,10 +242,57 @@ public class KpiService {
     return validKpis;
   }
 
-  @Data
-  @AllArgsConstructor
   private static class TargetAndUnit {
+
     private String target;
     private TargetValueUnit targetValueUnit;
+
+    public TargetAndUnit(final String target, final TargetValueUnit targetValueUnit) {
+      this.target = target;
+      this.targetValueUnit = targetValueUnit;
+    }
+
+    public String getTarget() {
+      return target;
+    }
+
+    public void setTarget(final String target) {
+      this.target = target;
+    }
+
+    public TargetValueUnit getTargetValueUnit() {
+      return targetValueUnit;
+    }
+
+    public void setTargetValueUnit(final TargetValueUnit targetValueUnit) {
+      this.targetValueUnit = targetValueUnit;
+    }
+
+    protected boolean canEqual(final Object other) {
+      return other instanceof TargetAndUnit;
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final TargetAndUnit that = (TargetAndUnit) o;
+      return Objects.equals(target, that.target) && targetValueUnit == that.targetValueUnit;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(target, targetValueUnit);
+    }
+
+    @Override
+    public String toString() {
+      return "KpiService.TargetAndUnit(target="
+          + getTarget()
+          + ", targetValueUnit="
+          + getTargetValueUnit()
+          + ")";
+    }
   }
 }

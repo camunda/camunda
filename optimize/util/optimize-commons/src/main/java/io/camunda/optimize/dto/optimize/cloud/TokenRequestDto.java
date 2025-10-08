@@ -8,15 +8,8 @@
 package io.camunda.optimize.dto.optimize.cloud;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class TokenRequestDto {
 
   @JsonProperty("client_id")
@@ -30,4 +23,145 @@ public class TokenRequestDto {
 
   @JsonProperty("grant_type")
   private String grantType;
+
+  public TokenRequestDto(
+      final String clientId,
+      final String clientSecret,
+      final String audience,
+      final String grantType) {
+    this.clientId = clientId;
+    this.clientSecret = clientSecret;
+    this.audience = audience;
+    this.grantType = grantType;
+  }
+
+  public TokenRequestDto() {}
+
+  public String getClientId() {
+    return clientId;
+  }
+
+  @JsonProperty("client_id")
+  public void setClientId(final String clientId) {
+    this.clientId = clientId;
+  }
+
+  public String getClientSecret() {
+    return clientSecret;
+  }
+
+  @JsonProperty("client_secret")
+  public void setClientSecret(final String clientSecret) {
+    this.clientSecret = clientSecret;
+  }
+
+  public String getAudience() {
+    return audience;
+  }
+
+  @JsonProperty("audience")
+  public void setAudience(final String audience) {
+    this.audience = audience;
+  }
+
+  public String getGrantType() {
+    return grantType;
+  }
+
+  @JsonProperty("grant_type")
+  public void setGrantType(final String grantType) {
+    this.grantType = grantType;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof TokenRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(clientId, clientSecret, audience, grantType);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TokenRequestDto that = (TokenRequestDto) o;
+    return Objects.equals(clientId, that.clientId)
+        && Objects.equals(clientSecret, that.clientSecret)
+        && Objects.equals(audience, that.audience)
+        && Objects.equals(grantType, that.grantType);
+  }
+
+  @Override
+  public String toString() {
+    return "TokenRequestDto(clientId="
+        + getClientId()
+        + ", clientSecret="
+        + getClientSecret()
+        + ", audience="
+        + getAudience()
+        + ", grantType="
+        + getGrantType()
+        + ")";
+  }
+
+  public static TokenRequestDtoBuilder builder() {
+    return new TokenRequestDtoBuilder();
+  }
+
+  public static class TokenRequestDtoBuilder {
+
+    private String clientId;
+    private String clientSecret;
+    private String audience;
+    private String grantType;
+
+    TokenRequestDtoBuilder() {}
+
+    @JsonProperty("client_id")
+    public TokenRequestDtoBuilder clientId(final String clientId) {
+      this.clientId = clientId;
+      return this;
+    }
+
+    @JsonProperty("client_secret")
+    public TokenRequestDtoBuilder clientSecret(final String clientSecret) {
+      this.clientSecret = clientSecret;
+      return this;
+    }
+
+    @JsonProperty("audience")
+    public TokenRequestDtoBuilder audience(final String audience) {
+      this.audience = audience;
+      return this;
+    }
+
+    @JsonProperty("grant_type")
+    public TokenRequestDtoBuilder grantType(final String grantType) {
+      this.grantType = grantType;
+      return this;
+    }
+
+    public TokenRequestDto build() {
+      return new TokenRequestDto(clientId, clientSecret, audience, grantType);
+    }
+
+    @Override
+    public String toString() {
+      return "TokenRequestDto.TokenRequestDtoBuilder(clientId="
+          + clientId
+          + ", clientSecret="
+          + clientSecret
+          + ", audience="
+          + audience
+          + ", grantType="
+          + grantType
+          + ")";
+    }
+  }
 }

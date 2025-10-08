@@ -11,34 +11,78 @@ import com.google.common.annotations.VisibleForTesting;
 import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import java.util.Objects;
 
-@AllArgsConstructor
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
 public abstract class UpgradeStep {
+
   protected IndexMappingCreator index;
 
   // This should always be false in real upgrades. In test scenarios, it can be set to true to avoid
   // failing conversion of test indices that don't have lookups
-  @VisibleForTesting @Setter protected boolean skipIndexConversion = false;
+  @VisibleForTesting protected boolean skipIndexConversion = false;
 
   protected UpgradeStep(final IndexMappingCreator index) {
     this.index = index;
   }
 
+  public UpgradeStep(final IndexMappingCreator index, final boolean skipIndexConversion) {
+    this.index = index;
+    this.skipIndexConversion = skipIndexConversion;
+  }
+
+  protected UpgradeStep() {}
+
   public abstract UpgradeStepType getType();
 
-  protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient);
+  protected abstract void performUpgradeStep(SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient);
 
-  public void execute(final SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void execute(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     if (!skipIndexConversion && index != null) {
       index = IndexLookupUtil.convertIndexForDatabase(index, schemaUpgradeClient.getDatabaseType());
     }
     performUpgradeStep(schemaUpgradeClient);
+  }
+
+  public IndexMappingCreator getIndex() {
+    return index;
+  }
+
+  public void setIndex(final IndexMappingCreator index) {
+    this.index = index;
+  }
+
+  public boolean isSkipIndexConversion() {
+    return skipIndexConversion;
+  }
+
+  public void setSkipIndexConversion(final boolean skipIndexConversion) {
+    this.skipIndexConversion = skipIndexConversion;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof UpgradeStep;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final UpgradeStep that = (UpgradeStep) o;
+    return skipIndexConversion == that.skipIndexConversion && Objects.equals(index, that.index);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(index, skipIndexConversion);
+  }
+
+  @Override
+  public String toString() {
+    return "UpgradeStep(index="
+        + getIndex()
+        + ", skipIndexConversion="
+        + isSkipIndexConversion()
+        + ")";
   }
 }

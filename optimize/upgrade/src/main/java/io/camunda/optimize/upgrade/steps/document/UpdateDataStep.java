@@ -9,15 +9,14 @@ package io.camunda.optimize.upgrade.steps.document;
 
 import io.camunda.optimize.service.db.DatabaseQueryWrapper;
 import io.camunda.optimize.service.db.schema.IndexMappingCreator;
+import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Callable;
-import lombok.EqualsAndHashCode;
-import lombok.SneakyThrows;
 
-@EqualsAndHashCode(callSuper = true)
 public class UpdateDataStep extends UpgradeStep {
 
   private final DatabaseQueryWrapper queryWrapper;
@@ -59,11 +58,39 @@ public class UpdateDataStep extends UpgradeStep {
   }
 
   @Override
-  @SneakyThrows
-  public void performUpgradeStep(SchemaUpgradeClient<?, ?> schemaUpgradeClient) {
+  public void performUpgradeStep(final SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient) {
     if (paramMapProvider != null) {
-      parameters = paramMapProvider.call();
+      try {
+        parameters = paramMapProvider.call();
+      } catch (final Exception e) {
+        throw new OptimizeRuntimeException(e);
+      }
     }
     schemaUpgradeClient.updateDataByIndexName(index, queryWrapper, updateScript, parameters);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof UpdateDataStep;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final UpdateDataStep that = (UpdateDataStep) o;
+    return Objects.equals(queryWrapper, that.queryWrapper)
+        && Objects.equals(updateScript, that.updateScript)
+        && Objects.equals(parameters, that.parameters)
+        && Objects.equals(paramMapProvider, that.paramMapProvider);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), queryWrapper, updateScript, parameters, paramMapProvider);
   }
 }

@@ -7,10 +7,10 @@
  */
 package io.camunda.optimize.service.util.configuration.security;
 
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class CCSMAuthConfiguration {
+
   // the url to Identity
   private String issuerUrl;
   // the url to Identity (back channel for container to container communication)
@@ -24,4 +24,106 @@ public class CCSMAuthConfiguration {
   // Identity audience
   private String audience;
   private String baseUrl;
+
+  public CCSMAuthConfiguration() {}
+
+  public String getIssuerUrl() {
+    return issuerUrl;
+  }
+
+  public void setIssuerUrl(final String issuerUrl) {
+    this.issuerUrl = issuerUrl;
+  }
+
+  public String getIssuerBackendUrl() {
+    return issuerBackendUrl;
+  }
+
+  public void setIssuerBackendUrl(final String issuerBackendUrl) {
+    this.issuerBackendUrl = issuerBackendUrl;
+  }
+
+  public String getRedirectRootUrl() {
+    return redirectRootUrl;
+  }
+
+  public void setRedirectRootUrl(final String redirectRootUrl) {
+    this.redirectRootUrl = redirectRootUrl;
+  }
+
+  public String getClientId() {
+    return clientId;
+  }
+
+  public void setClientId(final String clientId) {
+    this.clientId = clientId;
+  }
+
+  public String getClientSecret() {
+    return clientSecret;
+  }
+
+  public void setClientSecret(final String clientSecret) {
+    this.clientSecret = clientSecret;
+  }
+
+  public String getAudience() {
+    return audience;
+  }
+
+  public void setAudience(final String audience) {
+    this.audience = audience;
+  }
+
+  public String getBaseUrl() {
+    return baseUrl;
+  }
+
+  public void setBaseUrl(final String baseUrl) {
+    this.baseUrl = baseUrl;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CCSMAuthConfiguration;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CCSMAuthConfiguration that = (CCSMAuthConfiguration) o;
+    return Objects.equals(issuerUrl, that.issuerUrl)
+        && Objects.equals(issuerBackendUrl, that.issuerBackendUrl)
+        && Objects.equals(redirectRootUrl, that.redirectRootUrl)
+        && Objects.equals(clientId, that.clientId)
+        && Objects.equals(clientSecret, that.clientSecret)
+        && Objects.equals(audience, that.audience)
+        && Objects.equals(baseUrl, that.baseUrl);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        issuerUrl, issuerBackendUrl, redirectRootUrl, clientId, clientSecret, audience, baseUrl);
+  }
+
+  @Override
+  public String toString() {
+    return "CCSMAuthConfiguration(issuerUrl="
+        + getIssuerUrl()
+        + ", issuerBackendUrl="
+        + getIssuerBackendUrl()
+        + ", redirectRootUrl="
+        + getRedirectRootUrl()
+        + ", clientId="
+        + getClientId()
+        + ", clientSecret="
+        + getClientSecret()
+        + ", audience="
+        + getAudience()
+        + ", baseUrl="
+        + getBaseUrl()
+        + ")";
+  }
 }

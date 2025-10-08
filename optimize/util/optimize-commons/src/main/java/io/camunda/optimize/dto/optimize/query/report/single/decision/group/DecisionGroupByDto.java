@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.camunda.optimize.dto.optimize.query.report.Combinable;
 import io.camunda.optimize.dto.optimize.query.report.single.decision.group.value.DecisionGroupByValueDto;
 import java.util.Objects;
-import lombok.Data;
 
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
@@ -39,32 +38,68 @@ import lombok.Data;
       name = GROUP_BY_OUTPUT_VARIABLE_TYPE),
   @JsonSubTypes.Type(value = DecisionGroupByMatchedRuleDto.class, name = GROUP_BY_MATCHED_RULE_TYPE)
 })
-@Data
 public abstract class DecisionGroupByDto<VALUE extends DecisionGroupByValueDto>
     implements Combinable {
 
   @JsonProperty protected DecisionGroupByType type;
   protected VALUE value;
 
-  @Override
-  public String toString() {
-    return type.getId();
-  }
+  public DecisionGroupByDto() {}
 
   @Override
-  public boolean isCombinable(Object o) {
+  public boolean isCombinable(final Object o) {
     if (this == o) {
       return true;
     }
     if (!(o instanceof DecisionGroupByDto)) {
       return false;
     }
-    DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
+    final DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
     return Objects.equals(type, that.type) && Combinable.isCombinable(value, that.value);
   }
 
   @JsonIgnore
   public String createCommandKey() {
+    return type.getId();
+  }
+
+  public DecisionGroupByType getType() {
+    return type;
+  }
+
+  @JsonProperty
+  public void setType(final DecisionGroupByType type) {
+    this.type = type;
+  }
+
+  public VALUE getValue() {
+    return value;
+  }
+
+  public void setValue(final VALUE value) {
+    this.value = value;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionGroupByDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionGroupByDto<?> that = (DecisionGroupByDto<?>) o;
+    return type == that.type && Objects.equals(value, that.value);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, value);
+  }
+
+  @Override
+  public String toString() {
     return type.getId();
   }
 }

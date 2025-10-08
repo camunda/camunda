@@ -18,9 +18,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.ins
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RelativeDateFilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.instance.RollingDateFilterDataDto;
 import java.time.OffsetDateTime;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import java.util.Objects;
 
 /**
  * Abstract class that contains a hidden "type" field to distinguish which filter type the jackson
@@ -35,9 +33,6 @@ import lombok.Setter;
   @JsonSubTypes.Type(value = RollingDateFilterDataDto.class, name = ROLLING_DATE_FILTER),
   @JsonSubTypes.Type(value = RelativeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
 })
-@Getter
-@Setter
-@EqualsAndHashCode
 public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   protected DateFilterType type;
@@ -55,6 +50,69 @@ public abstract class DateFilterDataDto<START> implements FilterDataDto {
     this.end = end;
   }
 
+  public DateFilterType getType() {
+    return this.type;
+  }
+
+  public START getStart() {
+    return this.start;
+  }
+
+  public OffsetDateTime getEnd() {
+    return this.end;
+  }
+
+  public boolean isIncludeUndefined() {
+    return this.includeUndefined;
+  }
+
+  public boolean isExcludeUndefined() {
+    return this.excludeUndefined;
+  }
+
+  public void setType(final DateFilterType type) {
+    this.type = type;
+  }
+
+  public void setStart(final START start) {
+    this.start = start;
+  }
+
+  public void setEnd(final OffsetDateTime end) {
+    this.end = end;
+  }
+
+  public void setIncludeUndefined(final boolean includeUndefined) {
+    this.includeUndefined = includeUndefined;
+  }
+
+  public void setExcludeUndefined(final boolean excludeUndefined) {
+    this.excludeUndefined = excludeUndefined;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DateFilterDataDto<?> that = (DateFilterDataDto<?>) o;
+    return includeUndefined == that.includeUndefined
+        && excludeUndefined == that.excludeUndefined
+        && type == that.type
+        && Objects.equals(start, that.start)
+        && Objects.equals(end, that.end);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(type, start, end, includeUndefined, excludeUndefined);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DateFilterDataDto;
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String type = "type";
