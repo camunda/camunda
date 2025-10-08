@@ -17,7 +17,7 @@ type QueryOptions<T> = {
   select?: (result: QueryIncidentsResponseBody) => T;
 };
 
-function useIncidentsSearch<T = QueryIncidentsResponseBody>(
+function useProcessInstanceIncidentsSearch<T = QueryIncidentsResponseBody>(
   processInstanceKey: string,
   options?: QueryOptions<T>,
 ) {
@@ -39,12 +39,12 @@ function useIncidentsSearch<T = QueryIncidentsResponseBody>(
   });
 }
 
-function useIncidentsCount(processInstanceKey: string): number {
-  const {data} = useIncidentsSearch(processInstanceKey, {
+function useProcessInstanceIncidentsCount(processInstanceKey: string): number {
+  const {data} = useProcessInstanceIncidentsSearch(processInstanceKey, {
     select: (incidents) => incidents.page.totalItems,
   });
 
   return data ?? 0;
 }
 
-export {useIncidentsSearch, useIncidentsCount};
+export {useProcessInstanceIncidentsSearch, useProcessInstanceIncidentsCount};
