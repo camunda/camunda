@@ -287,6 +287,13 @@ void shouldFailWithByKeySelector() {
 
 ## Integration Tests
 
+### Camunda and Connector Docker Image Versions
+
+When running integration tests, CPT chooses the camunda and connectors runtime docker image based on
+the branch you're currently developing on. If it's a stable branch, e.g. `stable/8.8` or a backport
+such as `backport-36882-to-stable/8.8`, CPT will choose the docker version `8.8-SNAPSHOT`.
+Otherwise, it will default to the latest SNAPSHOT version.
+
 ### Java
 
 You can either annotate your integration tests with `@CamundaProcessTest` or register the extension
