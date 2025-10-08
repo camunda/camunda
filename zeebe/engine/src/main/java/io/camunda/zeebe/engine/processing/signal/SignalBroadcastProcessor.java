@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
+import io.camunda.zeebe.engine.state.signal.SignalSubscription;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -32,6 +33,8 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 
 public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor<SignalRecord> {
@@ -88,8 +91,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       return;
     }
 
-    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
-
+    final List<SignalSubscription> subscriptions = new ArrayList<>();
     signalSubscriptionState.visitBySignalName(
         signalRecord.getSignalNameBuffer(),
         signalRecord.getTenantId(),
@@ -97,7 +99,17 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
           final var subscriptionRecord = subscription.getRecord();
           final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
           checkAuthorization(command, isStartEvent, subscriptionRecord);
+          final var copiedSubscription = new SignalSubscription();
+          copiedSubscription.copyFrom(subscription);
+          subscriptions.add(copiedSubscription);
+        });
 
+    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
+
+    subscriptions.forEach(
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
           if (isStartEvent) {
             eventHandle.activateProcessInstanceForStartEvent(
                 subscriptionRecord.getProcessDefinitionKey(),
