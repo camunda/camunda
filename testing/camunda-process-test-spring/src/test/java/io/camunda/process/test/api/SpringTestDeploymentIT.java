@@ -16,106 +16,46 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.annotation.Deployment;
+import io.camunda.client.api.search.response.ProcessDefinition;
+import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = {SpringTestDeploymentIT.class})
+@SpringBootTest(classes = {SpringTestDeploymentIT.TestApplication.class})
 @CamundaSpringProcessTest
 public class SpringTestDeploymentIT {
 
   @Autowired private CamundaClient client;
-  @Autowired private CamundaProcessTestContext processTestContext;
 
-  @TestDeployment(resources = "connector-process.bpmn")
+  @TestDeployment(resources = {"connector-outbound-process.bpmn"})
   @Test
-  void shouldCreateProcessInstance() {
-    // when
-    final ProcessInstanceEvent processInstance =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("connector-process")
-            .latestVersion()
-            .send()
-            .join();
+  void shouldDeployProcessDefinitions() {
+    // given: processes are deployed
 
     // then
-    CamundaAssert.assertThat(processInstance).isCreated();
-    assertThat(processInstance.getBpmnProcessId()).isEqualTo("connector-process");
-    assertThat(processInstance.getProcessInstanceKey()).isGreaterThan(0);
-  }
-
-  @TestDeployment(resources = {"connector-process.bpmn", "connector-outbound-process.bpmn"})
-  @Test
-  void shouldDeployMultipleProcessDefinitions() {
-    // when
-    final ProcessInstanceEvent processInstance1 =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("connector-process")
-            .latestVersion()
-            .send()
-            .join();
-
-    final ProcessInstanceEvent processInstance2 =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("outbound-connector-process")
-            .latestVersion()
-            .send()
-            .join();
-
-    // then
-    CamundaAssert.assertThat(processInstance1).isCreated();
-    CamundaAssert.assertThat(processInstance2).isCreated();
-    assertThat(processInstance1.getProcessInstanceKey())
-        .isNotEqualTo(processInstance2.getProcessInstanceKey());
-  }
-
-  @TestDeployment(resources = "connector-process.bpmn")
-  @Test
-  void shouldVerifyProcessDefinitionExists() {
-    // Verify that the deployed process definition is available
-    assertThatCode(
+    Awaitility.await("until process definitions are available (eventually)")
+        .untilAsserted(
             () -> {
-              final ProcessInstanceEvent processInstance =
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId("connector-process")
-                      .latestVersion()
-                      .send()
-                      .join();
+              final List<ProcessDefinition> processDefinitions =
+                  client.newProcessDefinitionSearchRequest().send().join().items();
 
-              assertThat(processInstance).isNotNull();
-              assertThat(processInstance.getProcessInstanceKey()).isGreaterThan(0);
-              assertThat(processInstance.getBpmnProcessId()).isEqualTo("connector-process");
-            })
-        .doesNotThrowAnyException();
+              assertThat(processDefinitions)
+                  .extracting(ProcessDefinition::getProcessDefinitionId)
+                  .describedAs("Expect the process specified in @TestDeployment to be deployed")
+                  .contains("outbound-connector-process")
+                  .describedAs("Expect the process specified in @Deployment to be deployed")
+                  .contains("connector-process")
+                  .hasSize(2);
+            });
   }
 
-  @TestDeployment(resources = "connector-process.bpmn")
-  @Test
-  void shouldVerifySpringContextIntegration() {
-    // given
-    final CamundaClient contextClient = processTestContext.createClient();
-
-    // then
-    assertThatCode(
-            () -> {
-              final ProcessInstanceEvent processInstance =
-                  contextClient
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId("connector-process")
-                      .latestVersion()
-                      .send()
-                      .join();
-
-              CamundaAssert.assertThat(processInstance).isCreated();
-            })
-        .doesNotThrowAnyException();
-  }
+  @Deployment(resources = {"connector-process.bpmn"})
+  @SpringBootApplication
+  static class TestApplication {}
 }

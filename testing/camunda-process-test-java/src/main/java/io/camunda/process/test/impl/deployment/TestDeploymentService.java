@@ -15,21 +15,12 @@
  */
 package io.camunda.process.test.impl.deployment;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.DeploymentEvent;
-import io.camunda.client.api.search.response.ProcessDefinition;
 import io.camunda.process.test.api.TestDeployment;
 import java.lang.reflect.Method;
-import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
-import org.awaitility.Awaitility;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,8 +85,6 @@ public class TestDeploymentService {
       }
       final DeploymentEvent deploymentEvent = deployCommand.send().join();
 
-      // Wait until all deployed process definitions are visible in search (eventual consistency)
-      waitForPropagationOfProcessDefinitions(client, deploymentEvent);
       LOG.debug(
           "Successfully deployed resources with deployment key: {}", deploymentEvent.getKey());
     } catch (final Exception e) {
@@ -105,61 +94,5 @@ public class TestDeploymentService {
               Arrays.toString(deployment.resources()), testMethodName),
           e);
     }
-  }
-
-  private static void waitForPropagationOfProcessDefinitions(
-      final CamundaClient client, final DeploymentEvent deploymentEvent) {
-    deploymentEvent
-        .getProcesses()
-        .forEach(
-            (proc -> {
-              Awaitility.await("process definitions visibility")
-                  .pollDelay(Duration.ZERO)
-                  .pollInterval(Duration.ofMillis(150))
-                  .atMost(Duration.ofSeconds(15))
-                  .untilAsserted(
-                      () -> {
-                        final List<ProcessDefinition> defs =
-                            client
-                                .newProcessDefinitionSearchRequest()
-                                .filter((fn) -> fn.processDefinitionId(proc.getBpmnProcessId()))
-                                .send()
-                                .join()
-                                .items();
-                        assertThat(defs).hasSize(1);
-                      });
-            }));
-  }
-
-  private void waitForVisibility(final CamundaClient client, final List<String> bpmnProcessIds) {
-    final Set<String> remaining = new HashSet<>(bpmnProcessIds);
-
-    Awaitility.await("process definitions visibility")
-        .pollDelay(Duration.ZERO)
-        .pollInterval(Duration.ofMillis(150))
-        .atMost(Duration.ofSeconds(15))
-        .untilAsserted(
-            () -> {
-              final Iterator<String> it = remaining.iterator();
-              while (it.hasNext()) {
-                final String id = it.next();
-                try {
-                  // Start attempt proves broker has indexed latest version
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId(id)
-                      .latestVersion()
-                      .variables("{}")
-                      .send()
-                      .join();
-                  it.remove();
-                } catch (final Exception ignored) {
-                  // Still not visible; keep waiting
-                }
-              }
-              if (!remaining.isEmpty()) {
-                throw new AssertionError("Still waiting for: " + remaining);
-              }
-            });
   }
 }

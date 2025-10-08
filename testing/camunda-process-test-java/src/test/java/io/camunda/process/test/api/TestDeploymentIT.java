@@ -16,12 +16,11 @@
 package io.camunda.process.test.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.response.ProcessDefinition;
 import java.util.List;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 
 @CamundaProcessTest
@@ -29,70 +28,27 @@ public class TestDeploymentIT {
 
   private CamundaClient client;
 
-  @TestDeployment(resources = "coverage/test-with-simple-gateway.bpmn")
-  @Test
-  void shouldVerifyProcessDefinitionExists() {
-    assertThatCode(
-            () -> {
-              final ProcessInstanceEvent processInstance =
-                  client
-                      .newCreateInstanceCommand()
-                      .bpmnProcessId("test-with-simple-gateway")
-                      .latestVersion()
-                      .send()
-                      .join();
-
-              assertThat(processInstance).isNotNull();
-              assertThat(processInstance.getProcessInstanceKey()).isGreaterThan(0);
-              assertThat(processInstance.getBpmnProcessId()).isEqualTo("test-with-simple-gateway");
-            })
-        .doesNotThrowAnyException();
-  }
-
-  @TestDeployment(resources = "coverage/test-with-simple-gateway.bpmn")
-  @Test
-  void shouldDeployProcessDefinition() {
-    // when
-    final List<ProcessDefinition> defs =
-        client
-            .newProcessDefinitionSearchRequest()
-            .filter((fn) -> fn.processDefinitionId("test-with-simple-gateway"))
-            .send()
-            .join()
-            .items();
-    // then
-    assertThat(defs).hasSize(1);
-  }
-
   @TestDeployment(
       resources = {
         "coverage/test-with-simple-gateway.bpmn",
         "coverage/test-with-event-based-gateway.bpmn"
       })
   @Test
-  void shouldDeployMultipleProcessDefinitions() {
-    // given
-    // Both processes are deployed
-
-    // when
-    final ProcessInstanceEvent processInstance1 =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("test-with-simple-gateway")
-            .latestVersion()
-            .send()
-            .join();
-
-    final ProcessInstanceEvent processInstance2 =
-        client
-            .newCreateInstanceCommand()
-            .bpmnProcessId("test-with-event-based-gateway")
-            .latestVersion()
-            .send()
-            .join();
+  void shouldDeployProcessDefinitions() {
+    // given: processes are deployed
 
     // then
-    CamundaAssert.assertThat(processInstance1).isCreated();
-    CamundaAssert.assertThat(processInstance2).isCreated();
+    Awaitility.await("until process definitions are available (eventually)")
+        .untilAsserted(
+            () -> {
+              final List<ProcessDefinition> processDefinitions =
+                  client.newProcessDefinitionSearchRequest().send().join().items();
+
+              assertThat(processDefinitions)
+                  .extracting(ProcessDefinition::getProcessDefinitionId)
+                  .describedAs("Expect both processes specified in @TestDeployment to be deployed")
+                  .containsExactlyInAnyOrder(
+                      "test-with-simple-gateway", "test-with-event-based-gateway");
+            });
   }
 }
