@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.MessageStartEventSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
-import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import org.agrona.DirectBuffer;
 
 public final class MessageCorrelateBehavior {
@@ -91,12 +90,12 @@ public final class MessageCorrelateBehavior {
                     .setMessageKey(messageData.messageKey())
                     .setVariables(messageData.variables());
 
-            stateWriter.appendFollowUpEvent(
-                subscription.getKey(),
-                MessageSubscriptionIntent.CORRELATING,
-                correlatingSubscription);
+            //            stateWriter.appendFollowUpEvent(
+            //                subscription.getKey(),
+            //                MessageSubscriptionIntent.CORRELATING,
+            //                correlatingSubscription);
 
-            correlatingSubscriptions.add(correlatingSubscription);
+            correlatingSubscriptions.add(subscription.getKey(), correlatingSubscription);
           }
 
           return true;
