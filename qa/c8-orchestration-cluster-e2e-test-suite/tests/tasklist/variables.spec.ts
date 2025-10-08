@@ -166,6 +166,7 @@ test.describe('variables page', () => {
     taskDetailsPage,
     taskPanelPage,
   }) => {
+    test.slow();
     await taskPanelPage.filterBy('Unassigned');
     await taskPanelPage.openTask('usertask_with_variables');
 
