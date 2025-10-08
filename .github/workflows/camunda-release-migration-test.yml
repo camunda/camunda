@@ -19,12 +19,12 @@ on:
         default: ""
         required: false
       ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
         default: 'release-8.8.0'
         type: string
         required: false
       cluster:
-        description: 'Specifies which cluster to deploy the benchmark on'
+        description: 'Specifies which cluster to deploy the test on'
         default: 'zeebe-cluster'
         type: string
         required: false
@@ -313,28 +313,29 @@ jobs:
         run: |
           helm dependency build charts/camunda-platform-8.8/
           helm upgrade ${{ inputs.name || 'release-migration-test' }} charts/camunda-platform-8.8/ \
-          --wait --timeout 35m0s \
+          --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name || 'release-migration-test' }} \
           --render-subchart-notes \
-          --set orchestration.migration.identity.enabled=true \
-          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --set identityKeycloak.enabled=true \
-          --set identity.enabled=true \
-          --set identity.firstUser.enabled=false \
-          --set orchestration.security.authentication.method=oidc \
-          --set global.identity.auth.enabled=true \
-          --set orchestration.importer.enabled=true \
-          --set orchestration.migration.data.enabled=true \
+          --set connectors.image.tag=SNAPSHOT \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
+          --set identity.enabled=true \
+          --set identity.firstUser.enabled=false \
+          --set identity.image.tag=8.8-SNAPSHOT \
+          --set identityKeycloak.enabled=true \
+          --set global.identity.auth.enabled=true \
+          --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
+          --set-string "orchestration.env[0].value=false" \
           --set orchestration.image.registry=gcr.io \
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
-          --set connectors.image.tag=SNAPSHOT \
-          --set identity.image.tag=8.8-SNAPSHOT \
-          --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
-          --set-string "orchestration.env[0].value=false"
+          --set orchestration.migration.data.enabled=true \
+          --set orchestration.migration.identity.enabled=true \
+          --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
+          --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.method=oidc \
       - name: Summarize deployment
         if: success()
         run: |
