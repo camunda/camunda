@@ -1,0 +1,243 @@
+# Test workflow to verify GitHub App can access organization-level projects
+# This workflow is for testing purposes only and can be triggered on feature branches
+# owner: @kellervater
+
+name: Test Project Access (Feature Branch)
+
+on:
+  pull_request:
+    branches:
+      - '**'  # Trigger on PRs to any branch
+  workflow_dispatch:  # Allow manual trigger from Actions tab
+
+jobs:
+  test-project-access:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      
+      - name: Import Secrets
+        id: vault-secrets
+        uses: hashicorp/vault-action@v3.0.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID}}
+          secrets: |
+            secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_ID;
+            secret/data/github.com/organizations/camunda ISSUE_FIELD_INHERITANCE_GH_APP_KEY;
+      - name: Generate a GitHub token
+        id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_ID }}
+          private-key: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_KEY }}
+          owner: camunda  # Explicitly set to organization name
+      
+      - name: Test reading project data from issue 32017
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          script: |
+            const TARGET_PROJECT_ID = 'PVT_kwDOACVKPs4A1Kno';
+            const TEST_ISSUE_NUMBER = 32017;
+            
+            console.log('='.repeat(80));
+            console.log('🔍 TESTING PROJECT ACCESS');
+            console.log('='.repeat(80));
+            console.log(`Target Project ID: ${TARGET_PROJECT_ID}`);
+            console.log(`Test Issue Number: ${TEST_ISSUE_NUMBER}`);
+            console.log('');
+            
+            // Test 1: Query issue's project items
+            console.log('📋 TEST 1: Querying project items for issue #32017...');
+            const getFieldsQuery = `
+              query($owner: String!, $repo: String!, $issueNumber: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $issueNumber) {
+                    number
+                    title
+                    projectItems(first: 10) {
+                      nodes {
+                        id
+                        project { 
+                          id 
+                          title
+                          number
+                        }
+                        fieldValues(first: 50) {
+                          nodes {
+                            ... on ProjectV2ItemFieldTextValue {
+                              text
+                              field {
+                                ... on ProjectV2FieldCommon { id name dataType }
+                              }
+                            }
+                            ... on ProjectV2ItemFieldSingleSelectValue {
+                              name
+                              field {
+                                ... on ProjectV2FieldCommon { id name dataType }
+                                ... on ProjectV2SingleSelectField {
+                                  id name dataType
+                                  options { id name }
+                                }
+                              }
+                            }
+                            ... on ProjectV2ItemFieldNumberValue {
+                              number
+                              field {
+                                ... on ProjectV2FieldCommon { id name dataType }
+                              }
+                            }
+                            ... on ProjectV2ItemFieldDateValue {
+                              date
+                              field {
+                                ... on ProjectV2FieldCommon { id name dataType }
+                              }
+                            }
+                            ... on ProjectV2ItemFieldIterationValue {
+                              title
+                              field {
+                                ... on ProjectV2FieldCommon { id name dataType }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+            
+            try {
+              const { repository } = await github.graphql(getFieldsQuery, {
+                owner: 'camunda',
+                repo: 'camunda',
+                issueNumber: TEST_ISSUE_NUMBER
+              });
+              
+              const projectItems = repository?.issue?.projectItems?.nodes || [];
+              
+              console.log(`✅ Query successful!`);
+              console.log(`📊 Found ${projectItems.length} project(s) for issue #${TEST_ISSUE_NUMBER}`);
+              console.log('');
+              
+              if (projectItems.length === 0) {
+                console.log('❌ PROBLEM: No project items returned!');
+                console.log('This means the token cannot see organization projects.');
+                console.log('');
+                console.log('Possible causes:');
+                console.log('1. Issue #32017 is not actually in any projects');
+                console.log('2. GitHub App lacks organization-level Projects permission');
+                console.log('3. Organization admin approval is pending');
+                core.setFailed('No project items found - token may lack permissions');
+                return;
+              }
+              
+              // Test 2: Find the target project
+              console.log('📋 TEST 2: Looking for target project...');
+              console.log('');
+              
+              projectItems.forEach((item, index) => {
+                console.log(`Project ${index + 1}:`);
+                console.log(`  - ID: ${item.project?.id}`);
+                console.log(`  - Title: ${item.project?.title}`);
+                console.log(`  - Number: ${item.project?.number}`);
+                console.log(`  - Item ID: ${item.id}`);
+                console.log(`  - Fields: ${item.fieldValues?.nodes?.length || 0}`);
+                console.log('');
+              });
+              
+              const targetProject = projectItems.find(item => item.project?.id === TARGET_PROJECT_ID);
+              
+              if (!targetProject) {
+                console.log(`⚠️  Target project ${TARGET_PROJECT_ID} not found in issue's projects`);
+                console.log(`Issue is in ${projectItems.length} project(s), but not the target one.`);
+                core.warning('Target project not found - issue may not be in Project 173');
+              } else {
+                console.log(`✅ SUCCESS! Found target project: ${targetProject.project?.title}`);
+                console.log('');
+                
+                // Test 3: Display field values
+                console.log('📋 TEST 3: Reading field values from target project...');
+                console.log('');
+                
+                const fields = targetProject.fieldValues?.nodes || [];
+                
+                if (fields.length === 0) {
+                  console.log('⚠️  No fields found (this might be normal if no custom fields are set)');
+                } else {
+                  console.log(`Found ${fields.length} field(s):`);
+                  console.log('');
+                  
+                  fields.forEach((field, index) => {
+                    const fieldName = field.field?.name || 'Unknown';
+                    const fieldType = field.field?.dataType || 'Unknown';
+                    const value = field.text || field.name || field.number || field.date || field.title || 'N/A';
+                    
+                    console.log(`  ${index + 1}. ${fieldName} (${fieldType}): ${value}`);
+                  });
+                  
+                  console.log('');
+                  
+                  // Check for the specific fields we need
+                  const teamField = fields.find(f => f.field?.name === 'Team');
+                  const projectNameField = fields.find(f => f.field?.name === 'PH Project name');
+                  
+                  if (teamField) {
+                    console.log(`✅ Found 'Team' field: ${teamField.name || teamField.text || 'N/A'}`);
+                  } else {
+                    console.log(`⚠️  'Team' field not found`);
+                  }
+                  
+                  if (projectNameField) {
+                    console.log(`✅ Found 'PH Project name' field: ${projectNameField.name || projectNameField.text || 'N/A'}`);
+                  } else {
+                    console.log(`⚠️  'PH Project name' field not found`);
+                  }
+                }
+                
+                console.log('');
+                console.log('='.repeat(80));
+                console.log('🎉 ALL TESTS PASSED!');
+                console.log('='.repeat(80));
+                console.log('The GitHub App token has correct permissions to:');
+                console.log('  ✅ Read organization-level projects');
+                console.log('  ✅ Query project items from issues');
+                console.log('  ✅ Access project field values');
+                console.log('');
+                console.log('You can now safely use this token in the main workflow!');
+              }
+              
+            } catch (error) {
+              console.log('');
+              console.log('='.repeat(80));
+              console.log('❌ ERROR OCCURRED');
+              console.log('='.repeat(80));
+              console.log(`Error: ${error.message}`);
+              console.log('');
+              
+              if (error.message.includes('Resource not accessible by integration')) {
+                console.log('🔍 This error indicates the GitHub App lacks required permissions.');
+                console.log('');
+                console.log('Please verify:');
+                console.log('1. GitHub App has Organization permissions → Projects: Read & write');
+                console.log('2. Organization admin has approved the permissions');
+                console.log('3. App is installed with access to the camunda organization');
+              }
+              
+              if (error.message.includes('401') || error.message.includes('Unauthorized')) {
+                console.log('🔍 Authentication failed. Please verify:');
+                console.log('1. APP_ID secret is correct');
+                console.log('2. APP_PRIVATE_KEY secret contains the full .pem file content');
+              }
+              
+              console.log('');
+              console.log('Full error details:');
+              console.log(JSON.stringify(error, null, 2));
+              
+              core.setFailed(`GraphQL query failed: ${error.message}`);
+            }
