@@ -63,6 +63,8 @@
     <version.httpclient>4.5.14</version.httpclient>
     <version.httpclient5>5.5</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
+<!--    <version.httpclient5>5.5.1</version.httpclient5>-->
+<!--    <version.httpcore5>5.3.6</version.httpcore5>-->
     <version.httpcomponents>4.4.16</version.httpcomponents>
     <version.identity>8.5.5</version.identity>
     <version.surefire>3.5.0</version.surefire>
@@ -99,8 +101,10 @@
     <version.dmn-scala>1.10.0</version.dmn-scala>
     <version.rest-assured>5.5.0</version.rest-assured>
     <version.spring>6.2.10</version.spring>
+<!--    <version.spring>6.2.11</version.spring>-->
     <version.spring-security>6.4.7</version.spring-security>
     <version.spring-boot>3.5.5</version.spring-boot>
+<!--    <version.spring-boot>3.5.6</version.spring-boot>-->
     <version.tomcat>10.1.44</version.tomcat>
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.0</version.kryo>

@@ -264,24 +264,165 @@ public class OptimizeOpenSearchClientFactory {
 
     for (int attempt = 1; attempt <= maxRetries; attempt++) {
       try {
-        int nodeCount = openSearchClient.cluster().health().numberOfNodes();
-        log.debug("OpenSearch cluster has {} nodes", nodeCount);
+        log.info("=== OpenSearch Client Request Debugging - Attempt {} ===", attempt);
+
+        // Add detailed timing and step-by-step logging
+        long startTime = System.currentTimeMillis();
+
+        // Log the client type and configuration
+        log.info("OpenSearch client class: {}", openSearchClient.getClass().getName());
+        log.info("OpenSearch client toString: {}", openSearchClient.toString());
+
+        // Try to get cluster health with detailed logging
+        log.info("About to call openSearchClient.cluster().health()");
+        log.info("Request start time: {}", java.time.Instant.now());
+
+        // Capture any exceptions during the actual call
+        var clusterHealthResponse = openSearchClient.cluster().health();
+        long healthCallDuration = System.currentTimeMillis() - startTime;
+        log.info("cluster().health() call completed successfully in {}ms", healthCallDuration);
+
+        // Log the response object details
+        log.info("Health response class: {}", clusterHealthResponse.getClass().getName());
+        log.info("Health response toString: {}", clusterHealthResponse.toString());
+
+        log.info("About to call .numberOfNodes() on health response");
+        startTime = System.currentTimeMillis();
+        int nodeCount = clusterHealthResponse.numberOfNodes();
+        long nodeCountDuration = System.currentTimeMillis() - startTime;
+        log.info("numberOfNodes() call completed in {}ms, result: {}", nodeCountDuration, nodeCount);
+
+        // Log additional health response details
+        try {
+          log.info("Cluster name: {}", clusterHealthResponse.clusterName());
+          log.info("Cluster status: {}", clusterHealthResponse.status());
+          log.info("Number of data nodes: {}", clusterHealthResponse.numberOfDataNodes());
+          log.info("Active primary shards: {}", clusterHealthResponse.activePrimaryShards());
+          log.info("Active shards: {}", clusterHealthResponse.activeShards());
+        } catch (Exception detailEx) {
+          log.warn("Could not retrieve additional cluster details: {}", detailEx.getMessage());
+        }
+
+        log.info("=== OpenSearch Client Request SUCCESS ===");
         return nodeCount;
+
       } catch (Exception e) {
-        log.warn("Cluster health check attempt {} failed: {} - {}",
-                 attempt, e.getClass().getSimpleName(), e.getMessage());
+        log.error("=== OpenSearch Client Request FAILED - Attempt {} ===", attempt);
+        log.error("Exception class: {}", e.getClass().getName());
+        log.error("Exception message: {}", e.getMessage());
+
+        // Log the full stack trace for debugging
+        log.error("Full exception stack trace:", e);
+
+        // Log more detailed error information
+        if (e.getCause() != null) {
+          log.error("Root cause class: {}", e.getCause().getClass().getName());
+          log.error("Root cause message: {}", e.getCause().getMessage());
+          log.error("Root cause stack trace:", e.getCause());
+        }
+
+        // Check for OpenSearch-specific exceptions
+        if (e instanceof org.opensearch.client.opensearch._types.OpenSearchException) {
+          org.opensearch.client.opensearch._types.OpenSearchException osEx =
+              (org.opensearch.client.opensearch._types.OpenSearchException) e;
+          log.error("OpenSearch exception status: {}", osEx.status());
+          log.error("OpenSearch exception error: {}", osEx.error());
+          if (osEx.response() != null) {
+            log.error("OpenSearch response: {}", osEx.response());
+          }
+        }
+
+        // Check for transport-level exceptions
+        if (e instanceof org.opensearch.client.ResponseException) {
+          org.opensearch.client.ResponseException respEx = (org.opensearch.client.ResponseException) e;
+          log.error("HTTP Response status: {}", respEx.getResponse().getStatusLine());
+          log.error("HTTP Response headers: {}", java.util.Arrays.toString(respEx.getResponse().getHeaders()));
+
+          try {
+            String responseBody = org.apache.http.util.EntityUtils.toString(respEx.getResponse().getEntity());
+            log.error("HTTP Response body: {}", responseBody);
+          } catch (Exception bodyEx) {
+            log.error("Could not read response body: {}", bodyEx.getMessage());
+          }
+        }
+
+        // Check for connection-related exceptions with detailed analysis
+        String errorMessage = e.getMessage() != null ? e.getMessage() : "";
+        String rootCauseMessage = e.getCause() != null && e.getCause().getMessage() != null ?
+            e.getCause().getMessage() : "";
+
+        if (errorMessage.contains("Connection reset") || rootCauseMessage.contains("Connection reset")) {
+          log.error("=== CONNECTION RESET DETECTED ===");
+          log.error("This indicates the server closed the connection unexpectedly");
+          log.error("Possible causes:");
+          log.error("1. OpenSearch server is overloaded or restarting");
+          log.error("2. Network issues between client and server");
+          log.error("3. Proxy or load balancer dropping connections");
+          log.error("4. OpenSearch configuration limiting connection time");
+        }
+
+        if (errorMessage.contains("timeout") || rootCauseMessage.contains("timeout")) {
+          log.error("=== TIMEOUT DETECTED ===");
+          log.error("The request timed out before completing");
+          log.error("Current timeout settings need to be checked");
+        }
+
+        if (errorMessage.contains("Connection closed") || rootCauseMessage.contains("Connection closed")) {
+          log.error("=== CONNECTION CLOSED DETECTED ===");
+          log.error("The connection was closed before the request completed");
+          log.error("This might be related to HTTP keep-alive settings");
+        }
 
         if (attempt == maxRetries) {
-          // On final attempt, provide more detailed error info
-          if (e.getMessage().contains("Connection reset") ||
-              e.getMessage().contains("Connection refused") ||
-              e.getMessage().contains("timeout")) {
-            log.error("Connection issue detected in CI environment. This may be due to:");
-            log.error("1. Network instability in CI containers");
-            log.error("2. OpenSearch container not fully ready despite health checks");
-            log.error("3. Connection pool exhaustion");
-            log.error("Consider increasing connection timeouts or adding container dependencies");
+          log.error("=== ALL ATTEMPTS FAILED - TRYING FALLBACK ===");
+
+          // Try a direct HTTP call as fallback to compare behavior
+          try {
+            log.info("Attempting direct HTTP call to /_cluster/health for comparison...");
+            java.net.URL url = new java.net.URL("http://localhost:9200/_cluster/health");
+            java.net.HttpURLConnection connection = (java.net.HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(10000);
+
+            log.info("Direct HTTP request configured, making call...");
+            int responseCode = connection.getResponseCode();
+            String responseMessage = connection.getResponseMessage();
+            log.info("Direct HTTP response: {} {}", responseCode, responseMessage);
+
+            if (responseCode == 200) {
+              try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                  new java.io.InputStreamReader(connection.getInputStream()))) {
+                StringBuilder response = new StringBuilder();
+                String line;
+                while ((line = reader.readLine()) != null) {
+                  response.append(line);
+                }
+                String healthResponse = response.toString();
+                log.info("Direct HTTP call successful. Full response: {}", healthResponse);
+
+                // Try to parse the number of nodes from the JSON response
+                if (healthResponse.contains("\"number_of_nodes\":")) {
+                  try {
+                    String nodeCountStr = healthResponse.replaceAll(".*\"number_of_nodes\":(\\d+).*", "$1");
+                    int nodeCount = Integer.parseInt(nodeCountStr);
+                    log.warn("=== FALLBACK SUCCESS: {} nodes found via direct HTTP ===", nodeCount);
+                    log.error("This proves OpenSearch is working, but the Java client is failing");
+                    log.error("The issue is specifically with the OpenSearch Java client configuration");
+                    return nodeCount; // Return the parsed node count as fallback
+                  } catch (Exception parseEx) {
+                    log.error("Could not parse node count from fallback response: {}", parseEx.getMessage());
+                  }
+                }
+              }
+            } else {
+              log.error("Direct HTTP call failed with status: {} {}", responseCode, responseMessage);
+            }
+          } catch (Exception restEx) {
+            log.error("Fallback HTTP call also failed: {} - {}", restEx.getClass().getSimpleName(), restEx.getMessage());
+            log.error("Fallback exception stack trace:", restEx);
           }
+
           throw e;
         }
 
