@@ -40,6 +40,7 @@ jobs:
       - name: Inherit fields from parent sub-issue if parent is in project 173(PVT_kwDOACVKPs4A1Kno)
         uses: actions/github-script@v7
         with:
+          github-token: ${{ steps.app-token.outputs.token }}
           script: |
             try {
               const myScript = require('./.github/actions/core-features/inheritCoreFields.cjs');
@@ -49,5 +50,4 @@ jobs:
               return;
             }
         env:
-          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
           GHA_BEST_PRACTICES_LINTER: disabled
