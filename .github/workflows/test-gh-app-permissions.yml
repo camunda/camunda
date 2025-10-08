@@ -34,7 +34,7 @@ jobs:
         with:
           app-id: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_ID }}
           private-key: ${{ steps.vault-secrets.outputs.ISSUE_FIELD_INHERITANCE_GH_APP_KEY }}
-          owner: camunda  # Explicitly set to organization name
+          #owner: camunda  # Explicitly set to organization name
       
       - name: Test reading project data from issue 32017
         uses: actions/github-script@v7
