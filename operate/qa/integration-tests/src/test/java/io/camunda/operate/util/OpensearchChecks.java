@@ -62,7 +62,7 @@ import org.springframework.context.annotation.Configuration;
 @Conditional(OpensearchCondition.class)
 @ConditionalOnProperty(
     prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
+    name = "webapp-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class OpensearchChecks {

@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @ConditionalOnProperty(
     prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
+    name = "webapp-enabled",
     havingValue = "true",
     matchIfMissing = true)
 public class SearchCheckPredicatesHolder {
