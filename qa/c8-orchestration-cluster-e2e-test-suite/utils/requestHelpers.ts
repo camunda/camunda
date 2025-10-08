@@ -848,3 +848,25 @@ export async function throwErrorForJob(
   });
   await assertStatusCode(throwRes, 204);
 }
+
+export async function verifyIncidentsForProcessInstance(
+  request: APIRequestContext,
+  processInstanceKey: string,
+  expectedIncidentCount: number,
+) {
+  return await expect(async () => {
+    const res = await request.post(
+      buildUrl(`/process-instances/${processInstanceKey}/incidents/search`),
+      {
+        headers: jsonHeaders(),
+        data: {},
+      },
+    );
+    await assertStatusCode(res, 200);
+    const json = await res.json();
+    expect(
+      json.page.totalItems,
+      `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
+    ).toBe(expectedIncidentCount);
+  }).toPass(defaultAssertionOptions);
+}
