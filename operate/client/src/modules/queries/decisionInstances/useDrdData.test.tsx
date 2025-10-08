@@ -13,7 +13,7 @@ import {
   assignApproverGroup,
   invoiceClassification,
   literalExpression,
-} from 'modules/mocks/mockDecisionInstanceV2';
+} from 'modules/mocks/mockDecisionInstance';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {useDrdData} from './useDrdData';
 

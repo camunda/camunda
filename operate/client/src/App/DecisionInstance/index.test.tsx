@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect} from 'react';
 import {
   render,
   screen,
@@ -14,9 +13,8 @@ import {
   within,
 } from 'modules/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {invoiceClassification} from 'modules/mocks/mockDecisionInstanceV2';
+import {invoiceClassification} from 'modules/mocks/mockDecisionInstance';
 import {DecisionInstance} from './';
-import {drdStore} from 'modules/stores/drd';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
@@ -30,14 +28,6 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 const DECISION_INSTANCE_ID = '4294980768';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-  useEffect(() => {
-    drdStore.init();
-
-    return () => {
-      drdStore.reset();
-    };
-  }, []);
-
   return (
     <QueryClientProvider client={getMockQueryClient()}>
       <MemoryRouter

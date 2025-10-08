@@ -40,7 +40,7 @@ const StateOverlay: React.FC<Props> = observer(
   }) => {
     const showStatistic = count !== undefined;
 
-    // FIXME: What icons and colors should be used for these new states?
+    // TODO: The new states will be addressed with https://github.com/camunda/camunda/issues/38966.
     if (state === 'UNKNOWN' || state === 'UNSPECIFIED') {
       state = 'FAILED';
     }

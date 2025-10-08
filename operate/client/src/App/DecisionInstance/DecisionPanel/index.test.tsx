@@ -11,7 +11,7 @@ import {
   invoiceClassification,
   assignApproverGroup,
   literalExpression,
-} from 'modules/mocks/mockDecisionInstanceV2';
+} from 'modules/mocks/mockDecisionInstance';
 import {mockDmnXml} from 'modules/mocks/mockDmnXml';
 import {DecisionPanel} from '.';
 import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinitionXML';
