@@ -71,6 +71,32 @@ public final class MessageCorrelateBehavior {
         });
   }
 
+  /**
+   * Collects message start event subscriptions without writing state changes.
+   * Used for authorization checks before actual correlation.
+   */
+  public void collectMessageStartEventSubscriptions(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    startEventSubscriptionState.visitSubscriptionsByMessageName(
+        messageData.tenantId(),
+        messageData.messageName(),
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var bpmnProcessIdBuffer = subscriptionRecord.getBpmnProcessIdBuffer();
+
+          // create only one instance of a process per correlation key
+          // - allow multiple instance if correlation key is empty
+          if (!correlatingSubscriptions.contains(bpmnProcessIdBuffer)
+              && (messageData.correlationKey().capacity() == 0
+                  || !messageState.existActiveProcessInstance(
+                      messageData.tenantId(), bpmnProcessIdBuffer, messageData.correlationKey()))) {
+
+            // Just collect, don't trigger events yet
+            correlatingSubscriptions.add(subscriptionRecord);
+          }
+        });
+  }
+
   public void correlateToMessageEvents(
       final MessageData messageData, final Subscriptions correlatingSubscriptions) {
 
@@ -97,6 +123,31 @@ public final class MessageCorrelateBehavior {
                 correlatingSubscription);
 
             correlatingSubscriptions.add(correlatingSubscription);
+          }
+
+          return true;
+        });
+  }
+
+  /**
+   * Collects message event subscriptions without writing state changes.
+   * Used for authorization checks before actual correlation.
+   */
+  public void collectMessageEventSubscriptions(
+      final MessageData messageData, final Subscriptions correlatingSubscriptions) {
+    messageSubscriptionState.visitSubscriptions(
+        messageData.tenantId(),
+        messageData.messageName(),
+        messageData.correlationKey(),
+        subscription -> {
+
+          // correlate the message only once per process
+          if (!subscription.isCorrelating()
+              && !correlatingSubscriptions.contains(
+                  subscription.getRecord().getBpmnProcessIdBuffer())) {
+
+            // Just collect, don't write state yet
+            correlatingSubscriptions.add(subscription.getRecord());
           }
 
           return true;
