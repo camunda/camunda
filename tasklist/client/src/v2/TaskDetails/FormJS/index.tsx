@@ -24,7 +24,10 @@ import {
 import {useMemo, useRef, useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {match, Pattern} from 'ts-pattern';
-import {useSelectedVariables} from 'v2/api/useSelectedVariables.query';
+import {
+  useSelectedVariables,
+  TruncatedVariableError,
+} from 'v2/api/useSelectedVariables.query';
 import {useRemoveFormReference} from 'v2/api/useTask.query';
 import {useUserTaskForm} from 'v2/api/useUserTaskForm.query';
 import {tryParseJSON} from 'v2/features/tasks/details/tryParseJSON';
@@ -65,7 +68,11 @@ const FormJS: React.FC<Props> = ({
   );
   const {schema} = data ?? {};
   const extractedVariables = extractVariablesFromFormSchema(schema);
-  const {data: variablesData, status} = useSelectedVariables(
+  const {
+    data: variablesData,
+    status,
+    error,
+  } = useSelectedVariables(
     {
       userTaskKey,
       variableNames: extractedVariables,
@@ -86,6 +93,10 @@ const FormJS: React.FC<Props> = ({
 
   const canCompleteTask =
     user.username === assignee && state === 'CREATED' && hasFetchedVariables;
+
+  if (error instanceof TruncatedVariableError) {
+    throw error;
+  }
 
   const {removeFormReference} = useRemoveFormReference(task);
   return (

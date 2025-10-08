@@ -54,6 +54,8 @@
     "errorGenericErrorMessage": "No se pudo cargar esta página. Inténtalo de nuevo más tarde.",
     "errorGenericErrorButtonLabel": "Intentar de nuevo",
     "taskDetailsFailedToFetchVariablesErrorSubtitle": "No pudimos obtener las variables de la tarea. Intente nuevamente o contacte con su administrador de Tasklist.",
+    "taskDetailsTruncatedVariablesErrorTitle": "Las variables son demasiado grandes",
+    "taskDetailsTruncatedVariablesErrorSubtitle": "Por favor, contacte con su administrador de Tasklist.",
     "taskDetailsFormJSSingleFieldError": "Por favor revise 1 campo",
     "taskDetailsFormJSMultipleFieldError": "Por favor revise {{count}} campos",
     "formJSPoweredByLabel": "Desarrollado por",
