@@ -110,12 +110,14 @@ public class ManagementIdentityConnectorConfig {
     public ClientHttpResponse intercept(
         final HttpRequest request, final byte[] body, final ClientHttpRequestExecution execution)
         throws IOException {
-      final var result = execution.execute(request, body);
-      if (result.getStatusCode() == HttpStatus.NOT_FOUND) {
+      final var response = execution.execute(request, body);
+      if (response.getStatusCode() == HttpStatus.NOT_FOUND) {
+        // the response needs to be closed as it won't be processed anymore due the exception thrown
+        response.close();
         throw new NotImplementedException(
             "Endpoint is not implemented", request.getURI().toString());
       }
-      return result;
+      return response;
     }
   }
 }
