@@ -137,6 +137,14 @@ public final class IncidentUpdateTask implements BackgroundTask {
     }
     logger.trace("Applying the following pending incident updates: {}", batch.newIncidentStates());
     searchForInstances(data);
+    data.incidents()
+        .forEach(
+            (key, incidentDocument) -> {
+              if (incidentDocument.incident().getTreePath() == null) {
+                final var treePath = data.incidentTreePaths().get(key);
+                incidentDocument.incident().setTreePath(treePath);
+              }
+            });
     return CompletableFuture.completedFuture(processIncidents(data, batch))
         .thenComposeAsync(
             documentsUpdated -> {
