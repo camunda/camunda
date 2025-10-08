@@ -15,6 +15,9 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -143,6 +146,7 @@ public class MessageCorrelationCorrelateAuthorizationTest {
             .correlate(user.getUsername());
 
     // then
+    assertNoMessagePublishedOrCorrelated(INTERMEDIATE_MSG_NAME, correlationKey);
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
@@ -196,17 +200,19 @@ public class MessageCorrelationCorrelateAuthorizationTest {
   public void shouldBeUnauthorizedToCorrelateMessageToStartEventIfNoPermissions() {
     // given
     final var user = createUser();
+    final var correlationKey = "test";
 
     // when
     final var rejection =
         engine
             .messageCorrelation()
             .withName(START_MSG_NAME)
-            .withCorrelationKey("")
+            .withCorrelationKey(correlationKey)
             .expectRejection()
             .correlate(user.getUsername());
 
     // then
+    assertNoMessagePublishedOrCorrelated(START_MSG_NAME, correlationKey);
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
@@ -240,15 +246,17 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         .getKey();
 
     // when
+    final var messageCorrelationKey = "";
     final var rejection =
         engine
             .messageCorrelation()
             .withName(START_MSG_NAME)
-            .withCorrelationKey("")
+            .withCorrelationKey(messageCorrelationKey)
             .expectRejection()
             .correlate(user.getUsername());
 
     // then
+    assertNoMessagePublishedOrCorrelated(START_MSG_NAME, messageCorrelationKey);
     Assertions.assertThat(rejection)
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
@@ -301,5 +309,42 @@ public class MessageCorrelationCorrelateAuthorizationTest {
         .ofBpmnProcessId(PROCESS_ID)
         .withVariable(CORRELATION_KEY_VARIABLE, correlationKey)
         .create(DEFAULT_USER.getUsername());
+  }
+
+  private void assertNoMessagePublishedOrCorrelated(
+      final String messageName, final String correlationKey) {
+    final var limitPosition =
+        engine.signal().withSignalName("limiterRecord").broadcast().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .messageRecords()
+                .withIntent(MessageIntent.PUBLISHED)
+                .withName(messageName)
+                .withCorrelationKey(correlationKey))
+        .isEmpty();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .messageCorrelationRecords()
+                .withIntent(MessageCorrelationIntent.CORRELATING)
+                .withName(messageName)
+                .withCorrelationKey(correlationKey))
+        .isEmpty();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .messageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.CORRELATING)
+                .withMessageName(messageName)
+                .withCorrelationKey(correlationKey))
+        .isEmpty();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .messageStartEventSubscriptionRecords()
+                .withIntent(MessageStartEventSubscriptionIntent.CORRELATED)
+                .withMessageName(messageName))
+        .isEmpty();
   }
 }
