@@ -23,6 +23,7 @@ import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
+import io.camunda.process.test.impl.deployment.TestDeploymentService;
 import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
@@ -96,6 +97,7 @@ public class CamundaProcessTestExtension
   private static final Logger LOG = LoggerFactory.getLogger(CamundaProcessTestExtension.class);
 
   private final List<AutoCloseable> createdClients = new ArrayList<>();
+  private final TestDeploymentService testDeploymentService = new TestDeploymentService();
 
   private final CamundaProcessTestRuntimeBuilder runtimeBuilder;
   private final CamundaProcessTestResultPrinter processTestResultPrinter;
@@ -223,6 +225,12 @@ public class CamundaProcessTestExtension
 
     // initialize result collector
     processTestResultCollector = new CamundaProcessTestResultCollector(dataSource);
+
+    // deploy resources if present
+    testDeploymentService.deployTestResources(
+        context.getRequiredTestMethod(),
+        context.getRequiredTestClass(),
+        camundaProcessTestContext.createClient());
   }
 
   private <T> void injectField(
