@@ -71,7 +71,8 @@ public class DeleterJob implements BackgroundTask {
                 })
             .toList();
 
-    deleterRepository.deleteFromListView(batch.ids());
+    //    deleterRepository.deleteFromListView(batch.ids()); TODO delete from list view. Concurrency
+    // issues happened
     deleterRepository.deleteFromDeleteIndex(batch.ids());
 
     // TODO fix the return here
