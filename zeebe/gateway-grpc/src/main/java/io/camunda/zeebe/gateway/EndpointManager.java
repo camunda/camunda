@@ -499,6 +499,13 @@ public final class EndpointManager {
   private Map<String, Object> getClaims() throws Exception {
     final Map<String, Object> claims = new HashMap<>();
 
+    claims.put(
+        Authorization.IS_CAMUNDA_GROUPS_ENABLED,
+        Context.current().call(AuthenticationHandler.IS_CAMUNDA_GROUPS_ENABLED::get));
+    claims.put(
+        Authorization.IS_CAMUNDA_USERS_ENABLED,
+        Context.current().call(AuthenticationHandler.IS_CAMUNDA_USERS_ENABLED::get));
+
     // retrieve the user claims from the context and add them to the authorization if present
     final Map<String, Object> userClaims =
         Context.current().call(AuthenticationHandler.Oidc.USER_CLAIMS::get);

@@ -27,8 +27,8 @@ public class AuthorizationEntityChecker {
       "Expected to create or update authorization with ownerId or resourceId '%s', but a user with this ID does not exist.";
   public static final String GROUP_DOES_NOT_EXIST_ERROR_MESSAGE =
       "Expected to create or update authorization with ownerId or resourceId '%s', but a group with this ID does not exist.";
-  public static final String IS_CAMUNDA_USERS_ENABLED = "IS_CAMUNDA_USERS_ENABLED";
-  public static final String IS_CAMUNDA_GROUPS_ENABLED = "IS_CAMUNDA_GROUPS_ENABLED";
+  public static final String IS_CAMUNDA_USERS_ENABLED = "is_camunda_users_enabled";
+  public static final String IS_CAMUNDA_GROUPS_ENABLED = "is_camunda_groups_enabled";
 
   private final UserState userState;
   private final MappingRuleState mappingRuleState;
