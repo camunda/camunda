@@ -118,6 +118,7 @@ public class ResourceDeletionAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE_PROCESS' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(processId));
+    assertNoResourceIsDeleted(processDefinitionKey);
   }
 
   @Test
@@ -179,6 +180,7 @@ public class ResourceDeletionAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE_DRD' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(drdId));
+    assertNoResourceIsDeleted(drdKey);
   }
 
   @Test
@@ -240,6 +242,7 @@ public class ResourceDeletionAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE_FORM' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(formId));
+    assertNoResourceIsDeleted(formKey);
   }
 
   @Test
@@ -305,6 +308,7 @@ public class ResourceDeletionAuthorizationTest {
         .hasRejectionReason(
             "Insufficient permissions to perform operation 'DELETE_RESOURCE' on resource 'RESOURCE', required resource identifiers are one of '[*, %s]'"
                 .formatted(resourceId));
+    assertNoResourceIsDeleted(resourceKey);
   }
 
   private UserRecordValue createUser() {
@@ -379,5 +383,24 @@ public class ResourceDeletionAuthorizationTest {
         .getResourceMetadata()
         .getFirst()
         .getResourceKey();
+  }
+
+  private void assertNoResourceIsDeleted(final long resourceKey) {
+    final var limitPosition =
+        engine.signal().withSignalName("limitingRecord").broadcast().getPosition();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .resourceDeletionRecords()
+                .withIntent(ResourceDeletionIntent.DELETING)
+                .withResourceKey(resourceKey))
+        .isEmpty();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getPosition() < limitPosition)
+                .resourceDeletionRecords()
+                .withIntent(ResourceDeletionIntent.DELETED)
+                .withResourceKey(resourceKey))
+        .isEmpty();
   }
 }

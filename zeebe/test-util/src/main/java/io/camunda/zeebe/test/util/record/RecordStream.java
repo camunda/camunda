@@ -106,6 +106,16 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
         filter(r -> r.getValueType() == ValueType.INCIDENT).map(Record.class::cast));
   }
 
+  public MessageRecordStream messageRecords() {
+    return new MessageRecordStream(
+        filter(r -> r.getValueType() == ValueType.MESSAGE).map(Record.class::cast));
+  }
+
+  public MessageCorrelationRecordStream messageCorrelationRecords() {
+    return new MessageCorrelationRecordStream(
+        filter(r -> r.getValueType() == ValueType.MESSAGE_CORRELATION).map(Record.class::cast));
+  }
+
   public MessageSubscriptionRecordStream messageSubscriptionRecords() {
     return new MessageSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.MESSAGE_SUBSCRIPTION).map(Record.class::cast));
@@ -126,6 +136,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   public SignalSubscriptionRecordStream signalSubscriptionRecords() {
     return new SignalSubscriptionRecordStream(
         filter(r -> r.getValueType() == ValueType.SIGNAL_SUBSCRIPTION).map(Record.class::cast));
+  }
+
+  public SignalRecordStream signalRecords() {
+    return new SignalRecordStream(
+        filter(r -> r.getValueType() == ValueType.SIGNAL).map(Record.class::cast));
   }
 
   public UserTaskRecordStream userTaskRecords() {
@@ -151,6 +166,11 @@ public final class RecordStream extends ExporterRecordStream<RecordValue, Record
   public AuthorizationRecordStream authorizationRecords() {
     return new AuthorizationRecordStream(
         filter(r -> r.getValueType() == ValueType.AUTHORIZATION).map(Record.class::cast));
+  }
+
+  public ResourceDeletionRecordStream resourceDeletionRecords() {
+    return new ResourceDeletionRecordStream(
+        filter(r -> r.getValueType() == ValueType.RESOURCE_DELETION).map(Record.class::cast));
   }
 
   public AsyncRequestRecordStream asyncRequestRecords() {
