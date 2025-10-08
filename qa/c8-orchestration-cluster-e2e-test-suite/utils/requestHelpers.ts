@@ -742,6 +742,7 @@ export async function findUserTask(
   request: APIRequestContext,
   procKey: string,
   state: string,
+  elementId?: string,
 ) {
   const localState: Record<string, unknown> = {};
   await expect(async () => {
@@ -760,6 +761,9 @@ export async function findUserTask(
     expect(searchJson.page.totalItems).toBe(1);
     expect(searchJson.items.length).toBe(1);
     expect(searchJson.items[0].state).toBe(state);
+    if (elementId) {
+      expect(searchJson.items[0].elementId).toBe(elementId);
+    }
     localState['userTaskKey'] = searchJson.items[0].userTaskKey;
   }).toPass(defaultAssertionOptions);
   return localState['userTaskKey'] as string;
