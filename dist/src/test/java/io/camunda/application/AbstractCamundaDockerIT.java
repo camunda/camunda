@@ -21,9 +21,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.HttpWaitStrategy;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 
 public abstract class AbstractCamundaDockerIT {
@@ -34,6 +36,8 @@ public abstract class AbstractCamundaDockerIT {
   protected static final int ELASTICSEARCH_PORT = 9200;
   protected static final String CAMUNDA_NETWORK_ALIAS = "camunda";
   protected static final String ELASTICSEARCH_NETWORK_ALIAS = "elasticsearch";
+  protected static final String POSTGRES_NETWORK_ALIAS = "postgresql";
+  protected static final String ORACLE_NETWORK_ALIAS = "oracle";
   protected static final String DATABASE_TYPE = "elasticsearch";
   protected static final String CAMUNDA_TEST_DOCKER_IMAGE =
       System.getProperty("camunda.docker.test.image", "camunda/camunda:SNAPSHOT");
@@ -43,7 +47,7 @@ public abstract class AbstractCamundaDockerIT {
           "docker.elastic.co/elasticsearch/elasticsearch:" + SUPPORTED_ELASTICSEARCH_VERSION);
   private static final Logger LOGGER = LoggerFactory.getLogger(AbstractCamundaDockerIT.class);
   protected Network network;
-  private final List<GenericContainer> createdContainers = new ArrayList<>();
+  private final List<GenericContainer<?>> createdContainers = new ArrayList<>();
 
   @BeforeEach
   public void beforeEach() {
@@ -57,7 +61,7 @@ public abstract class AbstractCamundaDockerIT {
     network = null;
   }
 
-  protected void startContainer(final GenericContainer container) {
+  protected void startContainer(final GenericContainer<?> container) {
     try {
       container.start();
     } catch (final Exception e) {
@@ -68,7 +72,7 @@ public abstract class AbstractCamundaDockerIT {
     }
   }
 
-  protected <T extends GenericContainer> T createContainer(final Supplier<T> containerSupplier) {
+  protected <T extends GenericContainer<?>> T createContainer(final Supplier<T> containerSupplier) {
     final T container = containerSupplier.get();
     createdContainers.add(container);
     return container;
@@ -82,7 +86,21 @@ public abstract class AbstractCamundaDockerIT {
         .withExposedPorts(ELASTICSEARCH_PORT);
   }
 
-  protected GenericContainer createUnauthenticatedUnifiedConfigCamundaContainer() {
+  protected PostgreSQLContainer<?> createPostgresContainer() {
+    return TestSearchContainers.createDefaultPostgresContainer()
+        .withNetwork(network)
+        .withNetworkAliases(POSTGRES_NETWORK_ALIAS)
+        .withExposedPorts(PostgreSQLContainer.POSTGRESQL_PORT);
+  }
+
+  protected OracleContainer createOracleContainer() {
+    return TestSearchContainers.createDefaultOracleContainer()
+        .withNetwork(network)
+        .withNetworkAliases(ORACLE_NETWORK_ALIAS)
+        .withExposedPorts(1521);
+  }
+
+  protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
         .withLogConsumer(new Slf4jLogConsumer(LOGGER))
         .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
@@ -102,7 +120,44 @@ public abstract class AbstractCamundaDockerIT {
         .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false");
   }
 
-  protected GenericContainer createCamundaContainer() {
+  private GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainerWithRdbms(
+      final String url, final String vendorId, final String springProfile) {
+    return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
+        .withLogConsumer(new Slf4jLogConsumer(LOGGER))
+        .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
+        .withNetwork(network)
+        .withNetworkAliases(CAMUNDA_NETWORK_ALIAS)
+        .waitingFor(
+            new HttpWaitStrategy()
+                .forPort(MANAGEMENT_PORT)
+                .forPath("/actuator/health")
+                .withReadTimeout(Duration.ofSeconds(120)))
+        .withStartupTimeout(Duration.ofSeconds(300))
+        // Unified Configuration
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_TYPE", "rdbms")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_URL", url)
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_USERNAME", "camunda")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_PASSWORD", "camunda")
+        .withEnv("CAMUNDA_DATA_SECONDARYSTORAGE_RDBMS_DATABASE_VENDOR_ID", vendorId)
+        .withEnv(
+            "ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME", "io.camunda.exporter.rdbms.RdbmsExporter")
+        // ---
+        .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTED_API", "true")
+        .withEnv("CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED", "false")
+        .withEnv("SPRING_PROFILES_ACTIVE", springProfile);
+  }
+
+  protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainerWithPostgres() {
+    return createUnauthenticatedUnifiedConfigCamundaContainerWithRdbms(
+        "jdbc:postgresql://postgresql:5432/camunda", "postgresql", "rdbmsPostgres,broker,insecure");
+  }
+
+  protected GenericContainer<?> createUnauthenticatedUnifiedConfigCamundaContainerWithOracle() {
+    return createUnauthenticatedUnifiedConfigCamundaContainerWithRdbms(
+        "jdbc:oracle:thin:@//oracle:1521/camunda", "oracle", "rdbmsOracle,broker,insecure");
+  }
+
+  protected GenericContainer<?> createCamundaContainer() {
     return new GenericContainer<>(CAMUNDA_TEST_DOCKER_IMAGE)
         .withLogConsumer(new Slf4jLogConsumer(LOGGER))
         .withExposedPorts(SERVER_PORT, MANAGEMENT_PORT, GATEWAY_GRPC_PORT)
@@ -139,5 +194,9 @@ public abstract class AbstractCamundaDockerIT {
 
   protected static String elasticsearchUrl() {
     return String.format("http://%s:%d", ELASTICSEARCH_NETWORK_ALIAS, ELASTICSEARCH_PORT);
+  }
+
+  protected static String postgresUrl() {
+    return "jdbc:postgresql://postgresql:5432/postgres";
   }
 }

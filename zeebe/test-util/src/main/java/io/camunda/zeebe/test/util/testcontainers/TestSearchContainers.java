@@ -11,7 +11,9 @@ import java.time.Duration;
 import java.util.Objects;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
+import org.testcontainers.oracle.OracleContainer;
 import org.testcontainers.utility.DockerImageName;
 
 @SuppressWarnings("resource")
@@ -29,6 +31,12 @@ public final class TestSearchContainers {
               Objects.requireNonNullElse(
                   org.opensearch.client.RestClient.class.getPackage().getImplementationVersion(),
                   "2.19.0"));
+
+  private static final DockerImageName POSTGRES_IMAGE =
+      DockerImageName.parse("postgres").withTag("15.3-alpine");
+
+  private static final DockerImageName ORACLE_IMAGE =
+      DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
 
   private TestSearchContainers() {}
 
@@ -87,5 +95,21 @@ public final class TestSearchContainers {
         .withEnv("xpack.watcher.enabled", "false")
         .withEnv("xpack.ml.enabled", "false")
         .withEnv("action.destructive_requires_name", "false");
+  }
+
+  public static PostgreSQLContainer<?> createDefaultPostgresContainer() {
+    return new PostgreSQLContainer<>(POSTGRES_IMAGE)
+        .withDatabaseName("camunda")
+        .withUsername("camunda")
+        .withPassword("camunda")
+        .withStartupTimeout(Duration.ofMinutes(2));
+  }
+
+  public static OracleContainer createDefaultOracleContainer() {
+    return new OracleContainer(ORACLE_IMAGE)
+        .withDatabaseName("camunda")
+        .withUsername("camunda")
+        .withPassword("camunda")
+        .withStartupTimeout(Duration.ofMinutes(5));
   }
 }
