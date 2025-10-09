@@ -66,7 +66,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": ":white_check_mark: *Daily Camunda migration test succeeded against branch:* ${{ inputs.ref || 'release-8.8.0' }}"
+                    "text": ":white_check_mark: *Daily Camunda migration test succeeded against branch:* `release-8.8.0`"
                   }
                 }
               ]
