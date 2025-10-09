@@ -88,6 +88,7 @@ export const createEnhancedIncidentV2 = (
   const incident = createIncidentV2(options);
   return {
     ...incident,
+    processDefinitionName: 'Some Process Name',
     elementName: 'Always Failing Task',
     isSelected: false,
     ...options,
