@@ -235,12 +235,17 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
 
   @Override
   public CompletableFuture<Void> setLifeCycleToAllIndexes() {
+    final var retention = config.getRetention();
+    if (!retention.isEnabled()) {
+      return CompletableFuture.completedFuture(null);
+    }
+
     final var requests =
         allTemplatesDescriptors.stream()
             .map(
                 template ->
                     applyPolicyToIndices(
-                        getRetentionPolicyName(template.getIndexName(), config.getRetention()),
+                        getRetentionPolicyName(template.getIndexName(), retention),
                         buildHistoricalIndicesPattern(template)))
             .toList();
 

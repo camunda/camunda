@@ -969,6 +969,7 @@
         #       enabled: false
         #       minimumAge: 30d
         #       policyName: camunda-retention-policy
+        #       applyPolicyJobInterval: PT1H
         #
         #   batchOperations:
         #     exportItemsOnCreation: true
