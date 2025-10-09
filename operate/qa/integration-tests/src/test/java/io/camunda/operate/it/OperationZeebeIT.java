@@ -18,23 +18,31 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+<<<<<<< HEAD
 import io.camunda.operate.util.*;
+=======
+import io.camunda.operate.entities.*;
+import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
+import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
+import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
+import io.camunda.operate.schema.templates.OperationTemplate;
+import io.camunda.operate.util.ConversionUtils;
+import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.util.ZeebeTestUtil;
+>>>>>>> f972c62c (test: reenable and fix failing operate ITs)
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.rest.dto.listview.*;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
 import io.camunda.operate.webapp.zeebe.operation.*;
+<<<<<<< HEAD
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
@@ -44,6 +52,8 @@ import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
+=======
+>>>>>>> f972c62c (test: reenable and fix failing operate ITs)
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.HttpURLConnection;
@@ -115,6 +125,59 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  public void testBatchOperationsPersisted() throws Exception {
+    // given
+    final int instanceCount = 10;
+    for (int i = 0; i < instanceCount; i++) {
+      startDemoProcessInstance();
+    }
+
+    // when
+    final String batchOperationName = "operationName";
+    final ListViewQueryDto allRunningQuery = createGetAllRunningQuery();
+    final MvcResult mvcResult =
+        postBatchOperationWithOKResponse(
+            allRunningQuery, OperationType.CANCEL_PROCESS_INSTANCE, batchOperationName);
+
+    // then
+    final BatchOperationDto[] batchOperations =
+        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
+    assertThat(batchOperations).hasSize(1);
+
+    final BatchOperationDto batchOperationDto = batchOperations[0];
+    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.CANCEL_PROCESS_INSTANCE);
+    assertThat(batchOperationDto.getName()).isEqualTo(batchOperationName);
+    assertThat(batchOperationDto.getInstancesCount()).isEqualTo(10);
+    assertThat(batchOperationDto.getOperationsTotalCount()).isEqualTo(10);
+    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(0);
+    assertThat(batchOperationDto.getStartDate()).isNotNull();
+    assertThat(batchOperationDto.getEndDate()).isNull();
+
+    final BatchOperationDto batchOperationResponse =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse)
+        .usingRecursiveComparison()
+        // ignore because the Dto is created from an Entity (which doesn't have SortValues)
+        .ignoringFields("sortValues")
+        .isEqualTo(batchOperationDto);
+
+    final ListViewResponseDto response = getProcessInstances(allRunningQuery);
+    assertThat(response.getProcessInstances()).hasSize(instanceCount);
+    assertThat(response.getProcessInstances()).allMatch(pi -> pi.isHasActiveOperation());
+    assertThat(response.getProcessInstances())
+        .flatExtracting("operations")
+        .extracting(OperationTemplate.TYPE)
+        .containsOnly(OperationType.CANCEL_PROCESS_INSTANCE);
+    assertThat(response.getProcessInstances())
+        .flatExtracting("operations")
+        .extracting(OperationTemplate.STATE)
+        .containsOnly(OperationState.SCHEDULED);
+  }
+
+  @Test
+>>>>>>> f972c62c (test: reenable and fix failing operate ITs)
   public void testOperationPersisted() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -238,6 +301,30 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  public void testNoOperationsPersistedForNoProcessInstances() throws Exception {
+    // given
+    // no process instances
+
+    // when
+    final MvcResult mvcResult =
+        postBatchOperationWithOKResponse(
+            createGetAllRunningQuery(), OperationType.CANCEL_PROCESS_INSTANCE);
+
+    // then
+    final BatchOperationEntity batchOperationResponse =
+        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(0);
+    assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
+
+    final List<BatchOperationEntity> batchOperations = operationReader.getBatchOperations(10);
+    assertThat(batchOperations).hasSize(1);
+    assertThat(batchOperations.get(0).getEndDate()).isNotNull();
+  }
+
+  @Test
+>>>>>>> f972c62c (test: reenable and fix failing operate ITs)
   public void testResolveIncidentExecutedOnOneInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -768,6 +855,80 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
+<<<<<<< HEAD
+=======
+  public void testFailCancelOnCanceledInstance() throws Exception {
+    // given
+    final Long processInstanceKey = startDemoProcessInstance();
+    ZeebeTestUtil.cancelProcessInstance(super.getClient(), processInstanceKey);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCanceledCheck, processInstanceKey);
+
+    // when
+    // we call CANCEL_PROCESS_INSTANCE operation on instance
+    final ListViewQueryDto processInstanceQuery =
+        createGetAllProcessInstancesQuery()
+            .setIds(Collections.singletonList(processInstanceKey.toString()));
+    postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
+
+    // and execute the operation
+    executeOneBatch();
+
+    // then
+    // the state of operation is FAILED, as there are no appropriate incidents
+    final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
+    assertThat(processInstances.getProcessInstances()).hasSize(1);
+    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
+        .isEqualTo(false);
+    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
+    final OperationDto operation =
+        processInstances.getProcessInstances().get(0).getOperations().get(0);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .isEqualTo(
+            "Unable to cancel CANCELED process instance. Instance must be in ACTIVE or INCIDENT state.");
+    assertThat(operation.getId()).isNotNull();
+  }
+
+  @Test
+  public void testFailCancelOnCompletedInstance() throws Exception {
+    // given
+    final String bpmnProcessId = "startEndProcess";
+    final BpmnModelInstance startEndProcess =
+        Bpmn.createExecutableProcess(bpmnProcessId).startEvent().endEvent().done();
+    deployProcess(startEndProcess, "startEndProcess.bpmn");
+    final Long processInstanceKey =
+        ZeebeTestUtil.startProcessInstance(super.getClient(), bpmnProcessId, null);
+    searchTestRule.processAllRecordsAndWait(processInstanceIsCompletedCheck, processInstanceKey);
+    // elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    // when
+    // we call CANCEL_PROCESS_INSTANCE operation on instance
+    final ListViewQueryDto processInstanceQuery =
+        createGetAllProcessInstancesQuery()
+            .setIds(Collections.singletonList(processInstanceKey.toString()));
+    postBatchOperationWithOKResponse(processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
+
+    // and execute the operation
+    executeOneBatch();
+
+    // then
+    // the state of operation is FAILED, as the instance is in wrong state
+    final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
+    assertThat(processInstances.getProcessInstances()).hasSize(1);
+    assertThat(processInstances.getProcessInstances().get(0).isHasActiveOperation())
+        .isEqualTo(false);
+    assertThat(processInstances.getProcessInstances().get(0).getOperations()).hasSize(1);
+    final OperationDto operation =
+        processInstances.getProcessInstances().get(0).getOperations().get(0);
+    assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
+    assertThat(operation.getErrorMessage())
+        .isEqualTo(
+            "Unable to cancel COMPLETED process instance. Instance must be in ACTIVE or INCIDENT state.");
+    assertThat(operation.getId()).isNotNull();
+  }
+
+  @Test
+>>>>>>> f972c62c (test: reenable and fix failing operate ITs)
   public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -777,13 +938,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     final MvcResult mvcResult =
         postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -796,7 +961,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     // then it succeeds
     postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
 
@@ -806,7 +972,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
