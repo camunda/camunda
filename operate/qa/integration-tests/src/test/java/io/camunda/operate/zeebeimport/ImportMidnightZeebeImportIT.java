@@ -38,7 +38,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -75,7 +74,6 @@ public class ImportMidnightZeebeImportIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testProcessInstancesCompletedNextDay() throws IOException {
     // having
     final String processId = "demoProcess";
