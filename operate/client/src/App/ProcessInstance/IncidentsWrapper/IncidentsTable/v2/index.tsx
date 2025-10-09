@@ -21,7 +21,10 @@ import {SortableTable} from 'modules/components/SortableTable';
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {useHasPermissions} from 'modules/queries/permissions/useHasPermissions';
-import {isSingleIncidentSelectedV2} from 'modules/utils/incidents';
+import {
+  getIncidentErrorName,
+  isSingleIncidentSelectedV2,
+} from 'modules/utils/incidents';
 import {clearSelection, selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {useRootNode} from 'modules/hooks/flowNodeSelection';
 import type {EnhancedIncident} from 'modules/hooks/incidents';
@@ -147,8 +150,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
 
             return {
               id: incident.incidentKey,
-              // TODO: Error type is no longer the same readable message...
-              errorType: incident.errorType,
+              errorType: getIncidentErrorName(incident.errorType),
               elementName:
                 processInstanceKey === incident.processInstanceKey ? (
                   incident.elementName
