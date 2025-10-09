@@ -26,11 +26,20 @@ import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
+  const instanceKeys: string[] = [];
   test.beforeAll(async () => {
     await deploy([
       './resources/test_migration_process_v1.bpmn',
       './resources/test_migration_process_v2.bpmn',
     ]);
+  });
+
+  test.afterAll(async () => {
+    for (const key of instanceKeys) {
+      await cancelProcessInstance(key).catch(() => {
+        // ignore if already completed
+      });
+    }
   });
 
   test('Create a Batch Operation to Migrate Process Instances - Unauthorized', async ({
@@ -167,10 +176,6 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         'do_something_else',
       );
     });
-
-    await cancelProcessInstance(localState.processInstanceKey1);
-    await cancelProcessInstance(localState.processInstanceKey2);
-    await cancelProcessInstance(localState.targetProcessInstanceKey);
   });
 
   test('Create a Batch Operation to Migrate Process Instances - With Multiple Filters', async ({
@@ -230,10 +235,6 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         'do_something_else',
       );
     });
-
-    await cancelProcessInstance(localState.processInstanceKey1);
-    await cancelProcessInstance(localState.processInstanceKey2);
-    await cancelProcessInstance(localState.targetProcessInstanceKey);
   });
 
   test('Create a Batch Operation to Migrate Process Instances - With Or Filters', async ({
@@ -291,10 +292,6 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         'do_something_else',
       );
     });
-
-    await cancelProcessInstance(localState.processInstanceKey1);
-    await cancelProcessInstance(localState.processInstanceKey2);
-    await cancelProcessInstance(localState.targetProcessInstanceKey);
   });
 
   const verifyBothInstancesAreAtElementId = async (
@@ -317,7 +314,6 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
       processInstanceKey1: '',
       processInstanceKey2: '',
       targetProcessDefinitionKey: '',
-      targetProcessInstanceKey: '',
     };
     await test.step('Create two process instances of version 1', async () => {
       const instances1 = await createInstances(
@@ -327,6 +323,7 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         variableProcess1,
       );
       localState.processInstanceKey1 = instances1[0].processInstanceKey;
+      instanceKeys.push(instances1[0].processInstanceKey);
 
       const instances2 = await createInstances(
         'test_migration_process',
@@ -335,6 +332,7 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         variableProcess2,
       );
       localState.processInstanceKey2 = instances2[0].processInstanceKey;
+      instanceKeys.push(instances2[0].processInstanceKey);
     });
 
     await test.step('Verify both instances are at the source task', async () => {
@@ -354,7 +352,7 @@ test.describe.parallel('Create Process Instance Batch to Migrate Tests', () => {
         1,
       );
       localState.targetProcessDefinitionKey = instances[0].processDefinitionKey;
-      localState.targetProcessInstanceKey = instances[0].processInstanceKey;
+      instanceKeys.push(instances[0].processInstanceKey);
     });
     return localState;
   };

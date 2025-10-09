@@ -7,7 +7,11 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {createInstances, deploy} from '../../../../utils/zeebeClient';
+import {
+  cancelProcessInstance,
+  createInstances,
+  deploy,
+} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertInvalidState,
@@ -21,11 +25,21 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Test process instance migrate API', () => {
+  const instanceKeys: string[] = [];
+
   test.beforeAll(async () => {
     await deploy([
       './resources/test_migration_process_v1.bpmn',
       './resources/test_migration_process_v2.bpmn',
     ]);
+  });
+
+  test.afterAll(async () => {
+    for (const key of instanceKeys) {
+      await cancelProcessInstance(key).catch(() => {
+        // ignore if already completed
+      });
+    }
   });
 
   test('Process instance migrate - success', async ({request}) => {
@@ -36,6 +50,7 @@ test.describe.parallel('Test process instance migrate API', () => {
     await test.step('Create process instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;
+        instanceKeys.push(instance[0].processInstanceKey);
       });
     });
 
@@ -44,6 +59,7 @@ test.describe.parallel('Test process instance migrate API', () => {
       await createInstances('test_migration_process_v2', 1, 1).then(
         (instance) => {
           localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
         },
       );
     });
@@ -96,6 +112,7 @@ test.describe.parallel('Test process instance migrate API', () => {
     await test.step('Create process-instance of version 1', async () => {
       await createInstances('test_migration_process', 1, 1).then((instance) => {
         localState.processInstanceKey = instance[0].processInstanceKey;
+        instanceKeys.push(instance[0].processInstanceKey);
       });
     });
 
@@ -104,6 +121,7 @@ test.describe.parallel('Test process instance migrate API', () => {
       await createInstances('test_migration_process_v2', 1, 1).then(
         (instance) => {
           localState.processDefinitionKey = instance[0].processDefinitionKey;
+          instanceKeys.push(instance[0].processInstanceKey);
         },
       );
     });
