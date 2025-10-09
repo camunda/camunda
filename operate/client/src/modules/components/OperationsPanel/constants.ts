@@ -6,4 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-export const EMPTY_MESSAGE = 'No operations have been created yet.';
+const EMPTY_MESSAGE = 'No operations have been created yet.';
+const OPERATIONS_EXPANDED_PANEL_WIDTH = 478;
+
+export {EMPTY_MESSAGE, OPERATIONS_EXPANDED_PANEL_WIDTH};

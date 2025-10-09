@@ -8,10 +8,8 @@
 
 import {observer} from 'mobx-react';
 import {Restricted} from 'modules/components/Restricted';
-import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
-import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {groupedDecisionsStore} from 'modules/stores/groupedDecisions';
-import {useEffect, useRef, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {DecisionOperations} from './DecisionOperations';
 import {CopiableContent, PanelHeader, Section} from './styled';
@@ -21,6 +19,7 @@ import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useDecisionDefinitionXmlOptions} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
 import {useQuery} from '@tanstack/react-query';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 const Decision: React.FC = observer(() => {
   const location = useLocation();
@@ -103,13 +102,6 @@ const Decision: React.FC = observer(() => {
     }
   }, [isFetched, decisionId]);
 
-  const panelHeaderRef = useRef<HTMLDivElement>(null);
-
-  useOperationsPanelResize(panelHeaderRef, (target, width) => {
-    target.style['marginRight'] =
-      `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
-  });
-
   const getStatus = () => {
     if (
       isFetching ||
@@ -134,7 +126,14 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Section>
-      <PanelHeader title={decisionName} ref={panelHeaderRef}>
+      <PanelHeader
+        title={decisionName}
+        className={
+          panelStatesStore.state.isOperationsCollapsed
+            ? undefined
+            : 'panelOffset'
+        }
+      >
         <>
           {decisionId !== null && (
             <CopiableContent
