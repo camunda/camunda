@@ -79,8 +79,8 @@ public class WebSessionRepositoryConfiguration {
         new SelfSchedulingTask(
             executor,
             new WebSessionDeletionTask(webSessionRepository),
-            WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_DELAY),
-        WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_DELAY,
+            WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_RUN_DELAY),
+        WebSessionDeletionTask.DELETE_EXPIRED_SESSIONS_INITIAL_DELAY,
         TimeUnit.MILLISECONDS);
     return executor;
   }
