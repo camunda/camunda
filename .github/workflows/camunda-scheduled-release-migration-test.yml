@@ -1,0 +1,73 @@
+# description: Workflow to run Camunda Platform release migration tests on scheduled manner
+# type: CI
+# owner: @Chris
+name: Camunda Release migration test
+on:
+  schedule:
+    # Runs at 04:00. every day https://crontab.guru/#0_4_*_*_*
+    - cron: 0 4 * * *
+
+jobs:
+  migration-test:
+    uses: ./.github/workflows/camunda-release-migration-test.yml@main
+    secrets: inherit
+    with:
+      name: scheduled-release-migration-test
+      ref: release-8.8.0
+
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    needs: [ migration-test ]
+    if: (failure() || cancelled())
+    steps:
+      - uses: actions/checkout@v4
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Daily Camunda migration test failed:*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+
+  notify-success:
+    name: Notify on Success
+    runs-on: ubuntu-latest
+    needs: [ migration-test ]
+    if: success()
+    steps:
+      - uses: actions/checkout@v4
+      - id: slack-notify
+        uses: slackapi/slack-github-action@v2.1.1
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":white_check_mark: *Daily Camunda migration test succeeded against branch:* ${{ inputs.ref || 'release-8.8.0' }}"
+                  }
+                }
+              ]
+            }
