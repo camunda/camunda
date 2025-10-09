@@ -7,37 +7,28 @@
  */
 
 import {sortIncidents} from './service';
-import {createIncidentV2} from 'modules/testUtils';
+import {createEnhancedIncidentV2} from 'modules/testUtils';
 import {SORT_ORDER} from 'modules/constants';
 
 const incidents = [
-  {
-    ...createIncidentV2({
-      incidentKey: '1',
-      creationTime: '2017-03-14T15:17:21.296+0000',
-      errorType: 'TASK_LISTENER_NO_RETRIES',
-    }),
-    isSelected: false,
+  createEnhancedIncidentV2({
+    incidentKey: '1',
+    creationTime: '2017-03-14T15:17:21.296+0000',
+    errorType: 'TASK_LISTENER_NO_RETRIES',
     elementName: 'Task B',
-  },
-  {
-    ...createIncidentV2({
-      incidentKey: '2',
-      creationTime: '2018-12-14T15:17:32.919+0000',
-      errorType: 'IO_MAPPING_ERROR',
-    }),
-    isSelected: false,
+  }),
+  createEnhancedIncidentV2({
+    incidentKey: '2',
+    creationTime: '2018-12-14T15:17:32.919+0000',
+    errorType: 'IO_MAPPING_ERROR',
     elementName: 'Task A',
-  },
-  {
-    ...createIncidentV2({
-      incidentKey: '3',
-      creationTime: '2018-03-14T15:17:32.919+0000',
-      errorType: 'IO_MAPPING_ERROR',
-    }),
-    isSelected: false,
+  }),
+  createEnhancedIncidentV2({
+    incidentKey: '3',
+    creationTime: '2018-03-14T15:17:32.919+0000',
+    errorType: 'IO_MAPPING_ERROR',
     elementName: 'Task C',
-  },
+  }),
 ];
 
 describe('sortIncidents', () => {

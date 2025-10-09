@@ -24,6 +24,7 @@ import type {
   OperationEntity,
   InstanceOperationEntity,
 } from 'modules/types/operate';
+import type {EnhancedIncident} from './hooks/incidents';
 
 const createRandomId = function* createRandomId(type: string) {
   let idx = 0;
@@ -77,6 +78,18 @@ export const createIncidentV2 = (options: Partial<Incident> = {}): Incident => {
     processDefinitionKey: '2223894723423800',
     tenantId: '<default>',
     state: 'ACTIVE',
+    ...options,
+  };
+};
+
+export const createEnhancedIncidentV2 = (
+  options: Partial<EnhancedIncident> = {},
+): EnhancedIncident => {
+  const incident = createIncidentV2(options);
+  return {
+    ...incident,
+    elementName: 'Always Failing Task',
+    isSelected: false,
     ...options,
   };
 };
