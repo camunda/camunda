@@ -7,7 +7,13 @@
  */
 
 import {VariablePanel} from '../index';
-import {render, screen, type UserEvent, waitFor} from 'modules/testing-library';
+import {
+  render,
+  screen,
+  fireEvent,
+  type UserEvent,
+  waitFor,
+} from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
@@ -42,6 +48,7 @@ const editLastNewVariableName = async (
   }
 
   await user.click(nameField);
+  fireEvent.focus(nameField);
   await user.type(nameField, value);
   await user.tab();
 };

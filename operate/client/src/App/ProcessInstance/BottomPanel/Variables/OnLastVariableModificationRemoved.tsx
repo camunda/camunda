@@ -21,7 +21,7 @@ const OnLastVariableModificationRemoved: React.FC = observer(() => {
   const form = useForm();
   const formState = useFormState<VariableFormValues>();
   const fieldArray = useFieldArray('newVariables');
-  const newVariables = formState.values.newVariables;
+  const newVariables = formState.values?.newVariables;
 
   useEffect(() => {
     const disposer = reaction(
