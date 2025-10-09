@@ -6,13 +6,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.8.1-SNAPSHOT</version>
+    <version>8.8.0</version>
     <relativePath>../../parent/pom.xml</relativePath>
   </parent>
 
   <artifactId>zeebe-client-java</artifactId>
 
-  <version>8.8.1-SNAPSHOT</version>
+  <version>8.8.0</version>
   <packaging>jar</packaging>
   <name>Zeebe Client Java</name>
 
