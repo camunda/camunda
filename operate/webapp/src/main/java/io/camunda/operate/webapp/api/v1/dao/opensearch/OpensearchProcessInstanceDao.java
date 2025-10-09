@@ -121,7 +121,7 @@ public class OpensearchProcessInstanceDao
 
     final var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
 
-    request.query(queryDSLWrapper.and(nonNullQueryTerms));
+    request.query(queryDSLWrapper.withTenantCheck(queryDSLWrapper.and(nonNullQueryTerms)));
   }
 
   @Override
