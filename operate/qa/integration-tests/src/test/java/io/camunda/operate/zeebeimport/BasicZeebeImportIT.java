@@ -51,13 +51,11 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.function.Predicate;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
-@Ignore("https://github.com/camunda/camunda/issues/39185")
 public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ProcessInstanceReader processInstanceReader;
