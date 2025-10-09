@@ -11,9 +11,15 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
+import {useMemo} from 'react';
 
-type EnhancedIncident = Incident & {elementName: string; isSelected: boolean};
+type EnhancedIncident = Incident & {
+  processDefinitionName: string;
+  elementName: string;
+  isSelected: boolean;
+};
 
 const useIncidents = () => {
   const {data: businessObjects} = useBusinessObjects();
@@ -42,25 +48,57 @@ const useIncidentsV2 = (
   const {data: businessObjects} = useBusinessObjects();
   const {data: incidents} = useGetIncidentsByProcessInstance(
     processInstanceKey,
+    {enablePeriodicRefetch, select: (res) => res.items},
+  );
+
+  const instancesWithIncident = useMemo(() => {
+    if (!incidents) {
+      return [];
+    }
+    return Array.from(
+      new Set(incidents.map((incident) => incident.processInstanceKey)),
+    );
+  }, [incidents]);
+
+  const {data: processDefinitionNames} = useProcessInstancesSearch(
     {
-      enablePeriodicRefetch,
-      select: (incidents) =>
-        incidents.items.map((incident) => ({
-          ...incident,
-          elementName: getFlowNodeName({
-            businessObjects,
-            flowNodeId: incident.elementId,
-          }),
-          isSelected: flowNodeSelectionStore.isSelected({
-            flowNodeId: incident.elementId,
-            flowNodeInstanceId: incident.elementInstanceKey,
-            isMultiInstance: false,
-          }),
-        })),
+      filter: {processInstanceKey: {$in: instancesWithIncident}},
+      page: {limit: instancesWithIncident.length},
+    },
+    {
+      enabled: instancesWithIncident.length > 0,
+      select: (res) =>
+        res.items.reduce<Record<string, string>>((acc, item) => {
+          acc[item.processInstanceKey] = item.processDefinitionName;
+          return acc;
+        }, {}),
     },
   );
 
-  return incidents ?? [];
+  const enhancedIncidents = useMemo<EnhancedIncident[]>(() => {
+    if (!incidents) {
+      return [];
+    }
+
+    return incidents.map((incident) => {
+      return {
+        ...incident,
+        elementName: getFlowNodeName({
+          businessObjects,
+          flowNodeId: incident.elementId,
+        }),
+        isSelected: flowNodeSelectionStore.isSelected({
+          flowNodeId: incident.elementId,
+          flowNodeInstanceId: incident.elementInstanceKey,
+          isMultiInstance: false,
+        }),
+        processDefinitionName:
+          processDefinitionNames?.[incident.processInstanceKey] ?? '',
+      };
+    });
+  }, [incidents, businessObjects, processDefinitionNames]);
+
+  return enhancedIncidents;
 };
 
 const useIncidentsElements = () => {
