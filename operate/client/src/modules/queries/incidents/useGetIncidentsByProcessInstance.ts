@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryProcessInstanceIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  IncidentErrorType,
+  QueryProcessInstanceIncidentsResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
 import {queryKeys} from '../queryKeys';
@@ -49,4 +52,21 @@ function useProcessInstanceIncidentsCount(processInstanceKey: string): number {
   return data ?? 0;
 }
 
-export {useGetIncidentsByProcessInstance, useProcessInstanceIncidentsCount};
+function useProcessInstanceIncidentsErrorTypes(
+  processInstanceKey: string,
+): IncidentErrorType[] {
+  const {data} = useGetIncidentsByProcessInstance(processInstanceKey, {
+    select: (incidents) =>
+      Array.from(
+        new Set(incidents.items.map((incident) => incident.errorType)),
+      ),
+  });
+
+  return data ?? [];
+}
+
+export {
+  useGetIncidentsByProcessInstance,
+  useProcessInstanceIncidentsCount,
+  useProcessInstanceIncidentsErrorTypes,
+};
