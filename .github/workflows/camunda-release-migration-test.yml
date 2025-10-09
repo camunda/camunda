@@ -190,7 +190,7 @@ jobs:
     needs:
       - deploy-camunda-cluster-prev-version
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
