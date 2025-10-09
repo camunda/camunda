@@ -9,7 +9,7 @@ on:
 
 jobs:
   migration-test:
-    uses: ./.github/workflows/camunda-release-migration-test.yml@main
+    uses: ./.github/workflows/camunda-release-migration-test.yml
     secrets: inherit
     with:
       name: scheduled-release-migration-test
