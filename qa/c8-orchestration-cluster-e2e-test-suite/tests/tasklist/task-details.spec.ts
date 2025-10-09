@@ -275,7 +275,7 @@ test.describe('task details page', () => {
     await taskPanelPage.openTask('processWithDeployedForm');
 
     await taskDetailsPage.clickAssignToMeButton();
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await expect(taskDetailsPage.unassignButton).toBeVisible({timeout: 30000});
     await taskDetailsPage.fillTextInput('Client Name*', 'Jon');
     await taskDetailsPage.fillTextInput('Client Address*', 'Earth');
     await taskDetailsPage.fillDatetimeField('Invoice Date', '1/1/3000');

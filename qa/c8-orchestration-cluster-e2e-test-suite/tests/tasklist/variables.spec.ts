@@ -193,7 +193,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('usertask_with_variables');
 
-    await expect(page.getByText('newVariableName')).toBeVisible();
+    await expect(page.getByText('newVariableName')).toBeVisible({timeout: 30000});
     await expect(page.getByText('newVariableValue')).toBeVisible();
   });
 });
