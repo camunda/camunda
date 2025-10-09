@@ -64,7 +64,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
 
     const sortedIncidents = sortIncidents(incidents, sortBy, sortOrder);
 
-    const isJobKeyPresent = sortedIncidents.some(({jobKey}) => jobKey !== null);
+    const isJobKeyPresent = sortedIncidents.some(({jobKey}) => !!jobKey);
 
     const hasIncidentInCalledInstance = sortedIncidents.some(
       (i) => i.processInstanceKey !== processInstanceKey,
