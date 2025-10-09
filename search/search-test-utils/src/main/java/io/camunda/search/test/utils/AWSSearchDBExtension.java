@@ -48,6 +48,7 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     osConfig.setType("opensearch");
     osConfig.setUrl(osUrl);
     osConfig.setIndexPrefix("test-" + UUID.randomUUID());
+    osConfig.setAwsEnabled(true);
     final var connector = new OpensearchConnector(osConfig);
     objectMapper = connector.objectMapper();
     osClient = connector.createClient();

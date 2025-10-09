@@ -162,7 +162,7 @@ jobs:
     name: "Send slack notification on fail"
     runs-on: ubuntu-latest
     needs: integration-tests
-    if: failure()
+    if: failure() && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/stable/'))
     permissions:
       contents: read
       actions: write
