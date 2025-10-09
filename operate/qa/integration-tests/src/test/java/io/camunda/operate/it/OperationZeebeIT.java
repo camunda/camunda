@@ -21,12 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.entities.BatchOperationEntity;
-import io.camunda.operate.entities.FlowNodeInstanceEntity;
-import io.camunda.operate.entities.IncidentEntity;
-import io.camunda.operate.entities.OperationEntity;
-import io.camunda.operate.entities.OperationState;
-import io.camunda.operate.entities.OperationType;
+import io.camunda.operate.entities.*;
 import io.camunda.operate.entities.dmn.DecisionInstanceEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.schema.templates.DecisionInstanceTemplate;
@@ -35,29 +30,17 @@ import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.reader.BatchOperationReader;
-import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.reader.VariableReader;
+import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
 import io.camunda.operate.webapp.rest.dto.VariableDto;
 import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto;
+import io.camunda.operate.webapp.rest.dto.listview.*;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
-import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
-import io.camunda.operate.webapp.zeebe.operation.DeleteDecisionDefinitionHandler;
-import io.camunda.operate.webapp.zeebe.operation.DeleteProcessDefinitionHandler;
-import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
-import io.camunda.operate.webapp.zeebe.operation.UpdateVariableHandler;
+import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.net.HttpURLConnection;
@@ -69,7 +52,6 @@ import java.util.stream.Collectors;
 import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -133,7 +115,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testBatchOperationsPersisted() throws Exception {
     // given
     final int instanceCount = 10;
@@ -184,7 +165,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testOperationPersisted() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -229,7 +209,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testSeveralOperationsPersistedForSeveralIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstanceWithIncidents();
@@ -280,7 +259,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testNoOperationsPersistedForNoIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -330,7 +308,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testResolveIncidentExecutedOnOneInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -385,7 +362,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testResolveIncidentForExecutionListener() throws Exception {
 
     // given
@@ -418,7 +394,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testUpdateVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -485,7 +460,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testAddVariableOnProcessInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -869,7 +843,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testRetryOperationOnZeebeNotAvailable() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -900,7 +873,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailResolveIncidentBecauseOfNoIncidents() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -943,7 +915,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailCancelOnCanceledInstance() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -977,7 +948,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailCancelOnCompletedInstance() throws Exception {
     // given
     final String bpmnProcessId = "startEndProcess";
@@ -1016,7 +986,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -1026,17 +995,20 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     final MvcResult mvcResult =
         postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testFailAddVariableOperationAsOperationAlreadyExists() throws Exception {
     // given
     final Long processInstanceKey = startDemoProcessInstance();
@@ -1046,7 +1018,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     // then it succeeds
     postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
 
@@ -1056,7 +1029,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -1127,7 +1103,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  @Ignore("https://github.com/camunda/camunda/issues/39185")
   public void testDeleteProcessDefinitionFailsWhenRunning() throws Exception {
 
     // given
