@@ -11,7 +11,6 @@ import {queryBatchOperations} from 'modules/api/v2/batchOperations/queryBatchOpe
 import type {QueryBatchOperationsRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
 const BATCH_OPERATIONS_QUERY_KEY = 'batchOperations';
-
 const MAX_OPERATIONS_PER_REQUEST = 50;
 
 const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
@@ -46,8 +45,17 @@ const useBatchOperations = (payload: QueryBatchOperationsRequestBody) => {
 
       return nextPage;
     },
-    select: (data) => data.pages?.flatMap((page) => page.items),
+    getPreviousPageParam: (_, __, firstPageParam) => {
+      const previousPage = firstPageParam - MAX_OPERATIONS_PER_REQUEST;
+
+      if (previousPage < 0) {
+        return null;
+      }
+
+      return previousPage;
+    },
     refetchInterval: 5000,
+    maxPages: 2,
   });
 };
 

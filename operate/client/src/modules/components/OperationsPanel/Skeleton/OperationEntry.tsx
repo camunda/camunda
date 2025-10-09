@@ -26,14 +26,4 @@ const OperationEntry: React.FC = () => {
   );
 };
 
-const Skeleton: React.FC = () => {
-  return (
-    <ul data-testid="skeleton">
-      {[...Array(10)].map((_, index) => (
-        <OperationEntry key={index} />
-      ))}
-    </ul>
-  );
-};
-
-export {Skeleton};
+export {OperationEntry};

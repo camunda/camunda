@@ -16,6 +16,7 @@
     "@tanstack/eslint-plugin-query": "5.81.2",
     "@tanstack/react-query": "5.83.0",
     "@tanstack/react-query-devtools": "5.83.0",
+    "@tanstack/react-virtual": "3.13.12",
     "bpmn-js": "18.6.2",
     "bpmn-moddle": "9.0.2",
     "date-fns": "4.1.0",
