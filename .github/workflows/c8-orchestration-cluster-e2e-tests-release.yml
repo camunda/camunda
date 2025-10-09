@@ -63,6 +63,16 @@ jobs:
           echo "Detected base branch: $base"
           echo "base=$base" >> "$GITHUB_OUTPUT"
 
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   c8-orchestration-cluster-e2e-tests:
     name: C8 Orchestration Cluster E2E Tests Release (Tasklist ${{ matrix.tasklist_mode }} mode)
     strategy:
@@ -71,6 +81,8 @@ jobs:
         tasklist_mode: ${{ fromJSON( (needs.validate-release.outputs.base == 'stable/8.6' || needs.validate-release.outputs.base == 'stable/8.7') && '["v1"]' || '["v1","v2"]' ) }}
     needs: validate-release
     runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions: {}
     steps:
       - name: Print release info
         run: |
@@ -278,3 +290,62 @@ jobs:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: c8-orchestration-cluster-e2e-tests
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-result:
+    name: Send notification based on test results
+    runs-on: ubuntu-latest
+    needs: [validate-release, c8-orchestration-cluster-e2e-tests]
+    if: always()
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@2c5827061f1ad91ca97897d6257ebe638e033699
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPORELEASE_WEBHOOK_URL;
+
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPORELEASE_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "${{ needs.c8-orchestration-cluster-e2e-tests.result == 'success' && format('<@qa-automated-release-manager> :test_tube: C8 Orchestration Cluster E2E Tests for {0} succeeded. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) || format('<@qa-automated-release-manager> :warning: C8 Orchestration Cluster E2E Tests for {0} failed. See <https://github.com/camunda/camunda/actions/runs/{1}|test run overview> for details.', needs.validate-release.outputs.release_version, github.run_id) }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
