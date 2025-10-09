@@ -9,12 +9,9 @@ package io.camunda.exporter;
 
 import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.benmanes.caffeine.cache.CacheLoader;
@@ -161,9 +158,6 @@ final class CamundaExporterTest {
       // given
       final var expected = new ExporterMetadata(TestObjectMapper.objectMapper());
       exporter = new CamundaExporter(resourceProvider, expected);
-
-      final var exporterEngineClient = stubbedClientAdapterInUse.getSearchEngineClient();
-      when(exporterEngineClient.importersCompleted(anyInt(), any())).thenReturn(true);
 
       expected.setLastIncidentUpdatePosition(5);
       expected.setFirstUserTaskKey(TaskImplementation.JOB_WORKER, 10);

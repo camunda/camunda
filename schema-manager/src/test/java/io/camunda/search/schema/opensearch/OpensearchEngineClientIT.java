@@ -30,25 +30,17 @@ import io.camunda.search.schema.opensearch.OpensearchEngineClient.ISMPolicyState
 import io.camunda.search.schema.utils.SchemaTestUtil;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
-import io.camunda.webapps.schema.descriptors.IndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.entities.ImportPositionEntity;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.BulkRequest;
-import org.opensearch.client.opensearch.core.UpdateRequest;
 import org.opensearch.client.opensearch.generic.Requests;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
@@ -527,87 +519,5 @@ public class OpensearchEngineClientIT {
         .path("conditions")
         .get("min_index_age")
         .asText();
-  }
-
-  @Nested
-  class ImportersCompleted {
-    final String indexPrefix = "";
-    final int partitionId = 1;
-    final IndexDescriptor importPositionIndex = new ImportPositionIndex(indexPrefix, true);
-
-    @BeforeEach
-    void setup() throws IOException {
-      openSearchClient
-          .indices()
-          .delete(r -> r.index(importPositionIndex.getFullQualifiedName()).ignoreUnavailable(true));
-      opensearchEngineClient.createIndex(importPositionIndex, new IndexConfiguration());
-    }
-
-    @Test
-    void shouldReturnRecordReadersCompletedIfAllReadersCompletedFieldIsTrue() throws IOException {
-      // given, when
-      openSearchClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
-      openSearchClient.indices().refresh();
-
-      // then
-      final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
-
-    @Test
-    void shouldReturnRecordReadersNotCompletedIfSomeReadersCompletedFieldIsFalse()
-        throws IOException {
-      openSearchClient.bulk(createImportPositionDocuments(partitionId, importPositionIndex));
-
-      final var decisionEntity =
-          new ImportPositionEntity().setPartitionId(partitionId).setAliasName("decision");
-
-      final var updateRequest =
-          new UpdateRequest.Builder<ImportPositionEntity, Map<String, Boolean>>()
-              .id(decisionEntity.getId())
-              .index(importPositionIndex.getFullQualifiedName())
-              .doc(Map.of("completed", false))
-              .build();
-
-      openSearchClient.update(updateRequest, ImportPositionEntity.class);
-
-      openSearchClient.indices().refresh();
-
-      final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(false);
-    }
-
-    @Test
-    void shouldReturnImportersCompletedForFreshInstall() {
-      final var importersCompleted =
-          opensearchEngineClient.importersCompleted(partitionId, List.of(importPositionIndex));
-      assertThat(importersCompleted).isEqualTo(true);
-    }
-
-    private BulkRequest createImportPositionDocuments(
-        final int partitionId, final IndexDescriptor importPositionIndex) {
-      final BulkRequest.Builder br = new BulkRequest.Builder();
-      Stream.of("process-instance", "decision", "job")
-          .map(
-              type ->
-                  new ImportPositionEntity()
-                      .setCompleted(true)
-                      .setPartitionId(partitionId)
-                      .setAliasName(type))
-          .forEach(
-              entity -> {
-                br.operations(
-                    op ->
-                        op.index(
-                            i ->
-                                i.index(importPositionIndex.getFullQualifiedName())
-                                    .id(entity.getId())
-                                    .document(entity)));
-              });
-
-      return br.build();
-    }
   }
 }

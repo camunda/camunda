@@ -12,13 +12,11 @@ import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.MetricIndex;
 import io.camunda.webapps.schema.descriptors.index.PersistentWebSessionIndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.index.RoleIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.index.TenantIndex;
 import io.camunda.webapps.schema.descriptors.index.UserIndex;
@@ -63,7 +61,6 @@ public class IndexDescriptors {
                 new FlowNodeInstanceTemplate(indexPrefix, isElasticsearch),
                 new FormIndex(indexPrefix, isElasticsearch),
                 new GroupIndex(indexPrefix, isElasticsearch),
-                new ImportPositionIndex(indexPrefix, isElasticsearch),
                 new IncidentTemplate(indexPrefix, isElasticsearch),
                 new JobTemplate(indexPrefix, isElasticsearch),
                 new ListViewTemplate(indexPrefix, isElasticsearch),
@@ -77,7 +74,6 @@ public class IndexDescriptors {
                 new SequenceFlowTemplate(indexPrefix, isElasticsearch),
                 new SnapshotTaskVariableTemplate(indexPrefix, isElasticsearch),
                 new TaskTemplate(indexPrefix, isElasticsearch),
-                new TasklistImportPositionIndex(indexPrefix, isElasticsearch),
                 new TasklistMetricIndex(indexPrefix, isElasticsearch),
                 new TenantIndex(indexPrefix, isElasticsearch),
                 new UserIndex(indexPrefix, isElasticsearch),

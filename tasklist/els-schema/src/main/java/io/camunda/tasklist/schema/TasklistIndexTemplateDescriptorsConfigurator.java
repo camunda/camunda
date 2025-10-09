@@ -10,7 +10,6 @@ package io.camunda.tasklist.schema;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.webapps.schema.descriptors.index.TasklistMetricIndex;
 import io.camunda.webapps.schema.descriptors.template.DraftTaskVariableTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
@@ -78,12 +77,6 @@ public class TasklistIndexTemplateDescriptorsConfigurator {
   @Profile("!operate")
   public FlowNodeInstanceTemplate getFlowNodeInstanceTemplate() {
     return new FlowNodeInstanceTemplate(
-        tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
-  }
-
-  @Bean
-  public TasklistImportPositionIndex tasklistImportPositionIndex() {
-    return new TasklistImportPositionIndex(
         tasklistProperties.getIndexPrefix(), tasklistProperties.isElasticsearchDB());
   }
 

@@ -50,8 +50,6 @@ import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.SchemaManagerConfiguration;
 import io.camunda.search.schema.config.SearchEngineConfiguration;
 import io.camunda.webapps.schema.descriptors.AbstractIndexDescriptor;
-import io.camunda.webapps.schema.descriptors.index.ImportPositionIndex;
-import io.camunda.webapps.schema.descriptors.index.TasklistImportPositionIndex;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.api.context.Context;
@@ -60,7 +58,6 @@ import io.camunda.zeebe.exporter.api.context.Controller;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
-import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.Instant;
@@ -83,8 +80,6 @@ public class CamundaExporter implements Exporter {
   private CamundaExporterMetrics metrics;
   private BackgroundTaskManager taskManager;
   private ExporterMetadata metadata;
-  private boolean exporterCanFlush = false;
-  private boolean zeebeIndicesVersion87Exist = false;
   private SearchEngineClient searchEngineClient;
   private int partitionId;
   private Context context;
@@ -132,10 +127,9 @@ public class CamundaExporter implements Exporter {
       }
 
       writer = createBatchWriter();
-
-      checkImportersCompletedAndReschedule();
       controller.readMetadata().ifPresent(metadata::deserialize);
       taskManager.start();
+      scheduleDelayedFlush();
 
       LOG.info("Exporter opened");
     } catch (final Exception e) {
@@ -180,45 +174,6 @@ public class CamundaExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-
-    final var recordVersion = getVersion(record.getBrokerVersion());
-
-    if (recordVersion.major() == 8 && recordVersion.minor() < 8) {
-      LOG.debug(
-          "Skip record with broker version '{}'. Last exported position will be updated to '{}'",
-          record.getBrokerVersion(),
-          record.getPosition());
-      updateLastExportedPosition(record.getPosition());
-      return;
-    }
-
-    // Brownfield:
-    //
-    // Before flushing, Tasklist + Operate importers should have finished importing records of the
-    // previous version.
-    // Flushing is not possible to prevent data corruption (conflicting updates with Importers).
-    //
-    // For the importers to finish, the Elasticsearch/OpenSearch exporters need to
-    // export all records from the previous version. When Importer see records
-    // of a new version they can set as completed. Camunda Exporter skips older records to
-    // unblock other exporters, and let Importers do their job.
-    //
-    // As soon new records start to be exported, they get cached. Importers should be able to
-    // complete the importing.
-
-    if (configuration.getIndex().shouldWaitForImporters() && !exporterCanFlush) {
-
-      ensureCachedRecordsLessThanBulkSize(record);
-
-      writer.addRecord(record);
-
-      LOG.info(
-          "Waiting for importers to finish, cached record with key {} but did not flush",
-          record.getKey());
-
-      return;
-    }
-
     if (writer.getBatchSize() == 0) {
       metrics.startFlushLatencyMeasurement();
     }
@@ -332,36 +287,6 @@ public class CamundaExporter implements Exporter {
     return Arrays.stream(names).map(s -> indexPrefix + s).toList();
   }
 
-  private void ensureCachedRecordsLessThanBulkSize(final Record<?> record) {
-    final var maxCachedRecords = configuration.getBulk().getSize();
-
-    if (writer.getBatchSize() == configuration.getBulk().getSize()) {
-      LOG.info(
-          "Cached maximum batch size [{}] number of records, exporting will block at the current position of [{}] while waiting for the importers to finish processing records from previous version",
-          configuration.getBulk().getSize(),
-          record.getPosition());
-    }
-
-    if (writer.getBatchSize() >= maxCachedRecords) {
-      final var warnMsg =
-          String.format(
-              "Reached the max bulk size amount of cached records [%d] while waiting for importers to finish, retrying export for record at position [%s]",
-              maxCachedRecords, record.getPosition());
-      LOG.warn(warnMsg);
-      throw new IllegalStateException(warnMsg);
-    }
-  }
-
-  private SemanticVersion getVersion(final String version) {
-    return SemanticVersion.parse(version)
-        .orElseThrow(
-            () ->
-                new IllegalArgumentException(
-                    "Unsupported record broker version: ["
-                        + version
-                        + "] Must be a semantic version."));
-  }
-
   private boolean shouldFlush() {
     return writer.getBatchSize() >= configuration.getBulk().getSize()
         || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
@@ -388,48 +313,6 @@ public class CamundaExporter implements Exporter {
       LOG.warn("Unexpected exception occurred on periodically flushing bulk, will retry later.", e);
     }
     scheduleDelayedFlush();
-  }
-
-  private void scheduleImportersCompletedCheck() {
-    controller.scheduleCancellableTask(
-        Duration.ofSeconds(10), this::checkImportersCompletedAndReschedule);
-  }
-
-  private void checkImportersCompletedAndReschedule() {
-    if (!configuration.getIndex().shouldWaitForImporters()) {
-      LOG.debug(
-          "Waiting for importers to complete is disabled, thus scheduling delayed flush regardless of importer state.");
-      scheduleDelayedFlush();
-      return;
-    }
-    if (!exporterCanFlush) {
-      scheduleImportersCompletedCheck();
-    }
-    try {
-      final var importPositionIndices =
-          provider.getIndexDescriptors().stream()
-              .filter(
-                  d -> d instanceof ImportPositionIndex || d instanceof TasklistImportPositionIndex)
-              .toList();
-
-      if (!zeebeIndicesVersion87Exist) {
-        zeebeIndicesVersion87Exist =
-            !searchEngineClient
-                .getMappings(
-                    configuration.getIndex().getZeebeIndexPrefix() + "*8.7.*_", MappingSource.INDEX)
-                .isEmpty();
-      }
-
-      exporterCanFlush =
-          !zeebeIndicesVersion87Exist
-              || searchEngineClient.importersCompleted(partitionId, importPositionIndices);
-    } catch (final Exception e) {
-      LOG.warn("Unexpected exception occurred checking importers completed, will retry later.", e);
-    }
-
-    if (exporterCanFlush) {
-      scheduleDelayedFlush();
-    }
   }
 
   private void flush() {

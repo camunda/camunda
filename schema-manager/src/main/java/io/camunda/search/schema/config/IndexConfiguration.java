@@ -12,7 +12,6 @@ import java.util.Map;
 
 public class IndexConfiguration {
   public static final int DEFAULT_VARIABLE_SIZE_THRESHOLD = 8191;
-  private String zeebeIndexPrefix = "zeebe-record";
 
   private Integer numberOfShards = 1;
   private Integer numberOfReplicas = 1;
@@ -22,8 +21,6 @@ public class IndexConfiguration {
   private Map<String, Integer> shardsByIndexName = new HashMap<>();
 
   private Integer variableSizeThreshold = DEFAULT_VARIABLE_SIZE_THRESHOLD;
-
-  private boolean shouldWaitForImporters = true;
 
   public Integer getNumberOfShards() {
     return numberOfShards;
@@ -49,22 +46,6 @@ public class IndexConfiguration {
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
-  public boolean shouldWaitForImporters() {
-    return shouldWaitForImporters;
-  }
-
-  public String getZeebeIndexPrefix() {
-    return zeebeIndexPrefix;
-  }
-
-  public void setZeebeIndexPrefix(final String zeebeIndexPrefix) {
-    this.zeebeIndexPrefix = zeebeIndexPrefix;
-  }
-
-  public void setShouldWaitForImporters(final boolean shouldWaitForImporters) {
-    this.shouldWaitForImporters = shouldWaitForImporters;
-  }
-
   public Integer getTemplatePriority() {
     return templatePriority;
   }
@@ -88,8 +69,6 @@ public class IndexConfiguration {
         + shardsByIndexName
         + ", variableSizeThreshold="
         + variableSizeThreshold
-        + ", zeebeIndexPrefix='"
-        + zeebeIndexPrefix
         + '}';
   }
 

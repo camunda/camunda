@@ -14,19 +14,17 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public record BackupPriorities(
-    List<Prio1Backup> prio1,
     List<Prio2Backup> prio2,
     List<Prio3Backup> prio3,
     List<Prio4Backup> prio4,
     List<Prio5Backup> prio5) {
 
   public Stream<BackupPriority> allPriorities() {
-    return Stream.of(prio1(), prio2(), prio3(), prio4(), prio5()).flatMap(List::stream);
+    return Stream.of(prio2(), prio3(), prio4(), prio5()).flatMap(List::stream);
   }
 
   public Stream<SnapshotIndexCollection> indicesSplitBySnapshot() {
     return Stream.of(
-        fullQualifiedName(prio1()),
         fullQualifiedName(prio2()),
         // dated indices
         fullQualifiedNameWithMatcher(prio2()),

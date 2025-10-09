@@ -981,7 +981,6 @@ public class SchemaManagerIT {
             newPrefix + "-operate-decision-requirements-8.3.0_",
             newPrefix + "-operate-event-8.3.0_",
             newPrefix + "-operate-flownode-instance-8.3.1_",
-            newPrefix + "-operate-import-position-8.3.0_",
             newPrefix + "-operate-incident-8.3.1_",
             newPrefix + "-operate-list-view-8.3.0_",
             newPrefix + "-operate-metric-8.3.0_",
@@ -996,8 +995,7 @@ public class SchemaManagerIT {
             newPrefix + "-tasklist-form-8.4.0_",
             newPrefix + "-tasklist-metric-8.3.0_",
             newPrefix + "-tasklist-task-8.8.0_",
-            newPrefix + "-tasklist-task-variable-8.3.0_",
-            newPrefix + "-tasklist-import-position-8.2.0_");
+            newPrefix + "-tasklist-task-variable-8.3.0_");
   }
 
   @TestTemplate
