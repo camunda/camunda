@@ -18,9 +18,9 @@ package io.camunda.process.test.impl.runtime.properties;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyListOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyMapOrEmpty;
 import static io.camunda.process.test.impl.runtime.util.PropertiesUtil.getPropertyOrDefault;
-import static io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil.getLatestReleasedVersion;
 
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -43,7 +43,9 @@ public class ConnectorsContainerRuntimeProperties {
   private final Map<String, String> connectorsSecrets;
   private final List<Integer> connectorsExposedPorts;
 
-  public ConnectorsContainerRuntimeProperties(final Properties properties) {
+  public ConnectorsContainerRuntimeProperties(
+      final Properties properties, final VersionedPropertiesUtil versionedPropertiesReader) {
+
     // connectors are disabled by default
     isConnectorsEnabled =
         getPropertyOrDefault(properties, PROPERTY_NAME_CONNECTORS_ENABLED, "false")
@@ -55,7 +57,7 @@ public class ConnectorsContainerRuntimeProperties {
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_NAME,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_NAME);
     connectorsDockerImageVersion =
-        getLatestReleasedVersion(
+        versionedPropertiesReader.getVersion(
             properties,
             PROPERTY_NAME_CONNECTORS_DOCKER_IMAGE_VERSION,
             CamundaProcessTestRuntimeDefaults.DEFAULT_CONNECTORS_DOCKER_IMAGE_VERSION);
