@@ -416,7 +416,8 @@ jobs:
     name: Notify on failure
     runs-on: ubuntu-latest
     needs: [ target-version-complete-job ]
-    if: failure()
+    # We are only interested in notifications for scheduled runs
+    if: (failure() || cancelled()) && github.event.schedule != null
     steps:
       - uses: actions/checkout@v4
       - id: slack-notify
@@ -447,7 +448,8 @@ jobs:
     name: Notify on Success
     runs-on: ubuntu-latest
     needs: [ target-version-complete-job ]
-    if: success()
+    # We are only interested in notifications for scheduled runs
+    if: success() && github.event.schedule != null
     steps:
       - uses: actions/checkout@v4
       - id: slack-notify
