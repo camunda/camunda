@@ -260,7 +260,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: always() && (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: 'read'
       id-token: 'write'
