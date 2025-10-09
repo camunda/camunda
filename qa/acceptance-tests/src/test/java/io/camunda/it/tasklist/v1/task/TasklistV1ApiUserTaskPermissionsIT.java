@@ -12,6 +12,7 @@ import static io.camunda.client.api.search.enums.PermissionType.CREATE_PROCESS_I
 import static io.camunda.client.api.search.enums.PermissionType.READ;
 import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INSTANCE;
 import static io.camunda.client.api.search.enums.PermissionType.READ_USER_TASK;
+import static io.camunda.client.api.search.enums.PermissionType.UPDATE_USER_TASK;
 import static io.camunda.client.api.search.enums.ResourceType.AUTHORIZATION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.RESOURCE;
@@ -33,7 +34,7 @@ import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.tasklist.webapp.api.rest.v1.entities.VariableSearchResponse;
 import io.camunda.zeebe.model.bpmn.Bpmn;
-import io.camunda.zeebe.test.util.JsonUtil;
+import java.net.http.HttpResponse;
 import java.util.Collections;
 import java.util.List;
 import org.awaitility.core.ThrowingRunnable;
@@ -47,6 +48,7 @@ import org.springframework.http.HttpStatus;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class TasklistV1ApiUserTaskPermissionsIT {
+
   @MultiDbTestApplication
   static final TestCamundaApplication STANDALONE_CAMUNDA =
       new TestCamundaApplication().withAuthorizationsEnabled().withBasicAuth();
@@ -57,6 +59,9 @@ public class TasklistV1ApiUserTaskPermissionsIT {
   private static long taskKey;
   @AutoClose private static TestRestTasklistClient authorizedClient;
   @AutoClose private static TestRestTasklistClient unauthorizedClient;
+
+  private static final String VARIABLE_NAME = "key";
+  private static final String VARIABLE_VALUE = "val";
 
   @UserDefinition
   private static final TestUser ADMIN =
@@ -69,6 +74,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
               new Permissions(RESOURCE, CREATE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, CREATE_PROCESS_INSTANCE, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_USER_TASK, List.of("*")),
+              new Permissions(PROCESS_DEFINITION, UPDATE_USER_TASK, List.of("*")),
               new Permissions(PROCESS_DEFINITION, READ_PROCESS_INSTANCE, List.of("*"))));
 
   @UserDefinition
@@ -85,19 +91,19 @@ public class TasklistV1ApiUserTaskPermissionsIT {
                 .startEvent()
                 .userTask()
                 .zeebeUserTask()
+                .zeebeAssignee(ADMIN_USERNAME)
                 .endEvent()
                 .done(),
             "process2.bpmn")
         .send()
         .join();
 
-    final String json = JsonUtil.toJson(Collections.singletonMap("key", "val"));
     final var processInstanceEvent =
         adminClient
             .newCreateInstanceCommand()
             .bpmnProcessId(PROCESS_ID)
             .latestVersion()
-            .variables(json)
+            .variables(Collections.singletonMap(VARIABLE_NAME, VARIABLE_VALUE))
             .send()
             .join();
 
@@ -125,7 +131,7 @@ public class TasklistV1ApiUserTaskPermissionsIT {
                   .items();
           assertThat(authorizations)
               .describedAs("Wait until the authorizations exist")
-              .hasSize(7); // 6 created here + 1 default permission
+              .hasSize(8); // 7 created here + 1 default permission
         });
 
     waitUntilAsserted(
@@ -198,6 +204,29 @@ public class TasklistV1ApiUserTaskPermissionsIT {
         TestRestTasklistClient.OBJECT_MAPPER.readValue(
             response.body(), VariableSearchResponse[].class);
     assertThat(userTasks).isEmpty();
+  }
+
+  @Test
+  void shouldBeAuthorizedToSaveDraftVariables() {
+    // when
+    // overwriting the existing variable so that the assertions of
+    // #shouldBeAuthorizedToSearchUserTaskVariables doesn't break
+    final HttpResponse<String> response =
+        authorizedClient.saveDraftVariables(taskKey, VARIABLE_NAME, "\"someOtherValue\"");
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.NO_CONTENT.value());
+  }
+
+  @Test
+  void shouldBeUnauthorizedToSaveDraftVariables() {
+    // when
+    final HttpResponse<String> response =
+        unauthorizedClient.saveDraftVariables(taskKey, VARIABLE_NAME, "\"someOtherValue\"");
+
+    // then
+    assertThat(response.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
+    assertThat(response.body()).contains("User does not have permission to perform on this task.");
   }
 
   private static void waitUntilAsserted(ThrowingRunnable runnable) {
