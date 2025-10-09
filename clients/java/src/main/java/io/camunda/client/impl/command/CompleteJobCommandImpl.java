@@ -39,7 +39,6 @@ import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest.Builder;
-import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.JobResult;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StringList;
 import io.grpc.stub.StreamObserver;
 import java.time.Duration;
@@ -154,7 +153,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void setGrpcJobResult(final CompleteUserTaskJobResultImpl jobResult) {
-    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResult.Builder resultGrpc = GatewayOuterClass.JobResult.newBuilder();
     final GatewayOuterClass.JobResultCorrections.Builder correctionsGrpc =
         GatewayOuterClass.JobResultCorrections.newBuilder();
     if (jobResult.getCorrections().getAssignee() != null) {
@@ -227,7 +226,7 @@ public final class CompleteJobCommandImpl extends CommandWithVariables<CompleteJ
   }
 
   private void setGrpcJobResult(final CompleteAdHocSubProcessJobResultImpl jobResult) {
-    final JobResult.Builder resultGrpc = JobResult.newBuilder();
+    final GatewayOuterClass.JobResult.Builder resultGrpc = GatewayOuterClass.JobResult.newBuilder();
     resultGrpc
         .setType(getJobResultTypeEnum(jobResult.getType()).getValue())
         .setIsCompletionConditionFulfilled(jobResult.isCompletionConditionFulfilled())
