@@ -13,7 +13,6 @@ import static io.camunda.zeebe.gateway.rest.validator.ClockValidator.validateClo
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentLinkParams;
 import static io.camunda.zeebe.gateway.rest.validator.DocumentValidator.validateDocumentMetadata;
 import static io.camunda.zeebe.gateway.rest.validator.ElementRequestValidator.validateVariableRequest;
-import static io.camunda.zeebe.gateway.rest.validator.EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobActivationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobErrorRequest;
 import static io.camunda.zeebe.gateway.rest.validator.JobRequestValidator.validateJobUpdateRequest;
@@ -22,7 +21,6 @@ import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
-import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
@@ -69,6 +67,8 @@ import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.CancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.Changeset;
 import io.camunda.zeebe.gateway.protocol.rest.ClockPinRequest;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.DeleteResourceRequest;
 import io.camunda.zeebe.gateway.protocol.rest.DocumentLinkRequest;
@@ -88,11 +88,14 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageCorrelationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.MessagePublicationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationTerminateInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceMigrationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationBatchOperationRequest;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceModificationMoveBatchOperationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.RoleCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.RoleUpdateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
@@ -118,6 +121,7 @@ import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRuntimeInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationActivateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
@@ -770,23 +774,36 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstruction request, final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case final ProcessInstanceCreationInstructionById req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+      case final ProcessInstanceCreationInstructionByKey req ->
+          toCreateProcessInstance(req, multiTenancyEnabled);
+      default ->
+          Either.left(
+              RestErrorMapper.createProblemDetail(
+                  HttpStatus.BAD_REQUEST,
+                  "Unsupported process instance creation instruction type: "
+                      + request.getClass().getSimpleName(),
+                  "Only process instance creation by id or key is supported."));
+    };
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
-            .flatMap(
-                tenant ->
-                    validateCreateProcessInstanceRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenant)));
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(
-                getKeyOrDefault(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionKey, -1L),
+                -1L,
                 getStringOrEmpty(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionId),
+                    request, ProcessInstanceCreationInstructionById::getProcessDefinitionId),
                 getIntOrDefault(
-                    request, ProcessInstanceCreationInstruction::getProcessDefinitionVersion, -1),
-                getMapOrEmpty(request, ProcessInstanceCreationInstruction::getVariables),
+                    request,
+                    ProcessInstanceCreationInstructionById::getProcessDefinitionVersion,
+                    -1),
+                getMapOrEmpty(request, ProcessInstanceCreationInstructionById::getVariables),
                 tenantId,
                 request.getAwaitCompletion(),
                 request.getRequestTimeout(),
@@ -794,8 +811,43 @@ public class RequestMapper {
                 request.getStartInstructions().stream()
                     .map(
                         instruction ->
-                            new io.camunda.zeebe.protocol.impl.record.value.processinstance
-                                    .ProcessInstanceCreationStartInstruction()
+                            new ProcessInstanceCreationStartInstruction()
+                                .setElementId(instruction.getElementId()))
+                    .toList(),
+                request.getRuntimeInstructions().stream()
+                    .map(
+                        instruction -> {
+                          final var instructionCasted =
+                              (ProcessInstanceCreationTerminateInstruction) instruction;
+                          return new ProcessInstanceCreationRuntimeInstruction()
+                              .setType(RuntimeInstructionType.TERMINATE_PROCESS_INSTANCE)
+                              .setAfterElementId(instructionCasted.getAfterElementId());
+                        })
+                    .toList(),
+                request.getFetchVariables(),
+                request.getTags()));
+  }
+
+  public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
+      final ProcessInstanceCreationInstructionByKey request, final boolean multiTenancyEnabled) {
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
+    return validationResponse.map(
+        tenantId ->
+            new ProcessInstanceCreateRequest(
+                getKeyOrDefault(
+                    request, ProcessInstanceCreationInstructionByKey::getProcessDefinitionKey, -1L),
+                "",
+                -1,
+                getMapOrEmpty(request, ProcessInstanceCreationInstructionByKey::getVariables),
+                tenantId,
+                request.getAwaitCompletion(),
+                request.getRequestTimeout(),
+                request.getOperationReference(),
+                request.getStartInstructions().stream()
+                    .map(
+                        instruction ->
+                            new ProcessInstanceCreationStartInstruction()
                                 .setElementId(instruction.getElementId()))
                     .toList(),
                 request.getRuntimeInstructions().stream()
@@ -901,20 +953,44 @@ public class RequestMapper {
 
   public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
       final DecisionEvaluationInstruction request, final boolean multiTenancyEnabled) {
+    return switch (request) {
+      case final DecisionEvaluationById req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      case final DecisionEvaluationByKey req -> toEvaluateDecisionRequest(req, multiTenancyEnabled);
+      default ->
+          Either.left(
+              RestErrorMapper.createProblemDetail(
+                  HttpStatus.BAD_REQUEST,
+                  "Unsupported decision evaluation instruction type: "
+                      + request.getClass().getSimpleName(),
+                  "Only decision evaluation by id or key is supported."));
+    };
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final DecisionEvaluationById request, final boolean multiTenancyEnabled) {
+
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision")
-            .flatMap(
-                tenantId ->
-                    validateEvaluateDecisionRequest(request)
-                        .map(Either::<ProblemDetail, String>left)
-                        .orElseGet(() -> Either.right(tenantId)));
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
     return validationResponse.map(
         tenantId ->
             new DecisionEvaluationRequest(
-                getStringOrEmpty(request, DecisionEvaluationInstruction::getDecisionDefinitionId),
-                getKeyOrDefault(
-                    request, DecisionEvaluationInstruction::getDecisionDefinitionKey, -1L),
-                getMapOrEmpty(request, DecisionEvaluationInstruction::getVariables),
+                getStringOrEmpty(request, DecisionEvaluationById::getDecisionDefinitionId),
+                -1L,
+                getMapOrEmpty(request, DecisionEvaluationById::getVariables),
+                tenantId));
+  }
+
+  public static Either<ProblemDetail, DecisionEvaluationRequest> toEvaluateDecisionRequest(
+      final DecisionEvaluationByKey request, final boolean multiTenancyEnabled) {
+
+    final Either<ProblemDetail, String> validationResponse =
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Evaluate Decision");
+    return validationResponse.map(
+        tenantId ->
+            new DecisionEvaluationRequest(
+                "",
+                getKeyOrDefault(request, DecisionEvaluationByKey::getDecisionDefinitionKey, -1L),
+                getMapOrEmpty(request, DecisionEvaluationByKey::getVariables),
                 tenantId));
   }
 
@@ -1003,10 +1079,7 @@ public class RequestMapper {
 
   private static List<BatchOperationProcessInstanceModificationMoveInstruction>
       mapProcessInstanceModificationMoveInstruction(
-          final List<
-                  io.camunda.zeebe.gateway.protocol.rest
-                      .ProcessInstanceModificationMoveBatchOperationInstruction>
-              instructions) {
+          final List<ProcessInstanceModificationMoveBatchOperationInstruction> instructions) {
     return instructions.stream()
         .map(
             instruction -> {
@@ -1033,6 +1106,8 @@ public class RequestMapper {
     return switch (request.getResult().getType()) {
       case USER_TASK -> getJobResult((JobResultUserTask) request.getResult());
       case AD_HOC_SUB_PROCESS -> getJobResult((JobResultAdHocSubProcess) request.getResult());
+      default ->
+          throw new IllegalStateException("Unexpected value: " + request.getResult().getType());
     };
   }
 
