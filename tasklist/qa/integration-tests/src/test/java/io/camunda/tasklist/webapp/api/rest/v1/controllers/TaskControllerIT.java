@@ -13,13 +13,17 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang3.RandomStringUtils.randomNumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.tuple;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
+import io.camunda.search.entities.GroupEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.GroupServices;
 import io.camunda.tasklist.property.IdentityProperties;
 import io.camunda.tasklist.queries.RangeValueFilter;
 import io.camunda.tasklist.queries.RangeValueFilter.RangeValueFilterBuilder;
@@ -67,6 +71,8 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
   @InjectMocks private IdentityProperties identityProperties;
 
   @MockitoBean private UserGroupService userGroupService;
+
+  @MockitoBean private GroupServices groupServices;
 
   @Autowired private WebApplicationContext context;
 
@@ -226,6 +232,14 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Users");
       createTaskWithCandidateGroup(bpmnProcessId, flowNodeBpmnId, numberOfInstances, "Sales");
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins", "Users", "Sales"));
+      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
+          .thenReturn(groupServices);
+      when(groupServices.search(any()))
+          .thenReturn(
+              SearchQueryResult.of(
+                  new GroupEntity(1L, "Admins", "Admins", "default"),
+                  new GroupEntity(1L, "Users", "Users", "default"),
+                  new GroupEntity(1L, "Sales", "Sales", "default")));
 
       final var searchQuery =
           new TaskQueryDTO().setCandidateGroups(new String[] {"Admins", "Users"});
@@ -707,6 +721,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
+          .thenReturn(groupServices);
+      when(groupServices.search(any()))
+          .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
 
       // when
       final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
@@ -780,6 +798,10 @@ public class TaskControllerIT extends TasklistZeebeIntegrationTest {
       identityProperties.setUserAccessRestrictionsEnabled(true);
       tasklistProperties.setIdentity(identityProperties);
       when(userGroupService.getUserGroups()).thenReturn(List.of("Admins"));
+      when(groupServices.withAuthentication(CamundaAuthentication.anonymous()))
+          .thenReturn(groupServices);
+      when(groupServices.search(any()))
+          .thenReturn(SearchQueryResult.of(new GroupEntity(1L, "Admins", "Admins", "default")));
 
       // when
       final var result = mockMvcHelper.doRequest(post(TasklistURIs.TASKS_URL_V1.concat("/search")));
