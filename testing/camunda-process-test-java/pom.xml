@@ -194,14 +194,10 @@
 
     <plugins>
 
-      <!-- we are breaking backwards compatibility with 8.8.0 -->
-      <!-- TODO re-enable the plugin after the 8.8.0 minor release -->
-      <!--
       <plugin>
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
-      -->
 
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
