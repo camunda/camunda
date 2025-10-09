@@ -11,6 +11,9 @@ import java.time.Duration;
 import java.util.Objects;
 import org.opensearch.testcontainers.OpensearchContainer;
 import org.testcontainers.containers.BindMode;
+import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.oracle.OracleContainer;
@@ -34,6 +37,14 @@ public final class TestSearchContainers {
 
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("postgres").withTag("15.3-alpine");
+
+  private static final DockerImageName MARIADB_IMAGE =
+      DockerImageName.parse("mariadb").withTag("11.4");
+
+  private static final DockerImageName MYSQL_IMAGE = DockerImageName.parse("mysql").withTag("8.4");
+
+  private static final DockerImageName MSSQLSERVER_IMAGE =
+      DockerImageName.parse("mcr.microsoft.com/mssql/server").withTag("2019-latest");
 
   private static final DockerImageName ORACLE_IMAGE =
       DockerImageName.parse("gvenzl/oracle-free").withTag("slim");
@@ -102,7 +113,7 @@ public final class TestSearchContainers {
         .withDatabaseName("camunda")
         .withUsername("camunda")
         .withPassword("camunda")
-        .withStartupTimeout(Duration.ofMinutes(2));
+        .withStartupTimeout(Duration.ofMinutes(5));
   }
 
   public static OracleContainer createDefaultOracleContainer() {
@@ -111,5 +122,27 @@ public final class TestSearchContainers {
         .withUsername("camunda")
         .withPassword("camunda")
         .withStartupTimeout(Duration.ofMinutes(5));
+  }
+
+  public static MariaDBContainer<?> createDefaultMariaDBContainer() {
+    return new MariaDBContainer<>(MARIADB_IMAGE)
+        .withDatabaseName("camunda")
+        .withUsername("camunda")
+        .withPassword("camunda")
+        .withStartupTimeout(Duration.ofMinutes(5));
+  }
+
+  public static MySQLContainer<?> createDefaultMySQLContainer() {
+    return new MySQLContainer<>(MYSQL_IMAGE)
+        .withDatabaseName("camunda")
+        .withUsername("camunda")
+        .withPassword("camunda")
+        .withStartupTimeout(Duration.ofMinutes(5));
+  }
+
+  public static MSSQLServerContainer<?> createDefaultMSSQLServerContainer() {
+    return new MSSQLServerContainer<>(MSSQLSERVER_IMAGE)
+        .withStartupTimeout(Duration.ofMinutes(5))
+        .acceptLicense();
   }
 }
