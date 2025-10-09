@@ -155,6 +155,7 @@ class BackgroundTaskManagerFactoryTest {
   void shouldAlwaysScheduleNonProcessInstanceTasks() {
     // given
     config.getHistory().setProcessInstanceEnabled(false);
+    config.getHistory().getRetention().setEnabled(true);
 
     // when
     final var taskManager = factory.build();
@@ -170,7 +171,39 @@ class BackgroundTaskManagerFactoryTest {
         .anyMatch(task -> isTaskOfType(task, StandaloneDecisionArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
-        .anyMatch(task -> task instanceof ApplyRolloverPeriodJob);
+        .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
+  }
+
+  @Test
+  void shouldNotScheduleApplyRolloverPeriodJobWhenRetentionDisabled() {
+    // given
+    config.getHistory().getRetention().setEnabled(false);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
+        .hasSize(8)
+        .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
+  }
+
+  @Test
+  void shouldScheduleApplyRolloverPeriodJobWhenRetentionEnabled() {
+    // given
+    config.getHistory().getRetention().setEnabled(true);
+
+    // when
+    final var taskManager = factory.build();
+
+    // then
+    final var tasks = getTasksFromManager(taskManager);
+    assertThat(tasks)
+        .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
+        .hasSize(9)
+        .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
   private List<RunnableTask> getTasksFromManager(final BackgroundTaskManager taskManager) {

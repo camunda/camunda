@@ -242,12 +242,22 @@ public final class BackgroundTaskManagerFactory {
     tasks.add(buildStandaloneDecisionArchiverJob());
     if (partitionId == START_PARTITION_ID) {
       tasks.add(buildBatchOperationArchiverJob());
-      tasks.add(new ApplyRolloverPeriodJob(archiverRepository));
       tasks.add(buildBatchOperationUpdateTask());
+      if (config.getHistory().getRetention().isEnabled()) {
+        tasks.add(buildRolloverPeriodJob());
+      }
     }
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
+  }
+
+  private ReschedulingTask buildRolloverPeriodJob() {
+    final var applyRolloverPeriodJob = new ApplyRolloverPeriodJob(archiverRepository, logger);
+    final long delayBetweenRuns =
+        config.getHistory().getRetention().getApplyPolicyJobInterval().toMillis();
+    return new ReschedulingTask(
+        applyRolloverPeriodJob, 0, delayBetweenRuns, delayBetweenRuns, executor, logger);
   }
 
   private ReschedulingTask buildProcessInstanceToBeArchivedCountJob() {
