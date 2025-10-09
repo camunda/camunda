@@ -168,7 +168,7 @@ public class MultiDbConfiguratorTest {
 
     // when
     multiDbConfigurator.configureOpenSearchSupport(
-        EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW, true);
+        EXPECTED_URL, EXPECTED_PREFIX, EXPECTED_USER, EXPECTED_PW, true, false);
 
     // then
 
