@@ -14,6 +14,8 @@ import io.camunda.application.commons.configuration.WorkingDirectoryConfiguratio
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
+import io.camunda.configuration.beanoverrides.RestorePropertiesOverride;
+import io.camunda.configuration.beans.RestoreProperties;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -41,6 +43,7 @@ import org.springframework.context.annotation.Import;
       BrokerBasedPropertiesOverride.class,
       // ---
       BrokerBasedConfiguration.class,
+      RestorePropertiesOverride.class,
       WorkingDirectoryConfiguration.class
     })
 public class RestoreApp implements ApplicationRunner {
@@ -53,14 +56,14 @@ public class RestoreApp implements ApplicationRunner {
   // Parsed from commandline Eg:-`--backupId=100`
   private long[] backupId;
 
-  private final RestoreConfiguration restoreConfiguration;
+  private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
 
   @Autowired
   public RestoreApp(
       final BrokerBasedConfiguration configuration,
       final BackupStore backupStore,
-      final RestoreConfiguration restoreConfiguration,
+      final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry) {
     this.configuration = configuration.config();
     this.backupStore = backupStore;
@@ -96,7 +99,10 @@ public class RestoreApp implements ApplicationRunner {
   @Override
   public void run(final ApplicationArguments args)
       throws IOException, ExecutionException, InterruptedException {
-    LOG.info("Starting to restore from backup {}", backupId);
+    LOG.info(
+        "Starting to restore from backup {} with the following configuration: {}",
+        backupId,
+        restoreConfiguration);
     new RestoreManager(configuration, backupStore, meterRegistry)
         .restore(
             backupId,
