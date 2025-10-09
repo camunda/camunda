@@ -24,7 +24,7 @@ jobs:
       test-enabled: true
       caller-git-ref: main
       extra-values: |
-        zeebe:
+        orchestration:
           image:
             tag: SNAPSHOT
         operate:
