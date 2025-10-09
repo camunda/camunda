@@ -145,7 +145,7 @@ jobs:
   deploy-camunda-cluster-prev-version:
     name: Deploy previous version of Camunda Platform
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: 'read'
       id-token: 'write'
