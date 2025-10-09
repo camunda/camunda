@@ -9,7 +9,6 @@
 import {IncidentsTable} from '.';
 import {formatDate} from 'modules/utils/date';
 import {render, screen, within} from 'modules/testing-library';
-import {incidentsStore} from 'modules/stores/incidents';
 import {Wrapper, incidentsMock, firstIncident, secondIncident} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -20,8 +19,9 @@ import {
 } from 'modules/testUtils';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
-describe('IncidentsTable', () => {
+describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(
       createInstance({permissions: ['UPDATE_PROCESS_INSTANCE']}),
@@ -35,20 +35,20 @@ describe('IncidentsTable', () => {
 
   it('should render incident details', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    incidentsStore.setIncidents(incidentsMock);
 
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
     let withinRow = within(
       screen.getByRole('row', {
-        name: new RegExp(firstIncident!.errorType.name),
+        name: new RegExp(firstIncident.errorType),
       }),
     );
 
-    expect(
-      withinRow.getByText(firstIncident!.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.errorType)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobKey)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -63,14 +63,12 @@ describe('IncidentsTable', () => {
     ).not.toBeInTheDocument();
     withinRow = within(
       screen.getByRole('row', {
-        name: new RegExp(secondIncident!.errorType.name),
+        name: new RegExp(secondIncident.errorType),
       }),
     );
-    expect(
-      withinRow.getByText(secondIncident.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.errorType)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobKey)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -84,9 +82,11 @@ describe('IncidentsTable', () => {
 
   it('should render the right column headers', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    incidentsStore.setIncidents(incidentsMock);
 
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
@@ -100,9 +100,11 @@ describe('IncidentsTable', () => {
   it('should render the right column headers for restricted user', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockMe().withSuccess(createUser());
-    incidentsStore.setIncidents(incidentsMock);
 
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
@@ -120,9 +122,10 @@ describe('IncidentsTable', () => {
       resourcePermissionsEnabled: true,
     });
 
-    incidentsStore.setIncidents(incidentsMock);
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
 
     expect(screen.getByText('Incident Type')).toBeInTheDocument();
     expect(screen.getByText('Failing Flow Node')).toBeInTheDocument();
@@ -140,20 +143,19 @@ describe('IncidentsTable', () => {
       resourcePermissionsEnabled: true,
     });
 
-    incidentsStore.setIncidents(incidentsMock);
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
     let withinRow = within(
       screen.getByRole('row', {
-        name: new RegExp(firstIncident.errorType.name),
+        name: new RegExp(firstIncident.errorType),
       }),
     );
 
-    expect(
-      withinRow.getByText(firstIncident.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobId!)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.errorType)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobKey)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -170,14 +172,12 @@ describe('IncidentsTable', () => {
 
     withinRow = within(
       screen.getByRole('row', {
-        name: new RegExp(secondIncident.errorType.name),
+        name: new RegExp(secondIncident.errorType),
       }),
     );
-    expect(
-      withinRow.getByText(secondIncident.errorType.name),
-    ).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.flowNodeId)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobId!)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.errorType)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobKey)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -194,18 +194,18 @@ describe('IncidentsTable', () => {
     ).not.toBeInTheDocument();
   });
 
-  it('should display -- for jobId', () => {
+  it('should display -- for jobKey', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    const incidentMock = {...firstIncident, jobId: null};
+    const incidentMock = {...firstIncident, jobKey: ''};
     const incidents = [incidentMock];
 
-    incidentsStore.setIncidents({...incidentsMock, incidents, count: 1});
-
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(<IncidentsTable processInstanceKey="1" incidents={incidents} />, {
+      wrapper: Wrapper,
+    });
 
     let withinFirstRow = within(
       screen.getByRole('row', {
-        name: new RegExp(incidentMock.errorType.name),
+        name: new RegExp(incidentMock.errorType),
       }),
     );
 
@@ -214,11 +214,13 @@ describe('IncidentsTable', () => {
 
   it('should show a more button for long error messages', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    incidentsStore.setIncidents(incidentsMock);
-    render(<IncidentsTable />, {wrapper: Wrapper});
+    render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
     let withinFirstRow = within(
       screen.getByRole('row', {
-        name: new RegExp(firstIncident.errorType.name),
+        name: new RegExp(firstIncident.errorType),
       }),
     );
 
@@ -226,7 +228,7 @@ describe('IncidentsTable', () => {
 
     let withinSecondRow = within(
       screen.getByRole('row', {
-        name: new RegExp(secondIncident.errorType.name),
+        name: new RegExp(secondIncident.errorType),
       }),
     );
 
@@ -235,12 +237,14 @@ describe('IncidentsTable', () => {
 
   it('should open an modal when clicking on the more button', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    incidentsStore.setIncidents(incidentsMock);
-    const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
+    const {user} = render(
+      <IncidentsTable processInstanceKey="1" incidents={incidentsMock} />,
+      {wrapper: Wrapper},
+    );
 
     let withinSecondRow = within(
       screen.getByRole('row', {
-        name: new RegExp(secondIncident.errorType.name),
+        name: new RegExp(secondIncident.errorType),
       }),
     );
 
@@ -256,7 +260,9 @@ describe('IncidentsTable', () => {
       await within(modal).findByTestId('monaco-editor'),
     ).toBeInTheDocument();
     expect(
-      within(modal).getByText(`Flow Node "${secondIncident.flowNodeId}" Error`),
+      within(modal).getByText(
+        `Flow Node "${secondIncident.elementName}" Error`,
+      ),
     ).toBeInTheDocument();
   });
 });
