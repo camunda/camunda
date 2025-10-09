@@ -66,10 +66,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
 
     const isJobKeyPresent = sortedIncidents.some(({jobKey}) => !!jobKey);
 
-    const hasIncidentInCalledInstance = sortedIncidents.some(
-      (i) => i.processInstanceKey !== processInstanceKey,
-    );
-
     return (
       <>
         <SortableTable
@@ -135,14 +131,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               key: 'errorMessage',
               isDisabled: true,
             },
-            ...(hasIncidentInCalledInstance
-              ? [
-                  {
-                    header: 'Root Cause Instance',
-                    key: 'rootCauseInstance',
-                  },
-                ]
-              : []),
             ...(hasPermissionForRetryOperation
               ? [
                   {
@@ -161,7 +149,22 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               id: incident.incidentKey,
               // TODO: Error type is no longer the same readable message...
               errorType: incident.errorType,
-              elementName: incident.elementName,
+              elementName:
+                processInstanceKey === incident.processInstanceKey ? (
+                  incident.elementName
+                ) : (
+                  <Link
+                    to={{
+                      pathname: Paths.processInstance(
+                        incident.processInstanceKey,
+                      ),
+                      search: `?elementId=${incident.elementId}`,
+                    }}
+                    title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+                  >
+                    {`${incident.elementId} ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+                  </Link>
+                ),
               jobId: incident.jobKey || '--',
               creationTime: formatDate(incident.creationTime),
               errorMessage: (
@@ -190,21 +193,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                   )}
                 </FlexContainer>
               ),
-              // TODO: This is wrong...
-              rootCauseInstance:
-                processInstanceKey === incident.processInstanceKey ? (
-                  '--'
-                ) : (
-                  <Link
-                    to={{
-                      pathname: Paths.processInstance(processInstanceKey),
-                    }}
-                    title={`View root cause instance ${incident.processDefinitionKey} - ${processInstanceKey}`}
-                  >
-                    {`${incident.processDefinitionKey} - ${processInstanceKey}`}
-                  </Link>
-                ),
-
               operations:
                 hasPermissionForRetryOperation && areOperationsVisible ? (
                   <IncidentOperation

@@ -6,15 +6,23 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  QueryProcessInstancesRequestBody,
+  QueryProcessInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 
 const PROCESS_INSTANCES_SEARCH_QUERY_KEY = 'processInstancesSearch';
 
-const useProcessInstancesSearch = (
+type QueryOptions<T> = {
+  enabled?: boolean;
+  select?: (result: QueryProcessInstancesResponseBody) => T;
+};
+
+const useProcessInstancesSearch = <T = QueryProcessInstancesResponseBody>(
   payload: QueryProcessInstancesRequestBody,
-  {enabled} = {enabled: true},
+  options?: QueryOptions<T>,
 ) => {
   return useQuery({
     queryKey: [PROCESS_INSTANCES_SEARCH_QUERY_KEY, payload],
@@ -25,7 +33,8 @@ const useProcessInstancesSearch = (
       }
       throw error;
     },
-    enabled,
+    enabled: options?.enabled,
+    select: options?.select,
   });
 };
 
