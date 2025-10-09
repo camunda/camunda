@@ -21,6 +21,7 @@ import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1;
+import io.camunda.client.jobhandling.JobExceptionHandlerSupplier.JobExceptionHandlerSupplierContext;
 import io.camunda.client.jobhandling.parameter.ParameterResolver;
 import io.camunda.client.jobhandling.parameter.ParameterResolverStrategy;
 import io.camunda.client.jobhandling.result.ResultProcessor;
@@ -43,7 +44,7 @@ public class JobWorkerManager {
   private final ParameterResolverStrategy parameterResolverStrategy;
   private final ResultProcessorStrategy resultProcessorStrategy;
   private final BackoffSupplier backoffSupplier;
-  private final JobExceptionHandlingStrategy jobExceptionHandlingStrategy;
+  private final JobExceptionHandlerSupplier jobExceptionHandlerSupplier;
 
   private List<JobWorker> openedWorkers = new ArrayList<>();
   private final List<JobWorkerValue> workerValues = new ArrayList<>();
@@ -54,13 +55,13 @@ public class JobWorkerManager {
       final ParameterResolverStrategy parameterResolverStrategy,
       final ResultProcessorStrategy resultProcessorStrategy,
       final BackoffSupplier backoffSupplier,
-      final JobExceptionHandlingStrategy jobExceptionHandlingStrategy) {
+      final JobExceptionHandlerSupplier jobExceptionHandlerSupplier) {
     this.commandExceptionHandlingStrategy = commandExceptionHandlingStrategy;
     this.metricsRecorder = metricsRecorder;
     this.parameterResolverStrategy = parameterResolverStrategy;
     this.resultProcessorStrategy = resultProcessorStrategy;
     this.backoffSupplier = backoffSupplier;
-    this.jobExceptionHandlingStrategy = jobExceptionHandlingStrategy;
+    this.jobExceptionHandlerSupplier = jobExceptionHandlerSupplier;
   }
 
   public JobWorker openWorker(final CamundaClient client, final JobWorkerValue jobWorkerValue) {
@@ -76,8 +77,7 @@ public class JobWorkerManager {
             commandExceptionHandlingStrategy,
             metricsRecorder,
             parameterResolvers,
-            resultProcessor,
-            jobExceptionHandlingStrategy));
+            resultProcessor));
   }
 
   public JobWorker openWorker(
@@ -90,8 +90,10 @@ public class JobWorkerManager {
             .handler(handler)
             .name(jobWorkerValue.getName())
             .backoffSupplier(backoffSupplier)
-            .metrics(new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType()));
-
+            .metrics(new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType()))
+            .jobExceptionHandler(
+                jobExceptionHandlerSupplier.getJobExceptionHandler(
+                    new JobExceptionHandlerSupplierContext(jobWorkerValue)));
     if (jobWorkerValue.getMaxJobsActive() != null && jobWorkerValue.getMaxJobsActive() > 0) {
       builder.maxJobsActive(jobWorkerValue.getMaxJobsActive());
     }
