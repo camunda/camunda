@@ -7,6 +7,7 @@
  */
 package io.camunda.it.rdbms.db.util;
 
+import static io.camunda.zeebe.test.util.testcontainers.TestSearchContainers.*;
 import static org.junit.jupiter.api.extension.ExtensionContext.Namespace.GLOBAL;
 
 import java.util.List;
@@ -20,11 +21,6 @@ import org.junit.jupiter.api.extension.TestTemplateInvocationContext;
 import org.junit.jupiter.api.extension.TestTemplateInvocationContextProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.containers.MSSQLServerContainer;
-import org.testcontainers.containers.MariaDBContainer;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.oracle.OracleContainer;
 
 public class CamundaRdbmsInvocationContextProviderExtension
     implements TestTemplateInvocationContextProvider, BeforeAllCallback, AutoCloseable {
@@ -41,37 +37,23 @@ public class CamundaRdbmsInvocationContextProviderExtension
           "camundaWithPostgresSQL",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(
-                  new PostgreSQLContainer<>("postgres:16-alpine")
-                      .withUsername("camunda")
-                      .withPassword("camunda")),
+              .withDatabaseContainer(createDefaultPostgresContainer()),
           "camundaWithMariaDB",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(
-                  new MariaDBContainer<>("mariadb:11.4")
-                      .withUsername("camunda")
-                      .withPassword("camunda")),
+              .withDatabaseContainer(createDefaultMariaDBContainer()),
           "camundaWithMySQL",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(
-                  new MySQLContainer<>("mysql:8.4")
-                      .withUsername("camunda")
-                      .withPassword("camunda")),
+              .withDatabaseContainer(createDefaultMySQLContainer()),
           "camundaWithOracleDB",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(
-                  new OracleContainer("gvenzl/oracle-free:latest")
-                      .withUsername("camunda")
-                      .withPassword("camunda")),
+              .withDatabaseContainer(createDefaultOracleContainer()),
           "camundaWithMssqlDB",
           new CamundaRdbmsTestApplication(RdbmsTestConfiguration.class)
               .withRdbms()
-              .withDatabaseContainer(
-                  new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2019-latest")
-                      .acceptLicense()));
+              .withDatabaseContainer(createDefaultMSSQLServerContainer()));
 
   private final Set<String> useTestApplications;
 
