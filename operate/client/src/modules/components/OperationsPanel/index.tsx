@@ -6,15 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect, useRef} from 'react';
-
-import {CollapsablePanel as BaseCollapsablePanel} from 'modules/components/CollapsablePanel';
+import {useRef} from 'react';
+import {CollapsablePanel} from 'modules/components/CollapsablePanel';
 import {observer} from 'mobx-react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {OperationsList, EmptyMessageContainer} from './styled';
 import {OperationsEntry} from './OperationsEntry';
 import {InfiniteScroller} from 'modules/components/InfiniteScroller';
-import {EMPTY_MESSAGE} from './constants';
+import {EMPTY_MESSAGE, OPERATIONS_EXPANDED_PANEL_WIDTH} from './constants';
 import {InlineNotification} from '@carbon/react';
 import {Skeleton} from './Skeleton';
 import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
@@ -26,7 +25,6 @@ const OperationsPanel: React.FC = observer(() => {
   } = panelStatesStore;
 
   const scrollableContainerRef = useRef<HTMLDivElement | null>(null);
-  const collapsablePanelRef = useRef<HTMLDivElement | null>(null);
 
   const {data, isError, isLoading, isFetched, isFetching, fetchNextPage} =
     useBatchOperations({
@@ -35,23 +33,16 @@ const OperationsPanel: React.FC = observer(() => {
 
   const operations = data ?? [];
 
-  useEffect(() => {
-    if (collapsablePanelRef.current !== null) {
-      panelStatesStore.setOperationsPanelRef(collapsablePanelRef);
-    }
-  }, []);
-
   return (
-    <BaseCollapsablePanel
+    <CollapsablePanel
       label="Operations"
       panelPosition="RIGHT"
-      maxWidth={478}
+      maxWidth={OPERATIONS_EXPANDED_PANEL_WIDTH}
       isOverlay
       isCollapsed={isOperationsCollapsed}
       onToggle={toggleOperationsPanel}
       ref={scrollableContainerRef}
       scrollable={!isLoading}
-      collapsablePanelRef={collapsablePanelRef}
     >
       {(() => {
         if (isError) {
@@ -106,7 +97,7 @@ const OperationsPanel: React.FC = observer(() => {
           </InfiniteScroller>
         );
       })()}
-    </BaseCollapsablePanel>
+    </CollapsablePanel>
   );
 });
 
