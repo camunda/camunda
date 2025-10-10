@@ -78,7 +78,7 @@ public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
     assertThatMetricsFrom(
         mockMvc,
         new MetricAssert.ValueMatcher(
-            "operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\",}",
+            "operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\"}",
             d -> d.doubleValue() >= 1.0));
   }
 
