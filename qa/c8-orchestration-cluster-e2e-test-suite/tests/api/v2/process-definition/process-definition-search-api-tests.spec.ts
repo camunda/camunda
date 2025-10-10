@@ -22,13 +22,14 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 test.describe.parallel('Process Definition Search API', () => {
   const state: Record<string, unknown> = {};
   test.beforeAll(async () => {
-    await deploy(['./resources/process_definition_api_tests.bpmn']);
-    await createInstances('process_definition_api_tests', 1, 2).then(
+    await deploy([
+      './resources/process_definition_api_tests.bpmn',
+      './resources/process_definition_api_tests_2.bpmn',
+    ]);
+    await createInstances('process_definition_api_tests', 1, 1).then(
       (instances) => {
-        state['processDefinitionKey1'] = instances[0].processDefinitionKey;
+        state['processDefinitionKey'] = instances[0].processDefinitionKey;
         state['processDefinitionId'] = instances[0].processDefinitionId;
-        state['processDefinitionKey2'] = instances[1].processDefinitionKey;
-        state['processDefinitionId2'] = instances[1].processDefinitionKey;
       },
     );
   });
@@ -49,8 +50,8 @@ test.describe.parallel('Process Definition Search API', () => {
         },
         body,
       );
-      expect(body.page.totalItems).toBeGreaterThan(0);
-      expect(body.items.length).toBeGreaterThan(0);
+      expect(body.page.totalItems).toBeGreaterThan(1);
+      expect(body.items.length).toBeGreaterThan(1);
       expect(body.page.totalItems).toBe(body.items.length);
     }).toPass(defaultAssertionOptions);
   });
@@ -63,14 +64,15 @@ test.describe.parallel('Process Definition Search API', () => {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processDefinitionId: state.processDefinitionId1,
+            processDefinitionId: state.processDefinitionId,
           },
         },
       });
       await assertStatusCode(res, 200);
       const body = await res.json();
       expect(body.page.totalItems).toBe(body.items.length);
-      expect(body.page.totalItems).toBeGreaterThan(2);
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -82,8 +84,8 @@ test.describe.parallel('Process Definition Search API', () => {
         headers: jsonHeaders(),
         data: {
           filter: {
-            processDefinitionId: state.processDefinitionId1,
-            processDefinitionKey: state.processDefinitionKey1,
+            version: 1,
+            processDefinitionKey: state.processDefinitionKey,
           },
         },
       });
@@ -91,6 +93,11 @@ test.describe.parallel('Process Definition Search API', () => {
       const body = await res.json();
       expect(body.page.totalItems).toBe(body.items.length);
       expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].version).toBe(1);
+      expect(body.items[0].processDefinitionKey).toBe(
+        state.processDefinitionKey,
+      );
+      expect(body.items[0].processDefinitionId).toBe(state.processDefinitionId);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -129,7 +136,7 @@ test.describe.parallel('Process Definition Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Ignored due to issue #39371 https://github.com/camunda/camunda/issues/39372
+  // Skipped due to bug #39371: https://github.com/camunda/camunda/issues/39372
   test.skip('Search Process Definitions - with invalid pagination parameters', async ({
     request,
   }) => {
