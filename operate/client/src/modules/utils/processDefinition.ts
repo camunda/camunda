@@ -7,13 +7,13 @@
  */
 
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
-import _ from 'lodash';
+import kebabCase from 'lodash/kebabCase';
 
 const getFullyQualifiedProcessDefinitionName = (
   processName: string,
   processVersion: string,
 ) => {
-  return `${_.kebabCase(processName)}_v${processVersion}`;
+  return `${kebabCase(processName)}_v${processVersion}`;
 };
 
 const getDiagramNameByProcessDefinition = (definition?: ProcessDefinition) => {
