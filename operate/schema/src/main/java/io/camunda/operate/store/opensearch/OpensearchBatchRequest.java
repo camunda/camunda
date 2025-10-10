@@ -175,42 +175,6 @@ public class OpensearchBatchRequest implements BatchRequest {
   }
 
   @Override
-  public BatchRequest upsertWithScriptAndRouting(
-      final String index,
-      final String id,
-      final ExporterEntity entity,
-      final String script,
-      final Map<String, Object> parameters,
-      final String routing)
-      throws PersistenceException {
-    LOGGER.debug(
-        "Add upsert request with routing {} for index {} id {} entity {} and script {} with parameters {} ",
-        routing,
-        index,
-        id,
-        entity,
-        script,
-        parameters);
-    withPersistenceException(
-        () ->
-            bulkRequestBuilder.operations(
-                op ->
-                    op.update(
-                        upd ->
-                            upd.index(index)
-                                .id(id)
-                                .upsert(entity)
-                                .script(script(script, parameters))
-                                .routing(routing)
-                                .retryOnConflict(UPDATE_RETRY_COUNT))),
-        () ->
-            String.format(
-                "Error preparing the query to upsert [%s] of entity type [%s] with script and routing",
-                entity, entity.getClass().getName()));
-    return this;
-  }
-
-  @Override
   public BatchRequest update(
       final String index, final String id, final Map<String, Object> updateFields)
       throws PersistenceException {

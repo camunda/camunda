@@ -9,6 +9,8 @@ package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -52,16 +54,13 @@ public abstract class ImportJobAbstract implements ImportJob {
   @Override
   public Boolean call() {
     processPossibleIndexChange();
-
-    // separate importbatch in sub-batches per index
-    final List<ImportBatch> subBatches = createSubBatchesPerIndexName();
-
+    final List<ImportBatch> subBatches = createSizeLimitedSubBatchesPerIndexName();
     for (final ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
       if (!success) {
         notifyImportListenersAsFailed(importBatch);
         return false;
-      } // else continue
+      }
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
     for (final ImportBatch subBatch : subBatches) {
@@ -218,6 +217,20 @@ public abstract class ImportJobAbstract implements ImportJob {
     if (importListeners != null) {
       for (final ImportListener importListener : importListeners) {
         importListener.failed(importBatch);
+      }
+    }
+  }
+
+  public static class EntitySizeEstimator {
+    private static final int INITIAL_BUFFER_SIZE = 1024;
+    private static final int MAX_BUFFER_SIZE = 1024 * 1024;
+    private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL = ThreadLocal.withInitial(Kryo::new);
+
+    public static int estimateSize(final Object entity) {
+      final Kryo kryo = KYRO_THREAD_LOCAL.get();
+      try (final Output output = new Output(INITIAL_BUFFER_SIZE, MAX_BUFFER_SIZE)) {
+        kryo.writeClassAndObject(output, entity);
+        return output.position();
       }
     }
   }

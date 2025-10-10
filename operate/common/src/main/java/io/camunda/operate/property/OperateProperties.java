@@ -19,6 +19,8 @@ public class OperateProperties {
 
   public static final long BATCH_OPERATION_MAX_SIZE_DEFAULT = 1_000_000L;
 
+  public static final long BATCH_SIZE_MAX_BYTES_DEFAULT = 20 * (1024 * 1024);
+
   private static final String UNKNOWN_VERSION = "unknown-version";
 
   private boolean importerEnabled = false;
@@ -42,6 +44,8 @@ public class OperateProperties {
 
   /** Maximum size of batch operation. */
   private Long batchOperationMaxSize = BATCH_OPERATION_MAX_SIZE_DEFAULT;
+
+  private long importerMaxBatchSizeBytes = BATCH_SIZE_MAX_BYTES_DEFAULT;
 
   private boolean enterprise = false;
 
@@ -129,6 +133,14 @@ public class OperateProperties {
 
   public void setBatchOperationMaxSize(final Long batchOperationMaxSize) {
     this.batchOperationMaxSize = batchOperationMaxSize;
+  }
+
+  public long getImporterMaxBatchSizeBytes() {
+    return importerMaxBatchSizeBytes;
+  }
+
+  public void setImporterMaxBatchSizeBytes(final long importerMaxBatchSizeBytes) {
+    this.importerMaxBatchSizeBytes = importerMaxBatchSizeBytes;
   }
 
   public boolean isCsrfPreventionEnabled() {
@@ -352,7 +364,6 @@ public class OperateProperties {
     return switch (databaseType) {
       case Elasticsearch -> getElasticsearch() == null ? null : getElasticsearch().getIndexPrefix();
       case Opensearch -> getOpensearch() == null ? null : getOpensearch().getIndexPrefix();
-      default -> null;
     };
   }
 
