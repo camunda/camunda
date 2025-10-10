@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class ClientsByTenantIntegrationTest {
 
   private static CamundaClient camundaClient;
@@ -38,6 +37,7 @@ public class ClientsByTenantIntegrationTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldSearchAssignedClientsByTenantAndSort() {
     // given
     final var firstClientId = "aClientId";

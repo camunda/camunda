@@ -19,10 +19,8 @@ import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class RolesByClientIntegrationTest {
   private static CamundaClient camundaClient;
 
@@ -144,7 +142,7 @@ public class RolesByClientIntegrationTest {
               final SearchResponse<Client> response =
                   camundaClient.newClientsByRoleSearchRequest(roleId).send().join();
               assertThat(response.items().stream().map(Client::getClientId).toList())
-                  .containsExactly(clientId1, clientId2);
+                  .containsExactlyInAnyOrder(clientId1, clientId2);
             });
   }
 

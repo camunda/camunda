@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class GroupsByRoleIntegrationTest {
 
   private static CamundaClient camundaClient;
@@ -50,6 +49,7 @@ public class GroupsByRoleIntegrationTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByRoleSortedByGroupIdAsc() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var groupId1 = "b" + Strings.newRandomValidIdentityId();
@@ -80,6 +80,7 @@ public class GroupsByRoleIntegrationTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByRoleSortedByGroupIdDesc() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var groupId1 = "a" + Strings.newRandomValidIdentityId();

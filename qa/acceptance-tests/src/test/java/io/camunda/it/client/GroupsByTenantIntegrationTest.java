@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class GroupsByTenantIntegrationTest {
   private static CamundaClient camundaClient;
 
@@ -81,6 +80,7 @@ public class GroupsByTenantIntegrationTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByTenantSortedByTenantIdDesc() {
     final List<TenantGroup> groups =
         camundaClient
