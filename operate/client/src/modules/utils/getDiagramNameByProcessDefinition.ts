@@ -16,17 +16,16 @@ const getFullyQualifiedProcessDefinitionName = (
   return `${kebabCase(processName)}_v${processVersion}`;
 };
 
-const getDiagramNameByProcessDefinition = (definition?: ProcessDefinition) => {
-  if (!definition) {
-    return getFullyQualifiedProcessDefinitionName('diagram', '0');
-  }
-
-  const processName = definition.name || definition.processDefinitionId;
-  const processVersion = definition.version;
+const getDiagramNameByProcessDefinition = ({
+  name,
+  processDefinitionId,
+  version,
+}: ProcessDefinition) => {
+  const processName = name || processDefinitionId;
 
   return getFullyQualifiedProcessDefinitionName(
     processName,
-    processVersion.toString(),
+    version.toString(),
   );
 };
 

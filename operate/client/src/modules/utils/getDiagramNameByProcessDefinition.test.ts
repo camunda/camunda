@@ -34,8 +34,4 @@ describe('getDiagramNameByProcessDefinition', () => {
       getDiagramNameByProcessDefinition(definition as ProcessDefinition),
     ).toBe('fallback-id_v2');
   });
-
-  it('returns default name when ProcessDefinition is undefined', () => {
-    expect(getDiagramNameByProcessDefinition(undefined)).toBe('diagram_v0');
-  });
 });
