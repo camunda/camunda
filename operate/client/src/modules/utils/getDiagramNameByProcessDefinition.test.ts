@@ -9,7 +9,7 @@
 /*
  * Unit tests for processDefinition utils
  */
-import {getDiagramNameByProcessDefinition} from './processDefinition';
+import {getDiagramNameByProcessDefinition} from './getDiagramNameByProcessDefinition';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 
 describe('getDiagramNameByProcessDefinition', () => {
