@@ -15,7 +15,6 @@ import co.elastic.clients.elasticsearch._types.aggregations.BucketSortAggregatio
 import io.camunda.search.clients.aggregator.SearchBucketSortAggregator;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import io.camunda.search.sort.SortOption.FieldSorting;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -40,14 +39,13 @@ public final class SearchBucketSortAggregationTransformer
   }
 
   private List<SortOptions> toSort(final List<FieldSorting> requestedSort) {
-    final List<SortOptions> result = new ArrayList<>();
-
-    for (final FieldSorting fieldSort : requestedSort) {
-      result.add(
-          SortOptions.of(
-              s -> s.field(f -> f.field(fieldSort.field()).order(toOrder(fieldSort.order())))));
-    }
-    return result;
+    return requestedSort.stream()
+        .map(
+            fieldSort ->
+                SortOptions.of(
+                    s ->
+                        s.field(f -> f.field(fieldSort.field()).order(toOrder(fieldSort.order())))))
+        .toList();
   }
 
   private SortOrder toOrder(final io.camunda.search.sort.SortOrder order) {
