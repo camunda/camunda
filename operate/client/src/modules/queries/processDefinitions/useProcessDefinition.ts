@@ -9,16 +9,9 @@
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {fetchProcessDefinition} from 'modules/api/v2/processDefinitions/fetchProcessDefinition';
 
-const PROCESS_DEFINITION_QUERY_KEY = 'processDefinition';
-
-const useProcessDefinition = (
-  processDefinitionKey?: string,
-  options?: {
-    enabled?: boolean;
-  },
-) => {
-  return useQuery({
-    queryKey: [PROCESS_DEFINITION_QUERY_KEY, processDefinitionKey],
+const getUseProcessDefinitionOptions = (processDefinitionKey?: string) => {
+  return {
+    queryKey: ['processDefinition', processDefinitionKey],
     queryFn: processDefinitionKey
       ? async () => {
           const {response, error} = await fetchProcessDefinition({
@@ -30,8 +23,19 @@ const useProcessDefinition = (
           throw error;
         }
       : skipToken,
-    enabled: options?.enabled,
+  } as const;
+};
+
+const useProcessDefinition = (
+  processDefinitionKey?: string,
+  options?: {
+    enabled?: boolean;
+  },
+) => {
+  return useQuery({
+    ...getUseProcessDefinitionOptions(processDefinitionKey),
+    ...options,
   });
 };
 
-export {useProcessDefinition};
+export {useProcessDefinition, getUseProcessDefinitionOptions};

@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useCallback} from 'react';
-import {IconButton} from '@carbon/react';
+import {useTransition} from 'react';
+import {IconButton, Loading} from '@carbon/react';
 import {Download} from '@carbon/react/icons';
-import {useProcessDefinitionXml} from 'modules/queries/processDefinitions/useProcessDefinitionXml';
-import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
-import {getDiagramNameByProcessDefinition} from 'modules/utils/processDefinition';
+import {getUseProcessDefinitionXmlOptions} from 'modules/queries/processDefinitions/useProcessDefinitionXml';
+import {getUseProcessDefinitionOptions} from 'modules/queries/processDefinitions/useProcessDefinition';
+import {getDiagramNameByProcessDefinition} from 'modules/utils/getDiagramNameByProcessDefinition';
+import {useQueryClient} from '@tanstack/react-query';
 
 type Props = {
   processDefinitionKey: string;
@@ -22,48 +23,56 @@ const DownloadBPMNDefinitionXML: React.FC<Props> = ({
   processDefinitionKey,
   className,
 }) => {
-  const {isLoading, data: xmlData} = useProcessDefinitionXml({
-    processDefinitionKey,
-    select: (data) => data.xml,
-  });
+  const queryClient = useQueryClient();
+  const [isPending, startTransition] = useTransition();
 
-  const {data: processDefinition} = useProcessDefinition(processDefinitionKey);
-
-  const handleDownload = useCallback(async () => {
+  const handleDownload = async () => {
     try {
-      if (!xmlData) {
-        console.error('No BPMN XML data available for download');
-        return;
-      }
+      const [{xml, diagramModel}, processDefinition] = await Promise.all([
+        queryClient.ensureQueryData(
+          getUseProcessDefinitionXmlOptions(processDefinitionKey),
+        ),
+        queryClient.ensureQueryData(
+          getUseProcessDefinitionOptions(processDefinitionKey),
+        ),
+      ]);
 
-      const blob = new Blob([xmlData], {type: 'application/xml'});
+      const diagramName =
+        processDefinition === undefined
+          ? diagramModel.rootElement.id
+          : getDiagramNameByProcessDefinition(processDefinition);
+
+      const blob = new Blob([xml], {type: 'application/xml'});
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${getDiagramNameByProcessDefinition(processDefinition)}.bpmn`;
+      link.download = `${diagramName}.bpmn`;
       document.body.appendChild(link);
       link.click();
 
-      // Cleanup
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
     } catch (downloadError) {
       console.error('Failed to download BPMN definition:', downloadError);
     }
-  }, [xmlData, processDefinition]);
+  };
 
   return (
     <IconButton
       kind="tertiary"
       size="sm"
       align="left"
-      disabled={isLoading || !xmlData}
-      onClick={handleDownload}
+      disabled={isPending}
+      onClick={() =>
+        startTransition(async () => {
+          await handleDownload();
+        })
+      }
       className={className}
       label="Download XML"
       aria-label="Download BPMN definition XML"
     >
-      <Download />
+      {isPending ? <Loading withOverlay={false} small /> : <Download />}
     </IconButton>
   );
 };
