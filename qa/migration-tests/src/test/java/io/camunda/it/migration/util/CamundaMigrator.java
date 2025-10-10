@@ -26,6 +26,7 @@ import io.camunda.zeebe.it.util.SearchClientsUtil;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;
 import io.camunda.zeebe.util.FileUtil;
 import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebeTopologyWaitStrategy;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
@@ -79,7 +80,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withAdditionalExposedPort(8080)
             .withStartupTimeout(Duration.ofMinutes(1))
             .withNetworkAliases("camunda")
-            .withExtraHost("internal.host", "host-gateway");
+            .withExtraHost("internal.host", "host-gateway")
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 3));
 
     final String internalUrl =
         databaseUrl.replaceAll("elasticsearch|opensearch|localhost", "internal.host");
@@ -144,6 +146,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
                 "migration-completed-event-listener", migrationCompletedEventListener)
             .withBrokerConfig(
                 cfg -> {
+                  cfg.getCluster().setPartitionsCount(3);
                   cfg.getExperimental().setVersionCheckRestrictionEnabled(false);
                   cfg.getGateway().setEnable(true);
                 })
@@ -195,7 +198,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     env.forEach(camunda::withProperty);
 
     camunda.start();
-    camunda.awaitCompleteTopology();
+    camunda.awaitCompleteTopology(1, 3, 1, Duration.ofSeconds(30));
     camundaClient = camunda.newClientBuilder().preferRestOverGrpc(false).build();
     url = URL.formatted(camunda.host(), camunda.mappedPort(TestZeebePort.REST));
     final var uri = URI.create(url + "/");
@@ -249,7 +252,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     return new HashMap<>() {
       {
         put("SPRING_PROFILES_ACTIVE", "tasklist,broker,auth,operate");
-        put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "1");
+        put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "3");
         put(
             "ZEEBE_BROKER_EXPORTERS_ELASTICSEARCHEXPORTER_CLASSNAME",
             ElasticsearchExporter.class.getName());
@@ -280,7 +283,7 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     return new HashMap<>() {
       {
         put("SPRING_PROFILES_ACTIVE", "tasklist,broker,auth,operate");
-        put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "1");
+        put("ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT", "3");
         put(
             "ZEEBE_BROKER_EXPORTERS_OPENSEARCHEXPORTER_CLASSNAME",
             OpensearchExporter.class.getName());
