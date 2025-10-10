@@ -18,6 +18,7 @@ declare module 'bpmn-moddle' {
     elementsById: {
       [id: string]: BusinessObject;
     };
+    rootElement: BusinessObject;
   };
 
   class BpmnModdle {
