@@ -6,9 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-/*
- * Unit tests for processDefinition utils
- */
 import {getDiagramNameByProcessDefinition} from './getDiagramNameByProcessDefinition';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 
@@ -18,10 +15,13 @@ describe('getDiagramNameByProcessDefinition', () => {
       name: 'Order Process',
       processDefinitionId: 'order-process-id',
       version: 5,
-    };
-    expect(
-      getDiagramNameByProcessDefinition(definition as ProcessDefinition),
-    ).toBe('order-process_v5');
+      tenantId: '<default>',
+      processDefinitionKey: 'order-process-key',
+      hasStartForm: false,
+    } satisfies ProcessDefinition;
+    expect(getDiagramNameByProcessDefinition(definition)).toBe(
+      'order-process_v5',
+    );
   });
 
   it('uses processDefinitionId if name is missing', () => {
@@ -29,9 +29,12 @@ describe('getDiagramNameByProcessDefinition', () => {
       name: undefined,
       processDefinitionId: 'fallback-id',
       version: 2,
-    };
-    expect(
-      getDiagramNameByProcessDefinition(definition as ProcessDefinition),
-    ).toBe('fallback-id_v2');
+      tenantId: '<default>',
+      processDefinitionKey: 'fallback-key',
+      hasStartForm: false,
+    } satisfies ProcessDefinition;
+    expect(getDiagramNameByProcessDefinition(definition)).toBe(
+      'fallback-id_v2',
+    );
   });
 });
