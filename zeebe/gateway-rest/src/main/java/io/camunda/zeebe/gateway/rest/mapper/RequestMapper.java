@@ -21,6 +21,7 @@ import static io.camunda.zeebe.gateway.rest.validator.MessageRequestValidator.va
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantId;
 import static io.camunda.zeebe.gateway.rest.validator.MultiTenancyValidator.validateTenantIds;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCancelProcessInstanceRequest;
+import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateCreateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceBatchOperationRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateMigrateProcessInstanceRequest;
 import static io.camunda.zeebe.gateway.rest.validator.ProcessInstanceRequestValidator.validateModifyProcessInstanceBatchOperationRequest;
@@ -792,7 +793,12 @@ public class RequestMapper {
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
       final ProcessInstanceCreationInstructionById request, final boolean multiTenancyEnabled) {
     final Either<ProblemDetail, String> validationResponse =
-        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance");
+        validateTenantId(request.getTenantId(), multiTenancyEnabled, "Create Process Instance")
+            .flatMap(
+                tenant ->
+                    validateCreateProcessInstanceRequest(request)
+                        .map(Either::<ProblemDetail, String>left)
+                        .orElseGet(() -> Either.right(tenant)));
     return validationResponse.map(
         tenantId ->
             new ProcessInstanceCreateRequest(

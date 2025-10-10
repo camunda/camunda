@@ -442,9 +442,9 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required.",
+                "detail":"At least one of [processDefinitionId, processDefinitionKey] is required",
                 "instance":"/v2/process-instances"
              }""";
 
