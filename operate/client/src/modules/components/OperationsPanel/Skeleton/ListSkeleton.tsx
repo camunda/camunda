@@ -6,13 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {OperationEntry} from './OperationEntry';
+import {OperationEntrySkeleton} from './OperationEntrySkeleton';
 
 const ListSkeleton: React.FC = () => {
   return (
     <ul data-testid="skeleton">
       {[...Array(10)].map((_, index) => (
-        <OperationEntry key={index} />
+        <OperationEntrySkeleton key={index} />
       ))}
     </ul>
   );

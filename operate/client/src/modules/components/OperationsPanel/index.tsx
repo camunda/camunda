@@ -16,7 +16,7 @@ import {OperationsEntry} from './OperationsEntry';
 import {EMPTY_MESSAGE, OPERATIONS_EXPANDED_PANEL_WIDTH} from './constants';
 import {InlineNotification} from '@carbon/react';
 import {ListSkeleton} from './Skeleton/ListSkeleton';
-import {OperationEntry} from './Skeleton/OperationEntry';
+import {OperationEntrySkeleton} from './Skeleton/OperationEntrySkeleton';
 import {useBatchOperations} from 'modules/queries/batch-operations/useBatchOperations';
 import {useVirtualizer} from '@tanstack/react-virtual';
 
@@ -26,6 +26,13 @@ function getPageParam(param: unknown) {
   }
   return 0;
 }
+
+function getRealOperationIndex(index: number, firstPageParam: number) {
+  return Math.max(0, index - firstPageParam);
+}
+
+const FINISHED_OPERATION_SIZE = 122;
+const RUNNING_OPERATION_SIZE = 163;
 
 const OperationsPanel: React.FC = observer(() => {
   const {
@@ -58,7 +65,19 @@ const OperationsPanel: React.FC = observer(() => {
         ? data.pages[0].page.totalItems
         : 0,
     getScrollElement: () => scrollableContainerRef.current,
-    estimateSize: () => 122,
+    estimateSize: () => RUNNING_OPERATION_SIZE,
+    // measureElement: (el) => {
+    //   // finish implementation, it must be RUNNING_OPERATION_SIZE if there's an endDate, otherwise FINISHED_OPERATION_SIZE
+    //   const realIndex = el.dataset.realIndex;
+    //   console.log({realIndex});
+    //   const endDate = operations[realIndex]?.endDate;
+    //   console.log({endDate});
+    //   if (typeof endDate === 'string') {
+    //     return FINISHED_OPERATION_SIZE;
+    //   }
+
+    //   return RUNNING_OPERATION_SIZE;
+    // },
     overscan: 5,
     onChange: ({scrollDirection, getVirtualItems}) => {
       const virtualItems = getVirtualItems();
@@ -135,21 +154,31 @@ const OperationsPanel: React.FC = observer(() => {
         return (
           <OperationsList
             data-testid="operations-list"
-            $height={virtualizer.getTotalSize()}
+            style={{
+              height: virtualizer.getTotalSize(),
+            }}
           >
             {virtualItems.map((virtualItem) => {
-              const realIndex = virtualItem.index - firstPageParam;
+              const realIndex = getRealOperationIndex(
+                virtualItem.index,
+                firstPageParam,
+              );
               const isLoaderRow = realIndex > operations.length - 1;
-              const operation = operations[Math.max(0, realIndex)];
+              const operation = operations[realIndex];
 
               return (
                 <ScrollContainer
                   key={virtualItem.key}
-                  $height={virtualItem.size}
-                  $transform={virtualItem.start}
+                  style={{
+                    height: virtualItem.size,
+                    transform: `translateY(${virtualItem.start}px)`,
+                  }}
+                  data-real-index={realIndex}
+                  data-index={virtualItem.index}
+                  ref={virtualizer.measureElement}
                 >
                   {isLoaderRow ? (
-                    <OperationEntry />
+                    <OperationEntrySkeleton />
                   ) : (
                     <OperationsEntry operation={operation} />
                   )}

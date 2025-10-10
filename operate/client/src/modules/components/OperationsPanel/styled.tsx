@@ -8,19 +8,16 @@
 
 import styled from 'styled-components';
 
-const OperationsList = styled.div<{$height: number}>`
+const OperationsList = styled.div`
   position: relative;
   width: 100%;
-  height: ${({$height}) => $height}px;
 `;
 
-const ScrollContainer = styled.div<{$height: number; $transform: number}>`
+const ScrollContainer = styled.div`
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  transform: translateY(${({$transform}) => $transform}px);
-  height: ${({$height}) => $height}px;
 `;
 
 const EmptyMessageContainer = styled.div`

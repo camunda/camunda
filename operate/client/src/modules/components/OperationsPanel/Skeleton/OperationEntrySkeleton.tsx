@@ -9,7 +9,7 @@
 import {SkeletonIcon} from '@carbon/react';
 import {Container, Header, Details, SkeletonText} from './styled';
 
-const OperationEntry: React.FC = () => {
+const OperationEntrySkeleton: React.FC = () => {
   return (
     <Container>
       <Header>
@@ -26,4 +26,4 @@ const OperationEntry: React.FC = () => {
   );
 };
 
-export {OperationEntry};
+export {OperationEntrySkeleton};
