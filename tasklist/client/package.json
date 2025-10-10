@@ -10,7 +10,7 @@
     "@camunda/camunda-api-zod-schemas": "0.0.6",
     "@camunda/camunda-composite-components": "0.20.2",
     "@carbon/elements": "11.71.0",
-    "@carbon/react": "1.87.1",
+    "@carbon/react": "1.93.0",
     "@monaco-editor/react": "4.7.0",
     "@tanstack/eslint-plugin-query": "5.81.2",
     "@tanstack/react-query": "5.83.0",
