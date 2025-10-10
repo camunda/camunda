@@ -25,6 +25,10 @@ public class ImportProperties {
 
   private static final int DEFAULT_MAX_EMPTY_RUNS = 10;
 
+  private static final int DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
+
+  private static final int DEFAULT_MAX_BATCH_SIZE_BYTES = 20 * (1024 * 1024);
+
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -34,6 +38,8 @@ public class ImportProperties {
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   private boolean useOnlyPosition = false;
+
+  private long maxBatchSizeBytes = DEFAULT_MAX_BATCH_SIZE_BYTES;
 
   /**
    * The property is not used anymore. Instead of a backoff, the records reader gets rescheduled
@@ -133,6 +139,15 @@ public class ImportProperties {
 
   public ImportProperties setMaxEmptyRuns(final int maxEmptyRuns) {
     this.maxEmptyRuns = maxEmptyRuns;
+    return this;
+  }
+
+  public long getMaxBatchSizeBytes() {
+    return maxBatchSizeBytes;
+  }
+
+  public ImportProperties setMaxBatchSizeBytes(final long maxBatchSizeBytes) {
+    this.maxBatchSizeBytes = maxBatchSizeBytes;
     return this;
   }
 }

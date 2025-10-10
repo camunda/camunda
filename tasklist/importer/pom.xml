@@ -168,6 +168,10 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>com.esotericsoftware</groupId>
+      <artifactId>kryo</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
@@ -180,6 +184,11 @@
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
 
       <plugin>

@@ -50,6 +50,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
   @Qualifier("tasklistEsClient")
   private RestHighLevelClient esClient;
 
+  @Override
   public CompletableFuture<Long> deleteDocuments(
       final String sourceIndexName,
       final String idFieldName,
@@ -78,6 +79,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return deleteFuture;
   }
 
+  @Override
   public CompletableFuture<Long> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
@@ -108,6 +110,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
     return reindexFuture;
   }
 
+  @Override
   public void setIndexLifeCycle(final String destinationIndexName) {
     try {
       if (tasklistProperties.getArchiver().isIlmEnabled()) {
@@ -121,7 +124,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
                             .build()),
                 RequestOptions.DEFAULT);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.warn(
           "Could not set ILM policy {} for index {}: {}",
           TASKLIST_DELETE_ARCHIVED_INDICES,
@@ -177,7 +180,7 @@ public class ArchiverUtilElasticSearch extends ArchiverUtilAbstract {
           operation,
           sourceIndexName);
       bulkFailures.stream().forEach(f -> LOGGER.error(f.toString()));
-      return Either.left(new ArchiverException(String.format("Operation % failed", operation)));
+      return Either.left(new ArchiverException(String.format("Operation %s failed", operation)));
     }
 
     LOGGER.debug(
