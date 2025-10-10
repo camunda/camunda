@@ -264,6 +264,25 @@ public class ProcessDefinitionSearchTest {
   }
 
   @Test
+  void shouldGetProcessDefinitionWithFormByKey() {
+    // given
+    final var processEvent =
+        DEPLOYED_PROCESSES.stream()
+            .filter(p -> Objects.equals(PROCESS_ID_WITH_START_FORM, p.getBpmnProcessId()))
+            .findFirst()
+            .orElseThrow();
+    final var processDefinitionKey = processEvent.getProcessDefinitionKey();
+
+    // when
+    final var result =
+        camundaClient.newProcessDefinitionGetRequest(processDefinitionKey).send().join();
+
+    // then
+    assertThat(result).isNotNull();
+    assertThat(result.getHasStartForm()).isTrue();
+  }
+
+  @Test
   void shouldRetrieveAllProcessDefinitionsByDefault() {
     // given
     final var expectedProcessDefinitionIds =
