@@ -18,10 +18,8 @@ import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UsersByGroupSearchTest {
 
   private static CamundaClient camundaClient;
@@ -52,7 +50,7 @@ public class UsersByGroupSearchTest {
     assertThat(users.items().size()).isEqualTo(2);
     assertThat(users.items())
         .extracting(GroupUser::getUsername)
-        .containsExactly(USER_USERNAME_1, USER_USERNAME_2);
+        .containsExactlyInAnyOrder(USER_USERNAME_1, USER_USERNAME_2);
   }
 
   @Test
