@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 public class UsersByRoleIntegrationTest {
 
   private static CamundaClient camundaClient;
@@ -234,6 +233,7 @@ public class UsersByRoleIntegrationTest {
   }
 
   @Test
+  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnUsersByRoleSorted() {
     final var roleId = Strings.newRandomValidIdentityId();
     final var user1 = "Alice" + Strings.newRandomValidUsername();

@@ -354,7 +354,6 @@ class TenantAuthorizationIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void unassignMappingRuleFromTenantShouldReturnForbiddenIfUnauthorized(
       @Authenticated(RESTRICTED) final CamundaClient camundaClient) {
     assertThatThrownBy(
@@ -370,7 +369,6 @@ class TenantAuthorizationIT {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void unassignMappingRuleFromTenantShouldUnassignMappingRuleIfAuthorized(
       @Authenticated(ADMIN) final CamundaClient camundaClient) {
     // given - create a mapping rule and assign it to tenant

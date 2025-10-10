@@ -18,7 +18,6 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 // regression test for https://github.com/camunda/camunda/issues/35549
 @MultiDbTest
-@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class UniqueEntityIdentifiersIT {
 
