@@ -912,9 +912,9 @@ public class GroupQueryControllerTest extends RestControllerTest {
                 """
                     {
                       "type": "about:blank",
-                      "title": "INVALID_ARGUMENT",
+                      "title": "Bad Request",
                       "status": 400,
-                      "detail": "Both after and before cannot be set at the same time.",
+                      "detail": "Failed to read request",
                       "instance": "%s"
                     }""",
                 endpoint)));

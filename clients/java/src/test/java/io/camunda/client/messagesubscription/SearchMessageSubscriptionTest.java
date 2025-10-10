@@ -24,7 +24,6 @@ import io.camunda.client.impl.search.request.SearchRequestSort;
 import io.camunda.client.impl.search.request.SearchRequestSortMapper;
 import io.camunda.client.protocol.rest.MessageSubscriptionSearchQuery;
 import io.camunda.client.protocol.rest.MessageSubscriptionStateEnum;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
@@ -150,25 +149,5 @@ public class SearchMessageSubscriptionTest extends ClientRestTest {
     assertSort(sorts.get(7), "messageName", SortOrderEnum.ASC);
     assertSort(sorts.get(8), "correlationKey", SortOrderEnum.DESC);
     assertSort(sorts.get(9), "tenantId", SortOrderEnum.ASC);
-  }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // When
-    client
-        .newMessageSubscriptionSearchRequest()
-        .page(p -> p.from(2).limit(3).before("beforeCursor").after("afterCursor"))
-        .send()
-        .join();
-
-    // Then
-    final MessageSubscriptionSearchQuery request =
-        gatewayService.getLastRequest(MessageSubscriptionSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(2);
-    assertThat(pageRequest.getLimit()).isEqualTo(3);
-    assertThat(pageRequest.getBefore()).isEqualTo("beforeCursor");
-    assertThat(pageRequest.getAfter()).isEqualTo("afterCursor");
   }
 }

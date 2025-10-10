@@ -327,7 +327,8 @@
           <generatorName>java</generatorName>
           <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
           <modelPackage>io.camunda.client.protocol.rest</modelPackage>
-          <typeMappings>OffsetDateTime=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty</typeMappings>
+          public class ScopeKeyFilterProperty {
+          <typeMappings>OffsetDateTime=String,ResourceKey=String,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,DecisionDefinitionKeyFilterProperty=BasicStringFilterProperty,ElementInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceKeyFilterProperty=BasicStringFilterProperty,ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey=String,ScopeKeyFilterProperty=BasicStringFilterProperty,VariableKeyFilterProperty=BasicStringFilterProperty,ProcessDefinitionKeyFilterProperty=BasicStringFilterProperty,JobKeyFilterProperty=BasicStringFilterProperty,MessageSubscriptionKeyFilterProperty=BasicStringFilterProperty</typeMappings>
           <generateApis>false</generateApis>
           <generateApiTests>false</generateApiTests>
           <generateSupportingFiles>false</generateSupportingFiles>

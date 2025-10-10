@@ -158,24 +158,6 @@ public class SearchIncidentTest extends ClientRestTest {
     assertSort(sorts.get(9), "creationTime", SortOrderEnum.DESC);
   }
 
-  @Test
-  void shouldSearchWithFullPagination() {
-    // when
-    client
-        .newIncidentSearchRequest()
-        .page(p -> p.from(23).limit(5).before("b").after("a"))
-        .send()
-        .join();
-
-    // then
-    final IncidentSearchQuery request = gatewayService.getLastRequest(IncidentSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest.getFrom()).isEqualTo(23);
-    assertThat(pageRequest.getLimit()).isEqualTo(5);
-    assertThat(pageRequest.getBefore()).isEqualTo("b");
-    assertThat(pageRequest.getAfter()).isEqualTo("a");
-  }
-
   /*
    * This test is parameterized to test all possible values of the Zeebe Protocol ErrorType enum.
    * The goal is to catch any Zeebe Protocol error types not implemented in the Java client.

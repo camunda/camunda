@@ -56,7 +56,8 @@ public class SearchClientByTenantTest extends ClientRestTest {
     final String requestBody = lastRequest.getBodyAsString();
 
     assertThat(requestBody).contains("\"sort\":[{\"field\":\"clientId\",\"order\":\"DESC\"}]");
-    assertThat(requestBody).contains("\"page\":{\"limit\":2}");
+    assertThat(requestBody)
+        .contains("\"page\":{\"from\":0,\"limit\":2,\"after\":null,\"before\":null}}");
   }
 
   @Test
