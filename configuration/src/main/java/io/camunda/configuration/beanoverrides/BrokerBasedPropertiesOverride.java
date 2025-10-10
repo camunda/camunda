@@ -574,7 +574,11 @@ public class BrokerBasedPropertiesOverride {
     setArg(args, "connect.password", database.getPassword());
 
     setArg(args, "connect.indexPrefix", database.getIndexPrefix());
+
     setArg(args, "index.numberOfShards", database.getNumberOfShards());
+    setArg(args, "index.numberOfReplicas", database.getNumberOfReplicas());
+    setArg(args, "index.variableSizeThreshold", database.getVariableSizeThreshold());
+    setArg(args, "index.shouldWaitForImporters", database.isWaitForImporters());
 
     setArg(
         args,
