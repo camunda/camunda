@@ -58,4 +58,23 @@ describe('<DiagramControls />', () => {
     expect(handleZoomReset).not.toHaveBeenCalled();
     expect(handleZoomIn).not.toHaveBeenCalled();
   });
+
+  it('should not render download button', async () => {
+    const handleZoomIn = vi.fn(),
+      handleZoomOut = vi.fn(),
+      handleZoomReset = vi.fn();
+
+    render(
+      <DiagramControls
+        handleZoomIn={handleZoomIn}
+        handleZoomOut={handleZoomOut}
+        handleZoomReset={handleZoomReset}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    expect(
+      screen.queryByRole('button', {name: 'Download XML'}),
+    ).not.toBeInTheDocument();
+  });
 });
