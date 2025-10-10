@@ -31,6 +31,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {convertBpmnJsTypeToAPIType} from './convertBpmnJsTypeToAPIType';
 import {useJobs} from 'modules/queries/jobs/useJobs';
+import {useSearchMessageSubscriptions} from 'modules/queries/messageSubscriptions/useSearchMessageSubscriptions';
 
 type Props = {
   selectedFlowNodeRef?: SVGGraphicsElement | null;
@@ -180,6 +181,20 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     select: (data) => data.pages?.flatMap((page) => page.items),
   });
 
+  const {
+    data: messageSubscriptionSearchResult,
+    isLoading: isSearchingMessageSubscription,
+  } = useSearchMessageSubscriptions(
+    {
+      filter: {
+        elementInstanceKey: elementInstanceMetadata?.elementInstanceKey ?? '',
+      },
+    },
+    {
+      enabled: !!elementInstanceMetadata?.elementInstanceKey,
+    },
+  );
+
   if (
     elementId === undefined ||
     metaData === null ||
@@ -187,7 +202,8 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     (!!elementInstanceId && isFetchingInstance) ||
     isSearchingUserTasks ||
     isSearchingProcessInstances ||
-    isSearchingJob
+    isSearchingJob ||
+    isSearchingMessageSubscription
   ) {
     return null;
   }
@@ -227,6 +243,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
                 elementInstanceMetadata,
                 jobSearchResult?.[0],
                 processInstancesSearchResult?.items?.[0],
+                messageSubscriptionSearchResult?.items?.[0],
                 elementInstanceMetadata.type === 'USER_TASK'
                   ? userTask
                   : undefined,

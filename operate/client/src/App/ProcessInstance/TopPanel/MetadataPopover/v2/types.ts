@@ -12,6 +12,7 @@ import type {
   ProcessInstance,
   Job,
   UserTask,
+  MessageSubscription,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
 // V2 Element Instance Metadata - extends the old structure but with v2 element instance fields will be removed after other components migration
@@ -43,6 +44,8 @@ type V2InstanceMetadata = {
   jobDeadline?: string | null;
   jobCustomHeaders: Record<string, unknown> | null;
   jobKey?: string | null;
+  messageName?: string | null;
+  correlationKey?: string | null;
 } & Partial<UserTask>;
 
 type V2MetaDataDto = Omit<MetaDataDto, 'instanceMetadata' | 'incident'> & {
@@ -76,6 +79,7 @@ function createV2InstanceMetadata(
   elementInstance: ElementInstance,
   job?: Job,
   calledProcess?: ProcessInstance,
+  messageSubscription?: MessageSubscription,
   userTask: Partial<UserTaskSubset> | null = {},
 ): V2InstanceMetadata {
   const {
@@ -93,6 +97,8 @@ function createV2InstanceMetadata(
     candidateUsers,
     externalFormReference,
   } = userTask ?? {};
+
+  const {messageName, correlationKey} = messageSubscription ?? {};
 
   return {
     calledProcessInstanceId: calledProcess?.processInstanceKey ?? null,
@@ -136,6 +142,9 @@ function createV2InstanceMetadata(
     candidateGroups,
     candidateUsers,
     externalFormReference,
+
+    messageName,
+    correlationKey,
   };
 }
 
