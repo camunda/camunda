@@ -55,7 +55,10 @@ public record WorkingDirectoryConfiguration(Environment environment) {
 
   @Bean
   public NodeIdMapper nodeIdMapper(final BrokerBasedProperties properties) {
-    return new NodeIdMapper(properties.getLeaseConfig(), properties.getCluster().getClusterSize());
+    return new NodeIdMapper(
+        properties.getLeaseConfig(),
+        NodeIdMapper.randomTaskId(),
+        properties.getCluster().getClusterSize());
   }
 
   public record WorkingDirectory(Path path, boolean isTemporary) {}
