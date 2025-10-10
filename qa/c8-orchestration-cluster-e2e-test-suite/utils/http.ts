@@ -135,6 +135,15 @@ export async function assertConflictRequest(response: APIResponse) {
   expect(json['title']).toContain('ALREADY_EXISTS');
 }
 
+export async function assertInvalidState(
+  response: APIResponse,
+  expectedStatusCode: number = 409,
+) {
+  await assertStatusCode(response, expectedStatusCode);
+  const json = await response.json();
+  assertRequiredFields(json, ['detail', 'title']);
+  expect(json.title).toBe('INVALID_STATE');
+}
 export async function assertNotFoundRequest(
   response: APIResponse,
   detail: string,
