@@ -21,7 +21,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 @RunWith(Parameterized.class)
-public class UpdateUserPatchTest {
+public class UpdateUserFieldsTest {
   @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
 
   @Rule
@@ -32,7 +32,7 @@ public class UpdateUserPatchTest {
   private final UserRecord updatedUser;
   private final UserRecord expectedUser;
 
-  public UpdateUserPatchTest(
+  public UpdateUserFieldsTest(
       final UserRecord baseUser, final UserRecord updatedUser, final UserRecord expectedUser) {
     this.baseUser = baseUser;
     this.updatedUser = updatedUser;
@@ -82,7 +82,7 @@ public class UpdateUserPatchTest {
             new UserRecord()
                 .setUsername("user-1")
                 .setName("Bar Foo")
-                .setEmail("foo@bar")
+                .setEmail("")
                 .setPassword("password")
           },
           // Update the email field
@@ -95,7 +95,7 @@ public class UpdateUserPatchTest {
             new UserRecord().setEmail("bar@foo"),
             new UserRecord()
                 .setUsername("user-2")
-                .setName("Foo Bar")
+                .setName("")
                 .setEmail("bar@foo")
                 .setPassword("password")
           },
@@ -109,8 +109,8 @@ public class UpdateUserPatchTest {
             new UserRecord().setPassword("updated-password"),
             new UserRecord()
                 .setUsername("user-3")
-                .setName("Foo Bar")
-                .setEmail("foo@bar")
+                .setName("")
+                .setEmail("")
                 .setPassword("updated-password")
           },
           // Update the name and email field

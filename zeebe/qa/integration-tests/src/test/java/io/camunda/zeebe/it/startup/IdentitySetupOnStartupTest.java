@@ -38,10 +38,6 @@ final class IdentitySetupOnStartupTest {
                 .withReplicationFactor(3)
                 .withBrokerConfig(
                     cfg -> {
-                      cfg.brokerConfig()
-                          .getExperimental()
-                          .getFeatures()
-                          .setEnableIdentitySetup(true);
                       cfg.brokerConfig().getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
                       cfg.brokerConfig().getProcessing().setMaxCommandsInBatch(100);
                     })

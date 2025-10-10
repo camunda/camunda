@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-bom</artifactId>
-    <version>8.8.0-SNAPSHOT</version>
+    <version>8.8.1-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -49,28 +49,28 @@
     <version.commons-codec>1.19.0</version.commons-codec>
     <version.commons-compress>1.27.1</version.commons-compress>
     <version.commons-validator>1.10.0</version.commons-validator>
-    <version.zstd-jni>1.5.7-5</version.zstd-jni>
+    <version.zstd-jni>1.5.7-4</version.zstd-jni>
     <version.commons-text>1.14.0</version.commons-text>
     <version.cron-utils>9.2.1</version.cron-utils>
     <version.docker-java-api>3.5.3</version.docker-java-api>
     <version.elasticsearch>8.16.6</version.elasticsearch>
     <version.error-prone>2.41.0</version.error-prone>
     <version.grpc>1.73.0</version.grpc>
-    <version.gson>2.13.2</version.gson>
+    <version.gson>2.13.1</version.gson>
     <version.guava>33.4.8-jre</version.guava>
     <version.hamcrest>3.0</version.hamcrest>
     <version.httpasyncclient>4.1.5</version.httpasyncclient>
     <version.httpclient>4.5.14</version.httpclient>
-    <version.httpclient5>5.5.1</version.httpclient5>
+    <version.httpclient5>5.5</version.httpclient5>
     <version.httpcore5>5.3.4</version.httpcore5>
     <version.httpcomponents>4.4.16</version.httpcomponents>
-    <version.identity>8.8.0-alpha8</version.identity>
+    <version.identity>8.8.0</version.identity>
     <version.instancio>5.5.0</version.instancio>
-    <version.surefire>3.5.4</version.surefire>
+    <version.surefire>3.5.3</version.surefire>
     <version.jackson>2.19.2</version.jackson>
     <version.junit>5.13.4</version.junit>
     <version.junit4>4.13.2</version.junit4>
-    <version.log4j>2.25.2</version.log4j>
+    <version.log4j>2.25.1</version.log4j>
     <version.minlog>1.3.1</version.minlog>
     <version.mockito>5.18.0</version.mockito>
     <version.model>7.7.0</version.model>
@@ -83,7 +83,7 @@
     <version.prometheus>0.16.0</version.prometheus>
     <version.protobuf>4.31.1</version.protobuf>
     <version.protobuf-common>2.59.2</version.protobuf-common>
-    <version.micrometer>1.15.4</version.micrometer>
+    <version.micrometer>1.15.2</version.micrometer>
     <version.rocksdbjni>10.2.1</version.rocksdbjni>
     <version.sbe>1.35.6</version.sbe>
     <version.scala>2.13.16</version.scala>
@@ -101,7 +101,7 @@
     <version.zeebe-test-container>3.6.7</version.zeebe-test-container>
     <version.feel-scala>1.19.3</version.feel-scala>
     <version.dmn-scala>1.10.1</version.dmn-scala>
-    <version.rest-assured>5.5.6</version.rest-assured>
+    <version.rest-assured>5.5.5</version.rest-assured>
     <version.spring>6.2.11</version.spring>
     <version.spring-security>6.5.5</version.spring-security>
     <version.spring-boot>3.5.5</version.spring-boot>
@@ -123,7 +123,7 @@
     <version.servlet-api>2.5</version.servlet-api>
     <version.osgi>6.0.0</version.osgi>
     <version.findbugs-annotations>3.0.1u2</version.findbugs-annotations>
-    <version.spotbugs>4.9.6</version.spotbugs>
+    <version.spotbugs>4.9.4</version.spotbugs>
     <version.archunit>1.4.1</version.archunit>
     <version.easy-random>5.0.0</version.easy-random>
     <version.jcip>1.0</version.jcip>
@@ -134,7 +134,7 @@
     <version.google-sdk>26.64.0</version.google-sdk>
     <version.azure-sdk>1.2.38</version.azure-sdk>
     <version.awssdk>2.32.33</version.awssdk>
-    <version.toxiproxy>2.1.11</version.toxiproxy>
+    <version.toxiproxy>2.1.7</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.6</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
@@ -149,7 +149,7 @@
     <version.h2>2.3.232</version.h2>
     <version.aws-signing>3.0.0</version.aws-signing>
     <version.tc-keycloak>3.8.0</version.tc-keycloak>
-    <version.jakarta-activation>2.1.4</version.jakarta-activation>
+    <version.jakarta-activation>2.1.3</version.jakarta-activation>
     <version.jakarta.json-api>2.1.3</version.jakarta.json-api>
     <version.jakarta-annotation>3.0.0</version.jakarta-annotation>
     <version.jna-platform>5.17.0</version.jna-platform>
@@ -182,13 +182,13 @@
     <!-- If any of the following version changes, -->
     <!-- please check if they are compatible with "mvc-auth-commons" -->
     <version.auth0>1.45.1</version.auth0>
-    <version.auth0.commons>1.11.1</version.auth0.commons>
+    <version.auth0.commons>1.11.0</version.auth0.commons>
     <version.auth0.jwt>4.4.0</version.auth0.jwt>
     <version.okio-jvm>3.15.0</version.okio-jvm>
     <version.jwks-rsa>0.22.2</version.jwks-rsa>
     <version.guava.annotations>r03</version.guava.annotations>
-    <version.nimbus-jose-jwt>10.4.2</version.nimbus-jose-jwt>
-    <version.nimbus-sdk>11.27.1</version.nimbus-sdk>
+    <version.nimbus-jose-jwt>10.4</version.nimbus-jose-jwt>
+    <version.nimbus-sdk>11.27</version.nimbus-sdk>
     <version.keycloak>26.3.2</version.keycloak>
     <version.keycloak-client>26.0.6</version.keycloak-client>
     <version.jna>5.17.0</version.jna>
@@ -207,12 +207,12 @@
     <plugin.version.assembly>3.7.1</plugin.version.assembly>
     <plugin.version.build-helper>3.6.1</plugin.version.build-helper>
     <plugin.version.checkstyle>3.6.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.14.1</plugin.version.compiler>
+    <plugin.version.compiler>3.14.0</plugin.version.compiler>
     <plugin.version.dependency-analyzer>1.16.0</plugin.version.dependency-analyzer>
     <plugin.version.dependency>3.8.1</plugin.version.dependency>
-    <plugin.version.enforcer>3.6.2</plugin.version.enforcer>
+    <plugin.version.enforcer>3.6.1</plugin.version.enforcer>
     <plugin.version.exec>3.5.1</plugin.version.exec>
-    <plugin.version.failsafe>3.5.4</plugin.version.failsafe>
+    <plugin.version.failsafe>3.5.3</plugin.version.failsafe>
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.13</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
@@ -220,12 +220,12 @@
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
-    <plugin.version.shade>3.6.1</plugin.version.shade>
+    <plugin.version.shade>3.6.0</plugin.version.shade>
     <plugin.version.sonar>3.9.1.2184</plugin.version.sonar>
     <plugin.version.spotbugs>4.9.3.2</plugin.version.spotbugs>
     <plugin.version.surefire>3.5.2</plugin.version.surefire>
     <plugin.version.versions>2.18.0</plugin.version.versions>
-    <plugin.version.frontend-maven>1.15.4</plugin.version.frontend-maven>
+    <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
@@ -235,7 +235,7 @@
     <extension.version.os-maven-plugin>1.7.1</extension.version.os-maven-plugin>
 
     <!-- version against which backwards compatibility is checked -->
-    <backwards.compat.version>8.7.7</backwards.compat.version>
+    <backwards.compat.version>8.8.0</backwards.compat.version>
     <ignored.changes.file>ignored-changes.json</ignored.changes.file>
 
     <!--

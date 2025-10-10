@@ -31,7 +31,6 @@ public class ReaderCloseTest {
           config -> {
             config.getNetwork().setMaxMessageSize(DataSize.ofKilobytes(32));
             config.getData().setLogSegmentSize(DataSize.ofKilobytes(32));
-            config.getExperimental().getFeatures().setEnableIdentitySetup(false);
             // no exporters so that segments are immediately compacted after a snapshot.
             config.setExporters(Map.of());
           });

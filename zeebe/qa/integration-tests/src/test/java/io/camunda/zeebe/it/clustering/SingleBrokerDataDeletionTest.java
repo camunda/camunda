@@ -276,7 +276,6 @@ public class SingleBrokerDataDeletionTest {
     data.setLogSegmentSize(LOG_SEGMENT_SIZE);
     data.setLogIndexDensity(5);
     brokerCfg.getNetwork().setMaxMessageSize(MAX_MESSAGE_SIZE);
-    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
 
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setClassName(ControllableExporter.class.getName());
