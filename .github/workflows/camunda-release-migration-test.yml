@@ -17,7 +17,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'release-8.8.0'
+        default: 'stable/8.8'
         type: string
         required: false
       cluster:
@@ -44,7 +44,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'release-8.8.0'
+        default: 'stable/8.8'
         type: string
         required: false
       cluster:

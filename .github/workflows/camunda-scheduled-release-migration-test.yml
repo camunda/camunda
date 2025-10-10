@@ -13,7 +13,7 @@ jobs:
     secrets: inherit
     with:
       name: scheduled-release-migration-test
-      ref: release-8.8.0
+      ref: stable/8.8
       cluster: 'zeebe-cluster'
       cluster-region: 'europe-west1-b'
 
