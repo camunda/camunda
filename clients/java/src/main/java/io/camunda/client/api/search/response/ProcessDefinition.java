@@ -51,4 +51,9 @@ public interface ProcessDefinition {
    * @return the tenant id of the process definition
    */
   String getTenantId();
+
+  /**
+   * @return whether the start event of the process has an associated form key
+   */
+  Boolean getHasStartForm();
 }
