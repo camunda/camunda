@@ -81,6 +81,11 @@ public class OperatePropertiesOverride {
     override.getElasticsearch().setPassword(database.getElasticsearch().getPassword());
     override.getElasticsearch().setClusterName(database.getElasticsearch().getClusterName());
     override.getElasticsearch().setIndexPrefix(database.getElasticsearch().getIndexPrefix());
+    override.getElasticsearch().setDateFormat(database.getElasticsearch().getDateFormat());
+    override.getElasticsearch().setSocketTimeout(database.getElasticsearch().getSocketTimeout());
+    override
+        .getElasticsearch()
+        .setConnectTimeout(database.getElasticsearch().getConnectionTimeout());
 
     populateFromSecurity(
         database.getElasticsearch().getSecurity(),
@@ -96,6 +101,9 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setPassword(database.getOpensearch().getPassword());
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
+    override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
+    override.getOpensearch().setSocketTimeout(database.getOpensearch().getSocketTimeout());
+    override.getOpensearch().setConnectTimeout(database.getOpensearch().getConnectionTimeout());
 
     populateFromSecurity(
         database.getOpensearch().getSecurity(),

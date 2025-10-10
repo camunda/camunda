@@ -59,10 +59,8 @@ public class SearchEngineConnectPropertiesOverride {
       case elasticsearch:
         {
           database = secondaryStorage.getElasticsearch();
-          override.setClusterName(
-              ((DocumentBasedSecondaryStorageDatabase) database).getClusterName());
-          override.setIndexPrefix(
-              ((DocumentBasedSecondaryStorageDatabase) database).getIndexPrefix());
+          populateFromDocumentBasedSecondaryStorageDatabase(
+              (DocumentBasedSecondaryStorageDatabase) database, override);
           break;
         }
       case rdbms:
@@ -73,10 +71,8 @@ public class SearchEngineConnectPropertiesOverride {
       default:
         {
           database = secondaryStorage.getOpensearch();
-          override.setClusterName(
-              ((DocumentBasedSecondaryStorageDatabase) database).getClusterName());
-          override.setIndexPrefix(
-              ((DocumentBasedSecondaryStorageDatabase) database).getIndexPrefix());
+          populateFromDocumentBasedSecondaryStorageDatabase(
+              (DocumentBasedSecondaryStorageDatabase) database, override);
           break;
         }
     }
@@ -90,6 +86,16 @@ public class SearchEngineConnectPropertiesOverride {
     override.setPassword(database.getPassword());
 
     return override;
+  }
+
+  private void populateFromDocumentBasedSecondaryStorageDatabase(
+      final DocumentBasedSecondaryStorageDatabase database,
+      final SearchEngineConnectProperties override) {
+    override.setClusterName(database.getClusterName());
+    override.setDateFormat(database.getDateFormat());
+    override.setSocketTimeout(database.getSocketTimeout());
+    override.setConnectTimeout(database.getConnectionTimeout());
+    override.setIndexPrefix(database.getIndexPrefix());
   }
 
   private void populateFromSecurity(final SearchEngineConnectProperties override) {

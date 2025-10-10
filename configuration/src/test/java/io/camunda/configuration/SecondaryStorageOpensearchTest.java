@@ -42,6 +42,9 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
 })
 public class SecondaryStorageOpensearchTest {
   private static final String EXPECTED_CLUSTER_NAME = "sample-cluster";
+  private static final String EXPECTED_DATE_FORMAT = "date-format";
+  private static final int EXPECTED_SOCKET_TIMEOUT = 20;
+  private static final int EXPECTED_CONNECTION_TIMEOUT = 30;
   private static final String EXPECTED_INDEX_PREFIX = "sample-index-prefix";
 
   private static final String EXPECTED_USERNAME = "testUsername";
@@ -63,6 +66,10 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.date-format=" + EXPECTED_DATE_FORMAT,
+        "camunda.data.secondary-storage.opensearch.socket-timeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.data.secondary-storage.opensearch.connection-timeout="
+            + EXPECTED_CONNECTION_TIMEOUT
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -90,6 +97,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -97,6 +105,11 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(operateProperties.getOpensearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(operateProperties.getOpensearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(operateProperties.getOpensearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -105,11 +118,20 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://expected-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(tasklistProperties.getOpenSearch().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(tasklistProperties.getOpenSearch().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -128,8 +150,16 @@ public class SecondaryStorageOpensearchTest {
       assertThat(exporterConfiguration.getConnect().getUrl()).isEqualTo(expectedUrl);
       assertThat(exporterConfiguration.getConnect().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(exporterConfiguration.getConnect().getClusterName());
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(exporterConfiguration.getConnect().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
@@ -143,6 +173,12 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getType().toLowerCase()).isEqualTo(expectedType);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
       assertThat(searchEngineConnectProperties.getIndexPrefix()).isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(searchEngineConnectProperties.getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -175,6 +211,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.database.password=" + EXPECTED_PASSWORD,
         "camunda.operate.opensearch.password=" + EXPECTED_PASSWORD,
         "camunda.tasklist.opensearch.password=" + EXPECTED_PASSWORD,
+
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
         //  the className is also configured.
@@ -185,6 +222,22 @@ public class SecondaryStorageOpensearchTest {
         "camunda.tasklist.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.clusterName=" + EXPECTED_CLUSTER_NAME,
         "camunda.operate.opensearch.url=http://matching-url:4321",
+        // date format
+        "camunda.data.secondary-storage.opensearch.date-format=" + EXPECTED_DATE_FORMAT,
+        "camunda.data.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.tasklist.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
+        "camunda.operate.opensearch.dateFormat=" + EXPECTED_DATE_FORMAT,
+        // socket timeout
+        "camunda.data.secondary-storage.opensearch.socket-timeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.data.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.tasklist.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        "camunda.operate.opensearch.socketTimeout=" + EXPECTED_SOCKET_TIMEOUT,
+        // connection timeout
+        "camunda.data.secondary-storage.opensearch.connection-timeout="
+            + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.data.socketConnectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.tasklist.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
+        "camunda.operate.opensearch.connectTimeout=" + EXPECTED_CONNECTION_TIMEOUT,
 
         // NOTE: In the following blocks, the camundaExporter doesn't have to be configured, as
         //  it is default with StandaloneCamunda. Any attempt of configuration will fail unless
@@ -226,6 +279,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(operateProperties.getDatabase()).isEqualTo(expectedOperateDatabaseType);
+
       assertThat(operateProperties.getOpensearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(operateProperties.getOpensearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
@@ -233,6 +287,11 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(operateProperties.getOpensearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(operateProperties.getOpensearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(operateProperties.getOpensearch().getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(operateProperties.getOpensearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(operateProperties.getOpensearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -241,6 +300,7 @@ public class SecondaryStorageOpensearchTest {
       final String expectedUrl = "http://matching-url:4321";
 
       assertThat(tasklistProperties.getDatabase()).isEqualTo(expectedTasklistDatabaseType);
+
       assertThat(tasklistProperties.getOpenSearch().getUrl()).isEqualTo(expectedUrl);
       assertThat(tasklistProperties.getOpenSearch().getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(tasklistProperties.getOpenSearch().getPassword()).isEqualTo(EXPECTED_PASSWORD);
@@ -248,6 +308,12 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(tasklistProperties.getOpenSearch().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(tasklistProperties.getOpenSearch().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(tasklistProperties.getOpenSearch().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(tasklistProperties.getOpenSearch().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
@@ -270,6 +336,13 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_INDEX_PREFIX);
       assertThat(exporterConfiguration.getConnect().getClusterName())
           .isEqualTo(EXPECTED_CLUSTER_NAME);
+      assertThat(exporterConfiguration.getConnect().getDateFormat())
+          .isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(exporterConfiguration.getConnect().getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(exporterConfiguration.getConnect().getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
+
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
     }
@@ -284,6 +357,11 @@ public class SecondaryStorageOpensearchTest {
       assertThat(searchEngineConnectProperties.getClusterName()).isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(searchEngineConnectProperties.getUsername()).isEqualTo(EXPECTED_USERNAME);
       assertThat(searchEngineConnectProperties.getPassword()).isEqualTo(EXPECTED_PASSWORD);
+      assertThat(searchEngineConnectProperties.getDateFormat()).isEqualTo(EXPECTED_DATE_FORMAT);
+      assertThat(searchEngineConnectProperties.getSocketTimeout())
+          .isEqualTo(EXPECTED_SOCKET_TIMEOUT);
+      assertThat(searchEngineConnectProperties.getConnectTimeout())
+          .isEqualTo(EXPECTED_CONNECTION_TIMEOUT);
     }
 
     @Test
