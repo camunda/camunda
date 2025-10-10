@@ -31,6 +31,18 @@ const queryKeys = {
       decisionEvaluationKey,
     ],
   },
+  processDefinitionXml: {
+    get: (processDefinitionKey?: string) => [
+      'processDefinitionXml',
+      processDefinitionKey,
+    ],
+  },
+  processDefinitions: {
+    get: (processDefinitionKey?: string) => [
+      'processDefinition',
+      processDefinitionKey,
+    ],
+  },
 };
 
 export {queryKeys};

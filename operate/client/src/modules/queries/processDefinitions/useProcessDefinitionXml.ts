@@ -15,8 +15,7 @@ import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-
-const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
+import {queryKeys} from '../queryKeys';
 
 type ParsedXmlData = {
   xml: string;
@@ -35,7 +34,7 @@ const getUseProcessDefinitionXmlOptions = (
   processDefinitionKey?: ProcessDefinition['processDefinitionKey'],
 ) => {
   return {
-    queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
+    queryKey: queryKeys.processDefinitionXml.get(processDefinitionKey),
     queryFn:
       processDefinitionKey === undefined
         ? skipToken
