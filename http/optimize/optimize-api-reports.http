@@ -1,0 +1,334 @@
+### Get Bearer token
+# @name get-bearer-token
+POST {{TOKEN_URL}}
+Content-Type: application/x-www-form-urlencoded
+
+    client_id= {{CLIENT_ID}}
+    &client_secret={{CLIENT_SECRET}}
+    &grant_type=client_credentials
+
+> {%
+  client.test("Get token should be successful", function () {
+    client.assert(response.status === 200, "Response status is not 201");
+    client.global.set("TOKEN", response.body.access_token)
+  });
+%}
+
+
+
+
+############################--------GET REPORTS-------##################################
+
+### Get Reports by Collection ID 200
+# @name Get Reports by Collection ID
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report?collectionId=6013f3b4-6c1c-4025-971b-5bf0ba51dd8f
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Report IDs should be retrieved successfully", function () {
+    client.assert(response.status === 200, "Response status is 200");
+    client.assert(response.body.id !== "", "Response body id is empty ");
+  });
+%}
+
+
+
+### Get Reports - No token should fail with 401
+# @name Get Reports - No token should fail with 401
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report?collectionId=
+Content-Type: application/json
+Accept: application/json
+# Notice: No Authorization header here
+
+> {%
+  client.test("No token should fail with 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+  });
+%}
+
+
+
+### Get Reports - Missing collectionId should fail with 400
+# @name Get Reports - Missing collectionId should fail with 400
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Missing collectionId should fail with 400", function () {
+    client.assert(response.status === 400, "Expected status 400 but got " + response.status);
+  });
+%}
+
+
+
+### Get Reports - Invalid collectionId should return empty array
+# @name Get Reports - Invalid collectionId should return empty array
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report?collectionId=00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Invalid collectionId should return empty array", function () {
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+    client.assert(Array.isArray(response.body), "Response body is not an array");
+    client.assert(response.body.length === 0, "Expected empty array but got results");
+  });
+%}
+
+
+
+
+
+
+
+
+
+
+
+
+############################--------DELETE REPORT-------##################################
+
+### Delete Report by ID - Success 200
+# @name Delete Report - Success
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report/20415b82-ba60-4fc1-aab2-a9ad1b2f741a
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Report should be deleted successfully", function () {
+    client.assert(typeof client.global.get("REPORT_ID") !== "undefined", "No report ID available to delete");
+    // Accept both 200 and 204
+    client.assert(
+      response.status === 204 || response.status === 200,
+      "Expected status 204 or 200 but got " + response.status
+    );
+  });
+%}
+
+
+
+### Delete Report by ID - Unauthorized 401
+# @name Delete Report - Unauthorized
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report/ff1659c5-15c3-41f1-b5a7-acc92c1ed731
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalidToken
+
+> {%
+  client.test("Unauthorized delete should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+  });
+%}
+
+
+### Delete Report by ID - Not Found 404
+# @name Delete Report - Not Found
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/report/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Deleting non-existent report should return 404", function () {
+    client.assert(response.status === 404, "Expected status 404 but got " + response.status);
+  });
+%}
+
+
+
+
+
+
+
+
+
+
+############################--------EXPORT REPORT DEFINITION-------##################################
+
+### Export Report Definitions - Success 200
+# @name Export Report Definitions - Success
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+  "447c219e-2f5c-404a-88b6-d714ebcacc3a",
+  "abded489-8b38-42cb-955d-00b171fa8f45"
+]
+
+> {%
+  client.test("Reports should be exported successfully", function () {
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+
+    let reports = response.body;
+    if (typeof reports === "string") {
+      reports = JSON.parse(reports);
+    }
+
+    client.assert(Array.isArray(reports), "Response body is not an array");
+
+    const reportIds = reports.map(r => r.id).filter(id => id && id !== "");
+    client.assert(reportIds.length === 2, `Expected 2 report IDs, but got ${reportIds.length}`);
+
+    client.global.set("EXPORTED_REPORT_IDS", reportIds);
+    console.log("✅ Stored EXPORTED_REPORT_IDS:", reportIds);
+  });
+%}
+
+
+
+
+### Export Report Definitions - Unauthorized 401
+# @name Export Report Definitions - Unauthorized
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalidToken123
+
+[
+  "fake-id-123"
+]
+
+> {%
+  client.test("Unauthorized should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+  });
+%}
+
+
+
+### Export Report Definitions - Not Found 404
+# @name Export Report Definitions - Not Found
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+  "nonexistent-report-id-123"
+]
+
+> {%
+  client.test("Non-existent report ID should return 404", function () {
+    client.assert(response.status === 404, "Expected status 404 but got " + response.status);
+  });
+%}
+
+
+
+
+
+
+
+############################--------EXPORT REPORT RESULT DATA-------##################################
+
+### Export Report Result Data - First Page 200
+# @name Export Report Result Data - First Page
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/72e453f3-67a0-4275-8048-a64ea687e863/result/json?paginationTimeout=60&limit=2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Report result data export should succeed", function () {
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+
+    let body = response.body;
+    if (typeof body === "string") {
+      body = JSON.parse(body);
+    }
+
+   client.assert(
+  body.reportId === "72e453f3-67a0-4275-8048-a64ea687e863",
+  "Report ID does not match request"
+);
+
+
+    // ✅ Ensure pagination is working
+    client.assert(body.searchRequestId && body.searchRequestId !== "", "searchRequestId is missing");
+
+    // ✅ Ensure data is returned as an array
+    client.assert(Array.isArray(body.data), "Response data is not an array");
+
+    // Store searchRequestId for pagination (next request)
+    client.global.set("SEARCH_REQUEST_ID", body.searchRequestId);
+    console.log("Stored SEARCH_REQUEST_ID:", body.searchRequestId);
+  });
+%}
+
+
+### Export Report Result Data - Next Page 200
+# @name Export Report Result Data - Next Page
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/72e453f3-67a0-4275-8048-a64ea687e863/result/json?paginationTimeout=60&limit=2&searchRequestId={{SEARCH_REQUEST_ID}}
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  const searchRequestId = client.global.get("SEARCH_REQUEST_ID");
+  console.log(">>> Using SEARCH_REQUEST_ID: ", searchRequestId);
+
+  client.test("Paginated export should succeed", function () {
+    client.assert(searchRequestId, "Missing searchRequestId – First Page request must be run first");
+
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+
+    let body = response.body;
+    if (typeof body === "string") {
+      body = JSON.parse(body);
+    }
+
+    client.assert(
+      body.reportId === "72e453f3-67a0-4275-8048-a64ea687e863",
+      "Report ID mismatch"
+    );
+    client.assert(Array.isArray(body.data), "Response data is not an array");
+    client.assert(body.searchRequestId && body.searchRequestId !== "", "searchRequestId is missing");
+  });
+%}
+
+
+### Export Report Result Data - Unauthorized 401
+# @name Export Report Result Data - Unauthorized
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/a1be4931-0de0-4dcb-b920-39d1a0ab036c/result/json?paginationTimeout=60&limit=2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalidToken123
+
+> {%
+  client.test("Unauthorized should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+  });
+%}
+
+
+
+### Export Report Result Data - Not Found 404
+# @name Export Report Result Data - Not Found
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/report/nonexistent-report-id-12345/result/json?paginationTimeout=60&limit=2
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  console.log("🔍 Response status:", response.status);
+  console.log("📦 Raw response body:", response.body);
+
+  client.test("Non-existent report should ideally return 404", function () {
+    if (response.status === 500) {
+      console.log("⚠️ Got 500 instead of 404 — likely a backend bug or misconfiguration.");
+      client.assert(false, "Expected status 404 but got 500. This may indicate a server-side issue handling invalid report IDs.");
+    } else {
+      client.assert(response.status === 404, "Expected status 404 but got " + response.status);
+    }
+  });
+%}
+
+
