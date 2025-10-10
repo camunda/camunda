@@ -45,7 +45,8 @@ public final class CamundaObjectMapper implements JsonMapper {
     this.objectMapper = objectMapper;
     this.objectMapper
         .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+        .setSerializationInclusion(Include.NON_NULL);
   }
 
   @Override

@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionById;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessInstanceCreationInstructionByKey;
@@ -47,6 +48,14 @@ public class ProcessInstanceCreationInstructionDeserializer
     }
 
     validateFields(presentFields);
+
+    // Remove null fields from the tree to prevent parsing errors
+    if (treeNode.get(PROCESS_DEFINITION_KEY_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(PROCESS_DEFINITION_KEY_FIELD);
+    }
+    if (treeNode.get(PROCESS_DEFINITION_ID_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(PROCESS_DEFINITION_ID_FIELD);
+    }
 
     if (presentFields.contains(PROCESS_DEFINITION_KEY_FIELD)) {
       return codec.treeToValue(treeNode, ProcessInstanceCreationInstructionByKey.class);
