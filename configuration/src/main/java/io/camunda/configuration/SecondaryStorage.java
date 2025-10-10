@@ -48,6 +48,14 @@ public class SecondaryStorage {
     this.autoconfigureCamundaExporter = autoconfigureCamundaExporter;
   }
 
+  public boolean getAutoconfigureCamundaExporter() {
+    return autoconfigureCamundaExporter;
+  }
+
+  public void setAutoconfigureCamundaExporter(final boolean autoconfigureCamundaExporter) {
+    this.autoconfigureCamundaExporter = autoconfigureCamundaExporter;
+  }
+
   public SecondaryStorageType getType() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
         PREFIX + ".type",

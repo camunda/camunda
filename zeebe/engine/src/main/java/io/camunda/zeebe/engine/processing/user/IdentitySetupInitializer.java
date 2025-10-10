@@ -31,7 +31,6 @@ import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
-import io.camunda.zeebe.util.FeatureFlags;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -43,13 +42,13 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public static final String DEFAULT_TENANT_NAME = "Default";
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private final SecurityConfiguration securityConfig;
-  private final FeatureFlags featureFlags;
+  private final boolean enableIdentitySetup;
   private final PasswordEncoder passwordEncoder;
 
   public IdentitySetupInitializer(
-      final SecurityConfiguration securityConfig, final FeatureFlags featureFlags) {
+      final SecurityConfiguration securityConfig, final boolean enableIdentitySetup) {
     this.securityConfig = securityConfig;
-    this.featureFlags = featureFlags;
+    this.enableIdentitySetup = enableIdentitySetup;
     passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
   }
 
@@ -57,7 +56,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
   public void onRecovered(final ReadonlyStreamProcessorContext context) {
     // We can disable identity setup by disabling the feature flag. This is useful to prevent
     // interference in our engine tests, as this setup will write "unexpected" commands/events
-    if (!featureFlags.enableIdentitySetup()) {
+    if (!enableIdentitySetup) {
       return;
     }
 
@@ -205,6 +204,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setPermissionTypes(
                 Set.of(
                     PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
                     PermissionType.UPDATE_PROCESS_INSTANCE)));
     setupRecord.addAuthorization(
         new AuthorizationRecord()
