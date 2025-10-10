@@ -9,9 +9,13 @@ package io.camunda.zeebe.broker.clustering.mapper;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
+import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient;
+import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
+import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
 import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.Closeable;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -23,19 +27,39 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 public class NodeIdMapper implements Closeable {
 
   private static final Logger LOG = LoggerFactory.getLogger(NodeIdMapper.class);
-  private final S3Lease lease;
+  private static final Runnable SHUTDOWN_VM = () -> Runtime.getRuntime().halt(1);
+  private final LeaseClient lease;
   private final ScheduledExecutorService executor;
-  private int brokerId;
+  private NodeInstance nodeInstance;
   private final String taskId;
+  private final Runnable onRenewalFailure;
+  private ScheduledFuture<?> renewealTimer;
 
-  public NodeIdMapper(final S3LeaseConfig config, final int clusterSize) {
+  public NodeIdMapper(final LeaseClient lease) {
+    this(lease, SHUTDOWN_VM);
+  }
+
+  @VisibleForTesting
+  public NodeIdMapper(final LeaseClient lease, final Runnable onRenewalFailure) {
+    this.lease = lease;
+    taskId = lease.taskId();
+    this.onRenewalFailure = onRenewalFailure;
     executor = newSingleThreadScheduledExecutor();
-    taskId = UUID.randomUUID().toString().substring(0, 6);
-    lease = new S3Lease(config, taskId, clusterSize);
+    executor.execute(() -> MDC.put("taskId", taskId));
+    lease.initialize();
+  }
+
+  public NodeIdMapper(final S3LeaseConfig config, final String taskId, final int clusterSize) {
+    this(new S3Lease(config, taskId, clusterSize, Clock.systemUTC()));
+  }
+
+  public static String randomTaskId() {
+    return UUID.randomUUID().toString().substring(0, 6);
   }
 
   public boolean isHealthy() {
@@ -47,20 +71,26 @@ public class NodeIdMapper implements Closeable {
     }
   }
 
-  public int start() {
-    final var brokerId = acquireLease();
-    scheduleRenewal(brokerId);
-    this.brokerId = brokerId;
-    return brokerId;
+  public NodeInstance start() {
+    LOG.info("Starting nodeIdMapper");
+    final var nodeInstance = acquireLease();
+    scheduleRenewal();
+    this.nodeInstance = nodeInstance;
+    return nodeInstance;
   }
 
   @Override
   public void close() {
+    try {
+      executor.submit(lease::releaseLease).get();
+    } catch (final Exception e) {
+      //
+      LOG.warn("Failed to release the lease gracefully");
+    }
     executor.shutdown();
-    lease.releaseLease(brokerId);
   }
 
-  private int acquireLease() {
+  private NodeInstance acquireLease() {
     return CompletableFuture.supplyAsync(
             () -> {
               try {
@@ -74,7 +104,7 @@ public class NodeIdMapper implements Closeable {
         .join();
   }
 
-  private int busyAcquireLease() throws Exception {
+  private NodeInstance busyAcquireLease() throws Exception {
     final var retryConfig = new RetryConfiguration();
     // TODO: Externalize config
     retryConfig.setMaxRetries(Integer.MAX_VALUE);
@@ -87,28 +117,33 @@ public class NodeIdMapper implements Closeable {
     return retryDecorator.decorate(
         "Acquire Initial Lease",
         () -> {
-          final var acquiredId = lease.acquireLease();
-          if (acquiredId >= 0) {
-            LOG.info("Lease acquired for brokerId: {} by task: {}", acquiredId, taskId);
+          final var acquiredLease = lease.acquireLease();
+          if (acquiredLease != null) {
+            LOG.info("Lease acquired={}", acquiredLease);
+          } else {
+            LOG.warn("Failed to acquire the lease for task={}", taskId);
           }
-          return acquiredId;
+          return acquiredLease.nodeInstance();
         });
   }
 
-  private void scheduleRenewal(final int brokerId) {
-    executor.schedule(
-        () -> {
-          if (lease.renewLease(brokerId)) {
-            scheduleRenewal(brokerId);
-          } else {
-            LOG.info("Renewal lease not acquired");
-            if (executor.isShutdown() || executor.isTerminated()) {
-              return;
-            }
-            Runtime.getRuntime().halt(1);
-          }
-        },
-        S3Lease.LEASE_EXPIRY_SECONDS / 6, // 10sec
-        TimeUnit.SECONDS);
+  private void scheduleRenewal() {
+    renewealTimer =
+        executor.scheduleAtFixedRate(
+            () -> {
+              if (lease.renewLease() == null) {
+                LOG.info("Renewal lease not acquired");
+                if (executor.isShutdown() || executor.isTerminated()) {
+                  if (renewealTimer != null) {
+                    renewealTimer.cancel(true);
+                  }
+                  return;
+                }
+                onRenewalFailure.run();
+              }
+            },
+            1,
+            S3Lease.LEASE_EXPIRY_SECONDS / 6, // 10sec
+            TimeUnit.SECONDS);
   }
 }

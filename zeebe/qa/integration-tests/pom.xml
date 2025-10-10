@@ -343,11 +343,11 @@
       <artifactId>aws-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>software.amazon.awssdk</groupId>
-      <artifactId>sdk-core</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <!--    <dependency>-->
+    <!--      <groupId>software.amazon.awssdk</groupId>-->
+    <!--      <artifactId>sdk-core</artifactId>-->
+    <!--      <scope>test</scope>-->
+    <!--    </dependency>-->
 
     <dependency>
       <groupId>org.testcontainers</groupId>
