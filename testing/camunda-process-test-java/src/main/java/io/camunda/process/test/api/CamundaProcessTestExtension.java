@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -113,6 +114,8 @@ public class CamundaProcessTestExtension
   private CamundaManagementClient camundaManagementClient;
   private CamundaProcessTestContext camundaProcessTestContext;
 
+  private String initializingExtensionContextId;
+
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
       final ProcessCoverageBuilder processCoverageBuilder,
@@ -143,6 +146,12 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
+    if (runtime != null) {
+      // already initialized in parent context
+      return;
+    }
+    initializingExtensionContextId = context.getUniqueId();
+
     // create runtime
     runtime = runtimeBuilder.build();
     runtime.start();
@@ -272,7 +281,8 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.collectTestRunCoverage(context.getDisplayName());
+      processCoverage.collectTestRunCoverage(
+          buildDisplayNamePrefix(context.getParent()) + context.getDisplayName());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -287,6 +297,19 @@ public class CamundaProcessTestExtension
     // the other way around leads to race conditions and inconsistencies in the tests
     resetRuntimeClock();
     deleteRuntimeData();
+  }
+
+  private String buildDisplayNamePrefix(Optional<ExtensionContext> context) {
+    if (!context.isPresent()
+        || context.get().getUniqueId().equals(initializingExtensionContextId)) {
+      // if there is no context or it's the initializing context, then return an empty string
+      return "";
+    } else {
+      // if test is executed in a nested context, then build a prefix to be displayed
+      return buildDisplayNamePrefix(context.get().getParent())
+          + context.get().getDisplayName()
+          + "#";
+    }
   }
 
   private void printTestResults() {
@@ -335,6 +358,10 @@ public class CamundaProcessTestExtension
   public void afterAll(final ExtensionContext context) throws Exception {
     if (runtime == null) {
       // Skip if the runtime is not created.
+      return;
+    }
+    if (!context.getUniqueId().equals(initializingExtensionContextId)) {
+      // runtime was not initialized in this hierarchy level
       return;
     }
 
