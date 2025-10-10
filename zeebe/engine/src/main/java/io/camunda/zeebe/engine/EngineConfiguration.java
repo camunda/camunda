@@ -48,9 +48,17 @@ public final class EngineConfiguration {
       Duration.ofSeconds(60);
   public static final int DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR = 2;
   public static final boolean DEFAULT_COMMAND_DISTRIBUTION_PAUSED = false;
+<<<<<<< HEAD
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
   public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
       Duration.ofMinutes(5);
+||||||| 4f0d68366a8
+=======
+  public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL = Duration.ofSeconds(10);
+  public static final Duration DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION =
+      Duration.ofMinutes(5);
+>>>>>>> origin/release-8.8.0
 
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
@@ -84,9 +92,18 @@ public final class EngineConfiguration {
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
 
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
+<<<<<<< HEAD
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+||||||| 4f0d68366a8
+=======
+  private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
+  private Duration commandRedistributionMaxBackoff =
+      DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
+
+  private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
+>>>>>>> origin/release-8.8.0
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -304,6 +321,7 @@ public final class EngineConfiguration {
     this.commandDistributionPaused = commandDistributionPaused;
     return this;
   }
+<<<<<<< HEAD
 
   public Duration getCommandRedistributionInterval() {
     return commandRedistributionInterval;
@@ -324,4 +342,36 @@ public final class EngineConfiguration {
     this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
     return this;
   }
+||||||| 4f0d68366a8
+=======
+
+  public Duration getCommandRedistributionInterval() {
+    return commandRedistributionInterval;
+  }
+
+  public EngineConfiguration setCommandRedistributionInterval(
+      final Duration commandRedistributionInterval) {
+    this.commandRedistributionInterval = commandRedistributionInterval;
+    return this;
+  }
+
+  public Duration getCommandRedistributionMaxBackoff() {
+    return commandRedistributionMaxBackoff;
+  }
+
+  public EngineConfiguration setCommandRedistributionMaxBackoff(
+      final Duration commandRedistributionMaxBackoff) {
+    this.commandRedistributionMaxBackoff = commandRedistributionMaxBackoff;
+    return this;
+  }
+
+  public boolean isEnableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public EngineConfiguration setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
+    return this;
+  }
+>>>>>>> origin/release-8.8.0
 }

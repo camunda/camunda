@@ -53,7 +53,13 @@ public final class FeatureFlags {
   private boolean enableMessageTTLCheckerAsync;
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
+<<<<<<< HEAD
   private boolean enableIdentitySetup;
+||||||| 4f0d68366a8
+  private boolean enablePartitionScaling;
+  private boolean enableIdentitySetup;
+=======
+>>>>>>> origin/release-8.8.0
   private boolean enableMessageBodyOnExpired;
 
   public FeatureFlags(
@@ -62,7 +68,13 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
+<<<<<<< HEAD
       final boolean enableIdentitySetup,
+||||||| 4f0d68366a8
+      final boolean enablePartitionScaling,
+      final boolean enableIdentitySetup,
+=======
+>>>>>>> origin/release-8.8.0
       final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
@@ -70,7 +82,13 @@ public final class FeatureFlags {
     this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
+<<<<<<< HEAD
     this.enableIdentitySetup = enableIdentitySetup;
+||||||| 4f0d68366a8
+    this.enablePartitionScaling = enablePartitionScaling;
+    this.enableIdentitySetup = enableIdentitySetup;
+=======
+>>>>>>> origin/release-8.8.0
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
@@ -81,7 +99,13 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
+<<<<<<< HEAD
         ENABLE_IDENTITY_SETUP,
+||||||| 4f0d68366a8
+        ENABLE_PARTITION_SCALING,
+        ENABLE_IDENTITY_SETUP,
+=======
+>>>>>>> origin/release-8.8.0
         ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
@@ -98,7 +122,13 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
+<<<<<<< HEAD
         false, /* ENABLE_IDENTITY_SETUP */
+||||||| 4f0d68366a8
+        true, /* ENABLE_PARTITION_SCALING */
+        false, /* ENABLE_IDENTITY_SETUP */
+=======
+>>>>>>> origin/release-8.8.0
         false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
@@ -123,10 +153,22 @@ public final class FeatureFlags {
     return enableStraightThroughProcessingLoopDetector;
   }
 
+<<<<<<< HEAD
   public boolean enableIdentitySetup() {
     return enableIdentitySetup;
   }
 
+||||||| 4f0d68366a8
+  public boolean enablePartitionScaling() {
+    return enablePartitionScaling;
+  }
+
+  public boolean enableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+=======
+>>>>>>> origin/release-8.8.0
   public boolean enableMessageBodyOnExpired() {
     return enableMessageBodyOnExpired;
   }
@@ -152,10 +194,22 @@ public final class FeatureFlags {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
+<<<<<<< HEAD
   public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
     this.enableIdentitySetup = enableIdentitySetup;
   }
 
+||||||| 4f0d68366a8
+  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
+    this.enablePartitionScaling = enablePartitionScaling;
+  }
+
+  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
+  }
+
+=======
+>>>>>>> origin/release-8.8.0
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }

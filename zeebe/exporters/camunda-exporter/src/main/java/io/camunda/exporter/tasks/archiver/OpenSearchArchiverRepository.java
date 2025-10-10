@@ -71,9 +71,15 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   private final String archiverBlockedMetaIndex;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+<<<<<<< HEAD
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
+||||||| 4f0d68366a8
+=======
+  private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+>>>>>>> origin/release-8.8.0
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private final OpenSearchGenericClient genericClient;
@@ -101,12 +107,20 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     batchOperationTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+<<<<<<< HEAD
     usageMetricTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+||||||| 4f0d68366a8
+=======
+    usageMetricTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
+    usageMetricTUTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+>>>>>>> origin/release-8.8.0
     this.metrics = metrics;
     this.genericClient = genericClient;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
@@ -171,6 +185,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
+<<<<<<< HEAD
   public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
@@ -223,6 +238,39 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   }
 
   @Override
+||||||| 4f0d68366a8
+=======
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
+    return sendRequestAsync(() -> client.search(searchRequest, Object.class))
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+>>>>>>> origin/release-8.8.0
   public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
     final var retention = config.getRetention();
     if (!retention.isEnabled()) {

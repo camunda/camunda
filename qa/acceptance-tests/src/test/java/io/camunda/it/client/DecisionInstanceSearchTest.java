@@ -424,6 +424,7 @@ class DecisionInstanceSearchTest {
 
     // then
     assertThat(result.getDecisionInstanceKey()).isEqualTo(decisionInstanceKey);
+<<<<<<< HEAD
     assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
     assertThat(result.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
     assertThat(result.getEvaluationFailure()).isNull();
@@ -471,6 +472,44 @@ class DecisionInstanceSearchTest {
         .hasMessageContaining(
             ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(
                 "Decision Instance", "id", "someDecisionInstance"));
+||||||| 4f0d68366a8
+=======
+    assertThat(result.getDecisionInstanceId()).isEqualTo(decisionInstanceId);
+    assertThat(result.getState()).isEqualTo(DecisionInstanceState.EVALUATED);
+    assertThat(result.getEvaluationFailure()).isNull();
+    assertThat(result.getProcessDefinitionKey()).isEqualTo(-1L);
+    assertThat(result.getProcessInstanceKey()).isEqualTo(-1L);
+    assertThat(result.getElementInstanceKey()).isEqualTo(-1L);
+    assertThat(result.getDecisionDefinitionId()).isEqualTo("invoiceClassification");
+    assertThat(result.getDecisionDefinitionName()).isEqualTo("Invoice Classification");
+    assertThat(result.getDecisionDefinitionVersion()).isEqualTo(1);
+    assertThat(result.getDecisionDefinitionType()).isEqualTo(DecisionDefinitionType.DECISION_TABLE);
+    assertThat(result.getTenantId()).isEqualTo("<default>");
+    assertThat(result.getDecisionDefinitionKey()).isEqualTo(decisionDefinitionKey);
+    assertThat(result.getResult()).isEqualTo("\"day-to-day expense\"");
+    assertThat(result.getEvaluationDate()).isNotNull();
+
+    // Assert evaluated inputs
+    assertThat(result.getEvaluatedInputs()).hasSize(2);
+    assertThat(result.getEvaluatedInputs().get(0).getInputId()).isEqualTo("clause1");
+    assertThat(result.getEvaluatedInputs().get(0).getInputName()).isEqualTo("Invoice Amount");
+    assertThat(result.getEvaluatedInputs().get(0).getInputValue()).isEqualTo("100");
+    assertThat(result.getEvaluatedInputs().get(1).getInputId()).isEqualTo("InputClause_15qmk0v");
+    assertThat(result.getEvaluatedInputs().get(1).getInputName()).isEqualTo("Invoice Category");
+    assertThat(result.getEvaluatedInputs().get(1).getInputValue()).isEqualTo("\"Misc\"");
+
+    // Assert matched rules
+    assertThat(result.getMatchedRules()).hasSize(1);
+    assertThat(result.getMatchedRules().get(0).getRuleId()).isEqualTo("DecisionRule_1of5a87");
+    assertThat(result.getMatchedRules().get(0).getRuleIndex()).isEqualTo(1);
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs()).hasSize(1);
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputId())
+        .isEqualTo("clause3");
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputName())
+        .isEqualTo("Classification");
+    assertThat(result.getMatchedRules().get(0).getEvaluatedOutputs().get(0).getOutputValue())
+        .isEqualTo("\"day-to-day expense\"");
+>>>>>>> origin/release-8.8.0
   }
 
   @Test

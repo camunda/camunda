@@ -37,7 +37,13 @@ public final class FeatureFlagsCfg {
       DEFAULT_SETTINGS.enableTimerDueDateCheckerAsync();
   private boolean enableStraightThroughProcessingLoopDetector =
       DEFAULT_SETTINGS.enableStraightThroughProcessingLoopDetector();
+<<<<<<< HEAD
   private boolean enableIdentitySetup = DEFAULT_SETTINGS.enableIdentitySetup();
+||||||| 4f0d68366a8
+  private boolean enablePartitionScaling = DEFAULT_SETTINGS.enablePartitionScaling();
+  private boolean enableIdentitySetup = DEFAULT_SETTINGS.enableIdentitySetup();
+=======
+>>>>>>> origin/release-8.8.0
   private boolean enableMessageBodyOnExpired = DEFAULT_SETTINGS.enableMessageBodyOnExpired();
 
   public boolean isEnableYieldingDueDateChecker() {
@@ -81,6 +87,7 @@ public final class FeatureFlagsCfg {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
   }
 
+<<<<<<< HEAD
   public boolean isEnableIdentitySetup() {
     return enableIdentitySetup;
   }
@@ -89,6 +96,25 @@ public final class FeatureFlagsCfg {
     this.enableIdentitySetup = enableIdentitySetup;
   }
 
+||||||| 4f0d68366a8
+  public boolean isEnablePartitionScaling() {
+    return enablePartitionScaling;
+  }
+
+  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
+    this.enablePartitionScaling = enablePartitionScaling;
+  }
+
+  public boolean isEnableIdentitySetup() {
+    return enableIdentitySetup;
+  }
+
+  public void setEnableIdentitySetup(final boolean enableIdentitySetup) {
+    this.enableIdentitySetup = enableIdentitySetup;
+  }
+
+=======
+>>>>>>> origin/release-8.8.0
   public boolean isEnableMessageBodyOnExpired() {
     return enableMessageBodyOnExpired;
   }
@@ -104,7 +130,13 @@ public final class FeatureFlagsCfg {
         enableMessageTtlCheckerAsync,
         enableTimerDueDateCheckerAsync,
         enableStraightThroughProcessingLoopDetector,
+<<<<<<< HEAD
         enableIdentitySetup,
+||||||| 4f0d68366a8
+        enablePartitionScaling,
+        enableIdentitySetup,
+=======
+>>>>>>> origin/release-8.8.0
         enableMessageBodyOnExpired
         /*, enableFoo*/ );
   }

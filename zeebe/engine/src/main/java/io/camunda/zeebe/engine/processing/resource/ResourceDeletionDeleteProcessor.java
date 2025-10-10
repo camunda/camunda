@@ -193,8 +193,21 @@ public class ResourceDeletionDeleteProcessor
           eventKey,
           PermissionType.DELETE_PROCESS,
           bufferAsString(process.getBpmnProcessId()),
+<<<<<<< HEAD
           process.getTenantId(),
           () -> deleteProcess(process));
+||||||| 4f0d68366a8
+          process.getTenantId());
+      setTenantId(command, tenantId);
+      deleteProcess(process);
+      return true;
+=======
+          process.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
+      setTenantId(command, tenantId);
+      deleteProcess(process);
+      return true;
+>>>>>>> origin/release-8.8.0
     }
 
     final var drgOptional =
@@ -206,8 +219,21 @@ public class ResourceDeletionDeleteProcessor
           eventKey,
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
+<<<<<<< HEAD
           drg.getTenantId(),
           () -> deleteDecisionRequirements(drg));
+||||||| 4f0d68366a8
+          drg.getTenantId());
+      setTenantId(command, tenantId);
+      deleteDecisionRequirements(drg);
+      return true;
+=======
+          drg.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
+      setTenantId(command, tenantId);
+      deleteDecisionRequirements(drg);
+      return true;
+>>>>>>> origin/release-8.8.0
     }
 
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
@@ -218,8 +244,21 @@ public class ResourceDeletionDeleteProcessor
           eventKey,
           PermissionType.DELETE_FORM,
           bufferAsString(form.getFormId()),
+<<<<<<< HEAD
           form.getTenantId(),
           () -> deleteForm(form));
+||||||| 4f0d68366a8
+          form.getTenantId());
+      setTenantId(command, tenantId);
+      deleteForm(form);
+      return true;
+=======
+          form.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
+      setTenantId(command, tenantId);
+      deleteForm(form);
+      return true;
+>>>>>>> origin/release-8.8.0
     }
 
     final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
@@ -230,8 +269,21 @@ public class ResourceDeletionDeleteProcessor
           eventKey,
           PermissionType.DELETE_RESOURCE,
           bufferAsString(resource.getResourceId()),
+<<<<<<< HEAD
           resource.getTenantId(),
           () -> deleteResource(resource));
+||||||| 4f0d68366a8
+          resource.getTenantId());
+      setTenantId(command, tenantId);
+      deleteResource(resource);
+      return true;
+=======
+          resource.getTenantId());
+      stateWriter.appendFollowUpEvent(eventKey, ResourceDeletionIntent.DELETING, value);
+      setTenantId(command, tenantId);
+      deleteResource(resource);
+      return true;
+>>>>>>> origin/release-8.8.0
     }
 
     return false;

@@ -1057,6 +1057,7 @@ final class ElasticsearchArchiverRepositoryIT {
                     .aliases(batchOperationIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+<<<<<<< HEAD
   private void createUsageMetricIndex(final String usageMetricIndex) throws IOException {
     final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
     final var endTimeProp =
@@ -1124,6 +1125,53 @@ final class ElasticsearchArchiverRepositoryIT {
                     .aliases(standaloneDecisionIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+||||||| 4f0d68366a8
+=======
+  private void createUsageMetricIndex(final String usageMetricIndex) throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endTimeProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        UsageMetricTemplate.ID,
+                        idProp,
+                        UsageMetricTemplate.END_TIME,
+                        endTimeProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(usageMetricIndex)
+                    .mappings(properties)
+                    .aliases(usageMetricIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
+  private void createUsageMetricTUIndex(final String usageMetricTUIndex) throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var endTimeProp =
+        Property.of(p -> p.date(d -> d.index(true).format("date_time || epoch_millis")));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        UsageMetricTUTemplate.ID,
+                        idProp,
+                        UsageMetricTUTemplate.END_TIME,
+                        endTimeProp)));
+    testClient
+        .indices()
+        .create(
+            r ->
+                r.index(usageMetricTUIndex)
+                    .mappings(properties)
+                    .aliases(usageMetricTUIndex + "alias", a -> a.isWriteIndex(false)));
+  }
+
+>>>>>>> origin/release-8.8.0
   private record TestDocument(String id) implements TDocument {}
 
   private record TestBatchOperation(String id, String endDate) implements TDocument {}
@@ -1131,6 +1179,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private record TestProcessInstance(
       String id, String endDate, String joinRelation, int partitionId) implements TDocument {}
 
+<<<<<<< HEAD
   private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
 
   private record TestUsageMetricTU(String id, String endTime, int partitionId)
@@ -1140,6 +1189,14 @@ final class ElasticsearchArchiverRepositoryIT {
       String id, String evaluationDate, int partitionId, int processInstanceKey)
       implements TDocument {}
 
+||||||| 4f0d68366a8
+=======
+  private record TestUsageMetric(String id, String endTime, int partitionId) implements TDocument {}
+
+  private record TestUsageMetricTU(String id, String endTime, int partitionId)
+      implements TDocument {}
+
+>>>>>>> origin/release-8.8.0
   private interface TDocument {
     String id();
   }

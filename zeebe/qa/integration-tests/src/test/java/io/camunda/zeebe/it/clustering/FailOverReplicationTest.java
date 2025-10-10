@@ -71,7 +71,7 @@ public class FailOverReplicationTest {
   @Test
   public void shouldNotReceiveEntriesOnDisconnect() {
     // given
-    final var segmentCount = 2;
+    final var segmentCount = 4;
     final var oldLeaderId = clusteringRule.getLeaderForPartition(1).getNodeId();
     final var oldLeader = clusteringRule.getBroker(oldLeaderId);
     clusteringRule.disconnect(oldLeader);
@@ -294,6 +294,5 @@ public class FailOverReplicationTest {
     data.setLogSegmentSize(maxSize);
     data.setLogIndexDensity(1);
     brokerCfg.getNetwork().setMaxMessageSize(maxSize);
-    brokerCfg.getExperimental().getFeatures().setEnableIdentitySetup(false);
   }
 }

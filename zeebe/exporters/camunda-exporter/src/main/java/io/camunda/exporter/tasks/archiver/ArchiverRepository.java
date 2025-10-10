@@ -31,12 +31,20 @@ public interface ArchiverRepository extends AutoCloseable {
 
   CompletableFuture<ArchiveBatch> getBatchOperationsNextBatch();
 
+<<<<<<< HEAD
   CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch();
 
   CompletableFuture<ArchiveBatch> getUsageMetricNextBatch();
 
   CompletableFuture<ArchiveBatch> getStandaloneDecisionNextBatch();
 
+||||||| 4f0d68366a8
+=======
+  CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch();
+
+  CompletableFuture<ArchiveBatch> getUsageMetricNextBatch();
+
+>>>>>>> origin/release-8.8.0
   CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName);
 
   CompletableFuture<Void> setLifeCycleToAllIndexes();
@@ -93,6 +101,7 @@ public interface ArchiverRepository extends AutoCloseable {
     }
 
     @Override
+<<<<<<< HEAD
     public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
       return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
     }
@@ -108,6 +117,19 @@ public interface ArchiverRepository extends AutoCloseable {
     }
 
     @Override
+||||||| 4f0d68366a8
+=======
+    public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+    }
+
+    @Override
+    public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+      return CompletableFuture.completedFuture(new ArchiveBatch("2024-01-01", List.of()));
+    }
+
+    @Override
+>>>>>>> origin/release-8.8.0
     public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
       return CompletableFuture.completedFuture(null);
     }

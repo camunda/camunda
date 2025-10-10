@@ -69,9 +69,15 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private final String archiverBlockedMetaIndex;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
   private final IndexTemplateDescriptor batchOperationTemplateDescriptor;
+<<<<<<< HEAD
   private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
   private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
   private final IndexTemplateDescriptor decisionInstanceTemplateDescriptor;
+||||||| 4f0d68366a8
+=======
+  private final IndexTemplateDescriptor usageMetricTemplateDescriptor;
+  private final IndexTemplateDescriptor usageMetricTUTemplateDescriptor;
+>>>>>>> origin/release-8.8.0
   private final Collection<IndexTemplateDescriptor> allTemplatesDescriptors;
   private final CamundaExporterMetrics metrics;
   private String lastHistoricalArchiverDate = null;
@@ -97,12 +103,20 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         resourceProvider.getIndexTemplateDescriptor(ListViewTemplate.class);
     batchOperationTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(BatchOperationTemplate.class);
+<<<<<<< HEAD
     usageMetricTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
     usageMetricTUTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
     decisionInstanceTemplateDescriptor =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+||||||| 4f0d68366a8
+=======
+    usageMetricTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class);
+    usageMetricTUTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class);
+>>>>>>> origin/release-8.8.0
     this.metrics = metrics;
     lifeCyclePolicyApplied = buildLifeCycleAppliedCache(config.getRetention(), logger);
   }
@@ -163,6 +177,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+<<<<<<< HEAD
   public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
     final var searchRequest =
         createUsageMetricSearchRequest(
@@ -218,6 +233,47 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   }
 
   @Override
+||||||| 4f0d68366a8
+=======
+  public CompletableFuture<ArchiveBatch> getUsageMetricNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTemplate.END_TIME,
+            UsageMetricTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTemplate.END_TIME, usageMetricTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<ArchiveBatch> getUsageMetricTUNextBatch() {
+    final var searchRequest =
+        createUsageMetricSearchRequest(
+            usageMetricTUTemplateDescriptor.getFullQualifiedName(),
+            UsageMetricTUTemplate.END_TIME,
+            UsageMetricTUTemplate.PARTITION_ID);
+
+    final var timer = Timer.start();
+    return client
+        .search(searchRequest, Object.class)
+        .whenCompleteAsync((ignored, error) -> metrics.measureArchiverSearch(timer), executor)
+        .thenComposeAsync(
+            response ->
+                createArchiveBatch(
+                    response, UsageMetricTUTemplate.END_TIME, usageMetricTUTemplateDescriptor),
+            executor);
+  }
+
+  @Override
+>>>>>>> origin/release-8.8.0
   public CompletableFuture<Void> setIndexLifeCycle(final String destinationIndexName) {
     final var retention = config.getRetention();
     if (!retention.isEnabled()) {
@@ -449,6 +505,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         BatchOperationTemplate.END_DATE);
   }
 
+<<<<<<< HEAD
   private SearchRequest createUsageMetricSearchRequest(
       final String indexName, final String endTimeField, final String partitionIdField) {
     final var endDateQ =
@@ -496,6 +553,32 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         q -> q.filter(endDateQ).filter(partitionQ).filter(standaloneDecisionInstanceQ));
   }
 
+||||||| 4f0d68366a8
+=======
+  private SearchRequest createUsageMetricSearchRequest(
+      final String indexName, final String endTimeField, final String partitionIdField) {
+    final var endDateQ =
+        QueryBuilders.range(
+            q -> q.date(d -> d.field(endTimeField).lte(config.getArchivingTimePoint())));
+
+    final Builder boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+
+    if (partitionId == START_PARTITION_ID) {
+      // Include -1 for migrated documents without partitionId
+      final List<FieldValue> partitionIds = List.of(FieldValue.of(-1), FieldValue.of(partitionId));
+      final var termsQ =
+          QueryBuilders.terms(q -> q.field(partitionIdField).terms(t -> t.value(partitionIds)));
+      boolBuilder.must(termsQ);
+    } else {
+      final var termQ = QueryBuilders.term(q -> q.field(partitionIdField).value(partitionId));
+      boolBuilder.must(termQ);
+    }
+
+    return createSearchRequest(indexName, boolBuilder.build()._toQuery(), endTimeField);
+  }
+
+>>>>>>> origin/release-8.8.0
   private SearchRequest createSearchRequest(
       final String indexName, final Query filterQuery, final String sortField) {
     logger.trace(

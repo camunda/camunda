@@ -17,8 +17,13 @@ import static org.assertj.core.api.Assertions.fail;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.client.CamundaClient;
+<<<<<<< HEAD
 import io.camunda.client.api.response.CreateUserResponse;
 import io.camunda.configuration.Camunda;
+||||||| 4f0d68366a8
+=======
+import io.camunda.configuration.Camunda;
+>>>>>>> origin/release-8.8.0
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.management.backups.StateCode;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;

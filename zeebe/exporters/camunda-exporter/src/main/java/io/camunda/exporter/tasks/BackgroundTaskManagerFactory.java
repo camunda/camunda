@@ -23,8 +23,13 @@ import io.camunda.exporter.tasks.archiver.ElasticsearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.OpenSearchArchiverRepository;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceToBeArchivedCountJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstancesArchiverJob;
+<<<<<<< HEAD
 import io.camunda.exporter.tasks.archiver.StandaloneDecisionArchiverJob;
 import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
+||||||| 4f0d68366a8
+=======
+import io.camunda.exporter.tasks.archiver.UsageMetricsArchiverJob;
+>>>>>>> origin/release-8.8.0
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
@@ -230,11 +235,22 @@ public final class BackgroundTaskManagerFactory {
     final List<RunnableTask> tasks = new ArrayList<>();
 
     tasks.add(buildIncidentMarkerTask());
+<<<<<<< HEAD
     if (config.getHistory().isProcessInstanceEnabled()) {
       tasks.add(buildProcessInstanceArchiverJob());
       if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
         tasks.add(buildProcessInstanceToBeArchivedCountJob());
       }
+||||||| 4f0d68366a8
+    tasks.add(buildProcessInstanceArchiverJob());
+    if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+      tasks.add(buildProcessInstanceToBeArchivedCountJob());
+=======
+    tasks.add(buildProcessInstanceArchiverJob());
+    tasks.add(buildUsageMetricsArchiverJob());
+    if (config.getHistory().isTrackArchivalMetricsForProcessInstance()) {
+      tasks.add(buildProcessInstanceToBeArchivedCountJob());
+>>>>>>> origin/release-8.8.0
     }
     tasks.add(buildUsageMetricsArchiverJob());
     tasks.add(buildStandaloneDecisionArchiverJob());
@@ -321,6 +337,7 @@ public final class BackgroundTaskManagerFactory {
             executor));
   }
 
+<<<<<<< HEAD
   private ReschedulingTask buildUsageMetricsArchiverJob() {
     return buildReschedulingArchiverTask(
         new UsageMetricsArchiverJob(
@@ -342,6 +359,19 @@ public final class BackgroundTaskManagerFactory {
             executor));
   }
 
+||||||| 4f0d68366a8
+=======
+  private ReschedulingTask buildUsageMetricsArchiverJob() {
+    return buildReschedulingArchiverTask(
+        new UsageMetricsArchiverJob(
+            archiverRepository,
+            logger,
+            resourceProvider.getIndexTemplateDescriptor(UsageMetricTemplate.class),
+            resourceProvider.getIndexTemplateDescriptor(UsageMetricTUTemplate.class),
+            executor));
+  }
+
+>>>>>>> origin/release-8.8.0
   private ReschedulingTask buildReschedulingArchiverTask(final BackgroundTask task) {
     return new ReschedulingTask(
         task,
