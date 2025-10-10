@@ -194,14 +194,14 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
     });
 
     await test.step('Verify only second instance modified', async () => {
-      await expect(async () => {
-        await findUserTask(
-          request,
-          localState.processInstanceKey1,
-          'CREATED',
-          'first_task',
-        );
+      await findUserTask(
+        request,
+        localState.processInstanceKey1,
+        'CREATED',
+        'first_task',
+      );
 
+      await expect(async () => {
         const res2 = await request.post(buildUrl('/user-tasks/search'), {
           headers: jsonHeaders(),
           data: {
@@ -328,7 +328,9 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
         expect(secondTask).toBeDefined();
         expect(firstTask!.state).toBe('CANCELED');
         expect(secondTask!.state).toBe('CREATED');
+      }).toPass(defaultAssertionOptions);
 
+      await expect(async () => {
         const res2 = await request.post(buildUrl('/user-tasks/search'), {
           headers: jsonHeaders(),
           data: {
