@@ -143,6 +143,7 @@ public class WebSecurityConfig {
           "/rest-api.yaml",
           // deprecated Tasklist v1 Public Endpoints
           "/new/**",
+          "/tasklist/new/**",
           "/favicon.ico");
   // We explicitly support the "at+jwt" JWT 'typ' header defined in
   // https://datatracker.ietf.org/doc/html/rfc9068#name-header
@@ -819,6 +820,12 @@ public class WebSecurityConfig {
                   (authorizeHttpRequests) ->
                       authorizeHttpRequests
                           .requestMatchers(SPRING_DEFAULT_UI_CSS)
+                          .permitAll()
+                          .requestMatchers(
+                              "/tasklist/assets/**",
+                              "/tasklist/client-config.js",
+                              "/tasklist/custom.css",
+                              "/tasklist/favicon.ico")
                           .permitAll()
                           .anyRequest()
                           .authenticated())

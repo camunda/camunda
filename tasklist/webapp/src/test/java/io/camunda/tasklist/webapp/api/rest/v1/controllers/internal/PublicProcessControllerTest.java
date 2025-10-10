@@ -8,7 +8,6 @@
 package io.camunda.tasklist.webapp.api.rest.v1.controllers.internal;
 
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.forwardedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -48,10 +47,10 @@ public class PublicProcessControllerTest {
     mockMvc
         .perform(MockMvcRequestBuilders.get("/tasklist/new/test"))
         .andExpect(status().isOk())
-        .andExpect(model().size(3))
+        .andExpect(model().size(4))
+        .andExpect(model().attribute("contextPath", "/tasklist/"))
         .andExpect(model().attribute("title", "processEntity"))
         .andExpect(model().attribute("ogImage", "http://localhost/public-start-form-og-image.jpg"))
-        .andExpect(model().attribute("ogUrl", "http://localhost/tasklist/new/test"))
-        .andExpect(forwardedUrl("/tasklist/index.html"));
+        .andExpect(model().attribute("ogUrl", "http://localhost/tasklist/new/test"));
   }
 }
