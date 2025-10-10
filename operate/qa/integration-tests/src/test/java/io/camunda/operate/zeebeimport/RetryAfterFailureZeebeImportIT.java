@@ -11,7 +11,6 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.apps.retry_after_failure.RetryAfterFailureTestConfig;
 import org.junit.After;
-import org.junit.Ignore;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -24,7 +23,6 @@ import org.springframework.boot.test.context.SpringBootTest;
       "spring.main.allow-bean-definition-overriding=true",
       "spring.mvc.pathmatch.matching-strategy=ANT_PATH_MATCHER"
     })
-@Ignore("https://github.com/camunda/camunda/issues/39185")
 public class RetryAfterFailureZeebeImportIT extends BasicZeebeImportIT {
 
   @Autowired
