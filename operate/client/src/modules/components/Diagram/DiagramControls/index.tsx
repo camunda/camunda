@@ -12,7 +12,7 @@ import {
   ZoomResetButton,
   ZoomOutButton,
   ZoomInButton,
-  DownloadButton,
+  DownloadBPMNDefinitionXML,
 } from './styled';
 
 type Props = {
@@ -60,7 +60,7 @@ const DiagramControls: React.FC<Props> = ({
       >
         <Subtract />
       </ZoomOutButton>
-      <DownloadButton processDefinitionKey={processDefinitionKey} />
+      <DownloadBPMNDefinitionXML processDefinitionKey={processDefinitionKey} />
     </ButtonContainer>
   );
 };
