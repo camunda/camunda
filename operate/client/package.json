@@ -36,7 +36,7 @@
     "react-dom": "18.3.1",
     "react-error-boundary": "6.0.0",
     "react-final-form": "6.5.9",
-    "react-final-form-arrays": "3.1.4",
+    "react-final-form-arrays": "4.0.0",
     "react-router-dom": "7.7.1",
     "react-transition-group": "4.4.5",
     "serve": "14.2.4",
