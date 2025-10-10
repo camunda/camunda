@@ -70,7 +70,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    name: "Lint / Actionlint"
+    name: "Tool / Actionlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -104,7 +104,7 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
-    name: "Lint / Commitlint"
+    name: "Tool / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -137,7 +137,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    name: "Lint / Maven Spotless"
+    name: "Tool / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -744,7 +744,7 @@ jobs:
 
   integration-tests:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "${{ matrix.module }} / Integration / ${{ matrix.name }} ITs"
+    name: "${{ matrix.module }} / Integration / ${{ matrix.name }}"
     needs: [ detect-changes ]
     timeout-minutes: 30
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -764,7 +764,7 @@ jobs:
             docker-repository: localhost:5000/camunda/zeebe
             docker-file: Dockerfile
             owner: "QA"
-            module: "QA"
+            module: "Camunda"
           - group: modules
             name: "Zeebe Module"
             maven-modules: "'!qa/integration-tests,!qa/update-tests' -f zeebe"
@@ -1305,7 +1305,7 @@ jobs:
           user_description: "General"
 
   openapi-lint:
-    name: "Lint / C8 REST OpenAPI"
+    name: "Tool / C8 REST OpenAPI Linter"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -1342,7 +1342,7 @@ jobs:
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
-    name: "Lint / Renovate Config Validator"
+    name: "Tool / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
