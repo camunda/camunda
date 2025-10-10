@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.jupiter.api.extension.ExtensionContext.Store;
+import org.junit.platform.commons.util.AnnotationUtils;
 import org.junit.platform.commons.util.ExceptionUtils;
 import org.junit.platform.commons.util.ReflectionUtils;
 import org.slf4j.Logger;
@@ -140,6 +141,11 @@ public class CamundaProcessTestExtension
 
   @Override
   public void beforeAll(final ExtensionContext context) {
+    if (!hasProcessTestAnnotation(context)) {
+      // test class is not annotated as CamundaProcessTest so skip
+      return;
+    }
+
     // create runtime
     runtime = runtimeBuilder.build();
     runtime.start();
@@ -194,6 +200,10 @@ public class CamundaProcessTestExtension
     } else if (zeebeJsonMapper != null) {
       CamundaAssert.setJsonMapper(zeebeJsonMapper);
     }
+  }
+
+  private boolean hasProcessTestAnnotation(final ExtensionContext context) {
+    return AnnotationUtils.isAnnotated(context.getTestClass(), CamundaProcessTest.class);
   }
 
   @Override
@@ -263,7 +273,7 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.collectTestRunCoverage(context.getDisplayName());
+      processCoverage.collectTestRunCoverage(getCoverageTestName(context));
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -278,6 +288,19 @@ public class CamundaProcessTestExtension
     // the other way around leads to race conditions and inconsistencies in the tests
     resetRuntimeClock();
     deleteRuntimeData();
+  }
+
+  private String getCoverageTestName(final ExtensionContext context) {
+    final StringBuilder prefix = new StringBuilder();
+
+    ExtensionContext parentContext = context.getParent().orElse(null);
+
+    while (parentContext != null && !hasProcessTestAnnotation(parentContext)) {
+      prefix.insert(0, parentContext.getDisplayName() + "#");
+      parentContext = parentContext.getParent().orElse(null);
+    }
+
+    return prefix + context.getDisplayName();
   }
 
   private void printTestResults() {
@@ -326,6 +349,10 @@ public class CamundaProcessTestExtension
   public void afterAll(final ExtensionContext context) throws Exception {
     if (runtime == null) {
       // Skip if the runtime is not created.
+      return;
+    }
+    if (!hasProcessTestAnnotation(context)) {
+      // runtime was not initialized in this hierarchy level
       return;
     }
 
