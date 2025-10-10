@@ -60,7 +60,11 @@ const DiagramControls: React.FC<Props> = ({
       >
         <Subtract />
       </ZoomOutButton>
-      <DownloadBPMNDefinitionXML processDefinitionKey={processDefinitionKey} />
+      {processDefinitionKey === undefined ? null : (
+        <DownloadBPMNDefinitionXML
+          processDefinitionKey={processDefinitionKey}
+        />
+      )}
     </ButtonContainer>
   );
 };

@@ -13,12 +13,12 @@ import {useProcessDefinitionXml} from 'modules/queries/processDefinitions/usePro
 import {useProcessDefinition} from 'modules/queries/processDefinitions/useProcessDefinition';
 import {getDiagramNameByProcessDefinition} from 'modules/utils/processDefinition';
 
-interface DownloadBPMNDefinitionXMLProps {
-  processDefinitionKey: string | undefined;
+type Props = {
+  processDefinitionKey: string;
   className?: string;
-}
+};
 
-const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
+const DownloadBPMNDefinitionXML: React.FC<Props> = ({
   processDefinitionKey,
   className,
 }) => {

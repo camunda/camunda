@@ -19,6 +19,8 @@ vi.mock('modules/queries/processDefinitions/useProcessDefinition', () => ({
   }),
 }));
 
+const MOCK_PROCESS_DEFINITION_KEY = '123';
+
 describe('<DiagramControls />', () => {
   it('should render diagram controls', async () => {
     const handleZoomIn = vi.fn(),
@@ -29,6 +31,7 @@ describe('<DiagramControls />', () => {
         handleZoomIn={handleZoomIn}
         handleZoomOut={handleZoomOut}
         handleZoomReset={handleZoomReset}
+        processDefinitionKey={MOCK_PROCESS_DEFINITION_KEY}
       />,
     );
 
