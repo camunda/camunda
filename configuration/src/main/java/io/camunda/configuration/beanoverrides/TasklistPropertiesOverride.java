@@ -14,6 +14,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Security;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.tasklist.property.BackupProperties;
 import io.camunda.tasklist.property.SslProperties;
@@ -22,8 +23,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -38,7 +37,6 @@ import org.springframework.context.annotation.PropertySource;
 @DependsOn("unifiedConfigurationHelper")
 public class TasklistPropertiesOverride {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(TasklistPropertiesOverride.class);
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyTasklistProperties legacyTasklistProperties;
 
@@ -135,16 +133,10 @@ public class TasklistPropertiesOverride {
       final Consumer<List<PluginConfiguration>> setPluginConfiguration,
       final String databaseType) {
 
-    // Log common interceptor plugins warning instead of using UnifiedConfigurationHelper logging.
     if (getPluginConfiguration.get() != null) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.data.secondary-storage."
-                  + databaseType.toLowerCase()
-                  + ".interceptor-plugins",
-              "camunda.tasklist." + databaseType.toLowerCase() + ".interceptorPlugins");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.data.secondary-storage." + databaseType.toLowerCase() + ".interceptor-plugins",
+          "camunda.tasklist." + databaseType.toLowerCase() + ".interceptorPlugins");
     }
 
     if (!interceptorPlugins.isEmpty()) {

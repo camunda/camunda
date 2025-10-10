@@ -15,6 +15,7 @@ import io.camunda.configuration.KeyStore;
 import io.camunda.configuration.Membership;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.GatewayBasedProperties;
 import io.camunda.configuration.beans.LegacyGatewayBasedProperties;
 import io.camunda.zeebe.gateway.impl.configuration.ClusterCfg;
@@ -27,8 +28,6 @@ import io.camunda.zeebe.gateway.impl.configuration.SecurityCfg;
 import io.camunda.zeebe.gateway.impl.configuration.ThreadsCfg;
 import java.util.List;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeanUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -42,9 +41,6 @@ import org.springframework.context.annotation.Profile;
 @Profile("!broker")
 @DependsOn("unifiedConfigurationHelper")
 public class GatewayBasedPropertiesOverride {
-
-  private static final Logger LOGGER =
-      LoggerFactory.getLogger(GatewayBasedPropertiesOverride.class);
 
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyGatewayBasedProperties legacyGatewayBasedProperties;
@@ -118,14 +114,9 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromInterceptors(final GatewayBasedProperties override) {
-    // Order between legacy and new interceptor props is not guaranteed.
-    // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getInterceptors().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.api.grpc.interceptors", "zeebe.gateway.interceptors");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.api.grpc.interceptors", "zeebe.gateway.interceptors");
     }
 
     final List<Interceptor> interceptors =
@@ -138,14 +129,9 @@ public class GatewayBasedPropertiesOverride {
   }
 
   private void populateFromRestFilters(final GatewayBasedProperties override) {
-    // Order between legacy and new filters props is not guaranteed.
-    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getFilters().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.api.rest.filters", "zeebe.gateway.filters");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.api.rest.filters", "zeebe.gateway.filters");
     }
 
     final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();

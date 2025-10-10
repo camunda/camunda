@@ -29,6 +29,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.Ssl;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.zeebe.backup.azure.SasTokenConfig;
@@ -171,14 +172,9 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromInterceptors(final BrokerBasedProperties override) {
-    // Order between legacy and new interceptor props is not guaranteed.
-    // Log common interceptors warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getGateway().getInterceptors().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.api.grpc.interceptors", "zeebe.broker.gateway.interceptors");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.api.grpc.interceptors", "zeebe.broker.gateway.interceptors");
     }
 
     final List<Interceptor> interceptors =
@@ -341,14 +337,9 @@ public class BrokerBasedPropertiesOverride {
   }
 
   private void populateFromRestFilters(final BrokerBasedProperties override) {
-    // Order between legacy and new filters props is not guaranteed.
-    // Log common filters warning instead of using UnifiedConfigurationHelper logging.
     if (!override.getGateway().getFilters().isEmpty()) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.api.rest.filters", "zeebe.broker.gateway.filters");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.api.rest.filters", "zeebe.broker.gateway.filters");
     }
 
     final List<Filter> filters = unifiedConfiguration.getCamunda().getApi().getRest().getFilters();
@@ -447,9 +438,9 @@ public class BrokerBasedPropertiesOverride {
 
     if (brokerRocksDb.getColumnFamilyOptions() != null
         && !brokerRocksDb.getColumnFamilyOptions().isEmpty()) {
-      LOGGER.warn(
-          "Legacy column family options are deprecated! "
-              + "Please use camunda.data.primary-storage.rocks-db.column-family-options.* instead.");
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.data.primary-storage.rocks-db.column-family-options",
+          "zeebe.broker.experimental.rocksdb.columnFamilyOptions");
     }
 
     if (!unifiedRocksDb.getColumnFamilyOptions().isEmpty()) {
@@ -673,12 +664,9 @@ public class BrokerBasedPropertiesOverride {
 
     final Map<Object, String> connectMap = (Map<Object, String>) args.get("connect");
     if (connectMap != null && connectMap.containsKey("interceptorPlugins")) {
-      final String warningMessage =
-          String.format(
-              "The following legacy property is no longer supported and should be removed in favor of '%s': %s",
-              "camunda.data.secondary-storage." + database.databaseName() + ".interceptor-plugins",
-              "zeebe.broker.exporters.camundaexporter.args.connect.interceptorPlugins");
-      LOGGER.warn(warningMessage);
+      UnifiedConfigurationHelper.logLegacyListPropertyWarning(
+          "camunda.data.secondary-storage." + database.databaseName() + ".interceptor-plugins",
+          "zeebe.broker.exporters.camundaexporter.args.connect.interceptorPlugins");
     }
 
     for (int i = 0; i < database.getInterceptorPlugins().size(); i++) {
