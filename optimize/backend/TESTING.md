@@ -132,23 +132,3 @@ Note, that there are two kind of integration tests:
 ### Working with snapshots
 
 While executing integration tests it might be useful snapshots of data from elasticsearch. Please refer to [wiki](https://github.com/camunda/camunda-optimize/wiki/Using-ES-snapshots) for more information.
-
-## Migration testing
-
-### Prerequisites
-
-* Operating system: Linux/OSX as test setup uses bash cmds
-* Available binaries on path: curl, [jq](https://stedolan.github.io/jq/)
-
-To run the schema migration tests locally, execute the following cmds:
-
-### Execute tests locally
-
-```shell
-// first build everything required for running the integration tests
-mvn clean install -Dskip.docker -DskipTests -Pproduction,it -pl optimize/backend,upgrade -am
-
-// then run the schema migration test
-mvn clean verify -f qa/schema-tests/pom.xml -Pes-schema-integrity-tests
-```
-
