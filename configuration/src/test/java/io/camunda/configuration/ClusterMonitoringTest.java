@@ -24,14 +24,11 @@ import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
   UnifiedConfigurationHelper.class
 })
 @ActiveProfiles("broker")
-public class ClusterPropertiesTest {
+public class ClusterMonitoringTest {
   @Nested
   @TestPropertySource(
       properties = {
-        "camunda.cluster.node-id=7",
-        "camunda.cluster.partition-count=5",
-        "camunda.cluster.replication-factor=3",
-        "camunda.cluster.size=10"
+        "camunda.cluster.monitoring.execution-metrics-enabled=true",
       })
   class WithOnlyUnifiedConfigSet {
     final BrokerBasedProperties brokerCfg;
@@ -41,21 +38,15 @@ public class ClusterPropertiesTest {
     }
 
     @Test
-    void shouldSetClusterProperties() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(7);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(5);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(3);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(10);
+    void shouldSetExecutionMetricsEnabled() {
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled()).isTrue();
     }
   }
 
   @Nested
   @TestPropertySource(
       properties = {
-        "zeebe.broker.cluster.nodeId=11",
-        "zeebe.broker.cluster.partitionsCount=6",
-        "zeebe.broker.cluster.replicationFactor=4",
-        "zeebe.broker.cluster.clusterSize=12"
+        "zeebe.broker.executionMetricsExporterEnabled=true",
       })
   class WithOnlyLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -65,11 +56,8 @@ public class ClusterPropertiesTest {
     }
 
     @Test
-    void shouldSetClusterPropertiesFromLegacy() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(11);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(6);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(4);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(12);
+    void shouldSetExecutionMetricsExporterFromLegacy() {
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled()).isTrue();
     }
   }
 
@@ -77,15 +65,9 @@ public class ClusterPropertiesTest {
   @TestPropertySource(
       properties = {
         // new
-        "camunda.cluster.node-id=21",
-        "camunda.cluster.partition-count=8",
-        "camunda.cluster.replication-factor=5",
-        "camunda.cluster.size=15",
+        "camunda.cluster.monitoring.execution-metrics-enabled=true",
         // legacy
-        "zeebe.broker.cluster.nodeId=99",
-        "zeebe.broker.cluster.partitionsCount=99",
-        "zeebe.broker.cluster.replicationFactor=99",
-        "zeebe.broker.cluster.clusterSize=99"
+        "zeebe.broker.executionMetricsExporterEnabled=false",
       })
   class WithNewAndLegacySet {
     final BrokerBasedProperties brokerCfg;
@@ -95,11 +77,8 @@ public class ClusterPropertiesTest {
     }
 
     @Test
-    void shouldSetClusterPropertiesFromNew() {
-      assertThat(brokerCfg.getCluster().getNodeId()).isEqualTo(21);
-      assertThat(brokerCfg.getCluster().getPartitionsCount()).isEqualTo(8);
-      assertThat(brokerCfg.getCluster().getReplicationFactor()).isEqualTo(5);
-      assertThat(brokerCfg.getCluster().getClusterSize()).isEqualTo(15);
+    void shouldSetExecutionMetricsEnabledFromNew() {
+      assertThat(brokerCfg.isExecutionMetricsExporterEnabled()).isTrue();
     }
   }
 }
