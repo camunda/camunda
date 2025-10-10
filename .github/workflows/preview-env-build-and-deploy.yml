@@ -123,8 +123,14 @@ jobs:
           --file .ci/preview-environments/argo/c8sm.yml \
           --helm-set global.preview.git.branch=${revision} \
           --helm-set global.preview.ingress.domain=camunda.camunda.cloud \
-          --helm-set camunda-platform.core.image.tag=${docker_tag} \
+          --helm-set camunda-platform.orchestration.image.tag=${docker_tag} \
           --helm-set camunda-platform.optimize.image.tag=${docker_tag} \
+          --helm-set global.identity.auth.orchestration.secret.existingSecret=${app_name}-orchestration-identity-secret \
+          --helm-set global.identity.auth.orchestration.secret.existingSecretKey=identity-orchestration-client-token \
+          --helm-set global.identity.auth.connectors.secret.existingSecret=${app_name}-connectors-identity-secret \
+          --helm-set global.identity.auth.connectors.secret.existingSecretKey=identity-connectors-client-token \
+          --helm-set global.identity.auth.optimize.secret.existingSecret=${app_name}-optimize-identity-secret \
+          --helm-set global.identity.auth.optimize.secret.existingSecretKey=identity-optimize-client-token \
           --name ${app_name} \
           --revision ${revision} \
           --helm-set git.branch=${revision} \
@@ -132,7 +138,7 @@ jobs:
       env:
         docker_tag: "pr-${{ github.event.pull_request.head.sha }}"
         revision: ${{ github.head_ref }}
-        app_name: camunda-${{ steps.sanitize.outputs.branch_name }}
+        app_name: camunda-${{ steps.sanitize.outputs.branch_name}}
 
     #########################################################################
     # Create a preview environment
