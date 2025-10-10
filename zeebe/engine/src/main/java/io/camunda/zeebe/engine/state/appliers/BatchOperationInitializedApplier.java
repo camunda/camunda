@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationInitializationRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = BatchOperationIntent.class, type = "INITIALIZED")
 public class BatchOperationInitializedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationInitializationRecord> {
 

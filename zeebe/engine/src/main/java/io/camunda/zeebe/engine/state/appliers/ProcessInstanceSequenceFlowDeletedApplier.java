@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
  * flows. We apply this intent and right after create a new sequence flow on the target process
  * definition.
  */
+@HandlesIntent(intent = ProcessInstanceIntent.class, type = "SEQUENCE_FLOW_DELETED")
 final class ProcessInstanceSequenceFlowDeletedApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 

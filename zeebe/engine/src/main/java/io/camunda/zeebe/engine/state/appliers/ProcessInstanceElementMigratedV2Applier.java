@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
+@HandlesIntent(intent = ProcessInstanceIntent.class, type = "ELEMENT_MIGRATED", version = 2)
 final class ProcessInstanceElementMigratedV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 

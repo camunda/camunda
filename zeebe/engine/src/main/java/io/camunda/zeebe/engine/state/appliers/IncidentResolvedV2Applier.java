@@ -15,11 +15,13 @@ import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 import java.util.EnumSet;
 import java.util.Set;
 
+@HandlesIntent(intent = IncidentIntent.class, type = "RESOLVED", version = 2)
 final class IncidentResolvedV2Applier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
   private static final Set<State> RESOLVABLE_JOB_STATES =

@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
  * mark follower partitions as failed.
  */
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = BatchOperationIntent.class, type = "FAIL_PARTITION")
 public final class BatchOperationLeadPartitionFailProcessor
     implements DistributedTypedRecordProcessor<BatchOperationPartitionLifecycleRecord> {
 

@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = DecisionEvaluationIntent.class, type = "EVALUATED", version = 2)
 public final class DecisionEvaluationV2Applier
     implements TypedEventApplier<DecisionEvaluationIntent, DecisionEvaluationRecord> {
 

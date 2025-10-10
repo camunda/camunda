@@ -11,10 +11,12 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@HandlesIntent(intent = ScaleIntent.class, type = "PARTITION_BOOTSTRAPPED")
 public class PartitionBootstrappedApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(PartitionBootstrappedApplier.class);

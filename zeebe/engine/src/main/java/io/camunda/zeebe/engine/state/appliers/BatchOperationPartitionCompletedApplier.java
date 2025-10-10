@@ -12,6 +12,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationPartitionLifecycleRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
 /**
  * This applier can do two things:
@@ -23,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
  *       as completed
  * </ul>
  */
+@HandlesIntent(intent = BatchOperationIntent.class, type = "PARTITION_COMPLETED")
 public class BatchOperationPartitionCompletedApplier
     implements TypedEventApplier<BatchOperationIntent, BatchOperationPartitionLifecycleRecord> {
 

@@ -13,10 +13,12 @@ import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessEventRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessEventIntent;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+@HandlesIntent(intent = ProcessEventIntent.class, type = "TRIGGERING")
 final class ProcessEventTriggeringApplier
     implements TypedEventApplier<ProcessEventIntent, ProcessEventRecord> {
   private static final DirectBuffer NO_VARIABLES = new UnsafeBuffer();

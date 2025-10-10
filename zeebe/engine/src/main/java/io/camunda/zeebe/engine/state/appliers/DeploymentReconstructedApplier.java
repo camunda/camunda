@@ -15,7 +15,9 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = DeploymentIntent.class, type = "RECONSTRUCTED")
 public final class DeploymentReconstructedApplier
     implements TypedEventApplier<DeploymentIntent, DeploymentRecord> {
   private final MutableDeploymentState deploymentState;

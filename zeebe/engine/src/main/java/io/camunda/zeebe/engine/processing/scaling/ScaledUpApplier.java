@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.processing.scaling;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableRoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 
+@HandlesIntent(intent = ScaleIntent.class, type = "SCALED_UP")
 public class ScaledUpApplier implements TypedEventApplier<ScaleIntent, ScaleRecord> {
   private final MutableRoutingState routingState;
 

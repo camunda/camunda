@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 
+@HandlesIntent(intent = MessageCorrelationIntent.class, type = "NOT_CORRELATED")
 class MessageCorrelationNotCorrelatedApplier
     implements TypedEventApplier<MessageCorrelationIntent, MessageCorrelationRecord> {
 

@@ -14,8 +14,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
+@HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETION_DENIED")
 public class UserTaskCompletionDeniedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

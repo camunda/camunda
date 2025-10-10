@@ -15,10 +15,12 @@ import io.camunda.zeebe.engine.state.immutable.TimerInstanceState;
 import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.protocol.impl.record.value.timer.TimerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = TimerIntent.class, type = "CANCEL")
 public final class TimerCancelProcessor implements TypedRecordProcessor<TimerRecord> {
   public static final String NO_TIMER_FOUND_MESSAGE =
       "Expected to cancel timer with key '%d', but no such timer was found";

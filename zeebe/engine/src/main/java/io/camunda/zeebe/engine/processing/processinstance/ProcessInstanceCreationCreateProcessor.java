@@ -35,6 +35,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -50,6 +51,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = ProcessInstanceCreationIntent.class, type = "CREATE")
 public final class ProcessInstanceCreationCreateProcessor
     implements CommandProcessor<ProcessInstanceCreationRecord> {
 

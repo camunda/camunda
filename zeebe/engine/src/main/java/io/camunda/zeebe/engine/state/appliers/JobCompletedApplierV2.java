@@ -13,8 +13,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 
+@HandlesIntent(intent = JobIntent.class, type = "COMPLETED", version = 2)
 class JobCompletedApplierV2 implements TypedEventApplier<JobIntent, JobRecord> {
 
   private final MutableJobState jobState;

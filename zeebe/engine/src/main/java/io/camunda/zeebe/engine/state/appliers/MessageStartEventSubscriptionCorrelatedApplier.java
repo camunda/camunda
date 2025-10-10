@@ -10,9 +10,11 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageStartEventSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageStartEventSubscriptionIntent;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = MessageStartEventSubscriptionIntent.class, type = "CORRELATED")
 public final class MessageStartEventSubscriptionCorrelatedApplier
     implements TypedEventApplier<
         MessageStartEventSubscriptionIntent, MessageStartEventSubscriptionRecord> {

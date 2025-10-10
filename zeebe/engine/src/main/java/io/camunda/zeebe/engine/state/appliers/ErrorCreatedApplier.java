@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBannedInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = ErrorIntent.class, type = "CREATED")
 public class ErrorCreatedApplier implements TypedEventApplier<ErrorIntent, ErrorRecord> {
 
   private final MutableBannedInstanceState mutableBannedInstanceState;

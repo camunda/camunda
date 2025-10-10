@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -32,6 +33,7 @@ import io.camunda.zeebe.util.Either.Right;
 import io.camunda.zeebe.util.collection.Tuple;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = ScaleIntent.class, type = "MARK_PARTITION_BOOTSTRAPPED")
 public class MarkPartitionBootstrappedProcessor
     implements DistributedTypedRecordProcessor<ScaleRecord> {
 

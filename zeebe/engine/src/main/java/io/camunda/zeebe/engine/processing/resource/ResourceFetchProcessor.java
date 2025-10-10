@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
+@HandlesIntent(intent = ResourceIntent.class, type = "FETCH")
 public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceRecord> {
 
   private final TypedResponseWriter responseWriter;

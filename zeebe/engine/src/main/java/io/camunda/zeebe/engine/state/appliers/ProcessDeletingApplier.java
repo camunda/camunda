@@ -12,8 +12,10 @@ import io.camunda.zeebe.engine.state.deployment.PersistedProcess.PersistedProces
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
+@HandlesIntent(intent = ProcessIntent.class, type = "DELETING")
 public class ProcessDeletingApplier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
   private final MutableProcessState processState;

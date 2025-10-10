@@ -12,8 +12,10 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 
+@HandlesIntent(intent = RoleIntent.class, type = "ENTITY_ADDED")
 public class RoleEntityAddedApplier implements TypedEventApplier<RoleIntent, RoleRecord> {
 
   private final MutableMembershipState membershipState;

@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.stream.IntStream;
 
 /** Applies state changes for `ProcessInstance:Element_Activating` */
+@HandlesIntent(intent = ProcessInstanceIntent.class, type = "ELEMENT_ACTIVATING", version = 2)
 final class ProcessInstanceElementActivatingV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 

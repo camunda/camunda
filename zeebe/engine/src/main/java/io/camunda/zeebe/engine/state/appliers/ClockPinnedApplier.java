@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableClockState;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = ClockIntent.class, type = "PINNED")
 public final class ClockPinnedApplier implements TypedEventApplier<ClockIntent, ClockRecord> {
 
   private final MutableClockState clockState;

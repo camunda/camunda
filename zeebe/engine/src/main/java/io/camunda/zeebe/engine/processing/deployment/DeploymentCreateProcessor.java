@@ -53,6 +53,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -67,6 +68,7 @@ import java.time.InstantSource;
 import java.util.List;
 import org.agrona.DirectBuffer;
 
+@HandlesIntent(intent = DeploymentIntent.class, type = "CREATE")
 public final class DeploymentCreateProcessor
     implements DistributedTypedRecordProcessor<DeploymentRecord> {
 

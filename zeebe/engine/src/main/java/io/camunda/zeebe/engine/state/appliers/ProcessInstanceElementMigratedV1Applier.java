@@ -10,11 +10,13 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Applies state changes for `ProcessInstance:Element_Migrated` */
+@HandlesIntent(intent = ProcessInstanceIntent.class, type = "ELEMENT_MIGRATED")
 final class ProcessInstanceElementMigratedV1Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 

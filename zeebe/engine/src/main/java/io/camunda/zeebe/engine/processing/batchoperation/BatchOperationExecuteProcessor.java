@@ -26,6 +26,7 @@ import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperation
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationExecutionIntent;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationRelated;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
@@ -62,6 +63,7 @@ import org.slf4j.LoggerFactory;
  *       processed.
  * </ul>
  */
+@HandlesIntent(intent = BatchOperationExecutionIntent.class, type = "EXECUTE")
 @ExcludeAuthorizationCheck
 public final class BatchOperationExecuteProcessor
     implements TypedRecordProcessor<BatchOperationExecutionRecord> {

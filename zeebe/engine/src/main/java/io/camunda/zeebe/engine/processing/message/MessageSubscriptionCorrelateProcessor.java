@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRec
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -29,6 +30,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = MessageSubscriptionIntent.class, type = "CORRELATE")
 public final class MessageSubscriptionCorrelateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 

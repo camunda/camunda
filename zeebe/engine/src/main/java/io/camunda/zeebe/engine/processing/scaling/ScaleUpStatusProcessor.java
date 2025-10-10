@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.RoutingState;
 import io.camunda.zeebe.protocol.impl.record.value.scaling.ScaleRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -20,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = ScaleIntent.class, type = "STATUS_REQUEST")
 public class ScaleUpStatusProcessor implements TypedRecordProcessor<ScaleRecord> {
   private static final Logger LOG = LoggerFactory.getLogger(ScaleUpStatusProcessor.class);
 

@@ -28,6 +28,7 @@ import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
@@ -41,6 +42,7 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = JobBatchIntent.class, type = "ACTIVATE")
 public final class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
 
   private final StateWriter stateWriter;

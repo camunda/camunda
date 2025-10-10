@@ -10,9 +10,12 @@ package io.camunda.zeebe.engine.processing.distribution;
 import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessor;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = CommandDistributionIntent.class, type = "FINISH")
 public class CommandDistributionFinishProcessor
     implements TypedRecordProcessor<CommandDistributionRecord> {
   private final CommandDistributionBehavior commandDistributionBehavior;
