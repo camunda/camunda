@@ -70,19 +70,26 @@ public class OpensearchOperateZeebeRuleProvider implements OperateZeebeRuleProvi
 
   @Override
   public void updateRefreshInterval(final String value) {
-    final ComponentTemplateSummary template =
-        richOpenSearchClient.template().getComponentTemplate().get(prefix).template();
-    final IndexSettings indexSettings = template.settings().get("index");
-    final IndexSettings newSettings =
-        IndexSettings.of(b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
-    final IndexState newTemplate =
-        IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
-    final var requestBuilder = componentTemplateRequestBuilder(prefix).template(newTemplate);
-    assertThat(
-            richOpenSearchClient
-                .template()
-                .createComponentTemplateWithRetries(requestBuilder.build()))
-        .isTrue();
+    richOpenSearchClient.template().getComponentTemplate().entrySet().stream()
+        .filter(entry -> entry.getKey().startsWith(prefix))
+        .forEach(
+            componentTemplateSummary -> {
+              final ComponentTemplateSummary template =
+                  componentTemplateSummary.getValue().template();
+              final IndexSettings indexSettings = template.settings().get("index");
+              final IndexSettings newSettings =
+                  IndexSettings.of(
+                      b -> b.index(indexSettings).refreshInterval(ri -> ri.time(value)));
+              final IndexState newTemplate =
+                  IndexState.of(t -> t.settings(newSettings).mappings(template.mappings()));
+              final var requestBuilder =
+                  componentTemplateRequestBuilder(prefix).template(newTemplate);
+              assertThat(
+                      richOpenSearchClient
+                          .template()
+                          .createComponentTemplateWithRetries(requestBuilder.build()))
+                  .isTrue();
+            });
   }
 
   @Override

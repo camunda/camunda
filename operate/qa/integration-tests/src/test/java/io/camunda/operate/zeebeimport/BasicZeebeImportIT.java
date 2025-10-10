@@ -508,8 +508,9 @@ public class BasicZeebeImportIT extends OperateZeebeAbstractIT {
     final List<Integer> operatePartitions = partitionHolder.getPartitionIds();
     final int zeebePartitionsCount =
         camundaClient.newTopologyRequest().send().join().getPartitionsCount();
-    assertThat(operatePartitions).hasSize(zeebePartitionsCount);
-    assertThat(operatePartitions).allMatch(id -> id <= zeebePartitionsCount && id >= 1);
+    assertThat(operatePartitions)
+        .hasSize(zeebePartitionsCount)
+        .allMatch(id -> id <= zeebePartitionsCount && id >= 1);
   }
 
   private void assertStartActivityCompleted(final FlowNodeInstanceEntity activity) {
