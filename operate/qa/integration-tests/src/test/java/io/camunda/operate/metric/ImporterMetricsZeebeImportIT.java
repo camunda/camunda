@@ -121,7 +121,7 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
                 + OperationState.SENT
                 + "\",type=\""
                 + OperationType.UPDATE_VARIABLE
-                + "\",}",
+                + "\"}",
             d -> d.doubleValue() == 1));
   }
 
@@ -151,7 +151,7 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
                 + OperationState.FAILED
                 + "\",type=\""
                 + OperationType.CANCEL_PROCESS_INSTANCE
-                + "\",}",
+                + "\"}",
             d -> d.doubleValue() == 1));
   }
 
@@ -182,12 +182,12 @@ public class ImporterMetricsZeebeImportIT extends OperateZeebeAbstractIT {
                 Metrics.GAUGE_BPMN_MODEL_COUNT.replace('.', '_')
                     + "{"
                     + Metrics.TAG_KEY_ORGANIZATIONID
-                    + "=\"orga\",} 2.0"),
+                    + "=\"orga\"} 2.0"),
             containsString(
                 Metrics.GAUGE_DMN_MODEL_COUNT.replace('.', '_')
                     + "{"
                     + Metrics.TAG_KEY_ORGANIZATIONID
-                    + "=\"orga\",} 2.0")));
+                    + "=\"orga\"} 2.0")));
   }
 
   public static class ManagementPropertyRemoval
