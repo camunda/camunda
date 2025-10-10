@@ -1,11 +1,8 @@
-# description: Workflow to run Camunda Platform release migration tests
+# description: Reusable workflow to run Camunda Platform release migration tests
 # type: CI
 # owner: @Chris
 name: Camunda Release migration test
 on:
-  schedule:
-    # Runs at 04:00. every day https://crontab.guru/#0_4_*_*_*
-    - cron: 0 4 * * *
   workflow_dispatch:
     inputs:
       name:
@@ -20,7 +17,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'release-8.8.0'
+        default: 'stable/8.8'
         type: string
         required: false
       cluster:
@@ -47,7 +44,7 @@ on:
         required: false
       ref:
         description: 'Specifies the ref (e.g. main or a commit sha) to test the migration to'
-        default: 'release-8.8.0'
+        default: 'stable/8.8'
         type: string
         required: false
       cluster:
@@ -63,7 +60,7 @@ on:
 
 concurrency:
   cancel-in-progress: true
-  group: ${{ inputs.name || 'release-migration-test' }}
+  group: ${{ inputs.name }}
 
 jobs:
   calculate-image-tag:
@@ -74,11 +71,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'release-8.8.0' }}
+          ref: ${{ inputs.ref }}
       - name: Get image tag
         id: image-tag
         run: |
-          echo "image-tag=${{ inputs.name || 'release-migration-test' }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
   build-camunda-image:
     name: Build Zeebe
     needs: calculate-image-tag
@@ -91,7 +88,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'release-8.8.0' }}
+          ref: ${{ inputs.ref }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
@@ -136,7 +133,7 @@ jobs:
         name: Build Camunda Docker Image
         with:
           repository: 'gcr.io/zeebe-io/zeebe'
-          revision: ${{ inputs.ref || 'release-8.8.0' }}
+          revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
           distball: ${{ steps.build-zeebe.outputs.distball }}
@@ -145,43 +142,43 @@ jobs:
   deploy-camunda-cluster-prev-version:
     name: Deploy previous version of Camunda Platform
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: 'read'
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'release-8.8.0' }}
+          ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
-          cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
-          location: ${{ inputs.cluster-region || 'europe-west1-b' }}
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
       - name: Clean up existing namespace
         run: |
-          kubectl delete namespace ${{ inputs.name || 'release-migration-test' }} --ignore-not-found=true
+          kubectl delete namespace ${{ inputs.name }} --ignore-not-found=true
       - name: Add camunda helm repo
         run: |
           helm repo add camunda https://helm.camunda.io
           helm repo update
       - name: Helm install
         run: >
-          helm install ${{ inputs.name || 'release-migration-test' }} camunda/camunda-platform
+          helm install ${{ inputs.name }} camunda/camunda-platform
           --wait --timeout 35m0s
-          --namespace ${{ inputs.name || 'release-migration-test' }}
+          --namespace ${{ inputs.name }}
           --create-namespace
           --render-subchart-notes
       - name: Summarize deployment
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name || 'release-migration-test' }}\` values
+            ## Test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name || 'release-migration-test' }} -n ${{ inputs.name || 'release-migration-test' }})
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
 
@@ -190,7 +187,7 @@ jobs:
     needs:
       - deploy-camunda-cluster-prev-version
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -204,15 +201,15 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
-          cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
-          location: ${{ inputs.cluster-region || 'europe-west1-b' }}
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
       - name: Port-forward to gateway
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
       - name: Port-forward to Keycloak
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
       - name: Install zbctl
         run: |
@@ -221,7 +218,7 @@ jobs:
           chmod +x zbctl
       - name: Add load
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           # Get secret for connectors - to communicate with the cluster
           ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" "$release-zeebe-identity-secret" -o json | jq -r '.data."zeebe-secret"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
@@ -244,9 +241,9 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name || 'release-migration-test' }}\` values
+            ## Test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name || 'release-migration-test' }} -n ${{ inputs.name || 'release-migration-test' }})
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
 
@@ -260,7 +257,7 @@ jobs:
     # the deploy will be run, when build is skipped or successful.
     if: always() && (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped')
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -275,8 +272,8 @@ jobs:
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
-          cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
-          location: ${{ inputs.cluster-region || 'europe-west1-b' }}
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
       - name: Add camunda helm repo
         run: |
           helm repo add camunda https://helm.camunda.io
@@ -284,7 +281,7 @@ jobs:
       - name: Extract secrets
         id: extract-secrets
         run: |
-          release=${{ inputs.name || 'release-migration-test' }}
+          release=${{ inputs.name }}
           OPTIMIZE_SECRET=$(kubectl get secret --namespace "$release" "$release-optimize-identity-secret" -o jsonpath="{.data.optimize-secret}" | base64 --decode)
           export OPTIMIZE_SECRET
           CONNECTORS_SECRET=$(kubectl get secret --namespace "$release" "$release-connectors-identity-secret" -o jsonpath="{.data.connectors-secret}" | base64 --decode)
@@ -312,9 +309,9 @@ jobs:
         id: upgrade-platform
         run: |
           helm dependency build charts/camunda-platform-8.8/
-          helm upgrade ${{ inputs.name || 'release-migration-test' }} charts/camunda-platform-8.8/ \
+          helm upgrade ${{ inputs.name }} charts/camunda-platform-8.8/ \
           --wait --wait-for-jobs --timeout 35m0s \
-          --namespace ${{ inputs.name || 'release-migration-test' }} \
+          --namespace ${{ inputs.name }} \
           --render-subchart-notes \
           --set connectors.image.tag=SNAPSHOT \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
@@ -341,9 +338,9 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name || 'release-migration-test' }}\` values
+            ## Test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name || 'release-migration-test' }} -n ${{ inputs.name || 'release-migration-test' }})
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
 
@@ -352,29 +349,29 @@ jobs:
     needs:
       - upgrade-camunda-cluster-to-new-version
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 5
     permissions:
       contents: 'read'
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref || 'release-8.8.0' }}
+          ref: ${{ inputs.ref }}
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
           service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
       - uses: google-github-actions/get-gke-credentials@v2.3.4
         with:
-          cluster_name: ${{ inputs.cluster || 'zeebe-cluster' }}
-          location: ${{ inputs.cluster-region || 'europe-west1-b' }}
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
       - name: Port-forward to gateway
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           kubectl port-forward --namespace "$release" svc/$release-zeebe-gateway 26500 &
       - name: Port-forward to Keycloak
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           kubectl port-forward --namespace "$release" svc/$release-keycloak 18080:80 &
       - name: Install zbctl
         run: |
@@ -383,7 +380,7 @@ jobs:
           chmod +x zbctl
       - name: Add load
         run: |
-          release="${{ inputs.name || 'release-migration-test' }}"
+          release="${{ inputs.name }}"
           # Get client secret from camunda credentials - which has been extracted during the upgrade
           ZEEBE_CLIENT_SECRET=$(kubectl get secrets --namespace "$release" camunda-credentials -o json | jq -r '.data."identity-orchestration-client-token"' | base64 -d)
           # Set env vars to get zbctl working with the cluster
@@ -407,63 +404,8 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Test \`${{ inputs.name || 'release-migration-test' }}\` values
+            ## Test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name || 'release-migration-test' }} -n ${{ inputs.name || 'release-migration-test' }})
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
           EOF
-  notify:
-    name: Notify on failure
-    runs-on: ubuntu-latest
-    needs: [ target-version-complete-job ]
-    if: failure()
-    steps:
-      - uses: actions/checkout@v4
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Daily Camunda migration test failed:*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "@zeebe-medic Please check the related workflow execution: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
-  notify-success:
-    name: Notify on Success
-    runs-on: ubuntu-latest
-    needs: [ target-version-complete-job ]
-    if: success()
-    steps:
-      - uses: actions/checkout@v4
-      - id: slack-notify
-        uses: slackapi/slack-github-action@v2.1.1
-        with:
-          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
-          webhook-type: incoming-webhook
-          payload: |
-            {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":white_check_mark: *Daily Camunda migration test succeeded against branch:* ${{ inputs.ref || 'release-8.8.0' }}"
-                  }
-                }
-              ]
-            }
