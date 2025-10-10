@@ -14,6 +14,8 @@ import {
   Error,
   RadioButtonChecked,
   WarningFilled,
+  HelpFilled,
+  CircleDash,
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
@@ -40,11 +42,6 @@ const StateOverlay: React.FC<Props> = observer(
   }) => {
     const showStatistic = count !== undefined;
 
-    // TODO: The new states will be addressed with https://github.com/camunda/camunda/issues/38966.
-    if (state === 'UNKNOWN' || state === 'UNSPECIFIED') {
-      state = 'FAILED';
-    }
-
     return createPortal(
       <Container
         data-testid={testId}
@@ -62,6 +59,8 @@ const StateOverlay: React.FC<Props> = observer(
           <CheckmarkOutline />
         )}
         {state === 'canceled' && <Error />}
+        {state === 'UNSPECIFIED' && <CircleDash />}
+        {state === 'UNKNOWN' && <HelpFilled />}
         {showStatistic && <span>{count}</span>}
       </Container>,
       container,
