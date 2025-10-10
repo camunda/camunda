@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
@@ -48,6 +49,14 @@ public class DecisionEvaluationInstructionDeserializer
     }
 
     validateFields(presentFields);
+
+    // Remove null fields from the tree to prevent parsing errors
+    if (treeNode.get(DECISION_DEFINITION_ID_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(DECISION_DEFINITION_ID_FIELD);
+    }
+    if (treeNode.get(DECISION_DEFINITION_KEY_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(DECISION_DEFINITION_KEY_FIELD);
+    }
 
     if (presentFields.contains(DECISION_DEFINITION_KEY_FIELD)) {
       return codec.treeToValue(treeNode, DecisionEvaluationByKey.class);

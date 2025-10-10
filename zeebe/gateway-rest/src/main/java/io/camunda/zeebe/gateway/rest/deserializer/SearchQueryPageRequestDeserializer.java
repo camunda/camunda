@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.camunda.zeebe.gateway.protocol.rest.CursorBackwardPagination;
 import io.camunda.zeebe.gateway.protocol.rest.CursorForwardPagination;
 import io.camunda.zeebe.gateway.protocol.rest.OffsetPagination;
@@ -49,6 +50,17 @@ public class SearchQueryPageRequestDeserializer extends JsonDeserializer<SearchQ
     if (presentFields.size() != 1) {
       throw new DeserializationException(
           ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(getErrorMessageParam()));
+    }
+
+    // Remove null fields from the tree to prevent parsing errors
+    if (treeNode.get(OFFSET_PAGINATION_FIELD) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(OFFSET_PAGINATION_FIELD);
+    }
+    if (treeNode.get(AFTER_PAGINATION_KEY) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(AFTER_PAGINATION_KEY);
+    }
+    if (treeNode.get(BEFORE_PAGINATION_KEY) instanceof NullNode) {
+      ((ObjectNode) treeNode).remove(BEFORE_PAGINATION_KEY);
     }
 
     if (presentFields.contains(OFFSET_PAGINATION_FIELD)) {
