@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -33,7 +32,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.test.context.ContextConfiguration;
 
 @ContextConfiguration(initializers = ManagementPropertyRemoval.class)
-@Ignore("https://github.com/camunda/camunda/issues/39185")
 public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
 
   @Autowired private ZeebeImporter zeebeImporter;
@@ -80,7 +78,7 @@ public class ImporterMetricsMockedZeebeImportIT extends OperateZeebeAbstractIT {
     assertThatMetricsFrom(
         mockMvc,
         new MetricAssert.ValueMatcher(
-            "operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\",}",
+            "operate_import_queue_size{partition=\"1\",type=\"PROCESS_INSTANCE\"}",
             d -> d.doubleValue() >= 1.0));
   }
 
