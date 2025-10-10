@@ -25,7 +25,7 @@
     "dmn-js-literal-expression": "17.3.0",
     "dmn-js-shared": "17.3.0",
     "final-form": "4.20.10",
-    "final-form-arrays": "3.1.0",
+    "final-form-arrays": "4.0.0",
     "history": "5.3.0",
     "lodash": "4.17.21",
     "mixpanel-browser": "2.67.0",
