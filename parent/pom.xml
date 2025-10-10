@@ -2729,6 +2729,27 @@
           </configuration>
         </plugin>
 
+        <!-- Plugin to check for api changes -->
+        <plugin>
+          <groupId>com.github.siom79.japicmp</groupId>
+          <artifactId>japicmp-maven-plugin</artifactId>
+          <version>${plugin.version.japicmp}</version>
+          <configuration>
+            <parameter>
+              <accessModifier>private</accessModifier>
+              <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
+            </parameter>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>cmp</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
+        </plugin>
+
         <plugin>
           <groupId>org.springframework.boot</groupId>
           <artifactId>spring-boot-maven-plugin</artifactId>
@@ -2815,28 +2836,6 @@
             <version>${plugin.version.google-java-format}</version>
           </dependency>
         </dependencies>
-      </plugin>
-
-      <!-- Plugin to check for api changes -->
-      <plugin>
-        <groupId>com.github.siom79.japicmp</groupId>
-        <artifactId>japicmp-maven-plugin</artifactId>
-        <version>${plugin.version.japicmp}</version>
-        <configuration>
-          <parameter>
-            <accessModifier>private</accessModifier>
-            <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
-          </parameter>
-          <skip>true</skip>
-        </configuration>
-        <executions>
-          <execution>
-            <goals>
-              <goal>cmp</goal>
-            </goals>
-            <phase>verify</phase>
-          </execution>
-        </executions>
       </plugin>
 
     </plugins>
