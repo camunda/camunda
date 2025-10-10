@@ -15,13 +15,11 @@ import {getDiagramNameByProcessDefinition} from 'modules/utils/processDefinition
 
 interface DownloadBPMNDefinitionXMLProps {
   processDefinitionKey: string | undefined;
-  disabled?: boolean;
   className?: string;
 }
 
 const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
   processDefinitionKey,
-  disabled = false,
   className,
 }) => {
   const {isLoading, data: xmlData} = useProcessDefinitionXml({
@@ -59,7 +57,7 @@ const DownloadBPMNDefinitionXML: React.FC<DownloadBPMNDefinitionXMLProps> = ({
       kind="tertiary"
       size="sm"
       align="left"
-      disabled={disabled || isLoading || !xmlData}
+      disabled={isLoading || !xmlData}
       onClick={handleDownload}
       className={className}
       label="Download XML"
