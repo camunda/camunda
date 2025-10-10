@@ -8,6 +8,7 @@
 package io.camunda.webapps.schema.entities.usermanagement;
 
 import io.camunda.webapps.schema.entities.AbstractExporterEntity;
+import io.camunda.webapps.schema.entities.SinceVersion;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 
 public class TenantMemberEntity extends AbstractExporterEntity<TenantMemberEntity> {
