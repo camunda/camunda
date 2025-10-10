@@ -21,6 +21,7 @@ import io.camunda.zeebe.gateway.protocol.rest.BatchOperationItemStateFilterPrope
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.BatchOperationTypeFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.DateTimeFilterProperty;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceStateFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.IntegerFilterProperty;
 import io.camunda.zeebe.gateway.protocol.rest.JobKindFilterProperty;
@@ -37,6 +38,7 @@ import io.camunda.zeebe.gateway.rest.deserializer.BatchOperatioItemStateFilterPr
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.BatchOperationTypeFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.DateTimeFilterPropertyDeserializer;
+import io.camunda.zeebe.gateway.rest.deserializer.DecisionEvaluationInstructionDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.ElementInstanceStateFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.IntegerFilterPropertyDeserializer;
 import io.camunda.zeebe.gateway.rest.deserializer.JobKindFilterPropertyDeserializer;
@@ -92,6 +94,8 @@ public class JacksonConfig {
     module.addDeserializer(
         ProcessInstanceCreationInstruction.class,
         new ProcessInstanceCreationInstructionDeserializer());
+    module.addDeserializer(
+        DecisionEvaluationInstruction.class, new DecisionEvaluationInstructionDeserializer());
     return builder -> builder.modulesToInstall(modules -> modules.add(module));
   }
 

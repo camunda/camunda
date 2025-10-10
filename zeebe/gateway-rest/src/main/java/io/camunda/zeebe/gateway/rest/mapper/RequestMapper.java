@@ -1061,8 +1061,7 @@ public class RequestMapper {
               final var mappedInstruction = new ProcessInstanceModificationActivateInstruction();
               mappedInstruction
                   .setElementId(instruction.getElementId())
-                  .setAncestorScopeKey(
-                      KeyUtil.keyToLong(instruction.getAncestorElementInstanceKey()));
+                  .setAncestorScopeKey(getAncestorKey(instruction.getAncestorElementInstanceKey()));
               instruction.getVariableInstructions().stream()
                   .map(
                       variable ->
@@ -1075,6 +1074,13 @@ public class RequestMapper {
               return mappedInstruction;
             })
         .toList();
+  }
+
+  private static Long getAncestorKey(final String ancestorElementInstanceKey) {
+    if (ancestorElementInstanceKey == null) {
+      return -1L;
+    }
+    return KeyUtil.keyToLong(ancestorElementInstanceKey);
   }
 
   private static List<BatchOperationProcessInstanceModificationMoveInstruction>
