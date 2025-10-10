@@ -71,7 +71,7 @@
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.5/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.24.2</elasticsearch.log4j.version>
     <!-- OpenSearch-->
-    <opensearch.client.version>2.10.4</opensearch.client.version>
+    <opensearch.client.version>2.26.0</opensearch.client.version>
     <!-- The least supported opensearch version we should test against-->
     <opensearch.test.version>2.17.0</opensearch.test.version>
     <!-- the opensearch version of the previous Optimize version -->
@@ -276,6 +276,7 @@
               <dep>org.apache.httpcomponents:httpcore-nio</dep>
               <dep>org.apache.tika:tika-core</dep>
               <dep>org.opensearch.client:opensearch-java</dep>
+              <!-- TODO: Using OpenSearch high-level rest client -->
               <dep>org.opensearch.client:opensearch-rest-client</dep>
               <dep>com.nimbusds:nimbus-jose-jwt</dep>
             </ignoredNonTestScopedDependencies>

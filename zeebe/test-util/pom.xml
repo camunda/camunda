@@ -209,6 +209,7 @@
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
+      <!-- TODO: Using OpenSearch high-level rest client -->
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
 
