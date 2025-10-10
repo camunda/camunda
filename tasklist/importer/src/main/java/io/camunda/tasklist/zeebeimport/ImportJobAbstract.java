@@ -9,6 +9,8 @@ package io.camunda.tasklist.zeebeimport;
 
 import static io.camunda.tasklist.util.ElasticsearchUtil.ZEEBE_INDEX_DELIMITER;
 
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Output;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.tasklist.exceptions.NoSuchIndexException;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -52,16 +54,20 @@ public abstract class ImportJobAbstract implements ImportJob {
   @Override
   public Boolean call() {
     processPossibleIndexChange();
+<<<<<<< HEAD
 
     // separate importbatch in sub-batches per index
     final List<ImportBatch> subBatches = createSubBatchesPerIndexName();
 
+=======
+    final List<ImportBatch> subBatches = createSizeLimitedSubBatchesPerIndexName();
+>>>>>>> 7d018713 (fix: large batch sizes can cause OOM in importer)
     for (final ImportBatch subBatch : subBatches) {
       final boolean success = processOneIndexBatch(subBatch);
       if (!success) {
         notifyImportListenersAsFailed(importBatch);
         return false;
-      } // else continue
+      }
     }
     importPositionHolder.recordLatestLoadedPosition(getLastProcessedPosition());
     for (final ImportBatch subBatch : subBatches) {
@@ -221,4 +227,27 @@ public abstract class ImportJobAbstract implements ImportJob {
       }
     }
   }
+<<<<<<< HEAD
+=======
+
+  public static class EntitySizeEstimator {
+    private static final int INITIAL_BUFFER_SIZE = 1024;
+    private static final int MAX_BUFFER_SIZE = 1024 * 1024;
+    private static final ThreadLocal<Kryo> KYRO_THREAD_LOCAL =
+        ThreadLocal.withInitial(
+            () -> {
+              final Kryo kryo = new Kryo();
+              kryo.setRegistrationRequired(false);
+              return kryo;
+            });
+
+    public static int estimateSize(final Object entity) {
+      final Kryo kryo = KYRO_THREAD_LOCAL.get();
+      try (final Output output = new Output(INITIAL_BUFFER_SIZE, MAX_BUFFER_SIZE)) {
+        kryo.writeClassAndObject(output, entity);
+        return output.position();
+      }
+    }
+  }
+>>>>>>> 7d018713 (fix: large batch sizes can cause OOM in importer)
 }

@@ -26,5 +26,5 @@ public interface ImportJob extends Callable<Boolean> {
 
   public void processPossibleIndexChange();
 
-  public List<ImportBatch> createSubBatchesPerIndexName();
+  public List<ImportBatch> createSizeLimitedSubBatchesPerIndexName();
 }

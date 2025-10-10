@@ -27,6 +27,11 @@ public class ImportProperties {
 
   private static final int DEFAULT_MINIMUM_EMPTY_BATCHES_FOR_COMPLETED_READER = 5;
 
+<<<<<<< HEAD
+=======
+  private static final int DEFAULT_MAX_BATCH_SIZE_BYTES = 20 * (1024 * 1024);
+
+>>>>>>> 7d018713 (fix: large batch sizes can cause OOM in importer)
   private int threadsCount = DEFAULT_IMPORT_THREADS_COUNT;
 
   private int queueSize = DEFAULT_IMPORT_QUEUE_SIZE;
@@ -36,6 +41,8 @@ public class ImportProperties {
   private int readerThreadsCount = DEFAULT_READER_THREADS_COUNT;
 
   private boolean useOnlyPosition = false;
+
+  private long maxBatchSizeBytes = DEFAULT_MAX_BATCH_SIZE_BYTES;
 
   /**
    * The property is not used anymore. Instead of a backoff, the records reader gets rescheduled
@@ -144,6 +151,7 @@ public class ImportProperties {
     return this;
   }
 
+<<<<<<< HEAD
   public int getCompletedReaderMinEmptyBatches() {
     return completedReaderMinEmptyBatches;
   }
@@ -151,6 +159,14 @@ public class ImportProperties {
   public ImportProperties setCompletedReaderMinEmptyBatches(
       final int completedReaderMinEmptyBatches) {
     this.completedReaderMinEmptyBatches = completedReaderMinEmptyBatches;
+=======
+  public long getMaxBatchSizeBytes() {
+    return maxBatchSizeBytes;
+  }
+
+  public ImportProperties setMaxBatchSizeBytes(final long maxBatchSizeBytes) {
+    this.maxBatchSizeBytes = maxBatchSizeBytes;
+>>>>>>> 7d018713 (fix: large batch sizes can cause OOM in importer)
     return this;
   }
 }
