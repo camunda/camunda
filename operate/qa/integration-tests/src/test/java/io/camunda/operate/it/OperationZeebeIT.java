@@ -777,13 +777,17 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     final MvcResult mvcResult =
         postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
@@ -796,7 +800,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
     op.setVariableName(newVarName);
     op.setVariableValue("\"newValue\"");
-    op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
+    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
+    op.setVariableScopeId(scope);
     // then it succeeds
     postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
 
@@ -806,7 +811,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(String.format("Variable with the name \"%s\" already exists.", newVarName));
+        .isEqualTo(
+            String.format(
+                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
+                newVarName, scope, processInstanceKey));
   }
 
   @Test
