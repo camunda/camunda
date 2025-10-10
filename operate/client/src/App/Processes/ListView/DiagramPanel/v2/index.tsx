@@ -16,7 +16,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {Section} from '../styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
