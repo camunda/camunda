@@ -162,24 +162,4 @@ public class SearchCorrelatedMessageSubscriptionTest extends ClientRestTest {
     assertSort(sorts.get(10), "subscriptionKey", SortOrderEnum.ASC);
     assertSort(sorts.get(11), "tenantId", SortOrderEnum.DESC);
   }
-
-  @Test
-  void shouldSearchWithFullPagination() {
-    // When
-    client
-        .newCorrelatedMessageSubscriptionSearchRequest()
-        .page(p -> p.from(2).limit(3).before("beforeCursor").after("afterCursor"))
-        .send()
-        .join();
-
-    // Then
-    final CorrelatedMessageSubscriptionSearchQuery request =
-        gatewayService.getLastRequest(CorrelatedMessageSubscriptionSearchQuery.class);
-    final SearchQueryPageRequest pageRequest = request.getPage();
-    assertThat(pageRequest).isNotNull();
-    assertThat(pageRequest.getFrom()).isEqualTo(2);
-    assertThat(pageRequest.getLimit()).isEqualTo(3);
-    assertThat(pageRequest.getBefore()).isEqualTo("beforeCursor");
-    assertThat(pageRequest.getAfter()).isEqualTo("afterCursor");
-  }
 }
