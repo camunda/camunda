@@ -14,6 +14,7 @@ import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 import io.camunda.zeebe.msgpack.value.StringValue;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
@@ -57,6 +58,7 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private static final StringValue VALUE_TYPE_KEY = new StringValue("valueType");
   private static final StringValue INTENT_KEY = new StringValue("intent");
   private static final StringValue COMMAND_VALUE_KEY = new StringValue("commandValue");
+  private static final StringValue AUTH_INFO_KEY = new StringValue("authInfo");
 
   // You'll need to register any of the records value's that you want to distribute
   static {
@@ -88,6 +90,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   private final IntegerProperty intentProperty = new IntegerProperty(INTENT_KEY, Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>(COMMAND_VALUE_KEY, new UnifiedRecordValue(10));
+  private final ObjectProperty<AuthInfo> authInfoProperty =
+      new ObjectProperty<>(AUTH_INFO_KEY, new AuthInfo());
   private final MsgPackWriter commandValueWriter = new MsgPackWriter();
   private final MsgPackReader commandValueReader = new MsgPackReader();
 
@@ -97,7 +101,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         .declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(authInfoProperty);
   }
 
   public CommandDistributionRecord wrap(final CommandDistributionRecord other) {
@@ -105,7 +110,8 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
         .setQueueId(other.getQueueId())
         .setValueType(other.getValueType())
         .setIntent(other.getIntent())
-        .setCommandValue(other.getCommandValue());
+        .setCommandValue(other.getCommandValue())
+        .setAuthInfo(other.getAuthInfo());
     return this;
   }
 
@@ -170,6 +176,10 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return concreteCommandValue;
   }
 
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
+  }
+
   public CommandDistributionRecord setCommandValue(final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
@@ -207,6 +217,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
 
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
+    return this;
+  }
+
+  public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {
+    authInfoProperty.getValue().copyFrom(authInfo);
     return this;
   }
 }
