@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -156,4 +157,6 @@ public interface CamundaClientConfiguration {
    */
   @ExperimentalApi("https://github.com/camunda/camunda/issues/16166")
   boolean preferRestOverGrpc();
+
+  OpenTelemetry getOpenTelemetry();
 }

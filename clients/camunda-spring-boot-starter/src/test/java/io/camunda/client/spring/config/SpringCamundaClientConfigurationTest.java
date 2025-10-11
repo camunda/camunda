@@ -25,6 +25,7 @@ import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.spring.configuration.SpringCamundaClientConfiguration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.List;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,13 @@ public class SpringCamundaClientConfigurationTest {
       final CamundaClientExecutorService executorService,
       final CredentialsProvider credentialsProvider) {
     return new SpringCamundaClientConfiguration(
-        properties, jsonMapper, interceptors, chainHandlers, executorService, credentialsProvider);
+        properties,
+        jsonMapper,
+        interceptors,
+        chainHandlers,
+        executorService,
+        credentialsProvider,
+        GlobalOpenTelemetry.get());
   }
 
   private static CamundaClientProperties properties() {
@@ -75,7 +82,7 @@ public class SpringCamundaClientConfigurationTest {
   @Test
   void shouldPrintToString() {
     final SpringCamundaClientConfiguration camundaClientConfiguration =
-        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null);
+        new SpringCamundaClientConfiguration(properties(), null, null, null, null, null, null);
     final String toStringOutput = camundaClientConfiguration.toString();
     assertThat(toStringOutput).matches("CamundaClientConfigurationImpl\\{.*}");
   }
