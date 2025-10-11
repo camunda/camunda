@@ -26,7 +26,6 @@ import io.camunda.client.protocol.rest.FormResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionFilter;
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionSearchQuery;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import java.util.List;

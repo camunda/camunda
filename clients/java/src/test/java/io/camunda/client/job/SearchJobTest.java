@@ -32,7 +32,6 @@ import io.camunda.client.protocol.rest.JobListenerEventTypeFilterProperty;
 import io.camunda.client.protocol.rest.JobSearchQuery;
 import io.camunda.client.protocol.rest.JobStateEnum;
 import io.camunda.client.protocol.rest.JobStateFilterProperty;
-import io.camunda.client.protocol.rest.SearchQueryPageRequest;
 import io.camunda.client.protocol.rest.SortOrderEnum;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayService;
