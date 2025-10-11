@@ -29,7 +29,7 @@ import {
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {MetadataPopover} from './MetadataPopover/v2';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
@@ -327,6 +327,7 @@ const TopPanel: React.FC = observer(() => {
             processInstance && (
               <Diagram
                 xml={processDefinitionData?.xml}
+                processDefinitionKey={processDefinitionKey}
                 selectableFlowNodes={
                   isModificationModeEnabled
                     ? modifiableFlowNodes

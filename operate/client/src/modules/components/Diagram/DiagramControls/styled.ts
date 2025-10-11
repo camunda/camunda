@@ -8,6 +8,7 @@
 
 import {IconButton} from '@carbon/react';
 import styled, {css} from 'styled-components';
+import {DownloadBPMNDefinitionXML as BaseDownloadBPMNDefinitionXML} from 'modules/components/DownloadBPMNDefinitionXML';
 
 const ButtonContainer = styled.div`
   display: flex;
@@ -33,6 +34,17 @@ const ZoomInButton = styled(IconButton)`
 const ZoomOutButton = styled(IconButton)`
   ${buttonStyles}
   border-top: none;
+  margin-bottom: var(--cds-spacing-02);
 `;
 
-export {ButtonContainer, ZoomResetButton, ZoomInButton, ZoomOutButton};
+const DownloadBPMNDefinitionXML = styled(BaseDownloadBPMNDefinitionXML)`
+  ${buttonStyles}
+`;
+
+export {
+  ButtonContainer,
+  ZoomResetButton,
+  ZoomInButton,
+  ZoomOutButton,
+  DownloadBPMNDefinitionXML,
+};

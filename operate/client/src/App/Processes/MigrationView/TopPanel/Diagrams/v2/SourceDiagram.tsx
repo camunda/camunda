@@ -11,7 +11,7 @@ import {Header} from '../Header';
 import {DiagramWrapper} from '../styled';
 import {observer} from 'mobx-react';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
@@ -75,6 +75,7 @@ const SourceDiagram: React.FC = observer(() => {
         {migrationSourceData?.xml !== undefined && (
           <Diagram
             xml={migrationSourceData.xml}
+            processDefinitionKey={sourceProcessDefinitionKey ?? undefined}
             selectableFlowNodes={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,

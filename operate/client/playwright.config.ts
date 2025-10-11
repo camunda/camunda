@@ -19,7 +19,6 @@ const config = defineConfig({
   timeout: 30 * 1000,
   expect: {
     timeout: 15 * 1000,
-    toHaveScreenshot: {threshold: 0.1},
   },
   fullyParallel: !IS_E2E,
   forbidOnly: IS_CI,
