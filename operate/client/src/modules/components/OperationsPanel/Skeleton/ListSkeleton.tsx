@@ -6,22 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import styled from 'styled-components';
+import {OperationEntrySkeleton} from './OperationEntrySkeleton';
 
-const OperationsList = styled.div`
-  position: relative;
-  width: 100%;
-`;
+const ListSkeleton: React.FC = () => {
+  return (
+    <ul data-testid="skeleton">
+      {[...Array(10)].map((_, index) => (
+        <OperationEntrySkeleton key={index} />
+      ))}
+    </ul>
+  );
+};
 
-const ScrollContainer = styled.div`
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-`;
-
-const EmptyMessageContainer = styled.div`
-  padding: var(--cds-spacing-05);
-`;
-
-export {OperationsList, EmptyMessageContainer, ScrollContainer};
+export {ListSkeleton};

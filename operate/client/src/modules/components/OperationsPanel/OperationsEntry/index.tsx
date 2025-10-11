@@ -8,7 +8,14 @@
 
 import {formatDate} from 'modules/utils/date';
 import {useLoadingProgress} from './useLoadingProgress';
-import {Container, Details, Title, Header, ProgressBar} from './styled';
+import {
+  Container,
+  Details,
+  Title,
+  Header,
+  ProgressBar,
+  InvisibleProgressBar,
+} from './styled';
 import {OperationEntryStatus} from './OperationEntryStatus';
 import {
   Error,
@@ -99,7 +106,11 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
       ) : (
         <span data-testid="operation-id">{batchOperationKey}</span>
       )}
-      {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
+      {isComplete ? (
+        <InvisibleProgressBar />
+      ) : (
+        <ProgressBar label="" value={fakeProgressPercentage} />
+      )}
       <Details>
         <OperationEntryStatus
           type={batchOperationType}
