@@ -30,6 +30,8 @@ import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.BatchOperationUpdateTask;
 import io.camunda.exporter.tasks.batchoperations.ElasticsearchBatchOperationUpdateRepository;
 import io.camunda.exporter.tasks.batchoperations.OpensearchBatchOperationUpdateRepository;
+import io.camunda.exporter.tasks.deleter.DeleterJob;
+import io.camunda.exporter.tasks.deleter.ElasticsearchDeleterRepository;
 import io.camunda.exporter.tasks.incident.ElasticsearchIncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateRepository;
 import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
@@ -72,6 +74,7 @@ public final class BackgroundTaskManagerFactory {
   private ArchiverRepository archiverRepository;
   private IncidentUpdateRepository incidentRepository;
   private BatchOperationUpdateRepository batchOperationUpdateRepository;
+  private ElasticsearchDeleterRepository deleterRepository;
   private final ExporterEntityCacheImpl<Long, CachedProcessEntity> processCache;
 
   public BackgroundTaskManagerFactory(
@@ -115,6 +118,7 @@ public final class BackgroundTaskManagerFactory {
       archiverRepository = createArchiverRepository(asyncClient);
       incidentRepository = createIncidentUpdateRepository(asyncClient);
       batchOperationUpdateRepository = createBatchOperationRepository(asyncClient);
+      deleterRepository = createDeleterRepository(asyncClient);
     }
 
     final List<RunnableTask> tasks = buildTasks();
@@ -127,7 +131,8 @@ public final class BackgroundTaskManagerFactory {
         logger,
         executor,
         tasks,
-        Duration.ofSeconds(5));
+        Duration.ofSeconds(5),
+        deleterRepository);
   }
 
   private OpensearchBatchOperationUpdateRepository createBatchOperationRepository(
@@ -227,6 +232,12 @@ public final class BackgroundTaskManagerFactory {
         partitionId, config.getHistory(), resourceProvider, asyncClient, executor, metrics, logger);
   }
 
+  private ElasticsearchDeleterRepository createDeleterRepository(
+      final ElasticsearchAsyncClient asyncClient) {
+    return new ElasticsearchDeleterRepository(
+        config.getHistory(), resourceProvider, asyncClient, executor, logger);
+  }
+
   private List<RunnableTask> buildTasks() {
     final List<RunnableTask> tasks = new ArrayList<>();
 
@@ -247,6 +258,8 @@ public final class BackgroundTaskManagerFactory {
         tasks.add(buildRolloverPeriodJob());
       }
     }
+
+    tasks.add(buildProcessInstanceDeleterTask());
 
     executor.setCorePoolSize(tasks.size());
     return tasks;
@@ -302,6 +315,22 @@ public final class BackgroundTaskManagerFactory {
         1,
         postExport.getDelayBetweenRuns(),
         postExport.getMaxDelayBetweenRuns(),
+        executor,
+        logger);
+  }
+
+  private ReschedulingTask buildProcessInstanceDeleterTask() {
+    final var dependantTemplates = new ArrayList<ProcessInstanceDependant>();
+    resourceProvider.getIndexTemplateDescriptors().stream()
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
+        .forEach(dependantTemplates::add);
+
+    return new ReschedulingTask(
+        new DeleterJob(dependantTemplates, executor, deleterRepository),
+        1,
+        10000,
+        30000, // TODO put sensible delays in here
         executor,
         logger);
   }

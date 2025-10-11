@@ -42,7 +42,8 @@ final class BackgroundTaskManagerTest {
             executor,
             // return unfinished futures to have a deterministic count of submitted tasks
             List.of(CompletableFuture::new, CompletableFuture::new),
-            Duration.ofMillis(100));
+            Duration.ofMillis(100),
+            null);
 
     @Test
     void shouldNotResubmitTasksOnStart() {
@@ -127,7 +128,8 @@ final class BackgroundTaskManagerTest {
             LoggerFactory.getLogger(BackgroundTaskManagerTest.class),
             executor,
             tasks,
-            Duration.ofMillis(100));
+            Duration.ofMillis(100),
+            null);
 
     public CloseTest() {
       taskManager.start();
