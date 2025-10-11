@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -37,4 +38,14 @@ public interface InterPartitionCommandSender {
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command);
+
+  default void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final UnifiedRecordValue command,
+      final AuthInfo authInfo) {
+    sendCommand(receiverPartitionId, valueType, intent, command);
+  }
 }

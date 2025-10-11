@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.protocol.InterPartitionMessageEncoder;
 import io.camunda.zeebe.broker.protocol.MessageHeaderEncoder;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -54,6 +55,17 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command) {
+    sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
+  }
+
+  @Override
+  public void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final UnifiedRecordValue command,
+      final AuthInfo authInfo) {
     if (!partitionLeaders.containsKey(receiverPartitionId)) {
       LOG.warn(
           "Not sending command {} {} to {}, no known leader for this partition",
@@ -72,7 +84,8 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         partitionLeader);
 
     final var message =
-        Encoder.encode(checkpointId, receiverPartitionId, valueType, intent, recordKey, command);
+        Encoder.encode(
+            checkpointId, receiverPartitionId, valueType, intent, recordKey, command, authInfo);
 
     communicationService.unicast(
         TOPIC_PREFIX + receiverPartitionId,
@@ -98,7 +111,8 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         final ValueType valueType,
         final Intent intent,
         final Long recordKey,
-        final BufferWriter command) {
+        final BufferWriter command,
+        final BufferWriter authInfo) {
       final var messageLength =
           MessageHeaderEncoder.ENCODED_LENGTH
               + InterPartitionMessageEncoder.BLOCK_LENGTH
@@ -108,15 +122,18 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
       final var headerEncoder = new MessageHeaderEncoder();
       final var bodyEncoder = new InterPartitionMessageEncoder();
       final var commandBuffer = new UnsafeBuffer(new byte[command.getLength()]);
+      final var authBuffer = new UnsafeBuffer(new byte[authInfo.getLength()]);
       final var messageBuffer = new UnsafeBuffer(new byte[messageLength]);
       command.write(commandBuffer, 0);
+      authInfo.write(authBuffer, 0);
       bodyEncoder
           .wrapAndApplyHeader(messageBuffer, 0, headerEncoder)
           .checkpointId(checkpointId)
           .receiverPartitionId(receiverPartitionId)
           .valueType(valueType.value())
           .intent(intent.value())
-          .putCommand(commandBuffer, 0, command.getLength());
+          .putCommand(commandBuffer, 0, command.getLength())
+          .putAuth(authBuffer, 0, authInfo.getLength());
 
       bodyEncoder.recordKey(
           Objects.requireNonNullElseGet(
