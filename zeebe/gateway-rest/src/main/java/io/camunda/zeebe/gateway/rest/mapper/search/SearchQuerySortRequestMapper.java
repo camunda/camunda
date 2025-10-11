@@ -22,6 +22,7 @@ import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
 import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
+import io.camunda.search.sort.ProcessDefinitionInstanceStatisticsSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
@@ -200,6 +201,13 @@ public class SearchQuerySortRequestMapper {
   static List<SearchQuerySortRequest<CorrelatedMessageSubscriptionSearchQuerySortRequest.FieldEnum>>
       fromCorrelatedMessageSubscriptionSearchQuerySortRequest(
           final List<CorrelatedMessageSubscriptionSearchQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<
+          SearchQuerySortRequest<ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum>>
+      fromProcessDefinitionInstanceStatisticsQuerySortRequest(
+          final List<ProcessDefinitionInstanceStatisticsQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -731,6 +739,23 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_INSTANCE_KEY -> builder.processInstanceKey();
         case SUBSCRIPTION_KEY -> builder.subscriptionKey();
         case TENANT_ID -> builder.tenantId();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  public static List<String> applyProcessDefinitionInstanceStatisticsSortField(
+      final ProcessDefinitionInstanceStatisticsQuerySortRequest.FieldEnum field,
+      final ProcessDefinitionInstanceStatisticsSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case PROCESS_DEFINITION_ID -> builder.processDefinitionId();
+        case ACTIVE_INSTANCES_WITH_INCIDENT -> builder.activeInstancesWithIncident();
+        case ACTIVE_INSTANCES_WITHOUT_INCIDENT -> builder.activeInstancesWithoutIncident();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

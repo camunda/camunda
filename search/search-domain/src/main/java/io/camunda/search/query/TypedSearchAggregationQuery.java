@@ -9,19 +9,8 @@ package io.camunda.search.query;
 
 import io.camunda.search.aggregation.AggregationBase;
 import io.camunda.search.filter.FilterBase;
-import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.sort.NoSort;
+import io.camunda.search.sort.SortOption;
 
-public interface TypedSearchAggregationQuery<F extends FilterBase, A extends AggregationBase>
-    extends TypedSearchQuery<F, NoSort> {
-
-  @Override
-  default NoSort sort() {
-    return NoSort.NO_SORT;
-  }
-
-  @Override
-  default SearchQueryPage page() {
-    return SearchQueryPage.NO_ENTITIES_QUERY;
-  }
-}
+public interface TypedSearchAggregationQuery<
+        F extends FilterBase, S extends SortOption, A extends AggregationBase>
+    extends TypedSearchQuery<F, S> {}

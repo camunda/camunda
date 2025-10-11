@@ -17,6 +17,8 @@ import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.zeebe.gateway.protocol.rest.FormResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQuery;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
@@ -132,6 +134,13 @@ public class ProcessDefinitionController {
         .fold(RestErrorMapper::mapProblemToResponse, this::elementStatistics);
   }
 
+  @CamundaPostMapping(path = "/statistics/process-instances")
+  public ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult> processInstanceStatistics(
+      @RequestBody(required = false) final ProcessDefinitionInstanceStatisticsQuery query) {
+    return SearchQueryRequestMapper.toProcessDefinitionInstanceStatisticsQuery(query)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getProcessDefinitionInstanceStatistics);
+  }
+
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
       final ProcessDefinitionStatisticsFilter filter) {
     try {
@@ -141,6 +150,21 @@ public class ProcessDefinitionController {
               .elementStatistics(filter);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessDefinitionElementStatisticsResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<ProcessDefinitionInstanceStatisticsQueryResult>
+      getProcessDefinitionInstanceStatistics(
+          final io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery query) {
+    try {
+      final var result =
+          processDefinitionServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getProcessDefinitionInstanceStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toProcessInstanceStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

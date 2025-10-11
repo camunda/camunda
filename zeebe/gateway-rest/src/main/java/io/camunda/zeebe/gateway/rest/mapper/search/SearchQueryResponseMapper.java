@@ -34,6 +34,7 @@ import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.entities.RoleEntity;
@@ -99,6 +100,9 @@ import io.camunda.zeebe.gateway.protocol.rest.MessageSubscriptionStateEnum;
 import io.camunda.zeebe.gateway.protocol.rest.OwnerTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.PermissionTypeEnum;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsPageResponse;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionInstanceStatisticsResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessDefinitionSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.ProcessElementStatisticsResult;
@@ -231,6 +235,28 @@ public final class SearchQueryResponseMapper {
         .canceled(result.canceled())
         .incidents(result.incidents())
         .completed(result.completed());
+  }
+
+  public static ProcessDefinitionInstanceStatisticsQueryResult
+      toProcessInstanceStatisticsQueryResult(
+          final SearchQueryResult<ProcessDefinitionInstanceStatisticsEntity> result) {
+    final var page = toProcessDefinitionInstanceStatisticsPageResponse(result);
+    return new ProcessDefinitionInstanceStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toProcessInstanceStatisticsResult)
+                .toList());
+  }
+
+  private static ProcessDefinitionInstanceStatisticsResult toProcessInstanceStatisticsResult(
+      final ProcessDefinitionInstanceStatisticsEntity result) {
+    return new ProcessDefinitionInstanceStatisticsResult()
+        .processDefinitionId(result.processDefinitionId())
+        .latestProcessDefinitionName(result.latestProcessDefinitionName())
+        .hasMultipleVersions(result.hasMultipleVersions())
+        .activeInstancesWithIncidentCount(result.activeInstancesWithIncidentCount())
+        .activeInstancesWithoutIncidentCount(result.activeInstancesWithoutIncidentCount());
   }
 
   public static ProcessInstanceSequenceFlowsQueryResult toSequenceFlowsResult(
@@ -528,6 +554,14 @@ public final class SearchQueryResponseMapper {
         .hasMoreTotalItems(result.hasMoreTotalItems())
         .startCursor(result.startCursor())
         .endCursor(result.endCursor());
+  }
+
+  private static ProcessDefinitionInstanceStatisticsPageResponse
+      toProcessDefinitionInstanceStatisticsPageResponse(final SearchQueryResult<?> result) {
+
+    return new ProcessDefinitionInstanceStatisticsPageResponse()
+        .totalItems(result.total())
+        .hasMoreTotalItems(result.hasMoreTotalItems());
   }
 
   private static List<ProcessDefinitionResult> toProcessDefinitions(

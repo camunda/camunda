@@ -11,8 +11,7 @@ import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.List;
 
-public interface SearchStatisticsReader<T, A extends TypedSearchAggregationQuery<?, ?>>
+public interface SearchStatisticsReader<T, A extends TypedSearchAggregationQuery<?, ?, ?>>
     extends SearchClientReader {
-
   List<T> aggregate(final A query, final ResourceAccessChecks resourceAccessChecks);
 }

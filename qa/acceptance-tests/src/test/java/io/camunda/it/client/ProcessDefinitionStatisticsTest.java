@@ -710,7 +710,8 @@ public class ProcessDefinitionStatisticsTest {
             .getProcesses()
             .getFirst()
             .getProcessDefinitionKey();
-    TestHelper.startProcessInstance(camundaClient, "service_tasks_v2", "{\"path\":222}");
+    final Map<String, Object> variables = Map.of("path", 222);
+    TestHelper.startProcessInstance(camundaClient, "service_tasks_v2", variables);
 
     try (final JobWorker ignored =
         camundaClient
@@ -719,7 +720,7 @@ public class ProcessDefinitionStatisticsTest {
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient, 1);
+      waitUntilJobWorkerHasFailedJob(camundaClient, variables, 1);
 
       // when
       final var actual =

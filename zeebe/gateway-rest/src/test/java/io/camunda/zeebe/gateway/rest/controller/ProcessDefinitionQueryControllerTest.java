@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
+import io.camunda.search.entities.ProcessDefinitionInstanceStatisticsEntity;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.filter.ProcessDefinitionFilter;
@@ -523,5 +524,160 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
 
     verify(processDefinitionServices)
         .search(new ProcessDefinitionQuery.Builder().filter(filter).build());
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithOrOperator() {
+    // given
+    final var statsEntity =
+        new ProcessDefinitionInstanceStatisticsEntity(
+            "complexProcess", "Complex process", true, 5L, 10L);
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statsEntity))
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request =
+        """
+        {
+          "filter": {
+            "state": "ACTIVE",
+            "$or": [
+              { "tenantId": "tenantA" },
+              { "processDefinitionId": "complexProcess" }
+            ]
+          }
+        }
+        """;
+    final var response =
+        """
+        {
+          "items": [
+            {
+              "processDefinitionId": "complexProcess",
+              "latestProcessDefinitionName": "Complex process",
+              "hasMultipleVersions": true,
+              "activeInstancesWithoutIncidentCount": 5,
+              "activeInstancesWithIncidentCount": 10
+
+            }
+          ],
+          "page": {
+            "totalItems": 1,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices).getProcessDefinitionInstanceStatistics(any());
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithEmptyFilter() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request = "{ \"filter\": {} }";
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices).getProcessDefinitionInstanceStatistics(any());
+  }
+
+  @Test
+  public void shouldGetProcessDefinitionInstanceStatisticsWithMissingFilter() {
+    // given
+    final var statsResult =
+        new io.camunda.search.query.SearchQueryResult.Builder<
+                ProcessDefinitionInstanceStatisticsEntity>()
+            .total(0L)
+            .items(List.of())
+            .startCursor(null)
+            .endCursor(null)
+            .build();
+    when(processDefinitionServices.getProcessDefinitionInstanceStatistics(any()))
+        .thenReturn(statsResult);
+
+    final var request = "{}";
+    final var response =
+        """
+        {
+          "items": [],
+          "page": {
+            "totalItems": 0,
+            "hasMoreTotalItems": false
+          }
+        }
+        """;
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_DEFINITION_URL + "statistics/process-instances")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(response, JsonCompareMode.STRICT);
+
+    verify(processDefinitionServices).getProcessDefinitionInstanceStatistics(any());
   }
 }

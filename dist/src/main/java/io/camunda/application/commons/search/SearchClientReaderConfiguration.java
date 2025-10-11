@@ -42,6 +42,8 @@ import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionDocumentReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsDocumentReader;
+import io.camunda.search.clients.reader.ProcessDefinitionInstanceStatisticsReader;
 import io.camunda.search.clients.reader.ProcessDefinitionReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsDocumentReader;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
@@ -69,6 +71,7 @@ import io.camunda.search.clients.reader.UserTaskDocumentReader;
 import io.camunda.search.clients.reader.UserTaskReader;
 import io.camunda.search.clients.reader.VariableDocumentReader;
 import io.camunda.search.clients.reader.VariableReader;
+import io.camunda.search.clients.reader.utils.IncidentErrorHashCodeNormalizer;
 import io.camunda.search.clients.transformers.ServiceTransformers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
@@ -124,6 +127,12 @@ public class SearchClientReaderConfiguration {
   public AuthorizationReader authorizationReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new AuthorizationDocumentReader(executor, descriptors.get(AuthorizationIndex.class));
+  }
+
+  @Bean
+  public IncidentErrorHashCodeNormalizer incidentErrorHashCodeNormalizer(
+      final IncidentReader incidentReader) {
+    return new IncidentErrorHashCodeNormalizer((IncidentDocumentReader) incidentReader);
   }
 
   @Bean
@@ -241,18 +250,27 @@ public class SearchClientReaderConfiguration {
   public ProcessDefinitionStatisticsReader processDefinitionStatisticsReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptors descriptors,
-      final IncidentReader incidentReader) {
+      final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessDefinitionStatisticsDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), (IncidentDocumentReader) incidentReader);
+        executor, descriptors.get(ListViewTemplate.class), normalizer);
+  }
+
+  @Bean
+  public ProcessDefinitionInstanceStatisticsReader processDefinitionInstanceStatisticsReader(
+      final SearchClientBasedQueryExecutor executor,
+      final IndexDescriptors descriptors,
+      final IncidentErrorHashCodeNormalizer normalizer) {
+    return new ProcessDefinitionInstanceStatisticsDocumentReader(
+        executor, descriptors.get(ListViewTemplate.class), normalizer) {};
   }
 
   @Bean
   public ProcessInstanceReader processInstanceReader(
       final SearchClientBasedQueryExecutor executor,
       final IndexDescriptors descriptors,
-      final IncidentReader incidentReader) {
+      final IncidentErrorHashCodeNormalizer normalizer) {
     return new ProcessInstanceDocumentReader(
-        executor, descriptors.get(ListViewTemplate.class), (IncidentDocumentReader) incidentReader);
+        executor, descriptors.get(ListViewTemplate.class), normalizer);
   }
 
   @Bean
