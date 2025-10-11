@@ -11,7 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.IndexRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.snapshot.Repository;
 import co.elastic.clients.elasticsearch.snapshot.RestoreRequest;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
@@ -33,7 +36,7 @@ public class ESDBClientBackup implements BackupDBClient {
   final ElasticsearchClient esClient;
   private final Executor executor;
 
-  public ESDBClientBackup(final String url, final Executor executor) throws IOException {
+  public ESDBClientBackup(final String url, final Executor executor) {
     restClient = RestClient.builder(HttpHost.create(url)).build();
     this.executor = executor;
     esClient =
@@ -81,6 +84,64 @@ public class ESDBClientBackup implements BackupDBClient {
   @Override
   public List<String> cat() throws IOException {
     return esClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+  }
+
+  @Override
+  public void index(String indexName, String documentId, Object document) throws IOException {
+    final var indexRequest =
+        IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
+
+    final var response = esClient.index(indexRequest);
+
+    // Verify the indexing was successful
+    if (response.result() == null) {
+      throw new IOException("Failed to index document with ID: " + documentId + ", result is null");
+    }
+
+    final String result = response.result().toString().toLowerCase();
+    if (!"created".equals(result) && !"updated".equals(result)) {
+      throw new IOException(
+          "Failed to index document with ID: " + documentId + ", result: " + response.result());
+    }
+  }
+
+  @Override
+  public void refresh(String indexName) throws IOException {
+    final var refreshRequest = RefreshRequest.of(r -> r.index(indexName));
+    final var response = esClient.indices().refresh(refreshRequest);
+
+    // Check if refresh was successful
+    if (response.shards() != null && response.shards().failed().intValue() > 0) {
+      throw new IOException(
+          "Refresh failed for index: "
+              + indexName
+              + ", failed shards: "
+              + response.shards().failed());
+    }
+  }
+
+  @Override
+  public void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException {
+    if (documents.isEmpty()) {
+      return; // Nothing to index
+    }
+
+    final var bulkBuilder = new BulkRequest.Builder();
+
+    for (final var doc : documents) {
+      bulkBuilder.operations(
+          op -> op.index(idx -> idx.index(indexName).id(doc.id()).document(doc.document())));
+    }
+
+    final var bulkRequest = bulkBuilder.build();
+    final var response = esClient.bulk(bulkRequest);
+
+    // Check for errors in bulk response
+    if (response.errors()) {
+      final var errorCount = response.items().size();
+      throw new IOException(
+          "Bulk indexing failed for " + errorCount + " documents in index: " + indexName);
+    }
   }
 
   @Override
