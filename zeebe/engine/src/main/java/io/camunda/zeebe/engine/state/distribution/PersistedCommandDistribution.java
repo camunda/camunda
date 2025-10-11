@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -29,13 +30,16 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
+  private final ObjectProperty<AuthInfo> authInfoProperty =
+      new ObjectProperty<>("authInfo", new AuthInfo());
 
   public PersistedCommandDistribution() {
-    super(4);
+    super(5);
     declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(authInfoProperty);
   }
 
   public PersistedCommandDistribution wrap(
@@ -54,6 +58,12 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     valueBuffer.wrap(new byte[encodedLength]);
     commandValue.write(valueBuffer, 0);
     commandValueProperty.getValue().wrap(valueBuffer, 0, encodedLength);
+
+    final var authInfo = commandDistributionRecord.getAuthInfo();
+    final int authLength = authInfo.getLength();
+    final var authBuffer = new UnsafeBuffer(new byte[authLength]);
+    authInfo.write(authBuffer, 0);
+    authInfoProperty.getValue().wrap(authBuffer, 0, authLength);
 
     return this;
   }
@@ -85,5 +95,9 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
 
   public UnifiedRecordValue getCommandValue() {
     return commandValueProperty.getValue();
+  }
+
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -135,5 +136,10 @@ record MockTypedCheckpointRecord(
   @Override
   public int getLength() {
     return 0;
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return null;
   }
 }
