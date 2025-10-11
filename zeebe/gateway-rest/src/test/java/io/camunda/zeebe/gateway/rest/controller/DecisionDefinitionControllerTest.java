@@ -188,9 +188,9 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed.",
+                "detail":"Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 
@@ -223,9 +223,9 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
         """
             {
                 "type":"about:blank",
-                "title":"INVALID_ARGUMENT",
+                "title":"Bad Request",
                 "status":400,
-                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required.",
+                "detail":"At least one of [decisionDefinitionId, decisionDefinitionKey] is required",
                 "instance":"/v2/decision-definitions/evaluation"
              }""";
 

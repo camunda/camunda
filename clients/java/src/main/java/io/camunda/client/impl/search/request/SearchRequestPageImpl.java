@@ -42,12 +42,14 @@ public class SearchRequestPageImpl
 
   @Override
   public SearchRequestPage before(final String cursor) {
+    page.from(null); // clear from when using before
     page.before(cursor);
     return this;
   }
 
   @Override
   public SearchRequestPage after(final String cursor) {
+    page.from(null); // clear from when using after
     page.after(cursor);
     return this;
   }

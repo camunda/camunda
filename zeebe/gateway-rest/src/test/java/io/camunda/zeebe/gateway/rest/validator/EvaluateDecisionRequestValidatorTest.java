@@ -9,7 +9,8 @@ package io.camunda.zeebe.gateway.rest.validator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationInstruction;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationById;
+import io.camunda.zeebe.gateway.protocol.rest.DecisionEvaluationByKey;
 import java.util.Optional;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,7 +24,7 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept valid decisionDefinitionKey format")
   void shouldAcceptValidDecisionDefinitionKey() {
-    final var request = new DecisionEvaluationInstruction();
+    final var request = new DecisionEvaluationByKey();
     request.setDecisionDefinitionKey("123456789");
 
     final Optional<ProblemDetail> result =
@@ -35,8 +36,8 @@ class EvaluateDecisionRequestValidatorTest {
   @ParameterizedTest
   @ValueSource(strings = {"abc", "12.34", "12abc", "", " "})
   @DisplayName("Should reject invalid decisionDefinitionKey formats")
-  void shouldRejectInvalidDecisionDefinitionKey(String invalidKey) {
-    final var request = new DecisionEvaluationInstruction();
+  void shouldRejectInvalidDecisionDefinitionKey(final String invalidKey) {
+    final var request = new DecisionEvaluationByKey();
     request.setDecisionDefinitionKey(invalidKey);
 
     final Optional<ProblemDetail> result =
@@ -52,23 +53,9 @@ class EvaluateDecisionRequestValidatorTest {
   }
 
   @Test
-  @DisplayName("Should accept null decisionDefinitionKey when decisionDefinitionId is provided")
-  void shouldAcceptNullDecisionDefinitionKeyWhenIdProvided() {
-    final var request = new DecisionEvaluationInstruction();
-    request.setDecisionDefinitionKey(null);
-    request.setDecisionDefinitionId("decision-id");
-
-    final Optional<ProblemDetail> result =
-        EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
-
-    assertThat(result).isEmpty();
-  }
-
-  @Test
-  @DisplayName("Should reject when both decisionDefinitionKey and decisionDefinitionId are null")
-  void shouldRejectWhenBothKeyAndIdAreNull() {
-    final var request = new DecisionEvaluationInstruction();
-    request.setDecisionDefinitionKey(null);
+  @DisplayName("Should reject when both decisionDefinitionId is null")
+  void shouldRejectNullDecisionDefinitionId() {
+    final var request = new DecisionEvaluationById();
     request.setDecisionDefinitionId(null);
 
     final Optional<ProblemDetail> result =
@@ -81,12 +68,10 @@ class EvaluateDecisionRequestValidatorTest {
   }
 
   @Test
-  @DisplayName(
-      "Should reject when both decisionDefinitionKey and decisionDefinitionId are provided")
-  void shouldRejectWhenBothKeyAndIdProvided() {
-    final var request = new DecisionEvaluationInstruction();
-    request.setDecisionDefinitionKey("123456789");
-    request.setDecisionDefinitionId("decision-id");
+  @DisplayName("Should reject when both decisionDefinitionKey is null")
+  void shouldRejectNullDecisionDefinitionKey() {
+    final var request = new DecisionEvaluationByKey();
+    request.setDecisionDefinitionKey(null);
 
     final Optional<ProblemDetail> result =
         EvaluateDecisionRequestValidator.validateEvaluateDecisionRequest(request);
@@ -94,13 +79,13 @@ class EvaluateDecisionRequestValidatorTest {
     assertThat(result).isPresent();
     final ProblemDetail problem = result.get();
     assertThat(problem.getDetail())
-        .contains("Only one of [decisionDefinitionId, decisionDefinitionKey] is allowed");
+        .contains("At least one of [decisionDefinitionId, decisionDefinitionKey] is required");
   }
 
   @Test
   @DisplayName("Should handle edge case Long values")
   void shouldHandleEdgeCaseLongValues() {
-    final var request = new DecisionEvaluationInstruction();
+    final var request = new DecisionEvaluationByKey();
 
     // Test with maximum Long value
     request.setDecisionDefinitionKey(String.valueOf(Long.MAX_VALUE));
@@ -114,7 +99,7 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should reject Long values that are too large")
   void shouldRejectLongValuesTooLarge() {
-    final var request = new DecisionEvaluationInstruction();
+    final var request = new DecisionEvaluationByKey();
     // Create a number larger than Long.MAX_VALUE
     request.setDecisionDefinitionKey("99999999999999999999999999999");
 
@@ -133,7 +118,7 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept zero as valid Long value")
   void shouldAcceptZeroAsValidLong() {
-    final var request = new DecisionEvaluationInstruction();
+    final var request = new DecisionEvaluationByKey();
     request.setDecisionDefinitionKey("0");
 
     final Optional<ProblemDetail> result =
@@ -145,7 +130,7 @@ class EvaluateDecisionRequestValidatorTest {
   @Test
   @DisplayName("Should accept negative Long values")
   void shouldAcceptNegativeLongValues() {
-    final var request = new DecisionEvaluationInstruction();
+    final var request = new DecisionEvaluationByKey();
     request.setDecisionDefinitionKey("-123456789");
 
     final Optional<ProblemDetail> result =
