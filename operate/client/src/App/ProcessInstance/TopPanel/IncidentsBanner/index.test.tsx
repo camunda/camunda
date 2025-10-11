@@ -7,55 +7,29 @@
  */
 
 import {IncidentsBanner} from './index';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {render, screen} from 'modules/testing-library';
-import {incidentsStore} from 'modules/stores/incidents';
-import {mockIncidents} from 'modules/mocks/incidents';
-import {mockFetchProcessInstanceIncidents} from 'modules/mocks/api/processInstances/fetchProcessInstanceIncidents';
-import {Paths} from 'modules/Routes';
 
-const mockProps = {
+const getComponentProps = (
+  incidentsCount = 1,
+): React.ComponentProps<typeof IncidentsBanner> => ({
   onClick: vi.fn(),
-  isArrowFlipped: false,
+  incidentsCount,
+  processInstanceKey: '1',
   isOpen: false,
-};
-
-type Props = {
-  children?: React.ReactNode;
-};
-
-const {fetchIncidents} = incidentsStore;
-
-const Wrapper: React.FC<Props> = ({children}) => {
-  return (
-    <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
-      <Routes>
-        <Route path={Paths.processInstance()} element={children} />
-      </Routes>
-    </MemoryRouter>
-  );
-};
+});
 
 describe('IncidentsBanner', () => {
   it('should display incidents banner if banner is not collapsed', async () => {
-    mockFetchProcessInstanceIncidents().withSuccess(mockIncidents);
-
-    await fetchIncidents('1');
-
-    render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
+    const props = getComponentProps();
+    render(<IncidentsBanner {...props} />);
 
     expect(screen.getByText('1 Incident occurred')).toBeInTheDocument();
   });
 
   it('should show the right text for more than 1 incident', async () => {
-    mockFetchProcessInstanceIncidents().withSuccess({
-      ...mockIncidents,
-      count: 2,
-    });
+    const props = getComponentProps(2);
 
-    await fetchIncidents('1');
-
-    render(<IncidentsBanner {...mockProps} />, {wrapper: Wrapper});
+    render(<IncidentsBanner {...props} />);
 
     expect(screen.getByText('2 Incidents occurred')).toBeInTheDocument();
   });

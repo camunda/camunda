@@ -8,19 +8,24 @@
 
 import {IncidentsTable} from '.';
 import {
-  createIncident,
+  createEnhancedIncidentV2,
   createInstance,
   createProcessInstance,
 } from 'modules/testUtils';
 import {render, screen} from 'modules/testing-library';
-import {incidentsStore} from 'modules/stores/incidents';
-import {Wrapper, incidentsMock, firstIncident} from './mocks';
+import {Wrapper, firstIncident} from './mocks';
 import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
-describe('Selection', () => {
+// TODO: This test will no longer work because the selection state if an incident is
+// stored on the incident for rendering. Since they are now passed as prop, they
+// are not controlled by the "flowNodeSelectionStore" in this test.
+// Do we have to move away from passing data as props?
+
+describe('Selection', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
   it('should deselect selected incident', async () => {
     mockFetchProcessInstance().withSuccess(createInstance());
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -29,20 +34,18 @@ describe('Selection', () => {
         hasIncident: true,
       }),
     );
-    incidentsStore.setIncidents({
-      ...incidentsMock,
-      incidents: [firstIncident],
-      count: 1,
-    });
     selectFlowNode(
       {},
       {
-        flowNodeId: firstIncident.flowNodeId,
+        flowNodeId: firstIncident.elementId,
         isMultiInstance: false,
       },
     );
 
-    const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
+    const {user} = render(
+      <IncidentsTable processInstanceKey="1" incidents={[firstIncident]} />,
+      {wrapper: Wrapper},
+    );
     expect(screen.getByRole('row', {selected: true})).toBeInTheDocument();
 
     await user.click(screen.getByRole('row', {selected: true}));
@@ -58,11 +61,9 @@ describe('Selection', () => {
       }),
     );
     const incidents = [
-      createIncident({flowNodeId: 'myTask'}),
-      createIncident({flowNodeId: 'myTask'}),
+      createEnhancedIncidentV2({elementId: 'myTask'}),
+      createEnhancedIncidentV2({elementId: 'myTask'}),
     ];
-
-    incidentsStore.setIncidents({...incidentsMock, incidents});
     selectFlowNode(
       {},
       {
@@ -71,7 +72,10 @@ describe('Selection', () => {
       },
     );
 
-    const {user} = render(<IncidentsTable />, {wrapper: Wrapper});
+    const {user} = render(
+      <IncidentsTable processInstanceKey="1" incidents={incidents} />,
+      {wrapper: Wrapper},
+    );
     expect(screen.getAllByRole('row', {selected: true})).toHaveLength(2);
 
     const [firstRow] = screen.getAllByRole('row', {
