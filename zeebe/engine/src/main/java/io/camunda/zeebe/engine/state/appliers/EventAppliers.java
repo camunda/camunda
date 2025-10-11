@@ -152,7 +152,9 @@ public final class EventAppliers implements EventApplier {
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
-    register(ClusterVariableIntent.CREATED, NOOP_EVENT_APPLIER);
+    register(
+        ClusterVariableIntent.CREATED,
+        new ClusterVariableCreatedApplier(state.getClusterVariableState()));
     register(ClusterVariableIntent.UPDATED, NOOP_EVENT_APPLIER);
     register(ClusterVariableIntent.DELETED, NOOP_EVENT_APPLIER);
   }

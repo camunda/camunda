@@ -58,6 +58,7 @@ import io.camunda.zeebe.engine.processing.tenant.TenantProcessors;
 import io.camunda.zeebe.engine.processing.timer.DueDateTimerChecker;
 import io.camunda.zeebe.engine.processing.user.UserProcessors;
 import io.camunda.zeebe.engine.processing.usertask.UserTaskProcessor;
+import io.camunda.zeebe.engine.processing.variable.ClusterVariableProcessors;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.ScheduledTaskState;
 import io.camunda.zeebe.engine.state.message.TransientPendingSubscriptionState;
@@ -341,6 +342,14 @@ public final class EngineProcessors {
         routingInfo,
         batchOperationMetrics,
         brokerRequestAuthorizationConverter);
+
+    ClusterVariableProcessors.addClusterVariableProcessors(
+        keyGenerator,
+        typedRecordProcessors,
+        processingState.getClusterVariableState(),
+        writers,
+        commandDistributionBehavior,
+        authCheckBehavior);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);

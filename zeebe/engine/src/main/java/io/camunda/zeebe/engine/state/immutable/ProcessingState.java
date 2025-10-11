@@ -35,6 +35,8 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
 
   VariableState getVariableState();
 
+  ClusterVariableState getClusterVariableState();
+
   TimerInstanceState getTimerState();
 
   ElementInstanceState getElementInstanceState();

@@ -59,6 +59,7 @@ import io.camunda.zeebe.protocol.record.value.BatchOperationInitializationRecord
 import io.camunda.zeebe.protocol.record.value.BatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationPartitionLifecycleRecordValue;
 import io.camunda.zeebe.protocol.record.value.ClockRecordValue;
+import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.CompensationSubscriptionRecordValue;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
@@ -369,6 +370,11 @@ public final class RecordingExporter implements Exporter {
 
   public static VariableRecordStream variableRecords() {
     return new VariableRecordStream(records(ValueType.VARIABLE, VariableRecordValue.class));
+  }
+
+  public static ClusterVariableRecordStream clusterVariableRecords() {
+    return new ClusterVariableRecordStream(
+        records(ValueType.CLUSTER_VARIABLE, ClusterVariableRecordValue.class));
   }
 
   public static VariableRecordStream variableRecords(final VariableIntent intent) {
