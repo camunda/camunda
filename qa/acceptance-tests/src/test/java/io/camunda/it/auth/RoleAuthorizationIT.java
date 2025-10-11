@@ -133,6 +133,7 @@ class RoleAuthorizationIT {
             .send()
             .join();
 
+    // Debug the Camunda exporter AuditLogHander to assert role record contains authorization data
     assertThat(createdRole.getRoleId()).isEqualTo(roleId);
     assertThat(createdRole.getName()).isEqualTo(name);
     assertThat(createdRole.getDescription()).isEqualTo(description);
