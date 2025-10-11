@@ -313,12 +313,12 @@ jobs:
           --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
-          --set connectors.image.tag=SNAPSHOT \
+          --set connectors.image.tag=8.8.0 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
           --set identity.enabled=true \
           --set identity.firstUser.enabled=false \
-          --set identity.image.tag=8.8-SNAPSHOT \
+          --set identity.image.tag=8.8.0 \
           --set identityKeycloak.enabled=true \
           --set global.identity.auth.enabled=true \
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
