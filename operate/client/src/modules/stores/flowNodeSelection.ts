@@ -19,6 +19,7 @@ type Selection = {
   isMultiInstance?: boolean;
   isPlaceholder?: boolean;
   processInstanceId?: string;
+  anchorFlowNodeId?: string;
 };
 
 type State = {

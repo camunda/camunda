@@ -31,6 +31,10 @@ import {
   getVisibleChildPlaceholders,
   hasChildPlaceholders,
 } from 'modules/utils/instanceHistoryModification';
+import {
+  selectAdHocSubProcessInnerInstance,
+  selectFlowNode,
+} from 'modules/utils/flowNodeSelection';
 import {type BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 const TREE_NODE_HEIGHT = 32;
@@ -142,11 +146,14 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       : processInstanceXmlData?.businessObjects[flowNodeInstance.flowNodeId];
 
     const isMultiInstanceBody = flowNodeInstance.type === 'MULTI_INSTANCE_BODY';
+    const isAdHocSubProcessInnerInstance =
+      flowNodeInstance.type === 'AD_HOC_SUB_PROCESS_INNER_INSTANCE';
 
     const isFoldable =
       isMultiInstanceBody ||
       isSubProcess(businessObject) ||
       isAdHocSubProcess(businessObject) ||
+      isAdHocSubProcessInnerInstance ||
       isRoot;
 
     const hasChildren = flowNodeInstance.isPlaceholder
@@ -222,6 +229,10 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
       ? hasVisibleChildPlaceholders
       : hasVisibleChildNodes;
     let {rowRef: _, ...carbonTreeNodeProps} = rest;
+    const rootNode = {
+      flowNodeInstanceId: processInstanceDetailsStore.state.processInstance?.id,
+      isMultiInstance: false,
+    };
     return (
       <TreeNode
         {...carbonTreeNodeProps}
@@ -253,14 +264,21 @@ const FlowNodeInstancesTree: React.FC<Props> = observer(
             );
           } else {
             tracking.track({eventName: 'instance-history-item-clicked'});
-            flowNodeSelectionStore.selectFlowNode({
-              flowNodeId: isProcessInstance
-                ? undefined
-                : flowNodeInstance.flowNodeId,
-              flowNodeInstanceId: flowNodeInstance.id,
-              isMultiInstance: isMultiInstanceBody,
-              isPlaceholder: flowNodeInstance.isPlaceholder,
-            });
+            if (isAdHocSubProcessInnerInstance) {
+              if (!isExpanded) {
+                expandSubtree(flowNodeInstance);
+              }
+              selectAdHocSubProcessInnerInstance(rootNode, flowNodeInstance);
+            } else {
+              selectFlowNode(rootNode, {
+                flowNodeId: isProcessInstance
+                  ? undefined
+                  : flowNodeInstance.flowNodeId,
+                flowNodeInstanceId: flowNodeInstance.id,
+                isMultiInstance: isMultiInstanceBody,
+                isPlaceholder: flowNodeInstance.isPlaceholder,
+              });
+            }
           }
         }}
         onToggle={
