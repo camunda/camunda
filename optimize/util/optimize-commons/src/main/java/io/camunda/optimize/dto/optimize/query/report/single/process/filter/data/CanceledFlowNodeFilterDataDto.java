@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import java.util.List;
+import java.util.Objects;
 
 public class CanceledFlowNodeFilterDataDto implements FilterDataDto {
 
@@ -29,13 +30,17 @@ public class CanceledFlowNodeFilterDataDto implements FilterDataDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CanceledFlowNodeFilterDataDto that = (CanceledFlowNodeFilterDataDto) o;
+    return Objects.equals(values, that.values);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hashCode(values);
   }
 
   @Override

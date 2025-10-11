@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.processoverview;
 
 import java.util.List;
+import java.util.Objects;
 
 public class ProcessOverviewResponseDto {
 
@@ -77,13 +78,21 @@ public class ProcessOverviewResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessOverviewResponseDto that = (ProcessOverviewResponseDto) o;
+    return Objects.equals(processDefinitionName, that.processDefinitionName)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(owner, that.owner)
+        && Objects.equals(digest, that.digest)
+        && Objects.equals(kpis, that.kpis);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(processDefinitionName, processDefinitionKey, owner, digest, kpis);
   }
 
   @Override

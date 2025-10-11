@@ -13,6 +13,7 @@ import io.camunda.optimize.dto.optimize.datasource.DataSourceDto;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.util.Objects;
 
 public abstract class ImportIndexDto<T extends DataSourceDto> implements OptimizeDto {
 
@@ -75,12 +76,23 @@ public abstract class ImportIndexDto<T extends DataSourceDto> implements Optimiz
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        lastImportExecutionTimestamp, timestampOfLastEntity, dbTypeIndexRefersTo, dataSource);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ImportIndexDto<?> that = (ImportIndexDto<?>) o;
+    return Objects.equals(lastImportExecutionTimestamp, that.lastImportExecutionTimestamp)
+        && Objects.equals(timestampOfLastEntity, that.timestampOfLastEntity)
+        && Objects.equals(dbTypeIndexRefersTo, that.dbTypeIndexRefersTo)
+        && Objects.equals(dataSource, that.dataSource);
   }
 
   @Override

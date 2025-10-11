@@ -8,6 +8,7 @@
 package io.camunda.optimize.service.mixpanel.client;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Objects;
 
 public class MixpanelEntityEventProperties extends MixpanelEventProperties {
 
@@ -38,13 +39,20 @@ public class MixpanelEntityEventProperties extends MixpanelEventProperties {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final MixpanelEntityEventProperties that = (MixpanelEntityEventProperties) o;
+    return Objects.equals(entityId, that.entityId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), entityId);
   }
 
   @Override

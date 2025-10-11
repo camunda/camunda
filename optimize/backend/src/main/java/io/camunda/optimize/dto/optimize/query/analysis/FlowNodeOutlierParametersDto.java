@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
+import java.util.Objects;
+
 public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto {
 
   protected String flowNodeId;
@@ -52,16 +54,25 @@ public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeOutlierParametersDto that = (FlowNodeOutlierParametersDto) o;
+    return Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(lowerOutlierBound, that.lowerOutlierBound)
+        && Objects.equals(higherOutlierBound, that.higherOutlierBound);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), flowNodeId, lowerOutlierBound, higherOutlierBound);
   }
 
   @Override
   protected boolean canEqual(final Object other) {
     return other instanceof FlowNodeOutlierParametersDto;
-  }
-
-  @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
   }
 }

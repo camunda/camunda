@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
@@ -84,12 +85,23 @@ public class CombinedReportEvaluationResult extends ReportEvaluationResult {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), reportEvaluationResults, instanceCount);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final CombinedReportEvaluationResult that = (CombinedReportEvaluationResult) o;
+    return instanceCount == that.instanceCount
+        && Objects.equals(reportEvaluationResults, that.reportEvaluationResults);
   }
 
   @Override

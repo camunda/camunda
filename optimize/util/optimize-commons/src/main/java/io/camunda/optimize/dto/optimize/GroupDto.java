@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -57,12 +58,22 @@ public class GroupDto extends IdentityWithMetadataResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), memberCount);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final GroupDto groupDto = (GroupDto) o;
+    return Objects.equals(memberCount, groupDto.memberCount);
   }
 
   @Override

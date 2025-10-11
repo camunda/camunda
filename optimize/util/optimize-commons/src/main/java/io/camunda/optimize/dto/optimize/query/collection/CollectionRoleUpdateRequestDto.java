@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.collection;
 
 import io.camunda.optimize.dto.optimize.RoleType;
+import java.util.Objects;
 
 public class CollectionRoleUpdateRequestDto {
 
@@ -33,12 +34,19 @@ public class CollectionRoleUpdateRequestDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(role);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionRoleUpdateRequestDto that = (CollectionRoleUpdateRequestDto) o;
+    return Objects.equals(role, that.role);
   }
 
   @Override

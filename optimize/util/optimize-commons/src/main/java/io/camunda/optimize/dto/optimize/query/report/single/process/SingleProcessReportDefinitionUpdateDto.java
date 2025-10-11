@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.single.process;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
+import java.util.Objects;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class SingleProcessReportDefinitionUpdateDto extends ReportDefinitionUpdateDto {
@@ -31,13 +32,20 @@ public class SingleProcessReportDefinitionUpdateDto extends ReportDefinitionUpda
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final SingleProcessReportDefinitionUpdateDto that = (SingleProcessReportDefinitionUpdateDto) o;
+    return Objects.equals(data, that.data);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), data);
   }
 
   @Override

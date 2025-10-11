@@ -10,6 +10,7 @@ package io.camunda.optimize.dto.optimize.rest.definition;
 import jakarta.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class MultiDefinitionTenantsRequestDto {
 
@@ -49,13 +50,18 @@ public class MultiDefinitionTenantsRequestDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MultiDefinitionTenantsRequestDto that = (MultiDefinitionTenantsRequestDto) o;
+    return Objects.equals(definitions, that.definitions)
+        && Objects.equals(filterByCollectionScope, that.filterByCollectionScope);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(definitions, filterByCollectionScope);
   }
 
   @Override
@@ -100,13 +106,17 @@ public class MultiDefinitionTenantsRequestDto {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final DefinitionDto that = (DefinitionDto) o;
+      return Objects.equals(key, that.key) && Objects.equals(versions, that.versions);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(key, versions);
     }
 
     @Override

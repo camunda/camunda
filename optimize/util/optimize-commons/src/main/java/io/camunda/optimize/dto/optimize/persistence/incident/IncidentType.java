@@ -12,6 +12,7 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.FAILED_J
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
+import java.util.Objects;
 import org.slf4j.Logger;
 
 public class IncidentType {
@@ -54,12 +55,19 @@ public class IncidentType {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IncidentType that = (IncidentType) o;
+    return Objects.equals(id, that.id);
   }
 
   @Override

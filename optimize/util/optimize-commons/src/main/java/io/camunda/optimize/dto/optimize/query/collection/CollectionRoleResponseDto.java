@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.IdentityType;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.UserDto;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class CollectionRoleResponseDto implements Comparable<CollectionRoleResponseDto> {
@@ -99,12 +100,21 @@ public class CollectionRoleResponseDto implements Comparable<CollectionRoleRespo
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, identity, role);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionRoleResponseDto that = (CollectionRoleResponseDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(identity, that.identity)
+        && Objects.equals(role, that.role);
   }
 
   @Override

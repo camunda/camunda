@@ -120,13 +120,23 @@ public class UserDto extends IdentityWithMetadataResponseDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final UserDto userDto = (UserDto) o;
+    return Objects.equals(firstName, userDto.firstName)
+        && Objects.equals(lastName, userDto.lastName)
+        && Objects.equals(email, userDto.email)
+        && Objects.equals(roles, userDto.roles);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), firstName, lastName, email, roles);
   }
 
   @Override

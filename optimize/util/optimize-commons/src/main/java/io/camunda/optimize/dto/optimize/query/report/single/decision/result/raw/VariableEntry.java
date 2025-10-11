@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.decision.result.raw;
 
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
+import java.util.Objects;
 
 public class VariableEntry {
 
@@ -24,13 +25,17 @@ public class VariableEntry {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final VariableEntry that = (VariableEntry) o;
+    return Objects.equals(id, that.id) && Objects.equals(name, that.name) && type == that.type;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(id, name, type);
   }
 
   public String getId() {

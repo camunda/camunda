@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import java.util.Objects;
 
 public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto<?>>
     extends AuthorizedEntityDto {
@@ -41,12 +42,23 @@ public class AuthorizedReportEvaluationResponseDto<D extends ReportDefinitionDto
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), reportDefinition);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedReportEvaluationResponseDto<?> that =
+        (AuthorizedReportEvaluationResponseDto<?>) o;
+    return Objects.equals(reportDefinition, that.reportDefinition);
   }
 
   @Override

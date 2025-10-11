@@ -9,6 +9,7 @@ package io.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.j2objc.annotations.Property;
+import java.util.Objects;
 
 public class OnboardingConfiguration {
 
@@ -88,13 +89,29 @@ public class OnboardingConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OnboardingConfiguration that = (OnboardingConfiguration) o;
+    return enabled == that.enabled
+        && scheduleProcessOnboardingChecks == that.scheduleProcessOnboardingChecks
+        && enableOnboardingEmails == that.enableOnboardingEmails
+        && intervalForCheckingTriggerForOnboardingEmails
+            == that.intervalForCheckingTriggerForOnboardingEmails
+        && Objects.equals(appCuesScriptUrl, that.appCuesScriptUrl)
+        && Objects.equals(properties, that.properties);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        enabled,
+        appCuesScriptUrl,
+        scheduleProcessOnboardingChecks,
+        enableOnboardingEmails,
+        intervalForCheckingTriggerForOnboardingEmails,
+        properties);
   }
 
   @Override
@@ -152,13 +169,18 @@ public class OnboardingConfiguration {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Properties that = (Properties) o;
+      return Objects.equals(organizationId, that.organizationId)
+          && Objects.equals(clusterId, that.clusterId);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(organizationId, clusterId);
     }
 
     @Override

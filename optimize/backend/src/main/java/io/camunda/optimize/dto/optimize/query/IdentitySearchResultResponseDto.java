@@ -11,6 +11,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.optimize.dto.optimize.IdentityWithMetadataResponseDto;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.apache.lucene.search.ScoreDoc;
 
 public class IdentitySearchResultResponseDto {
@@ -58,12 +59,19 @@ public class IdentitySearchResultResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(result, scoreDoc);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final IdentitySearchResultResponseDto that = (IdentitySearchResultResponseDto) o;
+    return Objects.equals(result, that.result) && Objects.equals(scoreDoc, that.scoreDoc);
   }
 
   @Override

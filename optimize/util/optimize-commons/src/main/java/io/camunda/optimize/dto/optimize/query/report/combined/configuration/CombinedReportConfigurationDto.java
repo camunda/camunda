@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.optimize.query.report.combined.configuration;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.optimize.dto.optimize.query.report.combined.configuration.target_value.CombinedReportTargetValueDto;
+import java.util.Objects;
 
 public class CombinedReportConfigurationDto {
 
@@ -29,13 +30,32 @@ public class CombinedReportConfigurationDto {
   private CombinedReportTargetValueDto targetValue = new CombinedReportTargetValueDto();
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CombinedReportConfigurationDto that = (CombinedReportConfigurationDto) o;
+    return Objects.equals(pointMarkers, that.pointMarkers)
+        && Objects.equals(hideRelativeValue, that.hideRelativeValue)
+        && Objects.equals(hideAbsoluteValue, that.hideAbsoluteValue)
+        && Objects.equals(yLabel, that.yLabel)
+        && Objects.equals(xLabel, that.xLabel)
+        && Objects.equals(alwaysShowRelative, that.alwaysShowRelative)
+        && Objects.equals(alwaysShowAbsolute, that.alwaysShowAbsolute)
+        && Objects.equals(targetValue, that.targetValue);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        pointMarkers,
+        hideRelativeValue,
+        hideAbsoluteValue,
+        yLabel,
+        xLabel,
+        alwaysShowRelative,
+        alwaysShowAbsolute,
+        targetValue);
   }
 
   @Override

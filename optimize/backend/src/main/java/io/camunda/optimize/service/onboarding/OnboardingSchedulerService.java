@@ -19,6 +19,7 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -244,13 +245,42 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OnboardingSchedulerService that = (OnboardingSchedulerService) o;
+    return intervalToCheckForOnboardingDataInSeconds
+            == that.intervalToCheckForOnboardingDataInSeconds
+        && Objects.equals(processDefinitionReader, that.processDefinitionReader)
+        && Objects.equals(processDefinitionWriter, that.processDefinitionWriter)
+        && Objects.equals(processInstanceReader, that.processInstanceReader)
+        && Objects.equals(configurationService, that.configurationService)
+        && Objects.equals(
+            onboardingEmailNotificationService, that.onboardingEmailNotificationService)
+        && Objects.equals(processOverviewService, that.processOverviewService)
+        && Objects.equals(onboardingDataService, that.onboardingDataService)
+        && Objects.equals(saaSPanelNotificationService, that.saaSPanelNotificationService)
+        && Objects.equals(applicationContext, that.applicationContext)
+        && Objects.equals(emailNotificationHandler, that.emailNotificationHandler)
+        && Objects.equals(panelNotificationHandler, that.panelNotificationHandler);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionReader,
+        processDefinitionWriter,
+        processInstanceReader,
+        configurationService,
+        onboardingEmailNotificationService,
+        processOverviewService,
+        onboardingDataService,
+        saaSPanelNotificationService,
+        applicationContext,
+        intervalToCheckForOnboardingDataInSeconds,
+        emailNotificationHandler,
+        panelNotificationHandler);
   }
 
   @Override

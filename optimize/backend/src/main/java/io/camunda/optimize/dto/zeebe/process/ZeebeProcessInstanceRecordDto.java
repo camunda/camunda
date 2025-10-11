@@ -9,6 +9,7 @@ package io.camunda.optimize.dto.zeebe.process;
 
 import io.camunda.optimize.dto.zeebe.ZeebeRecordDto;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import java.util.Objects;
 
 public class ZeebeProcessInstanceRecordDto
     extends ZeebeRecordDto<ZeebeProcessInstanceDataDto, ProcessInstanceIntent> {
@@ -20,11 +21,17 @@ public class ZeebeProcessInstanceRecordDto
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(getClass(), super.hashCode());
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    return super.equals(o);
   }
 }

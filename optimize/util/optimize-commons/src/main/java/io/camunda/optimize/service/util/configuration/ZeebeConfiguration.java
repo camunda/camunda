@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class ZeebeConfiguration {
 
   private boolean enabled;
@@ -97,13 +99,30 @@ public class ZeebeConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeConfiguration that = (ZeebeConfiguration) o;
+    return enabled == that.enabled
+        && partitionCount == that.partitionCount
+        && maxImportPageSize == that.maxImportPageSize
+        && includeObjectVariableValue == that.includeObjectVariableValue
+        && variableImportEnabled == that.variableImportEnabled
+        && Objects.equals(name, that.name)
+        && Objects.equals(importConfig, that.importConfig);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        enabled,
+        name,
+        partitionCount,
+        maxImportPageSize,
+        includeObjectVariableValue,
+        variableImportEnabled,
+        importConfig);
   }
 
   @Override

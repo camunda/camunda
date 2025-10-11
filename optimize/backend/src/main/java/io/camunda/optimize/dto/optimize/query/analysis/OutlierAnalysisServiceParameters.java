@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.analysis;
 
 import java.time.ZoneId;
+import java.util.Objects;
 
 public class OutlierAnalysisServiceParameters<T extends ProcessDefinitionParametersDto> {
 
@@ -51,13 +52,19 @@ public class OutlierAnalysisServiceParameters<T extends ProcessDefinitionParamet
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OutlierAnalysisServiceParameters<?> that = (OutlierAnalysisServiceParameters<?>) o;
+    return Objects.equals(processDefinitionParametersDto, that.processDefinitionParametersDto)
+        && Objects.equals(zoneId, that.zoneId)
+        && Objects.equals(userId, that.userId);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(processDefinitionParametersDto, zoneId, userId);
   }
 
   @Override

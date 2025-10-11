@@ -16,6 +16,7 @@ import io.camunda.optimize.dto.optimize.query.report.single.ViewProperty;
 import io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value.TargetValueUnit;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import java.time.Duration;
+import java.util.Objects;
 import org.apache.commons.lang3.StringUtils;
 
 public class KpiResultDto {
@@ -142,13 +143,26 @@ public class KpiResultDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final KpiResultDto that = (KpiResultDto) o;
+    return isBelow == that.isBelow
+        && Objects.equals(reportId, that.reportId)
+        && Objects.equals(collectionId, that.collectionId)
+        && Objects.equals(reportName, that.reportName)
+        && Objects.equals(value, that.value)
+        && Objects.equals(target, that.target)
+        && type == that.type
+        && Objects.equals(measure, that.measure)
+        && unit == that.unit;
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        reportId, collectionId, reportName, value, target, isBelow, type, measure, unit);
   }
 
   @Override

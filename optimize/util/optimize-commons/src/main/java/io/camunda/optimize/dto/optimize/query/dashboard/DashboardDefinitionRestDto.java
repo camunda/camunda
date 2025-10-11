@@ -21,6 +21,7 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
@@ -71,18 +72,25 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DashboardDefinitionRestDto;
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardDefinitionRestDto that = (DashboardDefinitionRestDto) o;
+    return Objects.equals(tiles, that.tiles);
+  }
+
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), tiles);
   }
 
   @SuppressWarnings("checkstyle:ConstantName")

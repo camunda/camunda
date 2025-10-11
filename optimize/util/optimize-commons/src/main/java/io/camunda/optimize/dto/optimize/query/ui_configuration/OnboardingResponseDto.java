@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.dto.optimize.query.ui_configuration;
 
+import java.util.Objects;
+
 public class OnboardingResponseDto {
 
   private boolean enabled;
@@ -76,12 +78,23 @@ public class OnboardingResponseDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(enabled, appCuesScriptUrl, orgId, clusterId, salesPlanType);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OnboardingResponseDto that = (OnboardingResponseDto) o;
+    return enabled == that.enabled
+        && Objects.equals(appCuesScriptUrl, that.appCuesScriptUrl)
+        && Objects.equals(orgId, that.orgId)
+        && Objects.equals(clusterId, that.clusterId)
+        && Objects.equals(salesPlanType, that.salesPlanType);
   }
 
   @Override

@@ -12,6 +12,7 @@ import io.camunda.optimize.dto.optimize.TenantDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionScopeEntryDto;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 public class CollectionScopeEntryResponseDto {
@@ -80,7 +81,18 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CollectionScopeEntryResponseDto that = (CollectionScopeEntryResponseDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(definitionType, that.definitionType)
+        && Objects.equals(definitionKey, that.definitionKey)
+        && Objects.equals(definitionName, that.definitionName)
+        && Objects.equals(tenants, that.tenants);
   }
 
   protected boolean canEqual(final Object other) {
@@ -88,7 +100,7 @@ public class CollectionScopeEntryResponseDto {
   }
 
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(id, definitionType, definitionKey, definitionName, tenants);
   }
 
   public String toString() {

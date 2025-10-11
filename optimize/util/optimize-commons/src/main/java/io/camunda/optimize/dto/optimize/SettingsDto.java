@@ -8,6 +8,7 @@
 package io.camunda.optimize.dto.optimize;
 
 import java.time.OffsetDateTime;
+import java.util.Objects;
 import java.util.Optional;
 
 public class SettingsDto {
@@ -44,13 +45,18 @@ public class SettingsDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SettingsDto that = (SettingsDto) o;
+    return Objects.equals(sharingEnabled, that.sharingEnabled)
+        && Objects.equals(lastModified, that.lastModified);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(sharingEnabled, lastModified);
   }
 
   @Override

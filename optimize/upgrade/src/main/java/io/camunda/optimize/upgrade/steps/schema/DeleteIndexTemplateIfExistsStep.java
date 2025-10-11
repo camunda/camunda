@@ -15,6 +15,7 @@ import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.steps.UpgradeStep;
 import io.camunda.optimize.upgrade.steps.UpgradeStepType;
+import java.util.Objects;
 
 public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
 
@@ -57,18 +58,26 @@ public class DeleteIndexTemplateIfExistsStep extends UpgradeStep {
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
-  }
-
-  @Override
   protected boolean canEqual(final Object other) {
     return other instanceof DeleteIndexTemplateIfExistsStep;
   }
 
   @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DeleteIndexTemplateIfExistsStep that = (DeleteIndexTemplateIfExistsStep) o;
+    return templateVersion == that.templateVersion
+        && Objects.equals(templateName, that.templateName);
+  }
+
+  @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(super.hashCode(), templateName, templateVersion);
   }
 
   public String getTemplateName() {

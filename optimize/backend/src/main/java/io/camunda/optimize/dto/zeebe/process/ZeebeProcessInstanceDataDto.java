@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import org.apache.commons.lang3.StringUtils;
 
@@ -163,12 +164,38 @@ public class ZeebeProcessInstanceDataDto implements ProcessInstanceRecordValue {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        version,
+        bpmnProcessId,
+        processDefinitionKey,
+        flowScopeKey,
+        bpmnElementType,
+        parentProcessInstanceKey,
+        parentElementInstanceKey,
+        elementId,
+        processInstanceKey,
+        tenantId);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ZeebeProcessInstanceDataDto that = (ZeebeProcessInstanceDataDto) o;
+    return version == that.version
+        && processDefinitionKey == that.processDefinitionKey
+        && flowScopeKey == that.flowScopeKey
+        && parentProcessInstanceKey == that.parentProcessInstanceKey
+        && parentElementInstanceKey == that.parentElementInstanceKey
+        && processInstanceKey == that.processInstanceKey
+        && Objects.equals(bpmnProcessId, that.bpmnProcessId)
+        && Objects.equals(bpmnElementType, that.bpmnElementType)
+        && Objects.equals(elementId, that.elementId)
+        && Objects.equals(tenantId, that.tenantId);
   }
 
   @Override

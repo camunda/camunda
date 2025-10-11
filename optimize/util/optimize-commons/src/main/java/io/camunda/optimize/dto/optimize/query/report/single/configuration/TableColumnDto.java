@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 
@@ -197,13 +198,20 @@ public class TableColumnDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TableColumnDto that = (TableColumnDto) o;
+    return includeNewVariables == that.includeNewVariables
+        && Objects.equals(excludedColumns, that.excludedColumns)
+        && Objects.equals(includedColumns, that.includedColumns)
+        && Objects.equals(columnOrder, that.columnOrder);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(includeNewVariables, excludedColumns, includedColumns, columnOrder);
   }
 
   @Override

@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public class FindingsDto {
@@ -88,13 +89,23 @@ public class FindingsDto {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final FindingsDto that = (FindingsDto) o;
+    return Objects.equals(lowerOutlier, that.lowerOutlier)
+        && Objects.equals(higherOutlier, that.higherOutlier)
+        && Objects.equals(lowerOutlierHeat, that.lowerOutlierHeat)
+        && Objects.equals(higherOutlierHeat, that.higherOutlierHeat)
+        && Objects.equals(heat, that.heat)
+        && Objects.equals(totalCount, that.totalCount);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        lowerOutlier, higherOutlier, lowerOutlierHeat, higherOutlierHeat, heat, totalCount);
   }
 
   @Override
@@ -168,13 +179,20 @@ public class FindingsDto {
     }
 
     @Override
-    public int hashCode() {
-      return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(final Object o) {
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+      final Finding finding = (Finding) o;
+      return Objects.equals(boundValue, finding.boundValue)
+          && Objects.equals(percentile, finding.percentile)
+          && Objects.equals(relation, finding.relation)
+          && Objects.equals(count, finding.count);
     }
 
     @Override
-    public boolean equals(final Object o) {
-      return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    public int hashCode() {
+      return Objects.hash(boundValue, percentile, relation, count);
     }
 
     @Override

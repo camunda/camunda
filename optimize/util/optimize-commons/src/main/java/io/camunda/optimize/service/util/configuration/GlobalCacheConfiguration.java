@@ -7,6 +7,8 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.Objects;
+
 public class GlobalCacheConfiguration {
 
   private CacheConfiguration definitions;
@@ -62,13 +64,22 @@ public class GlobalCacheConfiguration {
   }
 
   @Override
-  public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final GlobalCacheConfiguration that = (GlobalCacheConfiguration) o;
+    return Objects.equals(definitions, that.definitions)
+        && Objects.equals(definitionEngines, that.definitionEngines)
+        && Objects.equals(cloudUsers, that.cloudUsers)
+        && Objects.equals(cloudTenantAuthorizations, that.cloudTenantAuthorizations)
+        && Objects.equals(users, that.users);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+  public int hashCode() {
+    return Objects.hash(
+        definitions, definitionEngines, cloudUsers, cloudTenantAuthorizations, users);
   }
 
   @Override

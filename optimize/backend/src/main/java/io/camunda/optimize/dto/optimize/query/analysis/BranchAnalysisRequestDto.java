@@ -14,6 +14,7 @@ import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 public class BranchAnalysisRequestDto {
 
@@ -86,12 +87,25 @@ public class BranchAnalysisRequestDto {
 
   @Override
   public int hashCode() {
-    return org.apache.commons.lang3.builder.HashCodeBuilder.reflectionHashCode(this);
+    return Objects.hash(
+        end, gateway, processDefinitionKey, processDefinitionVersions, tenantIds, filter);
   }
 
   @Override
   public boolean equals(final Object o) {
-    return org.apache.commons.lang3.builder.EqualsBuilder.reflectionEquals(this, o);
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BranchAnalysisRequestDto that = (BranchAnalysisRequestDto) o;
+    return Objects.equals(end, that.end)
+        && Objects.equals(gateway, that.gateway)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(filter, that.filter);
   }
 
   @Override
