@@ -484,20 +484,14 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>3.5.4</version>
         <configuration>
-          <skipITs>false</skipITs>
           <includes>
             <include>${includeITNames}</include>
           </includes>
           <excludes>
             <exclude>${excludeITNames}</exclude>
           </excludes>
-          <forkCount>1</forkCount>
-          <reuseForks>true</reuseForks>
-          <redirectTestOutputToFile>true</redirectTestOutputToFile>
           <systemPropertyVariables>
-            <testForkNumber>$${surefire.forkNumber}</testForkNumber>
             <spring.profiles.active>test</spring.profiles.active>
           </systemPropertyVariables>
           <environmentVariables>

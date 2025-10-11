@@ -358,8 +358,8 @@ jobs:
   run-importer-tests:
     if: inputs.runBeTests
     name: "Integration / Importer ITs"
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
+    runs-on: gcp-core-32-default
+    timeout-minutes: 30
     env:
       TEST_TYPE: Integration
       TEST_OWNER: Data Layer
@@ -378,7 +378,7 @@ jobs:
       - name: Build Operate
         run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
       - name: Run Tests
-        run: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
+        run: ./mvnw -pl operate/qa/integration-tests -P skipFrontendBuild,operateItImport,parallel-tests -B -Dfailsafe.rerunFailingTestsCount=0 verify
       - name: Observe build status
         if: always()
         continue-on-error: true
