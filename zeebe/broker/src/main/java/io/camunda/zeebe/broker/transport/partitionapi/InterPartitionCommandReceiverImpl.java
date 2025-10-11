@@ -172,6 +172,14 @@ final class InterPartitionCommandReceiverImpl {
       final var value = ReflectUtil.newInstance(valueClass);
 
       value.wrap(messageBuffer, commandOffset, commandLength);
+
+      final var authInfo = recordMetadata.getAuthorization();
+      authInfo.reset();
+      final var authOffset =
+          commandOffset + commandLength + InterPartitionMessageDecoder.authHeaderLength();
+      final var authLength = messageDecoder.authLength();
+      authInfo.wrap(messageBuffer, authOffset, authLength);
+
       return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
     }
   }
