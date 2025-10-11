@@ -22,6 +22,7 @@
     <field name="checkpointId" id="4" type="int64"/>
 
     <data name="command" id="32" type="varDataEncoding"/>
+    <data name="auth" id="33" type="varDataEncoding"/>
   </sbe:message>
 
 </sbe:messageSchema>
