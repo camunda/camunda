@@ -158,10 +158,11 @@ public final class AuthorizationCheckBehavior {
 
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
-    return (!authorizationsEnabled && !multiTenancyEnabled)
-        || (!request.hasRequestMetadata()
-            && request.batchOperationReference() == batchOperationReferenceNullValue())
-        || isAuthorizedAnonymousUser(request.claims());
+    return !request.forceAuthorization()
+        && ((!authorizationsEnabled && !multiTenancyEnabled)
+            || (!request.hasRequestMetadata()
+                && request.batchOperationReference() == batchOperationReferenceNullValue())
+            || isAuthorizedAnonymousUser(request.claims()));
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
@@ -619,7 +620,31 @@ public final class AuthorizationCheckBehavior {
       String tenantId,
       Set<AuthorizationScope> authorizationScopes,
       boolean hasRequestMetadata,
-      long batchOperationReference) {
+      long batchOperationReference,
+      boolean forceAuthorization) {
+
+    public AuthorizationRequestMetadata(
+        final Map<String, Object> claims,
+        final AuthorizationResourceType resourceType,
+        final PermissionType permissionType,
+        final boolean isNewResource,
+        final boolean isTenantOwnedResource,
+        final String tenantId,
+        final Set<AuthorizationScope> authorizationScopes,
+        final boolean hasRequestMetadata,
+        final long batchOperationReference) {
+      this(
+          claims,
+          resourceType,
+          permissionType,
+          isNewResource,
+          isTenantOwnedResource,
+          tenantId,
+          authorizationScopes,
+          hasRequestMetadata,
+          batchOperationReference,
+          false);
+    }
 
     public String getForbiddenErrorMessage() {
       final var authorizationScopesContainsOnlyWildcard =
@@ -654,6 +679,7 @@ public final class AuthorizationCheckBehavior {
     private String tenantId;
     private boolean isNewResource;
     private boolean isTenantOwnedResource;
+    private boolean forceAuthorization = false;
 
     public AuthorizationRequest() {
       authorizationScopes = new HashSet<>();
@@ -749,6 +775,11 @@ public final class AuthorizationCheckBehavior {
       return this;
     }
 
+    public AuthorizationRequest forceAuthorization() {
+      this.forceAuthorization = true;
+      return this;
+    }
+
     public AuthorizationRequestMetadata build() {
       if (command != null) {
         authorizationClaims = command.getAuthorizations();
@@ -761,7 +792,8 @@ public final class AuthorizationCheckBehavior {
             tenantId,
             Collections.unmodifiableSet(authorizationScopes),
             command.hasRequestMetadata(),
-            command.getBatchOperationReference());
+            command.getBatchOperationReference(),
+            forceAuthorization);
       }
       return new AuthorizationRequestMetadata(
           authorizationClaims,
@@ -772,7 +804,8 @@ public final class AuthorizationCheckBehavior {
           tenantId,
           Collections.unmodifiableSet(authorizationScopes),
           true,
-          RecordMetadataDecoder.batchOperationReferenceNullValue());
+          RecordMetadataDecoder.batchOperationReferenceNullValue(),
+          forceAuthorization);
     }
 
     public static AuthorizationRequest builder() {
