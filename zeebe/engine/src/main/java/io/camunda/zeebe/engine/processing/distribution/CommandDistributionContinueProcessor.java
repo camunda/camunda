@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
@@ -41,6 +42,8 @@ public class CommandDistributionContinueProcessor
     final var continuationRecord = distributionState.getContinuationRecord(queue, key);
     final var intent = continuationRecord.getIntent();
     final var continuationCommand = continuationRecord.getCommandValue();
+    final var metadata =
+        FollowUpCommandMetadata.of(b -> b.claims(continuationRecord.getAuthInfo().getClaims()));
     commandWriter.appendFollowUpCommand(key, intent, continuationCommand);
 
     stateWriter.appendFollowUpEvent(key, CommandDistributionIntent.CONTINUED, distributionRecord);

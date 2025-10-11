@@ -36,6 +36,7 @@ import io.camunda.zeebe.engine.state.immutable.VariableState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
@@ -179,7 +180,11 @@ public class ProcessInstanceMigrationMigrateProcessor
     while (!elementInstances.isEmpty()) {
       final var elementInstance = elementInstances.poll();
       tryMigrateElementInstance(
-          elementInstance, sourceProcessDefinition, targetProcessDefinition, mappedElementIds);
+          elementInstance,
+          sourceProcessDefinition,
+          targetProcessDefinition,
+          mappedElementIds,
+          command.getAuthInfo());
       final List<ElementInstance> children =
           elementInstanceState.getChildren(elementInstance.getKey());
       elementInstances.addAll(children);
@@ -232,7 +237,8 @@ public class ProcessInstanceMigrationMigrateProcessor
       final ElementInstance elementInstance,
       final DeployedProcess sourceProcessDefinition,
       final DeployedProcess targetProcessDefinition,
-      final Map<String, String> sourceElementIdToTargetElementId) {
+      final Map<String, String> sourceElementIdToTargetElementId,
+      final AuthInfo authInfo) {
 
     final var elementInstanceRecord = elementInstance.getValue();
     final long processInstanceKey = elementInstanceRecord.getProcessInstanceKey();
@@ -433,7 +439,8 @@ public class ProcessInstanceMigrationMigrateProcessor
           updatedElementInstanceRecord,
           targetElementId,
           processInstanceKey,
-          elementId);
+          elementId,
+          authInfo);
     }
 
     if (updatedElementInstanceRecord.getBpmnElementType() == BpmnElementType.CALL_ACTIVITY) {

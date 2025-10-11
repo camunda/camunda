@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.immutable.TenantState;
 import io.camunda.zeebe.engine.state.tenant.PersistedTenant;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -122,15 +123,15 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
-    distributeUpdate(updatedRecord);
+    distributeUpdate(updatedRecord, command.getAuthInfo());
   }
 
-  private void distributeUpdate(final TenantRecord updatedTenant) {
+  private void distributeUpdate(final TenantRecord updatedTenant, final AuthInfo authInfo) {
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedTenant);
+        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedTenant, authInfo);
   }
 
   private void rejectCommandWithUnauthorizedError(

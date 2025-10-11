@@ -31,6 +31,7 @@ import io.camunda.zeebe.engine.state.instance.TimerInstance;
 import io.camunda.zeebe.engine.state.message.ProcessMessageSubscription;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.compensation.CompensationSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -113,7 +114,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final ProcessInstanceRecord elementInstanceRecord,
       final String targetElementId,
       final long processInstanceKey,
-      final String elementId) {
+      final String elementId,
+      final AuthInfo authInfo) {
     final var context = new BpmnElementContextImpl();
     context.init(elementInstance.getKey(), elementInstanceRecord, elementInstance.getState());
 
@@ -159,7 +161,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
         targetProcessDefinition,
         sourceElementIdToTargetElementId,
         processMessageSubscriptionsToMigrate,
-        targetCatchEventIdToInterrupting);
+        targetCatchEventIdToInterrupting,
+        authInfo);
     migrateTimerEvents(
         targetProcessDefinition, sourceElementIdToTargetElementId, timerInstancesToMigrate);
     migrateSignalEvents(
@@ -288,14 +291,16 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final List<ProcessMessageSubscription> processMessageSubscriptionsToMigrate,
-      final Map<String, Boolean> targetCatchEventIdToInterrupting) {
+      final Map<String, Boolean> targetCatchEventIdToInterrupting,
+      final AuthInfo authInfo) {
     processMessageSubscriptionsToMigrate.forEach(
         processMessageSubscription ->
             migrateMessageSubscription(
                 targetProcessDefinition,
                 sourceElementIdToTargetElementId,
                 processMessageSubscription,
-                targetCatchEventIdToInterrupting));
+                targetCatchEventIdToInterrupting,
+                authInfo));
   }
 
   private Map<String, Boolean> subscribeToAllCatchEvents(
@@ -443,7 +448,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
       final DeployedProcess targetProcessDefinition,
       final Map<String, String> sourceElementIdToTargetElementId,
       final ProcessMessageSubscription processMessageSubscription,
-      final Map<String, Boolean> targetCatchEventIdToInterrupting) {
+      final Map<String, Boolean> targetCatchEventIdToInterrupting,
+      final AuthInfo authInfo) {
     final var processMessageSubscriptionRecord = processMessageSubscription.getRecord();
     final var sourceCatchEventId = processMessageSubscriptionRecord.getElementId();
     final var targetCatchEventId = sourceElementIdToTargetElementId.get(sourceCatchEventId);
@@ -486,7 +492,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           .distribute(
               ValueType.MESSAGE_SUBSCRIPTION,
               MessageSubscriptionIntent.MIGRATE,
-              messageSubscription);
+              messageSubscription,
+              authInfo);
     }
   }
 
