@@ -144,6 +144,39 @@ describe('VariablePanel', () => {
 
     mockFetchVariables().withSuccess([createVariable()]);
     mockFetchVariables().withSuccess([createVariable()]);
+
+    // Add extra mockSearchVariables calls to handle requests with ADD_TOKEN scope IDs
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -368,7 +401,7 @@ describe('VariablePanel', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should display correct state for a flow node that has no running or finished tokens on it', async () => {
+  it('should display correct state for a flow node that has no running or finished tokens on it', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariableV2()],
       page: {
@@ -416,6 +449,26 @@ describe('VariablePanel', () => {
     expect(
       screen.getByText('The Flow Node has no Variables'),
     ).toBeInTheDocument();
+
+    // mocks for variables query with the new scope ID
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     // one 'add token' modification is created
     act(() => {
@@ -612,12 +665,9 @@ describe('VariablePanel', () => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-
     expect(
       screen.getByRole('button', {name: /add variable/i}),
     ).toBeInTheDocument();
-    expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockFetchVariables().withSuccess([]);
     mockSearchVariables().withSuccess({
@@ -660,13 +710,35 @@ describe('VariablePanel', () => {
       }),
     );
 
-    // initial state
+    await waitFor(() =>
+      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
+    );
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText(/the flow node has no variables/i),
     ).toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /add variable/i}),
     ).not.toBeInTheDocument();
+
+    // mocks for variables query with the new scope ID
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
 
     // one 'add token' modification is created
     act(() => {
@@ -688,7 +760,7 @@ describe('VariablePanel', () => {
 
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        /to view the variables, select a single flow node instance in the instance history/i,
       ),
     ).toBeInTheDocument();
     expect(
@@ -696,16 +768,21 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Variables'}));
+    await waitFor(() =>
+      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
+    );
     expect(
       await screen.findByText(
-        'To view the Variables, select a single Flow Node Instance in the Instance History.',
+        /to view the variables, select a single flow node instance in the instance history/i,
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument();
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     // select only one of the scopes
+    mockFetchVariables().withSuccess([]);
+    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
+
     act(() => {
       selectFlowNode(
         {},
@@ -717,8 +794,12 @@ describe('VariablePanel', () => {
       );
     });
 
+    await waitFor(() =>
+      expect(screen.queryByTestId('variables-spinner')).not.toBeInTheDocument(),
+    );
+
     expect(
-      await screen.findByText('The Flow Node has no Variables'),
+      await screen.findByText(/the flow node has no variables/i),
     ).toBeInTheDocument();
 
     expect(

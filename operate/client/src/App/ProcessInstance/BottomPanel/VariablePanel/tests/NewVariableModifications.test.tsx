@@ -227,6 +227,12 @@ describe('New Variable Modifications', () => {
         totalItems: 1,
       },
     });
+    mockSearchVariables().withSuccess({
+      items: [createVariableV2()],
+      page: {
+        totalItems: 1,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -294,7 +300,27 @@ describe('New Variable Modifications', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
 
@@ -642,7 +668,7 @@ describe('New Variable Modifications', () => {
     vi.useRealTimers();
   });
 
-  it.skip('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
+  it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
@@ -695,6 +721,18 @@ describe('New Variable Modifications', () => {
 
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
 
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [],
       page: {

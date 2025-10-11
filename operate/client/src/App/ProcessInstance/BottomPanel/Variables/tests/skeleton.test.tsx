@@ -14,6 +14,7 @@ import {VariablePanel} from '../../VariablePanel';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
+import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 
@@ -34,6 +35,17 @@ describe('Skeleton', () => {
     mockFetchProcessInstanceDeprecated().withSuccess(
       mockProcessInstanceDeprecated,
     );
+    mockFetchProcessInstance().withSuccess({
+      processInstanceKey: '1',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionKey: '2',
+      processDefinitionVersion: 1,
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      processDefinitionName: 'someProcessName',
+      hasIncident: false,
+    });
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
