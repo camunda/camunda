@@ -45,7 +45,6 @@ public final class FeatureFlags {
   private static final boolean ENABLE_MSG_TTL_CHECKER_ASYNC = false;
   private static final boolean ENABLE_DUE_DATE_CHECKER_ASYNC = false;
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
-  private static final boolean ENABLE_PARTITION_SCALING = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
 
   private boolean yieldingDueDateChecker;
@@ -53,7 +52,6 @@ public final class FeatureFlags {
   private boolean enableMessageTTLCheckerAsync;
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
-  private boolean enablePartitionScaling;
   private boolean enableMessageBodyOnExpired;
 
   public FeatureFlags(
@@ -62,7 +60,6 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final boolean enablePartitionScaling,
       final boolean enableMessageBodyOnExpired
       /*, boolean foo*/ ) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
@@ -70,7 +67,6 @@ public final class FeatureFlags {
     this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
-    this.enablePartitionScaling = enablePartitionScaling;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
   }
 
@@ -81,7 +77,6 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_PARTITION_SCALING,
         ENABLE_MESSAGE_BODY_ON_EXPIRED
         /*, FOO_DEFAULT*/ );
   }
@@ -98,7 +93,6 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        true, /* ENABLE_PARTITION_SCALING */
         false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
         /*, FOO_DEFAULT*/ );
   }
@@ -121,10 +115,6 @@ public final class FeatureFlags {
 
   public boolean enableStraightThroughProcessingLoopDetector() {
     return enableStraightThroughProcessingLoopDetector;
-  }
-
-  public boolean enablePartitionScaling() {
-    return enablePartitionScaling;
   }
 
   public boolean enableMessageBodyOnExpired() {
@@ -150,10 +140,6 @@ public final class FeatureFlags {
   public void setEnableStraightThroughProcessingLoopDetector(
       final boolean enableStraightThroughProcessingLoopDetector) {
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
-  }
-
-  public void setEnablePartitionScaling(final boolean enablePartitionScaling) {
-    this.enablePartitionScaling = enablePartitionScaling;
   }
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
