@@ -29,6 +29,7 @@ public enum ResourceType {
   DECISION_DEFINITION,
   GROUP,
   USER,
+  USER_TASK,
   ROLE,
   DOCUMENT,
   UNKNOWN_ENUM_VALUE,
