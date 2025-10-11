@@ -56,40 +56,6 @@
 
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-surefire-plugin</artifactId>
-          <configuration>
-            <forkCount>${env.LIMITS_CPU}</forkCount>
-            <reuseForks>true</reuseForks>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
-          </configuration>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-failsafe-plugin</artifactId>
-          <configuration>
-            <forkCount>${env.LIMITS_CPU}</forkCount>
-            <reuseForks>true</reuseForks>
-            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-            <systemPropertyVariables>
-              <testForkNumber>$${surefire.forkNumber}</testForkNumber>
-            </systemPropertyVariables>
-          </configuration>
-          <executions>
-            <execution>
-              <goals>
-                <goal>integration-test</goal>
-                <goal>verify</goal>
-              </goals>
-            </execution>
-          </executions>
-        </plugin>
-
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
           <configuration>
             <nonFilteredFileExtensions>

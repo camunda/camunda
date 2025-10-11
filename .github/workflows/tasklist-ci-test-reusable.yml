@@ -28,19 +28,10 @@ on:
         description: "The branch name to be used for the workflow"
         required: true
         type: string
-      forkCount:
-        description: "The number of VMs to fork in parallel in order to execute the tests"
-        required: false
-        default: 4
-        type: number
 
 defaults:
   run:
     shell: bash
-
-# Define environment variable for concurrency
-env:
-  LIMITS_CPU: ${{ inputs.forkCount }}  # consumed by `maven-surefire-plugin` & `maven-failsafe-plugin` plugins defined in main `pom.xml` file
 
 jobs:
   integration-tests:
@@ -106,9 +97,8 @@ jobs:
       - name: Run Integration Tests
         run: |
           ./mvnw verify \
-            -f tasklist \
-            -T${{ env.LIMITS_CPU }} \
-            -P ${{ matrix.testProfile }},skipFrontendBuild \
+            -f tasklist/qa/integration-tests \
+            -P ${{ matrix.testProfile }},skipFrontendBuild,parallel-tests \
             -B --fail-at-end \
             -Dfailsafe.rerunFailingTestsCount=2 \
             -Dcamunda.data.secondary-storage.type=${{ matrix.database }} \
