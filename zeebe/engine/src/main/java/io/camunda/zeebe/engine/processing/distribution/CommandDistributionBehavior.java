@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -290,10 +291,13 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
 
+      final var authInfo = new AuthInfo();
+      authInfo.copyFrom(distributionRecord.getAuthInfo());
+
       sideEffectWriter.appendSideEffect(
           () -> {
             interPartitionCommandSender.sendCommand(
-                partition, valueType, intent, distributionKey, commandValue);
+                partition, valueType, intent, distributionKey, commandValue, authInfo);
             return true;
           });
     }
@@ -416,7 +420,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             distributionRecord.getValueType(),
             distributionRecord.getIntent(),
             distributionKey,
-            distributionRecord.getCommandValue());
+            distributionRecord.getCommandValue(),
+            distributionRecord.getAuthInfo());
   }
 
   public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
