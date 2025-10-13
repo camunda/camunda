@@ -70,7 +70,7 @@ import {
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsSearch';
+import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';

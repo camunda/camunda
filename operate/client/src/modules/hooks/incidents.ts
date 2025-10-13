@@ -11,7 +11,7 @@ import {incidentsStore} from 'modules/stores/incidents';
 import {getFlowNodeName} from '../utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
-import {useProcessInstanceIncidentsSearch} from 'modules/queries/incidents/useProcessInstanceIncidentsSearch';
+import {useGetIncidentsByProcessInstance} from 'modules/queries/incidents/useGetIncidentsByProcessInstance';
 
 type EnhancedIncident = Incident & {elementName: string; isSelected: boolean};
 
@@ -40,7 +40,7 @@ const useIncidentsV2 = (
   {enablePeriodicRefetch = false}: {enablePeriodicRefetch?: boolean},
 ): EnhancedIncident[] => {
   const {data: businessObjects} = useBusinessObjects();
-  const {data: incidents} = useProcessInstanceIncidentsSearch(
+  const {data: incidents} = useGetIncidentsByProcessInstance(
     processInstanceKey,
     {
       enablePeriodicRefetch,

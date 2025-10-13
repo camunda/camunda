@@ -6,34 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 
-import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
-const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearch';
+const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearchByElementInstance';
 
-const useGetIncidentsByElementInstance = (
+type QueryOptions<T> = {
+  enabled?: boolean;
+  enablePeriodicRefetch?: boolean;
+  select?: (result: QueryIncidentsResponseBody) => T;
+};
+
+const useGetIncidentsByElementInstance = <T = QueryIncidentsResponseBody>(
   elementInstanceKey: string,
-  processInstanceKey: string,
-  options: {enabled: boolean} = {enabled: true},
+  options?: QueryOptions<T>,
 ) => {
   return useQuery({
-    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, processInstanceKey],
+    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, elementInstanceKey],
+    refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
+    enabled: options?.enabled ?? !!elementInstanceKey,
+    select: options?.select,
     queryFn: async () => {
-      const {response, error} = await searchIncidentsByProcessInstance({
-        processInstanceKey,
-      });
-      if (response !== null) {
-        const filteredByElementInstanceIncidents = response.items.filter(
-          (incident) => incident.elementInstanceKey === elementInstanceKey,
-        );
-
-        return filteredByElementInstanceIncidents.length > 0
-          ? filteredByElementInstanceIncidents
-          : null;
-      }
-      throw error;
+      throw new Error(
+        'Waiting for implementation: https://github.com/camunda/camunda/issues/38806',
+      );
     },
-    ...options,
   });
 };
 

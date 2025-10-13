@@ -128,7 +128,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     );
 
   const shouldFilterByElementInstance =
-    elementInstanceMetadata?.elementInstanceKey &&
+    !!elementInstanceMetadata?.elementInstanceKey &&
     elementInstanceMetadata?.type !== 'CALL_ACTIVITY' &&
     elementInstanceMetadata?.type !== 'BUSINESS_RULE_TASK';
 
@@ -137,10 +137,15 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     isLoading: isSearchingIncidents,
   } = useGetIncidentsByProcessInstance(
     processInstance?.processInstanceKey ?? '',
-    elementInstanceMetadata?.elementInstanceKey,
-    !!shouldFilterByElementInstance,
     {
-      enabled: !!processInstance?.processInstanceKey,
+      select: (result) => {
+        const elementInstanceKey = elementInstanceMetadata?.elementInstanceKey;
+        return shouldFilterByElementInstance && elementInstanceKey
+          ? result.items.filter(
+              (incident) => incident.elementInstanceKey === elementInstanceKey,
+            )
+          : result.items;
+      },
     },
   );
 
