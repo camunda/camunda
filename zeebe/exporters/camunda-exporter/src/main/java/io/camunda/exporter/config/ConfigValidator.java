@@ -16,6 +16,7 @@ import java.util.regex.Pattern;
 public final class ConfigValidator {
   private static final String PATTERN_DATE_INTERVAL_FORMAT = "^(?:[1-9]\\d*)" + "([smhdwMy])$";
   private static final String PATTERN_ROLLOVER_INTERVAL_FORMAT = "^(?:[1-9]\\d*)([hdwMy])$";
+  private static final String PATTERN_USAGE_METRICS_ROLLOVER_INTERVAL_FORMAT = "^(?:[1-4]w|1M)$";
 
   /**
    * Supported pattern for min_age property of ILM, we only support: days, hours, minutes and
@@ -33,6 +34,8 @@ public final class ConfigValidator {
       Pattern.compile(PATTERN_DATE_INTERVAL_FORMAT).asPredicate();
   private static final Predicate<String> CHECK_ROLLOVER_INTERVAL =
       Pattern.compile(PATTERN_ROLLOVER_INTERVAL_FORMAT).asPredicate();
+  private static final Predicate<String> CHECK_USAGE_METRICS_ROLLOVER_INTERVAL =
+      Pattern.compile(PATTERN_USAGE_METRICS_ROLLOVER_INTERVAL_FORMAT).asPredicate();
   private static final Pattern INVALID_INDEX_PREFIX_CHARS = Pattern.compile("[\\\\/*?\"<>| _]");
 
   private ConfigValidator() {}
@@ -90,6 +93,16 @@ public final class ConfigValidator {
           String.format(
               "CamundaExporter archiver.rolloverInterval '%s' must match pattern '%s', but didn't.",
               rolloverInterval, PATTERN_ROLLOVER_INTERVAL_FORMAT));
+    }
+
+    final String usageMetricsRolloverInterval =
+        configuration.getHistory().getUsageMetricsRolloverInterval();
+    if (usageMetricsRolloverInterval != null
+        && !CHECK_USAGE_METRICS_ROLLOVER_INTERVAL.test(usageMetricsRolloverInterval)) {
+      throw new ExporterException(
+          String.format(
+              "CamundaExporter archiver.usageMetricsRolloverInterval '%s' must match pattern '%s', but didn't.",
+              usageMetricsRolloverInterval, PATTERN_USAGE_METRICS_ROLLOVER_INTERVAL_FORMAT));
     }
 
     final String waitPeriodBeforeArchiving =
