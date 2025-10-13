@@ -9,6 +9,7 @@ package io.camunda.zeebe.stream.impl.records;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.logstreams.log.LoggedEvent;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -91,6 +92,11 @@ public final class TypedRecordImpl implements TypedRecord {
   @Override
   public Map<String, Object> getAuthorizations() {
     return metadata.getAuthorization().toDecodedMap();
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
   }
 
   @Override

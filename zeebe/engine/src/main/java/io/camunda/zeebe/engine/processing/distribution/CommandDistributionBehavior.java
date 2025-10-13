@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -161,7 +162,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final ValueType valueType,
       final Intent intent,
       final T value,
-      final Set<Integer> partitions) {
+      final Set<Integer> partitions,
+      final AuthInfo authInfo) {
     if (partitions.isEmpty()
         || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
       return;
@@ -175,6 +177,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setPartitionId(currentPartitionId)
             .setValueType(valueType)
             .setIntent(intent)
+            .setAuthInfo(authInfo)
             .setCommandValue(value);
 
     stateWriter.appendFollowUpEvent(
@@ -289,11 +292,12 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // mutable object, and it is somehow modified before the side effect is executed. Instead, we
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
+      final var authInfo = distributionRecord.getAuthInfo();
 
       sideEffectWriter.appendSideEffect(
           () -> {
             interPartitionCommandSender.sendCommand(
-                partition, valueType, intent, distributionKey, commandValue);
+                partition, valueType, intent, distributionKey, commandValue, authInfo);
             return true;
           });
     }
@@ -416,7 +420,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             distributionRecord.getValueType(),
             distributionRecord.getIntent(),
             distributionKey,
-            distributionRecord.getCommandValue());
+            distributionRecord.getCommandValue(),
+            distributionRecord.getAuthInfo());
   }
 
   public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
@@ -454,7 +459,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     /** Distributes the command as specified. */
     <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value);
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
   }
 
   public interface ContinuationRequestBuilder {
@@ -522,19 +527,26 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     @Override
     public <T extends UnifiedRecordValue> void distribute(final TypedRecord<T> command) {
       distributeCommand(
-          queue, key, command.getValueType(), command.getIntent(), command.getValue(), partitions);
+          queue,
+          key,
+          command.getValueType(),
+          command.getIntent(),
+          command.getValue(),
+          partitions,
+          command.getAuthInfo());
     }
 
     @Override
     public <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value) {
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
       distributeCommand(
           queue,
           key,
           Objects.requireNonNull(valueType),
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
-          partitions);
+          partitions,
+          authInfo);
     }
 
     @Override

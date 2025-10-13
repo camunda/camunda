@@ -135,7 +135,10 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     signalSubscriptionState.visitBySignalName(
         value.getSignalNameBuffer(),
         value.getTenantId(),
-        subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
+        subscription -> {
+          checkAuthorization(command, false, subscription.getRecord());
+          activateElement(subscription.getRecord(), value.getVariablesBuffer());
+        });
 
     stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
     commandDistributionBehavior.acknowledgeCommand(command);
@@ -155,6 +158,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 permissionType,
                 command.getValue().getTenantId())
+            .forceAuthorization()
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
