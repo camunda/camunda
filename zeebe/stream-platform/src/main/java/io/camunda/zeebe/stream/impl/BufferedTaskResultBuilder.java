@@ -63,7 +63,8 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
             .rejectionReason("")
             .valueType(valueType)
             .operationReference(metadata.operationReference())
-            .batchOperationReference(metadata.batchOperationReference());
+            .batchOperationReference(metadata.batchOperationReference())
+            .authorization(metadata.authInfo());
     final var either = mutableRecordBatch.appendRecord(key, recordMetadata, -1, value);
 
     either.ifRight(ok -> cache.add(intent, key));
@@ -85,7 +86,8 @@ public final class BufferedTaskResultBuilder implements TaskResultBuilder {
             .rejectionReason("")
             .valueType(ValueType.NULL_VAL) // every value type has the same size in the record
             .operationReference(metadata.operationReference())
-            .batchOperationReference(metadata.batchOperationReference());
+            .batchOperationReference(metadata.batchOperationReference())
+            .authorization(metadata.authInfo());
 
     // we need to calculate the total size of all records, but we optimize it with not
     // recalculating the metadata size again for each entry
