@@ -160,7 +160,7 @@ test.describe.parallel('Process Definition Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  // Skipped due to bug #39371: https://github.com/camunda/camunda/issues/39372
+  //Skipped due to bug 39372: https://github.com/camunda/camunda/issues/39372
   test.skip('Search Process Definitions - with invalid pagination parameters', async ({
     request,
   }) => {
