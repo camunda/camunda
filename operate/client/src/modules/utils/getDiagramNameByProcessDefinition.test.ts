@@ -1,0 +1,40 @@
+/*
+ * Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+ * one or more contributor license agreements. See the NOTICE file distributed
+ * with this work for additional information regarding copyright ownership.
+ * Licensed under the Camunda License 1.0. You may not use this file
+ * except in compliance with the Camunda License 1.0.
+ */
+
+import {getDiagramNameByProcessDefinition} from './getDiagramNameByProcessDefinition';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+
+describe('getDiagramNameByProcessDefinition', () => {
+  it('returns formatted name with version', () => {
+    const definition = {
+      name: 'Order Process',
+      processDefinitionId: 'order-process-id',
+      version: 5,
+      tenantId: '<default>',
+      processDefinitionKey: 'order-process-key',
+      hasStartForm: false,
+    } satisfies ProcessDefinition;
+    expect(getDiagramNameByProcessDefinition(definition)).toBe(
+      'order-process_v5',
+    );
+  });
+
+  it('uses processDefinitionId if name is missing', () => {
+    const definition = {
+      name: undefined,
+      processDefinitionId: 'fallback-id',
+      version: 2,
+      tenantId: '<default>',
+      processDefinitionKey: 'fallback-key',
+      hasStartForm: false,
+    } satisfies ProcessDefinition;
+    expect(getDiagramNameByProcessDefinition(definition)).toBe(
+      'fallback-id_v2',
+    );
+  });
+});

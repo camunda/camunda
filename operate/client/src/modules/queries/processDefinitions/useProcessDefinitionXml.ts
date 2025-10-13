@@ -15,8 +15,7 @@ import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
 import {isRequestError} from 'modules/request';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-
-const PROCESS_DEFINITION_XML_QUERY_KEY = 'processDefinitionXml';
+import {queryKeys} from '../queryKeys';
 
 type ParsedXmlData = {
   xml: string;
@@ -31,6 +30,27 @@ async function processDefinitionParser(data: string): Promise<ParsedXmlData> {
   return {xml: data, diagramModel, selectableFlowNodes};
 }
 
+const getUseProcessDefinitionXmlOptions = (
+  processDefinitionKey?: ProcessDefinition['processDefinitionKey'],
+) => {
+  return {
+    queryKey: queryKeys.processDefinitionXml.get(processDefinitionKey),
+    queryFn:
+      processDefinitionKey === undefined
+        ? skipToken
+        : async () => {
+            const {response, error} =
+              await fetchProcessDefinitionXml(processDefinitionKey);
+
+            if (response !== null) {
+              return processDefinitionParser(response);
+            }
+
+            throw error;
+          },
+  } as const;
+};
+
 function useProcessDefinitionXml<T = ParsedXmlData>({
   processDefinitionKey,
   select,
@@ -41,20 +61,8 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   enabled?: boolean;
 }) {
   return useQuery({
-    queryKey: [PROCESS_DEFINITION_XML_QUERY_KEY, processDefinitionKey],
-    queryFn:
-      enabled && !!processDefinitionKey
-        ? async () => {
-            const {response, error} =
-              await fetchProcessDefinitionXml(processDefinitionKey);
-
-            if (response !== null) {
-              return processDefinitionParser(response);
-            }
-
-            throw error;
-          }
-        : skipToken,
+    ...getUseProcessDefinitionXmlOptions(processDefinitionKey),
+    enabled,
     select,
     staleTime: 'static',
     refetchOnWindowFocus: false,
@@ -76,5 +84,5 @@ function useProcessDefinitionXml<T = ParsedXmlData>({
   });
 }
 
-export {useProcessDefinitionXml};
+export {useProcessDefinitionXml, getUseProcessDefinitionXmlOptions};
 export type {ParsedXmlData};
