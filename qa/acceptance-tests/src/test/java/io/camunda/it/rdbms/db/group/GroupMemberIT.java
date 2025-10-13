@@ -17,7 +17,7 @@ import io.camunda.it.rdbms.db.fixtures.GroupFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GroupMemberEntity;
-import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.sort.GroupMemberSort;
@@ -57,7 +57,7 @@ public class GroupMemberIT {
     final var searchResult =
         reader.search(
             new GroupMemberQuery(
-                GroupFilter.of(b -> b.memberType(EntityType.USER).joinParentId(group.groupId())),
+                GroupMemberFilter.of(b -> b.memberType(EntityType.USER).groupId(group.groupId())),
                 GroupMemberSort.of(b -> b),
                 SearchQueryPage.of(b -> b)),
             ResourceAccessChecks.disabled());

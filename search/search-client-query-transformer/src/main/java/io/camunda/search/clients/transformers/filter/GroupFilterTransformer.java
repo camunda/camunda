@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringOperations;
@@ -59,15 +58,7 @@ public class GroupFilterTransformer extends IndexFilterTransformer<GroupFilter> 
                   IdentityJoinRelationshipType.MEMBER.getType(),
                   stringTerms(MEMBER_ID, filter.memberIds())));
     }
-    if (filter.memberType() != null) {
-      queries.add(term(GroupIndex.MEMBER_TYPE, filter.memberType().name()));
-    }
-    queries.add(
-        filter.joinParentId() == null
-            ? term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType())
-            : hasParentQuery(
-                IdentityJoinRelationshipType.GROUP.getType(),
-                term(GROUP_ID, filter.joinParentId())));
+    queries.add(term(GroupIndex.JOIN, IdentityJoinRelationshipType.GROUP.getType()));
     if (filter.childMemberType() != null) {
       queries.add(
           hasChildQuery(

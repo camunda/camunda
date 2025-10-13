@@ -334,10 +334,7 @@ public class GroupController {
       final String groupId, final EntityType memberType, final GroupMemberQuery groupMemberQuery) {
     return groupMemberQuery.toBuilder()
         .filter(
-            groupMemberQuery.filter().toBuilder()
-                .joinParentId(groupId)
-                .memberType(memberType)
-                .build())
+            groupMemberQuery.filter().toBuilder().groupId(groupId).memberType(memberType).build())
         .build();
   }
 

@@ -247,7 +247,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromGroupUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::groupMember,
             SearchQuerySortRequestMapper::applyGroupUserSortField);
-    final var filter = FilterBuilders.group().build();
+    final var filter = FilterBuilders.groupMember().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupMemberSearchQuery);
   }
 
@@ -262,7 +262,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromGroupClientSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::groupMember,
             SearchQuerySortRequestMapper::applyGroupClientSortField);
-    final var filter = FilterBuilders.group().build();
+    final var filter = FilterBuilders.groupMember().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupMemberSearchQuery);
   }
 

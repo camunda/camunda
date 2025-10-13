@@ -24,9 +24,7 @@ public record GroupFilter(
     List<Operation<String>> groupIdOperations,
     String name,
     String description,
-    String joinParentId,
     Set<String> memberIds,
-    EntityType memberType,
     String tenantId,
     EntityType childMemberType,
     String roleId,
@@ -44,9 +42,7 @@ public record GroupFilter(
         .groupIdOperations(groupIdOperations)
         .name(name)
         .description(description)
-        .joinParentId(joinParentId)
         .memberIds(memberIds)
-        .memberType(memberType)
         .tenantId(tenantId)
         .childMemberType(childMemberType)
         .roleId(roleId)
@@ -58,9 +54,7 @@ public record GroupFilter(
     private List<Operation<String>> groupIdOperations;
     private String name;
     private String description;
-    private String joinParentId;
     private Set<String> memberIds;
-    private EntityType memberType;
     private String tenantId;
     private EntityType childMemberType;
     private String roleId;
@@ -110,22 +104,12 @@ public record GroupFilter(
       return this;
     }
 
-    public Builder joinParentId(final String value) {
-      joinParentId = value;
-      return this;
-    }
-
     public Builder memberId(final String value) {
       return memberIds(Set.of(value));
     }
 
     public Builder memberIds(final Set<String> value) {
       memberIds = value;
-      return this;
-    }
-
-    public Builder memberType(final EntityType value) {
-      memberType = value;
       return this;
     }
 
@@ -156,9 +140,7 @@ public record GroupFilter(
           groupIdOperations,
           name,
           description,
-          joinParentId,
           memberIds,
-          memberType,
           tenantId,
           childMemberType,
           roleId,

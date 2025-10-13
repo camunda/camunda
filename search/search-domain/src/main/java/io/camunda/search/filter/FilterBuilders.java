@@ -108,6 +108,10 @@ public final class FilterBuilders {
     return new GroupFilter.Builder();
   }
 
+  public static GroupMemberFilter.Builder groupMember() {
+    return new GroupMemberFilter.Builder();
+  }
+
   public static AuthorizationFilter.Builder authorization() {
     return new AuthorizationFilter.Builder();
   }
@@ -165,6 +169,11 @@ public final class FilterBuilders {
   public static GroupFilter group(
       final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
     return fn.apply(new GroupFilter.Builder()).build();
+  }
+
+  public static GroupMemberFilter groupMember(
+      final Function<GroupMemberFilter.Builder, ObjectBuilder<GroupMemberFilter>> fn) {
+    return fn.apply(new GroupMemberFilter.Builder()).build();
   }
 
   public static AuthorizationFilter authorization(
