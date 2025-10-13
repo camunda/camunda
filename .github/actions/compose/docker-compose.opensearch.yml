@@ -12,7 +12,7 @@ services:
     image: centos:8@sha256:a27fd8080b517143cbbbab9dfb7c8571c40d67d534bbdee55bd6c473f432b177
     command: "sysctl -w vm.max_map_count=262144"
   opensearch:
-    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-2.11.1@sha256:68039e76c8c60c0488b8906945b2efd5179bb29a9ae8d71ec64981ab5772b796}
+    image: opensearchproject/opensearch:${OPENSEARCH_VERSION:-3.2.0@sha256:23297b8d8545e129dd58c254ed08d786dc552410ba772983ad2af31048d2f04b}
     container_name: opensearch-${OPENSEARCH_HTTP_PORT:-9200}
     depends_on:
       - fixsysctl

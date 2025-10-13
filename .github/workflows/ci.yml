@@ -527,7 +527,7 @@ jobs:
       # Set up an OpenSearch service container
       # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
       opensearch:
-        image: opensearchproject/opensearch:2.19.3
+        image: opensearchproject/opensearch:3.2.0
         # Exposing the ports allow to be accessible via http://localhost:9200 in the runner
         ports:
           - 9200:9200
