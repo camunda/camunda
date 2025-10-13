@@ -17,6 +17,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
@@ -417,22 +418,24 @@ public class SearchQuerySortRequestMapper {
   }
 
   static List<String> applyGroupUserSortField(
-      final GroupUserSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
+      final GroupUserSearchQuerySortRequest.FieldEnum field,
+      final GroupMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case USERNAME -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
   }
 
   static List<String> applyGroupClientSortField(
-      final GroupClientSearchQuerySortRequest.FieldEnum field, final GroupSort.Builder builder) {
+      final GroupClientSearchQuerySortRequest.FieldEnum field,
+      final GroupMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case CLIENT_ID -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };

@@ -12,7 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 import io.camunda.db.rdbms.sql.GroupMapper;
-import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.Set;
 import org.junit.jupiter.api.Test;
@@ -27,7 +27,7 @@ class GroupMemberDbReaderTest {
     // When
     final var result =
         reader.search(
-            GroupQuery.of(
+            GroupMemberQuery.of(
                 b -> b.filter(f -> f.memberIds(Set.of()).childMemberType(EntityType.USER))),
             null);
 

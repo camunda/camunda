@@ -13,6 +13,7 @@ import static io.camunda.service.authorization.Authorizations.GROUP_READ_AUTHORI
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -126,7 +127,7 @@ public class GroupServices extends SearchQueryService<GroupServices, GroupQuery,
             .setMemberType(groupMemberDTO.memberType));
   }
 
-  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupQuery query) {
+  public SearchQueryResult<GroupMemberEntity> searchMembers(final GroupMemberQuery query) {
     return executeSearchRequest(
         () ->
             groupSearchClient

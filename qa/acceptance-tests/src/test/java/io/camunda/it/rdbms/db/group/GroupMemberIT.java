@@ -19,8 +19,8 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.page.SearchQueryPage;
-import io.camunda.search.query.GroupQuery;
-import io.camunda.search.sort.GroupSort;
+import io.camunda.search.query.GroupMemberQuery;
+import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.time.OffsetDateTime;
@@ -56,9 +56,9 @@ public class GroupMemberIT {
 
     final var searchResult =
         reader.search(
-            new GroupQuery(
+            new GroupMemberQuery(
                 GroupFilter.of(b -> b.memberType(EntityType.USER).joinParentId(group.groupId())),
-                GroupSort.of(b -> b),
+                GroupMemberSort.of(b -> b),
                 SearchQueryPage.of(b -> b)),
             ResourceAccessChecks.disabled());
 

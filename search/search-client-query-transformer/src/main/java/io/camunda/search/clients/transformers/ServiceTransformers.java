@@ -104,6 +104,7 @@ import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FlowNodeInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.GroupMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.JobFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingRuleFieldSortingTransformer;
@@ -154,6 +155,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
@@ -184,6 +186,7 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.FormSort;
+import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
@@ -324,6 +327,7 @@ public final class ServiceTransformers {
             FlowNodeInstanceQuery.class,
             FormQuery.class,
             GroupQuery.class,
+            GroupMemberQuery.class,
             IncidentQuery.class,
             JobQuery.class,
             MappingRuleQuery.class,
@@ -384,6 +388,7 @@ public final class ServiceTransformers {
     mappers.put(FlowNodeInstanceSort.class, new FlowNodeInstanceFieldSortingTransformer());
     mappers.put(FormSort.class, new FormFieldSortingTransformer());
     mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
+    mappers.put(GroupMemberSort.class, new GroupMemberFieldSortingTransformer());
     mappers.put(IncidentSort.class, new IncidentFieldSortingTransformer());
     mappers.put(JobSort.class, new JobFieldSortingTransformer());
     mappers.put(MappingRuleSort.class, new MappingRuleFieldSortingTransformer());

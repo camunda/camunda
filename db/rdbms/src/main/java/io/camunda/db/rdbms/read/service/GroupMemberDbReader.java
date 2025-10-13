@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.domain.GroupMemberDbModel;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.filter.GroupFilter;
-import io.camunda.search.query.GroupQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -30,13 +30,13 @@ public class GroupMemberDbReader extends AbstractEntityReader<GroupMemberEntity>
   private final GroupMapper groupMapper;
 
   public GroupMemberDbReader(final GroupMapper groupMapper) {
-    super(null);
+    super(GroupMemberSearchColumn.values());
     this.groupMapper = groupMapper;
   }
 
   @Override
   public SearchQueryResult<GroupMemberEntity> search(
-      final GroupQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final GroupMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
     if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
       return new SearchQueryResult.Builder<GroupMemberEntity>().total(0).items(List.of()).build();
     }

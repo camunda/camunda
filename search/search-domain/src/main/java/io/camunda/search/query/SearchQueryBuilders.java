@@ -150,6 +150,15 @@ public final class SearchQueryBuilders {
     return fn.apply(groupSearchQuery()).build();
   }
 
+  public static GroupMemberQuery.Builder groupMemberSearchQuery() {
+    return new GroupMemberQuery.Builder();
+  }
+
+  public static GroupMemberQuery groupMemberSearchQuery(
+      final Function<GroupMemberQuery.Builder, ObjectBuilder<GroupMemberQuery>> fn) {
+    return fn.apply(groupMemberSearchQuery()).build();
+  }
+
   public static AuthorizationQuery.Builder authorizationSearchQuery() {
     return new AuthorizationQuery.Builder();
   }

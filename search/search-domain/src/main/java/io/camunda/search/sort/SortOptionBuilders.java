@@ -85,6 +85,10 @@ public final class SortOptionBuilders {
     return new GroupSort.Builder();
   }
 
+  public static GroupMemberSort.Builder groupMember() {
+    return new GroupMemberSort.Builder();
+  }
+
   public static AuthorizationSort.Builder authorization() {
     return new AuthorizationSort.Builder();
   }
@@ -140,6 +144,11 @@ public final class SortOptionBuilders {
 
   public static GroupSort group(final Function<GroupSort.Builder, ObjectBuilder<GroupSort>> fn) {
     return fn.apply(group()).build();
+  }
+
+  public static GroupMemberSort groupMember(
+      final Function<GroupMemberSort.Builder, ObjectBuilder<GroupMemberSort>> fn) {
+    return fn.apply(groupMember()).build();
   }
 
   public static FormSort.Builder form() {
