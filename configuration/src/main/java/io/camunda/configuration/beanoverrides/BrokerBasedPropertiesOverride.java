@@ -581,6 +581,11 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(
+        args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
+    setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
+    setArg(args, "formCache.maxCacheSize", database.getFormCache().getMaxSize());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
