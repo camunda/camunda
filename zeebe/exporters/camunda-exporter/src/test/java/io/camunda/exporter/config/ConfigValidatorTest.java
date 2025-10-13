@@ -180,6 +180,60 @@ public class ConfigValidatorTest {
             "CamundaExporter archiver.rolloverInterval '1s' must match pattern '^(?:[1-9]\\d*)([hdwMy])$', but didn't.");
   }
 
+  @Test
+  void shouldAssureUsageMetricsRolloverIntervalToBeValid() {
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("1day");
+
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.usageMetricsRolloverInterval '1day' must match pattern '^(?:[1-4]w|1M)$', but didn't.");
+  }
+
+  @Test
+  void shouldAssureUsageMetricsRolloverIsInAllowedRange() {
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("7d");
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.usageMetricsRolloverInterval '7d' must match pattern '^(?:[1-4]w|1M)$', but didn't.");
+
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("5w");
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.usageMetricsRolloverInterval '5w' must match pattern '^(?:[1-4]w|1M)$', but didn't.");
+
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("2M");
+    // when - then
+    assertThatCode(() -> ConfigValidator.validate(config))
+        .isInstanceOf(ExporterException.class)
+        .hasMessageContaining(
+            "CamundaExporter archiver.usageMetricsRolloverInterval '2M' must match pattern '^(?:[1-4]w|1M)$', but didn't.");
+
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("1w");
+    // when - then
+    ConfigValidator.validate(config);
+
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("4w");
+    // when - then
+    ConfigValidator.validate(config);
+
+    // given
+    config.getHistory().setUsageMetricsRolloverInterval("1M");
+    // when - then
+    ConfigValidator.validate(config);
+  }
+
   @ParameterizedTest(name = "{0}")
   @ValueSource(ints = {-1, 0})
   void shouldForbidNonPositiveMaxCacheSize(final int maxCacheSize) {
