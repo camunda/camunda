@@ -67,7 +67,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         # Currently only Linux runners support building docker images without further ado
@@ -137,7 +137,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
@@ -196,7 +196,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
@@ -270,7 +270,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - name: Maven Test Build
@@ -351,7 +351,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-zeebe-docker
         with:

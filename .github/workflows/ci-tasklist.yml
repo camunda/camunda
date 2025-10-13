@@ -325,7 +325,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-tasklist-docker
         with:
@@ -344,7 +344,7 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Tasklist backup restore Tests
         shell: bash
-        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ matrix.database }} -DskipTests=false verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: ./mvnw -B -pl tasklist/qa/backup-restore-tests -DskipChecks -DtasklistDatabase=${{ matrix.database }} -DskipTests=false -P\!include-optimize verify | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
@@ -405,7 +405,7 @@ jobs:
       - id: build-backend
         uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -D skip.fe.build -D skipOptimize
+          maven-extra-args: -D skip.fe.build -D skipOptimize -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         with:
           repository: localhost:5000/camunda/tasklist
@@ -414,7 +414,7 @@ jobs:
           distball: ${{ steps.build-backend.outputs.distball }}
           dockerfile: tasklist.Dockerfile
       - name: Run Docker tests
-        run: ./mvnw --no-snapshot-updates -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: ./mvnw --no-snapshot-updates -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test -P\!include-optimize
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
