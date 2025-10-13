@@ -51,6 +51,8 @@ public class SecondaryStorageOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final boolean EXPECTED_CREATE_SCHEMA = false;
+
   private static final String EXPECTED_INCIDENT_NOTIFIER_WEBHOOK =
       "https://test-webhook.example.com";
   private static final String EXPECTED_INCIDENT_NOTIFIER_AUTH0_DOMAIN = "test-domain.auth0.com";
@@ -86,6 +88,7 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.create-schema=" + EXPECTED_CREATE_SCHEMA,
         "camunda.data.secondary-storage.opensearch.incident-notifier.webhook="
             + EXPECTED_INCIDENT_NOTIFIER_WEBHOOK,
         "camunda.data.secondary-storage.opensearch.incident-notifier.auth0-domain="
@@ -180,6 +183,7 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.isCreateSchema()).isEqualTo(EXPECTED_CREATE_SCHEMA);
       assertThat(exporterConfiguration.getNotifier().getWebhook())
           .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_WEBHOOK);
       assertThat(exporterConfiguration.getNotifier().getAuth0Domain())
