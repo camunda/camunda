@@ -104,6 +104,15 @@ public interface ExportersActuator {
   PlannedOperationsResponse enableExporter(@Param final String exporterId);
 
   /**
+   * Request to delete an exporter
+   *
+   * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
+   */
+  @RequestLine("DELETE /{exporterId}")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  PlannedOperationsResponse deleteExporter(@Param final String exporterId);
+
+  /**
    * Returns the list of exporters with their status
    *
    * @throws feign.FeignException if the request is not successful (e.g. 4xx or 5xx)
