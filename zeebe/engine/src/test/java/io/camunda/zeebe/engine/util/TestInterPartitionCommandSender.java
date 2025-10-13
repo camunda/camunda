@@ -11,6 +11,7 @@ import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -38,22 +39,18 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command) {
-    sendCommand(receiverPartitionId, valueType, intent, null, command);
-  }
-
-  @Override
-  public void sendCommand(
-      final int receiverPartitionId,
-      final ValueType valueType,
-      final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue command) {
+      final UnifiedRecordValue command,
+      final AuthInfo authInfo) {
     if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
       return;
     }
     final var metadata =
         new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
+
+    if (authInfo != null) {
+      metadata.authorization(authInfo);
+    }
     final var writer = writers.computeIfAbsent(receiverPartitionId, i -> new CompletableFuture<>());
     final LogAppendEntry entry;
     if (recordKey != null) {
