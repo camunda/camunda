@@ -1,0 +1,487 @@
+# type: CI
+# owner: @camunda/monorepo-devops-team
+
+# Description: 
+# This GitHub Actions workflow creates Docker images for urgent hotfixes. It is triggered manually via workflow dispatch
+# and allows building specific components with versions from either a branch or a specific commit SHA.
+# 
+# Usage:
+# - Input format for components: "component:version,component:version" (e.g., "camunda:8.6.1,operate:8.6.1")
+# - Either branch OR commit must be specified (commit takes precedence)
+# - Support ticket ID is required for proper tagging (e.g. SUPPORT-12345, JIRA-123, ticket-456)
+# 
+# The workflow validates inputs, builds the requested images, and pushes them to the hotfix registry following 
+# the Camunda naming convention: registry.camunda.cloud/hotfixes/<image>:<application-version>-<support-issue-id>
+# Example: registry.camunda.cloud/hotfixes/camunda:8.6.1-support-12345
+name: Create Urgent Hotfix Images
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'The branch to create hotfix images from (ignored if commit is specified)'
+        required: false
+        type: string
+      commit:
+        description: 'The specific commit SHA to create hotfix images from (takes precedence over branch)'
+        required: false
+        type: string
+      support-ticket-id:
+        description: 'The support ticket ID (e.g. SUPPORT-12345, JIRA-123, ticket-456)'
+        required: true
+        type: string
+      components_with_versions:
+        description: 'Components to build with versions (e.g. camunda:8.6.1,operate:8.6.1)'
+        required: true
+        type: string
+      registry:
+        description: 'Target registry for hotfix images'
+        required: false
+        default: 'registry.camunda.cloud/hotfixes'
+        type: string
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  DOCKER_PLATFORMS: "linux/amd64"
+  MAVEN_CACHE_KEY: "maven-cache"
+
+jobs:
+  validate-inputs:
+    name: Validate Inputs
+    runs-on: ubuntu-latest
+    outputs:
+      ref: ${{ steps.determine-ref.outputs.ref }}
+      short-sha: ${{ steps.determine-ref.outputs.short-sha }}
+      components-matrix: ${{ steps.parse-components.outputs.matrix }}
+    steps:
+      - name: Validate inputs
+        run: |
+          if [[ -z "${{ github.event.inputs.branch }}" && -z "${{ github.event.inputs.commit }}" ]]; then
+            echo "❌ Error: Either branch or commit must be specified"
+            exit 1
+          fi
+          
+          if [[ -z "${{ github.event.inputs.support-ticket-id }}" ]]; then
+            echo "❌ Error: Support ticket ID is required for proper image tagging"
+            exit 1
+          fi
+          
+          # Validate ticket ID format (should be alphanumeric with hyphens/underscores)
+          if [[ ! "${{ github.event.inputs.support-ticket-id }}" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "❌ Error: Support ticket ID contains invalid characters. Use only alphanumeric, hyphens, and underscores"
+            echo "❌ Current format: '${{ github.event.inputs.support-ticket-id }}'"
+            exit 1
+          fi
+
+          if [[ -z "${{ github.event.inputs.components_with_versions }}" ]]; then
+              echo "❌ Error: Components with versions input is required"
+              exit 1
+          fi
+
+      - name: Checkout repository to determine ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine reference and SHA
+        id: determine-ref
+        run: |
+          if [[ -n "${{ github.event.inputs.commit }}" ]]; then
+            # Validate commit exists and get full SHA (handles both short and full SHAs)
+            if ! FULL_SHA=$(git rev-parse "${{ github.event.inputs.commit }}^{commit}" 2>/dev/null); then
+              echo "❌ Error: Commit '${{ github.event.inputs.commit }}' does not exist"
+              exit 1
+            fi
+            REF="${{ github.event.inputs.commit }}"
+          else
+            # Validate branch exists
+            if ! git show-ref --verify --quiet "refs/remotes/origin/${{ github.event.inputs.branch }}"; then
+              echo "❌ Error: Branch '${{ github.event.inputs.branch }}' does not exist"
+              exit 1
+            fi
+            REF="origin/${{ github.event.inputs.branch }}"
+            FULL_SHA=$(git rev-parse "origin/${{ github.event.inputs.branch }}")
+          fi
+          
+          SHORT_SHA="${FULL_SHA:0:8}"
+          
+          echo "✅ Using reference: $REF"
+          echo "✅ Full SHA: $FULL_SHA"
+          echo "✅ Short SHA: $SHORT_SHA"
+          
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "short-sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Parse components
+        id: parse-components
+        run: |
+          COMPONENTS_WITH_VERSIONS="${{ github.event.inputs.components_with_versions }}"
+          
+          echo "Raw input: $COMPONENTS_WITH_VERSIONS"
+          
+          # Parse components with versions using jq for robust JSON handling
+          # Example: camunda:7.15.0,operate:7.15.0
+          
+          # Create temporary array to collect valid components
+          VALID_COMPONENTS=()
+          
+          IFS=',' read -ra COMPONENT_ARRAY <<< "$COMPONENTS_WITH_VERSIONS"
+          for COMPONENT_WITH_VERSION in "${COMPONENT_ARRAY[@]}"; do
+            # Trim whitespace
+            COMPONENT_WITH_VERSION=$(echo "$COMPONENT_WITH_VERSION" | xargs)
+            
+            # Split component and version
+            if [[ "$COMPONENT_WITH_VERSION" =~ ^([^:]+):(.+)$ ]]; then
+              COMPONENT="${BASH_REMATCH[1]}"
+              VERSION="${BASH_REMATCH[2]}"
+              
+              # Validate component is supported
+              case "$COMPONENT" in
+                "camunda"|"operate"|"tasklist"|"optimize"|"zeebe")
+                  echo "✅ Valid component: $COMPONENT"
+                  ;;
+                *)
+                  echo "❌ Error: Unsupported component '$COMPONENT'"
+                  echo "❌ Supported components: camunda, operate, tasklist, optimize, zeebe"
+                  echo "❌ If you need to add a new component, update both input validation and Maven build configuration"
+                  exit 1
+                  ;;
+              esac
+              
+              # Validate version format - only proper version numbers allowed
+              # Examples: 8.6.1, 8.9, SNAPSHOT, 1.0.0-alpha, 2.1-SNAPSHOT
+              if [[ ! "$VERSION" =~ ^[0-9]+(\.[0-9]+)*(-[a-zA-Z0-9]+)*$|^[A-Z]+(-[a-zA-Z0-9]+)*$ ]]; then
+                echo "❌ Error: Invalid version format '$VERSION' for component '$COMPONENT'"
+                echo "❌ Version must be a proper version number (semver or snapshot)"
+                echo "❌ Examples: 8.6.1, 8.9, 1.0.0-alpha, SNAPSHOT, SNAPSHOT-fix1"
+                exit 1
+              fi
+              
+              # Add to valid components array
+              VALID_COMPONENTS+=("$COMPONENT:$VERSION")
+              echo "✅ Parsed: $COMPONENT -> $VERSION"
+            else
+              echo "❌ Error: Invalid format '$COMPONENT_WITH_VERSION'. Expected format: component:version"
+              exit 1
+            fi
+          done
+          
+          # Generate JSON matrix using jq for proper JSON handling
+          MATRIX_JSON=$(printf '%s\n' "${VALID_COMPONENTS[@]}" | \
+            jq -R -s 'split("\n") | map(select(length > 0)) | map(split(":") | {component: .[0], version: .[1]})')
+          
+          echo "Components to build: $COMPONENTS_WITH_VERSIONS"
+          echo "Matrix JSON: $MATRIX_JSON"
+          echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+
+  build-images:
+    name: Build ${{ matrix.component }} ${{ matrix.version }} Image
+    runs-on: gcp-perf-core-8-default
+    needs: validate-inputs
+    timeout-minutes: 45
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.validate-inputs.outputs.components-matrix) }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate-inputs.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          secrets: |
+            secret/data/github.com/organizations/camunda NEXUS_PSW | ci-account-password;
+            secret/data/github.com/organizations/camunda NEXUS_USR | ci-account-username; 
+
+      - name: Log into Harbor
+        uses: docker/login-action@v3
+        with:
+            registry: registry.camunda.cloud
+            username: ${{ steps.secrets.outputs.ci-account-username }}
+            password: ${{ steps.secrets.outputs.ci-account-password }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Setup Maven cache
+        uses: ./.github/actions/setup-maven-cache
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Determine Dockerfile and build context
+        id: docker-config
+        run: |
+          COMPONENT="${{ matrix.component }}"
+          CONTEXT="."
+          
+          # Check for component-specific Dockerfile first
+          if [[ -f "${COMPONENT}.Dockerfile" ]]; then
+            DOCKERFILE="${COMPONENT}.Dockerfile"
+            echo "✅ Found component-specific Dockerfile: $DOCKERFILE"
+          elif [[ ("$COMPONENT" == "zeebe" || "$COMPONENT" == "camunda") && -f "Dockerfile" ]]; then
+            # Both zeebe and camunda use the main Dockerfile
+            DOCKERFILE="Dockerfile"
+            echo "✅ Using main Dockerfile for $COMPONENT: $DOCKERFILE"
+          else
+            echo "❌ Error: No Dockerfile found for component '$COMPONENT'"
+            echo "❌ Expected: '${COMPONENT}.Dockerfile' or 'Dockerfile' (for zeebe/camunda)"
+            echo "❌ Available Dockerfiles:"
+            ls -la ./*.Dockerfile ./Dockerfile 2>/dev/null || echo "❌ No Dockerfiles found"
+            exit 1
+          fi
+          
+          echo "dockerfile=$DOCKERFILE" >> "$GITHUB_OUTPUT"
+          echo "context=$CONTEXT" >> "$GITHUB_OUTPUT"
+          echo "✅ Using Dockerfile: $DOCKERFILE"
+
+      - name: Build Maven artifacts
+        run: |
+          echo "🔨 Building Maven artifacts for ${{ matrix.component }}..."
+          
+          # Build the necessary distribution artifacts based on component
+          # Each component has specific build requirements based on their Dockerfile expectations
+          case "${{ matrix.component }}" in
+            "camunda")
+              echo "📦 Building camunda (zeebe) distribution tarball..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl dist
+              echo "✅ Built: dist/target/camunda-zeebe-*.tar.gz"
+              ;;
+            "operate")
+              echo "📦 Building operate distribution tarball..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl operate-distro
+              echo "✅ Built: operate-distro/target/camunda-operate-*-*.tar.gz"
+              ;;
+            "tasklist")
+              echo "📦 Building tasklist distribution tarball..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl tasklist-distro
+              echo "✅ Built: tasklist-distro/target/camunda-tasklist-*-*.tar.gz"
+              ;;
+            "optimize")
+              echo "📦 Building optimize distribution tarball..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl optimize-distro
+              echo "✅ Built: optimize-distro/target/camunda-optimize-*-*.tar.gz"
+              ;;
+            "zeebe")
+              echo "📦 Building zeebe distribution tarball (same as camunda)..."
+              ./mvnw clean package -T1C -DskipTests -DskipChecks -am -pl dist
+              echo "✅ Built: dist/target/camunda-zeebe-*.tar.gz"
+              ;;
+            *)
+              echo "❌ INTERNAL ERROR: Unknown component '${{ matrix.component }}' reached Maven build step"
+              echo "❌ This should not happen since input validation should catch invalid components"
+              echo "❌ Please report this as a workflow bug"
+              exit 1
+              ;;
+          esac
+
+      - name: Verify build artifacts
+        run: |
+          echo "🔍 Verifying that required artifacts were built..."
+          case "${{ matrix.component }}" in
+            "camunda"|"zeebe")
+              if ls dist/target/camunda-zeebe-*.tar.gz 1> /dev/null 2>&1; then
+                echo "✅ Found zeebe/camunda distribution: $(ls dist/target/camunda-zeebe-*.tar.gz)"
+              else
+                echo "❌ Missing zeebe/camunda distribution tarball in dist/target/"
+                exit 1
+              fi
+              ;;
+            "operate")
+              if ls operate-distro/target/camunda-operate-*-*.tar.gz 1> /dev/null 2>&1; then
+                echo "✅ Found operate distribution: $(ls operate-distro/target/camunda-operate-*-*.tar.gz)"
+              else
+                echo "❌ Missing operate distribution tarball in operate-distro/target/"
+                exit 1
+              fi
+              ;;
+            "tasklist")
+              if ls tasklist-distro/target/camunda-tasklist-*-*.tar.gz 1> /dev/null 2>&1; then
+                echo "✅ Found tasklist distribution: $(ls tasklist-distro/target/camunda-tasklist-*-*.tar.gz)"
+              else
+                echo "❌ Missing tasklist distribution tarball in tasklist-distro/target/"
+                exit 1
+              fi
+              ;;
+            "optimize")
+              if ls optimize-distro/target/camunda-optimize-*-*.tar.gz 1> /dev/null 2>&1; then
+                echo "✅ Found optimize distribution: $(ls optimize-distro/target/camunda-optimize-*-*.tar.gz)"
+              else
+                echo "❌ Missing optimize distribution tarball in optimize-distro/target/"
+                exit 1
+              fi
+              ;;
+            *)
+              echo "❌ Error: Unknown component '${{ matrix.component }}' in verification step"
+              echo "❌ This should not happen if the Maven build step completed successfully"
+              exit 1
+              ;;
+          esac
+
+      - name: Set build metadata
+        id: build-metadata
+        run: |
+          BUILD_DATE=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+          echo "build-date=$BUILD_DATE" >> "$GITHUB_OUTPUT"
+          echo "✅ Build date: $BUILD_DATE"
+
+      - name: Generate image tags
+        id: image-tags
+        run: |
+          REGISTRY="${{ github.event.inputs.registry }}"
+          COMPONENT="${{ matrix.component }}"
+          VERSION="${{ matrix.version }}"
+          TICKET_ID="${{ github.event.inputs.support-ticket-id }}"
+          SHORT_SHA="${{ needs.validate-inputs.outputs.short-sha }}"
+          
+          # Validate that ticket ID is safe for Docker tagging (already validated earlier)
+          if [[ ! "$TICKET_ID" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+            echo "⚠️  Warning: Support ticket ID contains characters that may not be safe for Docker tags"
+            echo "⚠️  Current format: '$TICKET_ID'"
+          fi
+          
+          # Convert ticket ID to lowercase for consistency
+          TICKET_LOWER=$(echo "$TICKET_ID" | tr '[:upper:]' '[:lower:]')
+          
+          # Primary hotfix tag following Camunda convention: <registry>/<image>:<application-version>-<support-issue-id>
+          PRIMARY_TAG="${REGISTRY}/${COMPONENT}:${VERSION}-${TICKET_LOWER}"
+          
+          # Additional tag with SHA for exact reproducibility
+          SHA_TAG="${REGISTRY}/${COMPONENT}:${VERSION}-${TICKET_LOWER}-${SHORT_SHA}"
+          
+          echo "primary-tag=$PRIMARY_TAG" >> "$GITHUB_OUTPUT"
+          echo "sha-tag=$SHA_TAG" >> "$GITHUB_OUTPUT"
+          echo "✅ Primary tag: $PRIMARY_TAG"
+          echo "✅ SHA tag: $SHA_TAG"
+
+     
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ steps.docker-config.outputs.context }}
+          file: ${{ steps.docker-config.outputs.dockerfile }}
+          platforms: ${{ env.DOCKER_PLATFORMS }}
+          push: true
+          build-args: |
+            VERSION=${{ matrix.version }}
+            DATE=${{ steps.build-metadata.outputs.build-date }}
+            REVISION=${{ needs.validate-inputs.outputs.ref }}
+            DIST=distball
+          tags: |
+            ${{ steps.image-tags.outputs.primary-tag }}
+            ${{ steps.image-tags.outputs.sha-tag }}
+          labels: |
+            org.opencontainers.image.title=Camunda ${{ matrix.component }} ${{ matrix.version }} Hotfix
+            org.opencontainers.image.description=Hotfix image for ${{ matrix.component }} ${{ matrix.version }} - Ticket: ${{ github.event.inputs.support-ticket-id }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ needs.validate-inputs.outputs.ref }}
+            org.opencontainers.image.version=${{ matrix.version }}
+            camunda.hotfix.ticket-id=${{ github.event.inputs.support-ticket-id }}
+            camunda.hotfix.component=${{ matrix.component }}
+            camunda.hotfix.version=${{ matrix.version }}
+            camunda.hotfix.sha=${{ needs.validate-inputs.outputs.short-sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Image build summary
+        run: |
+          echo "🎉 Successfully built and pushed hotfix image for ${{ matrix.component }} ${{ matrix.version }}"
+          echo "📦 Primary image: ${{ steps.image-tags.outputs.primary-tag }}"
+          echo "📦 SHA image: ${{ steps.image-tags.outputs.sha-tag }}"
+          echo "🎫 Ticket: ${{ github.event.inputs.support-ticket-id }}"
+          echo "📝 SHA: ${{ needs.validate-inputs.outputs.short-sha }}"
+
+  summary:
+    name: Build Summary
+    runs-on: ubuntu-latest
+    needs: [validate-inputs, build-images]
+    if: always()
+    steps:
+      - name: Generate summary
+        run: |
+          {
+            echo "# 🔥 Urgent Hotfix Images Build Summary"
+            echo ""
+            echo "**Support Ticket:** \`${{ github.event.inputs.support-ticket-id }}\`"
+            echo "**Reference:** \`${{ needs.validate-inputs.outputs.ref }}\`"  
+            echo "**SHA:** \`${{ needs.validate-inputs.outputs.short-sha }}\`"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+          
+          if [[ "${{ needs.build-images.result }}" == "success" ]]; then
+            {
+              echo "## ✅ Images Successfully Built"
+              echo ""
+              echo "The following hotfix images are available:"
+              echo ""
+            } >> "$GITHUB_STEP_SUMMARY"
+            
+            COMPONENTS_WITH_VERSIONS="${{ github.event.inputs.components_with_versions }}"
+            
+            TICKET_LOWER=$(echo "${{ github.event.inputs.support-ticket-id }}" | tr '[:upper:]' '[:lower:]')
+            
+            IFS=',' read -ra COMP_ARRAY <<< "$COMPONENTS_WITH_VERSIONS"
+            for COMPONENT_WITH_VERSION in "${COMP_ARRAY[@]}"; do
+              COMPONENT_WITH_VERSION=$(echo "$COMPONENT_WITH_VERSION" | xargs)  # trim whitespace
+              if [[ "$COMPONENT_WITH_VERSION" =~ ^([^:]+):(.+)$ ]]; then
+                COMP="${BASH_REMATCH[1]}"
+                VERSION="${BASH_REMATCH[2]}"
+                {
+                  echo "- **Primary**: \`${{ github.event.inputs.registry }}/${COMP}:${VERSION}-${TICKET_LOWER}\`"
+                  echo "- **With SHA**: \`${{ github.event.inputs.registry }}/${COMP}:${VERSION}-${TICKET_LOWER}-${{ needs.validate-inputs.outputs.short-sha }}\`"
+                  echo ""
+                } >> "$GITHUB_STEP_SUMMARY"
+              fi
+            done
+            
+            {
+              echo ""
+              echo "### 🚀 Usage"
+              echo ""
+              echo "\`\`\`bash"
+              echo "# Pull the hotfix image (primary tag)"
+              echo "docker pull ${{ github.event.inputs.registry }}/[COMPONENT]:[VERSION]-$(echo '${{ github.event.inputs.support-ticket-id }}' | tr '[:upper:]' '[:lower:]')"
+              echo ""
+              echo "# Example for Camunda 8.6.1 with ticket SUPPORT-12345:"
+              echo "docker pull ${{ github.event.inputs.registry }}/camunda:8.6.1-support-12345"
+              echo ""
+              echo "# Or use the SHA tag for exact reproducibility:"
+              echo "docker pull ${{ github.event.inputs.registry }}/camunda:8.6.1-support-12345-${{ needs.validate-inputs.outputs.short-sha }}"
+              echo "\`\`\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+          else
+            {
+              echo "## ❌ Build Failed"
+              echo ""
+              echo "The hotfix image build failed. Please check the logs above for details."
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}  
