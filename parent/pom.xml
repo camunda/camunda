@@ -156,6 +156,7 @@
     <version.sqlformatter>2.0.5</version.sqlformatter>
     <version.caffeine>3.2.2</version.caffeine>
     <version.commons-collections>20040616</version.commons-collections>
+    <version.reflections>0.10.2</version.reflections>
 
     <version.commons-io>2.20.0</version.commons-io>
     <version.thymeleaf>3.1.3.RELEASE</version.thymeleaf>
@@ -226,6 +227,7 @@
     <plugin.version.versions>2.18.0</plugin.version.versions>
     <plugin.version.frontend-maven>1.15.1</plugin.version.frontend-maven>
     <plugin.version.maven-source>3.3.1</plugin.version.maven-source>
+    <plugin.version.japicmp>0.23.1</plugin.version.japicmp>
 
     <!-- when updating this version, also change it in .idea/externalDependencies.xml -->
     <plugin.version.google-java-format>1.25.2</plugin.version.google-java-format>
@@ -1310,6 +1312,13 @@
         <groupId>org.instancio</groupId>
         <artifactId>instancio-core</artifactId>
         <version>${version.instancio}</version>
+        <scope>test</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.reflections</groupId>
+        <artifactId>reflections</artifactId>
+        <version>${version.reflections}</version>
         <scope>test</scope>
       </dependency>
 
@@ -2718,6 +2727,27 @@
               <useSpringBoot3>true</useSpringBoot3>
             </configOptions>
           </configuration>
+        </plugin>
+
+        <!-- Plugin to check for api changes -->
+        <plugin>
+          <groupId>com.github.siom79.japicmp</groupId>
+          <artifactId>japicmp-maven-plugin</artifactId>
+          <version>${plugin.version.japicmp}</version>
+          <configuration>
+            <parameter>
+              <accessModifier>private</accessModifier>
+              <postAnalysisScript>${project.basedir}/src/main/scripts/failOnNewFieldWithoutAnnotation.groovy</postAnalysisScript>
+            </parameter>
+          </configuration>
+          <executions>
+            <execution>
+              <goals>
+                <goal>cmp</goal>
+              </goals>
+              <phase>verify</phase>
+            </execution>
+          </executions>
         </plugin>
 
         <plugin>
