@@ -48,7 +48,8 @@ public class BrokerBasedConfiguration {
     this.properties = properties;
     this.lifecycle = lifecycle;
     final var brokerId = nodeIdMapper.start();
-    properties.getCluster().setNodeId(brokerId);
+    // TODO: add version as well
+    properties.getCluster().setNodeId(brokerId.id());
     final var dir = properties.getData().getDirectory();
     properties.getData().setDirectory(dir + "/node-" + brokerId);
     properties.init(workingDirectory.path().toAbsolutePath().toString());

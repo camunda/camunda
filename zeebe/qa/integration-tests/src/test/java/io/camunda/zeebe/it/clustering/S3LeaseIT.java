@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.it.clustering;
 
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatNoException;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.atomix.utils.AbstractIdentifier;
 import io.camunda.zeebe.broker.clustering.mapper.S3LeaseConfig;
+import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
@@ -23,9 +26,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
-import software.amazon.awssdk.services.s3.model.CreateBucketRequest;
 
 @ZeebeIntegration
 @Testcontainers
@@ -38,6 +41,7 @@ public class S3LeaseIT {
   public static final Region REGION = Region.EU_NORTH_1;
   public static S3AsyncClient s3Client;
   private static final String BUCKET_NAME = "";
+  private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
   @TestZeebe(autoStart = false)
   private final TestCluster cluster =
@@ -62,13 +66,13 @@ public class S3LeaseIT {
             .credentialsProvider(
                 () -> AwsBasicCredentials.create(config.getAccessKey(), config.getSecretKey()))
             .build();
-    if (s3Client.listBuckets().join().buckets().stream()
-        .noneMatch(b -> b.name().equals(BUCKET_NAME))) {
-      // Create bucket if it does not exist
-      s3Client
-          .createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build())
-          .join();
-    }
+    //        if (s3Client.listBuckets().join().buckets().stream()
+    //            .noneMatch(b -> b.name().equals(BUCKET_NAME))) {
+    //          // Create bucket if it does not exist
+    //          s3Client
+    //              .createBucket(CreateBucketRequest.builder().bucket(config.bucketName()).build())
+    //              .join();
+    //        }
     cluster.brokers().values().forEach(broker -> broker.brokerConfig().setLeaseConfig(config));
     cluster.start().awaitCompleteTopology();
   }
@@ -81,13 +85,24 @@ public class S3LeaseIT {
     final List<String> claimedTaskIds = new ArrayList<>();
     brokerIds.forEach(
         brokerId -> {
-          final var resp = s3Client.headObject(h -> h.bucket(BUCKET_NAME).key(brokerId)).join();
+          final var resp =
+              s3Client
+                  .getObject(
+                      h -> h.bucket(BUCKET_NAME).key(brokerId), AsyncResponseTransformer.toBytes())
+                  .join();
           assertThat(resp).isNotNull();
-          assertThat(resp.hasMetadata()).isTrue();
-          assertThat(resp.metadata()).containsKey("taskid");
-          assertThat(resp.metadata().get("taskid")).isNotBlank();
-          claimedTaskIds.add(resp.metadata().get("taskid"));
-          assertThat(resp.metadata().get("expiry")).isNotBlank();
+          final var response = resp.response();
+          assertThat(response.hasMetadata()).isTrue();
+          assertThat(response.metadata()).containsKey("taskid");
+          assertThat(response.metadata().get("taskid")).isNotBlank();
+          claimedTaskIds.add(response.metadata().get("taskid"));
+          assertThat(response.metadata().get("expiry")).isNotBlank();
+          assertThatNoException()
+              .isThrownBy(
+                  () -> {
+                    final var body = Lease.fromJsonBytes(OBJECT_MAPPER, resp.asByteArray());
+                    assertThat(body.nodeInstance().version()).isGreaterThan(0);
+                  });
         });
 
     // Check that all brokers have different taskIds
