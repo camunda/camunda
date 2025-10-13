@@ -33,6 +33,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  @NestedConfigurationProperty private Bulk bulk = new Bulk(databaseName());
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -71,6 +73,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public Bulk getBulk() {
+    return bulk;
+  }
+
+  public void setBulk(final Bulk bulk) {
+    this.bulk = bulk;
   }
 
   public Security getSecurity() {
