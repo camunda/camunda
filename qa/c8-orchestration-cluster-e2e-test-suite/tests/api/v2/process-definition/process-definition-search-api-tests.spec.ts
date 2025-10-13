@@ -101,6 +101,30 @@ test.describe.parallel('Process Definition Search API', () => {
     }).toPass(defaultAssertionOptions);
   });
 
+  test('Search Process Definitions - filter isLatestVersion & resourceName', async ({
+    request,
+  }) => {
+    await expect(async () => {
+      const res = await request.post(buildUrl('/process-definitions/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            isLatestVersion: true,
+            resourceName: 'process_definition_api_tests_2.bpmn',
+          },
+        },
+      });
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      expect(body.page.totalItems).toBe(body.items.length);
+      expect(body.page.totalItems).toBe(1);
+      expect(body.items[0].version).toBe(1);
+      expect(body.items[0].processDefinitionId).toBe(
+        'process_definition_api_tests_2',
+      );
+    }).toPass(defaultAssertionOptions);
+  });
+
   test('Search Process Definitions - with empty result', async ({request}) => {
     await expect(async () => {
       const res = await request.post(buildUrl('/process-definitions/search'), {
