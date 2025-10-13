@@ -113,27 +113,34 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
         final Long recordKey,
         final BufferWriter command,
         final BufferWriter authInfo) {
+      final var commandLength = command.getLength();
+      final var authInfoLength = authInfo != null ? authInfo.getLength() : 0;
       final var messageLength =
           MessageHeaderEncoder.ENCODED_LENGTH
               + InterPartitionMessageEncoder.BLOCK_LENGTH
               + InterPartitionMessageEncoder.commandHeaderLength()
-              + command.getLength();
+              + commandLength
+              + InterPartitionMessageEncoder.authHeaderLength()
+              + authInfoLength;
 
       final var headerEncoder = new MessageHeaderEncoder();
       final var bodyEncoder = new InterPartitionMessageEncoder();
-      final var commandBuffer = new UnsafeBuffer(new byte[command.getLength()]);
-      final var authBuffer = new UnsafeBuffer(new byte[authInfo.getLength()]);
+      final var commandBuffer = new UnsafeBuffer(new byte[commandLength]);
       final var messageBuffer = new UnsafeBuffer(new byte[messageLength]);
       command.write(commandBuffer, 0);
-      authInfo.write(authBuffer, 0);
       bodyEncoder
           .wrapAndApplyHeader(messageBuffer, 0, headerEncoder)
           .checkpointId(checkpointId)
           .receiverPartitionId(receiverPartitionId)
           .valueType(valueType.value())
           .intent(intent.value())
-          .putCommand(commandBuffer, 0, command.getLength())
-          .putAuth(authBuffer, 0, authInfo.getLength());
+          .putCommand(commandBuffer, 0, commandLength);
+
+      if (authInfo != null) {
+        final var authBuffer = new UnsafeBuffer(new byte[authInfoLength]);
+        authInfo.write(authBuffer, 0);
+        bodyEncoder.putAuth(authBuffer, 0, authInfoLength);
+      }
 
       bodyEncoder.recordKey(
           Objects.requireNonNullElseGet(
