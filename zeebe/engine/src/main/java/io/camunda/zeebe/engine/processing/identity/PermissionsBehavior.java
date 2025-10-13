@@ -11,7 +11,6 @@ import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior.AuthorizationRequest;
 import io.camunda.zeebe.engine.state.authorization.PersistedAuthorization;
 import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
-import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -34,8 +33,9 @@ public class PermissionsBehavior {
   private final AuthorizationCheckBehavior authCheckBehavior;
 
   public PermissionsBehavior(
-      final ProcessingState processingState, final AuthorizationCheckBehavior authCheckBehavior) {
-    authorizationState = processingState.getAuthorizationState();
+      final AuthorizationState authorizationState,
+      final AuthorizationCheckBehavior authCheckBehavior) {
+    this.authorizationState = authorizationState;
     this.authCheckBehavior = authCheckBehavior;
   }
 

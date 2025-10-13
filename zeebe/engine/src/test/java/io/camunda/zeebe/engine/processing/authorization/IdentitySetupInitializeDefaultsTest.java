@@ -152,6 +152,10 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.DELETE),
             auth ->
                 Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.USER_TASK)
+                    .hasOnlyPermissionTypes(PermissionType.READ, PermissionType.UPDATE),
+            auth ->
+                Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.ROLE)
                     .hasOnlyPermissionTypes(
                         PermissionType.CREATE,
@@ -254,6 +258,10 @@ public class IdentitySetupInitializeDefaultsTest {
             auth ->
                 Assertions.assertThat(auth)
                     .hasResourceType(AuthorizationResourceType.USER)
+                    .hasOnlyPermissionTypes(PermissionType.READ),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.USER_TASK)
                     .hasOnlyPermissionTypes(PermissionType.READ),
             auth ->
                 Assertions.assertThat(auth)

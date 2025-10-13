@@ -7647,6 +7647,7 @@ components:
         - DECISION_DEFINITION
         - GROUP
         - USER
+        - USER_TASK
         - ROLE
         - DOCUMENT
     OwnerTypeEnum:
