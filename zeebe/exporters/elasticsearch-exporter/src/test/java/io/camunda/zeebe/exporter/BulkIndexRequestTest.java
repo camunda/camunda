@@ -124,6 +124,11 @@ final class BulkIndexRequestTest {
     assertThat(request.lastIndexedMetadata()).isNull();
   }
 
+  private static String getPreviousMinorVersion() {
+    final var currentVersion = VersionUtil.getSemanticVersion().get();
+    return "%d.%d.0".formatted(currentVersion.major(), currentVersion.minor() - 1);
+  }
+
   @Nested
   final class IndexTest {
     @Test
@@ -292,9 +297,7 @@ final class BulkIndexRequestTest {
       // given
       final var record =
           recordFactory.generateRecord(
-              r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
-                      .withBatchOperationReference(10L));
+              r -> r.withBrokerVersion(getPreviousMinorVersion()).withBatchOperationReference(10L));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
 
@@ -337,7 +340,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(getPreviousMinorVersion())
                       .withValue(new UserTaskRecord().setDeniedReason("denied")));
 
       final var actions = List.of(new BulkIndexAction("index", "id", "routing"));
@@ -423,7 +426,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(getPreviousMinorVersion())
                       .withValue(
                           new JobRecord().setResult(new JobResult().setDeniedReason("denied"))));
 
@@ -474,7 +477,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(getPreviousMinorVersion())
                       .withValue(
                           ImmutableProcessInstanceCreationRecordValue.builder()
                               .withRuntimeInstructions(
@@ -540,7 +543,7 @@ final class BulkIndexRequestTest {
       final var record =
           recordFactory.generateRecord(
               r ->
-                  r.withBrokerVersion(VersionUtil.getPreviousVersion())
+                  r.withBrokerVersion(getPreviousMinorVersion())
                       .withValue(
                           ImmutableProcessInstanceRecordValue.builder()
                               .withElementInstancePath(List.of(List.of(1L, 2L, 3L)))
@@ -644,7 +647,7 @@ final class BulkIndexRequestTest {
     }
 
     static Stream<Arguments> recordsSupportingTagsPreviousVersion() {
-      final var version = VersionUtil.getPreviousVersion();
+      final var version = getPreviousMinorVersion();
       return tagRecordArguments(version);
     }
 

@@ -279,9 +279,11 @@ final class ElasticsearchExporterIT {
     exporter.configure(exporterTestContext);
     exporter.open(controller);
 
+    final var currentVersion = VersionUtil.getSemanticVersion().get();
+    final String previousMinorVersion =
+        "%d.%d.0".formatted(currentVersion.major(), currentVersion.minor() - 1);
     final var record =
-        factory.generateRecord(
-            valueType, r -> r.withBrokerVersion(VersionUtil.getPreviousVersion().toLowerCase()));
+        factory.generateRecord(valueType, r -> r.withBrokerVersion(previousMinorVersion));
 
     // when
     export(record);
