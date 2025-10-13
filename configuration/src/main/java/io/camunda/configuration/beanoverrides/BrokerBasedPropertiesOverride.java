@@ -670,6 +670,11 @@ public class BrokerBasedPropertiesOverride {
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
 
+    setArg(
+        args, "batchOperationCache.maxCacheSize", database.getBatchOperationCache().getMaxSize());
+    setArg(args, "processCache.maxCacheSize", database.getProcessCache().getMaxSize());
+    setArg(args, "formCache.maxCacheSize", database.getFormCache().getMaxSize());
+
     setArg(args, "postExport.batchSize", database.getPostExport().getBatchSize());
     // Duration supports only seconds and nanos; other units need to be converted
     setArg(
