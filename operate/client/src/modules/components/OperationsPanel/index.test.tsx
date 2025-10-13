@@ -60,6 +60,10 @@ describe('OperationsPanel', () => {
   });
 
   it('should render operation entries', async () => {
+    const heightSpy = vi
+      .spyOn(HTMLElement.prototype, 'offsetHeight', 'get')
+      .mockReturnValue(800);
+
     mockQueryBatchOperations().withSuccess({
       items: [mockOperationRunning, mockOperationFinished],
       page: {totalItems: 2},
@@ -68,6 +72,8 @@ describe('OperationsPanel', () => {
     render(<OperationsPanel />, {wrapper: Wrapper});
 
     await waitForElementToBeRemoved(screen.queryByTestId('skeleton'));
+
+    expect(screen.getAllByTestId('operations-entry')).toHaveLength(2);
 
     const [firstOperation, secondOperation] =
       screen.getAllByTestId('operations-entry');
@@ -93,6 +99,7 @@ describe('OperationsPanel', () => {
     expect(
       withinSecondOperation.getByTestId('operation-cancel-icon'),
     ).toBeInTheDocument();
+    heightSpy.mockRestore();
   });
 
   it('should show an error message', async () => {
