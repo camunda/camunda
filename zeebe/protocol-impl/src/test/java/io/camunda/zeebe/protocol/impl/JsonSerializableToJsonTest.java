@@ -2432,7 +2432,8 @@ final class JsonSerializableToJsonTest {
             "resourceMetadata":[],
             "tenantId": "<default>",
             "deploymentKey": -1
-          }
+          },
+          "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
         }
         """
       },
@@ -2449,7 +2450,8 @@ final class JsonSerializableToJsonTest {
           "queueId": null,
           "valueType": "NULL_VAL",
           "intent": "UNKNOWN",
-          "commandValue": null
+          "commandValue": null,
+          "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
         }
         """
       },
