@@ -66,15 +66,15 @@ public class S3Lease extends AbstractLeaseClient {
     this.clock = clock;
   }
 
-  private Lease atomicAcquireLease(final boolean isRenew) {
+  private Lease atomicAcquireLease(final Lease lease, final boolean isRenew) {
     // 2. Attempt atomic update
-    if (currentLease == null) {
+    if (isRenew && currentLease == null) {
       throw new IllegalStateException("Cannot acquire a lease, current one is empty");
     }
-    final var nodeInstance = currentLease.nodeInstance();
+    final var nodeInstance = lease.nodeInstance();
     final var objectKey = objectKey(nodeInstance.id());
-    final var nextLease = currentLease.renew(leaseExpirationDuration.toMillis());
-    final var nodeVersion = nodeInstance.version() + 1;
+    final var nextLease = lease.renew(leaseExpirationDuration.toMillis());
+    final var nodeVersion = nodeInstance.version();
     final PutObjectRequest putRequest =
         PutObjectRequest.builder()
             .bucket(bucketName)
@@ -191,9 +191,9 @@ public class S3Lease extends AbstractLeaseClient {
       currentETag = headResponse.eTag();
       // always increase the version when acquiring a new lease
       final var nodeInstance = new NodeInstance(nodeId, currentNodeVersion).nextVersion();
-      currentLease = new Lease(taskId, Long.parseLong(expiry), nodeInstance);
+      final var lease = new Lease(taskId, Long.parseLong(expiry), nodeInstance);
 
-      return atomicAcquireLease(false);
+      return atomicAcquireLease(lease, false);
     }
     return null;
   }
@@ -226,7 +226,7 @@ public class S3Lease extends AbstractLeaseClient {
       throw new IllegalStateException(
           "Cannot renew lease as it was not held anymore. eTag is null");
     }
-    return atomicAcquireLease(true);
+    return atomicAcquireLease(currentLease, true);
   }
 
   public Lease getLease(final int id) throws IOException {

@@ -30,7 +30,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
@@ -90,7 +89,6 @@ public class S3LeaseComponentIT {
   }
 
   @Test
-  @Disabled
   void lease() {
     final List<String> claimedTaskIds = new ArrayList<>();
     // given
@@ -146,7 +144,7 @@ public class S3LeaseComponentIT {
                               final var body =
                                   Lease.fromJsonBytes(OBJECT_MAPPER, resp.asByteArray());
                               System.out.println(String.valueOf(body));
-                              assertThat(body.nodeInstance().version()).isGreaterThan(0);
+                              assertThat(body.nodeInstance().version()).isEqualTo(1);
                             });
                     final var response = resp.response();
                     assertThat(response.hasMetadata()).isTrue();
