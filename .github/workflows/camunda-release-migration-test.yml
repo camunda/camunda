@@ -313,6 +313,7 @@ jobs:
           --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
+          --set global.security.authentication.method=oidc \
           --set connectors.image.tag=8.8.0 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
@@ -332,8 +333,7 @@ jobs:
           --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
           --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --set orchestration.security.authentication.method=oidc \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token          
       - name: Summarize deployment
         if: success()
         run: |
