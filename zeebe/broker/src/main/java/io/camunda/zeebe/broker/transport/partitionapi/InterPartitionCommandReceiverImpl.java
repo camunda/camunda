@@ -197,6 +197,9 @@ final class InterPartitionCommandReceiverImpl {
     private static void decodeAuthInfo(
         final InterPartitionMessageDecoder messageDecoder, final RecordMetadata recordMetadata) {
       final var length = messageDecoder.authLength();
+      if (length <= 0) {
+        return;
+      }
       final var offset = messageDecoder.limit() + InterPartitionMessageDecoder.authHeaderLength();
       recordMetadata.getAuthorization().wrap(messageDecoder.buffer(), offset, length);
       messageDecoder.skipAuth();
