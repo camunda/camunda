@@ -313,12 +313,13 @@ jobs:
           --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
-          --set connectors.image.tag=SNAPSHOT \
+          --set global.security.authentication.method=oidc \
+          --set connectors.image.tag=8.8.0 \
           --set connectors.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set connectors.security.authentication.oidc.secret.existingSecretKey=identity-connectors-client-token \
           --set identity.enabled=true \
           --set identity.firstUser.enabled=false \
-          --set identity.image.tag=8.8-SNAPSHOT \
+          --set identity.image.tag=8.8.0 \
           --set identityKeycloak.enabled=true \
           --set global.identity.auth.enabled=true \
           --set "orchestration.env[0].name=CAMUNDA_SYSTEM_UPGRADE_ENABLEVERSIONCHECK" \
@@ -327,13 +328,12 @@ jobs:
           --set orchestration.image.repository=zeebe-io/zeebe \
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} \
           --set orchestration.migration.data.enabled=true \
-          --set orchestration.migration.identity.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.migration.identity.enabled=true \
           --set orchestration.migration.identity.secret.existingSecret=camunda-credentials \
           --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
+          --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --set orchestration.security.authentication.method=oidc \
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token          
       - name: Summarize deployment
         if: success()
         run: |
