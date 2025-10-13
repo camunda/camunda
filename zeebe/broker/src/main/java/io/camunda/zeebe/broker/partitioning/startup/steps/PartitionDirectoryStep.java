@@ -14,7 +14,6 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.startup.StartupStep;
 import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
-import java.nio.file.Paths;
 
 public final class PartitionDirectoryStep implements StartupStep<PartitionStartupContext> {
 
@@ -32,7 +31,7 @@ public final class PartitionDirectoryStep implements StartupStep<PartitionStartu
   @Override
   public ActorFuture<PartitionStartupContext> startup(final PartitionStartupContext context) {
     final var result = context.concurrencyControl().<PartitionStartupContext>createFuture();
-    final var dataDirectory = Paths.get(context.brokerConfig().getData().getDirectory());
+    final var dataDirectory = context.brokerConfig().getData().getBrokerDataDirectory();
     final var partitionId = context.partitionMetadata().id().id();
     final var partitionDirectory =
         dataDirectory.resolve(GROUP_NAME).resolve("partitions").resolve(partitionId.toString());

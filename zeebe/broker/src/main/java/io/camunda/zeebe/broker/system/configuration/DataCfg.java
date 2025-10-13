@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupStoreCfg;
 import java.io.File;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -21,9 +22,13 @@ public final class DataCfg implements ConfigurationEntry {
   private static final Logger LOG = Loggers.SYSTEM_LOGGER;
   private static final DataSize DEFAULT_DATA_SIZE = DataSize.ofMegabytes(128);
 
-  private String directory = DEFAULT_DIRECTORY;
+  private String rootDirectory = DEFAULT_DIRECTORY;
+  private Path brokerDataDirectory;
 
   private String runtimeDirectory = null;
+
+  private DataDirectoryInitializationMode initializationMode =
+      DataDirectoryInitializationMode.SHARED_ROOT_VERSIONED_NODE;
 
   private DataSize logSegmentSize = DEFAULT_DATA_SIZE;
 
@@ -41,7 +46,7 @@ public final class DataCfg implements ConfigurationEntry {
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
-    directory = ConfigurationUtil.toAbsolutePath(directory, brokerBase);
+    rootDirectory = ConfigurationUtil.toAbsolutePath(rootDirectory, brokerBase);
     if (runtimeDirectory != null) {
       runtimeDirectory = ConfigurationUtil.toAbsolutePath(runtimeDirectory, brokerBase);
     }
@@ -80,16 +85,28 @@ public final class DataCfg implements ConfigurationEntry {
   }
 
   private DataSize convertWatermarkToFreeSpace(final Double watermark) {
-    final var directoryFile = new File(getDirectory());
+    final var directoryFile = new File(getRootDirectory());
     return DataSize.ofBytes(Math.round(directoryFile.getTotalSpace() * (1 - watermark)));
   }
 
-  public String getDirectory() {
-    return directory;
+  public String getRootDirectory() {
+    return rootDirectory;
   }
 
-  public void setDirectory(final String directory) {
-    this.directory = directory;
+  public void setRootDirectory(final String directory) {
+    rootDirectory = directory;
+  }
+
+  public Path getBrokerDataDirectory() {
+    if (brokerDataDirectory == null) {
+      throw new IllegalStateException(
+          "Broker data directory accessed before it was initialized. Make sure to call init() first.");
+    }
+    return brokerDataDirectory;
+  }
+
+  public void setBrokerDataDirectory(final Path brokerDataDirectory) {
+    this.brokerDataDirectory = brokerDataDirectory;
   }
 
   public String getRuntimeDirectory() {
@@ -164,15 +181,25 @@ public final class DataCfg implements ConfigurationEntry {
     this.backup = backup;
   }
 
+  public DataDirectoryInitializationMode getInitializationMode() {
+    return initializationMode;
+  }
+
+  public void setInitializationMode(final DataDirectoryInitializationMode initializationMode) {
+    this.initializationMode = initializationMode;
+  }
+
   @Override
   public String toString() {
     return "DataCfg{"
         + "directory='"
-        + directory
+        + rootDirectory
         + '\''
         + ", stateDirectory='"
         + runtimeDirectory
         + '\''
+        + ", initializationMode="
+        + initializationMode
         + ", logSegmentSize="
         + logSegmentSize
         + ", snapshotPeriod="

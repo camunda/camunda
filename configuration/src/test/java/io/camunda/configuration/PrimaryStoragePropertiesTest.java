@@ -49,7 +49,7 @@ public class PrimaryStoragePropertiesTest {
 
     @Test
     void shouldSetDirectory() {
-      assertThat(brokerCfg.getData().getDirectory()).isEqualTo("/custom/data");
+      assertThat(brokerCfg.getData().getRootDirectory()).isEqualTo("/custom/data");
     }
 
     @Test
@@ -112,7 +112,7 @@ public class PrimaryStoragePropertiesTest {
 
     @Test
     void shouldSetDirectory() {
-      assertThat(brokerCfg.getData().getDirectory()).isEqualTo("/legacy/data");
+      assertThat(brokerCfg.getData().getRootDirectory()).isEqualTo("/legacy/data");
     }
 
     @Test
@@ -185,7 +185,7 @@ public class PrimaryStoragePropertiesTest {
 
     @Test
     void shouldSetDirectoryFromNew() {
-      assertThat(brokerCfg.getData().getDirectory()).isEqualTo("/unified/data");
+      assertThat(brokerCfg.getData().getRootDirectory()).isEqualTo("/unified/data");
     }
 
     @Test

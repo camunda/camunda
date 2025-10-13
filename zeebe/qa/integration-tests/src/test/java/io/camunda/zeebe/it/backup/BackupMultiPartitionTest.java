@@ -241,7 +241,7 @@ class BackupMultiPartitionTest {
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(broker.brokerConfig().getData().getDirectory());
+        .setDirectory(broker.brokerConfig().getData().getRootDirectory());
     unifiedRestoreConfig.getCluster().setSize(broker.brokerConfig().getCluster().getClusterSize());
 
     // backup config s3

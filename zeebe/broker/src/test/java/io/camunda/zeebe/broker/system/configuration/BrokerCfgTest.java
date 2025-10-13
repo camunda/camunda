@@ -236,7 +236,7 @@ public final class BrokerCfgTest {
 
     // then
     assertWithDefaultConfigurations(
-        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
+        config -> assertThat(config.getData().getRootDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test
@@ -246,7 +246,7 @@ public final class BrokerCfgTest {
     final String expectedDataDirectory = Paths.get(BROKER_BASE, "foo").toString();
 
     // then
-    assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory);
+    assertThat(config.getData().getRootDirectory()).isEqualTo(expectedDataDirectory);
   }
 
   @Test
@@ -257,7 +257,7 @@ public final class BrokerCfgTest {
 
     // then
     assertWithDefaultConfigurations(
-        config -> assertThat(config.getData().getDirectory()).isEqualTo(expectedDataDirectory));
+        config -> assertThat(config.getData().getRootDirectory()).isEqualTo(expectedDataDirectory));
   }
 
   @Test

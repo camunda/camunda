@@ -140,7 +140,7 @@ public class ScaleUpPartitionsTest {
     unifiedRestoreConfig
         .getData()
         .getPrimaryStorage()
-        .setDirectory(brokerCfg.getData().getDirectory());
+        .setDirectory(brokerCfg.getData().getRootDirectory());
     unifiedRestoreConfig
         .getCluster()
         .setReplicationFactor(brokerCfg.getCluster().getReplicationFactor());
@@ -314,7 +314,7 @@ public class ScaleUpPartitionsTest {
 
     final var partition1Leader = cluster.leaderForPartition(1);
 
-    final var directory = Path.of(partition1Leader.brokerConfig().getData().getDirectory());
+    final var directory = Path.of(partition1Leader.brokerConfig().getData().getRootDirectory());
     final var bootstrapSnapshotDirectory =
         directory.resolve("raft-partition/partitions/1/bootstrap-snapshots/1-1-0-0-0");
     scaleToPartitions(targetPartitionCount);
@@ -594,7 +594,7 @@ public class ScaleUpPartitionsTest {
       throws IOException {
     for (final var broker : cluster.brokers().values()) {
       LOG.debug("Restoring broker: {}", broker.nodeId());
-      final var dataFolder = Path.of(broker.brokerConfig().getData().getDirectory());
+      final var dataFolder = Path.of(broker.brokerConfig().getData().getRootDirectory());
       FileUtil.deleteFolderIfExists(dataFolder);
 
       Files.createDirectories(dataFolder);
