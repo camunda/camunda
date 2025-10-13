@@ -17,6 +17,7 @@ import io.camunda.operate.zeebeimport.util.XMLUtil;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 import io.camunda.zeebe.protocol.record.value.deployment.Process;
@@ -56,8 +57,7 @@ public class ProcessZeebeRecordProcessor {
   public void processDeploymentRecord(final Record record, final BatchRequest batchRequest)
       throws PersistenceException {
     final String intentStr = record.getIntent().name();
-
-    if (STATES.contains(intentStr)) {
+    if (record.getPartitionId() == Protocol.DEPLOYMENT_PARTITION && STATES.contains(intentStr)) {
       final ProcessMetadataValue recordValue = (ProcessMetadataValue) record.getValue();
       persistProcess((Process) recordValue, batchRequest);
     }
