@@ -536,6 +536,12 @@ public final class ZeebePartition extends Actor
     return future;
   }
 
+  public ActorFuture<Void> deleteExporter(final String exporterId) {
+    final var future = new CompletableActorFuture<Void>();
+    actor.run(() -> partitionConfigurationManager.deleteExporter(exporterId).onComplete(future));
+    return future;
+  }
+
   public ActorFuture<Void> enableExporter(
       final String exporterId, final long metadataVersion, final String initializeFrom) {
     final var future = new CompletableActorFuture<Void>();
