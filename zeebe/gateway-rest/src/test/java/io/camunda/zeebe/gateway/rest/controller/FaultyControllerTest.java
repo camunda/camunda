@@ -16,14 +16,12 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
-@Disabled
 @WebMvcTest(value = ProcessInstanceController.class)
 public class FaultyControllerTest extends RestControllerTest {
 
@@ -50,6 +48,7 @@ public class FaultyControllerTest extends RestControllerTest {
     final var request =
         """
         {
+            "processDefinitionKey": "123",
             "test": "123"
         }""";
 
