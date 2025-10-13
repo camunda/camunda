@@ -70,7 +70,7 @@ jobs:
 
   actionlint:
     if: needs.detect-changes.outputs.actionlint == 'true'
-    name: "Tool / Actionlint"
+    name: "Camunda / Tool / Actionlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -104,7 +104,7 @@ jobs:
 
   commitlint:
     if: needs.detect-changes.outputs.commitlint == 'true'
-    name: "Tool / Commitlint"
+    name: "Camunda / Tool / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -137,7 +137,7 @@ jobs:
 
   maven-spotless-linter:
     if: needs.detect-changes.outputs.maven-spotless-linter == 'true'
-    name: "Tool / Maven Spotless"
+    name: "Camunda / Tool / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -985,7 +985,7 @@ jobs:
 
   docker-checks:
     if: needs.detect-changes.outputs.camunda-docker-tests == 'true'
-    name: "Docker / Tool / Checks"
+    name: "Camunda / Tool / Docker - Checks"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     outputs:
@@ -1305,7 +1305,7 @@ jobs:
           user_description: "General"
 
   openapi-lint:
-    name: "Tool / C8 REST OpenAPI Linter"
+    name: "Camunda / Tool / C8 REST OpenAPI Linter"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
@@ -1342,7 +1342,7 @@ jobs:
 
   renovatelint:
     if: needs.detect-changes.outputs.renovate-config-changes == 'true'
-    name: "Tool / Renovate Config Validator"
+    name: "Camunda / Tool / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 5
