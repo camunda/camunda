@@ -62,7 +62,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
     ) => {
       setIsModalVisible(true);
       setModalContent(errorMessage);
-      setModalTitle(`Flow Node "${elementName}" Error`);
+      setModalTitle(`Element "${elementName}" Error`);
     };
 
     const sortedIncidents = sortIncidents(incidents, sortBy, sortOrder);
@@ -116,7 +116,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
               key: 'errorType',
             },
             {
-              header: 'Failing Flow Node',
+              header: 'Failing Element',
               key: 'elementName',
             },
             {
@@ -164,7 +164,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                     }}
                     title={`View root cause instance ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   >
-                    {`${incident.elementId} ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
+                    {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   </Link>
                 ),
               jobId: incident.jobKey || '--',
