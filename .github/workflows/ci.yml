@@ -163,7 +163,7 @@ jobs:
 
   java-checks:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
-    name: "Java Checks"
+    name: "Camunda / Tool / Java Checks"
     needs: [ detect-changes ]
     timeout-minutes: 15
     permissions: { }  # GITHUB_TOKEN unused in this job
@@ -1252,7 +1252,7 @@ jobs:
     permissions: { }
 
   protobuf-checks:
-    name: "Protobuf Backwards Compatibility"
+    name: "General / Tool / Protobuf Backwards Compatibility"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
     timeout-minutes: 10
