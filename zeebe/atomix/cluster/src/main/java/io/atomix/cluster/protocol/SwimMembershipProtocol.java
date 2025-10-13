@@ -243,6 +243,16 @@ public class SwimMembershipProtocol
   private boolean updateState(final ImmutableMember member) {
     // If the member matches the local member, ignore the update.
     if (member.id().equals(localMember.id())) {
+      if (member.id().getIdVersion() < localMember.id().getIdVersion()) {
+        LOGGER.warn(
+            "{} - Detected another member with the same id {}. This is likely due to a stale node rejoining the cluster. Local member version: {}, remote member version: {}",
+            localMember.id(),
+            member.id(),
+            localMember.id().getIdVersion(),
+            member.id().getIdVersion());
+      } else if (member.id().getIdVersion() > localMember.id().getIdVersion()) {
+        // TODO: shutdown node as we detect a newer node with the same id
+      }
       return false;
     }
 
@@ -266,6 +276,10 @@ public class SwimMembershipProtocol
             localMember.id(),
             member);
       }
+      return false;
+    }
+    if (swimMember.id().getIdVersion() > member.id().getIdVersion()) {
+      // Ignore updates for members with lower id versions
       return false;
     }
     // If the term has been increased, update the member and record a gossip event.
