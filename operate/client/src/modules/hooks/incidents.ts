@@ -35,11 +35,15 @@ const useIncidents = () => {
   }));
 };
 
-const useIncidentsV2 = (processInstanceKey: string): EnhancedIncident[] => {
+const useIncidentsV2 = (
+  processInstanceKey: string,
+  {enablePeriodicRefetch = false}: {enablePeriodicRefetch?: boolean},
+): EnhancedIncident[] => {
   const {data: businessObjects} = useBusinessObjects();
   const {data: incidents} = useProcessInstanceIncidentsSearch(
     processInstanceKey,
     {
+      enablePeriodicRefetch,
       select: (incidents) =>
         incidents.items.map((incident) => ({
           ...incident,

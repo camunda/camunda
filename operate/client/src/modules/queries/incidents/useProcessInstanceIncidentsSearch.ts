@@ -14,6 +14,7 @@ const INCIDENTS_SEARCH_LIVE_QUERY_KEY = 'incidentsSearchLive';
 
 type QueryOptions<T> = {
   enabled?: boolean;
+  enablePeriodicRefetch?: boolean;
   select?: (result: QueryIncidentsResponseBody) => T;
 };
 
@@ -23,7 +24,7 @@ function useProcessInstanceIncidentsSearch<T = QueryIncidentsResponseBody>(
 ) {
   return useQuery({
     queryKey: [INCIDENTS_SEARCH_LIVE_QUERY_KEY, processInstanceKey],
-    refetchInterval: 5000,
+    refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
     enabled: options?.enabled ?? !!processInstanceKey,
     select: options?.select,
     queryFn: async () => {

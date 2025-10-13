@@ -23,6 +23,8 @@ import {useIncidents, useIncidentsV2} from 'modules/hooks/incidents';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useEffect} from 'react';
 import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
+import {isInstanceRunning} from 'modules/utils/instance';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -87,7 +89,11 @@ const IncidentsWrapper: React.FC<Props> = observer(
 
 const IncidentsWrapperV2: React.FC<Props> = observer(
   ({setIsInTransition, processInstance}) => {
-    const incidents = useIncidentsV2(processInstance.processInstanceKey);
+    const incidents = useIncidentsV2(processInstance.processInstanceKey, {
+      enablePeriodicRefetch:
+        isInstanceRunning(processInstance) &&
+        !modificationsStore.isModificationModeEnabled,
+    });
     const filteredIncidents = getFilteredIncidentsV2(incidents);
 
     if (incidents.length === 0) {
