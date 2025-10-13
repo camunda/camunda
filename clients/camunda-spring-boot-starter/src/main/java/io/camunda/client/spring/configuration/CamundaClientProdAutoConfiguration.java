@@ -28,6 +28,7 @@ import io.camunda.client.spring.testsupport.CamundaSpringProcessTestContext;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc;
 import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import org.apache.hc.client5.http.async.AsyncExecChainHandler;
@@ -71,7 +72,8 @@ public class CamundaClientProdAutoConfiguration {
         interceptors,
         chainHandlers,
         camundaClientExecutorService,
-        camundaClientCredentialsProvider);
+        camundaClientCredentialsProvider,
+        GlobalOpenTelemetry.get());
   }
 
   @Bean(destroyMethod = "close")

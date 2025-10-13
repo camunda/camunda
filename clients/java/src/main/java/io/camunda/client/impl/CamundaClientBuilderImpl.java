@@ -63,6 +63,8 @@ import io.camunda.client.impl.util.AddressUtil;
 import io.camunda.client.impl.util.DataSizeUtil;
 import io.camunda.client.impl.util.Environment;
 import io.grpc.ClientInterceptor;
+import io.opentelemetry.api.GlobalOpenTelemetry;
+import io.opentelemetry.api.OpenTelemetry;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
@@ -125,6 +127,7 @@ public final class CamundaClientBuilderImpl
   private ScheduledExecutorService jobWorkerExecutor;
   private boolean ownsJobWorkerExecutor;
   private boolean useDefaultRetryPolicy;
+  private OpenTelemetry openTelemetry;
 
   @Override
   public URI getRestAddress() {
@@ -254,6 +257,11 @@ public final class CamundaClientBuilderImpl
   @Override
   public boolean preferRestOverGrpc() {
     return preferRestOverGrpc;
+  }
+
+  @Override
+  public OpenTelemetry getOpenTelemetry() {
+    return openTelemetry;
   }
 
   private void gatewayAddress(final String gatewayAddress) {
@@ -575,9 +583,18 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
+  public CamundaClientBuilder openTelemetry(final OpenTelemetry openTelemetry) {
+    this.openTelemetry = openTelemetry;
+    return this;
+  }
+
+  @Override
   public CamundaClient build() {
     if (applyEnvironmentVariableOverrides) {
       applyOverrides();
+    }
+    if (openTelemetry == null) {
+      openTelemetry = GlobalOpenTelemetry.get();
     }
     return new CamundaClientImpl(this);
   }

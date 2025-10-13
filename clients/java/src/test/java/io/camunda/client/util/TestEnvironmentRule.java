@@ -25,6 +25,7 @@ import io.camunda.client.impl.CamundaClientImpl;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.grpc.ManagedChannel;
 import io.grpc.testing.GrpcServerRule;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
@@ -62,6 +63,9 @@ public final class TestEnvironmentRule extends ExternalResource {
     serverRule.getServiceRegistry().addService(gatewayService);
 
     final ManagedChannel channel = serverRule.getChannel();
+
+    // set the default open telemetry so that the client can pick it up
+    builder.openTelemetry(GlobalOpenTelemetry.get());
 
     clientConfigurator.accept(builder);
     gatewayStub = spy(CamundaClientImpl.buildGatewayStub(channel, builder));
