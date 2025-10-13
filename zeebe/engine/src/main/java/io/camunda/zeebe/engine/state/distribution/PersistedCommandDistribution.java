@@ -20,7 +20,6 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
@@ -52,18 +51,8 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
     intentProperty.setValue(commandDistributionRecord.getIntent().value());
 
-    final var commandValue = commandDistributionRecord.getCommandValue();
-    final var valueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = commandValue.getLength();
-    valueBuffer.wrap(new byte[encodedLength]);
-    commandValue.write(valueBuffer, 0);
-    commandValueProperty.getValue().wrap(valueBuffer, 0, encodedLength);
-
-    final var authInfo = commandDistributionRecord.getAuthInfo();
-    final int authLength = authInfo.getLength();
-    final var authBuffer = new UnsafeBuffer(new byte[authLength]);
-    authInfo.write(authBuffer, 0);
-    authInfoProperty.getValue().wrap(authBuffer, 0, authLength);
+    commandValueProperty.getValue().copyFrom(commandDistributionRecord.getCommandValue());
+    authInfoProperty.getValue().copyFrom(commandDistributionRecord.getAuthInfo());
 
     return this;
   }
