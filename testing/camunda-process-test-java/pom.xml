@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.8.0</version>
+    <version>8.8.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -15,7 +15,6 @@
 
   <properties>
     <version.java>8</version.java>
-    <maven-commit-id-plugin-version>9.0.2</maven-commit-id-plugin-version>
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
@@ -285,30 +284,6 @@
               </relocations>
 
             </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>io.github.git-commit-id</groupId>
-        <artifactId>git-commit-id-maven-plugin</artifactId>
-        <version>${maven-commit-id-plugin-version}</version>
-        <configuration>
-          <generateGitPropertiesFile>true</generateGitPropertiesFile>
-          <generateGitPropertiesFilename>${project.build.outputDirectory}/git.properties</generateGitPropertiesFilename>
-          <includeOnlyProperties>
-            <includeOnlyProperty>^git.branch$</includeOnlyProperty>
-          </includeOnlyProperties>
-          <failOnNoGitDirectory>false</failOnNoGitDirectory>
-          <failOnUnableToExtractRepoInfo>false</failOnUnableToExtractRepoInfo>
-        </configuration>
-        <executions>
-          <execution>
-            <id>collect-git-info</id>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
           </execution>
         </executions>
       </plugin>
