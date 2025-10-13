@@ -486,7 +486,8 @@ public class ProcessInstanceMigrationCatchEventBehaviour {
           .distribute(
               ValueType.MESSAGE_SUBSCRIPTION,
               MessageSubscriptionIntent.MIGRATE,
-              messageSubscription);
+              messageSubscription,
+              null);
     }
   }
 
