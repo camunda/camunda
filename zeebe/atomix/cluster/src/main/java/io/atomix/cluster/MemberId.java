@@ -54,23 +54,23 @@ public class MemberId extends NodeId {
   public static MemberId from(final String id) {
     return new MemberId(id);
   }
-
-  @Override
-  public int hashCode() {
-    int result = super.hashCode();
-    result = 31 * result + Long.hashCode(idVersion);
-    return result;
-  }
-
-  @Override
-  public final boolean equals(final Object o) {
-    if (!(o instanceof final MemberId memberId)) {
-      return false;
-    }
-    if (!super.equals(o)) {
-      return false;
-    }
-
-    return idVersion == memberId.idVersion;
-  }
+  //
+  //  @Override
+  //  public int hashCode() {
+  //    int result = super.hashCode();
+  //    result = 31 * result + Long.hashCode(idVersion);
+  //    return result;
+  //  }
+  //
+  //  @Override
+  //  public final boolean equals(final Object o) {
+  //    if (!(o instanceof final MemberId memberId)) {
+  //      return false;
+  //    }
+  //    if (!super.equals(o)) {
+  //      return false;
+  //    }
+  //
+  //    return idVersion == memberId.idVersion;
+  //  }
 }
