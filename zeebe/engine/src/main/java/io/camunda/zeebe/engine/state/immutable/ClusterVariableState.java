@@ -13,12 +13,13 @@ import org.agrona.DirectBuffer;
 
 public interface ClusterVariableState {
 
-  Optional<ClusterVariableInstance> getClusterVariable(
+  Optional<ClusterVariableInstance> getTenantScopedClusterVariable(
       DirectBuffer variableNameBuffer, String tenantId);
 
-  Optional<ClusterVariableInstance> getClusterVariable(DirectBuffer variableNameBuffer);
+  Optional<ClusterVariableInstance> getGloballyScopedClusterVariable(
+      DirectBuffer variableNameBuffer);
 
-  boolean exists(final DirectBuffer variableNameBuffer, final String tenantId);
+  boolean existsAtTenantScope(final DirectBuffer variableNameBuffer, final String tenantId);
 
-  boolean exists(final DirectBuffer variableNameBuffer);
+  boolean existsAtGlobalScope(final DirectBuffer variableNameBuffer);
 }

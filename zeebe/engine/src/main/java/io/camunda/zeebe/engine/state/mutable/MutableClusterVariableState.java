@@ -14,7 +14,7 @@ import org.agrona.DirectBuffer;
 public interface MutableClusterVariableState extends ClusterVariableState {
   void setClusterVariable(ClusterVariableRecord clusterVariableRecord);
 
-  void deleteClusterVariable(DirectBuffer variableNameBuffer, String tenantId);
+  void deleteTenantScopedClusterVariable(DirectBuffer variableNameBuffer, String tenantId);
 
-  void deleteClusterVariable(DirectBuffer variableNameBuffer);
+  void deleteGloballyScopedClusterVariable(DirectBuffer variableNameBuffer);
 }

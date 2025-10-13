@@ -38,7 +38,6 @@ public class DbClusterVariableState implements MutableClusterVariableState {
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     clusterVariableInstance = new ClusterVariableInstance();
 
-    // tenant scoped cluster variable
     name = new DbString();
     tenantId = new DbString();
     scope = new DbEnumValue<>(Scope.class);
@@ -72,7 +71,8 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public void deleteClusterVariable(final DirectBuffer variableNameBuffer, final String tenantId) {
+  public void deleteTenantScopedClusterVariable(
+      final DirectBuffer variableNameBuffer, final String tenantId) {
     name.wrapBuffer(variableNameBuffer);
     scope.setValue(Scope.TENANT);
     this.tenantId.wrapString(tenantId);
@@ -80,7 +80,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public void deleteClusterVariable(final DirectBuffer variableNameBuffer) {
+  public void deleteGloballyScopedClusterVariable(final DirectBuffer variableNameBuffer) {
     name.wrapBuffer(variableNameBuffer);
     scope.setValue(Scope.GLOBAL);
     tenantId.wrapString("");
@@ -88,7 +88,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public Optional<ClusterVariableInstance> getClusterVariable(
+  public Optional<ClusterVariableInstance> getTenantScopedClusterVariable(
       final DirectBuffer variableNameBuffer, final String tenantId) {
     name.wrapBuffer(variableNameBuffer);
     this.tenantId.wrapString(tenantId);
@@ -99,7 +99,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public Optional<ClusterVariableInstance> getClusterVariable(
+  public Optional<ClusterVariableInstance> getGloballyScopedClusterVariable(
       final DirectBuffer variableNameBuffer) {
     name.wrapBuffer(variableNameBuffer);
     tenantId.wrapString("");
@@ -110,7 +110,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public boolean exists(final DirectBuffer variableNameBuffer, final String tenantId) {
+  public boolean existsAtTenantScope(final DirectBuffer variableNameBuffer, final String tenantId) {
     name.wrapBuffer(variableNameBuffer);
     this.tenantId.wrapString(tenantId);
     scope.setValue(Scope.TENANT);
@@ -118,7 +118,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public boolean exists(final DirectBuffer variableNameBuffer) {
+  public boolean existsAtGlobalScope(final DirectBuffer variableNameBuffer) {
     name.wrapBuffer(variableNameBuffer);
     tenantId.wrapString("");
     scope.setValue(Scope.GLOBAL);
