@@ -39,38 +39,6 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command) {
-    sendCommand(receiverPartitionId, valueType, intent, null, command);
-  }
-
-  @Override
-  public void sendCommand(
-      final int receiverPartitionId,
-      final ValueType valueType,
-      final Intent intent,
-      final Long recordKey,
-      final UnifiedRecordValue command) {
-    if (!interceptor.shouldSend(receiverPartitionId, valueType, intent, recordKey, command)) {
-      return;
-    }
-    final var metadata =
-        new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
-    final var writer = writers.computeIfAbsent(receiverPartitionId, i -> new CompletableFuture<>());
-    final LogAppendEntry entry;
-    if (recordKey != null) {
-      entry = LogAppendEntry.of(recordKey, metadata, command);
-    } else {
-      entry = LogAppendEntry.of(metadata, command);
-    }
-
-    writer.thenAccept(w -> w.tryWrite(WriteContext.interPartition(), entry));
-  }
-
-  @Override
-  public void sendCommand(
-      final int receiverPartitionId,
-      final ValueType valueType,
-      final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue command,
       final AuthInfo authInfo) {
@@ -78,11 +46,11 @@ public class TestInterPartitionCommandSender implements InterPartitionCommandSen
       return;
     }
     final var metadata =
-        new RecordMetadata()
-            .recordType(RecordType.COMMAND)
-            .intent(intent)
-            .valueType(valueType)
-            .authorization(authInfo);
+        new RecordMetadata().recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
+
+    if (authInfo != null) {
+      metadata.authorization(authInfo);
+    }
     final var writer = writers.computeIfAbsent(receiverPartitionId, i -> new CompletableFuture<>());
     final LogAppendEntry entry;
     if (recordKey != null) {

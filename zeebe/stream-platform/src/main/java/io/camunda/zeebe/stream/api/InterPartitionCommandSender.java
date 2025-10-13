@@ -17,35 +17,50 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
  * silently, it is up to the caller to detect this and retry.
  */
 public interface InterPartitionCommandSender {
-  void sendCommand(
+  /**
+   * Sends a command without a specific record key or authentication info to the given partition.
+   *
+   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
+   *     AuthInfo)
+   */
+  default void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
-      final UnifiedRecordValue command);
+      final UnifiedRecordValue command) {
+    sendCommand(receiverPartitionId, valueType, intent, null, command, null);
+  }
 
   /**
-   * Uses the given record key when writing the command. Otherwise, behaves like {@link
-   * InterPartitionCommandSender#sendCommand}. This may be used in cases where the key has been
-   * provided to the users, and the entity must be available on the receiving partition with that
-   * specific key. This also helps inform the receiving partition that this command was sent from
-   * another partition (and from which partition as the key encodes the partition id).
+   * Sends a command without authentication info to the given partition.
    *
-   * @param recordKey Record key to use when writing the command. Ignored if null.
+   * @see InterPartitionCommandSender#sendCommand(int, ValueType, Intent, Long, UnifiedRecordValue,
+   *     AuthInfo)
+   */
+  default void sendCommand(
+      final int receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final UnifiedRecordValue command) {
+    sendCommand(receiverPartitionId, valueType, intent, recordKey, command, null);
+  }
+
+  /**
+   * Sends a command to the given partition.
+   *
+   * @param recordKey This may be used in cases where the key has been provided to the users, and
+   *     the entity must be available on the receiving partition with that specific key. This also
+   *     helps inform the receiving partition that this command was sent from another partition (and
+   *     from which partition as the key encodes the partition id). May be null, in which case it is
+   *     ignored.
+   * @param authInfo May be null if authentication at the receiving partition is not required.
    */
   void sendCommand(
       final int receiverPartitionId,
       final ValueType valueType,
       final Intent intent,
       final Long recordKey,
-      final UnifiedRecordValue command);
-
-  default void sendCommand(
-      final int receiverPartitionId,
-      final ValueType valueType,
-      final Intent intent,
-      final Long recordKey,
       final UnifiedRecordValue command,
-      final AuthInfo authInfo) {
-    sendCommand(receiverPartitionId, valueType, intent, command);
-  }
+      final AuthInfo authInfo);
 }
