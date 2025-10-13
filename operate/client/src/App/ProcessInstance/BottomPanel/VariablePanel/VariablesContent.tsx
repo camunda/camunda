@@ -54,6 +54,20 @@ const VariablesContent: React.FC = observer(() => {
     );
   }
 
+  if (displayStatus === 'no-variables') {
+    return (
+      <Content>
+        {scopeId !== null ? (
+          <VariablesFinalForm scopeId={scopeId} />
+        ) : (
+          <EmptyMessageContainer>
+            <EmptyMessage message="The Flow Node has no Variables" />
+          </EmptyMessageContainer>
+        )}
+      </Content>
+    );
+  }
+
   return (
     <Content>
       {displayStatus === 'spinner' && (
