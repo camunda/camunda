@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserState;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 
+@HandlesIntent(intent = UserIntent.class, type = "DELETED")
 public class UserDeletedApplier implements TypedEventApplier<UserIntent, UserRecord> {
   private final MutableUserState userState;
 

@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableBatchOperationState;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationChunkRecordValue.BatchOperationItemValue;
 import java.util.stream.Collectors;
 
+@HandlesIntent(intent = BatchOperationChunkIntent.class, type = "CREATED")
 public class BatchOperationChunkCreatedApplier
     implements TypedEventApplier<BatchOperationChunkIntent, BatchOperationChunkRecord> {
 

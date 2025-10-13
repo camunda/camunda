@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ProcessRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessIntent;
 
+@HandlesIntent(intent = ProcessIntent.class, type = "CREATED")
 public class ProcessCreatedV1Applier implements TypedEventApplier<ProcessIntent, ProcessRecord> {
 
   private final MutableProcessState processState;

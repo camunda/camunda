@@ -20,12 +20,14 @@ import io.camunda.zeebe.engine.state.mutable.MutableMessageCorrelationState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageCorrelationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageCorrelationIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = MessageSubscriptionIntent.class, type = "REJECT")
 public final class MessageSubscriptionRejectProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 

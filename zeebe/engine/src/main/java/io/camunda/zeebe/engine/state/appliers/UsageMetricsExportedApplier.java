@@ -11,11 +11,13 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@HandlesIntent(intent = UsageMetricIntent.class, type = "EXPORTED")
 public class UsageMetricsExportedApplier
     implements TypedEventApplier<UsageMetricIntent, UsageMetricRecord> {
 

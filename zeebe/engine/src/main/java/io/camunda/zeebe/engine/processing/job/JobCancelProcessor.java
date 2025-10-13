@@ -15,10 +15,12 @@ import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = JobIntent.class, type = "CANCEL")
 public final class JobCancelProcessor implements CommandProcessor<JobRecord> {
 
   public static final String NO_JOB_FOUND_MESSAGE =

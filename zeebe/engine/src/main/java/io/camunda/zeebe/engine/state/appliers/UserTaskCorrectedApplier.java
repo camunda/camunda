@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
+@HandlesIntent(intent = UserTaskIntent.class, type = "CORRECTED")
 public final class UserTaskCorrectedApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

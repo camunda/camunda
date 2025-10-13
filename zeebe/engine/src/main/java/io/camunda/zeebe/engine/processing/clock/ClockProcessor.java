@@ -19,6 +19,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.clock.ClockRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntents;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.SideEffectProducer;
@@ -27,6 +29,10 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.time.Instant;
 
+@HandlesIntents({
+  @HandlesIntent(intent = ClockIntent.class, type = "PIN"),
+  @HandlesIntent(intent = ClockIntent.class, type = "RESET")
+})
 public final class ClockProcessor implements DistributedTypedRecordProcessor<ClockRecord> {
   private final SideEffectWriter sideEffectWriter;
   private final StateWriter stateWriter;

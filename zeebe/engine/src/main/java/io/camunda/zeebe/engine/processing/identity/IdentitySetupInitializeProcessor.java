@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.IdentitySetupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.intent.AuthorizationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IdentitySetupIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
@@ -31,6 +32,7 @@ import java.util.Collection;
 import java.util.List;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = IdentitySetupIntent.class, type = "INITIALIZE")
 public final class IdentitySetupInitializeProcessor
     implements TypedRecordProcessor<IdentitySetupRecord> {
   private final KeyGenerator keyGenerator;

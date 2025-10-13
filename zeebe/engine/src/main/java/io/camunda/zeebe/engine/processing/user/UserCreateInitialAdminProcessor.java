@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.immutable.UserState;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.RoleIntent;
 import io.camunda.zeebe.protocol.record.intent.UserIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -35,6 +36,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@HandlesIntent(intent = UserIntent.class, type = "CREATE_INITIAL_ADMIN")
 public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<UserRecord> {
   public static final String USER_ALREADY_EXISTS_ERROR_MESSAGE =
       "Expected to create user with username '%s', but a user with this username already exists";

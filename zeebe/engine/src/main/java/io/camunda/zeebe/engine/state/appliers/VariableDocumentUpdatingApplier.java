@@ -10,8 +10,10 @@ package io.camunda.zeebe.engine.state.appliers;
 import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableDocumentRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 
+@HandlesIntent(intent = VariableDocumentIntent.class, type = "UPDATING")
 public class VariableDocumentUpdatingApplier
     implements TypedEventApplier<VariableDocumentIntent, VariableDocumentRecord> {
 

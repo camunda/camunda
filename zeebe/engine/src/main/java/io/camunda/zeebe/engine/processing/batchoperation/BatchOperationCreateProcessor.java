@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -35,6 +36,7 @@ import org.slf4j.LoggerFactory;
  * Processes commands to create batch operations. It validates the command and checks for
  * authorization. This command will be distributed to all other existing partitions.
  */
+@HandlesIntent(intent = BatchOperationIntent.class, type = "CREATE")
 public final class BatchOperationCreateProcessor
     implements DistributedTypedRecordProcessor<BatchOperationCreationRecord> {
 

@@ -11,8 +11,10 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageState;
 import io.camunda.zeebe.engine.state.mutable.MutableMessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 
+@HandlesIntent(intent = MessageSubscriptionIntent.class, type = "CORRELATING")
 public final class MessageSubscriptionCorrelatingApplier
     implements TypedEventApplier<MessageSubscriptionIntent, MessageSubscriptionRecord> {
 

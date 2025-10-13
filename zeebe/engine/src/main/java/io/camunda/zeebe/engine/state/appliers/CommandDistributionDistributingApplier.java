@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDistributionState;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = CommandDistributionIntent.class, type = "DISTRIBUTING")
 public final class CommandDistributionDistributingApplier
     implements TypedEventApplier<CommandDistributionIntent, CommandDistributionRecord> {
 

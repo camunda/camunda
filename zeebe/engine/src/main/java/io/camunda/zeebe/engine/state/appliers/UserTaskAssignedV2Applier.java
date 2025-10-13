@@ -14,9 +14,11 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.List;
 
+@HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGNED", version = 2)
 public final class UserTaskAssignedV2Applier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

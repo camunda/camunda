@@ -37,6 +37,8 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AsyncRequestIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntents;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -45,6 +47,14 @@ import java.util.Optional;
 import java.util.Set;
 
 @ExcludeAuthorizationCheck
+@HandlesIntents({
+  @HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETE"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "ASSIGN"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "CLAIM"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "UPDATE"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "COMPLETE_TASK_LISTENER"),
+  @HandlesIntent(intent = UserTaskIntent.class, type = "DENY_TASK_LISTENER")
+})
 public class UserTaskProcessor implements TypedRecordProcessor<UserTaskRecord> {
 
   private static final String USER_TASK_COMPLETION_REJECTION =

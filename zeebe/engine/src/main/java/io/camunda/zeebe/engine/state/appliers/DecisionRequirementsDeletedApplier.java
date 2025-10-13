@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableDecisionState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DecisionRequirementsRecord;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = DecisionRequirementsIntent.class, type = "DELETED")
 public final class DecisionRequirementsDeletedApplier
     implements TypedEventApplier<DecisionRequirementsIntent, DecisionRequirementsRecord> {
 

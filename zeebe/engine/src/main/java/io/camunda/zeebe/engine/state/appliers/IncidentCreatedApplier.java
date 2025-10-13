@@ -11,9 +11,11 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.protocol.impl.record.value.incident.IncidentRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
 
+@HandlesIntent(intent = IncidentIntent.class, type = "CREATED")
 final class IncidentCreatedApplier implements TypedEventApplier<IncidentIntent, IncidentRecord> {
 
   private final MutableIncidentState incidentState;

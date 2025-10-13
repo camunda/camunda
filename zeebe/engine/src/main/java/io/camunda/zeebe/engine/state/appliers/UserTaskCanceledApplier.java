@@ -13,8 +13,10 @@ import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUserTaskState;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 
+@HandlesIntent(intent = UserTaskIntent.class, type = "CANCELED")
 public final class UserTaskCanceledApplier
     implements TypedEventApplier<UserTaskIntent, UserTaskRecord> {
 

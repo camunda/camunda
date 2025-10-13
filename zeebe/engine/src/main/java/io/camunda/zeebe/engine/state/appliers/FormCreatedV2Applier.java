@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.FormRecord;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = FormIntent.class, type = "CREATED", version = 2)
 public class FormCreatedV2Applier implements TypedEventApplier<FormIntent, FormRecord> {
 
   private final MutableFormState formState;

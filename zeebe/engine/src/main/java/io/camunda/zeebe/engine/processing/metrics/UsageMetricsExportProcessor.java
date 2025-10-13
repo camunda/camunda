@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.UsageMetricState;
 import io.camunda.zeebe.engine.state.metrics.PersistedUsageMetrics;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.UsageMetricIntent;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = UsageMetricIntent.class, type = "EXPORT")
 public class UsageMetricsExportProcessor implements TypedRecordProcessor<UsageMetricRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsExportProcessor.class);

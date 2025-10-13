@@ -18,12 +18,15 @@ import io.camunda.zeebe.engine.state.message.StoredMessage;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
+import io.camunda.zeebe.protocol.record.intent.MessageBatchIntent;
 import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = MessageBatchIntent.class, type = "EXPIRE")
 public final class MessageBatchExpireProcessor implements TypedRecordProcessor<MessageBatchRecord> {
 
   private static final Logger LOG = LoggerFactory.getLogger(MessageBatchExpireProcessor.class);

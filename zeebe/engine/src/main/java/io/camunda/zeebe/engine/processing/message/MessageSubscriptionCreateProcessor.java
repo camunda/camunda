@@ -18,6 +18,7 @@ import io.camunda.zeebe.engine.state.immutable.MessageState;
 import io.camunda.zeebe.engine.state.immutable.MessageSubscriptionState;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.time.InstantSource;
 
 @ExcludeAuthorizationCheck
+@HandlesIntent(intent = MessageSubscriptionIntent.class, type = "CREATE")
 public final class MessageSubscriptionCreateProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 

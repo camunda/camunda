@@ -12,8 +12,10 @@ import io.camunda.zeebe.engine.state.authorization.DbMembershipState.RelationTyp
 import io.camunda.zeebe.engine.state.mutable.MutableMembershipState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
 
+@HandlesIntent(intent = TenantIntent.class, type = "ENTITY_ADDED")
 public class TenantEntityAddedApplier implements TypedEventApplier<TenantIntent, TenantRecord> {
 
   private final MutableMembershipState membershipState;

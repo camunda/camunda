@@ -11,7 +11,9 @@ import io.camunda.zeebe.engine.state.TypedEventApplier;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
 import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HandlesIntent;
 
+@HandlesIntent(intent = GroupIntent.class, type = "UPDATED")
 public class GroupUpdatedApplier implements TypedEventApplier<GroupIntent, GroupRecord> {
 
   private final MutableGroupState groupState;
