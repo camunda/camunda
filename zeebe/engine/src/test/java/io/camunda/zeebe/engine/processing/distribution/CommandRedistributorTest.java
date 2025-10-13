@@ -24,6 +24,7 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo.StaticRoutingInfo;
 import io.camunda.zeebe.engine.util.ProcessingStateExtension;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.user.UserRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -115,7 +116,8 @@ public class CommandRedistributorTest {
 
     // then
     verify(mockCommandSender, times(1))
-        .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+        .sendCommand(
+            1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
   }
 
   private CommandRedistributor getCommandRedistributor(
@@ -168,11 +170,14 @@ public class CommandRedistributorTest {
 
       // then
       verify(mockCommandSender, times(1))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
       verify(mockCommandSender, times(1))
-          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
       verify(mockCommandSender, never())
-          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
     }
 
     @Test
@@ -185,11 +190,14 @@ public class CommandRedistributorTest {
 
       // then
       verify(mockCommandSender, times(1))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
       verify(mockCommandSender, times(1))
-          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
       verify(mockCommandSender, never())
-          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
 
       // then
       // Partition 3 is now scaled up, so it should be redistributed to
@@ -199,7 +207,8 @@ public class CommandRedistributorTest {
       commandRedistributor.runRetryCycle();
       commandRedistributor.runRetryCycle();
       verify(mockCommandSender, times(1))
-          .sendCommand(3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              3, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
     }
   }
 
@@ -258,9 +267,11 @@ public class CommandRedistributorTest {
       // Cycle 9: no retry
 
       verify(mockCommandSender, times(4))
-          .sendCommand(1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              1, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
       verify(mockCommandSender, times(4))
-          .sendCommand(2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue);
+          .sendCommand(
+              2, ValueType.USER, UserIntent.CREATE, distributionKey, recordValue, new AuthInfo());
     }
   }
 }
