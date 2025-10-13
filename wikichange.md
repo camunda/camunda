@@ -37,8 +37,8 @@ CI / <componentName> / <testType> / <testName>
 ```
 
 - `CI` is the identifier of the Unified CI, and comes from being included in the Unified CI architecture.
-- `componentName` is the name of the product, component, or tool being tested or used. This should be things like `Tasklist`, `Operate`, `Optimize`, `Identity`, `Zeebe`, `Schema Manager`, or `Docker`. `General` is used when the test is not specific to a single component. `Camunda` is used when the test is specific to the whole Camunda Platform. `Tool` is used when a job runs a specific third party application (Such as a linter)
-- `testType` refers to the type of test being run. It should be descriptive of the nature of the tests being run. This should be things like `Unit`, `Integration`, `E2E`, `Smoke`, `Performance`, or `Build`. `Tool` is used when a 3rd part tool is running a check or test
+- `componentName` is the name of the product, component, or tool being tested or used. This should be one of the following: `Tasklist`, `Operate`, `Optimize`, `Identity`, `Zeebe`, `Schema Manager`, or `Docker`. `General` is used when the test is not specific to a single component. `Camunda` is used when the test is specific to the whole Camunda Platform.
+- `testType` refers to the type of test being run. It should be descriptive of the nature of the tests being run. This should be things like `Unit`, `Integration`, `E2E`, `Smoke`, `Performance`, or `Build`. `Tool` is used when a 3rd party tool is running a check, test, or static analysis
 - `testName` is a descriptive two word name of what the test is doing. It should be descriptive enough to understand what the test is doing at a glance.
   - This is the last part of the name, and it will show on the Github Test Summary page. use a `-` delimited to separate parts of the name
   - The test name should include `Front End` or `Back End` when applicable to clarify which part of the codebase is being tested
