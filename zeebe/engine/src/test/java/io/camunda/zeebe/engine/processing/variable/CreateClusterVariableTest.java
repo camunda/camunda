@@ -7,15 +7,24 @@
  */
 package io.camunda.zeebe.engine.processing.variable;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+
+import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.util.EngineRule;
+import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
+import java.util.stream.Stream;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 public final class CreateClusterVariableTest {
 
@@ -60,7 +69,8 @@ public final class CreateClusterVariableTest {
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.CREATE)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
-        .hasRejectionReason("The variable already exists in this scope");
+        .hasRejectionReason(
+            "Invalid cluster variable name: KEY_3. The name already in the scope GLOBAL");
   }
 
   @Test
@@ -76,7 +86,7 @@ public final class CreateClusterVariableTest {
         .hasIntent(ClusterVariableIntent.CREATE)
         .hasRejectionType(RejectionType.INVALID_ARGUMENT)
         .hasRejectionReason(
-            "Invalid Camunda variable name: 'KEY-1'. The name must not start with a digit, contain whitespace, or use any of the following characters: +-*/=><?.. Additionally, variable names cannot be any of the reserved keywords or literals: [null, true, false, function, if, then, else, for, return, between, instance, of, not, in, and, or, some, every, satisfies].");
+            "Invalid cluster variable name: `KEY-1`. The name must not contains any invalid characters `+-*/=><?.`");
   }
 
   @Test
@@ -112,5 +122,56 @@ public final class CreateClusterVariableTest {
     Assertions.assertThat(recordTenant)
         .hasIntent(ClusterVariableIntent.CREATED)
         .hasRecordType(RecordType.EVENT);
+  }
+
+  @ParameterizedTest
+  @MethodSource("retrieveInvalidClusterVariableName")
+  public void checkClusterVariableRecordValidator(
+      final String clusterVariableName, final String rejectionReason) {
+    final ClusterVariableRecord clusterVariableRecord =
+        new ClusterVariableRecord().setName(clusterVariableName);
+    final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
+    final ClusterVariableRecordValidator clusterVariableRecordValidator =
+        new ClusterVariableRecordValidator(clusterVariableState);
+    final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
+    assertThat(result.getLeft().reason()).isEqualTo(rejectionReason);
+  }
+
+  static Stream<Arguments> retrieveInvalidClusterVariableName() {
+    return Stream.of(
+        Arguments.of(
+            "KEY-1",
+            "Invalid cluster variable name: `KEY-1`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "test key",
+            "Invalid cluster variable name: `test key`. The name must not contains any whitespace."),
+        Arguments.of(
+            "", "Invalid cluster variable name: ``. cluster variable can not be null or empty."),
+        Arguments.of(
+            "1KEY", "Invalid cluster variable name: `1KEY`. The name must not start with a digit."),
+        Arguments.of(
+            "<KEY",
+            "Invalid cluster variable name: `<KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "+KEY",
+            "Invalid cluster variable name: `+KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "-KEY",
+            "Invalid cluster variable name: `-KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "*KEY",
+            "Invalid cluster variable name: `*KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "/KEY",
+            "Invalid cluster variable name: `/KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "?KEY",
+            "Invalid cluster variable name: `?KEY`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "KEY.",
+            "Invalid cluster variable name: `KEY.`. The name must not contains any invalid characters `+-*/=><?.`"),
+        Arguments.of(
+            "KEY>",
+            "Invalid cluster variable name: `KEY>`. The name must not contains any invalid characters `+-*/=><?.`"));
   }
 }
