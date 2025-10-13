@@ -9,7 +9,9 @@ package io.camunda.zeebe.broker.clustering.mapper;
 
 import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient;
+import io.camunda.zeebe.broker.clustering.mapper.lease.NodeIdMappings;
 import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
 import io.camunda.zeebe.util.VisibleForTesting;
 import io.camunda.zeebe.util.retry.RetryConfiguration;
@@ -17,6 +19,7 @@ import io.camunda.zeebe.util.retry.RetryDecorator;
 import java.io.Closeable;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -25,6 +28,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -145,5 +149,16 @@ public class NodeIdMapper implements Closeable {
             1,
             S3Lease.LEASE_EXPIRY_SECONDS / 6, // 10sec
             TimeUnit.SECONDS);
+  }
+
+  public void setCurrentClusterMembers(final List<MemberId> currentMembers) {
+    executor.submit(
+        () -> {
+          final var map =
+              currentMembers.stream()
+                  .collect(Collectors.toMap(MemberId::id, MemberId::getIdVersion));
+
+          lease.setNodeIdMappings(new NodeIdMappings(map));
+        });
   }
 }

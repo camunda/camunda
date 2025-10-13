@@ -15,6 +15,7 @@ import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.service.UserServices;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
@@ -61,6 +62,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final NodeIdMapper nodeIdMapper;
 
   private Broker broker;
 
@@ -79,7 +81,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final SearchClientsProxy searchClientsProxy) {
+      @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
+      @Autowired(required = false) final NodeIdMapper nodeIdMapper) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -93,6 +96,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.nodeIdMapper = nodeIdMapper;
   }
 
   @Bean
@@ -134,6 +138,20 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     // Operate can connect
     startBroker();
 
+    if (nodeIdMapper != null) {
+      // TODO: This is a temporary solution. This wiring should be done somewhere else based on the
+      // configuration.
+      cluster
+          .getMembershipService()
+          .addListener(
+              ignore -> {
+                final var currentMembers =
+                    cluster.getMembershipService().getMembers().stream()
+                        .map(member -> member.id())
+                        .toList();
+                nodeIdMapper.setCurrentClusterMembers(currentMembers);
+              });
+    }
     return broker;
   }
 

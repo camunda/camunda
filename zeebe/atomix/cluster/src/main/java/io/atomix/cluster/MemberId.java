@@ -21,18 +21,18 @@ import java.util.UUID;
 /** Controller cluster identity. */
 public class MemberId extends NodeId {
 
-  private long idVersion;
+  private int idVersion;
 
   public MemberId(final String id) {
     super(id);
   }
 
-  public MemberId(final String id, final long version) {
+  public MemberId(final String id, final int version) {
     super(id);
     idVersion = version;
   }
 
-  public long getIdVersion() {
+  public int getIdVersion() {
     return idVersion;
   }
 
