@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.transport.partitionapi;
 import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -23,6 +24,7 @@ import io.camunda.zeebe.logstreams.impl.log.LogEntryDescriptor;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageSubscriptionRecord;
@@ -31,6 +33,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.util.Either;
+import java.util.Map;
 import org.agrona.ExpandableArrayBuffer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -220,6 +223,78 @@ final class InterPartitionCommandReceiverTest {
     assertThat(entryCaptor.getValue().key()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
+  @Test
+  void shouldWriteAuthInfo() {
+    // given
+    final var receiverBrokerId = 1;
+    final var receiverPartitionId = 7;
+
+    final var authInfo = new AuthInfo();
+    final var token = "some-jwt-token";
+    final var claims = Map.<String, Object>of("sub", "user-123", "scope", "test");
+    authInfo.setFormat(AuthInfo.AuthDataFormat.JWT).setAuthData(token).setClaims(claims);
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            null,
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1),
+            authInfo);
+
+    final var logStreamWriter = getLogStreamWriter();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.interPartition()),
+            assertArg(
+                (final LogAppendEntry logEntry) -> {
+                  final var writtenAuth = logEntry.recordMetadata().getAuthorization();
+                  assertThat(writtenAuth.getFormat()).isEqualTo(AuthInfo.AuthDataFormat.JWT);
+                  assertThat(writtenAuth.getAuthData()).isEqualTo(token);
+                  assertThat(writtenAuth.getClaims()).isEqualTo(claims);
+                }));
+  }
+
+  @Test
+  void shouldHandleMissingAuthInfoGracefully() {
+    // given
+    final var receiverBrokerId = 1;
+    final var receiverPartitionId = 7;
+
+    final var sentMessage =
+        sendCommand(
+            receiverBrokerId,
+            receiverPartitionId,
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            null,
+            new MessageSubscriptionRecord().setProcessInstanceKey(1).setElementInstanceKey(1),
+            null);
+
+    final var logStreamWriter = getLogStreamWriter();
+    final var receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
+
+    // when
+    receiver.handleMessage(new MemberId("0"), sentMessage);
+
+    // then
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.interPartition()),
+            assertArg(
+                (final LogAppendEntry logEntry) ->
+                    assertThat(logEntry.recordMetadata().getAuthorization())
+                        .isEqualTo(new AuthInfo())));
+  }
+
   private byte[] sendCommand(
       final Integer receiverBrokerId,
       final Integer receiverPartitionId,
@@ -236,13 +311,25 @@ final class InterPartitionCommandReceiverTest {
       final Intent intent,
       final Long recordKey,
       final UnifiedRecordValue recordValue) {
+    return sendCommand(
+        receiverBrokerId, receiverPartitionId, valueType, intent, recordKey, recordValue, null);
+  }
+
+  private byte[] sendCommand(
+      final Integer receiverBrokerId,
+      final Integer receiverPartitionId,
+      final ValueType valueType,
+      final Intent intent,
+      final Long recordKey,
+      final UnifiedRecordValue recordValue,
+      final AuthInfo authInfo) {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
     final var sender = new InterPartitionCommandSenderImpl(communicationService);
     sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
 
-    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue);
+    sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo);
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
