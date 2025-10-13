@@ -51,6 +51,10 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final int EXPECTED_BULK_DELAY = 10;
+  private static final int EXPECTED_BULK_SIZE = 2_000;
+  private static final int EXPECTED_BULK_MEMORY_LIMIT = 50;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -64,6 +68,9 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.elasticsearch.bulk.delay=10s",
+        "camunda.data.secondary-storage.elasticsearch.bulk.size=" + EXPECTED_BULK_SIZE,
+        "camunda.data.secondary-storage.elasticsearch.bulk.memory-limit=50MB"
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -135,6 +142,10 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getBulk().getDelay()).isEqualTo(EXPECTED_BULK_DELAY);
+      assertThat(exporterConfiguration.getBulk().getSize()).isEqualTo(EXPECTED_BULK_SIZE);
+      assertThat(exporterConfiguration.getBulk().getMemoryLimit())
+          .isEqualTo(EXPECTED_BULK_MEMORY_LIMIT);
     }
 
     @Test
