@@ -10,6 +10,7 @@ package io.camunda.operate;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.security.entity.AuthenticationMethod;
+import java.util.Arrays;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
@@ -30,6 +31,10 @@ public class OperateProfileService {
 
   public boolean isDevelopmentProfileActive() {
     return List.of(environment.getActiveProfiles()).contains("dev");
+  }
+
+  public boolean isRdbmsProfileActive() {
+    return Arrays.stream(environment.getActiveProfiles()).anyMatch(profile -> profile.startsWith("rdbms"));
   }
 
   public boolean isConsolidatedAuthOidc() {
