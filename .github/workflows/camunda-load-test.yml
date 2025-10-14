@@ -218,7 +218,7 @@ jobs:
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
 
   deploy-cluster-under-test:
-    name: Deploy
+    name: Deploy cluster under test
     needs:
       - calculate-image-tag
       - build-camunda-image
@@ -295,7 +295,7 @@ jobs:
           EOF
 
   deploy-load-test:
-    name: Deploy
+    name: Deploy load test
     needs:
       # We need to depend on calculate-image-tag, so that we can use the output in the job
       - calculate-image-tag
