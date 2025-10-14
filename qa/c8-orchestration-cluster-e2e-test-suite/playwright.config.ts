@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { devices, defineConfig } from '@playwright/test';
+import {devices, defineConfig} from '@playwright/test';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
@@ -12,13 +12,14 @@ const testRailOptions = {
 const isV2StatelessTestsOnly = process.env.V2_STATELESS_TESTS === 'true';
 
 // Default: V2 mode (unless explicitly disabled with CAMUNDA_TASKLIST_V2_MODE_ENABLED=false)
-const isV2ModeEnabled = process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
+const isV2ModeEnabled =
+  process.env.CAMUNDA_TASKLIST_V2_MODE_ENABLED !== 'false';
 
 // Reporters
 const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
-  ['html', { outputFolder: 'html-report' }],
+  ['html', {outputFolder: 'html-report'}],
 ];
 
 const useReportersWithSlack: any[] = [
@@ -57,59 +58,103 @@ const normalProjects = [
     use: devices['Desktop Chrome'],
     testMatch: changedFolders.includes('chromium')
       ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
-      : ['tests/**/*.spec.ts'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
     teardown: 'chromium-subset',
   },
   {
     name: 'chromium-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
-    grep: /^(?!.*@v1-only).*$/,
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Chrome'],
     testIgnore: 'v2-stateless-tests/**',
   },
   {
     name: 'firefox',
     use: devices['Desktop Firefox'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    testMatch: changedFolders.includes('firefox')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
     teardown: 'firefox-subset',
   },
   {
     name: 'firefox-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Firefox'],
     testIgnore: 'v2-stateless-tests/**',
   },
   {
     name: 'msedge',
     use: devices['Desktop Edge'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
+    testMatch: changedFolders.includes('msedge')
+      ? changedFolders.map((folder) => `**/${folder}/*.spec.ts`)
+      : isV2ModeEnabled
+        ? ['tests/**/*.spec.ts']
+        : [
+            'tests/tasklist/v1/**/*.spec.ts',
+            'tests/common-flows/v1/**/*.spec.ts',
+          ],
+    testIgnore: isV2ModeEnabled
+      ? [
+          'tests/tasklist/task-panel.spec.ts',
+          'v2-stateless-tests/**',
+          'tests/tasklist/v1/**',
+          'tests/common-flows/v1/**',
+        ]
+      : ['tests/tasklist/v1/task-panel.spec.ts', 'v2-stateless-tests/**'],
     teardown: 'msedge-subset',
   },
   {
     name: 'msedge-subset',
-    testMatch: 'tests/tasklist/task-panel.spec.ts',
+    testMatch: isV2ModeEnabled
+      ? 'tests/tasklist/task-panel.spec.ts'
+      : 'tests/tasklist/v1/task-panel.spec.ts',
     use: devices['Desktop Edge'],
     testIgnore: 'v2-stateless-tests/**',
   },
   {
     name: 'tasklist-v1-e2e',
-    testMatch: ['tests/tasklist/*.spec.ts', 'tests/tasklist/v1/*.spec.ts'],
+    testMatch: ['tests/tasklist/v1/*.spec.ts'],
     use: devices['Desktop Edge'],
-    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
-    grep: /@v1-only/, // explicitly run v1 tests
+    testIgnore: [
+      'tests/tasklist/v1/task-panel.spec.ts',
+      'v2-stateless-tests/**',
+    ],
     teardown: 'chromium-subset',
   },
   {
     name: 'tasklist-v2-e2e',
     testMatch: ['tests/tasklist/*.spec.ts'],
     use: devices['Desktop Edge'],
-    testIgnore: [
-      'tests/tasklist/task-panel.spec.ts',
-      'tests/tasklist/v1/*.spec.ts',
-      'v2-stateless-tests/**',
-    ],
-    grep: /^(?!.*@v1-only).*$/, // exclude v1-only
+    testIgnore: ['tests/tasklist/task-panel.spec.ts', 'v2-stateless-tests/**'],
     teardown: 'chromium-subset',
   },
   {
@@ -133,7 +178,6 @@ export default defineConfig({
   timeout: 12 * 60 * 1000,
   workers: 4,
   retries: 1,
-  grep: isV2ModeEnabled ? /^(?!.*@v1-only).*$/ : undefined,
   expect: {
     timeout: 10_000,
   },
