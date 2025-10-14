@@ -35,6 +35,7 @@ import {Serializable} from 'playwright-core/types/structs';
 import {cancelProcessInstance, createInstances, deploy} from './zeebeClient';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
+import {readFileSync} from 'node:fs';
 
 export async function createGroupAndStoreResponseFields(
   request: APIRequestContext,
@@ -873,4 +874,31 @@ export async function verifyIncidentsForProcessInstance(
       `Unexpected number of incident items. Found: ${JSON.stringify(json)}`,
     ).toBe(expectedIncidentCount);
   }).toPass(defaultAssertionOptions);
+}
+
+export function createResourceFormData(resourceName: string): FormData {
+  const formData = new FormData();
+  const blob = createResourceBlob(resourceName);
+  formData.append('resources', blob, resourceName);
+  return formData;
+}
+
+export function createMultiResourceFormData(
+  ...resourceNames: string[]
+): FormData {
+  const formData = new FormData();
+  for (const resourceName of resourceNames) {
+    const blob = createResourceBlob(resourceName);
+    formData.append('resources', blob, resourceName);
+  }
+  return formData;
+}
+
+function createResourceBlob(resourceName: string) {
+  const resourcePath = `./resources/${resourceName}`;
+  const resourceBuffer = readFileSync(resourcePath);
+  const mimeType = resourceName.endsWith('.bpmn')
+    ? 'application/xml'
+    : 'application/json';
+  return new Blob([resourceBuffer], {type: mimeType});
 }
