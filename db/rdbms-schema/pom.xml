@@ -26,6 +26,10 @@
       <artifactId>liquibase-core</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.github.vertical-blank</groupId>
       <artifactId>sql-formatter</artifactId>
       <scope>compile</scope>
@@ -61,6 +65,7 @@
           <mainClass>io.camunda.db.rdbms.LiquibaseScriptGenerator</mainClass>
           <arguments>
             <argument>${project.basedir}/target</argument>
+            <argument>${project.version}</argument>
           </arguments>
         </configuration>
         <executions>

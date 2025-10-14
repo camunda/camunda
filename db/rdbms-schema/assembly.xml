@@ -23,5 +23,9 @@
       <outputDirectory>/</outputDirectory>
       <directory>${project.basedir}/target/liquibase</directory>
     </fileSet>
+    <fileSet>
+      <outputDirectory>/liquibase</outputDirectory>
+      <directory>${project.basedir}/src/main/resources/db/changelog/rdbms-exporter</directory>
+    </fileSet>
   </fileSets>
 </assembly>
