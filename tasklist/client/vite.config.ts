@@ -59,7 +59,7 @@ export default defineConfig(({mode}) => ({
       }),
     },
     target: browserslistToEsbuild(),
-    sourcemap: true,
+    sourcemap: mode !== 'sbom',
   },
   esbuild: {
     banner: '/*! licenses: /assets/vendor.LICENSE.txt */',
