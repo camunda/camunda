@@ -16,6 +16,7 @@
 package io.camunda.client.jobhandling.result;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.CompleteJobCommandStep1.ResultFunction;
 import io.camunda.client.bean.MethodInfo;
 
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
@@ -34,6 +35,10 @@ public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
 
   @Override
   public ResultProcessor createProcessor(final MethodInfo methodInfo) {
+    if (methodInfo.getReturnType() != null
+        && methodInfo.getReturnType().equals(ResultFunction.class)) {
+      return new ResultFunctionResultProcessor();
+    }
     return new DefaultResultProcessor(
         camundaClient, documentResultProcessorFailureHandlingStrategy);
   }

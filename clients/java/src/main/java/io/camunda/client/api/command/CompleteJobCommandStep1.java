@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.command.CompleteJobCommandStep1.CompleteJobCommandJobResultStep;
 import io.camunda.client.api.response.CompleteJobResponse;
 import java.io.InputStream;
 import java.util.Map;
@@ -81,8 +82,9 @@ public interface CompleteJobCommandStep1
    *
    * @return the builder for this command.
    */
-  CompleteJobCommandStep1 withResult(
-      Function<CompleteJobCommandJobResultStep, CompleteJobResult> consumer);
+  CompleteJobCommandStep1 withResult(ResultFunction consumer);
+
+  interface ResultFunction extends Function<CompleteJobCommandJobResultStep, CompleteJobResult> {}
 
   interface CompleteJobCommandJobResultStep {
     /**
