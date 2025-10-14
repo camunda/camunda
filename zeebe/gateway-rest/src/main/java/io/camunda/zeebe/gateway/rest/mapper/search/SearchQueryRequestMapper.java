@@ -221,7 +221,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleSearchQuery);
   }
 
-  public static Either<ProblemDetail, GroupQuery> toGroupMemberQuery(
+  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
       final GroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.groupSearchQuery().build());

@@ -231,7 +231,7 @@ public class GroupController {
   @CamundaPostMapping(path = "/search")
   public ResponseEntity<GroupSearchQueryResult> searchGroups(
       @RequestBody(required = false) final GroupSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toGroupMemberQuery(query)
+    return SearchQueryRequestMapper.toGroupQuery(query)
         .fold(RestErrorMapper::mapProblemToResponse, this::search);
   }
 
