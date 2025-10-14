@@ -346,7 +346,7 @@ final class AuthorizationCheckBehaviorMultiTenancyTest {
 
     // when
     final var request =
-        new AuthorizationRequest(command, resourceType, permissionType, null, false, false)
+        new AuthorizationRequest(command, resourceType, permissionType, null, false, false, false)
             .addResourceId(resourceId);
     final var authorized = authorizationCheckBehavior.isAuthorized(request);
 
