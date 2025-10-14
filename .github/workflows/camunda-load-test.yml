@@ -97,6 +97,10 @@ on:
         type: boolean
         required: false
         default: false
+
+env:
+  HELM_CHART: camunda-platform-8.8
+
 jobs:
   calculate-image-tag:
     name: Calculate Image Tag
@@ -213,7 +217,7 @@ jobs:
       - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
 
-  deploy-test-cluster:
+  deploy-cluster-under-test:
     name: Deploy
     needs:
       - calculate-image-tag
@@ -233,7 +237,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.ref }}
+          repository: 'camunda/camunda-platform-helm'
+          ref: 'main'
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
@@ -242,18 +247,19 @@ jobs:
         with:
           cluster_name: ${{ inputs.cluster }}
           location: ${{ inputs.cluster-region }}
-      - name: Add camunda helm repo
+      - name: Add Camunda Helm repo
         run: |
-          helm repo add zeebe-benchmark https://camunda.github.io/zeebe-benchmark-helm
+          helm repo add camunda https://helm.camunda.io/
           helm repo update
-
       - name: Find previous Helm chart release version
         id: find-chart-release
         run: |
           echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
-      - name: Helm install
+      - name: Build dependencies of Camunda Platform
+        run: helm dependency build charts/${{ env.HELM_CHART }}/
+      - name: Install latest Camunda Platform
         run: >
-          helm upgrade --install ${{ inputs.name }} zeebe-benchmark/zeebe-benchmark --wait --timeout 35m0s
+          helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
           --namespace ${{ inputs.name }}
           --create-namespace
           --reuse-values
@@ -272,13 +278,63 @@ jobs:
           --set camunda-platform.zeebe-gateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          -f load-tests/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
-          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
-          ${{ inputs.load-test-load }}
       - name: Label namespace
         run: >
             kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Camunda platform \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+
+  deploy-load-test:
+    name: Deploy
+    needs:
+      - deploy-cluster-under-test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Add Load test Helm repo
+        run: |
+          helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
+          helm repo update
+      - name: Find previous Helm chart release version
+        id: find-chart-release
+        run: |
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
+      - name: Install load test
+        run: >
+          helm upgrade --install ${{ inputs.name }}-test camunda-load-tests/camunda-load-tests
+          --wait --timeout 35m0s
+          --namespace ${{ inputs.name }}
+          --create-namespace
+          --reuse-values
+          --render-subchart-notes
+          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
+          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
+          ${{ inputs.load-test-load }}
       - name: Summarize deployment
         if: success()
         run: |
