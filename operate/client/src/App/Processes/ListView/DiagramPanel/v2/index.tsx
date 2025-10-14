@@ -16,7 +16,7 @@ import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {Section} from '../styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {batchModificationStore} from 'modules/stores/batchModification';
@@ -82,11 +82,12 @@ const DiagramPanel: React.FC = observer(() => {
   const {selectedTargetElementId} = batchModificationStore.state;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
-  const processDefinition = useListViewXml({
+  const processDefinitionXML = useListViewXml({
     processDefinitionKey,
   });
-  const xml = processDefinition?.data?.xml;
-  const selectableIds = processDefinition?.data?.selectableFlowNodes.map(
+
+  const xml = processDefinitionXML?.data?.xml;
+  const selectableIds = processDefinitionXML?.data?.selectableFlowNodes.map(
     (flowNode) => flowNode.id,
   );
 
@@ -128,7 +129,7 @@ const DiagramPanel: React.FC = observer(() => {
   );
 
   const isDiagramLoading =
-    processDefinition?.isFetching ||
+    processDefinitionXML?.isFetching ||
     !processesStore.isInitialLoadComplete ||
     (processesStore.state.status === 'fetching' &&
       location.state?.refreshContent);
@@ -137,7 +138,7 @@ const DiagramPanel: React.FC = observer(() => {
     if (isDiagramLoading) {
       return 'loading';
     }
-    if (processDefinition?.isError) {
+    if (processDefinitionXML?.isError) {
       return 'error';
     }
     if (!isVersionSelected) {
@@ -173,6 +174,7 @@ const DiagramPanel: React.FC = observer(() => {
         {xml !== undefined && (
           <Diagram
             xml={xml}
+            processDefinitionKey={processDefinitionKey}
             {...(batchModificationStore.state.isEnabled
               ? // Props for batch modification mode
                 {
@@ -201,7 +203,8 @@ const DiagramPanel: React.FC = observer(() => {
                       isMoveModificationTarget(
                         getFlowNode({
                           businessObjects:
-                            processDefinition.data?.diagramModel.elementsById,
+                            processDefinitionXML.data?.diagramModel
+                              .elementsById,
                           flowNodeId: selectedFlowNodeId,
                         }),
                       ),

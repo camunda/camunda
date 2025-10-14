@@ -21,6 +21,18 @@ const queryKeys = {
       value?: Variable['value'];
     }) => [...queryKeys.variables.search(), ...Object.values(params)],
   },
+  processDefinitionXml: {
+    get: (processDefinitionKey?: string) => [
+      'processDefinitionXml',
+      processDefinitionKey,
+    ],
+  },
+  processDefinitions: {
+    get: (processDefinitionKey?: string) => [
+      'processDefinition',
+      processDefinitionKey,
+    ],
+  },
 };
 
 export {queryKeys};

@@ -17,9 +17,15 @@ import {Diagram as StyledDiagram, DiagramCanvas} from './styled';
 import {modificationsStore} from 'modules/stores/modifications';
 import {observer} from 'mobx-react';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {getSelectedRunningInstanceCount} from 'modules/utils/flowNodeSelection';
 import {useTotalRunningInstancesForFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
-import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
+import {
+  clearSelection,
+  getSelectedRunningInstanceCount,
+} from 'modules/utils/flowNodeSelection';
+import {
+  useIsRootNodeSelected,
+  useRootNode,
+} from 'modules/hooks/flowNodeSelection';
 
 type SelectedFlowNodeOverlayProps = {
   selectedFlowNodeRef: SVGElement;
@@ -28,6 +34,7 @@ type SelectedFlowNodeOverlayProps = {
 
 type Props = {
   xml: string;
+  processDefinitionKey?: string;
   selectableFlowNodes?: string[];
   selectedFlowNodeIds?: string[];
   onFlowNodeSelection?: OnFlowNodeSelection;
@@ -43,6 +50,7 @@ type Props = {
 const Diagram: React.FC<Props> = observer(
   ({
     xml,
+    processDefinitionKey,
     selectableFlowNodes,
     selectedFlowNodeIds,
     onFlowNodeSelection,
@@ -65,6 +73,7 @@ const Diagram: React.FC<Props> = observer(
       totalRunningInstancesForFlowNode: totalRunningInstances ?? 0,
       isRootNodeSelected,
     });
+    const rootNode = useRootNode();
 
     function getViewer() {
       if (viewerRef.current === null) {
@@ -125,11 +134,11 @@ const Diagram: React.FC<Props> = observer(
           );
 
           if (rootElementId !== currentSelectionRootId) {
-            flowNodeSelectionStore.clearSelection();
+            clearSelection(rootNode);
           }
         };
       }
-    }, [viewer, onFlowNodeSelection]);
+    }, [viewer, onFlowNodeSelection, rootNode]);
 
     useEffect(() => {
       return () => {
@@ -146,6 +155,7 @@ const Diagram: React.FC<Props> = observer(
               handleZoomIn={viewer.zoomIn}
               handleZoomOut={viewer.zoomOut}
               handleZoomReset={viewer.zoomReset}
+              processDefinitionKey={processDefinitionKey}
             />
             {children}
           </>
