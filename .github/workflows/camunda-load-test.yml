@@ -1,33 +1,36 @@
-# description: This step for helm install deploys a camunda cluster in zeebe-io with additional tools for benchmarking. We use this worklow to start weekly medic benchmarks. The health of the cluster and results of the benchmarks are monitored by the zeebe team regularly. https://grafana.dev.zeebe.io/login
+# description: This step for helm install deploys a camunda cluster in zeebe-io with additional tools for load testing.
+# We use this worklow to start weekly medic load tests.
+# The health of the cluster and results of the load tests are monitored by Core team's regularly.
+# https://grafana.dev.zeebe.io/login
 # called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
 # type: CI
 # owner: @camunda/core-features
-name: Zeebe Benchmark
+name: Camunda load test
 on:
   workflow_dispatch:
     inputs:
       name:
-        description: 'Specifies the name of the benchmark'
+        description: 'Specifies the name of the load test'
         required: true
       reuse-tag:
-        description: 'Docker image tag, that should be reused for benchmark. Allows to skip the docker image build step'
+        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
         required: false
       ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
         default: 'main'
         required: false
       cluster:
-        description: 'Specifies which cluster to deploy the benchmark on'
+        description: 'Specifies which cluster to deploy the load test on'
         default: 'zeebe-cluster'
         required: false
       cluster-region:
         description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
         default: europe-west1-b
         required: false
-      benchmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
@@ -35,33 +38,33 @@ on:
         required: false
         default: false
       operate-tag:
-        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        description: 'Specifies the tag of operate, when Operate should be included in the load test'
         type: string
         default: ""
         required: false
       realistic:
-        description: 'Should run a realistic benchmark, with real-world process and load'
+        description: 'Should run a realistic load test, with real-world process and load'
         type: boolean
         required: false
         default: false
   workflow_call:
     inputs:
       name:
-        description: 'Specifies the name of the benchmark'
+        description: 'Specifies the name of the load test'
         type: string
         required: true
       reuse-tag:
-        description: 'Docker image tag, that should be reused for benchmark. Allows to skip the docker image build step'
+        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
         type: string
         default: ""
         required: false
       ref:
-        description: 'Specifies the ref (e.g. main or a commit sha) to benchmark'
+        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
         default: 'main'
         type: string
         required: false
       cluster:
-        description: 'Specifies which cluster to deploy the benchmark on'
+        description: 'Specifies which cluster to deploy the load test on'
         default: 'zeebe-cluster'
         type: string
         required: false
@@ -70,8 +73,8 @@ on:
         default: europe-west1-b
         type: string
         required: false
-      benchmark-load:
-        description: 'Specifies which benchmark components to deploy. `starter`, `timer` and `publisher` can be assigned with the rate at which they publish. Allows arbitrary helm arguments, like --set starter.rate=100'
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
         type: string
         required: false
       publish:
@@ -85,12 +88,12 @@ on:
         required: false
         default: false
       operate-tag:
-        description: 'Specifies the tag of operate, when Operate should be included in the Benchmark'
+        description: 'Specifies the tag of operate, when Operate should be included in the load test'
         type: string
         default: ""
         required: false
       realistic:
-        description: 'Should run a realistic benchmark, with real-world process and load'
+        description: 'Should run a realistic load test, with real-world process and load'
         type: boolean
         required: false
         default: false
@@ -172,7 +175,7 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
           dockerfile: 'camunda.Dockerfile'
 
-  build-benchmark-images:
+  build-load-test-images:
     name: Build Starter and Worker
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
@@ -210,18 +213,18 @@ jobs:
       - name: Build Worker Image
         run: ./mvnw -pl load-tests/load-tester jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
 
-  deploy-benchmark-cluster:
+  deploy-test-cluster:
     name: Deploy
     needs:
       - calculate-image-tag
       - build-zeebe-image
-      - build-benchmark-images
-    # To have the possibility to re-deploy the benchmarks without rebuilding the images,
+      - build-load-test-images
+    # To have the possibility to re-deploy the tests without rebuilding the images,
     # the deploy will be run, when build is skipped or successful.
     if: |
       always() &&
       (needs.build-zeebe-image.result == 'success' || needs.build-zeebe-image.result == 'skipped') &&
-      (needs.build-benchmark-images.result == 'success' || needs.build-benchmark-images.result == 'skipped')
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
@@ -271,8 +274,8 @@ jobs:
           --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
-          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/zeebe-io/benchmark-helm/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml' || '' }}
-          ${{ inputs.benchmark-load }}
+          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
+          ${{ inputs.load-test-load }}
       - name: Label namespace
         run: >
             kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
@@ -280,7 +283,7 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Benchmark \`${{ inputs.name }}\` values
+            ## Load test \`${{ inputs.name }}\` values
             \`\`\`yaml
             $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
             \`\`\`
