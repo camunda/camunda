@@ -13,6 +13,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
@@ -95,7 +96,8 @@ public final class MessageStreamProcessorTest {
           final var processingState = processingContext.getProcessingState();
           final var scheduledTaskState = processingContext.getScheduledTaskStateFactory();
           final var mockAuthCheckBehavior = mock(AuthorizationCheckBehavior.class);
-          when(mockAuthCheckBehavior.isAuthorized(any(AuthorizationRequest.class)))
+          when(mockAuthCheckBehavior.isAuthorized(
+                  any(AuthorizationRequest.class), anyBoolean(), anyLong()))
               .thenReturn(Either.right(null));
           MessageEventProcessors.addMessageProcessors(
               1,
