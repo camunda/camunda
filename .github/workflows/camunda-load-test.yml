@@ -1,4 +1,4 @@
-# description: This step for helm install deploys a camunda cluster in zeebe-io with additional tools for load testing.
+# description: This workflow deploys a load test with a camunda cluster under test.
 # We use this worklow to start weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
 # https://grafana.dev.zeebe.io/login
