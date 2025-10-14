@@ -256,6 +256,30 @@ public class ProcessModelReaderTest {
                 .isTrue());
   }
 
+  @Test
+  void shouldIgnoreEmptyProperty() throws IOException {
+    final String processId = "test-empty-property";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-empty-property.bpmn");
+
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var isPublic = reader.get().extractIsPublicAccess();
+
+    assertThat(isPublic).isTrue();
+  }
+
+  @Test
+  void shouldIgnoreEmptyPropertyAndEmptyValue() throws IOException {
+    final String processId = "test-empty-property";
+    final var bpmnBytes = parseBpmnResourceXml("process-with-empty-public-value.bpmn");
+
+    final var reader = ProcessModelReader.of(bpmnBytes, processId);
+    assertThat(reader).isPresent();
+    final var isPublic = reader.get().extractIsPublicAccess();
+
+    assertThat(isPublic).isFalse();
+  }
+
   private String formOneJson() {
     return """
 {
