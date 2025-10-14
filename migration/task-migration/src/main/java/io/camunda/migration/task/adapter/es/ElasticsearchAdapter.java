@@ -32,6 +32,8 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.ilm.DeleteAction;
 import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsRequest;
+import co.elastic.clients.elasticsearch.indices.GetIndicesSettingsResponse;
 import co.elastic.clients.elasticsearch.indices.PutIndicesSettingsRequest;
 import co.elastic.clients.elasticsearch.indices.PutMappingRequest;
 import co.elastic.clients.elasticsearch.indices.UpdateAliasesRequest;
@@ -351,6 +353,64 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     client._transport().close();
   }
 
+  private long getIndexCreationTime() throws MigrationException {
+    final var indexName = legacyIndex.getFullQualifiedName();
+    final GetIndicesSettingsRequest request =
+        new GetIndicesSettingsRequest.Builder()
+            .index(indexName)
+            .name("index.creation_date")
+            .build();
+
+    final GetIndicesSettingsResponse response;
+    try {
+      response = client.indices().getSettings(request);
+    } catch (final IOException e) {
+      throw new MigrationException(e);
+    }
+
+    // Get the creation date (stored as milliseconds since epoch)
+    final var creationDateLong = response.get(indexName).settings().index().creationDate();
+
+    return creationDateLong;
+  }
+
+  private String evaluateAbsoluteLegacyIndexRetentionAge(
+      final Long indexAge, final String futureRetention) {
+    if (indexAge == null || futureRetention == null || futureRetention.isEmpty()) {
+      return futureRetention;
+    }
+
+    final long currentTime = System.currentTimeMillis();
+    final long elapsedTime = Math.abs(currentTime - indexAge);
+
+    // Extract the numeric value and unit from futureRetention
+    final String unit = futureRetention.substring(futureRetention.length() - 1);
+    final int futureValue =
+        Integer.parseInt(futureRetention.substring(0, futureRetention.length() - 1));
+
+    final long elapsedInUnit;
+    switch (unit) {
+      case "s":
+        elapsedInUnit = elapsedTime / 1000;
+        break;
+      case "m":
+        elapsedInUnit = elapsedTime / (1000 * 60);
+        break;
+      case "h":
+        elapsedInUnit = elapsedTime / (1000 * 60 * 60);
+        break;
+      case "d":
+        elapsedInUnit = elapsedTime / (1000 * 60 * 60 * 24);
+        break;
+      default:
+        // If unknown unit, return original futureRetention
+        return futureRetention;
+    }
+
+    final long totalRetention = elapsedInUnit + futureValue;
+    return totalRetention + unit;
+  }
+
   private void writeLastMigratedStep(final ProcessorStep step) throws MigrationException {
     final UpdateRequest<ProcessorStep, ProcessorStep> updateRequest =
         new UpdateRequest.Builder<ProcessorStep, ProcessorStep>()
@@ -574,6 +634,10 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   }
 
   private PutLifecycleRequest putLifecycleRequest() {
+    final var indexAge = getIndexCreationTime();
+    final var absoluteIndexRetentionAge =
+        evaluateAbsoluteLegacyIndexRetentionAge(
+            indexAge, migrationConfiguration.getLegacyIndexRetentionAge());
     return new PutLifecycleRequest.Builder()
         .name(LEGACY_INDEX_RETENTION_POLICY_NAME)
         .policy(
@@ -582,11 +646,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                     phase ->
                         phase.delete(
                             del ->
-                                del.minAge(
-                                        m ->
-                                            m.time(
-                                                migrationConfiguration
-                                                    .getLegacyIndexRetentionAge()))
+                                del.minAge(m -> m.time(absoluteIndexRetentionAge))
                                     .actions(a -> a.delete(DeleteAction.of(d -> d))))))
         .build();
   }
