@@ -17,19 +17,20 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.store.opensearch.client.sync.OpenSearchDocumentOperations;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 
 @ExtendWith(MockitoExtension.class)
@@ -84,8 +85,9 @@ public class OpensearchKeyFilteringDaoTest {
           }
 
           @Override
-          protected void buildFiltering(
-              final Query<Object> query, final SearchRequest.Builder request) {}
+          protected Stream<Query> collectFilterQueryTerms(final Object filter) {
+            return Stream.empty();
+          }
 
           @Override
           protected Object convertInternalToApiResult(final Object internalResult) {
