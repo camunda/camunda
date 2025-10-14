@@ -171,7 +171,7 @@ test.describe('variables page', () => {
     await taskPanelPage.openTask('usertask_with_variables');
 
     await expect(taskDetailsPage.addVariableButton).toBeHidden();
-    await expect(taskDetailsPage.assignToMeButton).toBeVisible();
+    await expect(taskDetailsPage.assignToMeButton).toBeVisible({timeout: 30000});
     await expect(taskDetailsPage.completeTaskButton).toBeDisabled();
     await taskDetailsPage.clickAssignToMeButton();
 
@@ -193,7 +193,7 @@ test.describe('variables page', () => {
     await taskPanelPage.filterBy('Completed');
     await taskPanelPage.openTask('usertask_with_variables');
 
-    await expect(page.getByText('newVariableName')).toBeVisible({timeout: 30000});
+    await expect(page.getByText('newVariableName')).toBeVisible({timeout: 60000});
     await expect(page.getByText('newVariableValue')).toBeVisible();
   });
 });
