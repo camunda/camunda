@@ -16,6 +16,9 @@ const Container = styled.div`
   ${styles.bodyCompact01};
   border-bottom: 1px solid var(--cds-border-subtle-01);
   height: ${OPERATION_ENTRY_HEIGHT}px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 
 const Header = styled.header`
@@ -38,17 +41,11 @@ const Details = styled.div`
   padding-top: var(--cds-spacing-07);
 `;
 
-const PROGRESS_BAR_HEIGHT = 40;
-
 const ProgressBar = styled(BaseProgressBar)`
-  height: ${PROGRESS_BAR_HEIGHT}px;
+  height: 40px;
   padding-top: var(
     --cds-spacing-06
   ); // empty label has 0.5rem margin-bottom, so this spacing should be 06 instead of 07
 `;
 
-const InvisibleProgressBar = styled.div`
-  height: ${PROGRESS_BAR_HEIGHT}px;
-`;
-
-export {Title, Details, Header, Container, ProgressBar, InvisibleProgressBar};
+export {Title, Details, Header, Container, ProgressBar};
