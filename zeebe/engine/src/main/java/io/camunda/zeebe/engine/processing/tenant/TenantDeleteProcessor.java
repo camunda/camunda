@@ -86,7 +86,11 @@ public class TenantDeleteProcessor implements DistributedTypedRecordProcessor<Te
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.TENANT, PermissionType.DELETE)
             .addResourceId(persistedTenantRecord.get().getTenantId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            authorizationRequest,
+            command.hasRequestMetadata(),
+            command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       rejectCommandWithUnauthorizedError(command, isAuthorized.getLeft());
       return;

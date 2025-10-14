@@ -143,7 +143,10 @@ public class ResourceFetchProcessor implements TypedRecordProcessor<ResourceReco
                 PermissionType.READ,
                 resource.getTenantId())
             .addResourceId(BufferUtil.bufferAsString(resource.getResourceId()));
-    if (authorizationCheckBehavior.isAuthorized(authRequest).isLeft()) {
+    if (authorizationCheckBehavior
+        .isAuthorized(
+            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference())
+        .isLeft()) {
       throw new ForbiddenException(authRequest);
     }
   }

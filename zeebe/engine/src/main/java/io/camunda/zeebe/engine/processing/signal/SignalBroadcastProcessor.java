@@ -98,6 +98,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
+    // command.getAuthInfo().getClaims().isEmpty() skip auth for internal commands
     triggerSignal(command, command.getKey());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -116,10 +117,11 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 permissionType,
                 command.getValue().getTenantId())
-            .addResourceId(subscriptionRecord.getBpmnProcessId())
-            .enforceAuthorization(true);
+            .addResourceId(subscriptionRecord.getBpmnProcessId());
 
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(authRequest);
     }

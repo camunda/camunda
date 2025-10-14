@@ -107,7 +107,9 @@ public final class ProcessInstanceCancelProcessor
                 PermissionType.CANCEL_PROCESS_INSTANCE,
                 elementInstance.getValue().getTenantId())
             .addResourceId(elementInstance.getValue().getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            request, command.hasRequestMetadata(), command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       final String errorMessage =
