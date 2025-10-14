@@ -1172,13 +1172,15 @@ public class ProcessInstanceSearchTest {
             .handler((client, job) -> client.newFailCommand(job).retries(1).send().join())
             .open()) {
 
-      waitUntilJobWorkerHasFailedJob(camundaClient, 1);
+      final Map<String, Object> variables = Map.of("path", 222);
+
+      waitUntilJobWorkerHasFailedJob(camundaClient, variables, 1);
 
       // when
       final var result =
           camundaClient
               .newProcessInstanceSearchRequest()
-              .filter(f -> f.hasRetriesLeft(true))
+              .filter(f -> f.hasRetriesLeft(true).variables(variables))
               .send()
               .join();
 

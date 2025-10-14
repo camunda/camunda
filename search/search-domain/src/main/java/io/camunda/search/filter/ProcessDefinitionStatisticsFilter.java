@@ -49,7 +49,14 @@ public record ProcessDefinitionStatisticsFilter(
         .hasIncident(hasIncident)
         .tenantIdOperations(tenantIdOperations)
         .variables(variableFilters)
-        .batchOperationIdOperations(batchOperationIdOperations);
+        .errorMessageOperations(errorMessageOperations)
+        .batchOperationIdOperations(batchOperationIdOperations)
+        .hasRetriesLeft(hasRetriesLeft)
+        .flowNodeIdOperations(flowNodeIdOperations)
+        .hasFlowNodeInstanceIncident(hasFlowNodeInstanceIncident)
+        .flowNodeInstanceStateOperations(flowNodeInstanceStateOperations)
+        .incidentErrorHashCodeOperations(incidentErrorHashCodeOperations)
+        .orFilters(orFilters);
   }
 
   public static final class Builder implements ObjectBuilder<ProcessDefinitionStatisticsFilter> {

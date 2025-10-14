@@ -8,6 +8,7 @@
 package io.camunda.search.clients.aggregator;
 
 import io.camunda.search.clients.query.SearchQuery;
+import io.camunda.search.sort.SortOption.FieldSorting;
 import java.util.List;
 
 public final class SearchAggregatorBuilders {
@@ -74,5 +75,25 @@ public final class SearchAggregatorBuilders {
 
   public static SearchFiltersAggregator.Builder filters() {
     return new SearchFiltersAggregator.Builder();
+  }
+
+  public static SearchBucketSortAggregator.Builder bucketSort() {
+    return new SearchBucketSortAggregator.Builder();
+  }
+
+  public static SearchBucketSortAggregator bucketSort(
+      final String name,
+      final List<FieldSorting> sortings,
+      final Integer from,
+      final Integer size) {
+    return bucketSort().name(name).sorting(sortings).from(from).size(size).build();
+  }
+
+  public static SearchCardinalityAggregator.Builder cardinality() {
+    return new SearchCardinalityAggregator.Builder();
+  }
+
+  public static SearchCardinalityAggregator cardinality(final String name, final String field) {
+    return cardinality().name(name).field(field).build();
   }
 }

@@ -206,6 +206,18 @@ public final class TestHelper {
     return createProcessInstanceCommandStep3.send().join();
   }
 
+  public static ProcessInstanceEvent startProcessInstance(
+      final CamundaClient camundaClient,
+      final String bpmnProcessId,
+      final Map<String, Object> variables) {
+    final CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3 cmd =
+        camundaClient.newCreateInstanceCommand().bpmnProcessId(bpmnProcessId).latestVersion();
+    if (variables != null && !variables.isEmpty()) {
+      cmd.variables(variables);
+    }
+    return cmd.send().join();
+  }
+
   public static void waitForProcessInstancesToStart(
       final CamundaClient camundaClient, final int expectedProcessInstances) {
     waitForProcessInstancesToStart(camundaClient, f -> {}, expectedProcessInstances);
@@ -895,7 +907,9 @@ public final class TestHelper {
   }
 
   public static void waitUntilJobWorkerHasFailedJob(
-      final CamundaClient camundaClient, final int expectedProcesses) {
+      final CamundaClient camundaClient,
+      final Map<String, Object> variables,
+      final int expectedProcesses) {
     await("should wait until the process instance has been updated to reflect retries left.")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
@@ -903,7 +917,7 @@ public final class TestHelper {
               final var result =
                   camundaClient
                       .newProcessInstanceSearchRequest()
-                      .filter(f -> f.hasRetriesLeft(true))
+                      .filter(f -> f.hasRetriesLeft(true).variables(variables))
                       .send()
                       .join();
               assertThat(result.items().size()).isEqualTo(expectedProcesses);

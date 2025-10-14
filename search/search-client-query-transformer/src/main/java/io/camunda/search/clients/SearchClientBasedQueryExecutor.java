@@ -8,6 +8,7 @@
 package io.camunda.search.clients;
 
 import io.camunda.search.aggregation.result.AggregationResultBase;
+import io.camunda.search.aggregation.result.HasTotalItems;
 import io.camunda.search.clients.core.SearchGetRequest;
 import io.camunda.search.clients.core.SearchGetResponse;
 import io.camunda.search.clients.core.SearchQueryRequest;
@@ -30,6 +31,7 @@ import io.camunda.search.sort.SortOption;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -78,6 +80,36 @@ public final class SearchClientBasedQueryExecutor implements CloseableSilently {
     return transformers
         .getSearchAggregationResultTransformer(resultClass)
         .apply(searchQueryResponse.aggregations());
+  }
+
+  /**
+   * Aggregates and wraps the result in a SearchQueryResult, using total and hasMoreTotalItems from
+   * SearchQueryResponse.
+   */
+  public <F extends FilterBase, S extends SortOption, R extends AggregationResultBase, E>
+      SearchQueryResult<E> aggregateWithQueryResult(
+          final TypedSearchQuery<F, S> query,
+          final Class<R> resultClass,
+          final ResourceAccessChecks resourceAccessChecks,
+          final Function<R, List<E>> itemsExtractor) {
+    final var searchQueryResponse =
+        executeSearch(
+            query,
+            searchRequest -> searchClient.search(searchRequest, Object.class),
+            resourceAccessChecks);
+    final R aggResult =
+        transformers
+            .getSearchAggregationResultTransformer(resultClass)
+            .apply(searchQueryResponse.aggregations());
+    final List<E> items = itemsExtractor.apply(aggResult);
+    final int total;
+    if (aggResult instanceof final HasTotalItems hasTotalItems) {
+      total = hasTotalItems.totalItems();
+    } else {
+      total = items.size(); // fallback for other aggregation types
+    }
+    final boolean hasMoreTotalItems = searchQueryResponse.hasMoreTotalItems();
+    return new SearchQueryResult<>(total, hasMoreTotalItems, items, null, null);
   }
 
   /** Returns a single document by id * */

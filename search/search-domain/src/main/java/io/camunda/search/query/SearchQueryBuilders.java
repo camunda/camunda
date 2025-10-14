@@ -211,4 +211,9 @@ public final class SearchQueryBuilders {
           fn) {
     return fn.apply(correlatedMessageSubscriptionSearchQuery()).build();
   }
+
+  public static ProcessDefinitionInstanceStatisticsQuery.Builder
+      processDefinitionInstanceStatisticsQuery() {
+    return new ProcessDefinitionInstanceStatisticsQuery.Builder();
+  }
 }

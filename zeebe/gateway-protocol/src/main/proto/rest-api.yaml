@@ -1724,6 +1724,39 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /process-definitions/statistics/process-instances:
+    post:
+      tags:
+        - Process definition
+      operationId: getProcessDefinitionInstanceStatistics
+      summary: Get statistics for process instances by process definition
+      description: |
+        Get statistics about process instances, grouped by process definition. For each process
+        definition, the response includes the latest deployed instance name, total counts of active
+        instances without incident, total counts of active instances with incident and whether the
+        instance has more than one version.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsQuery"
+      responses:
+        "200":
+          description: The process definition instance statistic result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /process-instances:
     post:
       tags:
@@ -6746,6 +6779,101 @@ components:
           description: The total number of completed instances of the element.
           type: integer
           format: int64
+    ProcessDefinitionInstanceStatisticsQuery:
+      type: object
+      properties:
+        page:
+          description: Pagination criteria.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsPageRequest"
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsQuerySortRequest"
+        filter:
+          description: The process definition instance statistics filters.
+          allOf:
+            - $ref: "#/components/schemas/ProcessInstanceFilter"
+
+    ProcessDefinitionInstanceStatisticsQueryResult:
+      type: object
+      description: Process definition instance statistics query response.
+      properties:
+        items:
+          description: The process definition instance statistics result.
+          type: array
+          items:
+            $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsResult"
+        page:
+          description: Pagination information about the search results.
+          allOf:
+            - $ref: "#/components/schemas/ProcessDefinitionInstanceStatisticsPageResponse"
+
+
+    ProcessDefinitionInstanceStatisticsResult:
+      description: Process definition instance statistics response.
+      type: object
+      properties:
+        processDefinitionId:
+          description: Unique identifier for the process definition.
+          type: string
+        latestProcessDefinitionName:
+          description: Name of the latest deployed process definition instance version.
+          type: string
+        hasMultipleVersions:
+          description: Indicates whether multiple versions of this process definition instance are deployed.
+          type: boolean
+        activeInstancesWithoutIncidentCount:
+          description: Total number of currently active process instances of this definition that do not have incidents.
+          type: integer
+          format: int64
+        activeInstancesWithIncidentCount:
+          description: Total number of currently active process instances of this definition that have at least one incident.
+          type: integer
+          format: int64
+
+    ProcessDefinitionInstanceStatisticsQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - processDefinitionId
+            - activeInstancesWithIncident
+            - activeInstancesWithoutIncident
+        order:
+          $ref: "#/components/schemas/SortOrderEnum"
+      required:
+        - field
+
+    ProcessDefinitionInstanceStatisticsPageRequest:
+      type: object
+      properties:
+        from:
+          description: The index of items to start searching from.
+          type: integer
+          format: int32
+        limit:
+          description: The maximum number of items to return in one request.
+          type: integer
+          format: int32
+          default: 100
+
+    ProcessDefinitionInstanceStatisticsPageResponse:
+      description: Pagination information about the search results.
+      type: object
+      properties:
+        totalItems:
+          description: Total items matching the criteria.
+          type: integer
+          format: int64
+        hasMoreTotalItems:
+          description: |
+            Indicates if more results exist beyond the reported totalItems value. Due to system limitations, the totalItems value can be capped.
+          type: boolean
+
     CancelProcessInstanceRequest:
       type: object
       nullable: true
