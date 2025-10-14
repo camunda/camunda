@@ -51,6 +51,11 @@ public class SecondaryStorageOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final int EXPECTED_POST_EXPORT_BATCH_SIZE = 200;
+  private static final int EXPECTED_POST_EXPORT_DELAY_BETWEEN_RUNS = 3000;
+  private static final int EXPECTED_POST_EXPORT_MAX_DELAY_BETWEEN_RUNS = 70000;
+  private static final boolean EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA = true;
+
   private static final boolean EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION = false;
 
   private static final int EXPECTED_BULK_DELAY = 10;
@@ -69,6 +74,12 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.post-export.batch-size="
+            + EXPECTED_POST_EXPORT_BATCH_SIZE,
+        "camunda.data.secondary-storage.opensearch.post-export.delay-between-runs=3s",
+        "camunda.data.secondary-storage.opensearch.post-export.max-delay-between-runs=70s",
+        "camunda.data.secondary-storage.opensearch.post-export.ignore-missing-data="
+            + EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA,
         "camunda.data.secondary-storage.opensearch.batch-operations.export-items-on-creation="
             + EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION,
         "camunda.data.secondary-storage.opensearch.bulk.delay=10s",
@@ -145,6 +156,14 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getPostExport().getBatchSize())
+          .isEqualTo(EXPECTED_POST_EXPORT_BATCH_SIZE);
+      assertThat(exporterConfiguration.getPostExport().getDelayBetweenRuns())
+          .isEqualTo(EXPECTED_POST_EXPORT_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getPostExport().getMaxDelayBetweenRuns())
+          .isEqualTo(EXPECTED_POST_EXPORT_MAX_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getPostExport().isIgnoreMissingData())
+          .isEqualTo(EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA);
       assertThat(exporterConfiguration.getBatchOperation().isExportItemsOnCreation())
           .isEqualTo(EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION);
       assertThat(exporterConfiguration.getBulk().getDelay()).isEqualTo(EXPECTED_BULK_DELAY);
