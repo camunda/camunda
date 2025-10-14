@@ -343,6 +343,6 @@ jobs:
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             ## Load test \`${{ inputs.name }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
             \`\`\`
           EOF
