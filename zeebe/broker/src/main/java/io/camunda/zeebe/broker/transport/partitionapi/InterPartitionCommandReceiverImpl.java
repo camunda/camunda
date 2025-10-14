@@ -139,11 +139,7 @@ final class InterPartitionCommandReceiverImpl {
     private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
 
     DecodedMessage decodeMessage(final byte[] message) {
-      final var messageBuffer = new UnsafeBuffer();
-      final var recordMetadata = new RecordMetadata();
-
-      messageBuffer.wrap(message);
-      messageDecoder.wrapAndApplyHeader(messageBuffer, 0, headerDecoder);
+      messageDecoder.wrapAndApplyHeader(new UnsafeBuffer(message), 0, headerDecoder);
 
       final var checkpointId = messageDecoder.checkpointId();
       Optional<Long> recordKey = Optional.empty();
@@ -151,18 +147,31 @@ final class InterPartitionCommandReceiverImpl {
         recordKey = Optional.of(messageDecoder.recordKey());
       }
 
-      final var valueType = ValueType.get(messageDecoder.valueType());
-      final var intent = Intent.fromProtocolValue(valueType, messageDecoder.intent());
+      final var recordMetadata = new RecordMetadata();
+      final var value = decodeCommand(messageDecoder, recordMetadata);
+      decodeAuthInfo(messageDecoder, recordMetadata);
 
-      // rebuild the record metadata first, all messages must contain commands
-      recordMetadata.reset().recordType(RecordType.COMMAND).valueType(valueType).intent(intent);
+      return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
+    }
 
-      // wrap the command buffer around the rest of the message
-      // this does not try to parse the command, we are just assuming that these bytes
-      // are a valid command
-      final var commandOffset =
+    /**
+     * Reads out the command from the message decoder and updates the record metadata accordingly.
+     *
+     * @param messageDecoder The current message decoder, with {@link
+     *     InterPartitionMessageDecoder#limit()} pointing to the start of the command. After reading
+     *     the command, the decoder is advanced to the next section.
+     * @param recordMetadata The record metadata to update with record type, intent and value type.
+     * @return a new instance of the command, read from the message decoder.
+     */
+    private static UnifiedRecordValue decodeCommand(
+        final InterPartitionMessageDecoder messageDecoder, final RecordMetadata recordMetadata) {
+      final var offset =
           messageDecoder.limit() + InterPartitionMessageDecoder.commandHeaderLength();
       final var commandLength = messageDecoder.commandLength();
+
+      final var valueType = ValueType.get(messageDecoder.valueType());
+      final var intent = Intent.fromProtocolValue(valueType, messageDecoder.intent());
+      recordMetadata.recordType(RecordType.COMMAND).intent(intent).valueType(valueType);
 
       final var valueClass = TypedEventRegistry.EVENT_REGISTRY.get(valueType);
       if (valueClass == null) {
@@ -170,9 +179,30 @@ final class InterPartitionCommandReceiverImpl {
             "No value type mapped to %s, can't decode message".formatted(valueType));
       }
       final var value = ReflectUtil.newInstance(valueClass);
+      value.wrap(messageDecoder.buffer(), offset, commandLength);
+      messageDecoder.skipCommand();
+      return value;
+    }
 
-      value.wrap(messageBuffer, commandOffset, commandLength);
-      return new DecodedMessage(checkpointId, recordKey, recordMetadata, value);
+    /**
+     * Reads out the authorization info from the message decoder and updates the record metadata
+     * accordingly.
+     *
+     * @param messageDecoder The current message decoder, with {@link
+     *     InterPartitionMessageDecoder#limit()} pointing to the start of the auth info. After
+     *     reading the auth info, the decoder is advanced to the next section.
+     * @param recordMetadata The record metadata to update with the authorization info. If no auth
+     *     info is present, the authorization in the metadata is left unchanged.
+     */
+    private static void decodeAuthInfo(
+        final InterPartitionMessageDecoder messageDecoder, final RecordMetadata recordMetadata) {
+      final var length = messageDecoder.authLength();
+      if (length <= 0) {
+        return;
+      }
+      final var offset = messageDecoder.limit() + InterPartitionMessageDecoder.authHeaderLength();
+      recordMetadata.getAuthorization().wrap(messageDecoder.buffer(), offset, length);
+      messageDecoder.skipAuth();
     }
   }
 }

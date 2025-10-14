@@ -145,7 +145,12 @@ paths:
         "400":
           $ref: "#/components/responses/InvalidData"
         "500":
-          $ref: "#/components/responses/InternalServerError"
+          description: |
+            An Internal Error occurred. More details are provided in the response body. If the response body contains RESOURCE_EXHAUSTED, this signals back pressure.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
   /jobs/search:
@@ -4460,6 +4465,8 @@ paths:
                 $ref: "#/components/schemas/DocumentReference"
         "400":
           $ref: "#/components/responses/InvalidData"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
   /documents/batch:
     post:
       tags:
@@ -4535,6 +4542,8 @@ paths:
                 $ref: "#/components/schemas/DocumentCreationBatchResponse"
         "400":
           $ref: "#/components/responses/InvalidData"
+        "415":
+          $ref: "#/components/responses/UnsupportedMediaType"
   /documents/{documentId}:
     get:
       tags:
@@ -9426,6 +9435,7 @@ components:
         - AD_HOC_SUB_PROCESS
     JobListenerEventTypeEnum:
       description: The listener event type of the job.
+      type: string
       enum:
         - ASSIGNING
         - CANCELING
@@ -9546,22 +9556,27 @@ components:
           format: uri
           description: A URI identifying the problem type.
           default: about:blank
+          example: about:blank
         title:
           type: string
           description: A summary of the problem type.
+          example: Bad Request
         status:
           type: integer
           format: int32
           description: The HTTP status code for this problem.
+          example: 400
           minimum: 400
           maximum: 600
         detail:
           type: string
           description: An explanation of the problem in more detail.
+          example: Request property [maxJobsToActivates] cannot be parsed
         instance:
           type: string
           format: uri
-          description: A URI identifying the origin of the problem.
+          description: A URI path identifying the origin of the problem.
+          example: /v2/jobs/activation
     SearchQueryRequest:
       type: object
       properties:
@@ -11179,10 +11194,18 @@ components:
         application/problem+json:
           schema:
             $ref: "#/components/schemas/ProblemDetail"
+    UnsupportedMediaType:
+      description: |
+        The server cannot process the request because the media type (Content-Type) of the request payload is not supported  by the server for the requested resource and method.
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetail"
     ServiceUnavailable:
       description: >
         The service is currently unavailable. This may happen only on some requests where the system
         creates backpressure to prevent the server's compute resources from being exhausted, avoiding more severe failures.
+        In this case, the title of the error object contains `RESOURCE_EXHAUSTED`.
         Clients are recommended to eventually retry those requests after a backoff period.
         You can learn more about the backpressure mechanism here: https://docs.camunda.io/docs/components/zeebe/technical-concepts/internal-processing/#handling-backpressure .
       content:
