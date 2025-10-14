@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import TextField from "src/components/form/TextField";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
@@ -21,6 +21,7 @@ import {
 } from "../components";
 import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
+import { isValidTenantId } from "src/utility/isValidId.ts";
 
 type FormData = {
   mappingRuleId: string;
@@ -89,6 +90,8 @@ export const AddMappingRuleModal: FC<UseModalProps> = ({
         control={control}
         rules={{
           required: t("mappingRuleIdRequired"),
+          validate: (value) =>
+            isValidTenantId(value) || t("pleaseEnterValidMappingRuleId"),
         }}
         render={({ field }) => (
           <TextField

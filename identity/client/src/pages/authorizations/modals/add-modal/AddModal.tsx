@@ -31,6 +31,7 @@ import {
 } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
+import { isValidId } from "src/utility/isValidId.ts";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
@@ -245,6 +246,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
           control={control}
           rules={{
             required: "EMPTY",
+            validate: (value) => isValidId(value),
           }}
           render={({ field, fieldState }) => (
             <OwnerSelection
@@ -252,7 +254,8 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               ownerId={field.value}
               onChange={field.onChange}
               onBlur={field.onBlur}
-              isEmpty={!!fieldState.error?.message}
+              isEmpty={fieldState.error?.type === "required"}
+              isInvalidId={fieldState.error?.type === "validate"}
             />
           )}
         />
@@ -285,6 +288,8 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
             control={control}
             rules={{
               required: t("resourceIdRequired"),
+              validate: (value) =>
+                isValidId(value) || t("pleaseEnterValidResourceId"),
             }}
             render={({ field, fieldState }) => (
               <TextField
