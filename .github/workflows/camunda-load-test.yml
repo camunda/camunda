@@ -297,6 +297,8 @@ jobs:
   deploy-load-test:
     name: Deploy
     needs:
+      # We need to depend on calculate-image-tag, so that we can use the output in the job
+      - calculate-image-tag
       - deploy-cluster-under-test
     runs-on: ubuntu-latest
     timeout-minutes: 30
