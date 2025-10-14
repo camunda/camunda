@@ -51,6 +51,11 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final int EXPECTED_POST_EXPORT_BATCH_SIZE = 200;
+  private static final int EXPECTED_POST_EXPORT_DELAY_BETWEEN_RUNS = 3000;
+  private static final int EXPECTED_POST_EXPORT_MAX_DELAY_BETWEEN_RUNS = 70000;
+  private static final boolean EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA = true;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -64,6 +69,12 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.elasticsearch.post-export.batch-size="
+            + EXPECTED_POST_EXPORT_BATCH_SIZE,
+        "camunda.data.secondary-storage.elasticsearch.post-export.delay-between-runs=3s",
+        "camunda.data.secondary-storage.elasticsearch.post-export.max-delay-between-runs=70s",
+        "camunda.data.secondary-storage.elasticsearch.post-export.ignore-missing-data="
+            + EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -131,10 +142,20 @@ public class SecondaryStorageElasticsearchTest {
       assertThat(exporterConfiguration.getConnect().getPassword()).isEqualTo(EXPECTED_PASSWORD);
       assertThat(exporterConfiguration.getConnect().getIndexPrefix())
           .isEqualTo(EXPECTED_INDEX_PREFIX);
+      assertThat(exporterConfiguration.getConnect().getClusterName())
+          .isEqualTo(EXPECTED_CLUSTER_NAME);
       assertThat(exporterConfiguration.getIndex().getNumberOfShards())
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getPostExport().getBatchSize())
+          .isEqualTo(EXPECTED_POST_EXPORT_BATCH_SIZE);
+      assertThat(exporterConfiguration.getPostExport().getDelayBetweenRuns())
+          .isEqualTo(EXPECTED_POST_EXPORT_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getPostExport().getMaxDelayBetweenRuns())
+          .isEqualTo(EXPECTED_POST_EXPORT_MAX_DELAY_BETWEEN_RUNS);
+      assertThat(exporterConfiguration.getPostExport().isIgnoreMissingData())
+          .isEqualTo(EXPECTED_POST_EXPORT_IGNORE_MISSING_DATA);
     }
 
     @Test

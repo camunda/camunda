@@ -33,6 +33,8 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  @NestedConfigurationProperty private PostExport postExport = new PostExport(databaseName());
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -71,6 +73,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public PostExport getPostExport() {
+    return postExport;
+  }
+
+  public void setPostExport(final PostExport postExport) {
+    this.postExport = postExport;
   }
 
   public Security getSecurity() {
