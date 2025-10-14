@@ -21,12 +21,11 @@ import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import java.util.List;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -106,49 +105,34 @@ public class OpensearchDecisionInstanceDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionInstance> query, final SearchRequest.Builder request) {
-    final DecisionInstance filter = query.getFilter();
-
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
-                  queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.STATE,
-                      filter.getState() == null ? null : filter.getState().name()),
-                  queryDSLWrapper.matchDateQuery(
-                      DecisionInstance.EVALUATION_DATE,
-                      filter.getEvaluationDate(),
-                      dateTimeFormatter.getApiDateTimeFormatString()),
-                  queryDSLWrapper.or(
-                      queryDSLWrapper.term(
-                          DecisionInstance.EVALUATION_FAILURE_MESSAGE,
-                          filter.getEvaluationFailure()),
-                      queryDSLWrapper.term(
-                          DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure())),
-                  queryDSLWrapper.term(
-                      DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-                  queryDSLWrapper.term(DecisionInstance.DECISION_ID, filter.getDecisionId()),
-                  queryDSLWrapper.term(DecisionInstance.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
-                  queryDSLWrapper.term(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
-                  queryDSLWrapper.term(
-                      DecisionInstance.DECISION_TYPE,
-                      filter.getDecisionType() == null ? null : filter.getDecisionType().name()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query> collectFilterQueryTerms(
+      @NonNull final DecisionInstance filter) {
+    return Stream.of(
+        queryDSLWrapper.term(DecisionInstance.ID, filter.getId()),
+        queryDSLWrapper.term(DecisionInstance.KEY, filter.getKey()),
+        queryDSLWrapper.term(
+            DecisionInstance.STATE, filter.getState() == null ? null : filter.getState().name()),
+        queryDSLWrapper.matchDateQuery(
+            DecisionInstance.EVALUATION_DATE,
+            filter.getEvaluationDate(),
+            dateTimeFormatter.getApiDateTimeFormatString()),
+        queryDSLWrapper.or(
+            queryDSLWrapper.term(
+                DecisionInstance.EVALUATION_FAILURE_MESSAGE, filter.getEvaluationFailure()),
+            queryDSLWrapper.term(
+                DecisionInstance.EVALUATION_FAILURE, filter.getEvaluationFailure())),
+        queryDSLWrapper.term(
+            DecisionInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+        queryDSLWrapper.term(DecisionInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+        queryDSLWrapper.term(DecisionInstance.DECISION_ID, filter.getDecisionId()),
+        queryDSLWrapper.term(DecisionInstance.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(
+            DecisionInstance.DECISION_DEFINITION_ID, filter.getDecisionDefinitionId()),
+        queryDSLWrapper.term(DecisionInstance.DECISION_NAME, filter.getDecisionName()),
+        queryDSLWrapper.term(DecisionInstance.DECISION_VERSION, filter.getDecisionVersion()),
+        queryDSLWrapper.term(
+            DecisionInstance.DECISION_TYPE,
+            filter.getDecisionType() == null ? null : filter.getDecisionType().name()));
   }
 
   @Override
