@@ -28,7 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class UserTaskParameterResolverTest {
+public class UserTaskPropertiesParameterResolverTest {
   @Mock private JobClient jobClient;
   @Mock private ActivatedJob job;
 
@@ -36,7 +36,7 @@ public class UserTaskParameterResolverTest {
   void shouldReturnUserTask() {
     final UserTaskProperties userTask = mock(UserTaskProperties.class);
     when(job.getUserTask()).thenReturn(userTask);
-    final UserTaskParameterResolver resolver = new UserTaskParameterResolver();
+    final UserTaskPropertiesParameterResolver resolver = new UserTaskPropertiesParameterResolver();
     final Object resolve = resolver.resolve(jobClient, job);
     assertThat(resolve).isEqualTo(userTask);
   }
@@ -44,7 +44,7 @@ public class UserTaskParameterResolverTest {
   @Test
   void shouldReturnNullWhenNoUserTask() {
     when(job.getUserTask()).thenReturn(null);
-    final UserTaskParameterResolver resolver = new UserTaskParameterResolver();
+    final UserTaskPropertiesParameterResolver resolver = new UserTaskPropertiesParameterResolver();
     final Object resolve = resolver.resolve(jobClient, job);
     assertThat(resolve).isNull();
   }

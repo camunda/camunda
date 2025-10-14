@@ -18,7 +18,7 @@ package io.camunda.client.jobhandling.parameter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 
-public class UserTaskParameterResolver implements ParameterResolver {
+public class UserTaskPropertiesParameterResolver implements ParameterResolver {
 
   @Override
   public Object resolve(final JobClient jobClient, final ActivatedJob job) {
