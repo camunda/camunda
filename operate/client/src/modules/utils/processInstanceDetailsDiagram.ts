@@ -28,7 +28,10 @@ const hasMultipleScopes = (
     return true;
   }
 
-  if (parentFlowNode.$parent?.$type !== 'bpmn:SubProcess') {
+  if (
+    parentFlowNode.$parent?.$type !== 'bpmn:SubProcess' &&
+    parentFlowNode.$parent?.$type !== 'bpmn:AdHocSubProcess'
+  ) {
     return false;
   }
 

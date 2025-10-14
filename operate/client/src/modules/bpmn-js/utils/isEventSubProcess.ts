@@ -18,7 +18,10 @@ const isEventSubProcess = ({
   eventTypes?: EventType[];
 }) => {
   if (
-    hasType({businessObject, types: ['bpmn:SubProcess']}) &&
+    hasType({
+      businessObject,
+      types: ['bpmn:SubProcess', 'bpmn:AdHocSubProcess'],
+    }) &&
     businessObject.triggeredByEvent === true
   ) {
     if (eventTypes !== undefined) {
