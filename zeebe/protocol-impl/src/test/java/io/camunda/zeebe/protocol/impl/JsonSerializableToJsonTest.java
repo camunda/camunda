@@ -2402,7 +2402,8 @@ final class JsonSerializableToJsonTest {
                   .setQueueId("totally-random-queue-id")
                   .setValueType(ValueType.DEPLOYMENT)
                   .setIntent(DeploymentIntent.CREATE)
-                  .setCommandValue(deploymentRecord);
+                  .setCommandValue(deploymentRecord)
+                  .setAuthInfo(new AuthInfo().setClaims(Map.of("claim-a", "foo")));
             },
         """
         {
@@ -2433,7 +2434,7 @@ final class JsonSerializableToJsonTest {
             "tenantId": "<default>",
             "deploymentKey": -1
           },
-          "authInfo":{"format":"UNKNOWN","claims":{},"authData":""}
+          "authInfo":{"format":"UNKNOWN","claims":{"claim-a": "foo"},"authData":""}
         }
         """
       },
