@@ -25,6 +25,8 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.immutable.SignalSubscriptionState;
 import io.camunda.zeebe.engine.state.signal.SignalSubscription;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalSubscriptionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -93,12 +95,24 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
     triggerSignal(command, eventKey);
 
-    commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    // differentiate between internal and external commands for distribution
+    // if the command is external we distribute the authInfo coming from the command
+    // if the command is internal we distribute the authInfo as PRE_AUTHORIZED
+    if (!authCheckBehavior.isInternalCommand(
+        command.hasRequestMetadata(), command.getBatchOperationReference())) {
+      commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
+    } else {
+      final var authInfo = new AuthInfo();
+      authInfo.setFormat(AuthDataFormat.PRE_AUTHORIZED);
+      commandDistributionBehavior
+          .withKey(eventKey)
+          .unordered()
+          .distribute(command.getValueType(), command.getIntent(), command.getValue(), authInfo);
+    }
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
-    // command.getAuthInfo().getClaims().isEmpty() skip auth for internal commands
     triggerSignal(command, command.getKey());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
@@ -107,6 +121,12 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final TypedRecord<SignalRecord> command,
       final boolean isStartEvent,
       final SignalSubscriptionRecord subscriptionRecord) {
+    // skip auth check if command is pre-authorized
+    if (command.getAuthInfo().getFormat() == AuthDataFormat.PRE_AUTHORIZED
+        || authCheckBehavior.isInternalCommand(
+            command.hasRequestMetadata(), command.getBatchOperationReference())) {
+      return;
+    }
     final var permissionType =
         isStartEvent
             ? PermissionType.CREATE_PROCESS_INSTANCE
@@ -119,8 +139,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 command.getValue().getTenantId())
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
-    final var isAuthorized =
-        authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(authRequest);
     }
