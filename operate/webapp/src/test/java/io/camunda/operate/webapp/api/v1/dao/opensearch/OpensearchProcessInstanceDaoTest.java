@@ -27,6 +27,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -35,7 +36,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 @ExtendWith(MockitoExtension.class)
 public class OpensearchProcessInstanceDaoTest {
 
-  @Mock private OpensearchQueryDSLWrapper mockQueryWrapper;
+  @Mock(answer = Answers.RETURNS_MOCKS)
+  private OpensearchQueryDSLWrapper mockQueryWrapper;
 
   @Mock private OpensearchRequestDSLWrapper mockRequestWrapper;
 
@@ -137,6 +139,8 @@ public class OpensearchProcessInstanceDaoTest {
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1))
         .term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
+    // Verify that we don't need to specify a tenantCheck for it to be included
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
   }
 
   @Test
@@ -150,6 +154,8 @@ public class OpensearchProcessInstanceDaoTest {
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1))
         .term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
+    // Verify that we don't need to specify a tenantCheck for it to be included
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
   }
 
   @Test
@@ -201,5 +207,7 @@ public class OpensearchProcessInstanceDaoTest {
     // Verify that the join relation was still set
     verify(mockQueryWrapper, times(1))
         .term(ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION);
+    // Verify that we don't need to specify a tenantCheck for it to be included
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
   }
 }

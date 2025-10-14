@@ -28,6 +28,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,7 +37,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 @ExtendWith(MockitoExtension.class)
 public class OpensearchFlowNodeInstanceDaoTest {
 
-  @Mock private OpensearchQueryDSLWrapper mockQueryWrapper;
+  @Mock(answer = Answers.RETURNS_MOCKS)
+  private OpensearchQueryDSLWrapper mockQueryWrapper;
 
   @Mock private OpensearchRequestDSLWrapper mockRequestWrapper;
 
@@ -152,6 +154,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.INCIDENT, filter.getIncident());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey());
     verify(mockQueryWrapper, times(1)).term(FlowNodeInstance.TENANT_ID, filter.getTenantId());
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
   }
 
   @Test
@@ -212,6 +215,7 @@ public class OpensearchFlowNodeInstanceDaoTest {
     // Verify the request was built with a tenant check, the index name, and permissive matching
     assertThat(results).containsExactlyElementsOf(validResults);
     verify(mockQueryWrapper, times(1)).term(underTest.getKeyFieldName(), 1L);
+    // Verify that we don't need to specify a tenantCheck for it to be included
     verify(mockQueryWrapper, times(1)).withTenantCheck(any());
     verify(mockRequestWrapper, times(1)).searchRequestBuilder(underTest.getIndexName());
   }

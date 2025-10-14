@@ -8,6 +8,7 @@
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -22,6 +23,7 @@ import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -30,7 +32,8 @@ import org.opensearch.client.opensearch.core.SearchRequest;
 @ExtendWith(MockitoExtension.class)
 public class OpensearchVariableDaoTest {
 
-  @Mock private OpensearchQueryDSLWrapper mockQueryWrapper;
+  @Mock(answer = Answers.RETURNS_MOCKS)
+  private OpensearchQueryDSLWrapper mockQueryWrapper;
 
   @Mock private OpensearchRequestDSLWrapper mockRequestWrapper;
 
@@ -123,5 +126,7 @@ public class OpensearchVariableDaoTest {
     verify(mockQueryWrapper, times(1)).term(Variable.NAME, filter.getName());
     verify(mockQueryWrapper, times(1)).term(Variable.VALUE, filter.getValue());
     verify(mockQueryWrapper, times(1)).term(Variable.TRUNCATED, filter.getTruncated());
+    // Verify that we don't need to specify a tenantCheck for it to be included
+    verify(mockQueryWrapper, times(1)).withTenantCheck(any());
   }
 }

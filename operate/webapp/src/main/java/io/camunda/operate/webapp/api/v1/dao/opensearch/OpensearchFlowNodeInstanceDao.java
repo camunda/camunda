@@ -13,16 +13,13 @@ import io.camunda.operate.connect.OperateDateTimeFormatter;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.FlowNodeInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.FlowNodeInstance;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -85,39 +82,27 @@ public class OpensearchFlowNodeInstanceDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<FlowNodeInstance> query, final SearchRequest.Builder request) {
-    final FlowNodeInstance filter = query.getFilter();
-
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()),
-                  queryDSLWrapper.term(
-                      FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-                  queryDSLWrapper.term(
-                      FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-                  queryDSLWrapper.matchDateQuery(
-                      FlowNodeInstance.START_DATE,
-                      filter.getStartDate(),
-                      dateTimeFormatter.getApiDateTimeFormatString()),
-                  queryDSLWrapper.matchDateQuery(
-                      FlowNodeInstance.END_DATE,
-                      filter.getEndDate(),
-                      dateTimeFormatter.getApiDateTimeFormatString()),
-                  queryDSLWrapper.term(FlowNodeInstance.STATE, filter.getState()),
-                  queryDSLWrapper.term(FlowNodeInstance.TYPE, filter.getType()),
-                  queryDSLWrapper.term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()),
-                  queryDSLWrapper.term(FlowNodeInstance.INCIDENT, filter.getIncident()),
-                  queryDSLWrapper.term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()),
-                  queryDSLWrapper.term(FlowNodeInstance.TENANT_ID, filter.getTenantId()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query> collectFilterQueryTerms(
+      @NonNull final FlowNodeInstance filter) {
+    return Stream.of(
+        queryDSLWrapper.term(FlowNodeInstance.KEY, filter.getKey()),
+        queryDSLWrapper.term(FlowNodeInstance.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+        queryDSLWrapper.term(
+            FlowNodeInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+        queryDSLWrapper.matchDateQuery(
+            FlowNodeInstance.START_DATE,
+            filter.getStartDate(),
+            dateTimeFormatter.getApiDateTimeFormatString()),
+        queryDSLWrapper.matchDateQuery(
+            FlowNodeInstance.END_DATE,
+            filter.getEndDate(),
+            dateTimeFormatter.getApiDateTimeFormatString()),
+        queryDSLWrapper.term(FlowNodeInstance.STATE, filter.getState()),
+        queryDSLWrapper.term(FlowNodeInstance.TYPE, filter.getType()),
+        queryDSLWrapper.term(FlowNodeInstance.FLOW_NODE_ID, filter.getFlowNodeId()),
+        queryDSLWrapper.term(FlowNodeInstance.INCIDENT, filter.getIncident()),
+        queryDSLWrapper.term(FlowNodeInstance.INCIDENT_KEY, filter.getIncidentKey()),
+        queryDSLWrapper.term(FlowNodeInstance.TENANT_ID, filter.getTenantId()));
   }
 
   @Override

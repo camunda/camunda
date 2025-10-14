@@ -10,16 +10,14 @@ package io.camunda.operate.webapp.api.v1.dao.opensearch;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.VariableDao;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.entities.Variable;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -54,27 +52,15 @@ public class OpensearchVariableDao extends OpensearchKeyFilteringDao<Variable, V
   }
 
   @Override
-  protected void buildFiltering(final Query<Variable> query, final SearchRequest.Builder request) {
-    final Variable filter = query.getFilter();
-
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(Variable.KEY, filter.getKey()),
-                  queryDSLWrapper.term(Variable.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.term(
-                      Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-                  queryDSLWrapper.term(Variable.SCOPE_KEY, filter.getScopeKey()),
-                  queryDSLWrapper.term(Variable.NAME, filter.getName()),
-                  queryDSLWrapper.term(Variable.VALUE, filter.getValue()),
-                  queryDSLWrapper.term(Variable.TRUNCATED, filter.getTruncated()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<Query> collectFilterQueryTerms(@NonNull final Variable filter) {
+    return Stream.of(
+        queryDSLWrapper.term(Variable.KEY, filter.getKey()),
+        queryDSLWrapper.term(Variable.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(Variable.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+        queryDSLWrapper.term(Variable.SCOPE_KEY, filter.getScopeKey()),
+        queryDSLWrapper.term(Variable.NAME, filter.getName()),
+        queryDSLWrapper.term(Variable.VALUE, filter.getValue()),
+        queryDSLWrapper.term(Variable.TRUNCATED, filter.getTruncated()));
   }
 
   @Override

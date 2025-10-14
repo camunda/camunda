@@ -11,7 +11,6 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.DecisionRequirementsDao;
 import io.camunda.operate.webapp.api.v1.entities.DecisionRequirements;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -22,10 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -122,29 +121,16 @@ public class OpensearchDecisionRequirementsDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionRequirements> query, final SearchRequest.Builder request) {
-    final DecisionRequirements filter = query.getFilter();
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
-                  queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),
-                  queryDSLWrapper.term(
-                      DecisionRequirements.DECISION_REQUIREMENTS_ID,
-                      filter.getDecisionRequirementsId()),
-                  queryDSLWrapper.term(DecisionRequirements.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.term(DecisionRequirements.NAME, filter.getName()),
-                  queryDSLWrapper.term(DecisionRequirements.VERSION, filter.getVersion()),
-                  queryDSLWrapper.term(
-                      DecisionRequirements.RESOURCE_NAME, filter.getResourceName()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<Query> collectFilterQueryTerms(@NonNull final DecisionRequirements filter) {
+    return Stream.of(
+        queryDSLWrapper.term(DecisionRequirements.ID, filter.getId()),
+        queryDSLWrapper.term(DecisionRequirements.KEY, filter.getKey()),
+        queryDSLWrapper.term(
+            DecisionRequirements.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+        queryDSLWrapper.term(DecisionRequirements.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(DecisionRequirements.NAME, filter.getName()),
+        queryDSLWrapper.term(DecisionRequirements.VERSION, filter.getVersion()),
+        queryDSLWrapper.term(DecisionRequirements.RESOURCE_NAME, filter.getResourceName()));
   }
 
   @Override

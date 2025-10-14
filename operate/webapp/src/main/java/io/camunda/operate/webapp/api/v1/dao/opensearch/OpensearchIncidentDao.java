@@ -21,11 +21,9 @@ import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -90,32 +88,21 @@ public class OpensearchIncidentDao extends OpensearchKeyFilteringDao<Incident, O
   }
 
   @Override
-  protected void buildFiltering(final Query<Incident> query, final SearchRequest.Builder request) {
-    final Incident filter = query.getFilter();
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(Incident.KEY, filter.getKey()),
-                  queryDSLWrapper.term(
-                      Incident.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
-                  queryDSLWrapper.term(
-                      Incident.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
-                  queryDSLWrapper.term(Incident.TYPE, filter.getType()),
-                  queryDSLWrapper.match(Incident.MESSAGE, filter.getMessage()),
-                  queryDSLWrapper.term(Incident.STATE, filter.getState()),
-                  queryDSLWrapper.term(Incident.JOB_KEY, filter.getJobKey()),
-                  queryDSLWrapper.term(Incident.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.matchDateQuery(
-                      Incident.CREATION_TIME,
-                      filter.getCreationTime(),
-                      dateTimeFormatter.getApiDateTimeFormatString()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query> collectFilterQueryTerms(
+      @NonNull final Incident filter) {
+    return Stream.of(
+        queryDSLWrapper.term(Incident.KEY, filter.getKey()),
+        queryDSLWrapper.term(Incident.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+        queryDSLWrapper.term(Incident.PROCESS_INSTANCE_KEY, filter.getProcessInstanceKey()),
+        queryDSLWrapper.term(Incident.TYPE, filter.getType()),
+        queryDSLWrapper.match(Incident.MESSAGE, filter.getMessage()),
+        queryDSLWrapper.term(Incident.STATE, filter.getState()),
+        queryDSLWrapper.term(Incident.JOB_KEY, filter.getJobKey()),
+        queryDSLWrapper.term(Incident.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.matchDateQuery(
+            Incident.CREATION_TIME,
+            filter.getCreationTime(),
+            dateTimeFormatter.getApiDateTimeFormatString()));
   }
 
   @Override
