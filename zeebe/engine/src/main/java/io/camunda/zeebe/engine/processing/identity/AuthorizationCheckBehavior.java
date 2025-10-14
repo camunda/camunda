@@ -158,6 +158,9 @@ public final class AuthorizationCheckBehavior {
 
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
+    if (request.enforceAuthorization) {
+      return false;
+    }
     return (!authorizationsEnabled && !multiTenancyEnabled)
         || (!request.hasRequestMetadata()
             && request.batchOperationReference() == batchOperationReferenceNullValue())
@@ -619,7 +622,8 @@ public final class AuthorizationCheckBehavior {
       String tenantId,
       Set<AuthorizationScope> authorizationScopes,
       boolean hasRequestMetadata,
-      long batchOperationReference) {
+      long batchOperationReference,
+      boolean enforceAuthorization) {
 
     public String getForbiddenErrorMessage() {
       final var authorizationScopesContainsOnlyWildcard =
@@ -654,6 +658,7 @@ public final class AuthorizationCheckBehavior {
     private String tenantId;
     private boolean isNewResource;
     private boolean isTenantOwnedResource;
+    private boolean enforceAuthorization;
 
     public AuthorizationRequest() {
       authorizationScopes = new HashSet<>();
@@ -661,6 +666,7 @@ public final class AuthorizationCheckBehavior {
       tenantId = null;
       isNewResource = false;
       isTenantOwnedResource = true;
+      enforceAuthorization = false;
     }
 
     public AuthorizationRequest(
@@ -669,7 +675,8 @@ public final class AuthorizationCheckBehavior {
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource,
-        final boolean isTenantOwnedResource) {
+        final boolean isTenantOwnedResource,
+        final boolean enforceAuthorization) {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
@@ -678,6 +685,7 @@ public final class AuthorizationCheckBehavior {
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
+      this.enforceAuthorization = enforceAuthorization;
     }
 
     public AuthorizationRequest(
@@ -686,7 +694,7 @@ public final class AuthorizationCheckBehavior {
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource) {
-      this(command, resourceType, permissionType, tenantId, isNewResource, true);
+      this(command, resourceType, permissionType, tenantId, isNewResource, true, false);
     }
 
     public AuthorizationRequest(
@@ -694,14 +702,14 @@ public final class AuthorizationCheckBehavior {
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId) {
-      this(command, resourceType, permissionType, tenantId, false, true);
+      this(command, resourceType, permissionType, tenantId, false, true, false);
     }
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType) {
-      this(command, resourceType, permissionType, null, false, false);
+      this(command, resourceType, permissionType, null, false, false, false);
     }
 
     public AuthorizationRequest command(final TypedRecord<?> command) {
@@ -749,6 +757,11 @@ public final class AuthorizationCheckBehavior {
       return this;
     }
 
+    public AuthorizationRequest enforceAuthorization(final boolean enforceAuthorization) {
+      this.enforceAuthorization = enforceAuthorization;
+      return this;
+    }
+
     public AuthorizationRequestMetadata build() {
       if (command != null) {
         authorizationClaims = command.getAuthorizations();
@@ -761,7 +774,8 @@ public final class AuthorizationCheckBehavior {
             tenantId,
             Collections.unmodifiableSet(authorizationScopes),
             command.hasRequestMetadata(),
-            command.getBatchOperationReference());
+            command.getBatchOperationReference(),
+            enforceAuthorization);
       }
       return new AuthorizationRequestMetadata(
           authorizationClaims,
@@ -772,7 +786,8 @@ public final class AuthorizationCheckBehavior {
           tenantId,
           Collections.unmodifiableSet(authorizationScopes),
           true,
-          RecordMetadataDecoder.batchOperationReferenceNullValue());
+          RecordMetadataDecoder.batchOperationReferenceNullValue(),
+          enforceAuthorization);
     }
 
     public static AuthorizationRequest builder() {
