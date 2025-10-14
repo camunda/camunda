@@ -106,8 +106,7 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      benchmark-load: >
-        -f https://raw.githubusercontent.com/camunda/zeebe-benchmark-helm/refs/heads/main/charts/zeebe-benchmark/values-realistic-benchmark.yaml
+      realistic: 'true'
   setup-latency-benchmark:
     name: Latency Benchmark
     uses: ./.github/workflows/camunda-load-test.yml
@@ -121,7 +120,7 @@ jobs:
       cluster-region: europe-west1-b
       ref: ${{ needs.benchmark-data.outputs.full-ref }}
       reuse-tag: ${{ inputs.reuse-tag || '' }}
-      benchmark-load: >
+      load-test-load: >
         --set starter.rate=1
         --set workers.worker.replicas=1
 
