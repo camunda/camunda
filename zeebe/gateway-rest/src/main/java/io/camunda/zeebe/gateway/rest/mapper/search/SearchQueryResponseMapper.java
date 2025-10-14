@@ -290,6 +290,17 @@ public final class SearchQueryResponseMapper {
                 .orElseGet(Collections::emptyList));
   }
 
+  public static IncidentSearchQueryResult toElementIncidentSearchQueryResponse(
+      final SearchQueryResult<IncidentEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new IncidentSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(SearchQueryResponseMapper::toIncidents)
+                .orElseGet(Collections::emptyList));
+  }
+
   public static JobSearchQueryResult toJobSearchQueryResponse(
       final SearchQueryResult<JobEntity> result) {
     final var page = toSearchQueryPageResponse(result);

@@ -5234,6 +5234,48 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+  /element-instances/{elementInstanceKey}/incidents/search:
+    post:
+      tags:
+        - Element instance
+      operationId: searchElementInstanceIncidents
+      summary: Search for incidents of a specific element instance
+      description: |
+        Search for incidents caused by the specified element instance. Supported only for document-based backends (Elasticsearch/OpenSearch).
+      parameters:
+        - name: elementInstanceKey
+          in: path
+          required: true
+          description: The unique key of the element instance to search incidents for.
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElementInstanceIncidentSearchQuery"
+      responses:
+        "200":
+          description: The element instance incident search result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IncidentSearchQueryResult"
+        "400":
+          $ref: "#/components/responses/InvalidData"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          description: The element instance with the given key was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "#/components/schemas/ProblemDetail"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
 
   /element-instances/ad-hoc-activities/{adHocSubProcessInstanceKey}/activation:
     post:
@@ -7083,6 +7125,16 @@ components:
         incidentKey:
           description: Incident key associated with this element instance.
           type: string
+    ElementInstanceIncidentSearchQuery:
+      type: object
+      allOf:
+        - $ref: "#/components/schemas/SearchQueryRequest"
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: "#/components/schemas/IncidentSearchQuerySortRequest"
     AdHocSubProcessActivateActivitiesInstruction:
       type: object
       properties:

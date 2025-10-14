@@ -11,12 +11,15 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ElementInstanceServices.SetVariablesRequest;
+import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceIncidentSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceResult;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQuery;
 import io.camunda.zeebe.gateway.protocol.rest.ElementInstanceSearchQueryResult;
+import io.camunda.zeebe.gateway.protocol.rest.IncidentSearchQueryResult;
 import io.camunda.zeebe.gateway.protocol.rest.SetVariableRequest;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
@@ -90,6 +93,18 @@ public class ElementInstanceController {
     }
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/{elementInstanceKey}/incidents/search")
+  public ResponseEntity<IncidentSearchQueryResult> searchIncidentsForElementInstance(
+      @PathVariable("elementInstanceKey") final long elementInstanceKey,
+      @RequestBody(required = false) final ElementInstanceIncidentSearchQuery query) {
+
+    return SearchQueryRequestMapper.toIncidentQuery(query)
+        .fold(
+            RestErrorMapper::mapProblemToResponse,
+            incidentQuery -> searchIncidents(elementInstanceKey, incidentQuery));
+  }
+
   private ResponseEntity<ElementInstanceSearchQueryResult> search(
       final FlowNodeInstanceQuery query) {
     try {
@@ -100,6 +115,20 @@ public class ElementInstanceController {
 
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toElementInstanceSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<IncidentSearchQueryResult> searchIncidents(
+      final long elementInstanceKey, final IncidentQuery query) {
+    try {
+      final var result =
+          elementInstanceServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .searchIncidents(elementInstanceKey, query);
+
+      return ResponseEntity.ok(SearchQueryResponseMapper.toIncidentSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
