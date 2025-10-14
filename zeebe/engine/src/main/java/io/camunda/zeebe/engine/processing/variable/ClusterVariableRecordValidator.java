@@ -63,7 +63,7 @@ public class ClusterVariableRecordValidator {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
-              "Invalid Camunda variable value. The variable has a size of %s but the max size is '%s'"
+              "Invalid Camunda variable value. The variable has a size of %s but the max size is %s"
                   .formatted(record.getValueBuffer().capacity(), MAX_VARIABLE_SIZE_BYTES)));
     }
     return Either.right(record);
