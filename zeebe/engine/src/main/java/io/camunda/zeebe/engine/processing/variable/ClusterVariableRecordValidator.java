@@ -15,9 +15,6 @@ import io.camunda.zeebe.util.Either;
 
 public class ClusterVariableRecordValidator {
 
-  static final int MAX_VARIABLE_SIZE_BYTES = 16 * 1024;
-  private static final String FORBIDDEN_CHARS = "+-*/=><?.";
-
   private final ClusterVariableState clusterVariableState;
 
   public ClusterVariableRecordValidator(final ClusterVariableState clusterVariableState) {
@@ -33,38 +30,12 @@ public class ClusterVariableRecordValidator {
               "Invalid cluster variable name: '%s'. Cluster variable can not be null or empty."
                   .formatted(name)));
     }
-    if (Character.isDigit(name.charAt(0))) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Invalid cluster variable name: '%s'. The name must not start with a digit."
-                  .formatted(name)));
-    }
     if (name.chars().anyMatch(Character::isWhitespace)) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable name: '%s'. The name must not contains any whitespace."
                   .formatted(name)));
-    }
-    if (FORBIDDEN_CHARS.chars().anyMatch(c -> name.indexOf(c) >= 0)) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Invalid cluster variable name: '%s'. The name must not contains any invalid characters '%s'"
-                  .formatted(name, FORBIDDEN_CHARS)));
-    }
-    return Either.right(record);
-  }
-
-  public Either<Rejection, ClusterVariableRecord> validateValueSize(
-      final ClusterVariableRecord record) {
-    if (record.getValueBuffer().capacity() > MAX_VARIABLE_SIZE_BYTES) {
-      return Either.left(
-          new Rejection(
-              RejectionType.INVALID_ARGUMENT,
-              "Invalid Camunda variable value. The variable has a size of %s but the max size is %s"
-                  .formatted(record.getValueBuffer().capacity(), MAX_VARIABLE_SIZE_BYTES)));
     }
     return Either.right(record);
   }

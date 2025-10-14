@@ -74,38 +74,6 @@ public final class CreateClusterVariableTest {
   }
 
   @Test
-  public void clusterVariableContainsIllegalCharacter() {
-    final var record =
-        ENGINE_RULE
-            .clusterVariables()
-            .withName("KEY-1")
-            .withValue("VALUE")
-            .expectRejection()
-            .create();
-    Assertions.assertThat(record)
-        .hasIntent(ClusterVariableIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Invalid cluster variable name: 'KEY-1'. The name must not contains any invalid characters '+-*/=><?.'");
-  }
-
-  @Test
-  public void clusterVariableIsTooLarge() {
-    final var record =
-        ENGINE_RULE
-            .clusterVariables()
-            .withName("KEY_4")
-            .withValue("Value-".repeat(3000))
-            .expectRejection()
-            .create();
-    Assertions.assertThat(record)
-        .hasIntent(ClusterVariableIntent.CREATE)
-        .hasRejectionType(RejectionType.INVALID_ARGUMENT)
-        .hasRejectionReason(
-            "Invalid Camunda variable value. The variable has a size of 18003 but the max size is 16384");
-  }
-
-  @Test
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
     final var recordGlobal =
         ENGINE_RULE.clusterVariables().withName("KEY_5").withValue("VALUE").create();
@@ -140,38 +108,9 @@ public final class CreateClusterVariableTest {
   static Stream<Arguments> retrieveInvalidClusterVariableName() {
     return Stream.of(
         Arguments.of(
-            "KEY-1",
-            "Invalid cluster variable name: 'KEY-1'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
             "test key",
             "Invalid cluster variable name: 'test key'. The name must not contains any whitespace."),
         Arguments.of(
-            "", "Invalid cluster variable name: ''. Cluster variable can not be null or empty."),
-        Arguments.of(
-            "1KEY", "Invalid cluster variable name: '1KEY'. The name must not start with a digit."),
-        Arguments.of(
-            "<KEY",
-            "Invalid cluster variable name: '<KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "+KEY",
-            "Invalid cluster variable name: '+KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "-KEY",
-            "Invalid cluster variable name: '-KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "*KEY",
-            "Invalid cluster variable name: '*KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "/KEY",
-            "Invalid cluster variable name: '/KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "?KEY",
-            "Invalid cluster variable name: '?KEY'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "KEY.",
-            "Invalid cluster variable name: 'KEY.'. The name must not contains any invalid characters '+-*/=><?.'"),
-        Arguments.of(
-            "KEY>",
-            "Invalid cluster variable name: 'KEY>'. The name must not contains any invalid characters '+-*/=><?.'"));
+            "", "Invalid cluster variable name: ''. Cluster variable can not be null or empty."));
   }
 }
