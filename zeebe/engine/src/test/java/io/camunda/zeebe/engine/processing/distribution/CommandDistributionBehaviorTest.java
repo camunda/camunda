@@ -24,6 +24,8 @@ import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
 import io.camunda.zeebe.engine.util.stream.FakeProcessingResultBuilder;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo.AuthDataFormat;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -32,6 +34,7 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.DeploymentIntent;
 import io.camunda.zeebe.stream.api.InterPartitionCommandSender;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import org.assertj.core.api.Assertions;
@@ -64,6 +67,7 @@ class CommandDistributionBehaviorTest {
   private ValueType valueType;
   private DeploymentIntent intent;
   private MockTypedRecord<DeploymentRecord> command;
+  private AuthInfo authInfo;
 
   @BeforeEach
   void setUp() {
@@ -76,9 +80,17 @@ class CommandDistributionBehaviorTest {
     key = Protocol.encodePartitionId(1, 100);
     valueType = ValueType.DEPLOYMENT;
     intent = DeploymentIntent.CREATE;
+    authInfo =
+        new AuthInfo()
+            .setFormat(AuthDataFormat.JWT)
+            .setAuthData("some-jwt-token")
+            .setClaims(Map.of("a", "b", "c", 3));
+
     command =
         new MockTypedRecord<>(
-            key, new RecordMetadata().valueType(valueType).intent(intent), new DeploymentRecord());
+            key,
+            new RecordMetadata().valueType(valueType).intent(intent).authorization(authInfo),
+            new DeploymentRecord());
   }
 
   @Test
@@ -135,9 +147,9 @@ class CommandDistributionBehaviorTest {
     // then command is sent to all other partitions
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -172,9 +184,58 @@ class CommandDistributionBehaviorTest {
     // then command is sent to partitions 1 and 3
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(1), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+    verifyNoMoreInteractions(mockInterpartitionCommandSender);
+  }
+
+  @Test
+  void shouldDistributeCommandWithAuthInfo() {
+    // given 3 partitions and behavior on partition 1
+    final var behavior =
+        new CommandDistributionBehavior(
+            mockDistributionState,
+            writers,
+            1,
+            RoutingInfo.forStaticPartitions(3),
+            mockInterpartitionCommandSender,
+            mockDistributionMetrics);
+
+    // given command with auth info
+    final var authInfo =
+        new AuthInfo()
+            .setFormat(AuthDataFormat.JWT)
+            .setAuthData("some-jwt-token")
+            .setClaims(Map.of("a", "b", "c", 3));
+    final var command =
+        new MockTypedRecord<>(
+            key,
+            new RecordMetadata().valueType(valueType).intent(intent).authorization(authInfo),
+            new DeploymentRecord());
+
+    // when distributing to all partitions
+    behavior.withKey(key).unordered().distribute(command);
+
+    // then command distribution is started on partition 1 and distributing to all other partitions
+    Assertions.assertThat(fakeProcessingResultBuilder.getFollowupRecords())
+        .extracting(
+            Record::getKey,
+            Record::getIntent,
+            r -> r.getValue().getPartitionId(),
+            r -> r.getValue().getIntent())
+        .hasSize(3)
+        .startsWith(tuple(key, CommandDistributionIntent.STARTED, 1, intent))
+        .contains(
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 2, intent),
+            tuple(key, CommandDistributionIntent.DISTRIBUTING, 3, intent));
+
+    // then command is sent to all other partitions
+    fakeProcessingResultBuilder.flushPostCommitTasks();
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
+    verify(mockInterpartitionCommandSender)
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -207,9 +268,9 @@ class CommandDistributionBehaviorTest {
     // then command is sent immediately to partitions 2 and 3
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), eq(authInfo));
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 
@@ -252,9 +313,9 @@ class CommandDistributionBehaviorTest {
     // then first distribution is sent out immediately, second distribution isn't
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(firstKey), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo));
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(firstKey), any(), eq(authInfo));
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
   }
 

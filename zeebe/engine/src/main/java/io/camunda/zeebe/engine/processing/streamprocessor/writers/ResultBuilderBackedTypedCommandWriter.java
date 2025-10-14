@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor.writers;
 
-import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -65,11 +64,8 @@ final class ResultBuilderBackedTypedCommandWriter extends AbstractResultBuilderB
             .rejectionType(RejectionType.NULL_VAL)
             .rejectionReason("")
             .operationReference(commandMetadata.operationReference())
-            .batchOperationReference(commandMetadata.batchOperationReference());
-
-    if (commandMetadata.claims() != null) {
-      metadata.authorization(new AuthInfo().setClaims(commandMetadata.claims()));
-    }
+            .batchOperationReference(commandMetadata.batchOperationReference())
+            .authorization(commandMetadata.authInfo());
 
     resultBuilder().appendRecord(key, value, metadata);
   }

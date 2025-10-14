@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.stream.impl.records;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -126,5 +127,10 @@ public class UnwrittenRecord implements TypedRecord {
   @Override
   public int getLength() {
     return metadata.getLength() + value.getLength();
+  }
+
+  @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
   }
 }

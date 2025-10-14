@@ -122,15 +122,12 @@ public class TenantUpdateProcessor implements DistributedTypedRecordProcessor<Te
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord);
     responseWriter.writeEventOnCommand(
         persistedTenant.getTenantKey(), TenantIntent.UPDATED, updatedRecord, command);
-    distributeUpdate(updatedRecord);
-  }
 
-  private void distributeUpdate(final TenantRecord updatedTenant) {
     final long distributionKey = keyGenerator.nextKey();
     commandDistributionBehavior
         .withKey(distributionKey)
         .inQueue(DistributionQueue.IDENTITY.getQueueId())
-        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedTenant);
+        .distribute(ValueType.TENANT, TenantIntent.UPDATE, updatedRecord, command.getAuthInfo());
   }
 
   private void rejectCommandWithUnauthorizedError(
