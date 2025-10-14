@@ -70,7 +70,11 @@ public class GroupDeleteProcessor implements DistributedTypedRecordProcessor<Gro
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.GROUP, PermissionType.DELETE)
             .addResourceId(groupId);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            authorizationRequest,
+            command.hasRequestMetadata(),
+            command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

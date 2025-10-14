@@ -100,7 +100,9 @@ public final class IncidentResolveProcessor implements TypedRecordProcessor<Inci
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 incident.getTenantId())
             .addResourceId(incident.getBpmnProcessId());
-    final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

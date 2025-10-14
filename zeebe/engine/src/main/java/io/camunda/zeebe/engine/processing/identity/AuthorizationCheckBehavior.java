@@ -131,6 +131,16 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  public Either<Rejection, Void> isAuthorized(
+      final AuthorizationRequest request,
+      final boolean hasRequestMetadata,
+      final long batchOperationReference) {
+    if (isInternalCommand(hasRequestMetadata, batchOperationReference)) {
+      return Either.right(null);
+    }
+    return isAuthorized(request);
+  }
+
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequestMetadata request) {
 
     if (shouldSkipAuthorization(request)) {
@@ -158,13 +168,25 @@ public final class AuthorizationCheckBehavior {
 
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
-    if (request.enforceAuthorization) {
-      return false;
-    }
     return (!authorizationsEnabled && !multiTenancyEnabled)
-        || (!request.hasRequestMetadata()
-            && request.batchOperationReference() == batchOperationReferenceNullValue())
         || isAuthorizedAnonymousUser(request.claims());
+  }
+
+  /**
+   * Determines if the command is an internal command. Internal commands are commands that are
+   * written by Zeebe itself and not by an external user. Internal commands should skip the
+   * authorization checks and the tenant checks.
+   *
+   * <p>A command is considered internal if it has no request metadata and no batch operation
+   * reference.
+   *
+   * @param hasRequestMetadata true if the command has request metadata, false otherwise
+   * @param batchOperationReference the batch operation reference of the command
+   * @return true if the command is an internal command, false otherwise
+   */
+  public boolean isInternalCommand(
+      final boolean hasRequestMetadata, final long batchOperationReference) {
+    return !hasRequestMetadata && batchOperationReference == batchOperationReferenceNullValue();
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
@@ -622,8 +644,7 @@ public final class AuthorizationCheckBehavior {
       String tenantId,
       Set<AuthorizationScope> authorizationScopes,
       boolean hasRequestMetadata,
-      long batchOperationReference,
-      boolean enforceAuthorization) {
+      long batchOperationReference) {
 
     public String getForbiddenErrorMessage() {
       final var authorizationScopesContainsOnlyWildcard =
@@ -658,7 +679,6 @@ public final class AuthorizationCheckBehavior {
     private String tenantId;
     private boolean isNewResource;
     private boolean isTenantOwnedResource;
-    private boolean enforceAuthorization;
 
     public AuthorizationRequest() {
       authorizationScopes = new HashSet<>();
@@ -666,7 +686,6 @@ public final class AuthorizationCheckBehavior {
       tenantId = null;
       isNewResource = false;
       isTenantOwnedResource = true;
-      enforceAuthorization = false;
     }
 
     public AuthorizationRequest(
@@ -675,8 +694,7 @@ public final class AuthorizationCheckBehavior {
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource,
-        final boolean isTenantOwnedResource,
-        final boolean enforceAuthorization) {
+        final boolean isTenantOwnedResource) {
       this.command = command;
       this.resourceType = resourceType;
       this.permissionType = permissionType;
@@ -685,7 +703,6 @@ public final class AuthorizationCheckBehavior {
       this.tenantId = tenantId;
       this.isNewResource = isNewResource;
       this.isTenantOwnedResource = isTenantOwnedResource;
-      this.enforceAuthorization = enforceAuthorization;
     }
 
     public AuthorizationRequest(
@@ -694,7 +711,7 @@ public final class AuthorizationCheckBehavior {
         final PermissionType permissionType,
         final String tenantId,
         final boolean isNewResource) {
-      this(command, resourceType, permissionType, tenantId, isNewResource, true, false);
+      this(command, resourceType, permissionType, tenantId, isNewResource, true);
     }
 
     public AuthorizationRequest(
@@ -702,14 +719,14 @@ public final class AuthorizationCheckBehavior {
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType,
         final String tenantId) {
-      this(command, resourceType, permissionType, tenantId, false, true, false);
+      this(command, resourceType, permissionType, tenantId, false, true);
     }
 
     public AuthorizationRequest(
         final TypedRecord<?> command,
         final AuthorizationResourceType resourceType,
         final PermissionType permissionType) {
-      this(command, resourceType, permissionType, null, false, false, false);
+      this(command, resourceType, permissionType, null, false, false);
     }
 
     public AuthorizationRequest command(final TypedRecord<?> command) {
@@ -757,11 +774,6 @@ public final class AuthorizationCheckBehavior {
       return this;
     }
 
-    public AuthorizationRequest enforceAuthorization(final boolean enforceAuthorization) {
-      this.enforceAuthorization = enforceAuthorization;
-      return this;
-    }
-
     public AuthorizationRequestMetadata build() {
       if (command != null) {
         authorizationClaims = command.getAuthorizations();
@@ -774,8 +786,7 @@ public final class AuthorizationCheckBehavior {
             tenantId,
             Collections.unmodifiableSet(authorizationScopes),
             command.hasRequestMetadata(),
-            command.getBatchOperationReference(),
-            enforceAuthorization);
+            command.getBatchOperationReference());
       }
       return new AuthorizationRequestMetadata(
           authorizationClaims,
@@ -786,8 +797,7 @@ public final class AuthorizationCheckBehavior {
           tenantId,
           Collections.unmodifiableSet(authorizationScopes),
           true,
-          RecordMetadataDecoder.batchOperationReferenceNullValue(),
-          enforceAuthorization);
+          RecordMetadataDecoder.batchOperationReferenceNullValue());
     }
 
     public static AuthorizationRequest builder() {

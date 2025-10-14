@@ -93,7 +93,11 @@ public class MappingRuleUpdateProcessor
         new AuthorizationRequest(
                 command, AuthorizationResourceType.MAPPING_RULE, PermissionType.UPDATE)
             .addResourceId(mappingRuleId);
-    final var isAuthorized = authCheckBehavior.isAuthorized(authorizationRequest);
+    final var isAuthorized =
+        authCheckBehavior.isAuthorized(
+            authorizationRequest,
+            command.hasRequestMetadata(),
+            command.getBatchOperationReference());
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
