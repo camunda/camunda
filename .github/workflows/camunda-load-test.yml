@@ -265,19 +265,9 @@ jobs:
           --reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.orchestration.image.registry=gcr.io
-          --set camunda-platform.orchestration.image.repository=zeebe-io/zeebe
-          --set camunda-platform.orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          # Keep this for compatibility with older versions of the benchmark chart
-          --set camunda-platform.core.image.registry=gcr.io
-          --set camunda-platform.core.image.repository=zeebe-io/zeebe
-          --set camunda-platform.core.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.zeebe.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.zeebe-gateway.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebe-gateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set camunda-platform.zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
-          --set camunda-platform.zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set orchestration.image.registry=gcr.io
+          --set orchestration.image.repository=zeebe-io/zeebe
+          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/load-tests/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && '-f load-tests/setup/default/values-stable.yaml' || '' }}
