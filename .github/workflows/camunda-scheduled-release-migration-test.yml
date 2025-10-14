@@ -1,11 +1,14 @@
-# description: Workflow to run Camunda Platform release migration tests on scheduled manner
+# description: Workflow to run Camunda Platform release migration tests in a   scheduled manner
 # type: CI
 # owner: @Chris
-name: Camunda Release migration test
+name: Camunda scheduled release migration test
 on:
   schedule:
     # Runs at 04:00. every day https://crontab.guru/#0_4_*_*_*
     - cron: 0 4 * * *
+  workflow_dispatch:
+    # To trigger manually with notification
+
 
 jobs:
   migration-test:
@@ -21,7 +24,14 @@ jobs:
     name: Notify on failure
     runs-on: ubuntu-latest
     needs: [ migration-test ]
-    if: (failure() || cancelled())
+    # Current behavior of needs and dependency handling on a calling workflow is
+    # If the last job of the called workflow is skipped, because of a previous job failure, the
+    # depending jobs are skipped as well. This is the case for jobs in the caller workflow as well.
+    # This can be avoided by using always and checking the result directly.
+    # See context 
+    #  https://camunda.slack.com/archives/C013MEVQ4M9/p1760428530690699?thread_ts=1760426224.174949&cid=C013MEVQ4M9
+    # We need to run always and check for dependency outcome
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') )
     steps:
       - uses: actions/checkout@v4
       - id: slack-notify
