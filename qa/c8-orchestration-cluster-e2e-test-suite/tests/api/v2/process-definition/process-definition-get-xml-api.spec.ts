@@ -11,12 +11,14 @@ import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
+  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
   textXMLHeaders,
 } from '../../../../utils/http';
 import {readFileSync} from 'node:fs';
+import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Process Definition Get XML API', () => {
@@ -34,13 +36,16 @@ test.describe.parallel('Process Definition Get XML API', () => {
   });
 
   test('Get Process Definition XML - Success', async ({request}) => {
-    const res = await request.get(
-      buildUrl(`/process-definitions/${state.processDefinitionKey}/xml`),
-      {headers: textXMLHeaders()},
-    );
-    expect(res.status()).toBe(200);
-    const body = await res.text();
-    expect(body).toEqual(state['expectedXml']);
+    await expect(async () => {
+      const res = await request.get(
+        buildUrl(`/process-definitions/${state.processDefinitionKey}/xml`),
+        {headers: textXMLHeaders()},
+      );
+
+      await assertStatusCode(res, 200);
+      const body = await res.text();
+      expect(body).toEqual(state['expectedXml']);
+    }).toPass(defaultAssertionOptions);
   });
 
   test('Get Process Definition XML - Not Found', async ({request}) => {
