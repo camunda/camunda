@@ -13,6 +13,7 @@ import io.camunda.search.clients.TenantSearchClient;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -62,7 +63,7 @@ public class TenantServices extends SearchQueryService<TenantServices, TenantQue
                 .searchTenants(query));
   }
 
-  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantQuery query) {
+  public SearchQueryResult<TenantMemberEntity> searchMembers(final TenantMemberQuery query) {
     return executeSearchRequest(
         () ->
             tenantSearchClient

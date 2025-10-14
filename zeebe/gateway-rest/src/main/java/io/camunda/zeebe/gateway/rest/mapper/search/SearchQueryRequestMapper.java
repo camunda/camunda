@@ -37,6 +37,7 @@ import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryBuilders;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQueryBuilder;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -282,49 +283,49 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
       final TenantGroupSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
+      return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromTenantGroupSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::tenant,
+            SortOptionBuilders::tenantMember,
             SearchQuerySortRequestMapper::applyTenantGroupSortField);
     final var filter = FilterBuilders.tenant().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
       final TenantUserSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
+      return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromTenantUserSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::tenant,
+            SortOptionBuilders::tenantMember,
             SearchQuerySortRequestMapper::applyTenantUserSortField);
     final var filter = FilterBuilders.tenant().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
       final TenantClientSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.tenantSearchQuery().build());
+      return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromTenantClientSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::tenant,
+            SortOptionBuilders::tenantMember,
             SearchQuerySortRequestMapper::applyTenantClientSortField);
     final var filter = FilterBuilders.tenant().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantMemberSearchQuery);
   }
 
   public static Either<ProblemDetail, MappingRuleQuery> toMappingRuleQuery(

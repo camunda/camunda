@@ -141,6 +141,15 @@ public final class SearchQueryBuilders {
     return fn.apply(tenantSearchQuery()).build();
   }
 
+  public static TenantMemberQuery.Builder tenantMemberSearchQuery() {
+    return new TenantMemberQuery.Builder();
+  }
+
+  public static TenantMemberQuery tenantMemberSearchQuery(
+      final Function<TenantMemberQuery.Builder, ObjectBuilder<TenantMemberQuery>> fn) {
+    return fn.apply(tenantMemberSearchQuery()).build();
+  }
+
   public static GroupQuery.Builder groupSearchQuery() {
     return new GroupQuery.Builder();
   }

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.UserQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -277,7 +278,7 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
-      final String tenantId, final TenantQuery query) {
+      final String tenantId, final TenantMemberQuery query) {
     try {
       final var result =
           tenantServices
@@ -352,12 +353,12 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
-      final String tenantId, final TenantQuery tenantQuery) {
+      final String tenantId, final TenantMemberQuery tenantMemberQuery) {
     try {
       final var result =
           tenantServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantQuery));
+              .searchMembers(buildTenantMemberQuery(tenantId, EntityType.USER, tenantMemberQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toTenantUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -365,7 +366,7 @@ public class TenantController {
   }
 
   private ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
-      final String tenantId, final TenantQuery query) {
+      final String tenantId, final TenantMemberQuery query) {
     try {
       final var result =
           tenantServices
@@ -433,8 +434,8 @@ public class TenantController {
     }
   }
 
-  private TenantQuery buildTenantMemberQuery(
-      final String tenantId, final EntityType memberType, final TenantQuery query) {
+  private TenantMemberQuery buildTenantMemberQuery(
+      final String tenantId, final EntityType memberType, final TenantMemberQuery query) {
     return query.toBuilder()
         .filter(query.filter().toBuilder().joinParentId(tenantId).memberType(memberType).build())
         .build();

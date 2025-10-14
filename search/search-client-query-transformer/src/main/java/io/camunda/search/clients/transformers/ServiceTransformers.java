@@ -118,6 +118,7 @@ import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSorting
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.TenantMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
@@ -174,6 +175,7 @@ import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -203,6 +205,7 @@ import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.TenantMemberSort;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
@@ -347,6 +350,7 @@ public final class ServiceTransformers {
             RoleQuery.class,
             SequenceFlowQuery.class,
             TenantQuery.class,
+            TenantMemberQuery.class,
             UsageMetricsQuery.class,
             UsageMetricsTUQuery.class,
             UserTaskQuery.class,
@@ -405,6 +409,7 @@ public final class ServiceTransformers {
     mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
+    mappers.put(TenantMemberSort.class, new TenantMemberFieldSortingTransformer());
     mappers.put(UserTaskSort.class, new UserTaskFieldSortingTransformer());
     mappers.put(VariableSort.class, new VariableFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
