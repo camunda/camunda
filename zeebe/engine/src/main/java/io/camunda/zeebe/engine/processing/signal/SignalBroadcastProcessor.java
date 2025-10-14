@@ -91,53 +91,14 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       return;
     }
 
-    final List<SignalSubscription> subscriptions = new ArrayList<>();
-    signalSubscriptionState.visitBySignalName(
-        signalRecord.getSignalNameBuffer(),
-        signalRecord.getTenantId(),
-        subscription -> {
-          final var subscriptionRecord = subscription.getRecord();
-          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          checkAuthorization(command, isStartEvent, subscriptionRecord);
-          final var copiedSubscription = new SignalSubscription();
-          copiedSubscription.copyFrom(subscription);
-          subscriptions.add(copiedSubscription);
-        });
-
-    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
-
-    subscriptions.forEach(
-        subscription -> {
-          final var subscriptionRecord = subscription.getRecord();
-          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          if (isStartEvent) {
-            eventHandle.activateProcessInstanceForStartEvent(
-                subscriptionRecord.getProcessDefinitionKey(),
-                keyGenerator.nextKey(),
-                subscriptionRecord.getCatchEventIdBuffer(),
-                signalRecord.getVariablesBuffer(),
-                signalRecord.getTenantId());
-          } else {
-            activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
-          }
-        });
-
-    if (command.hasRequestMetadata()) {
-      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
-    }
+    triggerSignal(command, eventKey);
 
     commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
-    final var value = command.getValue();
-    signalSubscriptionState.visitBySignalName(
-        value.getSignalNameBuffer(),
-        value.getTenantId(),
-        subscription -> activateElement(subscription.getRecord(), value.getVariablesBuffer()));
-
-    stateWriter.appendFollowUpEvent(command.getKey(), SignalIntent.BROADCASTED, command.getValue());
+    triggerSignal(command, command.getKey());
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -155,7 +116,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
                 AuthorizationResourceType.PROCESS_DEFINITION,
                 permissionType,
                 command.getValue().getTenantId())
-            .addResourceId(subscriptionRecord.getBpmnProcessId());
+            .addResourceId(subscriptionRecord.getBpmnProcessId())
+            .enforceAuthorization(true);
 
     final var isAuthorized = authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
@@ -195,5 +157,44 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
+  }
+
+  private void triggerSignal(final TypedRecord<SignalRecord> command, final long eventKey) {
+    final var signalRecord = command.getValue();
+
+    final List<SignalSubscription> subscriptions = new ArrayList<>();
+    signalSubscriptionState.visitBySignalName(
+        signalRecord.getSignalNameBuffer(),
+        signalRecord.getTenantId(),
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
+          checkAuthorization(command, isStartEvent, subscriptionRecord);
+          final var copiedSubscription = new SignalSubscription();
+          copiedSubscription.copyFrom(subscription);
+          subscriptions.add(copiedSubscription);
+        });
+
+    stateWriter.appendFollowUpEvent(eventKey, SignalIntent.BROADCASTED, signalRecord);
+
+    subscriptions.forEach(
+        subscription -> {
+          final var subscriptionRecord = subscription.getRecord();
+          final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
+          if (isStartEvent) {
+            eventHandle.activateProcessInstanceForStartEvent(
+                subscriptionRecord.getProcessDefinitionKey(),
+                keyGenerator.nextKey(),
+                subscriptionRecord.getCatchEventIdBuffer(),
+                signalRecord.getVariablesBuffer(),
+                signalRecord.getTenantId());
+          } else {
+            activateElement(subscriptionRecord, signalRecord.getVariablesBuffer());
+          }
+        });
+
+    if (command.hasRequestMetadata()) {
+      responseWriter.writeEventOnCommand(eventKey, SignalIntent.BROADCASTED, signalRecord, command);
+    }
   }
 }
