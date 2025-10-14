@@ -93,13 +93,16 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       return;
     }
 
-    triggerSignal(command, eventKey);
+    final var isAuthNeeded =
+        !authCheckBehavior.isInternalCommand(
+            command.hasRequestMetadata(), command.getBatchOperationReference());
+
+    triggerSignal(command, eventKey, isAuthNeeded);
 
     // differentiate between internal and external commands for distribution
     // if the command is external we distribute the authInfo coming from the command
     // if the command is internal we distribute the authInfo as PRE_AUTHORIZED
-    if (!authCheckBehavior.isInternalCommand(
-        command.hasRequestMetadata(), command.getBatchOperationReference())) {
+    if (isAuthNeeded) {
       commandDistributionBehavior.withKey(eventKey).unordered().distribute(command);
     } else {
       final var authInfo = new AuthInfo();
@@ -113,7 +116,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<SignalRecord> command) {
-    triggerSignal(command, command.getKey());
+    final var isAuthNeeded = !(command.getAuthInfo().getFormat() == AuthDataFormat.PRE_AUTHORIZED);
+    triggerSignal(command, command.getKey(), isAuthNeeded);
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 
@@ -121,12 +125,6 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
       final TypedRecord<SignalRecord> command,
       final boolean isStartEvent,
       final SignalSubscriptionRecord subscriptionRecord) {
-    // skip auth check if command is pre-authorized
-    if (command.getAuthInfo().getFormat() == AuthDataFormat.PRE_AUTHORIZED
-        || authCheckBehavior.isInternalCommand(
-            command.hasRequestMetadata(), command.getBatchOperationReference())) {
-      return;
-    }
     final var permissionType =
         isStartEvent
             ? PermissionType.CREATE_PROCESS_INSTANCE
@@ -179,7 +177,8 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
     return ProcessingError.UNEXPECTED_ERROR;
   }
 
-  private void triggerSignal(final TypedRecord<SignalRecord> command, final long eventKey) {
+  private void triggerSignal(
+      final TypedRecord<SignalRecord> command, final long eventKey, final boolean isAuthNeeded) {
     final var signalRecord = command.getValue();
 
     final List<SignalSubscription> subscriptions = new ArrayList<>();
@@ -189,7 +188,9 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
         subscription -> {
           final var subscriptionRecord = subscription.getRecord();
           final var isStartEvent = subscriptionRecord.getCatchEventInstanceKey() == -1;
-          checkAuthorization(command, isStartEvent, subscriptionRecord);
+          if (isAuthNeeded) {
+            checkAuthorization(command, isStartEvent, subscriptionRecord);
+          }
           final var copiedSubscription = new SignalSubscription();
           copiedSubscription.copyFrom(subscription);
           subscriptions.add(copiedSubscription);
