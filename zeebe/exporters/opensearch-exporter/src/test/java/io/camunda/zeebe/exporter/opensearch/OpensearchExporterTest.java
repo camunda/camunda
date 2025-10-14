@@ -335,11 +335,14 @@ final class OpensearchExporterTest {
       // when
       final var recordMock = mock(Record.class);
       when(recordMock.getValueType()).thenReturn(valueType);
-      when(recordMock.getBrokerVersion()).thenReturn(VersionUtil.getPreviousVersion());
+      final var currentVersion = VersionUtil.getSemanticVersion().get();
+      final String previousMinorVersion =
+          "%d.%d.0".formatted(currentVersion.major(), currentVersion.minor() - 1);
+      when(recordMock.getBrokerVersion()).thenReturn(previousMinorVersion);
       exporter.export(recordMock);
 
       // then
-      verify(client, times(1)).putIndexTemplate(valueType, VersionUtil.getPreviousVersion());
+      verify(client, times(1)).putIndexTemplate(valueType, previousMinorVersion);
     }
   }
 
