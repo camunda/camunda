@@ -18,7 +18,7 @@ import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.TenantMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.sort.TenantMemberSort;
@@ -50,7 +50,8 @@ public class TenantMemberIT {
     final var searchResult =
         reader.search(
             new TenantMemberQuery(
-                TenantFilter.of(b -> b.memberType(EntityType.USER).joinParentId(tenant.tenantId())),
+                TenantMemberFilter.of(
+                    b -> b.memberType(EntityType.USER).tenantId(tenant.tenantId())),
                 TenantMemberSort.of(b -> b),
                 SearchQueryPage.of(b -> b)),
             ResourceAccessChecks.disabled());

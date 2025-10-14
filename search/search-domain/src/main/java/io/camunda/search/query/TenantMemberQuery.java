@@ -8,7 +8,7 @@
 package io.camunda.search.query;
 
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.TenantMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.SortOptionBuilders;
 import io.camunda.search.sort.TenantMemberSort;
@@ -16,8 +16,9 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record TenantMemberQuery(TenantFilter filter, TenantMemberSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<TenantFilter, TenantMemberSort> {
+public record TenantMemberQuery(
+    TenantMemberFilter filter, TenantMemberSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<TenantMemberFilter, TenantMemberSort> {
 
   public static TenantMemberQuery of(
       final Function<TenantMemberQuery.Builder, ObjectBuilder<TenantMemberQuery>> fn) {
@@ -30,16 +31,16 @@ public record TenantMemberQuery(TenantFilter filter, TenantMemberSort sort, Sear
 
   public static final class Builder extends AbstractQueryBuilder<TenantMemberQuery.Builder>
       implements TypedSearchQueryBuilder<
-          TenantMemberQuery, TenantMemberQuery.Builder, TenantFilter, TenantMemberSort> {
+          TenantMemberQuery, TenantMemberQuery.Builder, TenantMemberFilter, TenantMemberSort> {
 
-    private static final TenantFilter EMPTY_FILTER = FilterBuilders.tenant().build();
+    private static final TenantMemberFilter EMPTY_FILTER = FilterBuilders.tenantMember().build();
     private static final TenantMemberSort EMPTY_SORT = SortOptionBuilders.tenantMember().build();
 
-    private TenantFilter filter;
+    private TenantMemberFilter filter;
     private TenantMemberSort sort;
 
     @Override
-    public TenantMemberQuery.Builder filter(final TenantFilter value) {
+    public TenantMemberQuery.Builder filter(final TenantMemberFilter value) {
       filter = value;
       return this;
     }
@@ -51,8 +52,8 @@ public record TenantMemberQuery(TenantFilter filter, TenantMemberSort sort, Sear
     }
 
     public TenantMemberQuery.Builder filter(
-        final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
-      return filter(FilterBuilders.tenant(fn));
+        final Function<TenantMemberFilter.Builder, ObjectBuilder<TenantMemberFilter>> fn) {
+      return filter(FilterBuilders.tenantMember(fn));
     }
 
     public TenantMemberQuery.Builder sort(

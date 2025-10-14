@@ -36,7 +36,7 @@
     SELECT COUNT(*)
     FROM ${prefix}TENANT_MEMBER tm
     JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
-    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
   </select>
 
   <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery"
@@ -51,7 +51,7 @@
     tm.ENTITY_TYPE
     FROM ${prefix}TENANT_MEMBER tm
     JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
-    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -76,16 +76,6 @@
         </foreach>
       </if>
       <if test="filter.name != null">AND NAME = #{filter.name}</if>
-
-      <if test="filter.joinParentId != null">
-        <!-- only used for tenantMember search -->
-        AND t.TENANT_ID = #{filter.joinParentId}
-      </if>
-
-      <if test="filter.entityType != null">
-        <!-- only used for tenantMember search -->
-        AND tm.ENTITY_TYPE = #{filter.entityType}
-      </if>
 
       <if
         test="filter.memberIds != null and !filter.memberIds.isEmpty() and filter.childMemberType != null">
@@ -112,6 +102,27 @@
           </foreach>
         </where>
         )
+      </if>
+    </where>
+  </sql>
+
+  <sql id="searchMemberFilter">
+    <where>
+      <!-- authorization filters -->
+      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+        AND TENANT_ID IN
+        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+          close=")">
+          #{resourceId}
+        </foreach>
+      </if>
+
+      <if test="filter.tenantId != null">
+        AND t.TENANT_ID = #{filter.tenantId}
+      </if>
+
+      <if test="filter.entityType != null">
+        AND tm.ENTITY_TYPE = #{filter.entityType}
       </if>
     </where>
   </sql>

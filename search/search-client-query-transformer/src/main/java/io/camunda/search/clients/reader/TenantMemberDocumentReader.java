@@ -37,7 +37,7 @@ public class TenantMemberDocumentReader extends DocumentBasedReader implements T
   public Set<String> getTenantMembers(final String tenantId, final EntityType entityType) {
     final var tenantMemberQuery =
         TenantMemberQuery.of(
-            b -> b.filter(f -> f.joinParentId(tenantId).memberType(entityType)).unlimited());
+            b -> b.filter(f -> f.tenantId(tenantId).memberType(entityType)).unlimited());
     return search(tenantMemberQuery, ResourceAccessChecks.disabled()).items().stream()
         .map(TenantMemberEntity::id)
         .collect(Collectors.toSet());

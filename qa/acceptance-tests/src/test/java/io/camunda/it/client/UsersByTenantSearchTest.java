@@ -18,7 +18,6 @@ import io.camunda.zeebe.test.util.Strings;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class UsersByTenantSearchTest {
@@ -64,7 +63,6 @@ public class UsersByTenantSearchTest {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnUsersByTenantSorted() {
     final var roles =
         camundaClient

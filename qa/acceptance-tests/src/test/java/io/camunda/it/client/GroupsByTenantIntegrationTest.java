@@ -22,7 +22,6 @@ import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class GroupsByTenantIntegrationTest {
@@ -80,7 +79,6 @@ public class GroupsByTenantIntegrationTest {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldReturnGroupsByTenantSortedByTenantIdDesc() {
     final List<TenantGroup> groups =
         camundaClient

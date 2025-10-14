@@ -437,7 +437,7 @@ public class TenantController {
   private TenantMemberQuery buildTenantMemberQuery(
       final String tenantId, final EntityType memberType, final TenantMemberQuery query) {
     return query.toBuilder()
-        .filter(query.filter().toBuilder().joinParentId(tenantId).memberType(memberType).build())
+        .filter(query.filter().toBuilder().tenantId(tenantId).memberType(memberType).build())
         .build();
   }
 

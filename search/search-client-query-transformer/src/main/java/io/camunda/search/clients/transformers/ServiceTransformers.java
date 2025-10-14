@@ -88,6 +88,7 @@ import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFi
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.SequenceFlowFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
+import io.camunda.search.clients.transformers.filter.TenantMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsTUFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
@@ -147,6 +148,7 @@ import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.TenantMemberFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.filter.UserFilter;
@@ -467,6 +469,9 @@ public final class ServiceTransformers {
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
+    mappers.put(
+        TenantMemberFilter.class,
+        new TenantMemberFilterTransformer(indexDescriptors.get(TenantIndex.class)));
     mappers.put(
         UsageMetricsFilter.class,
         new UsageMetricsFilterTransformer(indexDescriptors.get(UsageMetricTemplate.class)));
