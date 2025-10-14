@@ -20,6 +20,7 @@ public final class S3LeaseConfig {
   private Optional<Duration> apiCallTimeout = Optional.empty();
   private Optional<String> basePath = Optional.empty();
   private Duration connectionAcquisitionTimeout = Duration.ofSeconds(45);
+  private Duration leaseExpiryDuration = Duration.ofSeconds(60);
 
   public S3LeaseConfig() {}
 
@@ -95,27 +96,59 @@ public final class S3LeaseConfig {
     return connectionAcquisitionTimeout;
   }
 
-  @Override
-  public int hashCode() {
-    return Objects.hash(
-        bucketName, endpoint, region, apiCallTimeout, basePath, connectionAcquisitionTimeout);
+  public String getAccessKey() {
+    return accessKey;
+  }
+
+  public void setAccessKey(final String accessKey) {
+    this.accessKey = accessKey;
+  }
+
+  public String getSecretKey() {
+    return secretKey;
+  }
+
+  public void setSecretKey(final String secretKey) {
+    this.secretKey = secretKey;
+  }
+
+  public Duration getLeaseExpiryDuration() {
+    return leaseExpiryDuration;
+  }
+
+  public void setLeaseExpiryDuration(final Duration leaseExpiryDuration) {
+    this.leaseExpiryDuration = leaseExpiryDuration;
   }
 
   @Override
-  public boolean equals(final Object obj) {
-    if (obj == this) {
-      return true;
-    }
-    if (obj == null || obj.getClass() != getClass()) {
+  public int hashCode() {
+    return Objects.hash(
+        bucketName,
+        endpoint,
+        region,
+        accessKey,
+        secretKey,
+        apiCallTimeout,
+        basePath,
+        connectionAcquisitionTimeout,
+        leaseExpiryDuration);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    final var that = (S3LeaseConfig) obj;
+    final S3LeaseConfig that = (S3LeaseConfig) o;
     return Objects.equals(bucketName, that.bucketName)
         && Objects.equals(endpoint, that.endpoint)
         && Objects.equals(region, that.region)
+        && Objects.equals(accessKey, that.accessKey)
+        && Objects.equals(secretKey, that.secretKey)
         && Objects.equals(apiCallTimeout, that.apiCallTimeout)
         && Objects.equals(basePath, that.basePath)
-        && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout);
+        && Objects.equals(connectionAcquisitionTimeout, that.connectionAcquisitionTimeout)
+        && Objects.equals(leaseExpiryDuration, that.leaseExpiryDuration);
   }
 
   @Override
@@ -139,21 +172,5 @@ public final class S3LeaseConfig {
         + "connectionAcquisitionTimeout="
         + connectionAcquisitionTimeout
         + ']';
-  }
-
-  public String getAccessKey() {
-    return accessKey;
-  }
-
-  public void setAccessKey(final String accessKey) {
-    this.accessKey = accessKey;
-  }
-
-  public String getSecretKey() {
-    return secretKey;
-  }
-
-  public void setSecretKey(final String secretKey) {
-    this.secretKey = secretKey;
   }
 }

@@ -153,7 +153,7 @@ public class NodeIdMapper implements Closeable {
               }
             },
             1,
-            S3Lease.LEASE_EXPIRY_SECONDS / 6, // 10sec
+            Math.max(lease.expiryDuration().toSeconds() / 6, 1), // 10sec
             TimeUnit.SECONDS);
   }
 

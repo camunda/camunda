@@ -80,6 +80,11 @@ public abstract class AbstractLeaseClient implements LeaseClient {
     return currentLease;
   }
 
+  @Override
+  public Duration expiryDuration() {
+    return leaseExpirationDuration;
+  }
+
   // Atomic operation
   protected abstract Lease tryAcquireLease(int id);
 

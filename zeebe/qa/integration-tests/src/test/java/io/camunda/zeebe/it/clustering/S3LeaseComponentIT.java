@@ -35,6 +35,7 @@ import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.core.async.AsyncResponseTransformer;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3AsyncClient;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
 public class S3LeaseComponentIT {
 
@@ -45,6 +46,7 @@ public class S3LeaseComponentIT {
   public static final Region REGION = Region.EU_NORTH_1;
   public static S3AsyncClient s3Client;
   private static final String BUCKET_NAME = "";
+  private static final Duration LEASE_EXPIRY_DURATION = Duration.ofSeconds(5);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final int CLUSTER_SIZE = 30;
   private static final List<Integer> ids = IntStream.range(0, CLUSTER_SIZE).boxed().toList();
@@ -76,6 +78,14 @@ public class S3LeaseComponentIT {
 
   @BeforeEach
   void setup() {
+    for (int i = 0; i < CLUSTER_SIZE; i++) {
+      try {
+        s3Client.deleteObject(
+            DeleteObjectRequest.builder().bucket(BUCKET_NAME).key(S3Lease.objectKey(i)).build());
+      } catch (final Exception e) {
+        System.err.println("failed to delete object for node=" + i);
+      }
+    }
     final var futures =
         ids.stream()
             .map(i -> CompletableFuture.supplyAsync(() -> createNodeIdMapper(i)))
@@ -105,17 +115,10 @@ public class S3LeaseComponentIT {
   @Test
   void lease() {
     // given
+    startMappers();
     // nodeMappers setup
 
     // when
-    final var acquiredIds =
-        CompletableFuture.allOf(
-            Arrays.stream(nodeIdMappers)
-                .map(m -> CompletableFuture.supplyAsync(m::start, executor))
-                .toArray(CompletableFuture[]::new));
-
-    // then
-    Awaitility.await().untilAsserted(() -> assertThat(acquiredIds).isCompleted());
 
     ids.forEach(
         brokerId -> {
@@ -150,6 +153,7 @@ public class S3LeaseComponentIT {
   @Test
   void acquireANewLeaseWhenNodeRestarts() {
     // given
+    startMappers();
     // when
     final var previousTimestamp = nodeIdMappers[0].expiresAt();
     nodeIdMappers[0].close();
@@ -162,10 +166,48 @@ public class S3LeaseComponentIT {
     assertThat(nodeIdMappers[0].expiresAt()).isGreaterThan(previousTimestamp);
   }
 
+  @Test
+  void shouldRenewLeaseConstantly() {
+    // given
+    startMappers();
+    Awaitility.await("Until all leases are acquired")
+        .untilAsserted(
+            () -> assertThat(expirations()).allSatisfy(l -> assertThat(l).isGreaterThan(0)));
+    final var timestamps = expirations();
+
+    // then
+    Awaitility.await("All leases have been renewed")
+        .atMost(LEASE_EXPIRY_DURATION.multipliedBy(4))
+        .untilAsserted(
+            () -> {
+              final var newTimestamps = expirations();
+              for (int i = 0; i < CLUSTER_SIZE; i++) {
+                assertThat(newTimestamps.get(i)).isGreaterThan(timestamps.get(i));
+              }
+            });
+  }
+
   private NodeIdMapper createNodeIdMapper(final int i) {
     final var taskId = NodeIdMapper.randomTaskId();
-    final var lease = new S3Lease(s3Client, BUCKET_NAME, taskId, CLUSTER_SIZE, Clock.systemUTC());
+    final var lease =
+        new S3Lease(
+            s3Client, BUCKET_NAME, taskId, CLUSTER_SIZE, LEASE_EXPIRY_DURATION, Clock.systemUTC());
     return new NodeIdMapper(
         lease, () -> System.err.println("Failed to renew lease for taskId " + taskId));
+  }
+
+  private List<Long> expirations() {
+    return Arrays.stream(nodeIdMappers).map(NodeIdMapper::expiresAt).toList();
+  }
+
+  private void startMappers() {
+    final var acquiredIds =
+        CompletableFuture.allOf(
+            Arrays.stream(nodeIdMappers)
+                .map(m -> CompletableFuture.supplyAsync(m::start, executor))
+                .toArray(CompletableFuture[]::new));
+
+    // then
+    Awaitility.await().untilAsserted(() -> assertThat(acquiredIds).isCompleted());
   }
 }

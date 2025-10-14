@@ -28,6 +28,8 @@ public interface LeaseClient {
 
   void releaseLease();
 
+  Duration expiryDuration();
+
   record Lease(
       String taskId, long timestamp, NodeInstance nodeInstance, NodeIdMappings nodeIdMappings) {
     public Lease(final String taskId, final long timestamp, final NodeInstance nodeInstance) {

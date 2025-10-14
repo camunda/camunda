@@ -32,7 +32,6 @@ import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 public class S3Lease extends AbstractLeaseClient {
-  public static final int LEASE_EXPIRY_SECONDS = 60;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_METADATA_KEY = "taskid";
@@ -52,8 +51,9 @@ public class S3Lease extends AbstractLeaseClient {
       final String bucketName,
       final String taskId,
       final int clusterSize,
+      final Duration leaseExpiryDuration,
       final Clock clock) {
-    super(clusterSize, taskId, Clock.systemUTC(), Duration.ofSeconds(LEASE_EXPIRY_SECONDS));
+    super(clusterSize, taskId, Clock.systemUTC(), leaseExpiryDuration);
     this.client = client;
     this.bucketName = bucketName;
     this.clock = clock;
@@ -61,7 +61,7 @@ public class S3Lease extends AbstractLeaseClient {
 
   public S3Lease(
       final S3LeaseConfig config, final String taskId, final int clusterSize, final Clock clock) {
-    super(clusterSize, taskId, clock, Duration.ofSeconds(LEASE_EXPIRY_SECONDS));
+    super(clusterSize, taskId, clock, config.getLeaseExpiryDuration());
     client = buildClient(config);
     bucketName = config.bucketName();
     this.clock = clock;
