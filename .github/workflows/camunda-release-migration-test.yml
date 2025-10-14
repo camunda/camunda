@@ -172,6 +172,7 @@ jobs:
           --namespace ${{ inputs.name }}
           --create-namespace
           --render-subchart-notes
+          --version 12.6.2
       - name: Summarize deployment
         if: success()
         run: |
@@ -263,9 +264,6 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@v4
-        with:
-          repository: 'camunda/camunda-platform-helm'
-          ref: 'main'
       - uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
@@ -308,8 +306,7 @@ jobs:
       - name: Upgrade platform
         id: upgrade-platform
         run: |
-          helm dependency build charts/camunda-platform-8.8/
-          helm upgrade ${{ inputs.name }} charts/camunda-platform-8.8/ \
+          helm upgrade ${{ inputs.name }} camunda/camunda-platform \
           --wait --wait-for-jobs --timeout 35m0s \
           --namespace ${{ inputs.name }} \
           --render-subchart-notes \
@@ -333,7 +330,8 @@ jobs:
           --set orchestration.migration.identity.secret.existingSecretKey=identity-orchestration-client-token \
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
-          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token          
+          --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
+          --version 13.0.0
       - name: Summarize deployment
         if: success()
         run: |
