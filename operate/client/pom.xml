@@ -51,7 +51,7 @@
             </goals>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <arguments>version --new-version=${project.version} --no-git-tag-version</arguments>
+              <arguments>version ${project.version} --no-git-tag-version --allow-same-version</arguments>
             </configuration>
           </execution>
 
