@@ -28,11 +28,11 @@ COPY .github/actions/build-platform-docker/99apt-timeout-and-retries /etc/apt/ap
 # caching them could break stuff (like not knowing the package is present) or container scanners
 # hadolint ignore=DL3008
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
-    --mount=type=cache,target=/var/lib/apt,sharing=locked \
-    --mount=type=cache,target=/var/log/apt,sharing=locked \
-    apt-get -qq update && \
-    apt-get install -yqq --no-install-recommends tini ca-certificates systemd perl && \
-    apt-get upgrade -yqq --no-install-recommends systemd perl
+  --mount=type=cache,target=/var/lib/apt,sharing=locked \
+  --mount=type=cache,target=/var/log/apt,sharing=locked \
+  apt-get -qq update && \
+  apt-get install -yqq --no-install-recommends tini ca-certificates systemd perl && \
+  apt-get upgrade -yqq --no-install-recommends systemd perl curl
 
 ### Build custom JRE using the base JDK image
 # hadolint ignore=DL3006
@@ -48,13 +48,13 @@ FROM ${JDK_IMAGE}@${JDK_DIGEST} AS jre-build
 # see https://github.com/openzipkin/docker-java/issues/34
 ENV JAVA_TOOL_OPTIONS "-Djdk.lang.Process.launchMechanism=vfork"
 RUN jlink \
-     --add-modules ALL-MODULE-PATH \
-     --strip-debug \
-     --no-man-pages \
-     --no-header-files \
-     --compress=2 \
-     --output /jre && \
-   rm -rf /jre/lib/src.zip
+  --add-modules ALL-MODULE-PATH \
+  --strip-debug \
+  --no-man-pages \
+  --no-header-files \
+  --compress=2 \
+  --output /jre && \
+  rm -rf /jre/lib/src.zip
 
 ### Java base image
 FROM base AS java
@@ -84,8 +84,8 @@ WORKDIR /zeebe
 ENV MAVEN_OPTS -XX:MaxRAMPercentage=80
 COPY --link . ./
 RUN --mount=type=cache,target=/root/.m2,rw \
-    ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
-    mv dist/target/camunda-zeebe .
+  ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
+  mv dist/target/camunda-zeebe .
 
 ### Extract zeebe from distball ###
 # hadolint ignore=DL3006
@@ -95,7 +95,7 @@ ARG DISTBALL="dist/target/camunda-zeebe-*.tar.gz"
 COPY --link ${DISTBALL} zeebe.tar.gz
 
 RUN mkdir camunda-zeebe && \
-    tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
+  tar xfvz zeebe.tar.gz --strip 1 -C camunda-zeebe
 
 ### Image containing the zeebe distribution ###
 # hadolint ignore=DL3006
@@ -138,8 +138,8 @@ LABEL io.openshift.min-memory="512Mi"
 LABEL io.openshift.min-cpu="1"
 
 ENV ZB_HOME=/usr/local/zeebe \
-    ZEEBE_STANDALONE_GATEWAY=false \
-    ZEEBE_RESTORE=false
+  ZEEBE_STANDALONE_GATEWAY=false \
+  ZEEBE_RESTORE=false
 ENV PATH "${ZB_HOME}/bin:${PATH}"
 # Disable RocksDB runtime check for musl, which launches `ldd` as a shell process
 # We know there's no need to check for musl on this image
@@ -153,14 +153,14 @@ VOLUME ${ZB_HOME}/logs
 VOLUME /driver-lib
 
 RUN groupadd --gid 1001 camunda && \
-    useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
-    chmod g=u /etc/passwd && \
-    # These directories are to be mounted by users, eagerly creating them and setting ownership
-    # helps to avoid potential permission issues due to default volume ownership.
-    mkdir ${ZB_HOME}/data && \
-    mkdir ${ZB_HOME}/logs && \
-    chown -R 1001:0 ${ZB_HOME} && \
-    chmod -R 0775 ${ZB_HOME}
+  useradd --system --gid 1001 --uid 1001 --home ${ZB_HOME} camunda && \
+  chmod g=u /etc/passwd && \
+  # These directories are to be mounted by users, eagerly creating them and setting ownership
+  # helps to avoid potential permission issues due to default volume ownership.
+  mkdir ${ZB_HOME}/data && \
+  mkdir ${ZB_HOME}/logs && \
+  chown -R 1001:0 ${ZB_HOME} && \
+  chmod -R 0775 ${ZB_HOME}
 
 COPY --link --chown=1001:0 zeebe/docker/utils/startup.sh /usr/local/bin/startup.sh
 COPY --from=dist --chown=1001:0 /zeebe/camunda-zeebe ${ZB_HOME}
