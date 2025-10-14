@@ -8,6 +8,7 @@
     <bpmn:startEvent id="StartEvent_1" name="start">
       <bpmn:extensionElements>
         <zeebe:properties>
+          <zeebe:property />
           <zeebe:property name="publicAccess" />
         </zeebe:properties>
       </bpmn:extensionElements>
