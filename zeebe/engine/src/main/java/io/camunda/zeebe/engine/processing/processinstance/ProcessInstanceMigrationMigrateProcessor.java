@@ -9,6 +9,8 @@ package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.engine.processing.processinstance.ProcessInstanceMigrationPreconditions.*;
 import static io.camunda.zeebe.engine.state.immutable.IncidentState.MISSING_INCIDENT;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_ELEMENTS;
+import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
 
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -225,16 +227,13 @@ public class ProcessInstanceMigrationMigrateProcessor
                     ProcessInstanceMigrationMappingInstructionValue::getSourceElementId,
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
 
-    mappingInstructions.forEach(
-        instruction -> {
-          final var sourceElement =
-              sourceProcessDefinition.getProcess().getElementById(instruction.getSourceElementId());
-          if (sourceElement.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
-            mappedElementIds.put(
-                instruction.getSourceElementId() + "#innerInstance",
-                instruction.getTargetElementId() + "#innerInstance");
-          }
-        });
+    mappingInstructions.stream()
+        .filter(instruction -> isAdHocSubProcess(sourceProcessDefinition, instruction.getSourceElementId()))
+        .forEach(
+            instruction ->
+                mappedElementIds.put(
+                    instruction.getSourceElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX,
+                    instruction.getTargetElementId() + AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX));
 
     // users don't provide a mapping instruction for the bpmn process id
     mappedElementIds.put(
@@ -420,22 +419,28 @@ public class ProcessInstanceMigrationMigrateProcessor
               .setVariables(NIL_VALUE));
     }
 
-    if (elementInstanceRecord.getBpmnElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
+    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
       final var targetAhsp =
           (ExecutableAdHocSubProcess)
               targetProcessDefinition
                   .getProcess()
-                  .getElementById(sourceElementIdToTargetElementId.get(elementId));
+                  .getElementById(targetElementId);
 
-      variableRecord
-          .setScopeKey(elementInstance.getKey())
-          .setName(BufferUtil.wrapString("adHocSubProcessElements"))
-          .setValue(targetAhsp.getAdHocActivitiesMetadata())
-          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-          .setProcessDefinitionKey(targetProcessDefinition.getKey())
-          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-          .setTenantId(elementInstance.getValue().getTenantId());
-      stateWriter.appendFollowUpEvent(111L, VariableIntent.UPDATED, variableRecord);
+      variableState
+          .getVariablesLocal(elementInstance.getKey())
+          .forEach(
+              variable ->
+                  stateWriter.appendFollowUpEvent(
+                      variable.key(),
+                      VariableIntent.MIGRATED,
+                      variableRecord
+                          .setScopeKey(elementInstance.getKey())
+                          .setName(BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS))
+                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
+                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                          .setTenantId(elementInstance.getValue().getTenantId())));
     }
 
     variableState
@@ -706,6 +711,18 @@ public class ProcessInstanceMigrationMigrateProcessor
         .resetProcessDefinitionPath();
 
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
+  }
+
+  private static boolean isAdHocSubProcess(
+      final DeployedProcess sourceProcessDefinition,
+      final String elementId) {
+    final var sourceElement =
+        sourceProcessDefinition.getProcess().getElementById(elementId);
+    return isAdHocSubProcess(sourceElement.getElementType());
+  }
+
+  private static boolean isAdHocSubProcess(final BpmnElementType elementType) {
+    return elementType == BpmnElementType.AD_HOC_SUB_PROCESS;
   }
 
   /**
