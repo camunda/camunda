@@ -120,8 +120,7 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
             .addResourceId(subscriptionRecord.getBpmnProcessId());
 
     final var isAuthorized =
-        authCheckBehavior.isAuthorized(
-            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference());
+        authCheckBehavior.isAuthorized(authRequest);
     if (isAuthorized.isLeft()) {
       throw new ForbiddenException(authRequest);
     }
