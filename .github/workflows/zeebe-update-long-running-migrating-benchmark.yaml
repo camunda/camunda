@@ -23,7 +23,7 @@ jobs:
     name: Update Long Running Migrating Benchmark with mixed load
     needs:
       - fetch-release
-    uses: ./.github/workflows/zeebe-benchmark.yml
+    uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: release-rolling
