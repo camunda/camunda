@@ -87,7 +87,7 @@ public final class ProcessModelReader {
 
   private boolean isPublic(final ZeebeProperties properties) {
     return properties.getProperties().stream()
-        .filter(zp -> zp.getName().equals(PUBLIC_ACCESS))
+        .filter(zp -> PUBLIC_ACCESS.equals(zp.getName()))
         .findFirst()
         .map(zp -> Boolean.parseBoolean(zp.getValue()))
         .orElse(false);
