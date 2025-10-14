@@ -43,6 +43,16 @@ const queryKeys = {
       processDefinitionKey,
     ],
   },
+  incidents: {
+    searchByProcessInstanceKey: (processInstanceKey: string) => [
+      'incidentsSearchByProcessInstanceKey',
+      processInstanceKey,
+    ],
+    searchByElementInstanceKey: (elementInstanceKey: string) => [
+      'incidentsSearchByElementInstanceKey',
+      elementInstanceKey,
+    ],
+  },
 };
 
 export {queryKeys};

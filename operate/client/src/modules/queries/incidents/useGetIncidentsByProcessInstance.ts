@@ -9,8 +9,7 @@
 import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
-
-const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearchByProcessInstance';
+import {queryKeys} from '../queryKeys';
 
 type QueryOptions<T> = {
   enabled?: boolean;
@@ -23,7 +22,8 @@ const useGetIncidentsByProcessInstance = <T = QueryIncidentsResponseBody>(
   options?: QueryOptions<T>,
 ) => {
   return useQuery({
-    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, processInstanceKey],
+    queryKey:
+      queryKeys.incidents.searchByProcessInstanceKey(processInstanceKey),
     refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
     enabled: options?.enabled ?? !!processInstanceKey,
     select: options?.select,

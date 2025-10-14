@@ -8,8 +8,7 @@
 
 import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
-
-const INCIDENTS_SEARCH_QUERY_KEY = 'incidentsSearchByElementInstance';
+import {queryKeys} from '../queryKeys';
 
 type QueryOptions<T> = {
   enabled?: boolean;
@@ -22,7 +21,8 @@ const useGetIncidentsByElementInstance = <T = QueryIncidentsResponseBody>(
   options?: QueryOptions<T>,
 ) => {
   return useQuery({
-    queryKey: [INCIDENTS_SEARCH_QUERY_KEY, elementInstanceKey],
+    queryKey:
+      queryKeys.incidents.searchByElementInstanceKey(elementInstanceKey),
     refetchInterval: () => (options?.enablePeriodicRefetch ? 5000 : false),
     enabled: options?.enabled ?? !!elementInstanceKey,
     select: options?.select,
