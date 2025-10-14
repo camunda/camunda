@@ -257,7 +257,7 @@ public class ProcessModelReaderTest {
   }
 
   @Test
-  void shouldIgnoreEmptyProperty() throws IOException {
+  void shouldIgnoreEmptyPropertyWhenParsingPublicAccess() throws IOException {
     final String processId = "test-empty-property";
     final var bpmnBytes = parseBpmnResourceXml("process-with-empty-property.bpmn");
 
