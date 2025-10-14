@@ -51,6 +51,14 @@ public class SecondaryStorageElasticsearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final String EXPECTED_INCIDENT_NOTIFIER_WEBHOOK =
+      "https://test-webhook.example.com";
+  private static final String EXPECTED_INCIDENT_NOTIFIER_AUTH0_DOMAIN = "test-domain.auth0.com";
+  private static final String EXPECTED_INCIDENT_NOTIFIER_AUTH0_PROTOCOL = "https";
+  private static final String EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_ID = "test-client-id";
+  private static final String EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_SECRET = "test-client-secret";
+  private static final String EXPECTED_INCIDENT_NOTIFIER_M2M_AUDIENCE = "test-audience";
+
   private static final int EXPECTED_BATCH_OPERATION_CACHE_MAX_SIZE = 5_000;
   private static final int EXPECTED_PROCESS_CACHE_MAX_SIZE = 15_000;
   private static final int EXPECTED_FORM_CACHE_MAX_SIZE = 20_000;
@@ -79,6 +87,18 @@ public class SecondaryStorageElasticsearchTest {
             + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.elasticsearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.webhook="
+            + EXPECTED_INCIDENT_NOTIFIER_WEBHOOK,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.auth0-domain="
+            + EXPECTED_INCIDENT_NOTIFIER_AUTH0_DOMAIN,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.auth0-protocol="
+            + EXPECTED_INCIDENT_NOTIFIER_AUTH0_PROTOCOL,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.m2m-client-id="
+            + EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_ID,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.m2m-client-secret="
+            + EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_SECRET,
+        "camunda.data.secondary-storage.elasticsearch.incident-notifier.m2m-audience="
+            + EXPECTED_INCIDENT_NOTIFIER_M2M_AUDIENCE,
         "camunda.data.secondary-storage.elasticsearch.post-export.batch-size="
             + EXPECTED_POST_EXPORT_BATCH_SIZE,
         "camunda.data.secondary-storage.elasticsearch.post-export.delay-between-runs=3s",
@@ -163,6 +183,18 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getNotifier().getWebhook())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_WEBHOOK);
+      assertThat(exporterConfiguration.getNotifier().getAuth0Domain())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_AUTH0_DOMAIN);
+      assertThat(exporterConfiguration.getNotifier().getAuth0Protocol())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_AUTH0_PROTOCOL);
+      assertThat(exporterConfiguration.getNotifier().getM2mClientId())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_ID);
+      assertThat(exporterConfiguration.getNotifier().getM2mClientSecret())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_M2M_CLIENT_SECRET);
+      assertThat(exporterConfiguration.getNotifier().getM2mAudience())
+          .isEqualTo(EXPECTED_INCIDENT_NOTIFIER_M2M_AUDIENCE);
       assertThat(exporterConfiguration.getPostExport().getBatchSize())
           .isEqualTo(EXPECTED_POST_EXPORT_BATCH_SIZE);
       assertThat(exporterConfiguration.getPostExport().getDelayBetweenRuns())
