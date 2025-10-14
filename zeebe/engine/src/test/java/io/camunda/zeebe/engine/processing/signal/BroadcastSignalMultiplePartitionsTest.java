@@ -158,7 +158,7 @@ public class BroadcastSignalMultiplePartitionsTest {
     waitForSignalSubscriptions(signalName);
 
     // when
-    ENGINE.signal().withSignalName(signalName).broadcast(user.getUsername());
+    ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
     // then (rejection on partition hosting unauthorized process)
     assertThat(
