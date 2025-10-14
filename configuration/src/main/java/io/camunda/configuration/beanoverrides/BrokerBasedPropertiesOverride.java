@@ -581,6 +581,10 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+    setArg(
+        args,
+        "batchOperation.exportItemsOnCreation",
+        database.getBatchOperations().isExportItemsOnCreation());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
