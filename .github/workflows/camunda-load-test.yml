@@ -1,0 +1,347 @@
+# description: This workflow deploys a load test with a camunda cluster under test.
+# We use this worklow to start weekly medic load tests.
+# The health of the cluster and results of the load tests are monitored by Core team's regularly.
+# https://grafana.dev.zeebe.io/login
+# called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
+# type: CI
+# owner: @camunda/core-features
+name: Camunda load test
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test'
+        required: true
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
+        default: 'stable/8.8'
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the load test on'
+        default: 'zeebe-cluster'
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        required: false
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        required: false
+      stable-vms:
+        description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the load test'
+        type: string
+        default: ""
+        required: false
+      realistic:
+        description: 'Should run a realistic load test, with real-world process and load'
+        type: boolean
+        required: false
+        default: false
+  workflow_call:
+    inputs:
+      name:
+        description: 'Specifies the name of the load test'
+        type: string
+        required: true
+      reuse-tag:
+        description: 'Docker image tag, that should be reused for the load test. Allows to skip the docker image build step'
+        type: string
+        default: ""
+        required: false
+      ref:
+        description: 'Specifies the ref (e.g. main or a commit sha) to load test'
+        default: 'main'
+        type: string
+        required: false
+      cluster:
+        description: 'Specifies which cluster to deploy the load test on'
+        default: 'zeebe-cluster'
+        type: string
+        required: false
+      cluster-region:
+        description: 'Specifies the cluster region. Needed to retrieve cluster credentials'
+        default: europe-west1-b
+        type: string
+        required: false
+      load-test-load:
+        description: 'Specifies which load test components to deploy. For example, `starter` can be assigned with the rate at which they start instances. Allows arbitrary helm arguments, like --set starter.rate=100'
+        type: string
+        required: false
+      publish:
+        description: 'Where to publish the results, can be "slack" or "comment"'
+        default: ""
+        type: string
+        required: false
+      stable-vms:
+        description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      operate-tag:
+        description: 'Specifies the tag of operate, when Operate should be included in the load test'
+        type: string
+        default: ""
+        required: false
+      realistic:
+        description: 'Should run a realistic load test, with real-world process and load'
+        type: boolean
+        required: false
+        default: false
+
+env:
+  HELM_CHART: camunda-platform-8.8
+
+jobs:
+  calculate-image-tag:
+    name: Calculate Image Tag
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ inputs.reuse-tag != '' && inputs.reuse-tag || steps.image-tag.outputs.image-tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Get image tag
+        id: image-tag
+        run: |
+          echo "image-tag=${{ inputs.name }}-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+
+  build-camunda-image:
+    name: Build Camunda
+    needs: calculate-image-tag
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/build-frontend
+        name: Build Operate Frontend
+        id: build-operate-fe
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Tasklist Frontend
+        id: build-tasklist-fe
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-frontend
+        name: Build Identity Frontend
+        id: build-identity-fe
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: ./.github/actions/build-zeebe
+        name: Build Camunda Platform
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+      - uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GCR
+        uses: docker/login-action@v3
+        with:
+          registry: gcr.io
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/build-platform-docker
+        name: Build Camunda Docker Image
+        with:
+          repository: 'gcr.io/zeebe-io/zeebe'
+          revision: ${{ inputs.ref }}
+          push: true
+          version: ${{ needs.calculate-image-tag.outputs.image-tag }}
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          dockerfile: 'camunda.Dockerfile'
+
+  build-load-test-images:
+    name: Build Starter and Worker
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: calculate-image-tag
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        id: auth
+        with:
+          token_format: 'access_token'
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - name: Login to GAR
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl zeebe/benchmarks/project -am install
+      - name: Build Starter Image
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+      - name: Build Worker Image
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+
+  deploy-cluster-under-test:
+    name: Deploy cluster under test
+    needs:
+      - calculate-image-tag
+      - build-camunda-image
+      - build-load-test-images
+    # To have the possibility to re-deploy the tests without rebuilding the images,
+    # the deploy will be run, when build is skipped or successful.
+    if: |
+      always() &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: 'camunda/camunda-platform-helm'
+          ref: 'main'
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.5
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Add Camunda Helm repo
+        run: |
+          helm repo add camunda https://helm.camunda.io/
+          helm repo update
+      - name: Find previous Helm chart release version
+        id: find-chart-release
+        run: |
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
+      - name: Build dependencies of Camunda Platform
+        run: helm dependency build charts/${{ env.HELM_CHART }}/
+      - name: Install latest Camunda Platform
+        run: >
+          helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
+          --namespace ${{ inputs.name }}
+          --create-namespace
+          --reuse-values
+          --render-subchart-notes
+          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set orchestration.image.registry=gcr.io
+          --set orchestration.image.repository=zeebe-io/zeebe
+          --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          -f https://raw.githubusercontent.com/camunda/camunda/refs/heads/${{ inputs.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
+          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
+          ${{ inputs.stable-vms && '-f zeebe/benchmarks/setup/default/values-stable.yaml' || '' }}
+      - name: Label namespace
+        run: >
+            kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Camunda platform \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            \`\`\`
+          EOF
+
+  deploy-load-test:
+    name: Deploy load test
+    needs:
+      # We need to depend on calculate-image-tag, so that we can use the output in the job
+      - calculate-image-tag
+      - deploy-cluster-under-test
+      - build-camunda-image
+      - build-load-test-images
+      # To have the possibility to re-deploy the tests without rebuilding the images,
+      # the deploy will be run, when build is skipped or successful.
+    if: |
+      always() &&
+      (needs.build-camunda-image.result == 'success' || needs.build-camunda-image.result == 'skipped') &&
+      (needs.build-load-test-images.result == 'success' || needs.build-load-test-images.result == 'skipped')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v2.3.4
+        with:
+          cluster_name: ${{ inputs.cluster }}
+          location: ${{ inputs.cluster-region }}
+      - name: Add Load test Helm repo
+        run: |
+          helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
+          helm repo update
+      - name: Find previous Helm chart release version
+        id: find-chart-release
+        run: |
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
+      - name: Install load test
+        run: >
+          helm upgrade --install ${{ inputs.name }}-test camunda-load-tests/camunda-load-tests
+          --wait --timeout 35m0s
+          --namespace ${{ inputs.name }}
+          --create-namespace
+          --reuse-values
+          --render-subchart-notes
+          --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
+          ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
+          ${{ inputs.load-test-load }}
+      - name: Summarize deployment
+        if: success()
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Load test \`${{ inputs.name }}\` values
+            \`\`\`yaml
+            $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
+            \`\`\`
+          EOF

@@ -16,7 +16,7 @@ jobs:
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
       (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
-    uses: ./.github/workflows/zeebe-benchmark.yml
+    uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
       name: ${{github.event.pull_request.head.ref}}-benchmark
