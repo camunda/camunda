@@ -28,8 +28,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -111,35 +111,21 @@ public class OpensearchDecisionDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<DecisionDefinition> query, final SearchRequest.Builder request) {
-    final DecisionDefinition filter = query.getFilter();
-
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
-                  queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
-                  queryDSLWrapper.term(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
-                  queryDSLWrapper.term(DecisionDefinition.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.term(DecisionDefinition.NAME, filter.getName()),
-                  queryDSLWrapper.term(DecisionDefinition.VERSION, filter.getVersion()),
-                  queryDSLWrapper.term(
-                      DecisionDefinition.DECISION_REQUIREMENTS_ID,
-                      filter.getDecisionRequirementsId()),
-                  queryDSLWrapper.term(
-                      DecisionDefinition.DECISION_REQUIREMENTS_KEY,
-                      filter.getDecisionRequirementsKey()),
-                  buildFilteringBy(
-                      filter.getDecisionRequirementsName(),
-                      filter.getDecisionRequirementsVersion()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query> collectFilterQueryTerms(
+      @NonNull final DecisionDefinition filter) {
+    return Stream.of(
+        queryDSLWrapper.term(DecisionDefinition.ID, filter.getId()),
+        queryDSLWrapper.term(DecisionDefinition.KEY, filter.getKey()),
+        queryDSLWrapper.term(DecisionDefinition.DECISION_ID, filter.getDecisionId()),
+        queryDSLWrapper.term(DecisionDefinition.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(DecisionDefinition.NAME, filter.getName()),
+        queryDSLWrapper.term(DecisionDefinition.VERSION, filter.getVersion()),
+        queryDSLWrapper.term(
+            DecisionDefinition.DECISION_REQUIREMENTS_ID, filter.getDecisionRequirementsId()),
+        queryDSLWrapper.term(
+            DecisionDefinition.DECISION_REQUIREMENTS_KEY, filter.getDecisionRequirementsKey()),
+        buildFilteringBy(
+            filter.getDecisionRequirementsName(), filter.getDecisionRequirementsVersion()));
   }
 
   @Override

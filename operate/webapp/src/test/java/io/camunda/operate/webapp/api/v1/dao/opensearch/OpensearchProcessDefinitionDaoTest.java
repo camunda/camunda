@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.webapp.api.v1.dao.opensearch;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -68,5 +69,7 @@ public class OpensearchProcessDefinitionDaoTest {
     verify(wrapper, times(1))
         .term(ProcessDefinition.VERSION_TAG, processDefinition.getVersionTag());
     verify(wrapper, times(1)).term(ProcessDefinition.KEY, processDefinition.getKey());
+    // Verify that we don't need to specify a tenantCheck for it to be included
+    verify(wrapper, times(1)).withTenantCheck(any());
   }
 }

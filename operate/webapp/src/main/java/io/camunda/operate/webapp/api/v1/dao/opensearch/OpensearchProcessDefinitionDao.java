@@ -11,7 +11,6 @@ import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessDefinitionDao;
 import io.camunda.operate.webapp.api.v1.entities.ProcessDefinition;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ResourceNotFoundException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -19,11 +18,9 @@ import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -100,26 +97,15 @@ public class OpensearchProcessDefinitionDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<ProcessDefinition> query, final SearchRequest.Builder request) {
-    final ProcessDefinition filter = query.getFilter();
-    if (filter != null) {
-      final var queryTerms =
-          Stream.of(
-                  queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
-                  queryDSLWrapper.term(
-                      ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
-                  queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
-                  queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
-                  queryDSLWrapper.term(ProcessDefinition.VERSION_TAG, filter.getVersionTag()),
-                  queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey()))
-              .filter(Objects::nonNull)
-              .collect(Collectors.toList());
-
-      if (!queryTerms.isEmpty()) {
-        request.query(queryDSLWrapper.and(queryTerms));
-      }
-    }
+  protected Stream<org.opensearch.client.opensearch._types.query_dsl.Query> collectFilterQueryTerms(
+      @NonNull final ProcessDefinition filter) {
+    return Stream.of(
+        queryDSLWrapper.term(ProcessDefinition.NAME, filter.getName()),
+        queryDSLWrapper.term(ProcessDefinition.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
+        queryDSLWrapper.term(ProcessDefinition.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.term(ProcessDefinition.VERSION, filter.getVersion()),
+        queryDSLWrapper.term(ProcessDefinition.VERSION_TAG, filter.getVersionTag()),
+        queryDSLWrapper.term(ProcessDefinition.KEY, filter.getKey()));
   }
 
   @Override

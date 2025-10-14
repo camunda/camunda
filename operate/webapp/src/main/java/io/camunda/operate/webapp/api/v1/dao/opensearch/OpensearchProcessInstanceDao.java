@@ -13,7 +13,6 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.api.v1.dao.ProcessInstanceDao;
 import io.camunda.operate.webapp.api.v1.entities.ChangeStatus;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
-import io.camunda.operate.webapp.api.v1.entities.Query;
 import io.camunda.operate.webapp.api.v1.exceptions.APIException;
 import io.camunda.operate.webapp.api.v1.exceptions.ClientException;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
@@ -23,10 +22,12 @@ import io.camunda.operate.webapp.writer.ProcessInstanceWriter;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
+import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
 @Conditional(OpensearchCondition.class)
@@ -79,49 +80,35 @@ public class OpensearchProcessInstanceDao
   }
 
   @Override
-  protected void buildFiltering(
-      final Query<ProcessInstance> query, final SearchRequest.Builder request) {
-    final List<org.opensearch.client.opensearch._types.query_dsl.Query> queryTerms =
-        new LinkedList<>();
-    queryTerms.add(
+  protected Stream<Query> collectRequiredFilterQueryTerms() {
+    return Stream.of(
         queryDSLWrapper.term(
             ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION));
+  }
 
-    final ProcessInstance filter = query.getFilter();
-
-    if (filter != null) {
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.KEY, filter.getKey()));
-      queryTerms.add(
-          queryDSLWrapper.term(
-              ProcessInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()));
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.PARENT_KEY, filter.getParentKey()));
-      queryTerms.add(
-          queryDSLWrapper.term(
-              ProcessInstance.PARENT_FLOW_NODE_INSTANCE_KEY,
-              filter.getParentFlowNodeInstanceKey()));
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.VERSION, filter.getProcessVersion()));
-      queryTerms.add(
-          queryDSLWrapper.term(ProcessInstance.VERSION_TAG, filter.getProcessVersionTag()));
-      queryTerms.add(
-          queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()));
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()));
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.INCIDENT, filter.getIncident()));
-      queryTerms.add(queryDSLWrapper.term(ProcessInstance.TENANT_ID, filter.getTenantId()));
-      queryTerms.add(
-          queryDSLWrapper.matchDateQuery(
-              ProcessInstance.START_DATE,
-              filter.getStartDate(),
-              dateTimeFormatter.getApiDateTimeFormatString()));
-      queryTerms.add(
-          queryDSLWrapper.matchDateQuery(
-              ProcessInstance.END_DATE,
-              filter.getEndDate(),
-              dateTimeFormatter.getApiDateTimeFormatString()));
-    }
-
-    final var nonNullQueryTerms = queryTerms.stream().filter(Objects::nonNull).toList();
-
-    request.query(queryDSLWrapper.and(nonNullQueryTerms));
+  @Override
+  protected Stream<Query> collectFilterQueryTerms(@NonNull final ProcessInstance filter) {
+    return Stream.of(
+        queryDSLWrapper.term(ProcessInstance.KEY, filter.getKey()),
+        queryDSLWrapper.term(
+            ProcessInstance.PROCESS_DEFINITION_KEY, filter.getProcessDefinitionKey()),
+        queryDSLWrapper.term(ProcessInstance.PARENT_KEY, filter.getParentKey()),
+        queryDSLWrapper.term(
+            ProcessInstance.PARENT_FLOW_NODE_INSTANCE_KEY, filter.getParentFlowNodeInstanceKey()),
+        queryDSLWrapper.term(ProcessInstance.VERSION, filter.getProcessVersion()),
+        queryDSLWrapper.term(ProcessInstance.VERSION_TAG, filter.getProcessVersionTag()),
+        queryDSLWrapper.term(ProcessInstance.BPMN_PROCESS_ID, filter.getBpmnProcessId()),
+        queryDSLWrapper.term(ProcessInstance.STATE, filter.getState()),
+        queryDSLWrapper.term(ProcessInstance.INCIDENT, filter.getIncident()),
+        queryDSLWrapper.term(ProcessInstance.TENANT_ID, filter.getTenantId()),
+        queryDSLWrapper.matchDateQuery(
+            ProcessInstance.START_DATE,
+            filter.getStartDate(),
+            dateTimeFormatter.getApiDateTimeFormatString()),
+        queryDSLWrapper.matchDateQuery(
+            ProcessInstance.END_DATE,
+            filter.getEndDate(),
+            dateTimeFormatter.getApiDateTimeFormatString()));
   }
 
   @Override
