@@ -34,9 +34,10 @@ import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 public class S3Lease extends AbstractLeaseClient {
   public static final int LEASE_EXPIRY_SECONDS = 60;
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  // KEYS MUST BE LOWERCASE
   private static final String TASK_ID_METADATA_KEY = "taskid";
   private static final String EXPIRY_METADATA_KEY = "expiry";
-  private static final String NODE_VERSION_METADATA_KEY = "nodeVersion";
+  private static final String NODE_VERSION_METADATA_KEY = "nodeversion";
 
   private static final Logger LOG = LoggerFactory.getLogger(S3Lease.class);
   private final S3AsyncClient client;
@@ -73,7 +74,7 @@ public class S3Lease extends AbstractLeaseClient {
     }
     final var nodeInstance = lease.nodeInstance();
     final var objectKey = objectKey(nodeInstance.id());
-    final var nextLease = lease.renew(leaseExpirationDuration.toMillis());
+    final var nextLease = lease.renew(clock.millis(), leaseExpirationDuration.toMillis());
     final var nodeVersion = nodeInstance.version();
     final PutObjectRequest putRequest =
         PutObjectRequest.builder()

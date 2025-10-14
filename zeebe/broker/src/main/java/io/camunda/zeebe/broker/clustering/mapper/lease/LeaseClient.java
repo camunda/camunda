@@ -58,8 +58,8 @@ public interface LeaseClient {
       return timestamp + expireDuration.toMillis() > now;
     }
 
-    public Lease renew(final long millis) {
-      return new Lease(taskId, timestamp + millis, nodeInstance, nodeIdMappings);
+    public Lease renew(final long now, final long millis) {
+      return new Lease(taskId, now + millis, nodeInstance, nodeIdMappings);
     }
   }
 }

@@ -12,12 +12,12 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
+import io.camunda.zeebe.broker.clustering.mapper.NodeInstance;
 import io.camunda.zeebe.broker.clustering.mapper.S3LeaseConfig;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
 import java.time.Clock;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -74,6 +74,20 @@ public class S3LeaseComponentIT {
 
   }
 
+  @BeforeEach
+  void setup() {
+    final var futures =
+        ids.stream()
+            .map(i -> CompletableFuture.supplyAsync(() -> createNodeIdMapper(i)))
+            .toArray(CompletableFuture[]::new);
+    CompletableFuture.allOf(futures).join();
+    nodeIdMappers =
+        Arrays.stream(futures)
+            .map(CompletableFuture::join)
+            .map(NodeIdMapper.class::cast)
+            .toArray(NodeIdMapper[]::new);
+  }
+
   @AfterEach
   void afterEach() {
     CloseHelper.closeAll(nodeIdMappers);
@@ -90,31 +104,9 @@ public class S3LeaseComponentIT {
 
   @Test
   void lease() {
-    final List<String> claimedTaskIds = new ArrayList<>();
     // given
+    // nodeMappers setup
 
-    final var futures =
-        ids.stream()
-            .map(
-                i ->
-                    CompletableFuture.supplyAsync(
-                        () -> {
-                          final var taskId = NodeIdMapper.randomTaskId();
-                          final var lease =
-                              new S3Lease(
-                                  s3Client, BUCKET_NAME, taskId, CLUSTER_SIZE, Clock.systemUTC());
-                          return new NodeIdMapper(
-                              lease,
-                              () ->
-                                  System.err.println("Failed to renew lease for taskId " + taskId));
-                        }))
-            .toArray(CompletableFuture[]::new);
-    CompletableFuture.allOf(futures).join();
-    nodeIdMappers =
-        Arrays.stream(futures)
-            .map(CompletableFuture::join)
-            .map(NodeIdMapper.class::cast)
-            .toArray(NodeIdMapper[]::new);
     // when
     final var acquiredIds =
         CompletableFuture.allOf(
@@ -150,9 +142,30 @@ public class S3LeaseComponentIT {
                     assertThat(response.hasMetadata()).isTrue();
                     assertThat(response.metadata()).containsKey("taskid");
                     assertThat(response.metadata().get("taskid")).isNotBlank();
-                    claimedTaskIds.add(response.metadata().get("taskid"));
                     assertThat(response.metadata().get("expiry")).isNotBlank();
                   });
         });
+  }
+
+  @Test
+  void acquireANewLeaseWhenNodeRestarts() {
+    // given
+    // when
+    final var previousTimestamp = nodeIdMappers[0].expiresAt();
+    nodeIdMappers[0].close();
+    nodeIdMappers[0] = createNodeIdMapper(0);
+
+    final var id = nodeIdMappers[0].start();
+
+    // then
+    assertThat(id).isEqualTo(new NodeInstance(0, 2));
+    assertThat(nodeIdMappers[0].expiresAt()).isGreaterThan(previousTimestamp);
+  }
+
+  private NodeIdMapper createNodeIdMapper(final int i) {
+    final var taskId = NodeIdMapper.randomTaskId();
+    final var lease = new S3Lease(s3Client, BUCKET_NAME, taskId, CLUSTER_SIZE, Clock.systemUTC());
+    return new NodeIdMapper(
+        lease, () -> System.err.println("Failed to renew lease for taskId " + taskId));
   }
 }

@@ -11,6 +11,7 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient;
+import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import io.camunda.zeebe.broker.clustering.mapper.lease.NodeIdMappings;
 import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -20,6 +21,7 @@ import java.io.Closeable;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -81,6 +83,10 @@ public class NodeIdMapper implements Closeable {
     scheduleRenewal();
     this.nodeInstance = nodeInstance;
     return nodeInstance;
+  }
+
+  public long expiresAt() {
+    return Optional.ofNullable(lease.currentLease()).map(Lease::timestamp).orElse(0L);
   }
 
   @Override
