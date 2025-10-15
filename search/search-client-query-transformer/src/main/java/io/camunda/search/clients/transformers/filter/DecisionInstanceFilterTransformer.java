@@ -21,7 +21,6 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
-import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
@@ -29,6 +28,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_DEFINITION_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.PROCESS_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.TENANT_ID;
 import static java.util.Optional.ofNullable;
@@ -71,7 +71,8 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
-    queries.addAll(getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
+    queries.addAll(
+        getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
     return and(queries);
   }
