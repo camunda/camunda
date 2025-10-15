@@ -7,13 +7,13 @@
  */
 package io.camunda.zeebe.stream.api;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
 public record FollowUpCommandMetadata(
-    long operationReference, long batchOperationReference, Map<String, Object> claims) {
+    long operationReference, long batchOperationReference, AuthInfo authInfo) {
 
   public static FollowUpCommandMetadata empty() {
     return of(builder -> {});
@@ -28,7 +28,7 @@ public record FollowUpCommandMetadata(
   public static class Builder {
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
-    private Map<String, Object> claims = null;
+    private final AuthInfo authInfo = new AuthInfo();
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -40,22 +40,18 @@ public record FollowUpCommandMetadata(
       return this;
     }
 
-    public Builder claims(final Map<String, Object> claims) {
-      this.claims = claims;
+    public Builder authInfo(final AuthInfo authInfo) {
+      this.authInfo.copyFrom(authInfo);
       return this;
     }
 
-    public Builder claim(final String key, final Object value) {
-      if (claims == null) {
-        claims = new HashMap<>();
-      }
-
-      claims.put(key, value);
+    public Builder claims(final Map<String, Object> claims) {
+      authInfo.setClaims(claims);
       return this;
     }
 
     public FollowUpCommandMetadata build() {
-      return new FollowUpCommandMetadata(operationReference, batchOperationReference, claims);
+      return new FollowUpCommandMetadata(operationReference, batchOperationReference, authInfo);
     }
   }
 }

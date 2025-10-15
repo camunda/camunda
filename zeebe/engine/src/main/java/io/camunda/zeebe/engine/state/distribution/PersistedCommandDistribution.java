@@ -13,13 +13,13 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class PersistedCommandDistribution extends UnpackedObject implements DbValue {
 
@@ -29,13 +29,16 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
   private final IntegerProperty intentProperty = new IntegerProperty("intent", Intent.NULL_VAL);
   private final ObjectProperty<UnifiedRecordValue> commandValueProperty =
       new ObjectProperty<>("commandValue", new UnifiedRecordValue(10));
+  private final ObjectProperty<AuthInfo> authInfoProperty =
+      new ObjectProperty<>("authInfo", new AuthInfo());
 
   public PersistedCommandDistribution() {
-    super(4);
+    super(5);
     declareProperty(queueIdProperty)
         .declareProperty(valueTypeProperty)
         .declareProperty(intentProperty)
-        .declareProperty(commandValueProperty);
+        .declareProperty(commandValueProperty)
+        .declareProperty(authInfoProperty);
   }
 
   public PersistedCommandDistribution wrap(
@@ -48,12 +51,8 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
     valueTypeProperty.setValue(commandDistributionRecord.getValueType());
     intentProperty.setValue(commandDistributionRecord.getIntent().value());
 
-    final var commandValue = commandDistributionRecord.getCommandValue();
-    final var valueBuffer = new UnsafeBuffer(0, 0);
-    final int encodedLength = commandValue.getLength();
-    valueBuffer.wrap(new byte[encodedLength]);
-    commandValue.write(valueBuffer, 0);
-    commandValueProperty.getValue().wrap(valueBuffer, 0, encodedLength);
+    commandValueProperty.getValue().copyFrom(commandDistributionRecord.getCommandValue());
+    authInfoProperty.getValue().copyFrom(commandDistributionRecord.getAuthInfo());
 
     return this;
   }
@@ -85,5 +84,9 @@ public class PersistedCommandDistribution extends UnpackedObject implements DbVa
 
   public UnifiedRecordValue getCommandValue() {
     return commandValueProperty.getValue();
+  }
+
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
   }
 }

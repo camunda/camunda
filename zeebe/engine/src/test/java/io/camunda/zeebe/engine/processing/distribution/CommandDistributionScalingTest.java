@@ -109,9 +109,9 @@ public class CommandDistributionScalingTest {
     fakeProcessingResultBuilder.flushPostCommitTasks();
     // then command is sent immediately to partition 2
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), any());
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
     assertThat(distributionState.hasRetriableDistribution(key, 3)).isTrue();
@@ -149,14 +149,14 @@ public class CommandDistributionScalingTest {
     fakeProcessingResultBuilder.flushPostCommitTasks();
     // then command is sent immediately to partition 2 for the first record
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), any());
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), any());
     // the second command is enqueued for partitions 2 and 3
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any(), any());
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any(), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
 
     assertThat(distributionState.hasPendingDistribution(key, 2)).isTrue();
@@ -196,14 +196,14 @@ public class CommandDistributionScalingTest {
     // then command is sent immediately to partition 2 for the first record
     fakeProcessingResultBuilder.flushPostCommitTasks();
     verify(mockInterpartitionCommandSender)
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(key), any(), any());
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(key), any(), any());
 
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any());
+        .sendCommand(eq(2), eq(valueType), eq(intent), eq(otherKey), any(), any());
     verify(mockInterpartitionCommandSender, never())
-        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any());
+        .sendCommand(eq(3), eq(valueType), eq(intent), eq(otherKey), any(), any());
     verifyNoMoreInteractions(mockInterpartitionCommandSender);
 
     assertThat(distributionState.hasPendingDistribution(key, 3)).isTrue();
