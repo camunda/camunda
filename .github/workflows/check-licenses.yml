@@ -115,9 +115,9 @@ jobs:
       uses: camunda/infra-global-github-actions/fossa/analyze@0cefec60b9a847594d0e33cddef4857772e3b09a
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-        branch: ${{  steps.info.outputs.head-ref }}
+        branch: 8.8.0
         path: ${{ matrix.project.path }}
-        revision-id: ${{ steps.info.outputs.head-revision }}
+        revision-id: 92fbec27b9ec5e724367c0fbbbda860e36ddedd6x
 
     # PR-only: Check for newly introduced license issues
     # This step only fails if the PR introduces new license violations.
