@@ -86,6 +86,7 @@ import io.camunda.search.clients.transformers.filter.ProcessDefinitionStatistics
 import io.camunda.search.clients.transformers.filter.ProcessInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
+import io.camunda.search.clients.transformers.filter.RoleMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.SequenceFlowFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantMemberFilterTransformer;
@@ -147,6 +148,7 @@ import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.filter.TenantMemberFilter;
@@ -459,6 +461,9 @@ public final class ServiceTransformers {
         new FlownodeInstanceFilterTransformer(
             indexDescriptors.get(FlowNodeInstanceTemplate.class)));
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
+    mappers.put(
+        RoleMemberFilter.class,
+        new RoleMemberFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(

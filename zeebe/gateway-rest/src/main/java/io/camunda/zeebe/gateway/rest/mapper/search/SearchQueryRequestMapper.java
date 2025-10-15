@@ -191,7 +191,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleUserSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleUserSortField);
-    final var filter = FilterBuilders.role().build();
+    final var filter = FilterBuilders.roleMember().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
@@ -206,7 +206,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleGroupSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleGroupSortField);
-    final var filter = FilterBuilders.role().build();
+    final var filter = FilterBuilders.roleMember().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
@@ -221,7 +221,7 @@ public final class SearchQueryRequestMapper {
             SearchQuerySortRequestMapper.fromRoleClientSearchQuerySortRequest(request.getSort()),
             SortOptionBuilders::roleMember,
             SearchQuerySortRequestMapper::applyRoleClientSortField);
-    final var filter = FilterBuilders.role().build();
+    final var filter = FilterBuilders.roleMember().build();
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 

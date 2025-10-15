@@ -80,9 +80,7 @@ public class RoleServices extends SearchQueryService<RoleServices, RoleQuery, Ro
             builder ->
                 builder.filter(
                     filter ->
-                        filter
-                            .joinParentId(DefaultRole.ADMIN.getId())
-                            .memberType(EntityType.USER)));
+                        filter.roleId(DefaultRole.ADMIN.getId()).memberType(EntityType.USER)));
     final var members = searchMembers(query);
     return members.total() > 0;
   }
