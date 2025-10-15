@@ -175,6 +175,11 @@ public class SignalBroadcastProcessor implements DistributedTypedRecordProcessor
           command, exception.getRejectionType(), exception.getMessage());
       responseWriter.writeRejectionOnCommand(
           command, exception.getRejectionType(), exception.getMessage());
+      if (command.isCommandDistributed()) {
+        // If the command was distributed but doesn't pass auth checks on this partition, we still
+        // need to acknowledge the command to avoid it being stuck in retry.
+        commandDistributionBehavior.acknowledgeCommand(command);
+      }
       return ProcessingError.EXPECTED_ERROR;
     }
     return ProcessingError.UNEXPECTED_ERROR;
