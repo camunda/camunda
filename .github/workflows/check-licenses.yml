@@ -14,7 +14,7 @@ jobs:
   analyze:
     name: Analyze dependencies
     permissions: {}
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
     strategy:
       # The matrix is necessary to run separate analyses
       matrix:
@@ -42,7 +42,8 @@ jobs:
         secrets: ${{ toJSON(secrets) }}
     - name: Setup fossa-cli
       # TODO: use main branch
-      uses: camunda/infra-global-github-actions/fossa/setup@32470949e549396aa5f2c5def890de831b8ca107
+      uses: camunda/infra-global-github-actions/fossa/setup@0cefec60b9a847594d0e33cddef4857772e3b09a
+
     - name: Adjust pom.xml files for FOSSA
       if: matrix.project.name == 'optimize'
       run: |
@@ -52,8 +53,7 @@ jobs:
           'del(.project.modules.module[] | select(. == "qa"))' \
           optimize/pom.xml
     - name: Analyze project
-      # TODO: use main branch
-      uses: camunda/infra-global-github-actions/fossa/analyze@32470949e549396aa5f2c5def890de831b8ca107
+      uses: camunda/infra-global-github-actions/fossa/analyze@0cefec60b9a847594d0e33cddef4857772e3b09a
       with:
         api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
         branch: ${{ github.ref_name }}
