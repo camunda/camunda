@@ -57,7 +57,7 @@ Accept: application/json
 ### Get Role
 # @name get-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}
@@ -76,7 +76,7 @@ Accept: application/json
 ### Update Role
 # @name update-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}
@@ -112,7 +112,7 @@ Accept: application/json
 ### Search User for Role
 # @name search-user-for-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/users/search
@@ -144,7 +144,7 @@ Accept: application/json
 ### Remove Role from User
 # @name remove-role-from-user
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/users/{{USERNAME}}
@@ -160,7 +160,7 @@ Accept: application/json
 ### Search Roles
 # @name search-roles
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/search
@@ -248,7 +248,7 @@ Accept: application/json
 ### Search Role for Tenant
 # @name search-role-for-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/roles/search
@@ -285,7 +285,7 @@ Accept: application/json
 ### Delete Tenant
 # @name delete-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
@@ -332,7 +332,7 @@ Accept: application/json
 ### Search Role for Group
 # @name search-role-for-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/roles/search
@@ -369,7 +369,7 @@ Accept: application/json
 ### Delete Group
 # @name delete-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -385,7 +385,7 @@ Accept: application/json
 ### Delete Role
 # @name delete-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}

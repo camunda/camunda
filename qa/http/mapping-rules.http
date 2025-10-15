@@ -6,7 +6,7 @@ Content-Type: application/x-www-form-urlencoded
     client_id= {{CLIENT_ID}}
     &client_secret={{CLIENT_SECRET}}
     &redirect_uri=http://localhost:8080/sso-callback
-    &scope=openid profile api://camunda/.default
+    &scope=openid profile 6fe432f2-7dc3-4e13-b1b4-4cc8480c80b7/.default
     &audience= {{AUDIENCE}}
     &grant_type=client_credentials
 
@@ -93,7 +93,7 @@ Accept: application/json
 ### Search Mapping for Tenant
 # @name search-mapping-for-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/mapping-rules/search
@@ -161,7 +161,7 @@ Accept: application/json
 ### Search Mapping for Group
 # @name search-mapping-for-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/mapping-rules/search
@@ -229,7 +229,7 @@ Accept: application/json
 ### Search Mapping for Role
 # @name search-mapping-for-Role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/search
@@ -254,7 +254,7 @@ Accept: application/json
 ### Remove Mapping Rule from Role
 # @name remove-mapping-rule-from-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}/mapping-rules/{{MAPPING_ID}}
@@ -270,7 +270,7 @@ Accept: application/json
 ### Update Mapping Rule
 # @name update-mapping-rule
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
@@ -295,7 +295,7 @@ Accept: application/json
 ### Get Mapping Rule
 # @name get-mapping-rule
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
@@ -314,7 +314,7 @@ Accept: application/json
 ### Search For Mapping Rule
 # @name search-mapping-rule
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/search
@@ -375,7 +375,7 @@ Accept: application/json
 ###
 # @name delete-authorization-positive
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
@@ -393,7 +393,7 @@ Accept: application/json
 ### Verify authorization is deleted
 # @name deleted-authorization-search
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
@@ -442,7 +442,7 @@ Accept: application/json
 ### Delete Mapping Rule
 # @name delete-mapping-rule
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/mapping-rules/{{MAPPING_ID}}
@@ -458,7 +458,7 @@ Accept: application/json
 ### Delete Tenant
 # @name delete-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
@@ -474,7 +474,7 @@ Accept: application/json
 ### Delete Group
 # @name delete-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -490,7 +490,7 @@ Accept: application/json
 ### Delete Role
 # @name delete-role
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/roles/{{ROLE_ID}}
