@@ -27,12 +27,16 @@ jobs:
         include:
           - component: "tasklist"
             folder: "build"
+            package_manager: "npm"
           - component: "operate"
             folder: "build"
+            package_manager: "npm"
           - component: "identity"
             folder: "dist"
+            package_manager: "yarn"
           - component: "optimize"
             folder: "dist"
+            package_manager: "yarn"
 
     defaults:
       run:
@@ -45,14 +49,17 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "22"
+          cache: ${{ matrix.package_manager }}
+          cache-dependency-path: ${{ matrix.component }}/client/${{ matrix.package_manager == 'npm' && 'package-lock.json' || 'yarn.lock' }}
       - uses: camunda/infra-global-github-actions/setup-yarn-cache@main
+        if: matrix.package_manager == 'yarn'
         with:
           directory: ${{ matrix.component }}/client
       - name: Install node dependencies
-        run: yarn
+        run: ${{ matrix.package_manager == 'npm' && 'npm ci' || 'yarn' }}
       - name: Extract SBOM
         run: |
-          yarn run extract-sbom
+          ${{ matrix.package_manager }} run extract-sbom
       - name: Upload SBOM as artifact
         uses: actions/upload-artifact@v4
         with:
