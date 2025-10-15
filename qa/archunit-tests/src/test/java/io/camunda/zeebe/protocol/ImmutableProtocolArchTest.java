@@ -40,7 +40,7 @@ import org.immutables.value.Value;
  * </ul>
  */
 @AnalyzeClasses(packages = "io.camunda.zeebe.protocol.record..")
-final class ImmutableProtocolTest {
+final class ImmutableProtocolArchTest {
   @ArchTest
   void shouldAnnotateImmutableProtocol(final JavaClasses importedClasses) {
     // given

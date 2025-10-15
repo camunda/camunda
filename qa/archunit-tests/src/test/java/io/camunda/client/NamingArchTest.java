@@ -18,7 +18,7 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(
     packages = "io.camunda.client",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class NamingTest {
+public class NamingArchTest {
 
   @ArchTest
   public static final ArchRule RULE_CLIENT_API_METHODS_SHOULD_NOT_CONTAIN_QUERY =
