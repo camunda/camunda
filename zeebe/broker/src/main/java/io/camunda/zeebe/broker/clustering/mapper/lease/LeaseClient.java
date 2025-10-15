@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.clustering.mapper.NodeInstance;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.List;
 
 public interface LeaseClient {
 
@@ -20,7 +21,7 @@ public interface LeaseClient {
 
   void initialize();
 
-  Lease acquireLease();
+  InitialLease acquireLease();
 
   void setNodeIdMappings(NodeIdMappings nodeIdMappings);
 
@@ -31,6 +32,10 @@ public interface LeaseClient {
   void releaseLease();
 
   Duration expiryDuration();
+
+  List<Lease> getAllLeases();
+
+  record InitialLease(boolean previousHolderExpired, Lease lease) {}
 
   record Lease(
       String taskId, long timestamp, NodeInstance nodeInstance, NodeIdMappings nodeIdMappings) {

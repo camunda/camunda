@@ -111,7 +111,11 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   }
 
   @Bean(destroyMethod = "close")
-  public Broker broker(final ExporterRepository exporterRepository) {
+  public Broker broker(
+      final ExporterRepository exporterRepository, final NodeIdMapperReadiness readiness) {
+    if (!readiness.isReady()) {
+      throw new IllegalStateException("NodeIdMapper is not ready");
+    }
     final SystemContext systemContext =
         new SystemContext(
             configuration.shutdownTimeout(),
@@ -155,6 +159,12 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     return broker;
   }
 
+  // Ensure that the other nodes has evicted the version before starting the broker
+  @Bean
+  public NodeIdMapperReadiness isReady(final NodeIdMapper nodeIdMapper) {
+    return new NodeIdMapperReadiness(nodeIdMapper.waitUntilReady().join());
+  }
+
   protected void startBroker() {
     broker.start();
   }
@@ -187,4 +197,6 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   public void close() {
     stopBroker();
   }
+
+  public record NodeIdMapperReadiness(boolean isReady) {}
 }
