@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -178,10 +179,6 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     return concreteCommandValue;
   }
 
-  public AuthInfo getAuthInfo() {
-    return authInfoProperty.getValue();
-  }
-
   public CommandDistributionRecord setCommandValue(final UnifiedRecordValue commandValue) {
     if (commandValue == null) {
       commandValueProperty.reset();
@@ -220,6 +217,11 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
   public CommandDistributionRecord setPartitionId(final int partitionId) {
     partitionIdProperty.setValue(partitionId);
     return this;
+  }
+
+  @JsonIgnoreProperties
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
   }
 
   public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {
