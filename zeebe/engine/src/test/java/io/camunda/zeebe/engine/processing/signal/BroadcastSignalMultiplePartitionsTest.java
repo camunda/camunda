@@ -15,6 +15,7 @@ import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.SignalClient;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -63,8 +64,6 @@ public class BroadcastSignalMultiplePartitionsTest {
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(DEFAULT_USER.getUsername()))));
 
-  private static final int LEADER_PARTITION = 1; // engine rule starts at 1
-
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -84,7 +83,7 @@ public class BroadcastSignalMultiplePartitionsTest {
     // then
     final Set<Integer> expectedTargets =
         IntStream.rangeClosed(1, PARTITION_COUNT)
-            .filter(p -> p != LEADER_PARTITION)
+            .filter(p -> p != Protocol.DEPLOYMENT_PARTITION)
             .boxed()
             .collect(java.util.stream.Collectors.toSet());
 
@@ -111,7 +110,7 @@ public class BroadcastSignalMultiplePartitionsTest {
     final long pi1 = createProcessInstance("wf_1");
     final long pi2 = createProcessInstance("wf_2");
 
-    waitForSignalSubscriptions(signalName);
+    waitForSignalSubscriptions(signalName, 2);
 
     // when
     ENGINE.signal().withSignalName(signalName).broadcast(DEFAULT_USER.getUsername());
@@ -155,12 +154,45 @@ public class BroadcastSignalMultiplePartitionsTest {
     final UserRecordValue user = createUser();
     grantProcessPermission(user.getUsername(), processId);
 
-    waitForSignalSubscriptions(signalName);
+    waitForSignalSubscriptions(signalName, 2);
 
     // when
     ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
     // then (rejection on partition hosting unauthorized process)
+    assertThat(
+            RecordingExporter.signalRecords(SignalIntent.BROADCAST)
+                .withSignalName(signalName)
+                .withPartitionId(2)
+                .withRecordType(RecordType.COMMAND_REJECTION)
+                .withRejectionReason(
+                    "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
+                        .formatted(otherProcessId))
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void shouldRejectBroadcastForOneUnauthorizedProcess() {
+    // given
+    final String signalName = newRandomSignal();
+    final String processId = Strings.newRandomValidBpmnId();
+    final String otherProcessId = Strings.newRandomValidBpmnId();
+    deployProcess(processId, "catch_main", signalName);
+    deployProcess(otherProcessId, "catch_other", signalName);
+
+    createProcessInstance(processId, 2);
+    createProcessInstance(otherProcessId, 2);
+
+    final UserRecordValue user = createUser();
+    grantProcessPermission(user.getUsername(), processId);
+
+    waitForSignalSubscriptions(signalName, 2);
+
+    // when
+    ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
+
+    // then
     assertThat(
             RecordingExporter.signalRecords(SignalIntent.BROADCAST)
                 .withSignalName(signalName)
@@ -238,7 +270,7 @@ public class BroadcastSignalMultiplePartitionsTest {
         .create(DEFAULT_USER.getUsername());
   }
 
-  private static void waitForSignalSubscriptions(final String signalName) {
+  private static void waitForSignalSubscriptions(final String signalName, final int processCount) {
     await("signal subscriptions created for " + signalName)
         .pollInterval(Duration.ofMillis(10))
         .atMost(Duration.ofSeconds(5))
@@ -248,8 +280,8 @@ public class BroadcastSignalMultiplePartitionsTest {
                         RecordingExporter.signalSubscriptionRecords(
                                 SignalSubscriptionIntent.CREATED)
                             .withSignalName(signalName)
-                            .limit(2)
+                            .limit(processCount)
                             .count())
-                    .isEqualTo(2));
+                    .isEqualTo(processCount));
   }
 }
