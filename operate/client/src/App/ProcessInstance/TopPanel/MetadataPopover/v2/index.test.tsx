@@ -52,6 +52,7 @@ import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTasks';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -169,6 +170,11 @@ describe('MetadataPopover', () => {
       page: {
         totalItems: 0,
       },
+    });
+
+    mockSearchMessageSubscriptions().withSuccess({
+      items: [],
+      page: {totalItems: 0},
     });
   });
 
