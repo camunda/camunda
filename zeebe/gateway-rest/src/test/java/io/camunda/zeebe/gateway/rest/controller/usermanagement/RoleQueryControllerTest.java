@@ -285,7 +285,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     verify(roleServices)
         .searchMembers(
             new RoleMemberQuery.Builder()
-                .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
+                .filter(f -> f.memberType(EntityType.USER).roleId(roleId))
                 .build());
   }
 
@@ -406,7 +406,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     verify(roleServices)
         .searchMembers(
             new RoleMemberQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
+                .filter(f -> f.roleId(roleId).memberType(EntityType.CLIENT))
                 .build());
   }
 
@@ -457,7 +457,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
     verify(roleServices)
         .searchMembers(
             new RoleMemberQuery.Builder()
-                .filter(f -> f.joinParentId(roleId).memberType(EntityType.GROUP))
+                .filter(f -> f.roleId(roleId).memberType(EntityType.GROUP))
                 .build());
   }
 }

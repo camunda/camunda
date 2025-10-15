@@ -36,8 +36,7 @@ public class RoleMemberDocumentReader extends DocumentBasedReader implements Rol
 
   public Set<String> getRoleMembers(final String roleId, final EntityType memberType) {
     final var roleMemberQuery =
-        RoleMemberQuery.of(
-            b -> b.filter(f -> f.joinParentId(roleId).memberType(memberType)).unlimited());
+        RoleMemberQuery.of(b -> b.filter(f -> f.roleId(roleId).memberType(memberType)).unlimited());
     return search(roleMemberQuery, ResourceAccessChecks.disabled()).items().stream()
         .map(RoleMemberEntity::id)
         .collect(Collectors.toSet());

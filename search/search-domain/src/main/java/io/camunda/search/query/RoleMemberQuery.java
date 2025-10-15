@@ -8,7 +8,7 @@
 package io.camunda.search.query;
 
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.search.sort.SortOptionBuilders;
@@ -16,8 +16,8 @@ import io.camunda.util.ObjectBuilder;
 import java.util.Objects;
 import java.util.function.Function;
 
-public record RoleMemberQuery(RoleFilter filter, RoleMemberSort sort, SearchQueryPage page)
-    implements TypedSearchQuery<RoleFilter, RoleMemberSort> {
+public record RoleMemberQuery(RoleMemberFilter filter, RoleMemberSort sort, SearchQueryPage page)
+    implements TypedSearchQuery<RoleMemberFilter, RoleMemberSort> {
   public static RoleMemberQuery of(
       final Function<RoleMemberQuery.Builder, ObjectBuilder<RoleMemberQuery>> fn) {
     return fn.apply(new RoleMemberQuery.Builder()).build();
@@ -29,15 +29,15 @@ public record RoleMemberQuery(RoleFilter filter, RoleMemberSort sort, SearchQuer
 
   public static final class Builder extends AbstractQueryBuilder<RoleMemberQuery.Builder>
       implements TypedSearchQueryBuilder<
-          RoleMemberQuery, RoleMemberQuery.Builder, RoleFilter, RoleMemberSort> {
-    private static final RoleFilter EMPTY_FILTER = FilterBuilders.role().build();
+          RoleMemberQuery, RoleMemberQuery.Builder, RoleMemberFilter, RoleMemberSort> {
+    private static final RoleMemberFilter EMPTY_FILTER = FilterBuilders.roleMember().build();
     private static final RoleMemberSort EMPTY_SORT = SortOptionBuilders.roleMember().build();
 
-    private RoleFilter filter;
+    private RoleMemberFilter filter;
     private RoleMemberSort sort;
 
     @Override
-    public RoleMemberQuery.Builder filter(final RoleFilter value) {
+    public RoleMemberQuery.Builder filter(final RoleMemberFilter value) {
       filter = value;
       return this;
     }
@@ -49,8 +49,8 @@ public record RoleMemberQuery(RoleFilter filter, RoleMemberSort sort, SearchQuer
     }
 
     public RoleMemberQuery.Builder filter(
-        final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
-      return filter(FilterBuilders.role(fn));
+        final Function<RoleMemberFilter.Builder, ObjectBuilder<RoleMemberFilter>> fn) {
+      return filter(FilterBuilders.roleMember(fn));
     }
 
     public RoleMemberQuery.Builder sort(

@@ -202,7 +202,7 @@ public class RoleController {
   private RoleMemberQuery buildRoleMemberQuery(
       final String roleId, final EntityType memberType, final RoleMemberQuery query) {
     return query.toBuilder()
-        .filter(query.filter().toBuilder().joinParentId(roleId).memberType(memberType).build())
+        .filter(query.filter().toBuilder().roleId(roleId).memberType(memberType).build())
         .build();
   }
 

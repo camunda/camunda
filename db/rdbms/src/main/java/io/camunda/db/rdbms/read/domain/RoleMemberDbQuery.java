@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.RoleFilter;
+import io.camunda.search.filter.RoleMemberFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record RoleMemberDbQuery(
-    RoleFilter filter,
+    RoleMemberFilter filter,
     List<String> authorizedResourceIds,
     DbQuerySorting<RoleMemberEntity> sort,
     DbQueryPage page) {
@@ -28,14 +28,14 @@ public record RoleMemberDbQuery(
 
   public static final class Builder implements ObjectBuilder<RoleMemberDbQuery> {
 
-    private static final RoleFilter EMPTY_FILTER = FilterBuilders.role().build();
+    private static final RoleMemberFilter EMPTY_FILTER = FilterBuilders.roleMember().build();
 
-    private RoleFilter filter;
+    private RoleMemberFilter filter;
     private List<String> authorizedResourceIds = Collections.emptyList();
     private DbQuerySorting<RoleMemberEntity> sort;
     private DbQueryPage page;
 
-    public RoleMemberDbQuery.Builder filter(final RoleFilter value) {
+    public RoleMemberDbQuery.Builder filter(final RoleMemberFilter value) {
       filter = value;
       return this;
     }
@@ -57,8 +57,8 @@ public record RoleMemberDbQuery(
     }
 
     public RoleMemberDbQuery.Builder filter(
-        final Function<RoleFilter.Builder, ObjectBuilder<RoleFilter>> fn) {
-      return filter(FilterBuilders.role(fn));
+        final Function<RoleMemberFilter.Builder, ObjectBuilder<RoleMemberFilter>> fn) {
+      return filter(FilterBuilders.roleMember(fn));
     }
 
     public RoleMemberDbQuery.Builder sort(
