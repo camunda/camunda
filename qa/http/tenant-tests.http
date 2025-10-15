@@ -39,7 +39,7 @@ Accept: application/json
 ### Get Tenant
 # @name get-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
@@ -58,7 +58,7 @@ Accept: application/json
 ### Update Tenant
 # @name update-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}
@@ -93,7 +93,7 @@ Accept: application/json
 ### Search Users for Tenant
 # @name search-users-for-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/search
@@ -124,7 +124,7 @@ Accept: application/json
 ### Remove User from Tenant
 # @name remove-user-from-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/users/{{USERNAME}}
@@ -171,7 +171,7 @@ Accept: application/json
 ### Search Group for Tenant
 # @name search-group-for-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}/groups/search
@@ -267,7 +267,7 @@ Accept: application/json
 ### Delete Group
 # @name delete-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -283,7 +283,7 @@ Accept: application/json
 ### Delete Tenant
 # @name delete-tenant
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/tenants/{{TENANT_ID}}

@@ -57,7 +57,7 @@ Accept: application/json
 ### Get Group
 # @name get-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -97,7 +97,7 @@ Accept: application/json
 ### Get Group Unauthorized
 # @name get-group-unauthorized
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -114,7 +114,7 @@ Accept: application/json
 ### Update Group
 # @name update-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 PUT {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}
@@ -150,7 +150,7 @@ Accept: application/json
 ### Search Users for Group
 # @name search-users-for-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/search
@@ -181,7 +181,7 @@ Accept: application/json
 ### Remove User from Group
 # @name remove-user-from-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}/users/{{USERNAME}}
@@ -221,7 +221,7 @@ Accept: application/json
 ### Search Groups
 # @name search-groups
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(2);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/search
@@ -254,7 +254,7 @@ Accept: application/json
 ### Delete Group
 # @name delete-group
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/groups/{{GROUP_ID}}

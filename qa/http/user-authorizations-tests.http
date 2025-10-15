@@ -160,7 +160,7 @@ Accept: application/json
 ###
 # @name test-user-search
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(4)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
@@ -234,7 +234,7 @@ Accept: application/json
     "UPDATE_USER_TASK"
   ],
   "ownerType": "USER",
-  "ownerId": "test-user",
+  "ownerId": "{{USERNAME}}",
   "resourceType": "PROCESS_DEFINITION",
   "resourceId": "test-resource"
 }
@@ -262,7 +262,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "ownerId": "test-user"
+  "ownerId": "{{USERNAME}}"
 }
 
 > {%
@@ -284,7 +284,7 @@ Accept: application/json
     "READ_USER_TASK"
   ],
   "ownerType": "USER",
-  "ownerId": "test-user",
+  "ownerId": "{{USERNAME}}",
   "resourceType": "PROCESS_DEFINITION",
   "resourceId": "test-resource"
 }
@@ -298,7 +298,7 @@ Accept: application/json
 ###
 # @name test-authorization-search
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(3);
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/search
@@ -314,7 +314,7 @@ Accept: application/json
     }
   ],
   "filter": {
-    "ownerId": "test-user"
+    "ownerId": "{{USERNAME}}"
   },
   "page": {
     "from": 0,
@@ -332,12 +332,14 @@ Accept: application/json
     console.log(response.headers);
   });
 
+  let expectedUsername = client.global.get("USERNAME");
+
   client.test("Response should contain authorizations for the specified ownerId", function () {
     const authorizations = response.body.items;
     client.assert(Array.isArray(authorizations), "Response items are not an array");
     client.assert(authorizations.length > 0, "No authorizations found for the specified ownerId");
     authorizations.forEach(auth => {
-      client.assert(auth.ownerId === "test-user", `Authorization ownerId mismatch: expected 'test-user', got '${auth.ownerId}'`);
+      client.assert(auth.ownerId === expectedUsername, `Authorization ownerId mismatch: expected '${expectedUsername}', got '${auth.ownerId}'`);
     });
   });
 %}
@@ -355,7 +357,7 @@ Accept: application/json
     "UPDATE_USER_TASK"
   ],
   "ownerType": "USER",
-  "ownerId": "test-user",
+  "ownerId": "{{USERNAME}}",
   "resourceType": "PROCESS_DEFINITION",
   "resourceId": "test-resource"
 }
@@ -370,7 +372,7 @@ Accept: application/json
 ###
 # @name delete-authorization-positive
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}
@@ -444,7 +446,7 @@ let expectedDefinitionKey = client.global.get("PROCESS_DEFINITION_KEY");
 ###
 # @name get-process-instance
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(3)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
@@ -470,7 +472,7 @@ Accept: application/json
 ###
 # @name process-instance-search-unauthorized
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(3)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/search
@@ -508,7 +510,7 @@ Accept: application/json
 ###
 # @name get-process-instance-no-tenant-assignment
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(3)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
@@ -546,7 +548,7 @@ Accept: application/json
 ###
 # @name get-process-instance-unauthorized
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(4)
 %}
 GET {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/process-instances/{{PROCESS_INSTANCE_KEY}}
@@ -618,7 +620,7 @@ Accept: application/json
 ###
 # @name test-user-search-no-authorizations
 < {%
-  import {wait} from "js/wait"
+  import {wait} from "../http/js/wait"
   wait(4)
 %}
 POST {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/users/search
@@ -736,7 +738,7 @@ Accept: application/json
 ###
 # @name delete-process-definition-authorization-unauthorized
 < {%
-  import {wait} from "js/wait";
+  import {wait} from "../http/js/wait";
   wait(4);
 %}
 DELETE {{ZEEBE_REST_ADDRESS_LOCAL}}/v2/authorizations/{{AUTHORIZATION_KEY}}

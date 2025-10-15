@@ -1,5 +1,5 @@
 # description: Runs regression tests on Identity. Tests are defined as .http files
-# test location: /http
+# test location: /qa/http
 # type: CI
 # owner: @camunda/identity
 name: Identity API Regression Tests
@@ -114,7 +114,7 @@ jobs:
               CLIENT_SECRET: $client_secret,
               TOKEN_URL: $token_url,
               AUDIENCE: $audience
-            }' http/http-client.private.env.json > http/tmp.env.json && mv http/tmp.env.json http/http-client.private.env.json
+            }' qa/http/http-client.private.env.json > qa/http/tmp.env.json && mv qa/http/tmp.env.json qa/http/http-client.private.env.json
         env:
           CLIENT_ID: ${{ steps.secrets.outputs.CLIENT_ID }}
           CLIENT_SECRET: ${{ steps.secrets.outputs.CLIENT_SECRET }}
@@ -181,7 +181,7 @@ jobs:
         run: |
           curl -f -L -o ijhttp.zip "https://jb.gg/ijhttp/latest"
           unzip ijhttp.zip
-          ijhttp/ijhttp http/${{ matrix.case }} --private-env-file http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
+          ijhttp/ijhttp qa/http/${{ matrix.case }} --private-env-file qa/http/http-client.private.env.json --env ${{ matrix.env }} --report -t 60000
 
       - name: Publish Test Report
         if: always()
@@ -194,7 +194,7 @@ jobs:
         shell: bash
         if: always()
         run: |
-          rm http/http-client.private.env.json
+          rm qa/http/http-client.private.env.json
 
       - name: Shut down Docker Compose
         if: always()
