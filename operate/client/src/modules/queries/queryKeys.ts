@@ -51,12 +51,15 @@ const queryKeys = {
     ],
   },
   incidents: {
+    search: () => ['incidentsSearch'],
     searchByProcessInstanceKey: (processInstanceKey: string) => [
-      'incidentsSearchByProcessInstanceKey',
+      queryKeys.incidents.search()[0],
+      'searchByProcessInstanceKey',
       processInstanceKey,
     ],
     searchByElementInstanceKey: (elementInstanceKey: string) => [
-      'incidentsSearchByElementInstanceKey',
+      queryKeys.incidents.search()[0],
+      'searchByElementInstanceKey',
       elementInstanceKey,
     ],
   },
