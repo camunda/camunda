@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
@@ -686,36 +685,6 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
                 ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
                 processInstanceId));
     return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-  }
-
-  @Deprecated // this endpoint is not used anymore from frontend.
-  @Ignore
-  @Test
-  public void testFlowNodeStateDtosIncidentIsPropagated() throws Exception {
-    // having
-    final String processId = "prWithSubprocess";
-    deployProcess("subProcess.bpmn");
-    final long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, "{\"items\": [0]}");
-    ZeebeTestUtil.completeTask(camundaClient, "taskA", getWorkerName(), null);
-    searchTestRule.waitFor(flowNodeIsActiveCheck, processInstanceKey, "taskB");
-    ZeebeTestUtil.failTask(camundaClient, "taskB", getWorkerName(), 3, "some error");
-    searchTestRule.waitFor(incidentIsActiveCheck, processInstanceKey);
-
-    // when
-    final Map<String, FlowNodeStateDto> flowNodeStateDtos =
-        getFlowNodeStateDtosFromRest(String.valueOf(processInstanceKey));
-
-    // then
-    assertThat(flowNodeStateDtos).hasSize(7);
-    assertFlowNodeStateDto(flowNodeStateDtos, "startEvent", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(flowNodeStateDtos, "taskA", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(flowNodeStateDtos, "subprocess", FlowNodeStateDto.INCIDENT);
-    assertFlowNodeStateDto(flowNodeStateDtos, "startEventSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(flowNodeStateDtos, "innerSubprocess", FlowNodeStateDto.INCIDENT);
-    assertFlowNodeStateDto(
-        flowNodeStateDtos, "startEventInnerSubprocess", FlowNodeStateDto.COMPLETED);
-    assertFlowNodeStateDto(flowNodeStateDtos, "taskB", FlowNodeStateDto.INCIDENT);
   }
 
   @Test
