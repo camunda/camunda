@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToRes
 import static io.camunda.zeebe.protocol.record.value.EntityType.GROUP;
 
 import io.camunda.authentication.ConditionalOnCamundaGroupsEnabled;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -172,7 +173,7 @@ public class GroupController {
   public ResponseEntity<GroupUserSearchResult> usersByGroup(
       @PathVariable final String groupId,
       @RequestBody(required = false) final GroupUserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toGroupQuery(query)
+    return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             groupQuery -> searchUsersInGroup(groupId, groupQuery));
@@ -205,10 +206,10 @@ public class GroupController {
   public ResponseEntity<GroupClientSearchResult> clientsByGroup(
       @PathVariable final String groupId,
       @RequestBody(required = false) final GroupClientSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toGroupQuery(query)
+    return SearchQueryRequestMapper.toGroupMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            groupQuery -> searchClientsInGroup(groupId, groupQuery));
+            groupMemberQuery -> searchClientsInGroup(groupId, groupMemberQuery));
   }
 
   @RequiresSecondaryStorage
@@ -276,12 +277,12 @@ public class GroupController {
   }
 
   private ResponseEntity<GroupUserSearchResult> searchUsersInGroup(
-      final String groupId, final GroupQuery groupQuery) {
+      final String groupId, final GroupMemberQuery groupMemberQuery) {
     try {
       final var result =
           groupServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupQuery));
+              .searchMembers(buildGroupMemberQuery(groupId, EntityType.USER, groupMemberQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupUserSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -289,12 +290,12 @@ public class GroupController {
   }
 
   private ResponseEntity<GroupClientSearchResult> searchClientsInGroup(
-      final String groupId, final GroupQuery groupQuery) {
+      final String groupId, final GroupMemberQuery groupMemberQuery) {
     try {
       final var result =
           groupServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchMembers(buildGroupMemberQuery(groupId, EntityType.CLIENT, groupQuery));
+              .searchMembers(buildGroupMemberQuery(groupId, EntityType.CLIENT, groupMemberQuery));
       return ResponseEntity.ok(SearchQueryResponseMapper.toGroupClientSearchQueryResponse(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
@@ -329,11 +330,11 @@ public class GroupController {
     }
   }
 
-  private GroupQuery buildGroupMemberQuery(
-      final String groupId, final EntityType memberType, final GroupQuery groupQuery) {
-    return groupQuery.toBuilder()
+  private GroupMemberQuery buildGroupMemberQuery(
+      final String groupId, final EntityType memberType, final GroupMemberQuery groupMemberQuery) {
+    return groupMemberQuery.toBuilder()
         .filter(
-            groupQuery.filter().toBuilder().joinParentId(groupId).memberType(memberType).build())
+            groupMemberQuery.filter().toBuilder().groupId(groupId).memberType(memberType).build())
         .build();
   }
 

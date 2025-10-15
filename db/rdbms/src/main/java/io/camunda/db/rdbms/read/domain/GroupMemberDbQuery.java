@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record GroupMemberDbQuery(
-    GroupFilter filter,
+    GroupMemberFilter filter,
     List<String> authorizedResourceIds,
     DbQuerySorting<GroupMemberEntity> sort,
     DbQueryPage page) {
@@ -29,14 +29,14 @@ public record GroupMemberDbQuery(
 
   public static final class Builder implements ObjectBuilder<GroupMemberDbQuery> {
 
-    private static final GroupFilter EMPTY_FILTER = FilterBuilders.group().build();
+    private static final GroupMemberFilter EMPTY_FILTER = FilterBuilders.groupMember().build();
 
-    private GroupFilter filter;
+    private GroupMemberFilter filter;
     private DbQuerySorting<GroupMemberEntity> sort;
     private DbQueryPage page;
     private List<String> authorizedResourceIds = Collections.emptyList();
 
-    public Builder filter(final GroupFilter value) {
+    public Builder filter(final GroupMemberFilter value) {
       filter = value;
       return this;
     }
@@ -56,8 +56,9 @@ public record GroupMemberDbQuery(
       return this;
     }
 
-    public Builder filter(final Function<GroupFilter.Builder, ObjectBuilder<GroupFilter>> fn) {
-      return filter(FilterBuilders.group(fn));
+    public Builder filter(
+        final Function<GroupMemberFilter.Builder, ObjectBuilder<GroupMemberFilter>> fn) {
+      return filter(FilterBuilders.groupMember(fn));
     }
 
     public Builder sort(

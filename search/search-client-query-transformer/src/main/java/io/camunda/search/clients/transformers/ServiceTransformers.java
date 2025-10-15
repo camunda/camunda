@@ -76,6 +76,7 @@ import io.camunda.search.clients.transformers.filter.FilterTransformer;
 import io.camunda.search.clients.transformers.filter.FlownodeInstanceFilterTransformer;
 import io.camunda.search.clients.transformers.filter.FormFilterTransformer;
 import io.camunda.search.clients.transformers.filter.GroupFilterTransformer;
+import io.camunda.search.clients.transformers.filter.GroupMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.IncidentFilterTransformer;
 import io.camunda.search.clients.transformers.filter.JobFilterTransformer;
 import io.camunda.search.clients.transformers.filter.MappingRuleFilterTransformer;
@@ -108,6 +109,7 @@ import io.camunda.search.clients.transformers.sort.FieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FlowNodeInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.FormFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.GroupFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.GroupMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.IncidentFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.JobFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.MappingRuleFieldSortingTransformer;
@@ -132,6 +134,7 @@ import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.FormFilter;
 import io.camunda.search.filter.GroupFilter;
+import io.camunda.search.filter.GroupMemberFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.MappingRuleFilter;
@@ -158,6 +161,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
@@ -189,6 +193,7 @@ import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
 import io.camunda.search.sort.FormSort;
+import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentSort;
 import io.camunda.search.sort.JobSort;
@@ -329,6 +334,7 @@ public final class ServiceTransformers {
             FlowNodeInstanceQuery.class,
             FormQuery.class,
             GroupQuery.class,
+            GroupMemberQuery.class,
             IncidentQuery.class,
             JobQuery.class,
             MappingRuleQuery.class,
@@ -390,6 +396,7 @@ public final class ServiceTransformers {
     mappers.put(FlowNodeInstanceSort.class, new FlowNodeInstanceFieldSortingTransformer());
     mappers.put(FormSort.class, new FormFieldSortingTransformer());
     mappers.put(GroupSort.class, new GroupFieldSortingTransformer());
+    mappers.put(GroupMemberSort.class, new GroupMemberFieldSortingTransformer());
     mappers.put(IncidentSort.class, new IncidentFieldSortingTransformer());
     mappers.put(JobSort.class, new JobFieldSortingTransformer());
     mappers.put(MappingRuleSort.class, new MappingRuleFieldSortingTransformer());
@@ -442,6 +449,9 @@ public final class ServiceTransformers {
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         GroupFilter.class, new GroupFilterTransformer(indexDescriptors.get(GroupIndex.class)));
+    mappers.put(
+        GroupMemberFilter.class,
+        new GroupMemberFilterTransformer(indexDescriptors.get(GroupIndex.class)));
     mappers.put(
         IncidentFilter.class,
         new IncidentFilterTransformer(indexDescriptors.get(IncidentTemplate.class)));

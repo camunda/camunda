@@ -20,6 +20,7 @@ import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
@@ -551,7 +552,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupUsersWithSorting() {
     // given
-    when(groupServices.searchMembers(any(GroupQuery.class)))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_USER_ENTITIES.size())
@@ -584,7 +585,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupUsersWithEmptyQuery() {
     // given
-    when(groupServices.searchMembers(any(GroupQuery.class)))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_USER_ENTITIES.size())
@@ -746,7 +747,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupClientsWithSorting() {
     // given
-    when(groupServices.searchMembers(any(GroupQuery.class)))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_CLIENT_ENTITIES.size())
@@ -779,7 +780,7 @@ public class GroupQueryControllerTest extends RestControllerTest {
   @Test
   void shouldSearchGroupClientsWithEmptyQuery() {
     // given
-    when(groupServices.searchMembers(any(GroupQuery.class)))
+    when(groupServices.searchMembers(any(GroupMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<GroupMemberEntity>()
                 .total(GROUP_CLIENT_ENTITIES.size())

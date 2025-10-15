@@ -27,6 +27,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
@@ -236,34 +237,34 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
   }
 
-  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
+  public static Either<ProblemDetail, GroupMemberQuery> toGroupMemberQuery(
       final GroupUserSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.groupSearchQuery().build());
+      return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromGroupUserSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::group,
+            SortOptionBuilders::groupMember,
             SearchQuerySortRequestMapper::applyGroupUserSortField);
-    final var filter = FilterBuilders.group().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
+    final var filter = FilterBuilders.groupMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, GroupQuery> toGroupQuery(
+  public static Either<ProblemDetail, GroupMemberQuery> toGroupMemberQuery(
       final GroupClientSearchQueryRequest request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.groupSearchQuery().build());
+      return Either.right(SearchQueryBuilders.groupMemberSearchQuery().build());
     }
     final var page = toSearchQueryPage(request.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromGroupClientSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::group,
+            SortOptionBuilders::groupMember,
             SearchQuerySortRequestMapper::applyGroupClientSortField);
-    final var filter = FilterBuilders.group().build();
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupSearchQuery);
+    final var filter = FilterBuilders.groupMember().build();
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::groupMemberSearchQuery);
   }
 
   public static Either<ProblemDetail, TenantQuery> toTenantQuery(
