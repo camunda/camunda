@@ -331,7 +331,7 @@ jobs:
           --set orchestration.security.authentication.oidc.backwardsCompatibleAudiences[0]=zeebe-api \
           --set orchestration.security.authentication.oidc.secret.existingSecret=camunda-credentials \
           --set orchestration.security.authentication.oidc.secret.existingSecretKey=identity-orchestration-client-token \
-          --version 13.0.0
+          --version 13.x
       - name: Summarize deployment
         if: success()
         run: |
