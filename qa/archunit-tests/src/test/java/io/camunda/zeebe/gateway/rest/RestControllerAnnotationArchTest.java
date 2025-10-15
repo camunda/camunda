@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.gateway.rest",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class RestControllerAnnotationTest {
+public class RestControllerAnnotationArchTest {
 
   /**
    * This ArchUnit test ensures that any REST API controllers, i.e. classes annotated with the

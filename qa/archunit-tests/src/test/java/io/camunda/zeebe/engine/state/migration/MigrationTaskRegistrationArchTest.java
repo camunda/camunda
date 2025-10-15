@@ -19,7 +19,7 @@ import com.tngtech.archunit.lang.ArchRule;
 @AnalyzeClasses(
     packages = "io.camunda.zeebe.engine.state.migration",
     importOptions = ImportOption.DoNotIncludeTests.class)
-public class MigrationTaskRegistrationTest {
+public class MigrationTaskRegistrationArchTest {
 
   @ArchTest()
   public static final ArchRule MIGRATION_TASKS_MUST_BE_REGISTERED =
