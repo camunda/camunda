@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.distribution;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.ObjectProperty;
@@ -209,4 +210,17 @@ public final class CommandDistributionRecord extends UnifiedRecordValue
     partitionIdProperty.setValue(partitionId);
     return this;
   }
+<<<<<<< HEAD
+=======
+
+  @JsonIgnoreProperties
+  public AuthInfo getAuthInfo() {
+    return authInfoProperty.getValue();
+  }
+
+  public CommandDistributionRecord setAuthInfo(final AuthInfo authInfo) {
+    authInfoProperty.getValue().copyFrom(authInfo);
+    return this;
+  }
+>>>>>>> 2a447f9b (fix: do not export auth info to avoid introducing a new field)
 }
