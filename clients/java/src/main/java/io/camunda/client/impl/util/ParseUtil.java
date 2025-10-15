@@ -16,8 +16,13 @@
 package io.camunda.client.impl.util;
 
 import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ParseUtil {
+  private static final Logger LOG = LoggerFactory.getLogger(ParseUtil.class);
 
   public static Long parseLongOrNull(final String input) {
     return input == null ? null : Long.parseLong(input);
@@ -36,7 +41,14 @@ public class ParseUtil {
       return null;
     }
     try {
-      return OffsetDateTime.parse(dateTime);
+      try {
+        return OffsetDateTime.parse(dateTime);
+      } catch (final DateTimeParseException e) {
+        LOG.debug(
+            "Failed parsing '{}' as ISO-8601 date-time, trying to parse as zoned ISO-8601 date-time.",
+            dateTime);
+        return ZonedDateTime.parse(dateTime).toOffsetDateTime();
+      }
     } catch (final Exception e) {
       throw new IllegalArgumentException("Failed to parse date: " + dateTime, e);
     }
