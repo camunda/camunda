@@ -1138,6 +1138,16 @@ public class MigrateInclusiveGatewayTest {
                     .moveToNode("fork")
                     .conditionExpression("= true")
                     .serviceTask("task3", b -> b.zeebeJobType("type3"))
+                    .sequenceFlowId("flow3")
+                    .connectTo("join1")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task4", b -> b.zeebeJobType("type4"))
+                    .sequenceFlowId("flow4")
+                    .connectTo("join1")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task5", b -> b.zeebeJobType("type5"))
                     .connectTo("join1")
                     .done())
             .withXmlResource(
@@ -1145,18 +1155,26 @@ public class MigrateInclusiveGatewayTest {
                     .startEvent()
                     .inclusiveGateway("fork")
                     .conditionExpression("= true")
-                    .serviceTask("task4", b -> b.zeebeJobType("type4"))
-                    .sequenceFlowId("flow3")
+                    .serviceTask("task6", b -> b.zeebeJobType("type6"))
+                    .sequenceFlowId("flow5")
                     .inclusiveGateway("join2")
                     .endEvent()
                     .moveToNode("fork")
                     .conditionExpression("= true")
-                    .serviceTask("task5", b -> b.zeebeJobType("type5"))
-                    .sequenceFlowId("flow4")
+                    .serviceTask("task7", b -> b.zeebeJobType("type7"))
+                    .sequenceFlowId("flow6")
                     .connectTo("join2")
                     .moveToNode("fork")
                     .conditionExpression("= true")
-                    .serviceTask("task6", b -> b.zeebeJobType("type6"))
+                    .serviceTask("task8", b -> b.zeebeJobType("type8"))
+                    .connectTo("join2")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task9", b -> b.zeebeJobType("type9"))
+                    .connectTo("join2")
+                    .moveToNode("fork")
+                    .conditionExpression("= true")
+                    .serviceTask("task10", b -> b.zeebeJobType("type10"))
                     .connectTo("join2")
                     .done())
             .deploy();
@@ -1170,11 +1188,13 @@ public class MigrateInclusiveGatewayTest {
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SERVICE_TASK)
-                .limit(3))
-        .hasSize(3);
+                .limit(5))
+        .hasSize(5);
 
     ENGINE.job().ofInstance(processInstanceKey).withType("type1").complete();
     ENGINE.job().ofInstance(processInstanceKey).withType("type2").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("type3").complete();
+    ENGINE.job().ofInstance(processInstanceKey).withType("type4").complete();
 
     assertThat(
             RecordingExporter.processInstanceRecords()
@@ -1185,10 +1205,10 @@ public class MigrateInclusiveGatewayTest {
                 .withIntent(ProcessInstanceIntent.SEQUENCE_FLOW_TAKEN)
                 .withProcessInstanceKey(processInstanceKey)
                 .withElementType(BpmnElementType.SEQUENCE_FLOW)
-                .limit(2))
+                .limit(4))
         .extracting(r -> r.getValue().getElementId())
         .describedAs("Expected to take the sequence flows to the joining gateway")
-        .contains("flow1", "flow2");
+        .contains("flow1", "flow2", "flow3", "flow4");
 
     // when
     final var rejectionRecord =
@@ -1199,8 +1219,10 @@ public class MigrateInclusiveGatewayTest {
             .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
             .addMappingInstruction("task3", "task6")
             .addMappingInstruction("join1", "join2")
-            .addMappingInstruction("flow1", "flow3")
-            .addMappingInstruction("flow2", "flow3") // both mapped to the same sequence flow
+            .addMappingInstruction("flow1", "flow5")
+            .addMappingInstruction("flow2", "flow5") // both mapped to the same sequence flow
+            .addMappingInstruction("flow3", "flow6")
+            .addMappingInstruction("flow4", "flow6") // both mapped to the same sequence flow
             .expectRejection()
             .migrate();
 
@@ -1211,9 +1233,11 @@ public class MigrateInclusiveGatewayTest {
         .hasRejectionReason(
             """
             Expected to migrate process instance '%s' \
-            but active sequence flows '%s, %s' are mapped to the same target sequence flow '%s'. \
+            but some active sequence flows are mapped to the same target sequence flow:
+            Active sequence flows 'flow1, flow2' mapped to target sequence flow 'flow5'.
+            Active sequence flows 'flow3, flow4' mapped to target sequence flow 'flow6'.
             Each active sequence flow must be mapped to a different sequence flow in the target process definition."""
-                .formatted(processInstanceKey, "flow1", "flow2", "flow3"))
+                .formatted(processInstanceKey))
         .hasKey(processInstanceKey);
   }
 }

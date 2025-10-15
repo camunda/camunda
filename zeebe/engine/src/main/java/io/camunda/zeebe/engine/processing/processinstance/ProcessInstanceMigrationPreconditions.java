@@ -1191,22 +1191,37 @@ public final class ProcessInstanceMigrationPreconditions {
           .add(sourceFlowId);
     }
 
-    targetElementIdToSourceElementIds.forEach(
-        (targetElementId, sourceElementIds) -> {
-          if (sourceElementIds.size() > 1) {
-            final var reason =
-                String.format(
-                    """
-                    Expected to migrate process instance '%s' \
-                    but active sequence flows '%s' are mapped to the same target sequence flow '%s'. \
-                    Each active sequence flow must be mapped to a different sequence flow in the target process definition.""",
-                    processInstanceKey,
-                    sourceElementIds.stream().sorted().collect(Collectors.joining(", ")),
-                    targetElementId);
-            throw new ProcessInstanceMigrationPreconditionFailedException(
-                reason, RejectionType.INVALID_ARGUMENT);
-          }
-        });
+    final List<String> conflicts =
+        targetElementIdToSourceElementIds.entrySet().stream()
+            .filter(e -> e.getValue().size() > 1)
+            .map(
+                e -> {
+                  final var formattedSources =
+                      String.join(
+                          ", ",
+                          e.getValue().stream()
+                              .sorted()
+                              .toList()); // sort to preserve order in test assertions
+                  final var targetElementId = e.getKey();
+                  return String.format(
+                      "Active sequence flows '%s' mapped to target sequence flow '%s'.",
+                      formattedSources, targetElementId);
+                })
+            .toList();
+
+    if (!conflicts.isEmpty()) {
+      final var lineSeparatedConflicts = String.join("\n", conflicts);
+      final var reason =
+          String.format(
+              """
+              Expected to migrate process instance '%s' \
+              but some active sequence flows are mapped to the same target sequence flow:
+              %s
+              Each active sequence flow must be mapped to a different sequence flow in the target process definition.""",
+              processInstanceKey, lineSeparatedConflicts);
+      throw new ProcessInstanceMigrationPreconditionFailedException(
+          reason, RejectionType.INVALID_ARGUMENT);
+    }
   }
 
   /**
