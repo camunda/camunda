@@ -88,14 +88,17 @@ func isRunning(ctx context.Context, name, url string, retries int, delay time.Du
 }
 
 func PrintStatus(settings types.C8RunSettings) error {
-	operatePort, tasklistPort, identityPort, camundaPort := 8080, 8080, 8080, 8080
-
-	// Overwrite ports if Docker is enabled
+	// For non-docker mode we respect the --port flag for all apps (they share the same port).
+	// In docker mode we keep the predefined mapped ports and ignore any custom --port value.
+	operatePort, tasklistPort, identityPort, camundaPort := settings.Port, settings.Port, settings.Port, settings.Port
 	if settings.Docker {
 		operatePort = 8088
 		tasklistPort = 8088
 		identityPort = 8088
 		camundaPort = 8088
+		if settings.Port != 8080 { // warn that user provided port is ignored in docker mode
+			log.Warn().Int("provided_port", settings.Port).Msg("--port flag is ignored in docker mode; using fixed container port mappings")
+		}
 	}
 
 	endpoints, _ := os.ReadFile("endpoints.txt")
