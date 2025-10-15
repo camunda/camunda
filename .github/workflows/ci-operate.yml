@@ -86,7 +86,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Maven
         run: |
-          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true
+          ./mvnw clean deploy -B -T1C -P -docker,skipFrontendBuild -DskipTests -DskipChecks -DaltStagingDirectory=${{ github.workspace }}/staging-${{ env.BRANCH_NAME }} -DskipRemoteStaging=true -Dmaven.deploy.skip=true -P\!include-optimize
       # Build the docker image to verify the built artifacts and the Dockerfile
       # It does NOT push the image to the registry
       - name: Build Docker image
@@ -376,9 +376,9 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - name: Build Operate
-        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild clean install
+        run: ./mvnw -B -T1C -DskipChecks -DskipTests -P skipFrontendBuild -P\!include-optimize clean install
       - name: Run Tests
-        run: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2
+        run: ./mvnw -pl operate -am verify -T1C -P skipFrontendBuild,operateItImport -B -Dfailsafe.rerunFailingTestsCount=2 -P\!include-optimize
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -420,7 +420,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild
+          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
       - uses: ./.github/actions/build-platform-docker
         id: build-operate-docker
         with:
@@ -431,7 +431,7 @@ jobs:
           distball: ${{ steps.build-zeebe.outputs.distball }}
       - name: Run Operate backup restore Tests
         shell: bash
-        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests verify | tee "${BUILD_OUTPUT_FILE_PATH}"
+        run: ./mvnw -B -pl operate/qa/backup-restore-tests -DskipChecks -P -docker,-skipTests -P\!include-optimize verify | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts
