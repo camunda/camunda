@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonAppend;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue;
@@ -49,6 +50,8 @@ final class BulkIndexRequest implements ContentProducer {
           .addMixIn(ProcessInstanceResultRecordValue.class, ProcessInstanceResult87Mixin.class)
           .addMixIn(UserTaskRecordValue.class, UserTask87Mixin.class)
           .addMixIn(JobRecordValue.class, Job87Mixin.class)
+          .addMixIn(
+              CommandDistributionRecordValue.class, CommandDistributionPreviousVersionMixin.class)
           .enable(Feature.ALLOW_SINGLE_QUOTES);
 
   // The property of the ES record template to store the sequence of the record.
@@ -64,6 +67,7 @@ final class BulkIndexRequest implements ContentProducer {
   private static final String ELEMENT_INSTANCE_PATH_PROPERTY = "elementInstancePath";
   private static final String PROCESS_DEFINITION_PATH_PROPERTY = "processDefinitionPath";
   private static final String CALLING_ELEMENT_PATH_PROPERTY = "callingElementPath";
+  private static final String AUTH_INFO_PROPERTY = "authInfo";
 
   private final List<BulkOperation> operations = new ArrayList<>();
 
@@ -213,4 +217,7 @@ final class BulkIndexRequest implements ContentProducer {
 
   @JsonIgnoreProperties({RESULT_PROPERTY, TAGS_PROPERTY})
   private static final class Job87Mixin {}
+
+  @JsonIgnoreProperties({AUTH_INFO_PROPERTY})
+  private static final class CommandDistributionPreviousVersionMixin {}
 }
