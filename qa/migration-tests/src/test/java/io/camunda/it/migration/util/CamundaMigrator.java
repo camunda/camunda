@@ -244,6 +244,10 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
     return searchClients;
   }
 
+  public String getDatabaseUrl() {
+    return databaseUrl;
+  }
+
   public IndexDescriptor indexFor(final Class<? extends IndexDescriptor> clazz) {
     return new IndexDescriptors(indexPrefix, true).get(clazz);
   }
