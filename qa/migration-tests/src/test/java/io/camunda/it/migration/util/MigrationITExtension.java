@@ -244,6 +244,7 @@ public class MigrationITExtension
                   .build(),
               BodyHandlers.ofString());
     } catch (final IOException | InterruptedException ignore) {
+      // ignore
     }
   }
 
@@ -259,21 +260,23 @@ public class MigrationITExtension
                   .build(),
               BodyHandlers.ofString());
     } catch (final IOException | InterruptedException ignore) {
+      // ignore
     }
   }
 
   private void increaseIsmPolling() {
+    final var requestBody =
+        "{\"persistent\":{\"plugins.index_state_management.job_interval\":\"1\"}}";
     try {
       HttpClient.newHttpClient()
           .send(
               HttpRequest.newBuilder(URI.create(databaseUrl + "/_cluster/settings"))
-                  .PUT(
-                      BodyPublishers.ofString(
-                          "{\"persistent\": {\"plugins.index_state_management.job_interval\": \"1\"	}}"))
+                  .PUT(BodyPublishers.ofString(requestBody))
                   .header("Content-Type", "application/json")
                   .build(),
               BodyHandlers.ofString());
     } catch (final IOException | InterruptedException ignore) {
+      // ignore
     }
   }
 
