@@ -72,6 +72,7 @@ public class TaskMigrator implements Migrator {
         performReindexForMainIndex();
         performReindexForDatedIndices();
         performBatchUpdatesForExportedDocuments();
+        adapter.applyRetentionOnLegacyRuntimeIndex();
         adapter.markMigrationAsCompleted();
         LOG.info("Task Migration completed successfully");
         LOG.info("Resuming archiver");
