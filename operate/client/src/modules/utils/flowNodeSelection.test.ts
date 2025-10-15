@@ -130,7 +130,6 @@ describe('flowNodeSelection', () => {
       sortValues: ['1606300828415', 'inner-1'] as [string, string],
     };
 
-    // pre-existing different selection
     flowNodeSelectionStore.setSelection({
       flowNodeId: 'existing',
       flowNodeInstanceId: 'existing-1',
@@ -138,7 +137,6 @@ describe('flowNodeSelection', () => {
 
     selectAdHocSubProcessInnerInstance(rootNode, innerInstance);
 
-    // selection should immediately switch to inner instance without anchor
     expect(flowNodeSelectionStore.state.selection).toEqual({
       flowNodeId: 'adhoc-subprocess',
       flowNodeInstanceId: 'inner-1',
@@ -146,7 +144,6 @@ describe('flowNodeSelection', () => {
       anchorFlowNodeId: undefined,
     });
 
-    // now load children (first child becomes anchor)
     flowNodeInstanceStore.handleFetchSuccess({
       'some-tree-path': {
         children: [
@@ -164,9 +161,6 @@ describe('flowNodeSelection', () => {
         running: false,
       },
     });
-
-    // wait microtask queue for when() to resolve
-    await Promise.resolve();
 
     expect(flowNodeSelectionStore.state.selection).toEqual({
       flowNodeId: 'adhoc-subprocess',
