@@ -41,10 +41,6 @@ public class AuthInfo extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getAuthDataBuffer() {
-    return authDataProp.getValue();
-  }
-
   public String getAuthData() {
     return BufferUtil.bufferAsString(authDataProp.getValue());
   }
@@ -68,16 +64,29 @@ public class AuthInfo extends UnpackedObject {
     return this;
   }
 
-  @JsonIgnore
-  public DirectBuffer getClaimsBuffer() {
-    return claimsProp.getValue();
-  }
-
   @Override
   public void reset() {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getEncodedLength() {
+    return super.getEncodedLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public boolean isEmpty() {
+    return super.isEmpty();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
   }
 
   public DirectBuffer toDirectBuffer() {

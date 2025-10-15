@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.immutable.DistributionState;
 import io.camunda.zeebe.engine.state.immutable.DistributionState.PendingDistributionVisitor;
 import io.camunda.zeebe.engine.state.routing.RoutingInfo;
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -153,6 +154,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
    * @param valueType the type of the command to distribute
    * @param intent the intent of the command to distribute
    * @param value the value of the command to distribute
+   * @param authInfo Auth info that will be attached to the distributed command, for receiving
+   *     partitions to check authorizations. May be null to not distribute any auth info.
    * @param partitions the partitions to distribute the command to
    */
   private <T extends UnifiedRecordValue> void distributeCommand(
@@ -161,6 +164,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final ValueType valueType,
       final Intent intent,
       final T value,
+      final AuthInfo authInfo,
       final Set<Integer> partitions) {
     if (partitions.isEmpty()
         || (partitions.size() == 1 && partitions.contains(currentPartitionId))) {
@@ -176,6 +180,10 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             .setValueType(valueType)
             .setIntent(intent)
             .setCommandValue(value);
+
+    if (authInfo != null) {
+      distributionRecord.setAuthInfo(authInfo);
+    }
 
     stateWriter.appendFollowUpEvent(
         distributionKey, CommandDistributionIntent.STARTED, distributionRecord);
@@ -290,10 +298,13 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       // have to copy this value for every partition.
       final var commandValue = distributionRecord.getCommandValue();
 
+      final var authInfo = new AuthInfo();
+      authInfo.copyFrom(distributionRecord.getAuthInfo());
+
       sideEffectWriter.appendSideEffect(
           () -> {
             interPartitionCommandSender.sendCommand(
-                partition, valueType, intent, distributionKey, commandValue);
+                partition, valueType, intent, distributionKey, commandValue, authInfo);
             return true;
           });
     }
@@ -334,7 +345,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
       final long key,
       final ValueType valueType,
       final Intent intent,
-      final T value) {
+      final T value,
+      final AuthInfo authInfo) {
     final var writeImmediately = !distributionState.hasQueuedDistributions(queue);
 
     if (writeImmediately) {
@@ -348,6 +360,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     commandDistributionContinuation.setValueType(valueType);
     commandDistributionContinuation.setIntent(intent);
     commandDistributionContinuation.setCommandValue(value);
+    commandDistributionContinuation.setAuthInfo(authInfo);
 
     stateWriter.appendFollowUpEvent(
         key, CommandDistributionIntent.CONTINUATION_REQUESTED, commandDistributionContinuation);
@@ -416,7 +429,8 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
             distributionRecord.getValueType(),
             distributionRecord.getIntent(),
             distributionKey,
-            distributionRecord.getCommandValue());
+            distributionRecord.getCommandValue(),
+            distributionRecord.getAuthInfo());
   }
 
   public void foreachRetriableDistribution(final PendingDistributionVisitor consumer) {
@@ -454,7 +468,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
 
     /** Distributes the command as specified. */
     <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value);
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
   }
 
   public interface ContinuationRequestBuilder {
@@ -470,7 +484,7 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
      * be written immediately.
      */
     <T extends UnifiedRecordValue> void continueWith(
-        final ValueType valueType, final Intent intent, final T value);
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo);
   }
 
   private class DistributionRequest
@@ -522,31 +536,43 @@ public final class CommandDistributionBehavior implements StreamProcessorLifecyc
     @Override
     public <T extends UnifiedRecordValue> void distribute(final TypedRecord<T> command) {
       distributeCommand(
-          queue, key, command.getValueType(), command.getIntent(), command.getValue(), partitions);
+          queue,
+          key,
+          command.getValueType(),
+          command.getIntent(),
+          command.getValue(),
+          command.getAuthInfo(),
+          partitions);
     }
 
     @Override
     public <T extends UnifiedRecordValue> void distribute(
-        final ValueType valueType, final Intent intent, final T value) {
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
       distributeCommand(
           queue,
           key,
           Objects.requireNonNull(valueType),
           Objects.requireNonNull(intent),
           Objects.requireNonNull(value),
+          authInfo,
           partitions);
     }
 
     @Override
     public <T extends UnifiedRecordValue> void continueWith(final TypedRecord<T> command) {
       requestContinuation(
-          queue, key, command.getValueType(), command.getIntent(), command.getValue());
+          queue,
+          key,
+          command.getValueType(),
+          command.getIntent(),
+          command.getValue(),
+          command.getAuthInfo());
     }
 
     @Override
     public <T extends UnifiedRecordValue> void continueWith(
-        final ValueType valueType, final Intent intent, final T value) {
-      requestContinuation(queue, key, valueType, intent, value);
+        final ValueType valueType, final Intent intent, final T value, final AuthInfo authInfo) {
+      requestContinuation(queue, key, valueType, intent, value, authInfo);
     }
   }
 }

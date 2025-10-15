@@ -250,7 +250,8 @@ public class DbDistributionState implements MutableDistributionState {
         .setQueueId(persistedDistribution.getQueueId().orElse(null))
         .setValueType(persistedDistribution.getValueType())
         .setIntent(persistedDistribution.getIntent())
-        .setCommandValue(persistedDistribution.getCommandValue());
+        .setCommandValue(persistedDistribution.getCommandValue())
+        .setAuthInfo(persistedDistribution.getAuthInfo());
   }
 
   @Override
@@ -387,6 +388,7 @@ public class DbDistributionState implements MutableDistributionState {
         .setQueueId(queue)
         .setValueType(persistedCommandDistribution.getValueType())
         .setIntent(persistedCommandDistribution.getIntent())
-        .setCommandValue(persistedCommandDistribution.getCommandValue());
+        .setCommandValue(persistedCommandDistribution.getCommandValue())
+        .setAuthInfo(persistedCommandDistribution.getAuthInfo());
   }
 }
