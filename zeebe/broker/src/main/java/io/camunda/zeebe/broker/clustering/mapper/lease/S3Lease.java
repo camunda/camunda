@@ -160,7 +160,21 @@ public class S3Lease extends AbstractLeaseClient {
   }
 
   @Override
-  public Lease tryAcquireLease(final int nodeId) {
+  public java.util.List<Lease> getAllLeases() {
+    final var leases = new java.util.ArrayList<Lease>();
+    for (int i = 0; i < clusterSize; i++) {
+      try {
+        final var lease = getLease(i);
+        leases.add(lease);
+      } catch (final Exception e) {
+        LOG.debug("Failed to get lease for nodeId {}: {}", i, e.getMessage());
+      }
+    }
+    return leases;
+  }
+
+  @Override
+  public InitialLease tryAcquireLease(final int nodeId) {
     final String objectKey = objectKey(nodeId);
 
     // 1. Get the current ETag
@@ -188,13 +202,14 @@ public class S3Lease extends AbstractLeaseClient {
     final boolean isCurrentLeaseExpired =
         Instant.ofEpochMilli(Long.parseLong(expiry)).isBefore(Instant.now());
 
-    if (currentLeaseHolder == null || currentLeaseHolder.isBlank() || isCurrentLeaseExpired) {
+    final boolean previousOwnerExists = currentLeaseHolder == null || currentLeaseHolder.isBlank();
+    if (previousOwnerExists || isCurrentLeaseExpired) {
       currentETag = headResponse.eTag();
       // always increase the version when acquiring a new lease
       final var nodeInstance = new NodeInstance(nodeId, currentNodeVersion).nextVersion();
       final var lease = new Lease(taskId, Long.parseLong(expiry), nodeInstance);
 
-      return atomicAcquireLease(lease, false);
+      return new InitialLease(previousOwnerExists, atomicAcquireLease(lease, false));
     }
     return null;
   }

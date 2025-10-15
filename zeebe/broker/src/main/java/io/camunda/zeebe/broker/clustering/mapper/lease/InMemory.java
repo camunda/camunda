@@ -11,6 +11,8 @@ import io.camunda.zeebe.broker.clustering.mapper.NodeInstance;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import java.time.Clock;
 import java.time.Duration;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 
@@ -61,20 +63,22 @@ public class InMemory {
     }
 
     @Override
-    public Lease tryAcquireLease(final int nodeId) {
-      return server.updateAt(
-          nodeId,
-          lease -> {
-            if (lease == null) {
-              currentLease = makeLease(NodeInstance.initial(nodeId));
-              return currentLease;
-            } else if (lease.isStillValid(clock.millis(), leaseExpirationDuration)) {
-              currentLease = makeLease(lease.nodeInstance());
-              return currentLease;
-            } else {
-              return null;
-            }
-          });
+    public InitialLease tryAcquireLease(final int nodeId) {
+      return new InitialLease(
+          false, // TODO ?
+          server.updateAt(
+              nodeId,
+              lease -> {
+                if (lease == null) {
+                  currentLease = makeLease(NodeInstance.initial(nodeId));
+                  return currentLease;
+                } else if (lease.isStillValid(clock.millis(), leaseExpirationDuration)) {
+                  currentLease = makeLease(lease.nodeInstance());
+                  return currentLease;
+                } else {
+                  return null;
+                }
+              }));
     }
 
     @Override
@@ -92,6 +96,11 @@ public class InMemory {
       if (currentLease != null) {
         server.updateAt(currentLease.nodeInstance().id(), lease -> null);
       }
+    }
+
+    @Override
+    public List<Lease> getAllLeases() {
+      return Arrays.stream(server.leases).toList();
     }
 
     private Lease makeLease(final NodeInstance currentNodeInstance) {

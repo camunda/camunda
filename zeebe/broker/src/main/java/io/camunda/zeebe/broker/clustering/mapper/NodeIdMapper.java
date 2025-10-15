@@ -11,6 +11,7 @@ import static java.util.concurrent.Executors.newSingleThreadScheduledExecutor;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient;
+import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.InitialLease;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import io.camunda.zeebe.broker.clustering.mapper.lease.NodeIdMappings;
 import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
@@ -45,6 +46,7 @@ public class NodeIdMapper implements Closeable {
   private final String taskId;
   private final Runnable onRenewalFailure;
   private ScheduledFuture<?> renewealTimer;
+  private boolean previousOwnerExpired;
 
   public NodeIdMapper(final LeaseClient lease) {
     this(lease, SHUTDOWN_VM);
@@ -79,10 +81,84 @@ public class NodeIdMapper implements Closeable {
 
   public NodeInstance start() {
     LOG.info("Starting nodeIdMapper");
-    final var nodeInstance = acquireLease();
+    final var initialLease = acquireLease();
+    previousOwnerExpired = initialLease.previousHolderExpired();
     scheduleRenewal();
-    this.nodeInstance = nodeInstance;
+    nodeInstance = initialLease.lease().nodeInstance();
     return nodeInstance;
+  }
+
+  // Waits until it is safe for the broker to start. It is safe if the previous lease owner
+  // gracefully released the lease. If the previous lease was timedout, then wait until all other
+  // nodes has kicked out the previous version.
+  public CompletableFuture<Boolean> waitUntilReady() {
+    if (!previousOwnerExpired) {
+      return CompletableFuture.completedFuture(true);
+    }
+
+    final var readyFuture = new CompletableFuture<Boolean>();
+
+    executor.submit(
+        () -> {
+          try {
+            waitUntilAllNodesHaveUpdatedVersion();
+            readyFuture.complete(true);
+          } catch (final Exception e) {
+            LOG.error("Failed to wait until ready: {}", e.getMessage(), e);
+            readyFuture.completeExceptionally(e);
+          }
+        });
+
+    return readyFuture;
+  }
+
+  private void waitUntilAllNodesHaveUpdatedVersion() throws Exception {
+    final var retryConfig = new RetryConfiguration();
+    retryConfig.setMaxRetries(Integer.MAX_VALUE);
+    retryConfig.setMinRetryDelay(Duration.ofSeconds(1));
+    retryConfig.setMaxRetryDelay(Duration.ofSeconds(10));
+    retryConfig.setRetryDelayMultiplier(1.5);
+    final RetryDecorator retryDecorator =
+        new RetryDecorator(retryConfig, Exception.class::isInstance);
+
+    // TODO: Do not block the thread. Resubmit each retry.
+    // TODO: Set max retry timeout
+    retryDecorator.decorate(
+        "Wait for all nodes to update version",
+        () -> {
+          final var allLeases = lease.getAllLeases();
+          final var allNodesUpdated =
+              allLeases.stream()
+                  .allMatch(
+                      l -> {
+                        final var mappings = l.nodeIdMappings().mappings();
+                        final var versionInMapping =
+                            mappings.get(String.valueOf(nodeInstance.id()));
+
+                        // If this node is not in the mapping, it means the node hasn't seen this
+                        // version yet
+                        if (versionInMapping == null) {
+                          return false;
+                        }
+
+                        // Check if the version in the mapping matches this node's version
+                        return versionInMapping == nodeInstance.version();
+                      });
+
+          if (allNodesUpdated) {
+            LOG.info(
+                "All nodes have updated to version {} for nodeId {}",
+                nodeInstance.version(),
+                nodeInstance.id());
+            return null;
+          } else {
+            LOG.debug(
+                "Not all nodes have updated to version {} for nodeId {} yet. Retrying...",
+                nodeInstance.version(),
+                nodeInstance.id());
+            throw new IllegalStateException("Not all nodes have updated version yet");
+          }
+        });
   }
 
   public long expiresAt() {
@@ -100,7 +176,7 @@ public class NodeIdMapper implements Closeable {
     executor.shutdown();
   }
 
-  private NodeInstance acquireLease() {
+  private InitialLease acquireLease() {
     return CompletableFuture.supplyAsync(
             () -> {
               try {
@@ -114,7 +190,7 @@ public class NodeIdMapper implements Closeable {
         .join();
   }
 
-  private NodeInstance busyAcquireLease() throws Exception {
+  private InitialLease busyAcquireLease() throws Exception {
     final var retryConfig = new RetryConfiguration();
     // TODO: Externalize config
     retryConfig.setMaxRetries(Integer.MAX_VALUE);
@@ -133,7 +209,7 @@ public class NodeIdMapper implements Closeable {
           } else {
             LOG.warn("Failed to acquire the lease for task={}", taskId);
           }
-          return acquiredLease.nodeInstance();
+          return acquiredLease;
         });
   }
 

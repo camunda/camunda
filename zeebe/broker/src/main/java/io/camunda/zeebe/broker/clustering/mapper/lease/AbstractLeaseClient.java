@@ -43,16 +43,17 @@ public abstract class AbstractLeaseClient implements LeaseClient {
   }
 
   @Override
-  public final Lease acquireLease() {
+  public final InitialLease acquireLease() {
     if (currentLease != null) {
       throw new IllegalStateException(
           "Tried to acquire a new lease, but  it is already in use: " + currentLease);
     }
 
     for (int i = 0; i < clusterSize; i++) {
-      currentLease = tryAcquireLease(i);
-      if (currentLease != null) {
-        return currentLease;
+      final var lease = tryAcquireLease(i);
+      if (lease != null) {
+        currentLease = lease.lease();
+        return lease;
       }
     }
     throw new IllegalStateException("Failed to acquire lease");
@@ -86,7 +87,7 @@ public abstract class AbstractLeaseClient implements LeaseClient {
   }
 
   // Atomic operation
-  protected abstract Lease tryAcquireLease(int id);
+  protected abstract InitialLease tryAcquireLease(int id);
 
   // Atomic operation
   protected abstract void initializeForNode(int id);
