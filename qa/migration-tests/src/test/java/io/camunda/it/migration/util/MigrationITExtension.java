@@ -204,15 +204,19 @@ public class MigrationITExtension
         closables.add(elasticsearchContainer);
         databaseUrl = "http://" + elasticsearchContainer.getHttpHostAddress();
         suppressEsWarnings();
+        increaseIlmPolling();
         expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
       case ES -> {
-        expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
         databaseUrl = DEFAULT_ES_URL;
+        suppressEsWarnings();
+        increaseIlmPolling();
+        expectedDescriptors = new IndexDescriptors(indexPrefix, true).all();
       }
       case OS -> {
         expectedDescriptors = new IndexDescriptors(indexPrefix, false).all();
         databaseUrl = DEFAULT_OS_URL;
+        increaseIsmPolling();
       }
       default -> throw new IllegalArgumentException("Unsupported database type: " + databaseType);
     }
@@ -240,7 +244,36 @@ public class MigrationITExtension
                   .build(),
               BodyHandlers.ofString());
     } catch (final IOException | InterruptedException ignore) {
-      // ignore
+    }
+  }
+
+  private void increaseIlmPolling() {
+    try {
+      HttpClient.newHttpClient()
+          .send(
+              HttpRequest.newBuilder(URI.create(databaseUrl + "/_cluster/settings"))
+                  .PUT(
+                      BodyPublishers.ofString(
+                          "{\"persistent\": {\"indices.lifecycle.poll_interval\": \"10s\"}}"))
+                  .header("Content-Type", "application/json")
+                  .build(),
+              BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException ignore) {
+    }
+  }
+
+  private void increaseIsmPolling() {
+    try {
+      HttpClient.newHttpClient()
+          .send(
+              HttpRequest.newBuilder(URI.create(databaseUrl + "/_cluster/settings"))
+                  .PUT(
+                      BodyPublishers.ofString(
+                          "{\"persistent\": {\"plugins.index_state_management.job_interval\": \"1\"	}}"))
+                  .header("Content-Type", "application/json")
+                  .build(),
+              BodyHandlers.ofString());
+    } catch (final IOException | InterruptedException ignore) {
     }
   }
 
