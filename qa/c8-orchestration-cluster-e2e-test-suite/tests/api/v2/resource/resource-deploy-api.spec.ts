@@ -108,6 +108,29 @@ test.describe.parallel('Resource Deploy API', () => {
     );
   });
 
+  test('Deploy Resource - RPA success', async ({request}) => {
+    const rpaResourceName = 'rpa_get_resource_api_test.rpa';
+    const formData = createResourceFormData(rpaResourceName);
+
+    const res = await request.post(buildUrl('/deployments'), {
+      headers: defaultHeaders(),
+      multipart: formData,
+    });
+
+    await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/deployments',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+    const body = await res.json();
+    validateDeploymentResponse(body, 1);
+    validateRpaDeployment(body.deployments, rpaResourceName, 'RPA_04pgbrx');
+  });
+
   test('Deploy Multiple Resources - Process Definition and Form Success', async ({
     request,
   }) => {
@@ -150,11 +173,13 @@ test.describe.parallel('Resource Deploy API', () => {
     const processResourceName = 'process_with_linked_start_form.bpmn';
     const formResourceName = 'sign_up_form.form';
     const decisionResourceName = 'simpleDecisionTable1.dmn';
+    const rpaResourceName = 'rpa_get_resource_api_test.rpa';
 
     const formData = createMultiResourceFormData(
       processResourceName,
       formResourceName,
       decisionResourceName,
+      rpaResourceName,
     );
 
     const res = await request.post(buildUrl('/deployments'), {
@@ -175,7 +200,7 @@ test.describe.parallel('Resource Deploy API', () => {
     const body = await res.json();
     expect(body.tenantId).toEqual('<default>');
     expect(body.deploymentKey).toBeDefined();
-    expect(body.deployments.length).toBe(4);
+    expect(body.deployments.length).toBe(5);
 
     const deploymentTypes = body.deployments.map(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -185,6 +210,7 @@ test.describe.parallel('Resource Deploy API', () => {
     expect(deploymentTypes).toContain('form');
     expect(deploymentTypes).toContain('decisionDefinition');
     expect(deploymentTypes).toContain('decisionRequirements');
+    expect(deploymentTypes).toContain('resource');
   });
 
   test('Deploy Resource - Unauthorized 401', async ({request}) => {
@@ -322,6 +348,24 @@ function validateDecisionRequirementsDeployment(
   expect(
     decisionRequirementsDeployment.decisionRequirements.version,
   ).toBeDefined();
+}
+
+function validateRpaDeployment(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  deployments: any[],
+  expectedResourceName: string,
+  expectedRpaId: string,
+): void {
+  const rpaDeployment = deployments.find(
+    (d) => 'resource' in (d as object),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  ) as any;
+  expect(rpaDeployment).toBeDefined();
+  expect(rpaDeployment.resource.tenantId).toEqual('<default>');
+  expect(rpaDeployment.resource.resourceName).toEqual(expectedResourceName);
+  expect(rpaDeployment.resource.resourceId).toEqual(expectedRpaId);
+  expect(rpaDeployment.resource.resourceKey).toBeDefined();
+  expect(rpaDeployment.resource.version).toBeDefined();
 }
 
 function validateDeploymentResponse(
