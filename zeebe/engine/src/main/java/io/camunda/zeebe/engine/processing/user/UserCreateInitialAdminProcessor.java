@@ -104,13 +104,13 @@ public class UserCreateInitialAdminProcessor implements TypedRecordProcessor<Use
   private Either<String, Void> checkUserCreateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.USER, PermissionType.CREATE);
-    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).mapLeft(Rejection::reason);
   }
 
   private Either<String, Void> checkRoleUpdateAuthorization(final TypedRecord<UserRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.ROLE, PermissionType.UPDATE);
-    return authCheckBehavior.isAuthorized(authRequest).mapLeft(Rejection::reason);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).mapLeft(Rejection::reason);
   }
 
   private Either<String, Void> checkUserDoesNotExist(final String username) {

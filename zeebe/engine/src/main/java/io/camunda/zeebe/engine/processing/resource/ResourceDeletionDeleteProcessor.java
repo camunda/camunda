@@ -448,7 +448,7 @@ public class ResourceDeletionDeleteProcessor
         new AuthorizationRequest(command, resourceType, permissionType, tenantId)
             .addResourceId(resourceId);
 
-    if (authCheckBehavior.isAuthorized(authRequest).isLeft()) {
+    if (authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).isLeft()) {
       throw new ForbiddenException(authRequest);
     }
   }

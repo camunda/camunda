@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperation.Batc
 import io.camunda.zeebe.engine.state.immutable.BatchOperationState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.util.MockTypedRecord;
+import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationLifecycleManagementRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -60,7 +61,7 @@ class BatchOperationSuspendProcessorTest {
     when(state.getBatchOperationState()).thenReturn(batchOperationState);
 
     final var authCheckBehavior = mock(AuthorizationCheckBehavior.class);
-    when(authCheckBehavior.isAuthorized(any(AuthorizationRequest.class)))
+    when(authCheckBehavior.isAuthorizedOrInternalCommand(any(AuthorizationRequest.class)))
         .thenReturn(Either.right(null));
 
     when(keyGenerator.nextKey()).thenReturn(1L);
@@ -93,7 +94,7 @@ class BatchOperationSuspendProcessorTest {
     when(batchOperationState.get(batchOperationKey)).thenReturn(Optional.of(batchOperation));
 
     // when
-    final var record = new MockTypedRecord<>(pauseKey, null, recordValue);
+    final var record = new MockTypedRecord<>(pauseKey, new RecordMetadata(), recordValue);
     processor.processNewCommand(record);
 
     // then
