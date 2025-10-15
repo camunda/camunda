@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.variable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.zeebe.engine.processing.clustervariable.ClusterVariableRecordValidator;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
