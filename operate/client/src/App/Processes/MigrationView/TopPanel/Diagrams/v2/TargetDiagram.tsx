@@ -14,7 +14,7 @@ import {TargetProcessField} from '../TargetProcessField';
 import {TargetVersionField} from '../TargetVersionField';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {DiagramShell} from 'modules/components/DiagramShell';
-import {Diagram} from 'modules/components/Diagram/v2';
+import {Diagram} from 'modules/components/Diagram';
 import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
@@ -122,6 +122,7 @@ const TargetDiagram: React.FC = observer(() => {
         {data?.xml !== undefined && (
           <Diagram
             xml={data.xml}
+            processDefinitionKey={selectedTargetProcessId}
             selectableFlowNodes={[
               ...data.selectableFlowNodes,
               ...data.selectableSequenceFlows,

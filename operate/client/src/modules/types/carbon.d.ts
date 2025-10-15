@@ -329,6 +329,7 @@ declare module '@carbon/react/icons' {
   export const Add: Icon;
   export const Close: Icon;
   export const Popup: Icon;
+  export const Download: Icon;
   export const WarningAltFilled: Icon;
   export const Subtract: Icon;
   export const CenterCircle: Icon;
