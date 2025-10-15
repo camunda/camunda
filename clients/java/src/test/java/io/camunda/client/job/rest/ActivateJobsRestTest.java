@@ -520,6 +520,17 @@ public final class ActivateJobsRestTest extends ClientRestTest {
               assertThat(props.getPriority()).isEqualTo(10);
               assertThat(props.getUserTaskKey()).isEqualTo(123);
             }),
+        // regression test for https://github.com/camunda/camunda/issues/39474
+        // DateTimeFormatter.ISO_ZONED_DATE_TIME format
+        new ActivateJobWithUserTaskPropsTestCase(
+            "should activate job with zoned ISO 8601 date time (FEEL expression format)",
+            new UserTaskProperties()
+                .dueDate("2025-12-03T12:00Z[GMT]")
+                .followUpDate("2025-12-04T12:00+01:00[Europe/Paris]"),
+            props -> {
+              assertThat(props.getDueDate()).isEqualTo("2025-12-03T12:00:00Z");
+              assertThat(props.getFollowUpDate()).isEqualTo("2025-12-04T12:00:00+01:00");
+            }),
         new ActivateJobWithUserTaskPropsTestCase(
             "should activate job with empty user task properties",
             new UserTaskProperties(),
