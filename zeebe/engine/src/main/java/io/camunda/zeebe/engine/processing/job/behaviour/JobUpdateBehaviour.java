@@ -64,10 +64,7 @@ public class JobUpdateBehaviour {
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 job.getTenantId())
             .addResourceId(job.getBpmnProcessId());
-    return authCheckBehavior
-        .isAuthorized(
-            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference())
-        .map(unused -> job);
+    return authCheckBehavior.isAuthorizedOrInternalCommand(authRequest).map(unused -> job);
   }
 
   public Optional<String> updateJobRetries(

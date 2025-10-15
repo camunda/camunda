@@ -133,9 +133,7 @@ public final class BatchOperationCreateProcessor
     // first check for general CREATE_BATCH_OPERATION permission
     final var request =
         new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.CREATE);
-    final var isAuthorized =
-        authCheckBehavior.isAuthorized(
-            request, command.hasRequestMetadata(), command.getBatchOperationReference());
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isLeft()) {
       // if that's not present, check for the BO type dependent permission
       final var permission =

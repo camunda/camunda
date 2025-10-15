@@ -130,11 +130,9 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
-  public Either<Rejection, Void> isAuthorized(
-      final AuthorizationRequest request,
-      final boolean hasRequestMetadata,
-      final long batchOperationReference) {
-    if (isInternalCommand(hasRequestMetadata, batchOperationReference)) {
+  public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
+    final var command = request.command;
+    if (isInternalCommand(command.hasRequestMetadata(), command.getBatchOperationReference())) {
       return Either.right(null);
     }
     return isAuthorized(request);

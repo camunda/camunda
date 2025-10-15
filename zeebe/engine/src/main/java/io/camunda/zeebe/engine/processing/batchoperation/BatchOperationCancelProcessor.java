@@ -78,9 +78,7 @@ public final class BatchOperationCancelProcessor
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var request =
         new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.UPDATE);
-    final var authorizationResult =
-        authCheckBehavior.isAuthorized(
-            request, command.hasRequestMetadata(), command.getBatchOperationReference());
+    final var authorizationResult = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

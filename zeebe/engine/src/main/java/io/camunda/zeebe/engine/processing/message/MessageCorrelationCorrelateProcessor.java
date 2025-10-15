@@ -213,10 +213,7 @@ public final class MessageCorrelationCorrelateProcessor
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
               final var rejectionOrAuthorized =
-                  authCheckBehavior.isAuthorized(
-                      request.get(),
-                      command.hasRequestMetadata(),
-                      command.getBatchOperationReference());
+                  authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
               rejectionOrAuthorized.ifLeft(rejection::set);
               return rejectionOrAuthorized.isRight();
             },
