@@ -9,7 +9,7 @@ package io.camunda.search.clients.reader;
 
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.RoleMemberEntity;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
@@ -26,7 +26,7 @@ public class RoleMemberDocumentReader extends DocumentBasedReader implements Rol
 
   @Override
   public SearchQueryResult<RoleMemberEntity> search(
-      final RoleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final RoleMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
     return getSearchExecutor()
         .search(
             query,
@@ -36,7 +36,8 @@ public class RoleMemberDocumentReader extends DocumentBasedReader implements Rol
 
   public Set<String> getRoleMembers(final String roleId, final EntityType memberType) {
     final var roleMemberQuery =
-        RoleQuery.of(b -> b.filter(f -> f.joinParentId(roleId).memberType(memberType)).unlimited());
+        RoleMemberQuery.of(
+            b -> b.filter(f -> f.joinParentId(roleId).memberType(memberType)).unlimited());
     return search(roleMemberQuery, ResourceAccessChecks.disabled()).items().stream()
         .map(RoleMemberEntity::id)
         .collect(Collectors.toSet());

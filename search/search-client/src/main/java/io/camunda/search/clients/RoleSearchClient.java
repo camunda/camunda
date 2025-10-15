@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import io.camunda.search.entities.RoleEntity;
 import io.camunda.search.entities.RoleMemberEntity;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
@@ -19,7 +20,7 @@ public interface RoleSearchClient {
 
   SearchQueryResult<RoleEntity> searchRoles(RoleQuery filter);
 
-  SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleQuery filter);
+  SearchQueryResult<RoleMemberEntity> searchRoleMembers(RoleMemberQuery filter);
 
   RoleSearchClient withSecurityContext(SecurityContext securityContext);
 }

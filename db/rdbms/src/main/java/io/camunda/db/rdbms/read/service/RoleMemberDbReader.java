@@ -14,7 +14,7 @@ import io.camunda.db.rdbms.write.domain.RoleMemberDbModel;
 import io.camunda.search.clients.reader.RoleMemberReader;
 import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.filter.RoleFilter;
-import io.camunda.search.query.RoleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -36,7 +36,7 @@ public class RoleMemberDbReader extends AbstractEntityReader<RoleMemberEntity>
 
   @Override
   public SearchQueryResult<RoleMemberEntity> search(
-      final RoleQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final RoleMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
 
     if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
       return new SearchQueryResult.Builder<RoleMemberEntity>().total(0).items(List.of()).build();

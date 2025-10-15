@@ -18,6 +18,7 @@ import io.camunda.search.entities.RoleMemberEntity;
 import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.sort.RoleSort;
@@ -236,7 +237,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchUsersByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -283,7 +284,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
+            new RoleMemberQuery.Builder()
                 .filter(f -> f.memberType(EntityType.USER).joinParentId(roleId))
                 .build());
   }
@@ -357,7 +358,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   public void shouldSearchClientsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(3)
@@ -404,7 +405,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
+            new RoleMemberQuery.Builder()
                 .filter(f -> f.joinParentId(roleId).memberType(EntityType.CLIENT))
                 .build());
   }
@@ -413,7 +414,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
   void shouldSearchGroupsByRole() {
     // given
     final var roleId = "roleId";
-    when(roleServices.searchMembers(any(RoleQuery.class)))
+    when(roleServices.searchMembers(any(RoleMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<RoleMemberEntity>()
                 .total(2)
@@ -455,7 +456,7 @@ public class RoleQueryControllerTest extends RestControllerTest {
 
     verify(roleServices)
         .searchMembers(
-            new RoleQuery.Builder()
+            new RoleMemberQuery.Builder()
                 .filter(f -> f.joinParentId(roleId).memberType(EntityType.GROUP))
                 .build());
   }

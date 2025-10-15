@@ -69,6 +69,7 @@ import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
@@ -295,7 +296,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleQuery query) {
+  public SearchQueryResult<RoleMemberEntity> searchRoleMembers(final RoleMemberQuery query) {
     return doSearchWithReader(readers.roleMemberReader(), query);
   }
 

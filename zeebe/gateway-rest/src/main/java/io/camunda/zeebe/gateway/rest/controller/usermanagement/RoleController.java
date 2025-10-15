@@ -10,6 +10,7 @@ package io.camunda.zeebe.gateway.rest.controller.usermanagement;
 import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
 
 import io.camunda.search.query.MappingRuleQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.SecurityConfiguration;
@@ -155,14 +156,14 @@ public class RoleController {
   public ResponseEntity<RoleUserSearchResult> searchUsersByRole(
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleUserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toRoleQuery(query)
+    return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             userQuery -> searchUsersInRole(roleId, userQuery));
   }
 
   private ResponseEntity<RoleUserSearchResult> searchUsersInRole(
-      final String roleId, final RoleQuery query) {
+      final String roleId, final RoleMemberQuery query) {
     try {
       final var result =
           roleServices
@@ -179,14 +180,14 @@ public class RoleController {
   public ResponseEntity<RoleClientSearchResult> searchClientsByRole(
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleClientSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toRoleQuery(query)
+    return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             roleQuery -> searchClientsInRole(roleId, roleQuery));
   }
 
   private ResponseEntity<RoleClientSearchResult> searchClientsInRole(
-      final String tenantId, final RoleQuery query) {
+      final String tenantId, final RoleMemberQuery query) {
     try {
       final var result =
           roleServices
@@ -198,8 +199,8 @@ public class RoleController {
     }
   }
 
-  private RoleQuery buildRoleMemberQuery(
-      final String roleId, final EntityType memberType, final RoleQuery query) {
+  private RoleMemberQuery buildRoleMemberQuery(
+      final String roleId, final EntityType memberType, final RoleMemberQuery query) {
     return query.toBuilder()
         .filter(query.filter().toBuilder().joinParentId(roleId).memberType(memberType).build())
         .build();
@@ -347,7 +348,7 @@ public class RoleController {
   }
 
   private ResponseEntity<RoleGroupSearchResult> searchGroupsInRole(
-      final String roleId, final RoleQuery query) {
+      final String roleId, final RoleMemberQuery query) {
     try {
       final var result =
           roleServices
