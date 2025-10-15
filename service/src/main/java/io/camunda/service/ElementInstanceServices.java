@@ -157,7 +157,6 @@ public final class ElementInstanceServices
 
   public SearchQueryResult<IncidentEntity> searchIncidents(
       final long elementInstanceKey, final IncidentQuery query) {
-    final IncidentQuery safeQuery = (query != null) ? query : IncidentQuery.of(b -> b);
     final var authenticatedIncidentServices = incidentServices.withAuthentication(authentication);
     if (authenticatedIncidentServices == null) {
       return SearchQueryResult.of();
@@ -171,8 +170,8 @@ public final class ElementInstanceServices
                                 Operation.like(
                                     String.format(
                                         FNI_ELEMENT_INSTANCE_PATTERN, elementInstanceKey))))
-                    .sort(safeQuery.sort())
-                    .page(safeQuery.page())));
+                    .sort(query.sort())
+                    .page(query.page())));
   }
 
   public record SetVariablesRequest(

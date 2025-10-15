@@ -202,6 +202,7 @@ public final class ElementInstanceServiceTest {
     class SearchIncidents {
       @Test
       void shouldReturnIncidentsForValidQuery() {
+        // given
         final long elementInstanceKey = 123L;
         final IncidentQuery query = IncidentQuery.of(q -> q);
         final IncidentEntity incident =
@@ -211,26 +212,22 @@ public final class ElementInstanceServiceTest {
 
         final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of(incident);
         when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        // when
         final var searchResult = services.searchIncidents(elementInstanceKey, query);
+        // then
         assertThat(searchResult.items()).containsExactly(incident);
       }
 
       @Test
       void shouldReturnEmptyListIfNoIncidentsFound() {
+        // given
         final long elementInstanceKey = 456L;
         final IncidentQuery query = IncidentQuery.of(q -> q);
         final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of();
         when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        // when
         final var searchResult = services.searchIncidents(elementInstanceKey, query);
-        assertThat(searchResult.items()).isEmpty();
-      }
-
-      @Test
-      void shouldHandleNullQueryGracefully() {
-        final long elementInstanceKey = 789L;
-        final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of();
-        when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
-        final var searchResult = services.searchIncidents(elementInstanceKey, null);
+        // then
         assertThat(searchResult.items()).isEmpty();
       }
     }

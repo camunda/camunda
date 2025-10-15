@@ -482,8 +482,10 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldSearchIncidentsForElementInstance() {
+    // given
     when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class)))
         .thenReturn(INCIDENT_SEARCH_RESULT);
+    // when / then
     webClient
         .post()
         .uri(String.format(INCIDENTS_SEARCH_URL, 1L))
@@ -501,8 +503,10 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
   @Test
   void shouldSearchIncidentsForElementInstanceWithNullBody() {
+    // given
     when(elementInstanceServices.searchIncidents(any(Long.class), any(IncidentQuery.class)))
         .thenReturn(INCIDENT_SEARCH_RESULT);
+    // when / then
     webClient
         .post()
         .uri(String.format(INCIDENTS_SEARCH_URL, 1L))

@@ -5241,7 +5241,7 @@ paths:
       operationId: searchElementInstanceIncidents
       summary: Search for incidents of a specific element instance
       description: |
-        Search for incidents caused by the specified element instance. Supported only for document-based backends (Elasticsearch/OpenSearch).
+        Search for incidents caused by the specified element instance, including incidents of any child instances created from this element instance.
       parameters:
         - name: elementInstanceKey
           in: path
