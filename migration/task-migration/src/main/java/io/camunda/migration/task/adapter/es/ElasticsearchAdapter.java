@@ -165,11 +165,6 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   }
 
   @Override
-  public void deleteLegacyMainIndex() throws MigrationException {
-    deleteLegacyIndex(legacyIndex.getFullQualifiedName());
-  }
-
-  @Override
   public String getLastMigratedTaskId() throws MigrationException {
     final var migrationStepContent = getLastMigratedContent();
     return MigrationUtils.getTaskIdFromMigrationStepContent(migrationStepContent);
@@ -308,6 +303,11 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
         .map(Hit::source)
         .filter(Objects::nonNull)
         .collect(Collectors.toSet());
+  }
+
+  @Override
+  public void applyRetentionOnLegacyRuntimeIndex() throws MigrationException {
+    /// This is already handled by the {@link #applyPolicy()}
   }
 
   @Override
@@ -550,7 +550,9 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
                               s.index(
                                   i ->
                                       i.lifecycle(
-                                          l -> l.name(LEGACY_INDEX_RETENTION_POLICY_NAME)))));
+                                          l ->
+                                              l.name(LEGACY_INDEX_RETENTION_POLICY_NAME)
+                                                  .originationDate(System.currentTimeMillis())))));
     } catch (final IOException e) {
       final var message =
           "Failed to apply index lifecycle policy '%s' to '%s' index"

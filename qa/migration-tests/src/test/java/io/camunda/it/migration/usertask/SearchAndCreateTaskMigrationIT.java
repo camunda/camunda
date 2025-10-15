@@ -49,6 +49,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   private static final Instant STARTING_INSTANT = Instant.now().truncatedTo(ChronoUnit.MILLIS);
   private static final int ARCHIVING_WAITING_PERIOD_SECONDS = 10;
+  private static final String RETENTION_AGE = "30s";
 
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
@@ -67,7 +68,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
           .withUpgradeSystemPropertyOverrides(
               Map.of(
                   "camunda.migration.tasks.legacyIndexRetentionAge",
-                  "2d",
+                  RETENTION_AGE,
                   "camunda.database.retention.enabled",
                   "true",
                   "camunda.database.retention.minimumAge",
@@ -154,10 +155,59 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     if (PROVIDER.isElasticSearch()) {
       assertThatIlmPolicyIsPresent();
       assertIndexHasIlmPolicy(indexName);
+      assertIndexDeletionPolicyIsTriggered(indexName);
     } else {
       assertThatIsmPolicyIsPresent();
       assertIndexHasIsmPolicy(indexName);
+      assertIndexDeletionPolicyIsTriggeredOpensearch(indexName);
     }
+  }
+
+  private void assertIndexDeletionPolicyIsTriggered(final String indexName) {
+    final var uri =
+        URI.create(String.format("%s/%s/_ilm/explain", PROVIDER.getDatabaseUrl(), indexName));
+    Awaitility.await("wait until runtime index is deleted after retention period")
+        .atMost(Duration.ofSeconds(200))
+        .atLeast(Duration.ofSeconds(30))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> {
+              final HttpRequest request =
+                  HttpRequest.newBuilder()
+                      .uri(uri)
+                      .header("Content-Type", "application/json")
+                      .GET()
+                      .build();
+              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+              final var jsonResponse = OBJECT_MAPPER.readTree(response.body());
+              assertThat(jsonResponse.at("/indices/" + indexName + "/phase").asText())
+                  .isEqualTo("delete");
+              assertThat(jsonResponse.at("/indices/" + indexName + "/action").asText())
+                  .isEqualTo("delete");
+            });
+  }
+
+  private void assertIndexDeletionPolicyIsTriggeredOpensearch(final String indexName) {
+    final var uri =
+        URI.create(
+            String.format("%s/_plugins/_ism/explain/%s", PROVIDER.getDatabaseUrl(), indexName));
+    Awaitility.await("wait until runtime index is deleted after retention period")
+        .atMost(Duration.ofSeconds(200))
+        .atLeast(Duration.ofSeconds(50))
+        .pollInterval(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> {
+              final HttpRequest request =
+                  HttpRequest.newBuilder()
+                      .uri(uri)
+                      .header("Content-Type", "application/json")
+                      .GET()
+                      .build();
+              final var response = HTTP_CLIENT.send(request, BodyHandlers.ofString());
+              final var jsonResponse = OBJECT_MAPPER.readTree(response.body());
+              assertThat(jsonResponse.at("/" + indexName + "/transition_to").asText())
+                  .isEqualTo("deleted");
+            });
   }
 
   @Test
@@ -199,7 +249,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     if (datedIndices.isEmpty()) {
       fail("Dated task indices were expected but not found");
     }
-    datedIndices.forEach(datedIndex -> assertIndexHasIlmPolicy(datedIndex));
+    datedIndices.forEach(this::assertIndexHasIlmPolicy);
   }
 
   private void assertIndexHasIlmPolicy(final String datedIndex) {
@@ -273,7 +323,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
                 + TaskMigrationAdapter.LEGACY_INDEX_RETENTION_POLICY_NAME
                 + "/policy/phases/delete/min_age");
     assertThat(minAge.isMissingNode()).isFalse();
-    assertThat(minAge.asText()).isEqualTo("2d");
+    assertThat(minAge.asText()).isEqualTo(RETENTION_AGE);
   }
 
   private void assertThatIsmPolicyIsPresent() throws IOException, InterruptedException {
@@ -292,7 +342,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     final JsonNode jsonResponse = OBJECT_MAPPER.readTree(response.body());
     final var minAge = jsonResponse.at("/policy/states/0/transitions/0/conditions/min_index_age");
     assertThat(minAge.isMissingNode()).isFalse();
-    assertThat(minAge.asText()).isEqualTo("2d");
+    assertThat(minAge.asText()).isEqualTo(RETENTION_AGE);
   }
 
   private List<String> getDatedTaskIndexNames() {

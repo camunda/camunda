@@ -33,8 +33,6 @@ public interface TaskMigrationAdapter {
 
   void deleteLegacyIndex(String legacyIndex) throws MigrationException;
 
-  void deleteLegacyMainIndex() throws MigrationException;
-
   String getLastMigratedTaskId() throws MigrationException;
 
   void writeLastMigratedTaskId(String taskId) throws MigrationException;
@@ -44,6 +42,8 @@ public interface TaskMigrationAdapter {
   String updateAcrossAllIndices(List<TaskWithIndex> tasksWithIndex) throws MigrationException;
 
   Set<ImportPositionEntity> getImportPositions() throws MigrationException;
+
+  void applyRetentionOnLegacyRuntimeIndex() throws MigrationException;
 
   void blockArchiving() throws MigrationException;
 

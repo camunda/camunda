@@ -36,10 +36,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.Conflicts;
 import org.opensearch.client.opensearch._types.FieldValue;
@@ -73,6 +76,7 @@ import org.slf4j.LoggerFactory;
 public class OpensearchAdapter implements TaskMigrationAdapter {
 
   private static final Logger LOG = LoggerFactory.getLogger(OpensearchAdapter.class);
+  private static final String CLONE_LEGACY_INDEX_PREFIX = "migration-clone-";
   private static final String LEGACY_RUNTIME_POLICY =
       "/opensearch-legacy-runtime-index-policy.json";
   private static final String ISM_POLICIES_ENDPOINT = "_plugins/_ism/policies";
@@ -85,6 +89,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   private final TasklistMigrationRepositoryIndex migrationIndex;
   private final RetryDecorator retryDecorator;
   private final TasklistImportPositionIndex importPositionIndex;
+  private final OpenSearchAsyncClient asyncClient;
 
   public OpensearchAdapter(
       final MigrationConfiguration migrationConfiguration,
@@ -93,6 +98,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     this.migrationConfiguration = migrationConfiguration;
     client = new OpensearchConnector(connectConfiguration).createClient();
     genericClient = new OpenSearchGenericClient(client._transport(), client._transportOptions());
+    asyncClient = new OpenSearchAsyncClient(client._transport(), client._transportOptions());
     retryDecorator =
         new RetryDecorator(migrationConfiguration.getRetry())
             .withRetryOnException(
@@ -154,9 +160,6 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   @Override
   public void reindexLegacyMainIndex() throws MigrationException {
     reindex(legacyIndex.getFullQualifiedName(), destinationIndex.getFullQualifiedName());
-    if (retentionConfiguration.isEnabled()) {
-      applyLegacyIndexRetentionPolicy();
-    }
   }
 
   @Override
@@ -170,11 +173,6 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     } catch (final IOException e) {
       throw new MigrationException("Failed to delete index: " + legacyIndexToDelete, e);
     }
-  }
-
-  @Override
-  public void deleteLegacyMainIndex() throws MigrationException {
-    deleteLegacyIndex(legacyIndex.getFullQualifiedName());
   }
 
   @Override
@@ -317,6 +315,37 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   }
 
   @Override
+  public void applyRetentionOnLegacyRuntimeIndex() throws MigrationException {
+    if (!retentionConfiguration.isEnabled()) {
+      return;
+    }
+    blockWrites(legacyIndex.getFullQualifiedName())
+        .thenCompose(
+            ignore ->
+                cloneColdIndex(
+                    legacyIndex.getFullQualifiedName(),
+                    CLONE_LEGACY_INDEX_PREFIX + legacyIndex.getFullQualifiedName()))
+        .thenCompose(ignore -> applyLegacyIndexRetentionPolicy())
+        .thenCompose(ignore -> deleteIndex(legacyIndex.getFullQualifiedName()))
+        .thenCompose(
+            ignore ->
+                cloneColdIndex(
+                    CLONE_LEGACY_INDEX_PREFIX + legacyIndex.getFullQualifiedName(),
+                    legacyIndex.getFullQualifiedName()))
+        .thenCompose(ignore -> applyLegacyIndexRetentionPolicy())
+        .thenCompose(
+            ignore -> deleteIndex(CLONE_LEGACY_INDEX_PREFIX + legacyIndex.getFullQualifiedName()))
+        .exceptionally(
+            ex -> {
+              LOG.error(
+                  "Failed to apply retention policy on legacy runtime index. Migration is succeeded but the legacy runtime index will not be cleaned automatically.",
+                  ex);
+              return null;
+            })
+        .join();
+  }
+
+  @Override
   public void blockArchiving() throws MigrationException {
     final var blockArchivingRequest =
         new PutMappingRequest.Builder()
@@ -355,6 +384,47 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
   @Override
   public void close() throws IOException {
     client._transport().close();
+  }
+
+  private CompletableFuture<Void> blockWrites(final String index) {
+    try {
+      return asyncClient
+          .indices()
+          .putSettings(
+              r -> r.index(index).settings(s -> s.index(i -> i.blocks(b -> b.write(true)))))
+          .thenRun(() -> LOG.info("Blocked writes for index [{}]", index));
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to block writes for index [" + index + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> cloneColdIndex(final String source, final String destination) {
+    try {
+      return asyncClient
+          .indices()
+          .clone(
+              c ->
+                  c.index(source)
+                      .target(destination)
+                      .settings(
+                          Map.of(
+                              "index",
+                              JsonData.of(Map.of("number_of_shards", 1, "number_of_replicas", 0)))))
+          .thenRun(() -> LOG.info("Cloned index [{}] to [{}]", source, destination));
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to clone index [" + source + "]", e);
+    }
+  }
+
+  private CompletableFuture<Void> deleteIndex(final String index) {
+    try {
+      return asyncClient
+          .indices()
+          .delete(r -> r.index(index))
+          .thenRun(() -> LOG.info("Deleted index [{}]", index));
+    } catch (final IOException e) {
+      throw new MigrationException("Failed to delete index [" + index + "]", e);
+    }
   }
 
   private void writeLastMigratedStep(final ProcessorStep step) throws MigrationException {
@@ -534,12 +604,11 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
   /// Forked from io.camunda.search.schema.opensearch.OpensearchEngineClient
 
-  private void applyLegacyIndexRetentionPolicy() {
-    createPolicy();
-    applyPolicy();
+  private CompletableFuture<Void> applyLegacyIndexRetentionPolicy() {
+    return createPolicy().thenCompose(v -> applyPolicy());
   }
 
-  private void createPolicy() {
+  private CompletableFuture<Void> createPolicy() {
     final var request = createRuntimeIndexPolicyRequest();
     final String policyName = LEGACY_INDEX_RETENTION_POLICY_NAME;
     final String deletionMinAge = migrationConfiguration.getLegacyIndexRetentionAge();
@@ -558,12 +627,13 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
             "Expected to create ISM policy with name '{}', but failed with: '{}'.",
             policyName,
             exceptionMessage);
-        return;
+        return CompletableFuture.completedFuture(null);
       }
       final var errMsg =
           String.format("Failed to create index state management policy [%s]", policyName);
       throw new MigrationException(errMsg, exception);
     }
+    return CompletableFuture.completedFuture(null);
   }
 
   private Request createRuntimeIndexPolicyRequest() {
@@ -599,7 +669,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     return String.format("%s/%s", ISM_POLICIES_ENDPOINT, LEGACY_INDEX_RETENTION_POLICY_NAME);
   }
 
-  private void applyPolicy() {
+  private CompletableFuture<Void> applyPolicy() {
     final ObjectMapper objectMapper = new ObjectMapper();
     final var requestEntity = new AddPolicyRequestBody(LEGACY_INDEX_RETENTION_POLICY_NAME);
     try {
@@ -623,6 +693,7 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
     } catch (final IOException e) {
       throw new MigrationException(e);
     }
+    return CompletableFuture.completedFuture(null);
   }
 
   private record AddPolicyRequestBody(@JsonProperty("policy_id") String policyId) {}
