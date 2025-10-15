@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.immutable;
 
-import io.camunda.zeebe.engine.state.variable.ClusterVariableInstance;
+import io.camunda.zeebe.engine.state.clustervariable.ClusterVariableInstance;
 import java.util.Optional;
 import org.agrona.DirectBuffer;
 
