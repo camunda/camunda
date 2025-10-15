@@ -568,13 +568,6 @@ public final class AuthorizationCheckBehavior {
     if (!multiTenancyEnabled) {
       return true;
     }
-
-    if (!request.hasRequestMetadata()) {
-      // The command is written by Zeebe internally. Internal Zeebe commands are always allowed to
-      // access all tenants
-      return true;
-    }
-
     return getAuthorizedTenantIds(request.claims()).isAuthorizedForTenantId(request.tenantId());
   }
 
@@ -642,9 +635,7 @@ public final class AuthorizationCheckBehavior {
       boolean isNewResource,
       boolean isTenantOwnedResource,
       String tenantId,
-      Set<AuthorizationScope> authorizationScopes,
-      boolean hasRequestMetadata,
-      long batchOperationReference) {
+      Set<AuthorizationScope> authorizationScopes) {
 
     public String getForbiddenErrorMessage() {
       final var authorizationScopesContainsOnlyWildcard =
@@ -784,9 +775,7 @@ public final class AuthorizationCheckBehavior {
             isNewResource,
             isTenantOwnedResource,
             tenantId,
-            Collections.unmodifiableSet(authorizationScopes),
-            command.hasRequestMetadata(),
-            command.getBatchOperationReference());
+            Collections.unmodifiableSet(authorizationScopes));
       }
       return new AuthorizationRequestMetadata(
           authorizationClaims,
@@ -795,9 +784,7 @@ public final class AuthorizationCheckBehavior {
           isNewResource,
           isTenantOwnedResource,
           tenantId,
-          Collections.unmodifiableSet(authorizationScopes),
-          true,
-          RecordMetadataDecoder.batchOperationReferenceNullValue());
+          Collections.unmodifiableSet(authorizationScopes));
     }
 
     public static AuthorizationRequest builder() {
