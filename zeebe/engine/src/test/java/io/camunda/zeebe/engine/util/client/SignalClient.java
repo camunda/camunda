@@ -85,4 +85,9 @@ public class SignalClient {
     final long position = writer.writeCommand(SignalIntent.BROADCAST, username, signalRecord);
     return expectation.apply(position);
   }
+
+  public Record<SignalRecordValue> broadcastWithMetadata(final String username) {
+    final long position = writer.writeCommand(1, 1, SignalIntent.BROADCAST, signalRecord, username);
+    return expectation.apply(position);
+  }
 }

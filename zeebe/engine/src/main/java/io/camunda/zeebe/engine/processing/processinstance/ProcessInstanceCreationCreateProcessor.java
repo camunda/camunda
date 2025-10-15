@@ -149,7 +149,7 @@ public final class ProcessInstanceCreationCreateProcessor
                 command.getValue().getTenantId())
             .addResourceId(processId);
 
-    final var isAuthorized = authCheckBehavior.isAuthorized(request);
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (isAuthorized.isRight()) {
       return Either.right(deployedProcess);
     }

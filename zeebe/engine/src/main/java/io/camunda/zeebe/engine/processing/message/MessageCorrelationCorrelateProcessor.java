@@ -89,13 +89,19 @@ public final class MessageCorrelationCorrelateProcessor
   public void processRecord(final TypedRecord<MessageCorrelationRecord> command) {
     final var messageCorrelationRecord = command.getValue();
 
-    if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
-      final var message =
-          "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
-              .formatted(messageCorrelationRecord.getTenantId());
-      rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
-      return;
+    // Check tenant authorization if not an internal command
+    final var isInternal =
+        authCheckBehavior.isInternalCommand(
+            command.hasRequestMetadata(), command.getBatchOperationReference());
+    if (!isInternal) {
+      if (!authCheckBehavior.isAssignedToTenant(command, messageCorrelationRecord.getTenantId())) {
+        final var message =
+            "Expected to correlate message for tenant '%s', but user is not assigned to this tenant."
+                .formatted(messageCorrelationRecord.getTenantId());
+        rejectionWriter.appendRejection(command, RejectionType.FORBIDDEN, message);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.FORBIDDEN, message);
+        return;
+      }
     }
 
     final long messageKey = keyGenerator.nextKey();
@@ -206,7 +212,8 @@ public final class MessageCorrelationCorrelateProcessor
 
               final var processIdString = bufferAsString(subscription.getBpmnProcessId());
               request.get().addResourceId(processIdString);
-              final var rejectionOrAuthorized = authCheckBehavior.isAuthorized(request.get());
+              final var rejectionOrAuthorized =
+                  authCheckBehavior.isAuthorizedOrInternalCommand(request.get());
               rejectionOrAuthorized.ifLeft(rejection::set);
               return rejectionOrAuthorized.isRight();
             },

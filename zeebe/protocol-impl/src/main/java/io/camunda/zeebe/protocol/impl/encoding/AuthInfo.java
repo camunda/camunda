@@ -107,7 +107,8 @@ public class AuthInfo extends UnpackedObject {
 
   public enum AuthDataFormat {
     UNKNOWN((short) 0),
-    JWT((short) 1);
+    JWT((short) 1),
+    PRE_AUTHORIZED((short) 2);
 
     public final short id;
 

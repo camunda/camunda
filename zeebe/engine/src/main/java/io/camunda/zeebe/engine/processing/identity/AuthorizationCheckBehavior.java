@@ -23,7 +23,6 @@ import io.camunda.zeebe.engine.state.immutable.AuthorizationState;
 import io.camunda.zeebe.engine.state.immutable.MappingRuleState;
 import io.camunda.zeebe.engine.state.immutable.MembershipState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
-import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -131,6 +130,14 @@ public final class AuthorizationCheckBehavior {
     }
   }
 
+  public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
+    final var command = request.command;
+    if (isInternalCommand(command.hasRequestMetadata(), command.getBatchOperationReference())) {
+      return Either.right(null);
+    }
+    return isAuthorized(request);
+  }
+
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequestMetadata request) {
 
     if (shouldSkipAuthorization(request)) {
@@ -159,9 +166,24 @@ public final class AuthorizationCheckBehavior {
   // Helper methods
   private boolean shouldSkipAuthorization(final AuthorizationRequestMetadata request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
-        || (!request.hasRequestMetadata()
-            && request.batchOperationReference() == batchOperationReferenceNullValue())
         || isAuthorizedAnonymousUser(request.claims());
+  }
+
+  /**
+   * Determines if the command is an internal command. Internal commands are commands that are
+   * written by Zeebe itself and not by an external user. Internal commands should skip the
+   * authorization checks and the tenant checks.
+   *
+   * <p>A command is considered internal if it has no request metadata and no batch operation
+   * reference.
+   *
+   * @param hasRequestMetadata true if the command has request metadata, false otherwise
+   * @param batchOperationReference the batch operation reference of the command
+   * @return true if the command is an internal command, false otherwise
+   */
+  public boolean isInternalCommand(
+      final boolean hasRequestMetadata, final long batchOperationReference) {
+    return !hasRequestMetadata && batchOperationReference == batchOperationReferenceNullValue();
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
@@ -543,13 +565,6 @@ public final class AuthorizationCheckBehavior {
     if (!multiTenancyEnabled) {
       return true;
     }
-
-    if (!request.hasRequestMetadata()) {
-      // The command is written by Zeebe internally. Internal Zeebe commands are always allowed to
-      // access all tenants
-      return true;
-    }
-
     return getAuthorizedTenantIds(request.claims()).isAuthorizedForTenantId(request.tenantId());
   }
 
@@ -617,9 +632,7 @@ public final class AuthorizationCheckBehavior {
       boolean isNewResource,
       boolean isTenantOwnedResource,
       String tenantId,
-      Set<AuthorizationScope> authorizationScopes,
-      boolean hasRequestMetadata,
-      long batchOperationReference) {
+      Set<AuthorizationScope> authorizationScopes) {
 
     public String getForbiddenErrorMessage() {
       final var authorizationScopesContainsOnlyWildcard =
@@ -759,9 +772,7 @@ public final class AuthorizationCheckBehavior {
             isNewResource,
             isTenantOwnedResource,
             tenantId,
-            Collections.unmodifiableSet(authorizationScopes),
-            command.hasRequestMetadata(),
-            command.getBatchOperationReference());
+            Collections.unmodifiableSet(authorizationScopes));
       }
       return new AuthorizationRequestMetadata(
           authorizationClaims,
@@ -770,9 +781,7 @@ public final class AuthorizationCheckBehavior {
           isNewResource,
           isTenantOwnedResource,
           tenantId,
-          Collections.unmodifiableSet(authorizationScopes),
-          true,
-          RecordMetadataDecoder.batchOperationReferenceNullValue());
+          Collections.unmodifiableSet(authorizationScopes));
     }
 
     public static AuthorizationRequest builder() {

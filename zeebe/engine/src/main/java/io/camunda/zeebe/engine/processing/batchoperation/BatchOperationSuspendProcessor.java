@@ -81,7 +81,7 @@ public final class BatchOperationSuspendProcessor
       final TypedRecord<BatchOperationLifecycleManagementRecord> command) {
     final var request =
         new AuthorizationRequest(command, AuthorizationResourceType.BATCH, PermissionType.UPDATE);
-    final var authorizationResult = authCheckBehavior.isAuthorized(request);
+    final var authorizationResult = authCheckBehavior.isAuthorizedOrInternalCommand(request);
     if (authorizationResult.isLeft()) {
       final Rejection rejection = authorizationResult.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
