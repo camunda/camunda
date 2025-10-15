@@ -15,8 +15,10 @@ import static io.camunda.zeebe.model.bpmn.impl.ZeebeConstants.AD_HOC_SUB_PROCESS
 import io.camunda.zeebe.engine.Loggers;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
 import io.camunda.zeebe.engine.processing.common.ElementTreePathBuilder;
+import io.camunda.zeebe.engine.processing.deployment.model.element.AbstractFlowElement;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableAdHocSubProcess;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableFlowNode;
+import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableMultiInstanceBody;
 import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSequenceFlow;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.AuthorizationCheckBehavior;
@@ -228,7 +230,7 @@ public class ProcessInstanceMigrationMigrateProcessor
                     ProcessInstanceMigrationMappingInstructionValue::getTargetElementId));
 
     mappingInstructions.stream()
-        .filter(instruction -> isAdHocSubProcess(sourceProcessDefinition, instruction.getSourceElementId()))
+        .filter(instruction -> isAdHocRelatedProcess(sourceProcessDefinition, instruction.getSourceElementId()))
         .forEach(
             instruction ->
                 mappedElementIds.put(
@@ -419,30 +421,6 @@ public class ProcessInstanceMigrationMigrateProcessor
               .setVariables(NIL_VALUE));
     }
 
-    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
-      final var targetAhsp =
-          (ExecutableAdHocSubProcess)
-              targetProcessDefinition
-                  .getProcess()
-                  .getElementById(targetElementId);
-
-      variableState
-          .getVariablesLocal(elementInstance.getKey())
-          .forEach(
-              variable ->
-                  stateWriter.appendFollowUpEvent(
-                      variable.key(),
-                      VariableIntent.MIGRATED,
-                      variableRecord
-                          .setScopeKey(elementInstance.getKey())
-                          .setName(BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS))
-                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
-                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
-                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
-                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
-                          .setTenantId(elementInstance.getValue().getTenantId())));
-    }
-
     variableState
         .getVariablesLocal(elementInstance.getKey())
         .forEach(
@@ -457,6 +435,8 @@ public class ProcessInstanceMigrationMigrateProcessor
                         .setProcessDefinitionKey(targetProcessDefinition.getKey())
                         .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
                         .setTenantId(elementInstance.getValue().getTenantId())));
+
+    handleAdHocSubProcess(elementInstance, targetProcessDefinition, elementInstanceRecord, targetElementId);
 
     if (ProcessInstanceIntent.ELEMENT_ACTIVATING != elementInstance.getState()) {
       // Elements in ACTIVATING state haven't subscribed to events yet. We shouldn't subscribe such
@@ -713,12 +693,49 @@ public class ProcessInstanceMigrationMigrateProcessor
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), intent, sequenceFlowRecord);
   }
 
-  private static boolean isAdHocSubProcess(
-      final DeployedProcess sourceProcessDefinition,
+  private void handleAdHocSubProcess(final ElementInstance elementInstance,
+      final DeployedProcess targetProcessDefinition,
+      final ProcessInstanceRecord elementInstanceRecord, final String targetElementId) {
+    if (isAdHocSubProcess(elementInstanceRecord.getBpmnElementType())) {
+      final AbstractFlowElement element = targetProcessDefinition
+          .getProcess()
+          .getElementById(targetElementId);
+
+      ExecutableAdHocSubProcess targetAhsp;
+      if (element instanceof ExecutableMultiInstanceBody mi) {
+        targetAhsp = (ExecutableAdHocSubProcess) mi.getInnerActivity();
+      } else {
+        targetAhsp = (ExecutableAdHocSubProcess) element;
+      }
+
+      variableState
+          .getVariablesLocal(elementInstance.getKey())
+          .forEach(
+              variable ->
+                  stateWriter.appendFollowUpEvent(
+                      variable.key(),
+                      VariableIntent.UPDATED,
+                      variableRecord
+                          .setScopeKey(elementInstance.getKey())
+                          .setName(BufferUtil.wrapString(AD_HOC_SUB_PROCESS_ELEMENTS))
+                          .setValue(targetAhsp.getAdHocActivitiesMetadata())
+                          .setProcessInstanceKey(elementInstance.getValue().getProcessInstanceKey())
+                          .setProcessDefinitionKey(targetProcessDefinition.getKey())
+                          .setBpmnProcessId(targetProcessDefinition.getBpmnProcessId())
+                          .setTenantId(elementInstance.getValue().getTenantId())));
+    }
+  }
+
+  private static boolean isAdHocRelatedProcess(
+      final DeployedProcess processDefinition,
       final String elementId) {
-    final var sourceElement =
-        sourceProcessDefinition.getProcess().getElementById(elementId);
-    return isAdHocSubProcess(sourceElement.getElementType());
+    final var element =
+        processDefinition.getProcess().getElementById(elementId);
+    final var elementType = element.getElementType();
+
+    return isAdHocSubProcess(elementType)
+        || (element instanceof ExecutableMultiInstanceBody mi &&
+        isAdHocSubProcess(mi.getInnerActivity().getElementType()));
   }
 
   private static boolean isAdHocSubProcess(final BpmnElementType elementType) {
