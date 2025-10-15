@@ -62,44 +62,48 @@ const OperationsEntry: React.FC<Props> = ({operation}) => {
 
   return (
     <Container data-testid="operations-entry">
-      <Header>
-        <Title>{label}</Title>
-        {batchOperationType === 'CANCEL_PROCESS_INSTANCE' && (
-          <Error size={16} data-testid="operation-cancel-icon" />
+      <div>
+        <Header>
+          <Title>{label}</Title>
+          {batchOperationType === 'CANCEL_PROCESS_INSTANCE' && (
+            <Error size={16} data-testid="operation-cancel-icon" />
+          )}
+          {batchOperationType === 'RESOLVE_INCIDENT' && (
+            <RetryFailed size={16} data-testid="operation-retry-icon" />
+          )}
+          {batchOperationType === 'MODIFY_PROCESS_INSTANCE' && (
+            <Tools size={16} data-testid="operation-modify-icon" />
+          )}
+          {batchOperationType === 'MIGRATE_PROCESS_INSTANCE' && (
+            <MigrateAlt size={16} data-testid="operation-migrate-icon" />
+          )}
+          {[
+            'DELETE_PROCESS_INSTANCE',
+            'DELETE_PROCESS_DEFINITION',
+            'DELETE_DECISION_DEFINITION',
+          ].includes(batchOperationType) && (
+            <TrashCan size={16} data-testid="operation-delete-icon" />
+          )}
+        </Header>
+        {!batchOperationType.startsWith('DELETE') ? (
+          <Link
+            data-testid="operation-id"
+            to={{
+              pathname: Paths.processes(),
+              search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${batchOperationKey}`,
+            }}
+            state={{hideOptionalFilters: true}}
+            onClick={panelStatesStore.expandFiltersPanel}
+          >
+            {batchOperationKey}
+          </Link>
+        ) : (
+          <span data-testid="operation-id">{batchOperationKey}</span>
         )}
-        {batchOperationType === 'RESOLVE_INCIDENT' && (
-          <RetryFailed size={16} data-testid="operation-retry-icon" />
-        )}
-        {batchOperationType === 'MODIFY_PROCESS_INSTANCE' && (
-          <Tools size={16} data-testid="operation-modify-icon" />
-        )}
-        {batchOperationType === 'MIGRATE_PROCESS_INSTANCE' && (
-          <MigrateAlt size={16} data-testid="operation-migrate-icon" />
-        )}
-        {[
-          'DELETE_PROCESS_INSTANCE',
-          'DELETE_PROCESS_DEFINITION',
-          'DELETE_DECISION_DEFINITION',
-        ].includes(batchOperationType) && (
-          <TrashCan size={16} data-testid="operation-delete-icon" />
-        )}
-      </Header>
-      {!batchOperationType.startsWith('DELETE') ? (
-        <Link
-          data-testid="operation-id"
-          to={{
-            pathname: Paths.processes(),
-            search: `?active=true&incidents=true&completed=true&canceled=true&operationId=${batchOperationKey}`,
-          }}
-          state={{hideOptionalFilters: true}}
-          onClick={panelStatesStore.expandFiltersPanel}
-        >
-          {batchOperationKey}
-        </Link>
-      ) : (
-        <span data-testid="operation-id">{batchOperationKey}</span>
+      </div>
+      {isComplete ? null : (
+        <ProgressBar label="" value={fakeProgressPercentage} />
       )}
-      {!isComplete && <ProgressBar label="" value={fakeProgressPercentage} />}
       <Details>
         <OperationEntryStatus
           type={batchOperationType}

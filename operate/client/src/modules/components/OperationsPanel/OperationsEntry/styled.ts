@@ -9,11 +9,16 @@
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
 import {ProgressBar as BaseProgressBar} from '@carbon/react';
+import {OPERATION_ENTRY_HEIGHT} from './constants';
 
-const Container = styled.li`
+const Container = styled.div`
   padding: var(--cds-spacing-05);
   ${styles.bodyCompact01};
   border-bottom: 1px solid var(--cds-border-subtle-01);
+  height: ${OPERATION_ENTRY_HEIGHT}px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 
 const Header = styled.header`
@@ -37,6 +42,7 @@ const Details = styled.div`
 `;
 
 const ProgressBar = styled(BaseProgressBar)`
+  height: 40px;
   padding-top: var(
     --cds-spacing-06
   ); // empty label has 0.5rem margin-bottom, so this spacing should be 06 instead of 07

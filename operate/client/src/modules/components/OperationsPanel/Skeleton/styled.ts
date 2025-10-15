@@ -9,7 +9,7 @@
 import styled from 'styled-components';
 import {SkeletonText as BaseSkeletonText} from '@carbon/react';
 
-const Container = styled.li`
+const Container = styled.div`
   padding: var(--cds-spacing-05);
 `;
 

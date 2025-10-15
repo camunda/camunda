@@ -6,13 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useRef} from 'react';
 import {useLocation, useNavigate, type Location} from 'react-router-dom';
 import {observer} from 'mobx-react';
-import {useOperationsPanelResize} from 'modules/hooks/useOperationsPanelResize';
 import {deleteSearchParams} from 'modules/utils/filter';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
-import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/constants';
 import {processesStore} from 'modules/stores/processes/processes.list';
 import {Section} from '../styled';
 import {DiagramShell} from 'modules/components/DiagramShell';
@@ -91,13 +88,6 @@ const DiagramPanel: React.FC = observer(() => {
     (flowNode) => flowNode.id,
   );
 
-  const panelHeaderRef = useRef<HTMLDivElement>(null);
-
-  useOperationsPanelResize(panelHeaderRef, (target, width) => {
-    target.style['marginRight'] =
-      `calc(${width}px - ${COLLAPSABLE_PANEL_MIN_WIDTH})`;
-  });
-
   const {data: businessObjects} = useBusinessObjects();
 
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
@@ -153,7 +143,6 @@ const DiagramPanel: React.FC = observer(() => {
         processDetails={processDetails}
         processDefinitionId={processId}
         isVersionSelected={isVersionSelected}
-        panelHeaderRef={panelHeaderRef}
         tenant={tenant}
       />
       <DiagramShell

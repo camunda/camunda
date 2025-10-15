@@ -18,6 +18,7 @@ import {
   DescriptionTitle,
   DescriptionData,
 } from './styled';
+import {panelStatesStore} from 'modules/stores/panelStates';
 
 type ProcessDetails = {
   bpmnProcessId?: string;
@@ -50,6 +51,11 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
       <PanelHeader
         title={!hasSelectedProcess ? 'Process' : undefined}
         ref={panelHeaderRef}
+        className={
+          panelStatesStore.state.isOperationsCollapsed
+            ? undefined
+            : 'panelOffset'
+        }
       >
         {hasSelectedProcess && (
           <>
