@@ -96,9 +96,7 @@ public final class VariableDocumentUpdateProcessor
                 PermissionType.UPDATE_PROCESS_INSTANCE,
                 scope.getValue().getTenantId())
             .addResourceId(scope.getValue().getBpmnProcessId());
-    final var isAuthorized =
-        authCheckBehavior.isAuthorized(
-            authRequest, record.hasRequestMetadata(), record.getBatchOperationReference());
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       final String errorMessage =

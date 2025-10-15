@@ -58,9 +58,7 @@ public final class ClockProcessor implements DistributedTypedRecordProcessor<Clo
   public void processNewCommand(final TypedRecord<ClockRecord> command) {
     final var authRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.SYSTEM, PermissionType.UPDATE);
-    final var isAuthorized =
-        authCheckBehavior.isAuthorized(
-            authRequest, command.hasRequestMetadata(), command.getBatchOperationReference());
+    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
     if (isAuthorized.isLeft()) {
       final var rejection = isAuthorized.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

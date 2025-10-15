@@ -74,9 +74,7 @@ public class DecisionEvaluationEvaluteProcessor
                   record.getTenantId())
               .addResourceId(decisionId);
 
-      final var isAuthorized =
-          authCheckBehavior.isAuthorized(
-              authRequest, command.hasRequestMetadata(), command.getBatchOperationReference());
+      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
       if (isAuthorized.isLeft()) {
         final var rejection = isAuthorized.getLeft();
         final String errorMessage =

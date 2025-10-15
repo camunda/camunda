@@ -49,10 +49,7 @@ public class PermissionsBehavior {
     final var authorizationRequest =
         new AuthorizationRequest(command, AuthorizationResourceType.AUTHORIZATION, permissionType);
     return authCheckBehavior
-        .isAuthorized(
-            authorizationRequest,
-            command.hasRequestMetadata(),
-            command.getBatchOperationReference())
+        .isAuthorizedOrInternalCommand(authorizationRequest)
         .map(unused -> command.getValue());
   }
 
