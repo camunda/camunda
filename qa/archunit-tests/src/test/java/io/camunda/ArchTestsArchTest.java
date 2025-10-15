@@ -53,7 +53,9 @@ public final class ArchTestsArchTest {
                 @Override
                 public void check(final JavaClass item, final ConditionEvents events) {
                   if (item.getFields().stream()
-                      .noneMatch(field -> field.isAnnotatedWith(ArchTest.class))) {
+                          .noneMatch(field -> field.isAnnotatedWith(ArchTest.class))
+                      && item.getMethods().stream()
+                          .noneMatch(method -> method.isAnnotatedWith(ArchTest.class))) {
                     events.add(
                         violated(
                             item,
