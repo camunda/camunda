@@ -15,7 +15,6 @@ public enum IncidentState {
   ACTIVE("CREATED"),
   MIGRATED("MIGRATED"),
   RESOLVED("RESOLVED"),
-  RESOLVE("RESOLVE"),
   PENDING(null);
 
   private static final Map<String, IncidentState> INTENT_MAP = new HashMap<>();

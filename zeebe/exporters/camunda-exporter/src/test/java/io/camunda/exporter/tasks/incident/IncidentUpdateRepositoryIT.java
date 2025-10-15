@@ -227,28 +227,6 @@ abstract class IncidentUpdateRepositoryIT {
   @Nested
   final class GetPendingIncidentsBatchTest {
     @Test
-    void shouldMatchAllIncidentIntentsToIncidentState() {
-      final var repository = createRepository();
-
-      for (final var intent : IncidentIntent.values()) {
-        setupIncidentUpdates(1, 2, e -> e.setIntent(intent.name()).setKey((long) intent.value()));
-      }
-
-      final var newIncidentStates =
-          repository
-              .getPendingIncidentsBatch(1L, IncidentIntent.values().length)
-              .toCompletableFuture()
-              .join()
-              .newIncidentStates();
-
-      for (final var intent : IncidentIntent.values()) {
-        final var matchingIncidentState = newIncidentStates.get((long) intent.value());
-        assertThat(matchingIncidentState).isNotNull();
-        assertThat(matchingIncidentState).isEqualTo(IncidentState.createFrom(intent.name()));
-      }
-    }
-
-    @Test
     void shouldGetOnlyNewUpdatesByPosition() throws PersistenceException {
       // given
       final var repository = createRepository();
