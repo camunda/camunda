@@ -118,6 +118,7 @@ import io.camunda.search.clients.transformers.sort.MessageSubscriptionFieldSorti
 import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.RoleMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
@@ -175,6 +176,7 @@ import io.camunda.search.query.ProcessDefinitionInstanceStatisticsQuery;
 import io.camunda.search.query.ProcessDefinitionQuery;
 import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
+import io.camunda.search.query.RoleMemberQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.search.query.TenantMemberQuery;
@@ -205,6 +207,7 @@ import io.camunda.search.sort.MappingRuleSort;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
+import io.camunda.search.sort.RoleMemberSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
 import io.camunda.search.sort.TenantMemberSort;
@@ -350,6 +353,7 @@ public final class ServiceTransformers {
             ProcessInstanceQuery.class,
             ProcessInstanceFlowNodeStatisticsQuery.class,
             RoleQuery.class,
+            RoleMemberQuery.class,
             SequenceFlowQuery.class,
             TenantQuery.class,
             TenantMemberQuery.class,
@@ -410,6 +414,7 @@ public final class ServiceTransformers {
     mappers.put(ProcessDefinitionSort.class, new ProcessDefinitionFieldSortingTransformer());
     mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
+    mappers.put(RoleMemberSort.class, new RoleMemberFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
     mappers.put(TenantMemberSort.class, new TenantMemberFieldSortingTransformer());
     mappers.put(UserTaskSort.class, new UserTaskFieldSortingTransformer());
