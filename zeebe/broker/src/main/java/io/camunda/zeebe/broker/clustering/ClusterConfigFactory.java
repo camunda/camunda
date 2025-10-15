@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.clustering;
 import com.google.common.net.HostAndPort;
 import io.atomix.cluster.ClusterConfig;
 import io.atomix.cluster.MemberConfig;
+import io.atomix.cluster.MemberId;
 import io.atomix.cluster.NodeConfig;
 import io.atomix.cluster.discovery.BootstrapDiscoveryConfig;
 import io.atomix.cluster.discovery.KubernetesDiscoveryConfig;
@@ -42,7 +43,8 @@ public final class ClusterConfigFactory {
     final var network = config.getNetwork();
 
     final var messaging = messagingConfig(cluster, network);
-    final var member = memberConfig(network.getInternalApi(), cluster.getNodeId());
+    final var member =
+        memberConfig(network.getInternalApi(), cluster.getNodeId(), cluster.getNodeIdVersion());
 
     return new ClusterConfig()
         .setClusterId(name)
@@ -52,11 +54,14 @@ public final class ClusterConfigFactory {
         .setProtocolConfig(membership);
   }
 
-  private MemberConfig memberConfig(final SocketBindingCfg network, final int nodeId) {
+  private MemberConfig memberConfig(
+      final SocketBindingCfg network, final int nodeId, final int nodeIdVersion) {
     final var advertisedAddress =
         Address.from(network.getAdvertisedHost(), network.getAdvertisedPort());
 
-    return new MemberConfig().setAddress(advertisedAddress).setId(String.valueOf(nodeId));
+    return new MemberConfig()
+        .setAddress(advertisedAddress)
+        .setId(MemberId.from(String.valueOf(nodeId), nodeIdVersion));
   }
 
   private SwimMembershipProtocolConfig membershipConfig(final MembershipCfg config) {
