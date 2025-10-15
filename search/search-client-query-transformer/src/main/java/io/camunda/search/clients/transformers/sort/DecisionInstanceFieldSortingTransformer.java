@@ -13,6 +13,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
@@ -42,6 +43,7 @@ public class DecisionInstanceFieldSortingTransformer implements FieldSortingTran
       case "decisionDefinitionName" -> DECISION_NAME;
       case "decisionDefinitionVersion" -> DECISION_VERSION;
       case "decisionDefinitionType" -> DECISION_TYPE;
+      case "rootDecisionDefinitionKey" -> ROOT_DECISION_DEFINITION_ID;
       case "tenantId" -> TENANT_ID;
       default -> throw new IllegalArgumentException("Unknown sortField: " + domainField);
     };

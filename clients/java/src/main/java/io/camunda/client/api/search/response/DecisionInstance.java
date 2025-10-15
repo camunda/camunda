@@ -88,6 +88,11 @@ public interface DecisionInstance {
   DecisionDefinitionType getDecisionDefinitionType();
 
   /**
+   * @return the root decision definition key of the decision instance
+   */
+  long getRootDecisionDefinitionKey();
+
+  /**
    * @return the tenant id of the decision instance
    */
   String getTenantId();

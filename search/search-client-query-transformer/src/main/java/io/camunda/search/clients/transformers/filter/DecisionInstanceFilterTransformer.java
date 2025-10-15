@@ -21,6 +21,7 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ROOT_DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_DATE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATION_FAILURE_MESSAGE;
@@ -70,6 +71,7 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getDecisionDefinitionVersionsQuery(filter.decisionDefinitionVersions()))
         .ifPresent(queries::add);
     ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
+    queries.addAll(getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
     return and(queries);
   }
@@ -146,6 +148,19 @@ public final class DecisionInstanceFilterTransformer
     return stringTerms(
         DECISION_TYPE,
         decisionTypes != null ? decisionTypes.stream().map(Enum::name).toList() : null);
+  }
+
+  private List<SearchQuery> getRootDecisionDefinitionKeysQuery(
+      final List<Operation<Long>> rootDecisionDefinitionKeyOperations) {
+    final var stringOperations =
+        rootDecisionDefinitionKeyOperations.stream()
+            .map(
+                op -> {
+                  final var values = op.values().stream().map(String::valueOf).toList();
+                  return new Operation<>(op.operator(), values);
+                })
+            .toList();
+    return stringOperations(ROOT_DECISION_DEFINITION_ID, stringOperations);
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {

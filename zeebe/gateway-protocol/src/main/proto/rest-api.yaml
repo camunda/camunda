@@ -10054,6 +10054,7 @@ components:
             - evaluationFailure
             - processDefinitionKey
             - processInstanceKey
+            - rootDecisionDefinitionKey
             - state
             - tenantId
         order:
@@ -10123,6 +10124,10 @@ components:
           description: The key of the element instance this decision instance is linked to.
           allOf:
             - $ref: "#/components/schemas/BasicStringFilterProperty"
+        rootDecisionDefinitionKey:
+          description: The key of the root decision definition.
+          allOf:
+            - $ref: "#/components/schemas/BasicStringFilterProperty"
     DecisionInstanceSearchQueryResult:
       type: object
       allOf:
@@ -10182,6 +10187,9 @@ components:
         elementInstanceKey:
           type: string
           description: The key of the element instance this decision instance is linked to.
+        rootDecisionDefinitionKey:
+          type: string
+          description: The key of the root decision definition.
 
     DecisionInstanceGetQueryResult:
       allOf:

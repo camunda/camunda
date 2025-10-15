@@ -59,6 +59,7 @@ public class DecisionInstanceAssertTest {
   private static final String PROCESS_INSTANCE_KEY = "3";
   private static final String DECISION_DEFINITION_KEY = "4";
   private static final String ELEMENT_INSTANCE_KEY = "5";
+  private static final String ROOT_DECISION_DEFINITION_KEY = "5";
   private static final int DECISION_DEFINITION_VERSION = 1;
 
   private static final String STRING_RESULT = "\"outputValue\"";
@@ -96,7 +97,8 @@ public class DecisionInstanceAssertTest {
             .processInstanceKey(PROCESS_INSTANCE_KEY)
             .decisionDefinitionKey(DECISION_DEFINITION_KEY)
             .elementInstanceKey(ELEMENT_INSTANCE_KEY)
-            .decisionDefinitionVersion(DECISION_DEFINITION_VERSION);
+            .decisionDefinitionVersion(DECISION_DEFINITION_VERSION)
+            .rootDecisionDefinitionKey(ROOT_DECISION_DEFINITION_KEY);
 
     return new DecisionInstanceImpl(resultBuilderFn.apply(basicResult), null);
   }
@@ -120,6 +122,7 @@ public class DecisionInstanceAssertTest {
         NAME,
         1,
         DecisionDefinitionType.DECISION_TABLE,
+        Long.parseLong(ROOT_DECISION_DEFINITION_KEY),
         "tenantId",
         Collections.emptyList(),
         rulesList,
