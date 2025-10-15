@@ -170,6 +170,14 @@ public class BroadcastSignalMultiplePartitionsTest {
                         .formatted(otherProcessId))
                 .exists())
         .isTrue();
+
+    // then - the signal distribution is still finished because a redistribution is not necessary
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                .withDistributionValueType(ValueType.SIGNAL)
+                .withDistributionIntent(SignalIntent.BROADCAST)
+                .exists())
+        .isTrue();
   }
 
   @Test
@@ -192,7 +200,7 @@ public class BroadcastSignalMultiplePartitionsTest {
     // when
     ENGINE.signal().withSignalName(signalName).broadcastWithMetadata(user.getUsername());
 
-    // then
+    // then - the command is rejected on the partition that hosts the unauthorized process instance
     assertThat(
             RecordingExporter.signalRecords(SignalIntent.BROADCAST)
                 .withSignalName(signalName)
@@ -201,6 +209,14 @@ public class BroadcastSignalMultiplePartitionsTest {
                 .withRejectionReason(
                     "Insufficient permissions to perform operation 'UPDATE_PROCESS_INSTANCE' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'"
                         .formatted(otherProcessId))
+                .exists())
+        .isTrue();
+
+    // then - the signal distribution is still finished because a redistribution is not necessary
+    assertThat(
+            RecordingExporter.commandDistributionRecords(CommandDistributionIntent.FINISHED)
+                .withDistributionValueType(ValueType.SIGNAL)
+                .withDistributionIntent(SignalIntent.BROADCAST)
                 .exists())
         .isTrue();
   }
