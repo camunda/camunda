@@ -37,8 +37,10 @@ public final class CreateClusterVariableMultiPartitionTest {
 
   @Test
   public void createGlobalScopedClusterVariableMultiPartition() {
+    // when
     ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("VALUE").create();
 
+    // then
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)
@@ -84,6 +86,7 @@ public final class CreateClusterVariableMultiPartitionTest {
 
   @Test
   public void createTenantScopedClusterVariableMultiPartition() {
+    // when
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_2")
@@ -91,6 +94,7 @@ public final class CreateClusterVariableMultiPartitionTest {
         .withTenantId("tenant_1")
         .create();
 
+    // then
     assertThat(
             RecordingExporter.records()
                 .withPartitionId(1)

@@ -36,7 +36,10 @@ public final class CreateClusterVariableTest {
 
   @Test
   public void createGlobalScopedClusterVariable() {
+    // when
     final var record = ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("VALUE").create();
+
+    // then
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.CREATED)
         .hasRecordType(RecordType.EVENT);
@@ -44,6 +47,7 @@ public final class CreateClusterVariableTest {
 
   @Test
   public void createTenantScopedClusterVariable() {
+    // when
     final var record =
         ENGINE_RULE
             .clusterVariables()
@@ -51,6 +55,7 @@ public final class CreateClusterVariableTest {
             .withValue("VALUE")
             .withTenantId("tenant_1")
             .create();
+    // then
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.CREATED)
         .hasRecordType(RecordType.EVENT);
@@ -58,7 +63,9 @@ public final class CreateClusterVariableTest {
 
   @Test
   public void createGlobalScopedClusterVariableAlreadyExists() {
+    // given
     ENGINE_RULE.clusterVariables().withName("KEY_3").withValue("VALUE").create();
+    // when
     final var record =
         ENGINE_RULE
             .clusterVariables()
@@ -66,6 +73,7 @@ public final class CreateClusterVariableTest {
             .withValue("VALUE_2")
             .expectRejection()
             .create();
+    // then
     Assertions.assertThat(record)
         .hasIntent(ClusterVariableIntent.CREATE)
         .hasRejectionType(RejectionType.ALREADY_EXISTS)
@@ -75,8 +83,10 @@ public final class CreateClusterVariableTest {
 
   @Test
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
+    // given
     final var recordGlobal =
         ENGINE_RULE.clusterVariables().withName("KEY_5").withValue("VALUE").create();
+    // when
     final var recordTenant =
         ENGINE_RULE
             .clusterVariables()
@@ -84,6 +94,7 @@ public final class CreateClusterVariableTest {
             .withValue("VALUE")
             .withTenantId("tenant-1")
             .create();
+    // then
     Assertions.assertThat(recordGlobal)
         .hasIntent(ClusterVariableIntent.CREATED)
         .hasRecordType(RecordType.EVENT);
@@ -96,12 +107,15 @@ public final class CreateClusterVariableTest {
   @MethodSource("retrieveInvalidClusterVariableName")
   public void checkClusterVariableRecordValidator(
       final String clusterVariableName, final String rejectionReason) {
+    // given
     final ClusterVariableRecord clusterVariableRecord =
         new ClusterVariableRecord().setName(clusterVariableName);
     final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
     final ClusterVariableRecordValidator clusterVariableRecordValidator =
         new ClusterVariableRecordValidator(clusterVariableState);
+    // when
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
+    // then
     assertThat(result.getLeft().reason()).isEqualTo(rejectionReason);
   }
 
