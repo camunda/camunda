@@ -159,10 +159,6 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION:
         return DecisionDefinitionType.LITERAL_EXPRESSION;
-      case UNSPECIFIED:
-        return DecisionDefinitionType.UNSPECIFIED;
-      case UNKNOWN:
-        return DecisionDefinitionType.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
         EnumUtil.logUnknownEnumValue(
@@ -181,10 +177,6 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionInstanceState.EVALUATED;
       case FAILED:
         return DecisionInstanceState.FAILED;
-      case UNSPECIFIED:
-        return DecisionInstanceState.UNSPECIFIED;
-      case UNKNOWN:
-        return DecisionInstanceState.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
         EnumUtil.logUnknownEnumValue(
