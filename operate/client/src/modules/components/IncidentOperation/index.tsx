@@ -9,8 +9,6 @@
 import React, {useState} from 'react';
 
 import {type ErrorHandler, operationsStore} from 'modules/stores/operations';
-
-import {type Incident} from 'modules/stores/incidents';
 import {OperationItems} from 'modules/components/OperationItems';
 import {OperationItem} from 'modules/components/OperationItem';
 import {observer} from 'mobx-react';
@@ -21,13 +19,13 @@ import {Container} from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
 
 type Props = {
-  incident: Incident;
+  incidentKey: string;
   instanceId: string;
   showSpinner?: boolean;
 };
 
 const IncidentOperation: React.FC<Props> = observer(
-  ({instanceId, incident, showSpinner}) => {
+  ({instanceId, incidentKey, showSpinner}) => {
     const [hasActiveOperation, setHasActiveOperation] = useState(false);
 
     const handleError: ErrorHandler = ({statusCode}) => {
@@ -48,7 +46,7 @@ const IncidentOperation: React.FC<Props> = observer(
         instanceId,
         payload: {
           operationType: 'RESOLVE_INCIDENT',
-          incidentId: incident.id,
+          incidentId: incidentKey,
         },
         onError: handleError,
         onSuccess: () => {

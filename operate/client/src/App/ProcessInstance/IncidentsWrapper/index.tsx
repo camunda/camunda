@@ -6,18 +6,25 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import React, {useEffect} from 'react';
-
 import {IncidentsOverlay} from './IncidentsOverlay';
 import {incidentsStore} from 'modules/stores/incidents';
 import {observer} from 'mobx-react';
 import {Transition} from './styled';
 import {IncidentsFilter} from './IncidentsFilter';
 import {IncidentsTable} from './IncidentsTable';
+import {IncidentsTable as IncidentsTableV2} from './IncidentsTable/v2';
 import {PanelHeader} from 'modules/components/PanelHeader';
-import {getFilteredIncidents, init} from 'modules/utils/incidents';
-import {useIncidents} from 'modules/hooks/incidents';
+import {
+  getFilteredIncidents,
+  getFilteredIncidentsV2,
+  init,
+} from 'modules/utils/incidents';
+import {useIncidents, useIncidentsV2} from 'modules/hooks/incidents';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {useEffect} from 'react';
+import {IS_INCIDENTS_PANEL_V2} from 'modules/feature-flags';
+import {isInstanceRunning} from 'modules/utils/instance';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   processInstance: ProcessInstance;
@@ -26,6 +33,17 @@ type Props = {
 
 const IncidentsWrapper: React.FC<Props> = observer(
   ({setIsInTransition, processInstance}) => {
+    if (IS_INCIDENTS_PANEL_V2) {
+      // Having a condition before hooks is usually not allowed but works this time,
+      // because the condition is static during runtime.
+      return (
+        <IncidentsWrapperV2
+          setIsInTransition={setIsInTransition}
+          processInstance={processInstance}
+        />
+      );
+    }
+
     const incidents = useIncidents();
     const filteredIncidents = getFilteredIncidents(incidents);
 
@@ -69,4 +87,48 @@ const IncidentsWrapper: React.FC<Props> = observer(
   },
 );
 
-export {IncidentsWrapper};
+const IncidentsWrapperV2: React.FC<Props> = observer(
+  ({setIsInTransition, processInstance}) => {
+    const incidents = useIncidentsV2(processInstance.processInstanceKey, {
+      enablePeriodicRefetch:
+        isInstanceRunning(processInstance) &&
+        !modificationsStore.isModificationModeEnabled,
+    });
+    const filteredIncidents = getFilteredIncidentsV2(incidents);
+
+    if (incidents.length === 0) {
+      return null;
+    }
+
+    return (
+      <>
+        <Transition
+          in={incidentsStore.state.isIncidentBarOpen}
+          onEnter={() => setIsInTransition(true)}
+          onEntered={() => setIsInTransition(false)}
+          onExit={() => setIsInTransition(true)}
+          onExited={() => setIsInTransition(false)}
+          mountOnEnter
+          unmountOnExit
+          timeout={400}
+        >
+          <IncidentsOverlay>
+            <PanelHeader
+              title="Incidents View"
+              count={filteredIncidents.length}
+              size="sm"
+            >
+              <IncidentsFilter />
+            </PanelHeader>
+            <IncidentsTableV2
+              processInstanceKey={processInstance.processInstanceKey}
+              incidents={filteredIncidents}
+            />
+          </IncidentsOverlay>
+        </Transition>
+      </>
+    );
+  },
+);
+
+export {IncidentsWrapper, IncidentsWrapperV2};

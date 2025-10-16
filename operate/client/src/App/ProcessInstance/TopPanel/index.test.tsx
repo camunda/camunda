@@ -430,7 +430,7 @@ describe('TopPanel', () => {
       ).not.toBeInTheDocument(),
     );
 
-    expect(screen.getByText(/Execution Duration/)).toBeInTheDocument();
+    await screen.findByText(/Execution Duration/);
 
     modificationsStore.enableModificationMode();
 
