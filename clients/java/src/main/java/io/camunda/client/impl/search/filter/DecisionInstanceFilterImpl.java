@@ -62,12 +62,6 @@ public class DecisionInstanceFilterImpl
       case FAILED:
         stateEnum = DecisionInstanceStateEnum.FAILED;
         break;
-      case UNSPECIFIED:
-        stateEnum = DecisionInstanceStateEnum.UNSPECIFIED;
-        break;
-      case UNKNOWN:
-        stateEnum = DecisionInstanceStateEnum.UNKNOWN;
-        break;
       default:
         throw new IllegalArgumentException("Unexpected DecisionInstanceState value: " + state);
     }
@@ -160,12 +154,6 @@ public class DecisionInstanceFilterImpl
         break;
       case LITERAL_EXPRESSION:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
-        break;
-      case UNSPECIFIED:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
-        break;
-      case UNKNOWN:
-        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
         break;
       default:
         throw new IllegalArgumentException(

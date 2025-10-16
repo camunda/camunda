@@ -12,23 +12,19 @@ import org.slf4j.LoggerFactory;
 
 public enum DecisionType {
   DECISION_TABLE,
-  LITERAL_EXPRESSION,
-
-  UNSPECIFIED,
-  UNKNOWN;
+  LITERAL_EXPRESSION;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DecisionType.class);
 
   public static DecisionType fromString(final String decisionType) {
     if (decisionType == null) {
-      return UNSPECIFIED;
+      throw new IllegalArgumentException("Decision type cannot be null");
     }
     try {
       return DecisionType.valueOf(decisionType);
     } catch (final IllegalArgumentException ex) {
-      LOGGER.error(
-          "Decision type not found for value [{}]. UNKNOWN type will be assigned.", decisionType);
-      return UNKNOWN;
+      LOGGER.error("Decision type not found for value [{}].", decisionType);
+      throw new IllegalArgumentException("Unexpected decision type value: " + decisionType, ex);
     }
   }
 }

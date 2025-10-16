@@ -10206,15 +10206,11 @@ components:
       enum:
         - DECISION_TABLE
         - LITERAL_EXPRESSION
-        - UNSPECIFIED
-        - UNKNOWN
     DecisionInstanceStateEnum:
       description: The state of the decision instance.
       enum:
         - EVALUATED
         - FAILED
-        - UNSPECIFIED
-        - UNKNOWN
     SortOrderEnum:
       description: The order in which to sort the related field.
       type: string

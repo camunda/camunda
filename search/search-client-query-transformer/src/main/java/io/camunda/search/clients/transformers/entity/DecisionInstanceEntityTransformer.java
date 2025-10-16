@@ -76,8 +76,7 @@ public class DecisionInstanceEntityTransformer
     return switch (source) {
       case DECISION_TABLE -> DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionType.LITERAL_EXPRESSION;
-      case UNSPECIFIED -> DecisionDefinitionType.UNSPECIFIED;
-      default -> DecisionDefinitionType.UNKNOWN;
+      default -> throw new IllegalArgumentException("Unexpected DecisionType: " + source);
     };
   }
 
@@ -89,7 +88,6 @@ public class DecisionInstanceEntityTransformer
     return switch (source) {
       case EVALUATED -> DecisionInstanceState.EVALUATED;
       case FAILED -> DecisionInstanceState.FAILED;
-      default -> DecisionInstanceState.UNKNOWN;
     };
   }
 }

@@ -18,7 +18,5 @@ package io.camunda.client.api.search.response;
 public enum DecisionInstanceState {
   EVALUATED,
   FAILED,
-  UNSPECIFIED,
-  UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 }
