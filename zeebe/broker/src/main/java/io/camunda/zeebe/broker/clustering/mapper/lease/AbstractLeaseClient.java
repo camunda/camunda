@@ -7,11 +7,14 @@
  */
 package io.camunda.zeebe.broker.clustering.mapper.lease;
 
+import static org.slf4j.LoggerFactory.getLogger;
+
 import java.time.Clock;
 import java.time.Duration;
+import org.slf4j.Logger;
 
 public abstract class AbstractLeaseClient implements LeaseClient {
-
+  private static final Logger LOG = getLogger(AbstractLeaseClient.class);
   protected final String taskId;
   protected final Clock clock;
   protected final Duration leaseExpirationDuration;
@@ -61,7 +64,10 @@ public abstract class AbstractLeaseClient implements LeaseClient {
 
   @Override
   public void setNodeIdMappings(final NodeIdMappings nodeIdMappings) {
-    this.nodeIdMappings = nodeIdMappings;
+    if (!nodeIdMappings.equals(this.nodeIdMappings)) {
+      LOG.info("Updated known cluster members and mapping: {}", nodeIdMappings);
+      this.nodeIdMappings = nodeIdMappings;
+    }
   }
 
   @Override

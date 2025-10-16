@@ -105,6 +105,7 @@ public class NodeIdMapper implements Closeable {
         () -> {
           try {
             waitUntilAllNodesHaveUpdatedVersion();
+            LOG.info("All nodes have updated the version. NodeIdMapper is ready.");
             readyFuture.complete(true);
           } catch (final Exception e) {
             LOG.error("Failed to wait until ready: {}", e.getMessage(), e);
@@ -244,7 +245,6 @@ public class NodeIdMapper implements Closeable {
                   .collect(Collectors.toMap(MemberId::id, MemberId::getIdVersion));
 
           lease.setNodeIdMappings(new NodeIdMappings(map));
-          LOG.info("Updated known cluster members and mapping: {}", map.keySet());
         });
   }
 }

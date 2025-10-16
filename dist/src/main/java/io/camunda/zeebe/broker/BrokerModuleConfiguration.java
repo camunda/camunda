@@ -164,6 +164,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   // Ensure that the other nodes has evicted the version before starting the broker
   @Bean
   public NodeIdMapperReadiness isReady(final NodeIdMapper nodeIdMapper) {
+    LOGGER.info("Waiting until NodeIdMapper is ready");
     return new NodeIdMapperReadiness(nodeIdMapper.waitUntilReady().join());
   }
 
