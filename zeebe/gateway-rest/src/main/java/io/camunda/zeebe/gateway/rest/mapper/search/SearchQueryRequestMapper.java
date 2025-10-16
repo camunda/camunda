@@ -50,6 +50,7 @@ import io.camunda.zeebe.gateway.rest.validator.RequestValidator;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 import java.util.function.Supplier;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.ProblemDetail;
@@ -474,32 +475,48 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final IncidentSearchQuery request) {
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
-    }
-    final var page = toSearchQueryPage(request.getPage());
-    final var sort =
-        SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
-            SortOptionBuilders::incident,
-            SearchQuerySortRequestMapper::applyIncidentSortField);
-    final var filter = SearchQueryFilterMapper.toIncidentFilter(request.getFilter());
-    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::incidentSearchQuery);
+    return toIncidentQueryWithNullFilter(
+        request,
+        IncidentSearchQuery::getFilter,
+        IncidentSearchQuery::getPage,
+        IncidentSearchQuery::getSort);
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
       final ProcessInstanceIncidentSearchQuery request) {
+    return toIncidentQueryWithNullFilter(
+        request,
+        f -> null,
+        ProcessInstanceIncidentSearchQuery::getPage,
+        ProcessInstanceIncidentSearchQuery::getSort);
+  }
+
+  public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
+      final ElementInstanceIncidentSearchQuery request) {
+    return toIncidentQueryWithNullFilter(
+        request,
+        f -> null,
+        ElementInstanceIncidentSearchQuery::getPage,
+        ElementInstanceIncidentSearchQuery::getSort);
+  }
+
+  private static <T> Either<ProblemDetail, IncidentQuery> toIncidentQueryWithNullFilter(
+      final T request,
+      final Function<T, IncidentFilter> filterExtractor,
+      final Function<T, SearchQueryPageRequest> pageExtractor,
+      final Function<T, List<IncidentSearchQuerySortRequest>> sortExtractor) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.incidentSearchQuery().build());
     }
-    final var page = toSearchQueryPage(request.getPage());
+    final var page = toSearchQueryPage(pageExtractor.apply(request));
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
-            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(request.getSort()),
+            SearchQuerySortRequestMapper.fromIncidentSearchQuerySortRequest(
+                sortExtractor.apply(request)),
             SortOptionBuilders::incident,
             SearchQuerySortRequestMapper::applyIncidentSortField);
     return buildSearchQuery(
-        SearchQueryFilterMapper.toIncidentFilter(null),
+        SearchQueryFilterMapper.toIncidentFilter(filterExtractor.apply(request)),
         sort,
         page,
         SearchQueryBuilders::incidentSearchQuery);

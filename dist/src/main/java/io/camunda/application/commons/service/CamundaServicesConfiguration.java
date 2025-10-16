@@ -211,6 +211,7 @@ public class CamundaServicesConfiguration {
       final SecurityContextProvider securityContextProvider,
       final FlowNodeInstanceSearchClient flowNodeInstanceSearchClient,
       final ProcessCache processCache,
+      final IncidentServices incidentServices,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new ElementInstanceServices(
@@ -218,6 +219,7 @@ public class CamundaServicesConfiguration {
         securityContextProvider,
         flowNodeInstanceSearchClient,
         processCache,
+        incidentServices,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

@@ -16,10 +16,13 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
+import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.SearchQueryBuilders;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -35,27 +38,33 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
 
 public final class ElementInstanceServiceTest {
 
   private ElementInstanceServices services;
   private FlowNodeInstanceSearchClient client;
   private ProcessCache processCache;
+  @Mock private IncidentServices incidentServices;
+  @Mock private CamundaAuthentication authentication;
 
   @BeforeEach
   public void before() {
     client = mock(FlowNodeInstanceSearchClient.class);
     processCache = mock(ProcessCache.class);
+    incidentServices = mock(IncidentServices.class);
     services =
         new ElementInstanceServices(
             mock(BrokerClient.class),
             mock(SecurityContextProvider.class),
             client,
             processCache,
+            incidentServices,
             null,
             mock(ApiServicesExecutorProvider.class),
             null);
 
+    when(incidentServices.withAuthentication(authentication)).thenReturn(incidentServices);
     when(client.withSecurityContext(any())).thenReturn(client);
     when(processCache.getCacheItems(any())).thenReturn(ProcessCacheResult.EMPTY);
   }
@@ -187,6 +196,40 @@ public final class ElementInstanceServiceTest {
 
       // then
       assertThat(foundEntity.flowNodeName()).isEqualTo(entity.flowNodeId());
+    }
+
+    @Nested
+    class SearchIncidents {
+      @Test
+      void shouldReturnIncidentsForValidQuery() {
+        // given
+        final long elementInstanceKey = 123L;
+        final IncidentQuery query = IncidentQuery.of(q -> q);
+        final IncidentEntity incident =
+            Instancio.of(IncidentEntity.class)
+                .set(field(IncidentEntity::flowNodeInstanceKey), elementInstanceKey)
+                .create();
+
+        final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of(incident);
+        when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        // when
+        final var searchResult = services.searchIncidents(elementInstanceKey, query);
+        // then
+        assertThat(searchResult.items()).containsExactly(incident);
+      }
+
+      @Test
+      void shouldReturnEmptyListIfNoIncidentsFound() {
+        // given
+        final long elementInstanceKey = 456L;
+        final IncidentQuery query = IncidentQuery.of(q -> q);
+        final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of();
+        when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
+        // when
+        final var searchResult = services.searchIncidents(elementInstanceKey, query);
+        // then
+        assertThat(searchResult.items()).isEmpty();
+      }
     }
   }
 }
