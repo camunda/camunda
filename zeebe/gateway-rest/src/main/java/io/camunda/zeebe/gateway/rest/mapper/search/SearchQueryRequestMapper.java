@@ -195,7 +195,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::roleMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, RoleMemberQuery> toRoleQuery(
+  public static Either<ProblemDetail, RoleMemberQuery> toRoleMemberQuery(
       final RoleGroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.roleMemberSearchQuery().build());
