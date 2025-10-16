@@ -76,7 +76,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final var nonExistingTenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var nonExistingTenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     final var roleName = "name-" + Strings.newRandomValidIdentityId();
     final var roleDesc = "desc-" + Strings.newRandomValidIdentityId();
@@ -97,7 +97,7 @@ public class RolesByTenantIntegrationTest {
 
   @Test
   void shouldRejectIfRoleDoesNotExist() {
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     assertThatThrownBy(
@@ -116,7 +116,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldRejectIfRoleAlreadyAssigned() {
     // given
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     final var roleName = "name-" + Strings.newRandomValidIdentityId();
     final var roleDesc = "desc-" + Strings.newRandomValidIdentityId();
@@ -140,7 +140,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldReturnAllRolesByTenant() {
     // given
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var firstRoleId = "role-" + Strings.newRandomValidIdentityId();
     final var secondRoleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
@@ -175,7 +175,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldReturnEmptyListForTenantWithoutRoles() {
     // given
-    final String emptyTenant = "empty-tenant-" + Strings.newRandomValidIdentityId();
+    final String emptyTenant = Strings.newRandomValidTenantId();
     createTenant(emptyTenant);
     waitForTenantsToBeCreated(emptyTenant);
     // when
@@ -201,7 +201,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldUnassignRoleFromTenant() {
     // given
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     createRole(roleId, "name", "desc");
@@ -226,7 +226,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldRejectUnassignIfRoleNotAssignedToTenant() {
     // given
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     createTenant(tenantId);
     createRole(roleId, "name", "desc");
@@ -253,7 +253,7 @@ public class RolesByTenantIntegrationTest {
 
   @Test
   void shouldRejectUnassignWithNonExistingTenantId() {
-    final var tenantId = "non-existing-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     assertThatThrownBy(
             () ->
@@ -270,7 +270,7 @@ public class RolesByTenantIntegrationTest {
 
   @Test
   void shouldRejectUnassignWithNonExistingRoleId() {
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     createTenant(tenantId);
     final var roleId = "non-existing-" + Strings.newRandomValidIdentityId();
     assertThatThrownBy(

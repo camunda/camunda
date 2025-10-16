@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 
 public class AssignUserToTenantTest extends ClientRestTest {
 
-  private static final String TENANT_ID = UUID.randomUUID().toString();
+  private static final String TENANT_ID = "tenant-id";
   private static final String USER_NAME = UUID.randomUUID().toString();
 
   @Test
