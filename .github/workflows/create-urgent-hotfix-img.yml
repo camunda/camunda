@@ -10,6 +10,7 @@
 # - Either branch OR commit must be specified (commit takes precedence)
 # - Support ticket ID is required for proper tagging (e.g. SUPPORT-12345, JIRA-123, ticket-456)
 # - Registry is fixed to: registry.camunda.cloud/hotfixes (not configurable)
+# - Platforms option to choose from: linux/amd64, linux/arm64, or both (linux/amd64,linux/arm64)
 # 
 # The workflow validates inputs, builds the requested images, and pushes them to the Camunda hotfix registry following 
 # the naming convention: registry.camunda.cloud/hotfixes/<image>:<application-version>-<support-issue-id>
@@ -17,12 +18,6 @@
 name: Create Urgent Hotfix Image
 
 on:
-    # For testing purposes, allow PRs to main to trigger the workflow
-    # Remove before merge to main
-  pull_request:
-    types: [opened, synchronize, reopened, edited]
-    branches:
-      - main  
   workflow_dispatch:
     inputs:
       branch:
@@ -41,14 +36,20 @@ on:
         description: 'Components to build with versions (e.g. camunda:8.6.1,operate:8.6.1)'
         required: true
         type: string
+      architecture:
+        type: choice
+        description: 'The target architecture for the Docker image(s)'
+        required: true
+        options:
+            - linux/amd64
+            - linux/arm64
+            - linux/amd64,linux/arm64
 
 defaults:
   run:
     shell: bash
 
 env:
-  DOCKER_PLATFORMS: "linux/amd64"
-  MAVEN_CACHE_KEY: "maven-cache"
   HOTFIX_REGISTRY: "registry.camunda.cloud/hotfixes"
 
 jobs:
@@ -59,48 +60,16 @@ jobs:
       ref: ${{ steps.determine-ref.outputs.ref }}
       short-sha: ${{ steps.determine-ref.outputs.short-sha }}
       components-matrix: ${{ steps.parse-components.outputs.matrix }}
-      # TODO remove before merge to main, its only for testing purposesq
-      support-ticket-id: ${{ steps.set-defaults.outputs.support-ticket-id }}
-      components-with-versions: ${{ steps.set-defaults.outputs.components_with_versions }}
-      #support-ticket-id: ${{ github.event.inputs.support-ticket-id }}
-      #components-with-versions: ${{ github.event.inputs.components_with_versions }}
+      support-ticket-id: ${{ github.event.inputs.support-ticket-id }}
+      components-with-versions: ${{ github.event.inputs.components_with_versions }}
     steps:
-        # TODO remove it before merge to main, its only for testing purposes
-      - name: Set default values for PR testing
-        id: set-defaults
-        run: |
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "🧪 PR test mode - using default test values"
-            {
-              echo "branch="
-              echo "commit="
-              echo "support-ticket-id=TEST-WORKFLOW-12345"
-              echo "components_with_versions=camunda:8.7.15-TEST"
-            } >> "$GITHUB_OUTPUT"
-          else
-            echo "🚀 Manual dispatch - using provided inputs"
-            {
-              echo "branch=${{ github.event.inputs.branch }}"
-              echo "commit=${{ github.event.inputs.commit }}"
-              echo "support-ticket-id=${{ github.event.inputs.support-ticket-id }}"
-              echo "components_with_versions=${{ github.event.inputs.components_with_versions }}"
-            } >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Validate inputs
         run: |
-         #TODO remove it before merge to main, its only for testing purposes
-          BRANCH="${{ steps.set-defaults.outputs.branch }}"
-          COMMIT="${{ steps.set-defaults.outputs.commit }}"
-          TICKET_ID="${{ steps.set-defaults.outputs.support-ticket-id }}"
-          COMPONENTS="${{ steps.set-defaults.outputs.components_with_versions }}"
-
-         # BRANCH="${{ github.event.inputs.branch }}"
-         # COMMIT="${{ github.event.inputs.commit }}"
-         # TICKET_ID="${{ github.event.inputs.support-ticket-id }}"
-         # COMPONENTS="${{ github.event.inputs.components_with_versions }}"
-        
-          
+          BRANCH="${{ github.event.inputs.branch }}"
+          COMMIT="${{ github.event.inputs.commit }}"
+          TICKET_ID="${{ github.event.inputs.support-ticket-id }}"
+          COMPONENTS="${{ github.event.inputs.components_with_versions }}"
+                  
           if [[ -z "$BRANCH" && -z "$COMMIT" ]]; then
             echo "❌ Error: Either branch or commit must be specified"
             exit 1
@@ -122,70 +91,10 @@ jobs:
               echo "❌ Error: Components with versions input is required"
               exit 1
           fi
-
-      - name: Checkout repository to determine ref
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ github.token }}      
-      - name: Fetch all branches and tags
-        run: |
-          git fetch --all --tags --force
-          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --force
-      - name: Determine reference and SHA
-        id: determine-ref
-        run: |
-         #TODO remove it before merge to main, its only for testing purposes
-          BRANCH="${{ steps.set-defaults.outputs.branch }}"
-          COMMIT="${{ steps.set-defaults.outputs.commit }}"
-
-         # BRANCH="${{ github.event.inputs.branch }}"
-         # COMMIT="${{ github.event.inputs.commit }}"
-          
-          if [[ -n "$COMMIT" ]]; then
-            # Validate commit exists and get full SHA (handles both short and full SHAs)
-            echo "🔍 Looking for commit: $COMMIT"
-            
-            # First try to find the commit directly
-            if FULL_SHA=$(git rev-parse "$COMMIT^{commit}" 2>/dev/null); then
-              echo "✅ Found commit directly: $COMMIT -> $FULL_SHA"
-            else
-              echo "❌ Error: Commit not found"
-              error 1
-            fi
-            REF="$FULL_SHA"  # Use full SHA for checkout action
-          else
-            # Validate branch exists - must find the exact branch specified
-            echo "🔍 Looking for branch: $BRANCH"
-            
-            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
-              echo "✅ Found remote branch: $BRANCH"
-              REF="$BRANCH"  # Use just the branch name for checkout
-              FULL_SHA=$(git rev-parse "origin/$BRANCH")
-            else
-              echo "❌ Error: Branch '$BRANCH' does not exist"
-              echo "🔍 Available remote branches:"
-              git branch -r | head -20
-              exit 1
-            fi
-          fi
-          
-          SHORT_SHA="${FULL_SHA:0:8}"
-          
-          echo "✅ Using reference: $REF"
-          echo "✅ Full SHA: $FULL_SHA"
-          echo "✅ Short SHA: $SHORT_SHA"
-          
-          echo "ref=$REF" >> "$GITHUB_OUTPUT"
-          echo "short-sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
-
       - name: Parse components
         id: parse-components
         run: |
-          #TODO remove it before merge to main, its only for testing purposes
-          COMPONENTS_WITH_VERSIONS="${{ steps.set-defaults.outputs.components_with_versions }}"
-          
-          # COMNONENTS_WITH_VERSIONS="${{ github.event.inputs.components_with_versions }}"
+          COMPONENTS_WITH_VERSIONS="${{ github.event.inputs.components_with_versions }}"
           echo "Raw input: $COMPONENTS_WITH_VERSIONS"
           
           # Parse components with versions using jq for robust JSON handling
@@ -243,6 +152,56 @@ jobs:
           echo "Components to build: $COMPONENTS_WITH_VERSIONS"
           echo "Matrix JSON: $MATRIX_JSON"
           echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+      - name: Checkout repository to determine ref
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ github.token }}      
+      - name: Fetch all branches and tags
+        run: |
+          git fetch --all --tags --force
+          git fetch origin '+refs/heads/*:refs/remotes/origin/*' --force
+      - name: Determine reference and SHA
+        id: determine-ref
+        run: |
+          BRANCH="${{ github.event.inputs.branch }}"
+          COMMIT="${{ github.event.inputs.commit }}"
+          
+          if [[ -n "$COMMIT" ]]; then
+            # Validate commit exists and get full SHA (handles both short and full SHAs)
+            echo "🔍 Looking for commit: $COMMIT"
+            
+            if FULL_SHA=$(git rev-parse "$COMMIT^{commit}" 2>/dev/null); then
+              echo "✅ Found commit directly: $COMMIT -> $FULL_SHA"
+            else
+              echo "❌ Error: Commit not found"
+              error 1
+            fi
+            REF="$FULL_SHA"  # Use full SHA for checkout action
+          else
+            # Validate branch exists - must find the exact branch specified
+            echo "🔍 Looking for branch: $BRANCH"
+            
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+              echo "✅ Found remote branch: $BRANCH"
+              REF="$BRANCH"  # Use just the branch name for checkout
+              FULL_SHA=$(git rev-parse "origin/$BRANCH")
+            else
+              echo "❌ Error: Branch '$BRANCH' does not exist"
+              echo "🔍 Available remote branches:"
+              git branch -r | head -20
+              exit 1
+            fi
+          fi
+          
+          SHORT_SHA="${FULL_SHA:0:8}"
+          
+          echo "✅ Using reference: $REF"
+          echo "✅ Full SHA: $FULL_SHA"
+          echo "✅ Short SHA: $SHORT_SHA"
+          
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "short-sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
 
   build-images:
     name: Build `${{ matrix.component }}:${{ matrix.version }}` Image
@@ -504,7 +463,7 @@ jobs:
         with:
           context: ${{ steps.docker-config.outputs.context }}
           file: ${{ steps.docker-config.outputs.dockerfile }}
-          platforms: ${{ env.DOCKER_PLATFORMS }}
+          platforms: ${{ inputs.architecture }}
           push: true
           build-args: ${{ steps.build-args.outputs.args }}
           tags: |
@@ -543,6 +502,8 @@ jobs:
             echo "**Support Ticket:** \`${{ needs.validate-inputs.outputs.support-ticket-id }}\`"
             echo "**Reference:** \`${{ needs.validate-inputs.outputs.ref }}\`"  
             echo "**SHA:** \`${{ needs.validate-inputs.outputs.short-sha }}\`"
+            echo "**Components Built:** \`${{ needs.validate-inputs.outputs.components-with-versions }}\`"
+            echo "**Architecture:** \`${{ inputs.architecture }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
           
