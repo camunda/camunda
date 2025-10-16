@@ -42,7 +42,7 @@ class AssignGroupToTenantTest {
     tenantId =
         client
             .newCreateTenantCommand()
-            .tenantId(Strings.newRandomValidIdentityId())
+            .tenantId(Strings.newRandomValidTenantId())
             .name("Tenant Name")
             .send()
             .join()
