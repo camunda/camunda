@@ -15,12 +15,7 @@ import {
   assertNotFoundRequest,
 } from '../../../../utils/http';
 import {deployResourceAndGetMetadata} from '../../../../utils/requestHelpers';
-import {readFileSync} from 'node:fs';
-
-function getExpectedContent(resourceName: string): string {
-  const resourcePath = `./resources/${resourceName}`;
-  return readFileSync(resourcePath, 'utf-8');
-}
+import {getExpectedContent} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Resource Get Content API', () => {
   test('Get Resource Content - RPA Success 200', async ({request}) => {
