@@ -788,25 +788,25 @@ jobs:
       - name: Get FOSSA context
         id: fossa-context
         uses: camunda/infra-global-github-actions/fossa/info@ec4caca36050ad1b7fee536facf95bc02515ddc6
-        with:
-          fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
       - name: Wait for FOSSA scan completion
         uses: camunda/infra-global-github-actions/fossa/wait-for-scan@infra-gh-854-publish-sboms
         with:
           fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          project-id: camunda/camunda@single-app
-          branch: ${{ steps.fossa-context.outputs.branch }}
-          revision: ${{ steps.fossa-context.outputs.revision }}
+          branch: ${{ steps.fossa-context.outputs.head-ref }}
+          project-id: "custom+50756/camunda/camunda@single-app"
+          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
       - name: Create FOSSA releases and generate reports
         uses: camunda/infra-global-github-actions/fossa/release@infra-gh-854-publish-sboms
         with:
           fossa-api-key: ${{ steps.secrets.outputs.FOSSA_API_KEY }}
-          project-id: camunda/camunda@single-app
-          branch: ${{ steps.fossa-context.outputs.branch }}
-          revision: ${{ steps.fossa-context.outputs.revision }}
-          release-group-attribution: TODO_ATTRIBUTION_GROUP_ID
-          release-group-sbom: TODO_SBOM_GROUP_ID
-          release-title: ${{ inputs.releaseVersion }}
+          branch: ${{ steps.info.outputs.head-ref }}
+          project-id: "custom+50756/camunda/camunda@single-app"
+          attribution-release-group-id: "4904" # https://app.fossa.com/projects/group/4904
+          sbom-release-group-id: "4905"        # https://app.fossa.com/projects/group/4905
+          release-number: ${{ env.RELEASE_VERSION }}
+          revision-id: ${{ steps.fossa-context.outputs.head-revision }}
+          attribution-format: "TXT"
+          sbom-format: "CYCLONEDX_JSON"
       - name: Observe build status
         if: always()
         continue-on-error: true
