@@ -34,7 +34,12 @@ import {
 import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
-import {queryElementInstances, getElementInstance, updateElementInstanceVariables} from './element-instance';
+import {
+	queryElementInstances,
+	getElementInstance,
+	updateElementInstanceVariables,
+	queryElementInstanceIncidents,
+} from './element-instance';
 import {
 	createGroup,
 	getGroup,
@@ -177,6 +182,7 @@ const endpoints = {
 	deleteDocument,
 	createDocumentLink,
 	queryElementInstances,
+	queryElementInstanceIncidents,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -420,6 +426,7 @@ export {
 export {
 	queryElementInstancesRequestBodySchema,
 	queryElementInstancesResponseBodySchema,
+	queryElementInstanceIncidentsRequestBodySchema,
 	getElementInstanceResponseBodySchema,
 	updateElementInstanceVariablesRequestBodySchema,
 	elementInstanceStateSchema,
@@ -431,6 +438,7 @@ export {
 	type ElementInstance,
 	type QueryElementInstancesRequestBody,
 	type QueryElementInstancesResponseBody,
+	type QueryElementInstanceIncidentsRequestBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
 } from './element-instance';

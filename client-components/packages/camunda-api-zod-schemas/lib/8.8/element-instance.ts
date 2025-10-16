@@ -136,6 +136,28 @@ const updateElementInstanceVariables: Endpoint<Pick<ElementInstance, 'elementIns
 	},
 };
 
+const queryElementInstanceIncidentsRequestBodySchema = getQueryRequestBodySchema({
+	sortFields: [
+		'incidentKey',
+		'errorType',
+		'errorMessage',
+		'state',
+		'creationTime',
+		'processInstanceKey',
+		'processDefinitionKey',
+		'elementInstanceKey',
+		'jobKey',
+		'tenantId',
+	] as const,
+	filter: z.never(),
+});
+type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
+
+const queryElementInstanceIncidents: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
+	method: 'POST',
+	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`,
+};
+
 export {
 	queryElementInstances,
 	getElementInstance,
@@ -148,6 +170,8 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
+	queryElementInstanceIncidentsRequestBodySchema,
+	queryElementInstanceIncidents,
 };
 export type {
 	ElementInstanceState,
@@ -157,4 +181,5 @@ export type {
 	QueryElementInstancesResponseBody,
 	GetElementInstanceResponseBody,
 	UpdateElementInstanceVariablesRequestBody,
+	QueryElementInstanceIncidentsRequestBody,
 };
