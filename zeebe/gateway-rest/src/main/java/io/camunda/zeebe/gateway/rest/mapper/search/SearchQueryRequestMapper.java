@@ -283,7 +283,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantMemberQuery(
       final TenantGroupSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
@@ -298,7 +298,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantMemberQuery(
       final TenantUserSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());
@@ -313,7 +313,7 @@ public final class SearchQueryRequestMapper {
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::tenantMemberSearchQuery);
   }
 
-  public static Either<ProblemDetail, TenantMemberQuery> toTenantQuery(
+  public static Either<ProblemDetail, TenantMemberQuery> toTenantMemberQuery(
       final TenantClientSearchQueryRequest request) {
     if (request == null) {
       return Either.right(SearchQueryBuilders.tenantMemberSearchQuery().build());

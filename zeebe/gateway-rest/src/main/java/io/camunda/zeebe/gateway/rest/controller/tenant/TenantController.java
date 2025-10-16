@@ -140,7 +140,7 @@ public class TenantController {
   public ResponseEntity<TenantUserSearchResult> searchUsersInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantUserSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchUsersInTenant(tenantId, tenantQuery));
@@ -271,7 +271,7 @@ public class TenantController {
   public ResponseEntity<TenantGroupSearchResult> searchGroupIdsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantGroupSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchGroupIdsInTenant(tenantId, tenantQuery));
@@ -306,7 +306,7 @@ public class TenantController {
   public ResponseEntity<TenantClientSearchResult> searchClientsInTenant(
       @PathVariable final String tenantId,
       @RequestBody(required = false) final TenantClientSearchQueryRequest query) {
-    return SearchQueryRequestMapper.toTenantQuery(query)
+    return SearchQueryRequestMapper.toTenantMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             tenantQuery -> searchClientsInTenant(tenantId, tenantQuery));
