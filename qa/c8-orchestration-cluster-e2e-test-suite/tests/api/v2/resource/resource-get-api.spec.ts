@@ -66,6 +66,7 @@ test.describe.parallel('Resource Get API', () => {
     validateResourceResponse(body, metadata);
   });
 
+  // eslint-disable-next-line playwright/expect-expect
   test('Get Resource - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 

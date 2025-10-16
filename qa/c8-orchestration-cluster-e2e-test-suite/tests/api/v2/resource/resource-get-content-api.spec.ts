@@ -46,6 +46,7 @@ test.describe.parallel('Resource Get Content API', () => {
     expect(content).toBe(expectedContent);
   });
 
+  // eslint-disable-next-line playwright/expect-expect
   test('Get Resource Content - Not Found 404', async ({request}) => {
     const nonExistentResourceKey = '2251799813733053';
 
