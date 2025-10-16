@@ -47,7 +47,6 @@ public class NodeIdMapper implements Closeable {
   private final Runnable onRenewalFailure;
   private ScheduledFuture<?> renewealTimer;
   private boolean previousOwnerExpired;
-
   public NodeIdMapper(final LeaseClient lease) {
     this(lease, SHUTDOWN_VM);
   }
@@ -66,6 +65,10 @@ public class NodeIdMapper implements Closeable {
     this(new S3Lease(config, taskId, clusterSize, Clock.systemUTC()));
   }
 
+  public NodeInstance getNodeInstance() {
+    return nodeInstance;
+  }
+
   public static String randomTaskId() {
     return UUID.randomUUID().toString().substring(0, 6);
   }
@@ -80,12 +83,16 @@ public class NodeIdMapper implements Closeable {
   }
 
   public NodeInstance start() {
-    LOG.info("Starting nodeIdMapper");
-    final var initialLease = acquireLease();
-    previousOwnerExpired = initialLease.previousHolderExpired();
-    scheduleRenewal();
-    nodeInstance = initialLease.lease().nodeInstance();
-    return nodeInstance;
+    // additional MDC as it's not running in the executor thread
+    try (final var ctx = MDC.putCloseable("taskId", taskId)) {
+      LOG.info("Starting nodeIdMapper");
+      final var initialLease = acquireLease();
+      LOG.info("Acquired lease {}", initialLease);
+      previousOwnerExpired = initialLease.previousHolderExpired();
+      scheduleRenewal();
+      nodeInstance = initialLease.lease().nodeInstance();
+      return nodeInstance;
+    }
   }
 
   // Waits until it is safe for the broker to start. It is safe if the previous lease owner

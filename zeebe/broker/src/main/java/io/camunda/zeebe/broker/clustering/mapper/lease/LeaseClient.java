@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.clustering.mapper.lease;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.clustering.mapper.NodeInstance;
 import java.io.IOException;
@@ -14,8 +15,6 @@ import java.time.Duration;
 import java.util.List;
 
 public interface LeaseClient {
-
-
 
   String taskId();
 
@@ -43,19 +42,28 @@ public interface LeaseClient {
       this(taskId, timestamp, nodeInstance, NodeIdMappings.empty());
     }
 
-    public String toJson(final ObjectMapper objectMapper)
-        throws com.fasterxml.jackson.core.JsonProcessingException {
-      return objectMapper.writeValueAsString(this);
+    public String toJson(final ObjectMapper objectMapper) {
+      try {
+        return objectMapper.writeValueAsString(this);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
     }
 
-    public byte[] toJsonBytes(final ObjectMapper objectMapper)
-        throws com.fasterxml.jackson.core.JsonProcessingException {
-      return objectMapper.writeValueAsBytes(this);
+    public byte[] toJsonBytes(final ObjectMapper objectMapper) {
+      try {
+        return objectMapper.writeValueAsBytes(this);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
     }
 
-    public static Lease fromJson(final ObjectMapper objectMapper, final String json)
-        throws com.fasterxml.jackson.core.JsonProcessingException {
-      return objectMapper.readValue(json, Lease.class);
+    public static Lease fromJson(final ObjectMapper objectMapper, final String json) {
+      try {
+        return objectMapper.readValue(json, Lease.class);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     public static Lease fromJsonBytes(final ObjectMapper objectMapper, final byte[] json)

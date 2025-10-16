@@ -17,6 +17,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
@@ -72,6 +73,9 @@ public class S3Lease extends AbstractLeaseClient {
     if (isRenew && currentLease == null) {
       throw new IllegalStateException("Cannot acquire a lease, current one is empty");
     }
+    if (currentETag == null) {
+      throw new IllegalStateException("Cannot acquire a lease, current eTag is null");
+    }
     final var nodeInstance = lease.nodeInstance();
     final var objectKey = objectKey(nodeInstance.id());
     final var nextLease =
@@ -96,8 +100,8 @@ public class S3Lease extends AbstractLeaseClient {
     try {
       LOG.info(
           "Attempting to acquire(renew={}) lease for nodeId {} with taskId {}",
-          Boolean.valueOf(isRenew),
-          Integer.valueOf(nodeInstance.id()),
+          isRenew,
+          nodeInstance.id(),
           taskId);
       final var response =
           client
@@ -110,8 +114,8 @@ public class S3Lease extends AbstractLeaseClient {
     } catch (final Exception e) {
       LOG.warn(
           "Failed to acquire(renew={}) lease for nodeId {}: {}",
-          Boolean.valueOf(isRenew),
-          Integer.valueOf(nodeInstance.id()),
+          isRenew,
+          nodeInstance.id(),
           e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
       return null;
     }
@@ -189,26 +193,24 @@ public class S3Lease extends AbstractLeaseClient {
     final var currentNodeVersionStr = headResponse.metadata().get(NODE_VERSION_METADATA_KEY);
     // Start
     final var currentNodeVersion =
-        currentNodeVersionStr != null ? Integer.valueOf(currentNodeVersionStr) : 0;
+        currentNodeVersionStr != null ? Integer.parseInt(currentNodeVersionStr) : 0;
 
-    final var expiry =
-        headResponse
-            .metadata()
-            .getOrDefault(
-                EXPIRY_METADATA_KEY,
-                String.valueOf(
-                    Instant.now()
-                        .minusSeconds(1)
-                        .toEpochMilli())); // Get the expiry timestamp from metadata
-    final boolean isCurrentLeaseExpired =
-        Instant.ofEpochMilli(Long.parseLong(expiry)).isBefore(Instant.now());
+    final var expiryStr =
+        Optional.ofNullable(
+            headResponse
+                .metadata()
+                .get(EXPIRY_METADATA_KEY)); // Get the expiry timestamp from metadata
+    final Optional<Long> expiry = expiryStr.map(Long::parseLong);
+    final boolean isCurrentLeaseExpired = expiry.map(t -> t < clock.millis()).orElse(true);
 
     final boolean previousOwnerExists = currentLeaseHolder == null || currentLeaseHolder.isBlank();
+    LOG.debug("Previous owner={}, expiry={}", previousOwnerExists, expiry);
     if (previousOwnerExists || isCurrentLeaseExpired) {
       currentETag = headResponse.eTag();
       // always increase the version when acquiring a new lease
       final var nodeInstance = new NodeInstance(nodeId, currentNodeVersion).nextVersion();
-      final var lease = new Lease(taskId, Long.parseLong(expiry), nodeInstance);
+      final var lease =
+          new Lease(taskId, expiry.orElseGet(() -> clock.millis() - 1000), nodeInstance);
 
       return new InitialLease(previousOwnerExists, atomicAcquireLease(lease, false));
     }
