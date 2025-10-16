@@ -10012,10 +10012,10 @@ components:
           type: object
           nullable: true
         result:
-          $ref: "#/components/schemas/JobResult"
+          allOf:
+            - $ref: "#/components/schemas/JobResult"
+          description: The result of the completed job as determined by the worker.
     JobResult:
-      description: >
-        The result of the completed job as determined by the worker.
       discriminator:
         propertyName: type
         mapping:
@@ -10035,6 +10035,9 @@ components:
             - $ref: "#/components/schemas/JobResultUserTask"
             - $ref: "#/components/schemas/JobResultAdHocSubProcess"
     JobResultUserTask:
+      description: >
+        Job result details for a user task completion, optionally including a denial
+        reason and corrected task properties.
       allOf:
         - $ref: '#/components/schemas/JobResult'
         - type: object
@@ -10107,6 +10110,9 @@ components:
           maximum: 100
           nullable: true
     JobResultAdHocSubProcess:
+      description: >
+        Job result details for an ad‑hoc sub‑process, including elements to activate
+        and flags indicating completion or cancellation behavior.
       allOf:
         - $ref: '#/components/schemas/JobResult'
         - type: object
@@ -10128,6 +10134,9 @@ components:
               default: false
               nullable: false
     JobResultActivateElement:
+      description: >
+        Instruction to activate a single BPMN element within an ad‑hoc sub‑process,
+        optionally providing variables scoped to that element.
       type: object
       properties:
         elementId:
