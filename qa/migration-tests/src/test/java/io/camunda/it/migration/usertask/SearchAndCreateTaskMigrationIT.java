@@ -60,6 +60,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
                 setup(db, migrator, null);
                 completeUserTaskAndWaitForArchiving(
                     migrator, USER_TASK_KEYS.get("first"), ARCHIVING_WAITING_PERIOD_SECONDS * 3);
+                createEmpty87TaskDatedIndex(migrator);
               })
           .withInitialEnvOverrides(
               Map.of(

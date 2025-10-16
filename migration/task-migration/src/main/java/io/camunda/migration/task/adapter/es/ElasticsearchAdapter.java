@@ -138,9 +138,17 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
   @Override
   public void reindexLegacyDatedIndex(final String legacyDatedIndex) throws MigrationException {
     final String newDatedIndex = MigrationUtils.generateNewIndexNameFromLegacy(legacyDatedIndex);
-    reindex(legacyDatedIndex, newDatedIndex);
-    updateIndexAlias(newDatedIndex);
-    setIndexLifecycle(newDatedIndex);
+    final var documentsWereProcessed = reindex(legacyDatedIndex, newDatedIndex);
+    if (documentsWereProcessed) {
+      updateIndexAlias(newDatedIndex);
+      setIndexLifecycle(newDatedIndex);
+    } else {
+      LOG.info(
+          "No documents were reindexed from {} to {}. {} was not created.",
+          legacyDatedIndex,
+          newDatedIndex,
+          newDatedIndex);
+    }
   }
 
   @Override
@@ -465,7 +473,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
     }
   }
 
-  private void reindex(final String source, final String destination) throws MigrationException {
+  private boolean reindex(final String source, final String destination) throws MigrationException {
     final ReindexRequest createMissingRequest =
         new ReindexRequest.Builder()
             .source(
@@ -483,7 +491,10 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
             .build();
 
     try {
-      client.reindex(createMissingRequest);
+      final var reindexResponse = client.reindex(createMissingRequest);
+      return reindexResponse != null
+          && reindexResponse.total() != null
+          && reindexResponse.total() > 0;
     } catch (final IOException e) {
       throw new MigrationException(e);
     }
@@ -505,7 +516,7 @@ public class ElasticsearchAdapter implements TaskMigrationAdapter {
       client.indices().updateAliases(indicesAliasesRequest);
     } catch (final Exception e) {
       throw new MigrationException(
-          "Failed to disable writes for legacy index: %s".formatted(newDatedIndex), e);
+          "Failed to disable writes for new dated index: %s".formatted(newDatedIndex), e);
     }
   }
 

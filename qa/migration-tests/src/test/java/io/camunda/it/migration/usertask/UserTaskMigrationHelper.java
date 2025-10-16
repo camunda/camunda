@@ -95,6 +95,25 @@ public abstract class UserTaskMigrationHelper {
     waitFor87TaskToBeArchived(migrator, taskKey, waitPeriodSeconds);
   }
 
+  protected static void createEmpty87TaskDatedIndex(final CamundaMigrator migrator) {
+    try {
+      final var legacyIndex =
+          new TaskLegacyIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
+      migrator.request(
+          b ->
+              b.PUT(HttpRequest.BodyPublishers.noBody())
+                  .uri(
+                      URI.create(
+                          migrator.getDatabaseUrl()
+                              + "/"
+                              + legacyIndex.getFullQualifiedName()
+                              + "2025-01-01")),
+          BodyHandlers.discarding());
+    } catch (final Exception e) {
+      throw new UncheckedException(e);
+    }
+  }
+
   protected static long startProcessInstance(
       final CamundaClient client, final long processDefinitionKey) {
     return client
