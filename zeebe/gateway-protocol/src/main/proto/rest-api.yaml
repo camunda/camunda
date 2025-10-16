@@ -10031,6 +10031,9 @@ components:
             - userTask
             - adHocSubProcess
           default: userTask
+          oneOf:
+            - $ref: "#/components/schemas/JobResultUserTask"
+            - $ref: "#/components/schemas/JobResultAdHocSubProcess"
     JobResultUserTask:
       allOf:
         - $ref: '#/components/schemas/JobResult'
@@ -11725,6 +11728,8 @@ components:
           type: string
           enum:
             - TERMINATE_PROCESS_INSTANCE
+          oneOf:
+            - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
       discriminator:
         propertyName: type
         mapping:
