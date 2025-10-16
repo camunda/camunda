@@ -426,7 +426,6 @@ export {
 export {
 	queryElementInstancesRequestBodySchema,
 	queryElementInstancesResponseBodySchema,
-	queryElementInstanceIncidentsRequestBodySchema,
 	getElementInstanceResponseBodySchema,
 	updateElementInstanceVariablesRequestBodySchema,
 	elementInstanceStateSchema,
@@ -438,7 +437,6 @@ export {
 	type ElementInstance,
 	type QueryElementInstancesRequestBody,
 	type QueryElementInstancesResponseBody,
-	type QueryElementInstanceIncidentsRequestBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
 } from './element-instance';
@@ -575,7 +573,6 @@ export {
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
-	queryProcessInstanceIncidentsRequestBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
@@ -588,7 +585,6 @@ export {
 	type QueryProcessInstancesRequestBody,
 	type QueryProcessInstancesResponseBody,
 	type CancelProcessInstanceRequestBody,
-	type QueryProcessInstanceIncidentsRequestBody,
 	type CallHierarchy,
 	type GetProcessInstanceCallHierarchyResponseBody,
 	type SequenceFlow,

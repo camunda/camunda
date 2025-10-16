@@ -100,23 +100,6 @@ const cancelProcessInstanceRequestBodySchema = z
 	.optional();
 type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
 
-const queryProcessInstanceIncidentsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'incidentKey',
-		'errorType',
-		'errorMessage',
-		'state',
-		'creationTime',
-		'processInstanceKey',
-		'processDefinitionKey',
-		'elementInstanceKey',
-		'jobKey',
-		'tenantId',
-	] as const,
-	filter: z.never(),
-});
-type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
-
 const getProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}`,
@@ -363,7 +346,6 @@ export {
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
-	queryProcessInstanceIncidentsRequestBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
@@ -378,7 +360,6 @@ export type {
 	QueryProcessInstancesRequestBody,
 	QueryProcessInstancesResponseBody,
 	CancelProcessInstanceRequestBody,
-	QueryProcessInstanceIncidentsRequestBody,
 	CallHierarchy,
 	GetProcessInstanceCallHierarchyResponseBody,
 	SequenceFlow,
