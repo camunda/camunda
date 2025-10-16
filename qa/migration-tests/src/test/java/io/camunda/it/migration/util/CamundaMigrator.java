@@ -37,11 +37,15 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.elasticsearch.core.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationListener;
 import org.springframework.lang.NonNull;
+import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.utility.DockerImageName;
 
 public class CamundaMigrator extends ApiCallable implements AutoCloseable {
+  private static final Logger LOG = LoggerFactory.getLogger(CamundaMigrator.class);
   private static final String OS_USER = "admin";
   private static final String OS_PASSWORD = "yourStrongPassword123!";
   private static final String URL = "http://%s:%d";
@@ -81,7 +85,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
             .withStartupTimeout(Duration.ofMinutes(1))
             .withNetworkAliases("camunda")
             .withExtraHost("internal.host", "host-gateway")
-            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 3));
+            .withTopologyCheck(new ZeebeTopologyWaitStrategy(1, 1, 3))
+            .withLogConsumer(new Slf4jLogConsumer(LOG));
 
     final String internalUrl =
         databaseUrl.replaceAll("elasticsearch|opensearch|localhost", "internal.host");
@@ -215,7 +220,8 @@ public class CamundaMigrator extends ApiCallable implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    CloseHelper.quietCloseAll(camundaContainer, camunda, tasklistClient, operateClient);
+    CloseHelper.quietCloseAll(
+        camundaContainer, camunda, tasklistClient, operateClient, camundaClient);
     if (Files.exists(zeebeDataPath)) {
       FileUtil.deleteFolder(zeebeDataPath);
     }
