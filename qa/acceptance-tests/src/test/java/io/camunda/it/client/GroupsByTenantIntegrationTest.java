@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 public class GroupsByTenantIntegrationTest {
   private static CamundaClient camundaClient;
 
-  private static final String TENANT_ID = Strings.newRandomValidIdentityId();
+  private static final String TENANT_ID = Strings.newRandomValidTenantId();
   private static final String A_GROUP_ID = "aGroupId";
   private static final String B_GROUP_ID = "bGroupId";
   private static final String UNASSIGNED_GROUP_ID = Strings.newRandomValidIdentityId();
