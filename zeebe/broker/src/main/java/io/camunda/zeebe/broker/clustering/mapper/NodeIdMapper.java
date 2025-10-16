@@ -93,9 +93,12 @@ public class NodeIdMapper implements Closeable {
   // nodes has kicked out the previous version.
   public CompletableFuture<Boolean> waitUntilReady() {
     if (!previousOwnerExpired) {
+      LOG.info("Previous owner released the lease gracefully. No need to wait.");
       return CompletableFuture.completedFuture(true);
     }
 
+    LOG.info(
+        "Previous owner did not release the lease gracefully. Waiting until all nodes have updated.");
     final var readyFuture = new CompletableFuture<Boolean>();
 
     executor.submit(
@@ -241,6 +244,7 @@ public class NodeIdMapper implements Closeable {
                   .collect(Collectors.toMap(MemberId::id, MemberId::getIdVersion));
 
           lease.setNodeIdMappings(new NodeIdMappings(map));
+          LOG.info("Updated known cluster members and mapping: {}", map.keySet());
         });
   }
 }

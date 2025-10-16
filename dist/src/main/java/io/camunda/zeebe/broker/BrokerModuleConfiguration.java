@@ -155,6 +155,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
                         .toList();
                 nodeIdMapper.setCurrentClusterMembers(currentMembers);
               });
+    } else {
+      LOGGER.info("NodeIdMapper is not available");
     }
     return broker;
   }
