@@ -9,7 +9,6 @@ package io.camunda.search.clients.transformers.filter;
 
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.hasChildQuery;
-import static io.camunda.search.clients.query.SearchQueryBuilders.hasParentQuery;
 import static io.camunda.search.clients.query.SearchQueryBuilders.matchNone;
 import static io.camunda.search.clients.query.SearchQueryBuilders.or;
 import static io.camunda.search.clients.query.SearchQueryBuilders.stringTerms;
@@ -46,9 +45,6 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
                 : hasChildQuery(
                     IdentityJoinRelationshipType.MEMBER.getType(),
                     stringTerms(TenantIndex.MEMBER_ID, filter.memberIds())),
-        filter.entityType() == null
-            ? null
-            : term(TenantIndex.MEMBER_TYPE, filter.entityType().name()),
         filter.childMemberType() == null
             ? null
             : hasChildQuery(
@@ -81,10 +77,6 @@ public class TenantFilterTransformer extends IndexFilterTransformer<TenantFilter
         filter.key() == null ? null : term(KEY, filter.key()),
         filter.tenantIds() == null ? null : stringTerms(TENANT_ID, filter.tenantIds()),
         filter.name() == null ? null : term(NAME, filter.name()),
-        filter.joinParentId() == null
-            ? term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType())
-            : hasParentQuery(
-                IdentityJoinRelationshipType.TENANT.getType(),
-                term(TENANT_ID, filter.joinParentId())));
+        term(TenantIndex.JOIN, IdentityJoinRelationshipType.TENANT.getType()));
   }
 }

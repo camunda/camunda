@@ -104,6 +104,10 @@ public final class FilterBuilders {
     return new TenantFilter.Builder();
   }
 
+  public static TenantMemberFilter.Builder tenantMember() {
+    return new TenantMemberFilter.Builder();
+  }
+
   public static GroupFilter.Builder group() {
     return new GroupFilter.Builder();
   }
@@ -164,6 +168,11 @@ public final class FilterBuilders {
   public static TenantFilter tenant(
       final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
     return fn.apply(new TenantFilter.Builder()).build();
+  }
+
+  public static TenantMemberFilter tenantMember(
+      final Function<TenantMemberFilter.Builder, ObjectBuilder<TenantMemberFilter>> fn) {
+    return fn.apply(new TenantMemberFilter.Builder()).build();
   }
 
   public static GroupFilter group(

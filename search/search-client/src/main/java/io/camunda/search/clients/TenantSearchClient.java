@@ -10,6 +10,7 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.TenantEntity;
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.security.auth.SecurityContext;
 
@@ -19,7 +20,7 @@ public interface TenantSearchClient {
 
   SearchQueryResult<TenantEntity> searchTenants(TenantQuery filter);
 
-  SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantQuery filter);
+  SearchQueryResult<TenantMemberEntity> searchTenantMembers(TenantMemberQuery filter);
 
   TenantSearchClient withSecurityContext(SecurityContext securityContext);
 }

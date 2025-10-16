@@ -21,8 +21,6 @@ public record TenantFilter(
     Long key,
     List<String> tenantIds,
     String name,
-    String joinParentId,
-    EntityType entityType,
     Set<String> memberIds,
     EntityType childMemberType,
     Map<EntityType, Set<String>> memberIdsByType)
@@ -37,8 +35,6 @@ public record TenantFilter(
         .key(key)
         .tenantIds(tenantIds)
         .name(name)
-        .joinParentId(joinParentId)
-        .memberType(entityType)
         .memberIds(memberIds)
         .childMemberType(childMemberType)
         .memberIdsByType(memberIdsByType);
@@ -49,8 +45,6 @@ public record TenantFilter(
     private Long key;
     private List<String> tenantIds;
     private String name;
-    private String joinParentId;
-    private EntityType entityType;
     private Set<String> memberIds;
     private EntityType childMemberType;
     private Map<EntityType, Set<String>> memberIdsByType;
@@ -74,16 +68,6 @@ public record TenantFilter(
       return this;
     }
 
-    public Builder joinParentId(final String value) {
-      joinParentId = value;
-      return this;
-    }
-
-    public Builder memberType(final EntityType value) {
-      entityType = value;
-      return this;
-    }
-
     public Builder memberIds(final Set<String> value) {
       memberIds = value;
       return this;
@@ -101,15 +85,7 @@ public record TenantFilter(
 
     @Override
     public TenantFilter build() {
-      return new TenantFilter(
-          key,
-          tenantIds,
-          name,
-          joinParentId,
-          entityType,
-          memberIds,
-          childMemberType,
-          memberIdsByType);
+      return new TenantFilter(key, tenantIds, name, memberIds, childMemberType, memberIdsByType);
     }
   }
 }

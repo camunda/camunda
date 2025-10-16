@@ -81,6 +81,10 @@ public final class SortOptionBuilders {
     return new TenantSort.Builder();
   }
 
+  public static TenantMemberSort.Builder tenantMember() {
+    return new TenantMemberSort.Builder();
+  }
+
   public static GroupSort.Builder group() {
     return new GroupSort.Builder();
   }
@@ -140,6 +144,11 @@ public final class SortOptionBuilders {
   public static TenantSort tenant(
       final Function<TenantSort.Builder, ObjectBuilder<TenantSort>> fn) {
     return fn.apply(tenant()).build();
+  }
+
+  public static TenantMemberSort tenantMember(
+      final Function<TenantMemberSort.Builder, ObjectBuilder<TenantMemberSort>> fn) {
+    return fn.apply(tenantMember()).build();
   }
 
   public static GroupSort group(final Function<GroupSort.Builder, ObjectBuilder<GroupSort>> fn) {
