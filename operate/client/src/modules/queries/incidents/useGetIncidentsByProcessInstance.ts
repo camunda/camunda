@@ -28,9 +28,8 @@ const useGetIncidentsByProcessInstance = <T = QueryIncidentsResponseBody>(
     enabled: options?.enabled ?? !!processInstanceKey,
     select: options?.select,
     queryFn: async () => {
-      const {response, error} = await searchIncidentsByProcessInstance({
-        processInstanceKey,
-      });
+      const {response, error} =
+        await searchIncidentsByProcessInstance(processInstanceKey);
       if (error) {
         throw error;
       }

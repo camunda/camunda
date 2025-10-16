@@ -28,9 +28,8 @@ const useGetIncidentsByElementInstance = <T = QueryIncidentsResponseBody>(
     enabled: options?.enabled ?? !!elementInstanceKey,
     select: options?.select,
     queryFn: async () => {
-      const {response, error} = await searchIncidentsByElementInstance({
-        elementInstanceKey,
-      });
+      const {response, error} =
+        await searchIncidentsByElementInstance(elementInstanceKey);
       if (error) {
         throw error;
       }
