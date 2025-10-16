@@ -27,6 +27,7 @@ import {
   buildUrl,
   jsonHeaders,
   paginatedResponseFields,
+  defaultHeaders,
 } from './http';
 import {expect} from '@playwright/test';
 import type {APIRequestContext} from 'playwright-core';
@@ -901,4 +902,69 @@ function createResourceBlob(resourceName: string) {
     ? 'application/xml'
     : 'application/json';
   return new Blob([resourceBuffer], {type: mimeType});
+}
+
+export interface ResourceMetadata {
+  resourceKey: string;
+  resourceName: string;
+  resourceId?: string;
+  version?: number;
+}
+
+export async function deployResourceAndGetMetadata(
+  request: APIRequestContext,
+  resourceName: string,
+  deploymentIndex: number = 0,
+): Promise<ResourceMetadata> {
+  const formData = createResourceFormData(resourceName);
+
+  const res = await request.post(buildUrl('/deployments'), {
+    headers: defaultHeaders(),
+    multipart: formData,
+  });
+
+  await assertStatusCode(res, 200);
+  const body = await res.json();
+  expect(body.deployments.length).toBeGreaterThan(deploymentIndex);
+
+  const deployment = body.deployments[deploymentIndex];
+
+  if (deployment.processDefinition) {
+    return {
+      resourceKey: deployment.processDefinition.processDefinitionKey,
+      resourceName: deployment.processDefinition.resourceName,
+      resourceId: deployment.processDefinition.processDefinitionId,
+      version: deployment.processDefinition.version,
+    };
+  } else if (deployment.form) {
+    return {
+      resourceKey: deployment.form.formKey,
+      resourceName: deployment.form.resourceName,
+      resourceId: deployment.form.formId,
+      version: deployment.form.version,
+    };
+  } else if (deployment.decisionDefinition) {
+    return {
+      resourceKey: deployment.decisionDefinition.decisionDefinitionKey,
+      resourceName: deployment.decisionDefinition.name,
+      resourceId: deployment.decisionDefinition.decisionDefinitionId,
+      version: deployment.decisionDefinition.version,
+    };
+  } else if (deployment.decisionRequirements) {
+    return {
+      resourceKey: deployment.decisionRequirements.decisionRequirementsKey,
+      resourceName: deployment.decisionRequirements.resourceName,
+      resourceId: deployment.decisionRequirements.decisionRequirementsId,
+      version: deployment.decisionRequirements.version,
+    };
+  } else if (deployment.resource) {
+    return {
+      resourceKey: deployment.resource.resourceKey,
+      resourceName: deployment.resource.resourceName,
+      resourceId: deployment.resource.resourceId,
+      version: deployment.resource.version,
+    };
+  }
+
+  throw new Error(`Unknown deployment type: ${JSON.stringify(deployment)}`);
 }
