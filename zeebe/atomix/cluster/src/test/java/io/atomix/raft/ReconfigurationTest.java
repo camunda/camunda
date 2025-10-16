@@ -241,6 +241,27 @@ final class ReconfigurationTest {
     }
 
     @Test
+    void rejoinShouldBeSuccessfulWithSingleReplica(@TempDir final Path tmp) throws IOException {
+      // given - a cluster with 3 members
+      final var id1 = MemberId.from("1");
+      final var id2 = MemberId.from("2");
+
+      final var m1 = createServer(tmp, createMembershipService(id1, id2));
+      final var m2 = createServer(tmp, createMembershipService(id2, id1));
+
+      // when - m2 joined once
+      CompletableFuture.allOf(m1.bootstrap(id1)).join();
+      m2.join(id1).join();
+      m2.shutdown().join();
+
+      Awaitility.await("1 is not leader").untilAsserted(() -> assertThat(m1.isLeader()).isFalse());
+
+      // then - m2 can join again after restarting
+      final var restartedM2 = createServer(tmp, createMembershipService(id2, id1));
+      restartedM2.join(id1).join();
+    }
+
+    @Test
     void canJoinAgainAfterDataloss(@TempDir final Path tmp) throws IOException {
       // given - a cluster with 3 members
       final var id1 = MemberId.from("1");
