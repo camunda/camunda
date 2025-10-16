@@ -252,6 +252,8 @@ public class SwimMembershipProtocol
             member.id().getIdVersion());
       } else if (member.id().getIdVersion() > localMember.id().getIdVersion()) {
         // TODO: shutdown node as we detect a newer node with the same id
+        // This can be done in a better way in the future
+        Runtime.getRuntime().exit(1);
       }
       return false;
     }
