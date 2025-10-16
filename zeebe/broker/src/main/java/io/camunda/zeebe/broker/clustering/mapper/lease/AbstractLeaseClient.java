@@ -54,7 +54,7 @@ public abstract class AbstractLeaseClient implements LeaseClient {
 
     for (int i = 0; i < clusterSize; i++) {
       final var lease = tryAcquireLease(i);
-      if (lease != null) {
+      if (lease != null && lease.lease() != null) {
         currentLease = lease.lease();
         return lease;
       }
