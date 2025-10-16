@@ -27,7 +27,7 @@ type Props = {
 };
 
 const StateIcon: React.FC<Props> = ({state, ...props}) => {
-  const TargetComponent = stateIconsMap[state as keyof typeof stateIconsMap];
+  const TargetComponent = stateIconsMap[state];
   return <TargetComponent data-testid={`${state}-icon`} {...props} />;
 };
 
