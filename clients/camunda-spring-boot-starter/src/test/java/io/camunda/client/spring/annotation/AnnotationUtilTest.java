@@ -32,8 +32,7 @@ import io.camunda.client.annotation.ProcessInstanceKey;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -60,7 +59,7 @@ public class AnnotationUtilTest {
       assertThat(jobWorkerValue).isPresent();
       final JobWorkerValue value = jobWorkerValue.get();
       assertThat(value.getFetchVariables())
-          .containsExactly(new FetchVariable("some_name", FieldSource.GENERATED_FROM_METHOD_INFO));
+          .containsExactly(new GeneratedFromMethodInfo<>("some_name"));
     }
 
     @Test
@@ -70,7 +69,7 @@ public class AnnotationUtilTest {
       assertThat(jobWorkerValue).isPresent();
       final JobWorkerValue value = jobWorkerValue.get();
       assertThat(value.getFetchVariables())
-          .containsExactly(new FetchVariable("helloWorld", FieldSource.GENERATED_FROM_METHOD_INFO));
+          .containsExactly(new GeneratedFromMethodInfo<>("helloWorld"));
     }
 
     @Test
@@ -81,8 +80,7 @@ public class AnnotationUtilTest {
       final JobWorkerValue value = jobWorkerValue.get();
       assertThat(value.getFetchVariables())
           .containsExactly(
-              new FetchVariable("hello", FieldSource.GENERATED_FROM_METHOD_INFO),
-              new FetchVariable("world", FieldSource.GENERATED_FROM_METHOD_INFO));
+              new GeneratedFromMethodInfo<>("hello"), new GeneratedFromMethodInfo<>("world"));
     }
 
     @Test
@@ -92,8 +90,7 @@ public class AnnotationUtilTest {
       final Optional<JobWorkerValue> jobWorkerValue = AnnotationUtil.getJobWorkerValue(methodInfo);
       assertThat(jobWorkerValue).isPresent();
       final JobWorkerValue value = jobWorkerValue.get();
-      assertThat(value.getFetchVariables())
-          .containsExactly(new FetchVariable("value", FieldSource.GENERATED_FROM_METHOD_INFO));
+      assertThat(value.getFetchVariables()).containsExactly(new GeneratedFromMethodInfo<>("value"));
     }
 
     @io.camunda.client.annotation.JobWorker

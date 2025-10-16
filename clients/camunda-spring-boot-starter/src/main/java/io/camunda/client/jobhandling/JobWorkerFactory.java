@@ -17,7 +17,8 @@ package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
@@ -26,6 +27,8 @@ import io.camunda.client.jobhandling.JobHandlerFactory.JobHandlerFactoryContext;
 import io.camunda.client.metrics.CamundaClientMetricsBridge;
 import io.camunda.client.metrics.MetricsRecorder;
 import java.time.Duration;
+import java.util.Objects;
+import java.util.function.Predicate;
 
 public class JobWorkerFactory {
   private final BackoffSupplier backoffSupplier;
@@ -54,36 +57,59 @@ public class JobWorkerFactory {
             .metrics(
                 new CamundaClientMetricsBridge(metricsRecorder, jobWorkerValue.getType().value()));
 
-    if (jobWorkerValue.getMaxJobsActive() != null && jobWorkerValue.getMaxJobsActive() > 0) {
-      builder.maxJobsActive(jobWorkerValue.getMaxJobsActive());
+    if (canBeSetToBuilder(jobWorkerValue.getMaxJobsActive(), this::isValidInteger)) {
+      builder.maxJobsActive(jobWorkerValue.getMaxJobsActive().value());
     }
-    if (isValidDuration(jobWorkerValue.getTimeout())) {
-      builder.timeout(jobWorkerValue.getTimeout());
+    if (canBeSetToBuilder(jobWorkerValue.getTimeout(), this::isValidDuration)) {
+      builder.timeout(jobWorkerValue.getTimeout().value());
     }
-    if (isValidDuration(jobWorkerValue.getPollInterval())) {
-      builder.pollInterval(jobWorkerValue.getPollInterval());
+    if (canBeSetToBuilder(jobWorkerValue.getPollInterval(), this::isValidDuration)) {
+      builder.pollInterval(jobWorkerValue.getPollInterval().value());
     }
-    if (isValidDuration(jobWorkerValue.getRequestTimeout())) {
-      builder.requestTimeout(jobWorkerValue.getRequestTimeout());
+    if (canBeSetToBuilder(jobWorkerValue.getRequestTimeout(), this::isValidDuration)) {
+      builder.requestTimeout(jobWorkerValue.getRequestTimeout().value());
     }
     if (jobWorkerValue.getFetchVariables() != null
         && !jobWorkerValue.getFetchVariables().isEmpty()) {
       builder.fetchVariables(
-          jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList());
+          jobWorkerValue.getFetchVariables().stream()
+              .map(SourceAware::value)
+              .filter(Objects::nonNull)
+              .toList());
     }
     if (jobWorkerValue.getTenantIds() != null && !jobWorkerValue.getTenantIds().isEmpty()) {
-      builder.tenantIds(jobWorkerValue.getTenantIds());
+      builder.tenantIds(
+          jobWorkerValue.getTenantIds().stream()
+              .map(SourceAware::value)
+              .filter(Objects::nonNull)
+              .toList());
     }
-    if (jobWorkerValue.getStreamEnabled() != null) {
-      builder.streamEnabled(jobWorkerValue.getStreamEnabled());
+    if (canBeSetToBuilder(jobWorkerValue.getStreamEnabled())) {
+      builder.streamEnabled(jobWorkerValue.getStreamEnabled().value());
     }
-    if (isValidDuration(jobWorkerValue.getStreamTimeout())) {
-      builder.streamTimeout(jobWorkerValue.getStreamTimeout());
+    if (canBeSetToBuilder(jobWorkerValue.getStreamTimeout(), this::isValidDuration)) {
+      builder.streamTimeout(jobWorkerValue.getStreamTimeout().value());
     }
     return builder.open();
   }
 
+  private <T> boolean canBeSetToBuilder(final SourceAware<T> value) {
+    return canBeSetToBuilder(value, v -> true);
+  }
+
+  private <T> boolean canBeSetToBuilder(final SourceAware<T> value, final Predicate<T> validator) {
+    return value.value() != null && !(value instanceof Empty) && validator.test(value.value());
+  }
+
   private boolean isValidDuration(final Duration duration) {
     return duration != null && !duration.isNegative();
+  }
+
+  private boolean isValidLong(final Long number) {
+    return number != null && number >= 0;
+  }
+
+  private boolean isValidInteger(final Integer number) {
+    return number != null && number >= 0;
   }
 }

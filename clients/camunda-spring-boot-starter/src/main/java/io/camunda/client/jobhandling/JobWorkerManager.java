@@ -57,8 +57,7 @@ public class JobWorkerManager {
     } else {
       internalManagedJobWorker = new InternalManagedJobWorker();
       internalManagedJobWorker.setSource(source);
-      internalManagedJobWorker.setOriginal(jobWorkerValue);
-      internalManagedJobWorker.setCurrent(jobWorkerValue.clone());
+      internalManagedJobWorker.setCurrent(jobWorkerValue);
       internalManagedJobWorker.setCamundaClient(client);
       internalManagedJobWorker.setJobHandlerFactory(managedJobWorker.jobHandlerFactory());
       managedJobWorkers.put(type, internalManagedJobWorker);
@@ -89,10 +88,7 @@ public class JobWorkerManager {
 
   public void resetJobWorker(final String type) {
     final InternalManagedJobWorker internalManagedJobWorker = findManagedJobWorker(type);
-    upsertWorker(
-        internalManagedJobWorker,
-        new ResetChangeSet(internalManagedJobWorker.getOriginal()),
-        false);
+    upsertWorker(internalManagedJobWorker, new ResetChangeSet(), false);
   }
 
   public void resetJobWorkers() {
@@ -138,9 +134,7 @@ public class JobWorkerManager {
       jobWorkerValueCustomizers.forEach(
           customizer -> customizer.customize(internalManagedJobWorker.getCurrent()));
     }
-    final boolean enabled =
-        internalManagedJobWorker.getCurrent().getEnabled() == null
-            || internalManagedJobWorker.getCurrent().getEnabled();
+    final boolean enabled = internalManagedJobWorker.getCurrent().getEnabled().value();
     if (enabled) {
       internalManagedJobWorker.setJobWorker(
           jobWorkerFactory.createJobWorker(
@@ -168,7 +162,6 @@ public class JobWorkerManager {
   private static final class InternalManagedJobWorker {
     private JobHandlerFactory jobHandlerFactory;
     private JobWorker jobWorker;
-    private JobWorkerValue original;
     private JobWorkerValue current;
     private CamundaClient camundaClient;
     private Object source;
@@ -179,14 +172,6 @@ public class JobWorkerManager {
 
     public void setJobWorker(final JobWorker jobWorker) {
       this.jobWorker = jobWorker;
-    }
-
-    public JobWorkerValue getOriginal() {
-      return original;
-    }
-
-    public void setOriginal(final JobWorkerValue original) {
-      this.original = original;
     }
 
     public JobWorkerValue getCurrent() {

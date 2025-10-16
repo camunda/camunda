@@ -18,6 +18,7 @@ package io.camunda.client.spring.actuator;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
 import io.camunda.client.jobhandling.JobWorkerChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
@@ -216,8 +217,8 @@ public class JobWorkerController {
         type,
         jobWorkerValue.getType().value(),
         jobWorkerValue.getName().value(),
-        ofNullable(jobWorkerValue.getEnabled()).orElse(true),
-        jobWorkerValue.getTenantIds());
+        ofNullable(jobWorkerValue.getEnabled().value()).orElse(true),
+        jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList());
   }
 
   public record JobWorkerDto(
