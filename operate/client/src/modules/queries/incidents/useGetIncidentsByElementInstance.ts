@@ -30,11 +30,11 @@ const useGetIncidentsByElementInstance = <T = QueryIncidentsResponseBody>(
     queryFn: async () => {
       const {response, error} =
         await searchIncidentsByElementInstance(elementInstanceKey);
-      if (error) {
-        throw error;
+      if (response !== null) {
+        return response;
       }
 
-      return response;
+      throw error;
     },
   });
 };

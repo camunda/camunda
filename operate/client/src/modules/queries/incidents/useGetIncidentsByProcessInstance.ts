@@ -30,11 +30,11 @@ const useGetIncidentsByProcessInstance = <T = QueryIncidentsResponseBody>(
     queryFn: async () => {
       const {response, error} =
         await searchIncidentsByProcessInstance(processInstanceKey);
-      if (error) {
-        throw error;
+      if (response !== null) {
+        return response;
       }
 
-      return response;
+      throw error;
     },
   });
 };
