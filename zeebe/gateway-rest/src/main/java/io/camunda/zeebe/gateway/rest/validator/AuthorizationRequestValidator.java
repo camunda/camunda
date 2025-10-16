@@ -29,7 +29,11 @@ public final class AuthorizationRequestValidator {
 
           // resource validation
           IdentifierValidator.validateId(
-              request.getResourceId(), "resourceId", violations, idPattern);
+              request.getResourceId(),
+              "resourceId",
+              violations,
+              idPattern,
+              (id) -> !"*".equals(id));
           if (request.getResourceType() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
           }
