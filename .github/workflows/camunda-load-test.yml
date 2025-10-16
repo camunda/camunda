@@ -99,7 +99,7 @@ on:
         default: false
 
 env:
-  HELM_CHART: camunda-platform-8.8
+  HELM_CHART: camunda-platform-8.9
 
 jobs:
   calculate-image-tag:
