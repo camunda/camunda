@@ -15,6 +15,7 @@ import {useProcessInstancePageParams} from '../../useProcessInstancePageParams';
 import {InputOutputMappings} from './InputOutputMappings';
 import {VariablesContent} from './VariablesContent';
 import {Listeners, type ListenerTypeFilter} from './Listeners';
+import {OperationsLog} from './OperationsLog';
 import {WarningFilled} from './styled';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useIsRootNodeSelected} from 'modules/hooks/flowNodeSelection';
@@ -110,6 +111,15 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
           removePadding: true,
           onClick: () => {
             setListenerTabVisibility(true);
+          },
+        },
+        {
+          id: 'operations-log',
+          label: 'Operations log',
+          content: <OperationsLog />,
+          removePadding: true,
+          onClick: () => {
+            setListenerTabVisibility(false);
           },
         },
       ]}
