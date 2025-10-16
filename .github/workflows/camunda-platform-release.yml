@@ -197,7 +197,12 @@ jobs:
             -DlocalCheckout=${{ inputs.dryRun }} \
             -DskipQaBuild=true \
             -P-autoFormat \
+<<<<<<< HEAD
             -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+=======
+            -P\!include-optimize \
+            -Darguments='-P-autoFormat -DskipQaBuild=true -DskipChecks=true -DskipTests=true -Dskip.fe.build=false -Dspotless.apply.skip=false -Dskip.central.release=${SKIP_CENTRAL_RELEASE} -Dskip.camunda.release=${SKIP_CAMUNDA_RELEASE} -P!include-optimize -Dgpg.passphrase="${{ steps.secrets.outputs.MAVEN_CENTRAL_GPG_SIGNING_KEY_PASSPHRASE }}"'
+>>>>>>> b7da11f9 (feat: Introduce releaseProcessDryRun)
 
           # switch to the directory to which maven checks out the release tag
           # see https://maven.apache.org/maven-release/maven-release-plugin/perform-mojo.html#workingDirectory
@@ -285,6 +290,7 @@ jobs:
           changelog="Release ${{ inputs.releaseVersion }}"
           isDraftRelease="true"
 
+<<<<<<< HEAD
           # Right now we only support patch releases for generating the changelog
           # as it is the easiest to automate and the most repetitive work to do on a release
           if [[ "${{ inputs.releaseVersion }}" =~ ^8\.[1-9][0-9]*\.[1-9][0-9]*$ ]]
@@ -295,6 +301,14 @@ jobs:
             # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type:
             #
             # PATCH: the tag for the previous patch version on the same minor branch. e.g. if you're releasing 1.2.3, then ZCL_FROM_REV=1.2.2.
+=======
+          # Add the release labels to the release's issues, specifying the previous and current release in place of ZCL_FROM_REV and ZCL_TARGET_REV, respectively.
+          #
+          # ZCL_TARGET_REV should be replaced with the tag name for the version you are releasing, and
+          # ZCL_FROM_REV should be replaced as the tag name for the previous version, based on the release type
+          ZCL_FROM_REV="${{ steps.prev_version.outputs.previous_version }}"
+          ZCL_TARGET_REV="${{ env.RELEASE_TAG }}"
+>>>>>>> b7da11f9 (feat: Introduce releaseProcessDryRun)
 
             # To find the previous patch version we extract the patch version and subtract by one
             patchVersion=$(echo ${{ inputs.releaseVersion }} | sed 's/8\.[1-9][0-9]*\.//')
@@ -365,7 +379,11 @@ jobs:
           name: ${{ env.RELEASE_TAG }}
           artifacts: "release-artifacts/*"
           artifactErrorsFailBuild: true
+<<<<<<< HEAD
           draft: ${{ inputs.releaseProcessDryRun || steps.gen-changelog.outputs.isDraftRelease }}
+=======
+          draft: ${{ inputs.releaseProcessDryRun }}
+>>>>>>> b7da11f9 (feat: Introduce releaseProcessDryRun)
           makeLatest: ${{ inputs.isLatest }}
           body: ${{ steps.gen-changelog.outputs.changelog }}
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -740,7 +758,11 @@ jobs:
       needs.operate-docker.result == 'success' &&
       needs.tasklist-docker.result == 'success' &&
       needs.camunda-docker.result == 'success' &&
+<<<<<<< HEAD
       needs.snyk.result == 'success'
+=======
+      (needs.snyk.result == 'success' || needs.snyk.result == 'skipped')
+>>>>>>> b7da11f9 (feat: Introduce releaseProcessDryRun)
       ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
