@@ -8,6 +8,7 @@
 
 import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
+import {searchIncidentsByElementInstance} from 'modules/api/v2/incidents/searchIncidentsByElementInstance';
 import {queryKeys} from '../queryKeys';
 
 type QueryOptions<T> = {
@@ -27,9 +28,14 @@ const useGetIncidentsByElementInstance = <T = QueryIncidentsResponseBody>(
     enabled: options?.enabled ?? !!elementInstanceKey,
     select: options?.select,
     queryFn: async () => {
-      throw new Error(
-        'Waiting for implementation: https://github.com/camunda/camunda/issues/38806',
-      );
+      const {response, error} = await searchIncidentsByElementInstance({
+        elementInstanceKey,
+      });
+      if (error) {
+        throw error;
+      }
+
+      return response;
     },
   });
 };
