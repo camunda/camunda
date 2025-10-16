@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.usage.metrics;
+package io.camunda.it.document.usagemetrics;
 
 import static io.camunda.webapps.schema.descriptors.ComponentNames.CAMUNDA;
 import static io.camunda.webapps.schema.descriptors.template.UsageMetricTemplate.INDEX_NAME;
@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.it.backup.BackupDBClient;
+import io.camunda.it.document.DocumentClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
 import io.camunda.search.connect.configuration.DatabaseType;
@@ -56,7 +56,7 @@ public class UsageMetricsIT {
   @TestZeebe(autoStart = false)
   protected TestCamundaApplication testCamundaApplication;
 
-  protected BackupDBClient webappsDBClient;
+  protected DocumentClient webappsDBClient;
   protected CamundaClient camundaClient;
 
   // cannot be a @Container because it's initialized in setup()
@@ -117,7 +117,7 @@ public class UsageMetricsIT {
             .defaultRequestTimeout(Duration.ofSeconds(30))
             .build();
 
-    webappsDBClient = BackupDBClient.create(dbUrl, config.databaseType, EXECUTOR);
+    webappsDBClient = DocumentClient.create(dbUrl, config.databaseType, EXECUTOR);
     webappsDBClient.createRepository(REPOSITORY_NAME);
   }
 

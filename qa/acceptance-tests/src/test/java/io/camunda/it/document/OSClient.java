@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -26,12 +26,12 @@ import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 
-public class OSDBClientBackup implements BackupDBClient {
+public class OSClient implements DocumentClient {
   private final org.opensearch.client.RestClient osRestClient;
   private final OpenSearchClient opensearchClient;
   private final OpenSearchTransport transport;
 
-  public OSDBClientBackup(final String url) {
+  public OSClient(final String url) {
     osRestClient = org.opensearch.client.RestClient.builder(HttpHost.create(url)).build();
     transport =
         new org.opensearch.client.transport.rest_client.RestClientTransport(

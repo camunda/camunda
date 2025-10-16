@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,13 +30,13 @@ import java.util.concurrent.Executor;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 
-public class ESDBClientBackup implements BackupDBClient {
+public class ESClient implements DocumentClient {
 
   final RestClient restClient;
   final ElasticsearchClient esClient;
   private final Executor executor;
 
-  public ESDBClientBackup(final String url, final Executor executor) {
+  public ESClient(final String url, final Executor executor) {
     restClient = RestClient.builder(HttpHost.create(url)).build();
     this.executor = executor;
     esClient =

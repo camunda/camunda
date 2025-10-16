@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.document;
 
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.webapps.backup.BackupRepository;
@@ -20,17 +20,17 @@ import java.util.concurrent.Executor;
  * are not implemented elsewhere as they are typically performed by users, not by the camunda
  * application.
  */
-public interface BackupDBClient extends AutoCloseable {
+public interface DocumentClient extends AutoCloseable {
   void restore(String repositoryName, Collection<String> snapshots) throws IOException;
 
   void createRepository(String repositoryName) throws IOException;
 
-  static BackupDBClient create(
+  static DocumentClient create(
       final String url, final DatabaseType databaseType, final Executor executor)
       throws IOException {
     return switch (databaseType) {
-      case ELASTICSEARCH -> new ESDBClientBackup(url, executor);
-      case OPENSEARCH -> new OSDBClientBackup(url);
+      case ELASTICSEARCH -> new ESClient(url, executor);
+      case OPENSEARCH -> new OSClient(url);
       default -> throw new IllegalStateException("Unsupported database type: " + databaseType);
     };
   }
