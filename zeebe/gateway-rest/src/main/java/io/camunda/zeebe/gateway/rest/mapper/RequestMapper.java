@@ -919,9 +919,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, TenantRequest> toTenantCreateDto(
-      final TenantCreateRequest tenantCreateRequest, final Pattern identifierPattern) {
+      final TenantCreateRequest tenantCreateRequest) {
     return getResult(
-        TenantRequestValidator.validateCreateRequest(tenantCreateRequest, identifierPattern),
+        TenantRequestValidator.validateCreateRequest(tenantCreateRequest),
         () ->
             new TenantRequest(
                 null,
