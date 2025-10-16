@@ -341,7 +341,7 @@ public class RoleController {
       @PathVariable final String roleId,
       @RequestBody(required = false) final RoleGroupSearchQueryRequest query) {
 
-    return SearchQueryRequestMapper.toRoleQuery(query)
+    return SearchQueryRequestMapper.toRoleMemberQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
             roleQuery -> searchGroupsInRole(roleId, roleQuery));
