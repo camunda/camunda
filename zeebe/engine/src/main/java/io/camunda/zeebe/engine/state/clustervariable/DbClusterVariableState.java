@@ -37,7 +37,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
   }
 
   @Override
-  public void setClusterVariable(final ClusterVariableRecord clusterVariableRecord) {
+  public void create(final ClusterVariableRecord clusterVariableRecord) {
     if (clusterVariableRecord.getTenantId() == null
         || clusterVariableRecord.getTenantId().isBlank()) {
       clusterVariableKey.globalKey(clusterVariableRecord.getNameBuffer());
@@ -46,7 +46,7 @@ public class DbClusterVariableState implements MutableClusterVariableState {
           clusterVariableRecord.getNameBuffer(), clusterVariableRecord.getTenantId());
     }
     clusterVariableInstance.setRecord(clusterVariableRecord);
-    clusterVariablesColumnFamily.upsert(clusterVariableKey, clusterVariableInstance);
+    clusterVariablesColumnFamily.insert(clusterVariableKey, clusterVariableInstance);
   }
 
   @Override

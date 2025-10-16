@@ -38,7 +38,7 @@ public final class CreateClusterVariableMultiPartitionTest {
   @Test
   public void createGlobalScopedClusterVariableMultiPartition() {
     // when
-    ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("VALUE").create();
+    ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create();
 
     // then
     assertThat(
@@ -90,7 +90,7 @@ public final class CreateClusterVariableMultiPartitionTest {
     ENGINE_RULE
         .clusterVariables()
         .withName("KEY_2")
-        .withValue("VALUE")
+        .withValue("\"VALUE\"")
         .withTenantId("tenant_1")
         .create();
 

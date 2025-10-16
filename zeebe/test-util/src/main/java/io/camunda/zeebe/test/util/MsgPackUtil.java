@@ -136,16 +136,6 @@ public final class MsgPackUtil {
     return new UnsafeBuffer(asMsgPackReturnArray(json));
   }
 
-  public static DirectBuffer asMsgPack(final Object object) {
-    final ObjectMapper objectMapper = new ObjectMapper(new MessagePackFactory());
-    try {
-      final byte[] msgPackBytes = objectMapper.writeValueAsBytes(object);
-      return new UnsafeBuffer(msgPackBytes);
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
   @FunctionalInterface
   public interface CheckedConsumer<T> {
     void accept(T t) throws Exception;

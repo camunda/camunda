@@ -37,7 +37,8 @@ public final class CreateClusterVariableTest {
   @Test
   public void createGlobalScopedClusterVariable() {
     // when
-    final var record = ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("VALUE").create();
+    final var record =
+        ENGINE_RULE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create();
 
     // then
     Assertions.assertThat(record)
@@ -52,7 +53,7 @@ public final class CreateClusterVariableTest {
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_2")
-            .withValue("VALUE")
+            .withValue("\"VALUE\"")
             .withTenantId("tenant_1")
             .create();
     // then
@@ -64,13 +65,13 @@ public final class CreateClusterVariableTest {
   @Test
   public void createGlobalScopedClusterVariableAlreadyExists() {
     // given
-    ENGINE_RULE.clusterVariables().withName("KEY_3").withValue("VALUE").create();
+    ENGINE_RULE.clusterVariables().withName("KEY_3").withValue("\"VALUE\"").create();
     // when
     final var record =
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_3")
-            .withValue("VALUE_2")
+            .withValue("\"VALUE_2\"")
             .expectRejection()
             .create();
     // then
@@ -85,13 +86,13 @@ public final class CreateClusterVariableTest {
   public void globalScopedAndTenantScopedClusterVariableDoNotOverlap() {
     // given
     final var recordGlobal =
-        ENGINE_RULE.clusterVariables().withName("KEY_5").withValue("VALUE").create();
+        ENGINE_RULE.clusterVariables().withName("KEY_5").withValue("\"VALUE\"").create();
     // when
     final var recordTenant =
         ENGINE_RULE
             .clusterVariables()
             .withName("KEY_5")
-            .withValue("VALUE")
+            .withValue("\"VALUE\"")
             .withTenantId("tenant-1")
             .create();
     // then

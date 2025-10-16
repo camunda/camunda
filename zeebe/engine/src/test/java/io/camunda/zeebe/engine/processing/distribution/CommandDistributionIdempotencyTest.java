@@ -681,7 +681,7 @@ public class CommandDistributionIdempotencyTest {
             new Scenario(
                 ValueType.CLUSTER_VARIABLE,
                 ClusterVariableIntent.CREATE,
-                () -> ENGINE.clusterVariables().withName("KEY_1").withValue("VALUE").create()),
+                () -> ENGINE.clusterVariables().withName("KEY_1").withValue("\"VALUE\"").create()),
             ClusterVariableCreateProcessor.class
           },
           {

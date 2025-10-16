@@ -23,6 +23,6 @@ public class ClusterVariableCreatedApplier
 
   @Override
   public void applyState(final long key, final ClusterVariableRecord clusterVariableRecord) {
-    clusterVariableState.setClusterVariable(clusterVariableRecord);
+    clusterVariableState.create(clusterVariableRecord);
   }
 }

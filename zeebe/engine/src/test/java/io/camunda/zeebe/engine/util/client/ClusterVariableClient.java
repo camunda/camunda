@@ -7,14 +7,15 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
 import io.camunda.zeebe.protocol.record.value.ClusterVariableRecordValue;
-import io.camunda.zeebe.test.util.MsgPackUtil;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Random;
 import java.util.function.LongFunction;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ClusterVariableClient {
@@ -46,8 +47,12 @@ public final class ClusterVariableClient {
     this.writer = writer;
   }
 
-  public ClusterVariableClient withValue(final Object value) {
-    clusterVariableRecord.setValue(new UnsafeBuffer(MsgPackUtil.asMsgPack(value)));
+  public ClusterVariableClient withValue(final String value) {
+    return withValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(value)));
+  }
+
+  public ClusterVariableClient withValue(final DirectBuffer value) {
+    clusterVariableRecord.setValue(value);
     return this;
   }
 

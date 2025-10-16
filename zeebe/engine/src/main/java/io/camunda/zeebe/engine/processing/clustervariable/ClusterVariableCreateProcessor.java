@@ -44,13 +44,13 @@ public class ClusterVariableCreateProcessor
   @Override
   public void processNewCommand(final TypedRecord<ClusterVariableRecord> command) {
     final ClusterVariableRecord clusterVariableRecord = command.getValue();
-    final long key = keyGenerator.nextKey();
 
     clusterVariableRecordValidator
         .validateName(clusterVariableRecord)
         .flatMap(clusterVariableRecordValidator::validateUniqueness)
         .ifRightOrLeft(
             record -> {
+              final var key = keyGenerator.nextKey();
               writers
                   .state()
                   .appendFollowUpEvent(key, ClusterVariableIntent.CREATED, clusterVariableRecord);

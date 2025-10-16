@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.variable;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -44,7 +45,7 @@ public class ClusterVariableRecord extends UnifiedRecordValue
   }
 
   @Override
-  public Object getValue() {
+  public String getValue() {
     return MsgPackConverter.convertToJson(valueProp.getValue());
   }
 
@@ -63,10 +64,12 @@ public class ClusterVariableRecord extends UnifiedRecordValue
     return this;
   }
 
+  @JsonIgnore
   public DirectBuffer getNameBuffer() {
     return nameProp.getValue();
   }
 
+  @JsonIgnore
   public DirectBuffer getValueBuffer() {
     return valueProp.getValue();
   }

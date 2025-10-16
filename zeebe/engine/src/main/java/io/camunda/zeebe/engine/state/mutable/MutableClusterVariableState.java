@@ -12,7 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.value.variable.ClusterVariableRecor
 import org.agrona.DirectBuffer;
 
 public interface MutableClusterVariableState extends ClusterVariableState {
-  void setClusterVariable(ClusterVariableRecord clusterVariableRecord);
+  void create(ClusterVariableRecord clusterVariableRecord);
 
   void deleteTenantScopedClusterVariable(DirectBuffer variableNameBuffer, String tenantId);
 
