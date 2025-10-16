@@ -73,9 +73,17 @@ public class ClusterVariableCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<ClusterVariableRecord> command) {
-    writers
-        .state()
-        .appendFollowUpEvent(command.getKey(), ClusterVariableIntent.CREATED, command.getValue());
+    final var record = command.getValue();
+    clusterVariableRecordValidator
+        .validateUniqueness(record)
+        .ifRightOrLeft(
+            clusterVariableRecord ->
+                writers
+                    .state()
+                    .appendFollowUpEvent(command.getKey(), ClusterVariableIntent.CREATED, record),
+            rejection ->
+                writers.rejection().appendRejection(command, rejection.type(), rejection.reason()));
+
     commandDistributionBehavior.acknowledgeCommand(command);
   }
 }
