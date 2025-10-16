@@ -23,7 +23,16 @@ public class SecurityConfiguration {
   private HeaderConfiguration httpHeaders = new HeaderConfiguration();
   private SaasConfiguration saas = new SaasConfiguration();
 
+  /**
+   * The ID validation pattern is configurable with the intention to:
+   *
+   * <ul>
+   *   <li>allow customers to use even more strict validation
+   *   <li>be able to react quickly if there was any ReDoS vulnerability within the default pattern
+   * </ul>
+   */
   private String idValidationPattern = DEFAULT_ID_REGEX;
+
   private Pattern compiledIdValidationPattern;
 
   public AuthenticationConfiguration getAuthentication() {
