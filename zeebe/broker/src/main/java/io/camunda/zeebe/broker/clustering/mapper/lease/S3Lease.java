@@ -74,7 +74,8 @@ public class S3Lease extends AbstractLeaseClient {
     }
     final var nodeInstance = lease.nodeInstance();
     final var objectKey = objectKey(nodeInstance.id());
-    final var nextLease = lease.renew(clock.millis(), leaseExpirationDuration.toMillis());
+    final var nextLease =
+        lease.renew(clock.millis(), leaseExpirationDuration.toMillis(), nodeIdMappings);
     final var nodeVersion = nodeInstance.version();
     final PutObjectRequest putRequest =
         PutObjectRequest.builder()

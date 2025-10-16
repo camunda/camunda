@@ -84,9 +84,10 @@ public class InMemory {
     public Lease renewCurrentLease() {
       return server.updateAt(
           currentLease.nodeInstance().id(),
-          lease -> currentLease.renew(clock.millis(), leaseExpirationDuration.toMillis()));
+          lease ->
+              currentLease.renew(
+                  clock.millis(), leaseExpirationDuration.toMillis(), nodeIdMappings));
     }
-
     @Override
     public void releaseLease() {
       if (currentLease != null) {

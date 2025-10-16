@@ -14,6 +14,8 @@ import java.time.Duration;
 
 public interface LeaseClient {
 
+
+
   String taskId();
 
   void initialize();
@@ -60,8 +62,8 @@ public interface LeaseClient {
       return timestamp + expireDuration.toMillis() > now;
     }
 
-    public Lease renew(final long now, final long millis) {
-      return new Lease(taskId, now + millis, nodeInstance, nodeIdMappings);
+    public Lease renew(final long now, final long millis, final NodeIdMappings mappings) {
+      return new Lease(taskId, now + millis, nodeInstance, mappings);
     }
   }
 }
