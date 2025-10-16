@@ -19,7 +19,6 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
-import java.util.UUID;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -73,7 +72,7 @@ class AssignGroupToTenantTest {
   @Test
   void shouldRejectIfTenantDoesNotExist() {
     // given
-    final var nonExistentTenantId = UUID.randomUUID().toString();
+    final var nonExistentTenantId = Strings.newRandomValidTenantId();
 
     // when / then
     assertThatThrownBy(
