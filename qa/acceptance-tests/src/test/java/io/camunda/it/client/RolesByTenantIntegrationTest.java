@@ -48,7 +48,7 @@ public class RolesByTenantIntegrationTest {
   @Test
   void shouldAssignRoleToTenant() {
     // given
-    final var tenantId = "tenant-" + Strings.newRandomValidIdentityId();
+    final var tenantId = Strings.newRandomValidTenantId();
     final var roleId = "role-" + Strings.newRandomValidIdentityId();
     final var roleName = "name-" + Strings.newRandomValidIdentityId();
     final var roleDesc = "desc-" + Strings.newRandomValidIdentityId();

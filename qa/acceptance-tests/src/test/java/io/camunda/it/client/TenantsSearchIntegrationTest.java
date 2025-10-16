@@ -23,9 +23,9 @@ public class TenantsSearchIntegrationTest {
 
   private static CamundaClient camundaClient;
 
-  private static final String TENANT_ID_1 = Strings.newRandomValidIdentityId();
+  private static final String TENANT_ID_1 = Strings.newRandomValidTenantId();
   private static final String TENANT_NAME_1 = "ATenantName";
-  private static final String TENANT_ID_2 = Strings.newRandomValidIdentityId();
+  private static final String TENANT_ID_2 = Strings.newRandomValidTenantId();
   private static final String TENANT_NAME_2 = "BTenantName";
 
   @BeforeAll
