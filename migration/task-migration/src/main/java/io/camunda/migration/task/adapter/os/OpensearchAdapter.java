@@ -548,7 +548,9 @@ public class OpensearchAdapter implements TaskMigrationAdapter {
 
     try {
       final var reindexResponse = client.reindex(createMissingRequest);
-      return reindexResponse.total() != null && reindexResponse.total() > 0;
+      return reindexResponse != null
+          && reindexResponse.total() != null
+          && reindexResponse.total() > 0;
     } catch (final IOException e) {
       throw new MigrationException(e);
     }

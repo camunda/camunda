@@ -99,17 +99,16 @@ public abstract class UserTaskMigrationHelper {
     try {
       final var legacyIndex =
           new TaskLegacyIndex(migrator.getIndexPrefix(), migrator.isElasticsearch());
-      final var response =
-          migrator.request(
-              b ->
-                  b.PUT(HttpRequest.BodyPublishers.noBody())
-                      .uri(
-                          URI.create(
-                              migrator.getDatabaseUrl()
-                                  + "/"
-                                  + legacyIndex.getFullQualifiedName()
-                                  + "2025-01-01")),
-              BodyHandlers.discarding());
+      migrator.request(
+          b ->
+              b.PUT(HttpRequest.BodyPublishers.noBody())
+                  .uri(
+                      URI.create(
+                          migrator.getDatabaseUrl()
+                              + "/"
+                              + legacyIndex.getFullQualifiedName()
+                              + "2025-01-01")),
+          BodyHandlers.discarding());
     } catch (final Exception e) {
       throw new UncheckedException(e);
     }
