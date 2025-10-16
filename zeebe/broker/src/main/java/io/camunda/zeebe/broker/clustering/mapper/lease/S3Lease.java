@@ -203,9 +203,10 @@ public class S3Lease extends AbstractLeaseClient {
     final Optional<Long> expiry = expiryStr.map(Long::parseLong);
     final boolean isCurrentLeaseExpired = expiry.map(t -> t < clock.millis()).orElse(true);
 
-    final boolean previousOwnerExists = currentLeaseHolder == null || currentLeaseHolder.isBlank();
+    final boolean previousOwnerExists =
+        !(currentLeaseHolder == null || currentLeaseHolder.isBlank());
     LOG.debug("Previous owner={}, expiry={}", previousOwnerExists, expiry);
-    if (previousOwnerExists || isCurrentLeaseExpired) {
+    if (!previousOwnerExists || isCurrentLeaseExpired) {
       currentETag = headResponse.eTag();
       // always increase the version when acquiring a new lease
       final var nodeInstance = new NodeInstance(nodeId, currentNodeVersion).nextVersion();
