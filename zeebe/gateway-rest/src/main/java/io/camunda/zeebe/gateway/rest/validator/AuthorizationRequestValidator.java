@@ -12,26 +12,24 @@ import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
 
 public final class AuthorizationRequestValidator {
 
   public static Optional<ProblemDetail> validateAuthorizationRequest(
-      final AuthorizationRequest request) {
+      final AuthorizationRequest request, final Pattern idPattern) {
     return validate(
         violations -> {
           // owner validation
-          if (request.getOwnerId() == null || request.getOwnerId().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerId"));
-          }
+          IdentifierValidator.validateId(request.getOwnerId(), "ownerId", violations, idPattern);
           if (request.getOwnerType() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("ownerType"));
           }
 
           // resource validation
-          if (request.getResourceId() == null || request.getResourceId().isEmpty()) {
-            violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceId"));
-          }
+          IdentifierValidator.validateId(
+              request.getResourceId(), "resourceId", violations, idPattern);
           if (request.getResourceType() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
           }
