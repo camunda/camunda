@@ -843,7 +843,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "General / Unit - ArchUnit"
+          name: "[UT] General - ArchUnit"
       - name: Observe build status
         if: always()
         continue-on-error: true
