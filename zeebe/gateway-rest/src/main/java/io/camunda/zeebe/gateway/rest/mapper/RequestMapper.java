@@ -374,9 +374,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, CreateAuthorizationRequest> toCreateAuthorizationRequest(
-      final AuthorizationRequest request) {
+      final AuthorizationRequest request, final Pattern idPattern) {
     return getResult(
-        validateAuthorizationRequest(request),
+        validateAuthorizationRequest(request, idPattern),
         () ->
             new CreateAuthorizationRequest(
                 request.getOwnerId(),
@@ -387,9 +387,9 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, UpdateAuthorizationRequest> toUpdateAuthorizationRequest(
-      final long authorizationKey, final AuthorizationRequest request) {
+      final long authorizationKey, final AuthorizationRequest request, final Pattern idPattern) {
     return getResult(
-        validateAuthorizationRequest(request),
+        validateAuthorizationRequest(request, idPattern),
         () ->
             new UpdateAuthorizationRequest(
                 authorizationKey,
