@@ -366,14 +366,29 @@ public final class UserTaskTransformer implements ModelElementTransformer<UserTa
         userTaskProperties);
   }
 
+  /** Convert global user task listener configuration to task listener model(s). */
   private List<TaskListener> toTaskListenerModel(
       final ListenerConfiguration globalTaskListener, final UserTaskProperties userTaskProperties) {
 
-    final var eventTypes =
-        globalTaskListener.eventTypes().stream().map(ZeebeTaskListenerEventType::valueOf).toList();
     final var jobType = globalTaskListener.type();
     final var jobRetries = globalTaskListener.retries();
 
+    // Extract the list of supported listener event types
+    var eventTypes =
+        globalTaskListener.eventTypes().contains(ListenerConfiguration.ALL_EVENT_TYPES)
+            ? List.of(ZeebeTaskListenerEventType.values())
+            : globalTaskListener.eventTypes().stream()
+                .map(ZeebeTaskListenerEventType::valueOf)
+                .toList();
+    // Remove duplicates (considering deprecated event types as equivalent to their non-deprecated
+    // counterparts)
+    eventTypes =
+        eventTypes.stream()
+            .map(UserTaskTransformer::getZeebeTaskListenerEventType)
+            .distinct()
+            .toList();
+
+    // Create a task listener model for each supported event type
     final List<TaskListener> taskListeners = new ArrayList<>();
     eventTypes.forEach(
         eventType -> {
