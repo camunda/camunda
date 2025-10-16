@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.rest.TenantCreateRequest;
 import io.camunda.zeebe.gateway.protocol.rest.TenantUpdateRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.gateway.rest.config.ApiFiltersConfiguration;
+import io.camunda.zeebe.gateway.rest.validator.IdentifierValidator;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.TenantIntent;
@@ -58,6 +59,10 @@ public class TenantControllerTest {
 
   private static final String TENANT_BASE_URL = "/v2/tenants";
   private static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
+  // When building the expected error messages including this regex, for some reason the backslashes
+  // disappear and have to be doubled to prevent that.
+  private static final String TENANT_ID_PATTERN =
+      IdentifierValidator.TENANT_ID_MASK.pattern().replace("\\", "\\\\");
 
   @Nested
   @WebMvcTest(TenantController.class)
@@ -80,7 +85,7 @@ public class TenantControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"foo", "foo~", "Foo", "foo123", "foo_", "foo.", "foo@"})
+    @ValueSource(strings = {"foo", "Foo", "foo123", "foo_", "foo."})
     void createTenantShouldReturnAccepted(final String id) {
       // given
       final var tenantName = "Test Tenant";
@@ -196,7 +201,7 @@ public class TenantControllerTest {
         strings = {
           "foo!", "foo#", "foo$", "foo%", "foo^", "foo&", "foo*", "foo(", "foo)", "foo=", "foo{",
           "foo[", "foo}", "foo]", "foo|", "foo\\", "foo:", "foo;", "foo\"", "foo'", "foo<", "foo>",
-          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r"
+          "foo,", "foo?", "foo/", "foo ", "foo\t", "foo\n", "foo\r", "foo~", "foo@"
         })
     void shouldRejectTenantCreationWithIllegalCharactersInId(final String id) {
       // given
@@ -223,7 +228,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, TENANT_BASE_URL),
+                  .formatted(TENANT_ID_PATTERN, TENANT_BASE_URL),
               JsonCompareMode.STRICT);
 
       // then
@@ -253,7 +258,7 @@ public class TenantControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "The provided tenantId exceeds the limit of 256 characters.",
+              "detail": "The provided tenantId exceeds the limit of 31 characters.",
               "instance": "%s"
             }"""
                   .formatted(TENANT_BASE_URL),
@@ -477,7 +482,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
@@ -576,7 +581,7 @@ public class TenantControllerTest {
               "detail": "The provided tenantId contains illegal characters. It must match the pattern '%s'.",
               "instance": "%s"
             }"""
-                  .formatted(SecurityConfiguration.DEFAULT_ID_REGEX, uri),
+                  .formatted(TENANT_ID_PATTERN, uri),
               JsonCompareMode.STRICT);
 
       // then
