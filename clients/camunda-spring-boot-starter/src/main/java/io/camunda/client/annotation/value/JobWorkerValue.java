@@ -15,60 +15,55 @@
  */
 package io.camunda.client.annotation.value;
 
-import static io.camunda.client.annotation.value.JobWorkerValue.FieldSource.EMPTY_FIELD;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
-public class JobWorkerValue implements Cloneable {
-  private Type type = new Type(null, EMPTY_FIELD);
-  private Name name = new Name(null, EMPTY_FIELD);
-  private Duration timeout;
-  private Integer maxJobsActive;
-  private Duration requestTimeout;
-  private Duration pollInterval;
-  private List<FetchVariable> fetchVariables;
-  private Boolean enabled;
-  private List<String> tenantIds;
-  private Boolean forceFetchAllVariables;
-  private Boolean streamEnabled;
-  private Duration streamTimeout;
-  private Integer maxRetries = 0;
-  private Duration retryBackoff;
+public class JobWorkerValue {
+  private SourceAware<String> type = new Empty<>();
+  private SourceAware<String> name = new Empty<>();
+  private SourceAware<Duration> timeout = new Empty<>();
+  private SourceAware<Integer> maxJobsActive = new Empty<>();
+  private SourceAware<Duration> requestTimeout = new Empty<>();
+  private SourceAware<Duration> pollInterval = new Empty<>();
+  private List<SourceAware<String>> fetchVariables = new ArrayList<>();
+  private SourceAware<Boolean> enabled = new Empty<>();
+  private List<SourceAware<String>> tenantIds = new ArrayList<>();
+  private SourceAware<Boolean> forceFetchAllVariables = new Empty<>();
+  private SourceAware<Boolean> streamEnabled = new Empty<>();
+  private SourceAware<Duration> streamTimeout = new Empty<>();
+  private SourceAware<Integer> maxRetries = new Empty<>();
+  private SourceAware<Duration> retryBackoff = new Empty<>();
   // cannot be changed from change set
-  private Boolean autoComplete;
+  private SourceAware<Boolean> autoComplete = new Empty<>();
 
   @Deprecated(forRemoval = true)
   @JsonIgnore
   private MethodInfo methodInfo;
-  private Duration retryBackoff;
 
   public JobWorkerValue() {}
 
   public JobWorkerValue(
-      final Type type,
-      final Name name,
-      final Duration timeout,
-      final Integer maxJobsActive,
-      final Duration requestTimeout,
-      final Duration pollInterval,
-      final Boolean autoComplete,
-      final List<FetchVariable> fetchVariables,
-      final Boolean enabled,
-      final List<String> tenantIds,
-      final Boolean forceFetchAllVariables,
-      final Boolean streamEnabled,
-      final Duration streamTimeout,
-      final Integer maxRetries,
-      final Duration retryBackoff) {
+      final SourceAware<String> type,
+      final SourceAware<String> name,
+      final SourceAware<Duration> timeout,
+      final SourceAware<Integer> maxJobsActive,
+      final SourceAware<Duration> requestTimeout,
+      final SourceAware<Duration> pollInterval,
+      final SourceAware<Boolean> autoComplete,
+      final List<SourceAware<String>> fetchVariables,
+      final SourceAware<Boolean> enabled,
+      final List<SourceAware<String>> tenantIds,
+      final SourceAware<Boolean> forceFetchAllVariables,
+      final SourceAware<Boolean> streamEnabled,
+      final SourceAware<Duration> streamTimeout,
+      final SourceAware<Integer> maxRetries,
+      final SourceAware<Duration> retryBackoff) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -86,125 +81,123 @@ public class JobWorkerValue implements Cloneable {
     this.retryBackoff = retryBackoff;
   }
 
-  public List<FetchVariable> getFetchVariables() {
-    return fetchVariables;
-  }
-
-  public void setFetchVariables(final List<FetchVariable> fetchVariables) {
-    this.fetchVariables = fetchVariables;
-  }
-
-  public Type getType() {
+  public SourceAware<String> getType() {
     return type;
   }
 
-  public void setType(final Type type) {
+  public void setType(final SourceAware<String> type) {
     this.type = type;
   }
 
-  public Name getName() {
+  public SourceAware<String> getName() {
     return name;
   }
 
-  public void setName(final Name name) {
+  public void setName(final SourceAware<String> name) {
     this.name = name;
   }
 
-  public Duration getTimeout() {
+  public SourceAware<Duration> getTimeout() {
     return timeout;
   }
 
-  public void setTimeout(final Duration timeout) {
+  public void setTimeout(final SourceAware<Duration> timeout) {
     this.timeout = timeout;
   }
 
-  public Integer getMaxJobsActive() {
+  public SourceAware<Integer> getMaxJobsActive() {
     return maxJobsActive;
   }
 
-  public void setMaxJobsActive(final Integer maxJobsActive) {
+  public void setMaxJobsActive(final SourceAware<Integer> maxJobsActive) {
     this.maxJobsActive = maxJobsActive;
   }
 
-  public Duration getRequestTimeout() {
+  public SourceAware<Duration> getRequestTimeout() {
     return requestTimeout;
   }
 
-  public void setRequestTimeout(final Duration requestTimeout) {
+  public void setRequestTimeout(final SourceAware<Duration> requestTimeout) {
     this.requestTimeout = requestTimeout;
   }
 
-  public Duration getPollInterval() {
+  public SourceAware<Duration> getPollInterval() {
     return pollInterval;
   }
 
-  public void setPollInterval(final Duration pollInterval) {
+  public void setPollInterval(final SourceAware<Duration> pollInterval) {
     this.pollInterval = pollInterval;
   }
 
-  public Boolean getAutoComplete() {
-    return autoComplete;
+  public List<SourceAware<String>> getFetchVariables() {
+    return fetchVariables;
   }
 
-  public void setAutoComplete(final Boolean autoComplete) {
-    this.autoComplete = autoComplete;
+  public void setFetchVariables(final List<SourceAware<String>> fetchVariables) {
+    this.fetchVariables = Collections.unmodifiableList(fetchVariables);
   }
 
-  public Boolean getEnabled() {
+  public SourceAware<Boolean> getEnabled() {
     return enabled;
   }
 
-  public void setEnabled(final Boolean enabled) {
+  public void setEnabled(final SourceAware<Boolean> enabled) {
     this.enabled = enabled;
   }
 
-  public List<String> getTenantIds() {
+  public List<SourceAware<String>> getTenantIds() {
     return tenantIds;
   }
 
-  public void setTenantIds(final List<String> tenantIds) {
-    if (tenantIds != null) {
-      this.tenantIds = Collections.unmodifiableList(tenantIds);
-    }
+  public void setTenantIds(final List<SourceAware<String>> tenantIds) {
+    this.tenantIds = Collections.unmodifiableList(tenantIds);
   }
 
-  public Boolean getForceFetchAllVariables() {
+  public SourceAware<Boolean> getForceFetchAllVariables() {
     return forceFetchAllVariables;
   }
 
-  public void setForceFetchAllVariables(final Boolean forceFetchAllVariables) {
+  public void setForceFetchAllVariables(final SourceAware<Boolean> forceFetchAllVariables) {
     this.forceFetchAllVariables = forceFetchAllVariables;
   }
 
-  public Boolean getStreamEnabled() {
+  public SourceAware<Boolean> getStreamEnabled() {
     return streamEnabled;
   }
 
-  public void setStreamEnabled(final Boolean streamEnabled) {
+  public void setStreamEnabled(final SourceAware<Boolean> streamEnabled) {
     this.streamEnabled = streamEnabled;
   }
 
-  public Duration getStreamTimeout() {
+  public SourceAware<Duration> getStreamTimeout() {
     return streamTimeout;
   }
 
-  public void setStreamTimeout(final Duration streamTimeout) {
+  public void setStreamTimeout(final SourceAware<Duration> streamTimeout) {
     this.streamTimeout = streamTimeout;
   }
 
-  public Integer getMaxRetries() {
+  public SourceAware<Integer> getMaxRetries() {
     return maxRetries;
   }
 
-  public void setMaxRetries(final Integer maxRetries) {
+  public void setMaxRetries(final SourceAware<Integer> maxRetries) {
     this.maxRetries = maxRetries;
   }
 
-  public Duration getRetryBackoff() {
+  public SourceAware<Boolean> getAutoComplete() {
+    return autoComplete;
+  }
+
+  public void setAutoComplete(final SourceAware<Boolean> autoComplete) {
+    this.autoComplete = autoComplete;
+  }
+
+  public SourceAware<Duration> getRetryBackoff() {
     return retryBackoff;
   }
 
-  public void setRetryBackoff(final Duration retryBackoff) {
+  public void setRetryBackoff(final SourceAware<Duration> retryBackoff) {
     this.retryBackoff = retryBackoff;
   }
 
@@ -262,20 +255,6 @@ public class JobWorkerValue implements Cloneable {
   }
 
   @Override
-  public JobWorkerValue clone() {
-    try {
-      final ObjectMapper objectMapper =
-          JsonMapper.builder().addModule(new JavaTimeModule()).build();
-      final JobWorkerValue clone =
-          objectMapper.readValue(objectMapper.writeValueAsString(this), JobWorkerValue.class);
-      clone.setMethodInfo(getMethodInfo());
-      return clone;
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException("Error while cloning " + this, e);
-    }
-  }
-
-  @Override
   public String toString() {
     return "JobWorkerValue{"
         + "autoComplete="
@@ -311,30 +290,102 @@ public class JobWorkerValue implements Cloneable {
         + '}';
   }
 
-  public record Name(String value, FieldSource source) {}
+  public sealed interface SourceAware<T> {
+    T value();
 
-  public record Type(String value, FieldSource source) {}
+    int priority();
 
-  public record FetchVariable(String value, FieldSource source) {}
+    boolean generated();
 
-  public enum FieldSource {
-    EMPTY_FIELD(true),
-    GENERATED_FROM_METHOD_INFO(true),
-    FROM_ANNOTATION(false),
-    FROM_DEFAULT_PROPERTIES(false),
-    FROM_OVERRIDE_PROPERTIES(false),
-    FROM_ACTUATOR(false),
-    @Deprecated(forRemoval = true)
-    LEGACY(false);
+    record Empty<T>() implements SourceAware<T> {
 
-    private final boolean generated;
+      @Override
+      public T value() {
+        return null;
+      }
 
-    FieldSource(final boolean generated) {
-      this.generated = generated;
+      @Override
+      public int priority() {
+        return 0;
+      }
+
+      @Override
+      public boolean generated() {
+        return true;
+      }
     }
 
-    public boolean isGenerated() {
-      return generated;
+    record GeneratedFromMethodInfo<T>(T value) implements SourceAware<T> {
+
+      @Override
+      public int priority() {
+        return 1;
+      }
+
+      @Override
+      public boolean generated() {
+        return true;
+      }
+    }
+
+    record FromDefaultProperty<T>(T value) implements SourceAware<T> {
+      @Override
+      public int priority() {
+        return 2;
+      }
+
+      @Override
+      public boolean generated() {
+        return false;
+      }
+    }
+
+    record FromAnnotation<T>(T value) implements SourceAware<T> {
+      @Override
+      public int priority() {
+        return 3;
+      }
+
+      @Override
+      public boolean generated() {
+        return false;
+      }
+    }
+
+    record FromOverrideProperty<T>(T value) implements SourceAware<T> {
+      @Override
+      public int priority() {
+        return 4;
+      }
+
+      @Override
+      public boolean generated() {
+        return false;
+      }
+    }
+
+    record FromActuator<T>(T value, SourceAware<T> original) implements SourceAware<T> {
+      @Override
+      public int priority() {
+        return 5;
+      }
+
+      @Override
+      public boolean generated() {
+        return false;
+      }
+    }
+
+    record FromLegacy<T>(T value) implements SourceAware<T> {
+      @Override
+      public int priority() {
+        return -1;
+      }
+
+      @Override
+      public boolean generated() {
+        return false;
+      }
     }
   }
 }

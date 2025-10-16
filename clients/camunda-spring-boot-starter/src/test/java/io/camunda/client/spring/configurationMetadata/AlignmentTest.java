@@ -113,6 +113,11 @@ public class AlignmentTest {
     GETTERS.put(
         "camunda.client.worker.defaults.stream-enabled",
         p -> p.getWorker().getDefaults().getStreamEnabled());
+    GETTERS.put(
+        "camunda.client.worker.defaults.enabled", p -> p.getWorker().getDefaults().getEnabled());
+    GETTERS.put(
+        "camunda.client.worker.defaults.auto-complete",
+        p -> p.getWorker().getDefaults().getAutoComplete());
     // camunda.client.worker.defaults.retry-backoff
     GETTERS.put(
         "camunda.client.worker.defaults.retry-backoff",

@@ -64,11 +64,19 @@ public class BeanJobHandlerFactory implements JobHandlerFactory {
 
   @Override
   public JobHandler getJobHandler(final JobHandlerFactoryContext context) {
+    final boolean autoComplete =
+        context.jobWorkerValue().getAutoComplete().value() != null
+            ? context.jobWorkerValue().getAutoComplete().value()
+            : true;
+    final int maxRetries =
+        context.jobWorkerValue().getMaxRetries().value() != null
+            ? context.jobWorkerValue().getMaxRetries().value()
+            : 0;
     return new JobHandlerInvokingBeans(
         context.jobWorkerValue().getName().value(),
         methodInfo::invoke,
-        context.jobWorkerValue().getAutoComplete(),
-        context.jobWorkerValue().getMaxRetries(),
+        autoComplete,
+        maxRetries,
         commandExceptionHandlingStrategy,
         metricsRecorder,
         createParameterResolvers(context.camundaClient()),

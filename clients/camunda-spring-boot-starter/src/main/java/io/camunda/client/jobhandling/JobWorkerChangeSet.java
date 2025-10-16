@@ -15,15 +15,17 @@
  */
 package io.camunda.client.jobhandling;
 
+import static java.util.function.Predicate.not;
+
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.client.annotation.value.JobWorkerValue.Name;
-import io.camunda.client.annotation.value.JobWorkerValue.Type;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public sealed interface JobWorkerChangeSet {
 
@@ -35,12 +37,58 @@ public sealed interface JobWorkerChangeSet {
    */
   boolean applyChanges(JobWorkerValue jobWorkerValue);
 
-  static <T> boolean updateIfChanged(final T original, final T updated, final Consumer<T> setter) {
-    if (!Objects.equals(original, updated)) {
-      setter.accept(updated);
+  static <T> boolean updateIfChanged(
+      final SourceAware<T> original, final T updated, final Consumer<SourceAware<T>> setter) {
+    if (!Objects.equals(original.value(), updated)) {
+      setter.accept(new FromActuator<>(updated, original));
       return true;
     }
     return false;
+  }
+
+  static <T> boolean updateIfChangedList(
+      final List<SourceAware<T>> original,
+      final List<T> updated,
+      final Consumer<List<SourceAware<T>>> setter) {
+    if (!Objects.equals(original.stream().map(SourceAware::value).toList(), updated)) {
+      final int listSize = Math.max(original.size(), updated.size());
+      while (original.size() < listSize || updated.size() < listSize) {
+        if (original.size() < listSize) {
+          original.add(new Empty<>());
+        }
+        if (updated.size() < listSize) {
+          updated.add(null);
+        }
+      }
+      setter.accept(
+          IntStream.range(0, listSize)
+              .mapToObj(i -> (SourceAware<T>) new FromActuator<>(updated.get(i), original.get(i)))
+              .toList());
+      return true;
+    }
+    return false;
+  }
+
+  private static <T> boolean reset(
+      final SourceAware<T> field, final Consumer<SourceAware<T>> setter) {
+    if (field instanceof final FromActuator<T> fromActuator) {
+      setter.accept(fromActuator.original());
+      return true;
+    }
+    return false;
+  }
+
+  private static <T> boolean resetList(
+      final List<SourceAware<T>> field, final Consumer<List<SourceAware<T>>> setter) {
+    final boolean changed = field.stream().anyMatch(FromActuator.class::isInstance);
+    setter.accept(
+        field.stream()
+            .filter(FromActuator.class::isInstance)
+            .map(fromActuator -> (FromActuator<T>) fromActuator)
+            .map(FromActuator::original)
+            .filter(not(Empty.class::isInstance))
+            .toList());
+    return changed;
   }
 
   record NoopChangeSet() implements JobWorkerChangeSet {
@@ -52,33 +100,26 @@ public sealed interface JobWorkerChangeSet {
     }
   }
 
-  record ResetChangeSet(JobWorkerValue original) implements JobWorkerChangeSet {
+  record ResetChangeSet() implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      // both are equals, no reset required
-      if (Objects.equals(original, jobWorkerValue)) {
-        return false;
-      }
-      // reset name
-      boolean changed =
-          updateIfChanged(original.getName(), jobWorkerValue.getName(), jobWorkerValue::setName);
-      // reset type
-      changed =
-          updateIfChanged(original.getType(), jobWorkerValue.getType(), jobWorkerValue::setType)
-              || changed;
-      // reset enabled
-      changed =
-          updateIfChanged(
-                  original.getEnabled(), jobWorkerValue.getEnabled(), jobWorkerValue::setEnabled)
-              || changed;
-      // reset tenant ids
-      changed =
-          updateIfChanged(
-                  original.getTenantIds(),
-                  jobWorkerValue.getTenantIds(),
-                  jobWorkerValue::setTenantIds)
-              || changed;
-      return changed;
+      return Stream.of(
+              reset(jobWorkerValue.getName(), jobWorkerValue::setName),
+              reset(jobWorkerValue.getType(), jobWorkerValue::setType),
+              reset(jobWorkerValue.getTimeout(), jobWorkerValue::setTimeout),
+              reset(jobWorkerValue.getMaxJobsActive(), jobWorkerValue::setMaxJobsActive),
+              reset(jobWorkerValue.getRequestTimeout(), jobWorkerValue::setRequestTimeout),
+              reset(jobWorkerValue.getPollInterval(), jobWorkerValue::setPollInterval),
+              resetList(jobWorkerValue.getFetchVariables(), jobWorkerValue::setFetchVariables),
+              reset(jobWorkerValue.getEnabled(), jobWorkerValue::setEnabled),
+              resetList(jobWorkerValue.getTenantIds(), jobWorkerValue::setTenantIds),
+              reset(
+                  jobWorkerValue.getForceFetchAllVariables(),
+                  jobWorkerValue::setForceFetchAllVariables),
+              reset(jobWorkerValue.getStreamEnabled(), jobWorkerValue::setStreamEnabled),
+              reset(jobWorkerValue.getStreamTimeout(), jobWorkerValue::setStreamTimeout),
+              reset(jobWorkerValue.getMaxRetries(), jobWorkerValue::setMaxRetries))
+          .reduce(false, Boolean::logicalOr);
     }
   }
 
@@ -99,10 +140,7 @@ public sealed interface JobWorkerChangeSet {
   record NameChangeSet(String name) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(
-          jobWorkerValue.getName().value(),
-          name,
-          n -> jobWorkerValue.setName(new Name(n, FieldSource.FROM_ACTUATOR)));
+      return updateIfChanged(jobWorkerValue.getName(), name, jobWorkerValue::setName);
     }
   }
 
@@ -110,24 +148,23 @@ public sealed interface JobWorkerChangeSet {
 
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(
-          jobWorkerValue.getType().value(),
-          type,
-          t -> jobWorkerValue.setType(new Type(t, FieldSource.FROM_ACTUATOR)));
+      return updateIfChanged(jobWorkerValue.getType(), type, jobWorkerValue::setType);
     }
   }
 
   record ComposedChangeSet(List<JobWorkerChangeSet> changeSets) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return changeSets.stream().anyMatch(changeSet -> changeSet.applyChanges(jobWorkerValue));
+      return changeSets.stream()
+          .map(changeSet -> changeSet.applyChanges(jobWorkerValue))
+          .reduce(false, Boolean::logicalOr);
     }
   }
 
   record TenantIdsChangeSet(List<String> tenantIds) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(
+      return updateIfChangedList(
           jobWorkerValue.getTenantIds(), tenantIds, jobWorkerValue::setTenantIds);
     }
   }
@@ -166,14 +203,8 @@ public sealed interface JobWorkerChangeSet {
   record FetchVariablesChangeSet(List<String> fetchVariables) implements JobWorkerChangeSet {
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
-      return updateIfChanged(
-          jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList(),
-          fetchVariables,
-          fvs ->
-              jobWorkerValue.setFetchVariables(
-                  fvs.stream()
-                      .map(fv -> new FetchVariable(fv, FieldSource.FROM_ACTUATOR))
-                      .toList()));
+      return updateIfChangedList(
+          jobWorkerValue.getFetchVariables(), fetchVariables, jobWorkerValue::setFetchVariables);
     }
   }
 

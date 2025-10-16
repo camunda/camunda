@@ -22,15 +22,13 @@ import static org.apache.commons.lang3.StringUtils.*;
 
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.client.annotation.value.JobWorkerValue.Name;
-import io.camunda.client.annotation.value.JobWorkerValue.Type;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromDefaultProperty;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
@@ -54,33 +52,34 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     applyDefaultJobWorkerTenantIds(jobWorkerValue);
     applyFetchVariables(jobWorkerValue);
     applyOverrides(jobWorkerValue);
+    applyForceFetchAll(jobWorkerValue);
   }
 
-  private void applyFetchVariables(final JobWorkerValue jobWorkerValue) {
-    if (jobWorkerValue.getForceFetchAllVariables() != null
-        && jobWorkerValue.getForceFetchAllVariables()) {
+  private void applyForceFetchAll(final JobWorkerValue jobWorkerValue) {
+    if (!(jobWorkerValue.getForceFetchAllVariables() instanceof Empty)
+        && jobWorkerValue.getForceFetchAllVariables().value()) {
       LOG.debug(
           "Worker '{}': Force fetch all variables is enabled", jobWorkerValue.getName().value());
       jobWorkerValue.setFetchVariables(List.of());
-    } else {
-      final List<FetchVariable> variables = new ArrayList<>();
-      if (jobWorkerValue.getFetchVariables() != null) {
-        variables.addAll(jobWorkerValue.getFetchVariables());
-      }
-      if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
-        variables.addAll(
-            camundaClientProperties.getWorker().getDefaults().getFetchVariables().stream()
-                .map(
-                    fetchVariable ->
-                        new FetchVariable(fetchVariable, FieldSource.FROM_DEFAULT_PROPERTIES))
-                .toList());
-      }
-      jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
-      LOG.debug(
-          "Worker '{}': Fetching only required variables {}",
-          jobWorkerValue.getName().value(),
-          variables);
     }
+  }
+
+  private void applyFetchVariables(final JobWorkerValue jobWorkerValue) {
+    final List<SourceAware<String>> variables = new ArrayList<>();
+    if (jobWorkerValue.getFetchVariables() != null) {
+      variables.addAll(jobWorkerValue.getFetchVariables());
+    }
+    if (camundaClientProperties.getWorker().getDefaults().getFetchVariables() != null) {
+      variables.addAll(
+          camundaClientProperties.getWorker().getDefaults().getFetchVariables().stream()
+              .map(FromDefaultProperty::new)
+              .toList());
+    }
+    jobWorkerValue.setFetchVariables(variables.stream().distinct().toList());
+    LOG.debug(
+        "Worker '{}': Fetching only required variables {}",
+        jobWorkerValue.getName().value(),
+        variables);
   }
 
   private void applyOverrides(final JobWorkerValue editedJobWorkerValue) {
@@ -102,78 +101,153 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
     return ofNullable(camundaClientProperties.getWorker().getOverride().get(type));
   }
 
+  private Supplier<List<String>> fetchVariablesSuppliers(
+      final CamundaClientJobWorkerProperties source) {
+    return source::getFetchVariables;
+  }
+
+  private Consumer<List<SourceAware<String>>> fetchVariablesConsumer(final JobWorkerValue target) {
+    return target::setFetchVariables;
+  }
+
+  private Supplier<List<String>> tenantIdsSupplier(final CamundaClientJobWorkerProperties source) {
+    return source::getTenantIds;
+  }
+
+  private Consumer<List<SourceAware<String>>> tenantIdsConsumer(final JobWorkerValue target) {
+    return target::setTenantIds;
+  }
+
   private void copyProperties(
       final CamundaClientJobWorkerProperties source,
       final JobWorkerValue target,
       final OverrideSource overrideSource) {
-    final FieldSource fieldSource =
-        switch (overrideSource) {
-          case worker -> FieldSource.FROM_OVERRIDE_PROPERTIES;
-          case defaults -> FieldSource.FROM_DEFAULT_PROPERTIES;
-        };
     if (overrideSource == OverrideSource.worker) {
-      copyProperty(
+      copyPropertyList(
           "fetchVariables",
           overrideSource,
-          () ->
-              ofNullable(source.getFetchVariables())
-                  .map(
-                      fetchVariables ->
-                          fetchVariables.stream()
-                              .map(fetchVariable -> new FetchVariable(fetchVariable, fieldSource))
-                              .toList())
-                  .orElse(null),
-          target::setFetchVariables);
-      copyProperty(
-          "type", overrideSource, () -> new Type(source.getType(), fieldSource), target::setType);
-      copyProperty(
-          "name", overrideSource, () -> new Name(source.getName(), fieldSource), target::setName);
-      copyProperty("tenantIds", overrideSource, source::getTenantIds, target::setTenantIds);
+          fetchVariablesSuppliers(source),
+          fetchVariablesConsumer(target));
+      copyProperty("type", overrideSource, source::getType, target::setType, target.getType());
+      copyProperty("name", overrideSource, source::getName, target::setName, target.getName());
+      copyPropertyList(
+          "tenantIds", overrideSource, tenantIdsSupplier(source), tenantIdsConsumer(target));
     }
-    copyProperty("timeout", overrideSource, source::getTimeout, target::setTimeout);
     copyProperty(
-        "maxJobsActive", overrideSource, source::getMaxJobsActive, target::setMaxJobsActive);
+        "timeout", overrideSource, source::getTimeout, target::setTimeout, target.getTimeout());
     copyProperty(
-        "requestTimeout", overrideSource, source::getRequestTimeout, target::setRequestTimeout);
-    copyProperty("pollInterval", overrideSource, source::getPollInterval, target::setPollInterval);
-    copyProperty("autoComplete", overrideSource, source::getAutoComplete, target::setAutoComplete);
-    copyProperty("enabled", overrideSource, source::getEnabled, target::setEnabled);
+        "maxJobsActive",
+        overrideSource,
+        source::getMaxJobsActive,
+        target::setMaxJobsActive,
+        target.getMaxJobsActive());
     copyProperty(
-        "streamEnabled", overrideSource, source::getStreamEnabled, target::setStreamEnabled);
+        "requestTimeout",
+        overrideSource,
+        source::getRequestTimeout,
+        target::setRequestTimeout,
+        target.getRequestTimeout());
     copyProperty(
-        "streamTimeout", overrideSource, source::getStreamTimeout, target::setStreamTimeout);
+        "pollInterval",
+        overrideSource,
+        source::getPollInterval,
+        target::setPollInterval,
+        target.getPollInterval());
+    copyProperty(
+        "autoComplete",
+        overrideSource,
+        source::getAutoComplete,
+        target::setAutoComplete,
+        target.getAutoComplete());
+    copyProperty(
+        "enabled", overrideSource, source::getEnabled, target::setEnabled, target.getEnabled());
+    copyProperty(
+        "streamEnabled",
+        overrideSource,
+        source::getStreamEnabled,
+        target::setStreamEnabled,
+        target.getStreamEnabled());
+    copyProperty(
+        "streamTimeout",
+        overrideSource,
+        source::getStreamTimeout,
+        target::setStreamTimeout,
+        target.getStreamTimeout());
     copyProperty(
         "forceFetchAllVariables",
         overrideSource,
         source::getForceFetchAllVariables,
-        target::setForceFetchAllVariables);
-    copyProperty("maxRetries", overrideSource, source::getMaxRetries, target::setMaxRetries);
-    copyProperty("retryBackoff", overrideSource, source::getRetryBackoff, target::setRetryBackoff);
+        target::setForceFetchAllVariables,
+        target.getForceFetchAllVariables());
+    copyProperty(
+        "maxRetries",
+        overrideSource,
+        source::getMaxRetries,
+        target::setMaxRetries,
+        target.getMaxRetries());
+    copyProperty(
+        "retryBackoff",
+        overrideSource,
+        source::getRetryBackoff,
+        target::setRetryBackoff,
+        target.getRetryBackoff());
+  }
+
+  private <T> void copyPropertyList(
+      final String propertyName,
+      final OverrideSource overrideSource,
+      final Supplier<List<T>> getter,
+      final Consumer<List<SourceAware<T>>> setter) {
+    final List<T> values = getter.get();
+    if (values != null) {
+      LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
+      final List<SourceAware<T>> sourceAwares =
+          values.stream()
+              .map(
+                  value ->
+                      switch (overrideSource) {
+                        case worker -> new FromOverrideProperty<>(value);
+                        case defaults ->
+                            throw new IllegalStateException(
+                                "List overrides are only supported for workers");
+                      })
+              .map(value -> (SourceAware<T>) value)
+              .toList();
+      setter.accept(sourceAwares);
+    }
   }
 
   private <T> void copyProperty(
       final String propertyName,
       final OverrideSource overrideSource,
       final Supplier<T> getter,
-      final Consumer<T> setter) {
+      final Consumer<SourceAware<T>> setter,
+      final SourceAware<T> currentValue) {
     final T value = getter.get();
     if (value != null) {
-      LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
-      setter.accept(value);
+      final SourceAware<T> sourceAware =
+          switch (overrideSource) {
+            case worker -> new FromOverrideProperty<>(value);
+            case defaults -> new FromDefaultProperty<>(value);
+          };
+      if (sourceAware.priority() > currentValue.priority()) {
+        LOG.debug("Overriding property '{}' from source {}", propertyName, overrideSource);
+        setter.accept(sourceAware);
+      }
     }
   }
 
   private void applyDefaultWorkerName(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerName = camundaClientProperties.getWorker().getDefaults().getName();
-    final Name jobWorkerName = jobWorkerValue.getName();
-    if (jobWorkerName.source().isGenerated()) {
+    final SourceAware<String> jobWorkerName = jobWorkerValue.getName();
+    if (jobWorkerName.generated()) {
       if (isNotBlank(defaultJobWorkerName)
           && !DEFAULT_JOB_WORKER_NAME_VAR.equals(defaultJobWorkerName)) {
         LOG.debug(
             "Worker '{}': Setting name to default {}",
             jobWorkerValue.getName().value(),
             defaultJobWorkerName);
-        jobWorkerValue.setName(new Name(defaultJobWorkerName, FieldSource.FROM_DEFAULT_PROPERTIES));
+        jobWorkerValue.setName(new FromDefaultProperty<>(defaultJobWorkerName));
       } else {
         LOG.debug("Worker '{}': Using generated name", jobWorkerValue.getName().value());
       }
@@ -182,14 +256,14 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
 
   private void applyDefaultJobWorkerType(final JobWorkerValue jobWorkerValue) {
     final String defaultJobWorkerType = camundaClientProperties.getWorker().getDefaults().getType();
-    final Type jobWorkerType = jobWorkerValue.getType();
-    if (jobWorkerType.source().isGenerated()) {
+    final SourceAware<String> jobWorkerType = jobWorkerValue.getType();
+    if (jobWorkerType.generated()) {
       if (isNotBlank(defaultJobWorkerType)) {
         LOG.debug(
             "Worker '{}': Setting type to default {}",
             jobWorkerValue.getName().value(),
             defaultJobWorkerType);
-        jobWorkerValue.setType(new Type(defaultJobWorkerType, FieldSource.FROM_DEFAULT_PROPERTIES));
+        jobWorkerValue.setType(new FromDefaultProperty<>(defaultJobWorkerType));
       } else {
         LOG.debug("Worker '{}': Using generated type", jobWorkerValue.getName().value());
       }
@@ -197,15 +271,18 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
   }
 
   private void applyDefaultJobWorkerTenantIds(final JobWorkerValue jobWorkerValue) {
-    final Set<String> tenantIds = new HashSet<>();
+    final List<SourceAware<String>> tenantIds = new ArrayList<>();
 
     // we consider default worker tenant ids configurations first
     if (!DEFAULT_JOB_WORKER_TENANT_IDS.equals(
         camundaClientProperties.getWorker().getDefaults().getTenantIds())) {
-      tenantIds.addAll(camundaClientProperties.getWorker().getDefaults().getTenantIds());
+      tenantIds.addAll(
+          camundaClientProperties.getWorker().getDefaults().getTenantIds().stream()
+              .map(FromDefaultProperty::new)
+              .toList());
     } else {
       // the default tenant set on the client is included in the default if no other default is set
-      tenantIds.add(camundaClientProperties.getTenantId());
+      tenantIds.add(new FromDefaultProperty<>(camundaClientProperties.getTenantId()));
     }
 
     // if set, worker annotation defaults get included as well

@@ -113,10 +113,10 @@ public @interface JobWorker {
   boolean streamEnabled() default false;
 
   /** Stream timeout in ms */
-  long streamTimeout() default 3600000L;
+  long streamTimeout() default 28800000L;
 
   /** Set the max number of retries for a job */
-  int maxRetries() default -1;
+  int maxRetries() default 0;
 
   /** Set the retry backoff for a job (in milliseconds) */
   long retryBackoff() default -1L;

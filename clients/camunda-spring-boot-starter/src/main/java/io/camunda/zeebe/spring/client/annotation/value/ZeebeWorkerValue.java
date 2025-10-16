@@ -16,10 +16,8 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
-import io.camunda.client.annotation.value.JobWorkerValue.Name;
-import io.camunda.client.annotation.value.JobWorkerValue.Type;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
+import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;
@@ -57,24 +55,27 @@ public class ZeebeWorkerValue {
       final Duration streamTimeout,
       final int maxRetries) {
     this();
-    jobWorkerValue.setType(new Type(type, FieldSource.LEGACY));
-    jobWorkerValue.setName(new Name(name, FieldSource.LEGACY));
-    jobWorkerValue.setTimeout(timeout);
-    jobWorkerValue.setMaxJobsActive(maxJobsActive);
-    jobWorkerValue.setRequestTimeout(requestTimeout);
-    jobWorkerValue.setPollInterval(pollInterval);
-    jobWorkerValue.setAutoComplete(autoComplete);
+    jobWorkerValue.setType(new FromLegacy<>(type));
+    jobWorkerValue.setName(new FromLegacy<>(name));
+    jobWorkerValue.setTimeout(new FromLegacy<>(timeout));
+    jobWorkerValue.setMaxJobsActive(new FromLegacy<>(maxJobsActive));
+    jobWorkerValue.setRequestTimeout(new FromLegacy<>(requestTimeout));
+    jobWorkerValue.setPollInterval(new FromLegacy<>(pollInterval));
+    jobWorkerValue.setAutoComplete(new FromLegacy<>(autoComplete));
     jobWorkerValue.setFetchVariables(
         fetchVariables.stream()
-            .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.LEGACY))
+            .map(fetchVariable -> (SourceAware<String>) new FromLegacy<>(fetchVariable))
             .toList());
-    jobWorkerValue.setEnabled(enabled);
+    jobWorkerValue.setEnabled(new FromLegacy<>(enabled));
     jobWorkerValue.setMethodInfo(methodInfo);
-    jobWorkerValue.setTenantIds(tenantIds);
-    jobWorkerValue.setForceFetchAllVariables(forceFetchAllVariables);
-    jobWorkerValue.setStreamEnabled(streamEnabled);
-    jobWorkerValue.setStreamTimeout(streamTimeout);
-    jobWorkerValue.setMaxRetries(maxRetries);
+    jobWorkerValue.setTenantIds(
+        tenantIds.stream()
+            .map(tenantId -> (SourceAware<String>) new FromLegacy<>(tenantId))
+            .toList());
+    jobWorkerValue.setForceFetchAllVariables(new FromLegacy<>(forceFetchAllVariables));
+    jobWorkerValue.setStreamEnabled(new FromLegacy<>(streamEnabled));
+    jobWorkerValue.setStreamTimeout(new FromLegacy<>(streamTimeout));
+    jobWorkerValue.setMaxRetries(new FromLegacy<>(maxRetries));
   }
 
   public JobWorkerValue getJobWorkerValue() {
@@ -86,7 +87,7 @@ public class ZeebeWorkerValue {
   }
 
   public void setType(final String type) {
-    jobWorkerValue.setType(new Type(type, FieldSource.LEGACY));
+    jobWorkerValue.setType(new FromLegacy<>(type));
   }
 
   public String getName() {
@@ -94,66 +95,66 @@ public class ZeebeWorkerValue {
   }
 
   public void setName(final String name) {
-    jobWorkerValue.setName(new Name(name, FieldSource.LEGACY));
+    jobWorkerValue.setName(new FromLegacy<>(name));
   }
 
   public Duration getTimeout() {
-    return jobWorkerValue.getTimeout();
+    return jobWorkerValue.getTimeout().value();
   }
 
   public void setTimeout(final Duration timeout) {
-    jobWorkerValue.setTimeout(timeout);
+    jobWorkerValue.setTimeout(new FromLegacy<>(timeout));
   }
 
   public Integer getMaxJobsActive() {
-    return jobWorkerValue.getMaxJobsActive();
+    return jobWorkerValue.getMaxJobsActive().value();
   }
 
   public void setMaxJobsActive(final Integer maxJobsActive) {
-    jobWorkerValue.setMaxJobsActive(maxJobsActive);
+    jobWorkerValue.setMaxJobsActive(new FromLegacy<>(maxJobsActive));
   }
 
   public Duration getRequestTimeout() {
-    return jobWorkerValue.getRequestTimeout();
+    return jobWorkerValue.getRequestTimeout().value();
   }
 
   public void setRequestTimeout(final Duration requestTimeout) {
-    jobWorkerValue.setRequestTimeout(requestTimeout);
+    jobWorkerValue.setRequestTimeout(new FromLegacy<>(requestTimeout));
   }
 
   public Duration getPollInterval() {
-    return jobWorkerValue.getPollInterval();
+    return jobWorkerValue.getPollInterval().value();
   }
 
   public void setPollInterval(final Duration pollInterval) {
-    jobWorkerValue.setPollInterval(pollInterval);
+    jobWorkerValue.setPollInterval(new FromLegacy<>(pollInterval));
   }
 
   public Boolean getAutoComplete() {
-    return jobWorkerValue.getAutoComplete();
+    return jobWorkerValue.getAutoComplete().value();
   }
 
   public void setAutoComplete(final Boolean autoComplete) {
-    jobWorkerValue.setAutoComplete(autoComplete);
+    jobWorkerValue.setAutoComplete(new FromLegacy<>(autoComplete));
   }
 
   public List<String> getFetchVariables() {
-    return jobWorkerValue.getFetchVariables().stream().map(FetchVariable::value).toList();
+    return jobWorkerValue.getFetchVariables().stream().map(SourceAware::value).toList();
   }
 
   public void setFetchVariables(final List<String> fetchVariables) {
     jobWorkerValue.setFetchVariables(
         fetchVariables.stream()
-            .map(fetchVariable -> new FetchVariable(fetchVariable, FieldSource.LEGACY))
+            .map(fetchVariable -> (SourceAware<String>) new FromLegacy<>(fetchVariable))
             .toList());
   }
 
   public Boolean getEnabled() {
-    return jobWorkerValue.getEnabled();
+    return jobWorkerValue.getEnabled().value();
   }
 
   public void setEnabled(final Boolean enabled) {
-    jobWorkerValue.setEnabled(enabled);
+    jobWorkerValue.setEnabled(new FromLegacy<>(enabled));
   }
 
   public MethodInfo getMethodInfo() {
@@ -165,43 +166,46 @@ public class ZeebeWorkerValue {
   }
 
   public List<String> getTenantIds() {
-    return jobWorkerValue.getTenantIds();
+    return jobWorkerValue.getTenantIds().stream().map(SourceAware::value).toList();
   }
 
   public void setTenantIds(final List<String> tenantIds) {
-    jobWorkerValue.setTenantIds(tenantIds);
+    jobWorkerValue.setTenantIds(
+        tenantIds.stream()
+            .map(tenantId -> (SourceAware<String>) new FromLegacy<>(tenantId))
+            .toList());
   }
 
   public Boolean getForceFetchAllVariables() {
-    return jobWorkerValue.getForceFetchAllVariables();
+    return jobWorkerValue.getForceFetchAllVariables().value();
   }
 
   public void setForceFetchAllVariables(final Boolean forceFetchAllVariables) {
-    jobWorkerValue.setForceFetchAllVariables(forceFetchAllVariables);
+    jobWorkerValue.setForceFetchAllVariables(new FromLegacy<>(forceFetchAllVariables));
   }
 
   public Boolean getStreamEnabled() {
-    return jobWorkerValue.getStreamEnabled();
+    return jobWorkerValue.getStreamEnabled().value();
   }
 
   public void setStreamEnabled(final Boolean streamEnabled) {
-    jobWorkerValue.setStreamEnabled(streamEnabled);
+    jobWorkerValue.setStreamEnabled(new FromLegacy<>(streamEnabled));
   }
 
   public Duration getStreamTimeout() {
-    return jobWorkerValue.getStreamTimeout();
+    return jobWorkerValue.getStreamTimeout().value();
   }
 
   public void setStreamTimeout(final Duration streamTimeout) {
-    jobWorkerValue.setStreamTimeout(streamTimeout);
+    jobWorkerValue.setStreamTimeout(new FromLegacy<>(streamTimeout));
   }
 
   public int getMaxRetries() {
-    return jobWorkerValue.getMaxRetries();
+    return jobWorkerValue.getMaxRetries().value();
   }
 
   public void setMaxRetries(final int maxRetries) {
-    jobWorkerValue.setMaxRetries(maxRetries);
+    jobWorkerValue.setMaxRetries(new FromLegacy<>(maxRetries));
   }
 
   public MethodInfo getBeanInfo() {

@@ -114,6 +114,14 @@
   ],
   "properties": [
     {
+      "name": "camunda.client.worker.defaults.enabled",
+      "defaultValue": true
+    },
+    {
+      "name": "camunda.client.worker.defaults.auto-complete",
+      "defaultValue": true
+    },
+    {
       "name": "camunda.client.worker.defaults.tenant-ids",
       "defaultValue": ["<default>"]
     },

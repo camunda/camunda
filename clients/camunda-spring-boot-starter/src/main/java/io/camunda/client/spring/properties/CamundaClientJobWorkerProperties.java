@@ -20,6 +20,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_TIMEOU
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
 
 import java.time.Duration;
@@ -116,6 +117,9 @@ public class CamundaClientJobWorkerProperties {
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
       name = DEFAULT_JOB_WORKER_NAME_VAR;
       streamEnabled = DEFAULT_STREAM_ENABLED;
+      enabled = true;
+      autoComplete = true;
+      requestTimeout = DEFAULT_REQUEST_TIMEOUT;
       retryBackoff = Duration.ZERO;
     }
   }

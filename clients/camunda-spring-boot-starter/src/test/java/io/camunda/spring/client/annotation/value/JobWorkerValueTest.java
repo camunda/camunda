@@ -15,41 +15,4 @@
  */
 package io.camunda.spring.client.annotation.value;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.FetchVariable;
-import io.camunda.client.annotation.value.JobWorkerValue.FieldSource;
-import java.time.Duration;
-import java.util.List;
-import org.junit.jupiter.api.Test;
-
-public class JobWorkerValueTest {
-  @Test
-  void shouldCloneEmpty() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    final JobWorkerValue clone = jobWorkerValue.clone();
-    assertThat(clone).isEqualTo(jobWorkerValue).isNotSameAs(jobWorkerValue);
-  }
-
-  @Test
-  void shouldCloneTimeout() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setTimeout(Duration.ofMinutes(5));
-    final JobWorkerValue clone = jobWorkerValue.clone();
-    assertThat(clone.getTimeout())
-        .isEqualTo(jobWorkerValue.getTimeout())
-        .isNotSameAs(jobWorkerValue.getTimeout());
-  }
-
-  @Test
-  void shouldCloneFetchVariables() {
-    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
-    jobWorkerValue.setFetchVariables(
-        List.of(new FetchVariable("foo", FieldSource.FROM_ANNOTATION)));
-    final JobWorkerValue clone = jobWorkerValue.clone();
-    assertThat(clone.getFetchVariables())
-        .isEqualTo(jobWorkerValue.getFetchVariables())
-        .isNotSameAs(jobWorkerValue.getFetchVariables());
-  }
-}
+public class JobWorkerValueTest {}
