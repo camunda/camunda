@@ -31,9 +31,6 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   /** Variable size threshold for the database configured as secondary storage. */
   private int variableSizeThreshold = 8191;
 
-  /** Whether to wait for importers before proceeding. */
-  private boolean waitForImporters = true;
-
   @NestedConfigurationProperty private Security security = new Security(databaseName());
 
   /** Sets the interceptor plugins */
@@ -163,19 +160,6 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     this.variableSizeThreshold = variableSizeThreshold;
   }
 
-  public boolean isWaitForImporters() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        prefix() + ".wait-for-importers",
-        waitForImporters,
-        Boolean.class,
-        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
-        legacyWaitForImportersProperties());
-  }
-
-  public void setWaitForImporters(final boolean waitForImporters) {
-    this.waitForImporters = waitForImporters;
-  }
-
   private String prefix() {
     return "camunda.data.secondary-storage." + databaseName().toLowerCase();
   }
@@ -241,11 +225,5 @@ public abstract class DocumentBasedSecondaryStorageDatabase
     return Set.of(
         "camunda.database.index.variableSizeThreshold",
         "zeebe.broker.exporters.camundaexporter.args.index.variableSizeThreshold");
-  }
-
-  private Set<String> legacyWaitForImportersProperties() {
-    return Set.of(
-        "camunda.database.index.shouldWaitForImporters",
-        "zeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters");
   }
 }
