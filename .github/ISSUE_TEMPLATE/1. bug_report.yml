@@ -10,7 +10,6 @@ body:
       description: In which component did the issue occur?
       # The components should be kept in alphabetical order, with "Not sure" at the top
       options:
-        - <!-- Not sure- -->
         - <!-- C8-API- -->
         - <!-- C8Run- -->
         - <!-- Camunda Process Test- -->
@@ -172,15 +171,15 @@ body:
       description: |
         Does this bug impact an automated test suite? If so:
 
-        **For the Cross Component Test Suite:**  
+        **For the Cross Component Test Suite:**
         This issue breaks a test case in the Cross Component Test Suite [Add link to the respective test case here]. Before you consider the fix as done, please check if the respective test case passes. To trigger the full test suite, follow the directions here: [GitHub Actions for Testing](https://github.com/camunda/c8-cross-component-e2e-tests/blob/main/README.md#github-actions-for-testing).
 
-        **For the Orchestration Cluster Test Suite:**  
-        This issue breaks a test case in the C8 Orchestration Cluster Test Suite [Add link to the respective test case here]. The test suite can be triggered automatically via PRs.  
+        **For the Orchestration Cluster Test Suite:**
+        This issue breaks a test case in the C8 Orchestration Cluster Test Suite [Add link to the respective test case here]. The test suite can be triggered automatically via PRs.
 
         Note: PR-triggered test runs only cover the components affected by the PR. Cross-component flows, or flows involving other components, are executed only during nightly builds and release runs. To trigger the full test suite, follow the directions here: [GitHub Actions for Testing](https://github.com/camunda/camunda/blob/main/qa/c8-orchestration-cluster-e2e-test-suite/README.md#running-the-on-demand-workflow).
 
-        **General note:**  
+        **General note:**
         The automated test cases on E2E level might not provide enough test coverage to verify if the fix works 100%. Ensure the fix is covered by a sufficient regression test. Conduct manual testing if required. Until this bug is fixed, the affected test will be skipped. Once the fix passes, create a PR in the respective test suite to re-enable the test.
     validations:
       required: false
