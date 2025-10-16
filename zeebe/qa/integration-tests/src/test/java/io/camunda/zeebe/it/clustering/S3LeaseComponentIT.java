@@ -12,7 +12,6 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.broker.clustering.mapper.NodeIdMapper;
-import io.camunda.zeebe.broker.clustering.mapper.NodeInstance;
 import io.camunda.zeebe.broker.clustering.mapper.S3LeaseConfig;
 import io.camunda.zeebe.broker.clustering.mapper.lease.LeaseClient.Lease;
 import io.camunda.zeebe.broker.clustering.mapper.lease.S3Lease;
@@ -41,12 +40,12 @@ public class S3LeaseComponentIT {
 
   // TODO: Provide you AWS S3 credentials
   // Neither LocalStack S3 nor MinIO have strong consistence guarantees on atomic file operations
-  public static final String ACCESS_KEY = "";
-  public static final String SECRET_KEY = "";
+  public static final String ACCESS_KEY = System.getenv("AWS_ACCESS_KEY");
+  public static final String SECRET_KEY = System.getenv("AWS_SECRET_KEY");
   public static final Region REGION = Region.EU_NORTH_1;
   public static S3AsyncClient s3Client;
-  private static final String BUCKET_NAME = "";
-  private static final Duration LEASE_EXPIRY_DURATION = Duration.ofSeconds(5);
+  private static final String BUCKET_NAME = System.getenv("AWS_BUCKET_NAME");
+  private static final Duration LEASE_EXPIRY_DURATION = Duration.ofSeconds(20);
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
   private static final int CLUSTER_SIZE = 30;
   private static final List<Integer> ids = IntStream.range(0, CLUSTER_SIZE).boxed().toList();
@@ -156,13 +155,14 @@ public class S3LeaseComponentIT {
     startMappers();
     // when
     final var previousTimestamp = nodeIdMappers[0].expiresAt();
+    final var previousId = nodeIdMappers[0].getNodeInstance();
     nodeIdMappers[0].close();
     nodeIdMappers[0] = createNodeIdMapper(0);
 
     final var id = nodeIdMappers[0].start();
 
     // then
-    assertThat(id).isEqualTo(new NodeInstance(0, 2));
+    assertThat(id).isEqualTo(previousId.nextVersion());
     assertThat(nodeIdMappers[0].expiresAt()).isGreaterThan(previousTimestamp);
   }
 
