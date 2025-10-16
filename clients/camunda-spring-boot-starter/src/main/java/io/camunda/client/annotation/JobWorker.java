@@ -46,7 +46,7 @@ public @interface JobWorker {
    * worker if it's not completed yet. If no timeout is set, then the default is used from the
    * {@link CamundaClientConfiguration}
    */
-  long timeout() default -1L;
+  long timeout() default 300000L;
 
   /**
    * Set the maximum number of jobs which will be exclusively activated for this worker at the same
@@ -64,13 +64,13 @@ public @interface JobWorker {
    *
    * <pre>time spent in queue + time job handler needs until job completion < job timeout</pre>
    */
-  int maxJobsActive() default -1;
+  int maxJobsActive() default 32;
 
   /**
    * Set the request timeout (in seconds) for activate job request used to poll for new jobs. If no
    * request timeout is set then the default is used from the {@link CamundaClientConfiguration}
    */
-  long requestTimeout() default -1L;
+  long requestTimeout() default 10L;
 
   /**
    * Set the maximal interval (in milliseconds) between polling for new jobs. A job worker will
@@ -78,7 +78,7 @@ public @interface JobWorker {
    * activated after completing, the worker will periodically poll for new jobs. If no poll interval
    * is set then the default is used from the {@link CamundaClientConfiguration}
    */
-  long pollInterval() default -1L;
+  long pollInterval() default 100L;
 
   /**
    * Set a list of variable names which should be fetched on job activation. The jobs which are
@@ -113,8 +113,8 @@ public @interface JobWorker {
   boolean streamEnabled() default false;
 
   /** Stream timeout in ms */
-  long streamTimeout() default 3600000L;
+  long streamTimeout() default 28800000L;
 
   /** Set the max number of retries for a job */
-  int maxRetries() default -1;
+  int maxRetries() default 0;
 }
