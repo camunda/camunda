@@ -9,16 +9,30 @@ package io.camunda.zeebe.engine.processing.deployment.model;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.el.ExpressionLanguageFactory;
+import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.ListenersConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.deployment.model.transformation.BpmnTransformer;
 import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidator;
 import java.time.InstantSource;
+import java.util.Objects;
 
 public final class BpmnFactory {
 
-  public static BpmnTransformer createTransformer(final InstantSource clock) {
-    return new BpmnTransformer(createExpressionLanguage(new ZeebeFeelEngineClock(clock)));
+  public BpmnFactory() {}
+
+  public static BpmnTransformer createTransformer(
+      final InstantSource clock, final EngineConfiguration configuration) {
+    final ListenersConfiguration listenerConfig;
+    if (configuration != null) {
+      listenerConfig =
+          Objects.requireNonNullElse(configuration.getListeners(), ListenersConfiguration.empty());
+    } else {
+      listenerConfig = ListenersConfiguration.empty();
+    }
+    return new BpmnTransformer(
+        createExpressionLanguage(new ZeebeFeelEngineClock(clock)), listenerConfig);
   }
 
   public static BpmnValidator createValidator(
