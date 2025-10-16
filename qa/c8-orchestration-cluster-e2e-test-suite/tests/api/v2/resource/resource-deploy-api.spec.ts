@@ -25,7 +25,7 @@ import {
   validateFormDeployment,
   validateProcessDefinitionDeployment,
   validateRpaDeployment,
-} from '../../../../utils/requestHelper/resource-deploy-requesthelper';
+} from '../../../../utils/requestHelper/resource-deploy-requestHelper';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Resource Deploy API', () => {
