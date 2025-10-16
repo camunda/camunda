@@ -161,6 +161,7 @@ public final class ElementInstanceServices
     if (authenticatedIncidentServices == null) {
       return SearchQueryResult.of();
     }
+    final var elementInstance = getByKey(elementInstanceKey);
     return authenticatedIncidentServices.search(
         IncidentQuery.of(
             b ->
@@ -169,7 +170,8 @@ public final class ElementInstanceServices
                             f.treePathOperations(
                                 Operation.like(
                                     String.format(
-                                        FNI_ELEMENT_INSTANCE_PATTERN, elementInstanceKey))))
+                                        FNI_ELEMENT_INSTANCE_PATTERN,
+                                        elementInstance.flowNodeInstanceKey()))))
                     .sort(query.sort())
                     .page(query.page())));
   }
