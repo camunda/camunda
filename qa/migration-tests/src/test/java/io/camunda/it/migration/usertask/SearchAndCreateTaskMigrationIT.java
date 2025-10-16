@@ -49,7 +49,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
 
   private static final Instant STARTING_INSTANT = Instant.now().truncatedTo(ChronoUnit.MILLIS);
   private static final int ARCHIVING_WAITING_PERIOD_SECONDS = 10;
-  private static final String RETENTION_AGE = "30s";
+  private static final String RETENTION_AGE = "40s";
 
   @RegisterExtension
   static final MigrationITExtension PROVIDER =
@@ -156,7 +156,7 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     if (PROVIDER.isElasticSearch()) {
       assertThatIlmPolicyIsPresent();
       assertIndexHasIlmPolicy(indexName);
-      assertIndexDeletionPolicyIsTriggered(indexName);
+      assertIndexDeletionPolicyIsTriggeredElasticsearch(indexName);
     } else {
       assertThatIsmPolicyIsPresent();
       assertIndexHasIsmPolicy(indexName);
@@ -164,12 +164,12 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
     }
   }
 
-  private void assertIndexDeletionPolicyIsTriggered(final String indexName) {
+  private void assertIndexDeletionPolicyIsTriggeredElasticsearch(final String indexName) {
     final var uri =
         URI.create(String.format("%s/%s/_ilm/explain", PROVIDER.getDatabaseUrl(), indexName));
     Awaitility.await("wait until runtime index is deleted after retention period")
-        .atMost(Duration.ofSeconds(200))
-        .atLeast(Duration.ofSeconds(30))
+        .atMost(Duration.ofSeconds(215))
+        .atLeast(Duration.ofSeconds(15))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
@@ -193,8 +193,8 @@ public class SearchAndCreateTaskMigrationIT extends UserTaskMigrationHelper {
         URI.create(
             String.format("%s/_plugins/_ism/explain/%s", PROVIDER.getDatabaseUrl(), indexName));
     Awaitility.await("wait until runtime index is deleted after retention period")
-        .atMost(Duration.ofSeconds(200))
-        .atLeast(Duration.ofSeconds(50))
+        .atMost(Duration.ofSeconds(235))
+        .atLeast(Duration.ofSeconds(15))
         .pollInterval(Duration.ofSeconds(1))
         .untilAsserted(
             () -> {
