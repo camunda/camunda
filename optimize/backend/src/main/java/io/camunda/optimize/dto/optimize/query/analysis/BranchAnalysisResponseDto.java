@@ -9,10 +9,10 @@ package io.camunda.optimize.dto.optimize.query.analysis;
 
 import java.util.HashMap;
 import java.util.Map;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class BranchAnalysisResponseDto {
+
   /** The end event the branch analysis is referred to. */
   protected String endEvent;
 
@@ -21,4 +21,64 @@ public class BranchAnalysisResponseDto {
 
   /** All branch analysis information of the flow nodes from the gateway to the end event. */
   protected Map<String, BranchAnalysisOutcomeDto> followingNodes = new HashMap<>();
+
+  public BranchAnalysisResponseDto() {}
+
+  public String getEndEvent() {
+    return endEvent;
+  }
+
+  public void setEndEvent(final String endEvent) {
+    this.endEvent = endEvent;
+  }
+
+  public Long getTotal() {
+    return total;
+  }
+
+  public void setTotal(final Long total) {
+    this.total = total;
+  }
+
+  public Map<String, BranchAnalysisOutcomeDto> getFollowingNodes() {
+    return followingNodes;
+  }
+
+  public void setFollowingNodes(final Map<String, BranchAnalysisOutcomeDto> followingNodes) {
+    this.followingNodes = followingNodes;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof BranchAnalysisResponseDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(endEvent, total, followingNodes);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BranchAnalysisResponseDto that = (BranchAnalysisResponseDto) o;
+    return Objects.equals(endEvent, that.endEvent)
+        && Objects.equals(total, that.total)
+        && Objects.equals(followingNodes, that.followingNodes);
+  }
+
+  @Override
+  public String toString() {
+    return "BranchAnalysisResponseDto(endEvent="
+        + getEndEvent()
+        + ", total="
+        + getTotal()
+        + ", followingNodes="
+        + getFollowingNodes()
+        + ")";
+  }
 }

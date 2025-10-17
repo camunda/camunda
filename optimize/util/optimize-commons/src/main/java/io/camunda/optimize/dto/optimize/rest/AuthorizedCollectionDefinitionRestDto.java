@@ -12,14 +12,8 @@ import io.camunda.optimize.dto.optimize.AuthorizedEntityDto;
 import io.camunda.optimize.dto.optimize.RoleType;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionDto;
 import io.camunda.optimize.dto.optimize.query.collection.CollectionDefinitionRestDto;
-import lombok.AccessLevel;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
 
   @JsonUnwrapped private CollectionDefinitionRestDto definitionDto;
@@ -29,6 +23,8 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     super(currentUserRole);
     this.definitionDto = definitionDto;
   }
+
+  protected AuthorizedCollectionDefinitionRestDto() {}
 
   public static AuthorizedCollectionDefinitionRestDto from(
       final AuthorizedCollectionDefinitionDto authorizedCollectionDto) {
@@ -47,5 +43,44 @@ public class AuthorizedCollectionDefinitionRestDto extends AuthorizedEntityDto {
     resolvedCollection.setData(collectionDefinitionDto.getData());
     return new AuthorizedCollectionDefinitionRestDto(
         authorizedCollectionDto.getCurrentUserRole(), resolvedCollection);
+  }
+
+  public CollectionDefinitionRestDto getDefinitionDto() {
+    return definitionDto;
+  }
+
+  @JsonUnwrapped
+  public void setDefinitionDto(final CollectionDefinitionRestDto definitionDto) {
+    this.definitionDto = definitionDto;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof AuthorizedCollectionDefinitionRestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), definitionDto);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final AuthorizedCollectionDefinitionRestDto that = (AuthorizedCollectionDefinitionRestDto) o;
+    return Objects.equals(definitionDto, that.definitionDto);
+  }
+
+  @Override
+  public String toString() {
+    return "AuthorizedCollectionDefinitionRestDto(definitionDto=" + getDefinitionDto() + ")";
   }
 }

@@ -11,11 +11,8 @@ import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@NoArgsConstructor
-@Data
 public class ExternalProcessVariableRequestDto implements OptimizeDto {
 
   @NotBlank private String id;
@@ -25,6 +22,8 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
   @NotBlank private String processInstanceId;
   @NotBlank private String processDefinitionKey;
   private String serializationDataFormat; // optional, used for object variables
+
+  public ExternalProcessVariableRequestDto() {}
 
   public static List<ExternalProcessVariableDto> toExternalProcessVariableDtos(
       final Long ingestionTimestamp, final List<ExternalProcessVariableRequestDto> variableDtos) {
@@ -47,6 +46,105 @@ public class ExternalProcessVariableRequestDto implements OptimizeDto {
         .toList();
   }
 
+  public @NotBlank String getId() {
+    return this.id;
+  }
+
+  public @NotBlank String getName() {
+    return this.name;
+  }
+
+  public String getValue() {
+    return this.value;
+  }
+
+  public @NotNull VariableType getType() {
+    return this.type;
+  }
+
+  public @NotBlank String getProcessInstanceId() {
+    return this.processInstanceId;
+  }
+
+  public @NotBlank String getProcessDefinitionKey() {
+    return this.processDefinitionKey;
+  }
+
+  public String getSerializationDataFormat() {
+    return this.serializationDataFormat;
+  }
+
+  public void setId(@NotBlank final String id) {
+    this.id = id;
+  }
+
+  public void setName(@NotBlank final String name) {
+    this.name = name;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
+  }
+
+  public void setType(@NotNull final VariableType type) {
+    this.type = type;
+  }
+
+  public void setProcessInstanceId(@NotBlank final String processInstanceId) {
+    this.processInstanceId = processInstanceId;
+  }
+
+  public void setProcessDefinitionKey(@NotBlank final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public void setSerializationDataFormat(final String serializationDataFormat) {
+    this.serializationDataFormat = serializationDataFormat;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        id, name, value, type, processInstanceId, processDefinitionKey, serializationDataFormat);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ExternalProcessVariableRequestDto that = (ExternalProcessVariableRequestDto) o;
+    return Objects.equals(id, that.id)
+        && Objects.equals(name, that.name)
+        && Objects.equals(value, that.value)
+        && Objects.equals(type, that.type)
+        && Objects.equals(processInstanceId, that.processInstanceId)
+        && Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(serializationDataFormat, that.serializationDataFormat);
+  }
+
+  public String toString() {
+    return "ExternalProcessVariableRequestDto(id="
+        + this.getId()
+        + ", name="
+        + this.getName()
+        + ", value="
+        + this.getValue()
+        + ", type="
+        + this.getType()
+        + ", processInstanceId="
+        + this.getProcessInstanceId()
+        + ", processDefinitionKey="
+        + this.getProcessDefinitionKey()
+        + ", serializationDataFormat="
+        + this.getSerializationDataFormat()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

@@ -21,20 +21,19 @@ import jakarta.validation.Valid;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor
-@AllArgsConstructor
 public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
     implements CollectionEntity {
 
   @Valid protected List<DashboardReportTileDto> tiles = new ArrayList<>();
+
+  public DashboardDefinitionRestDto(@Valid final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  public DashboardDefinitionRestDto() {}
 
   @JsonIgnore
   public Set<String> getTileIds() {
@@ -59,6 +58,42 @@ public class DashboardDefinitionRestDto extends BaseDashboardDefinitionDto
         roleType);
   }
 
+  public @Valid List<DashboardReportTileDto> getTiles() {
+    return tiles;
+  }
+
+  public void setTiles(@Valid final List<DashboardReportTileDto> tiles) {
+    this.tiles = tiles;
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardDefinitionRestDto(tiles=" + getTiles() + ")";
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardDefinitionRestDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardDefinitionRestDto that = (DashboardDefinitionRestDto) o;
+    return Objects.equals(tiles, that.tiles);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), tiles);
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String tiles = "tiles";

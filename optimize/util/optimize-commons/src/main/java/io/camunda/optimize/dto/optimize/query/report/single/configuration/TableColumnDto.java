@@ -13,18 +13,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-@Data
-@Slf4j
 public class TableColumnDto {
 
   public static final String VARIABLE_PREFIX = "variable:";
@@ -32,11 +24,25 @@ public class TableColumnDto {
   public static final String OUTPUT_PREFIX = "output:";
   public static final String FLOWNODE_DURATION_PREFIX = "dur:";
   public static final String COUNT_PREFIX = "count:";
+  private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(TableColumnDto.class);
 
-  @Builder.Default private boolean includeNewVariables = false;
-  @Builder.Default private List<String> excludedColumns = new ArrayList<>();
-  @Builder.Default private List<String> includedColumns = new ArrayList<>();
-  @Builder.Default private List<String> columnOrder = new ArrayList<>();
+  private boolean includeNewVariables = false;
+  private List<String> excludedColumns = new ArrayList<>();
+  private List<String> includedColumns = new ArrayList<>();
+  private List<String> columnOrder = new ArrayList<>();
+
+  public TableColumnDto(
+      final boolean includeNewVariables,
+      final List<String> excludedColumns,
+      final List<String> includedColumns,
+      final List<String> columnOrder) {
+    this.includeNewVariables = includeNewVariables;
+    this.excludedColumns = excludedColumns;
+    this.includedColumns = includedColumns;
+    this.columnOrder = columnOrder;
+  }
+
+  public TableColumnDto() {}
 
   public void addNewAndRemoveUnexpectedVariableColumns(final List<String> allVariableColumns) {
     final List<String> newColumns = determineNewColumns(allVariableColumns);
@@ -77,6 +83,10 @@ public class TableColumnDto {
     includedColumns.removeAll(excludedColumns);
     sortIncludedColumns();
     return includedColumns;
+  }
+
+  public void setIncludedColumns(final List<String> includedColumns) {
+    this.includedColumns = includedColumns;
   }
 
   private List<String> determineNewColumns(final List<String> allColumns) {
@@ -152,18 +162,169 @@ public class TableColumnDto {
     try {
       return digitsInString.isEmpty() ? 0 : Double.parseDouble(digitsInString);
     } catch (final NumberFormatException e) {
-      log.debug(
+      LOG.debug(
           "Cannot parse numbers in variable column names to double, ignoring and sorting by string.",
           e);
       return Double.MAX_VALUE;
     }
   }
 
+  public boolean isIncludeNewVariables() {
+    return includeNewVariables;
+  }
+
+  public void setIncludeNewVariables(final boolean includeNewVariables) {
+    this.includeNewVariables = includeNewVariables;
+  }
+
+  public List<String> getExcludedColumns() {
+    return excludedColumns;
+  }
+
+  public void setExcludedColumns(final List<String> excludedColumns) {
+    this.excludedColumns = excludedColumns;
+  }
+
+  public List<String> getColumnOrder() {
+    return columnOrder;
+  }
+
+  public void setColumnOrder(final List<String> columnOrder) {
+    this.columnOrder = columnOrder;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof TableColumnDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TableColumnDto that = (TableColumnDto) o;
+    return includeNewVariables == that.includeNewVariables
+        && Objects.equals(excludedColumns, that.excludedColumns)
+        && Objects.equals(includedColumns, that.includedColumns)
+        && Objects.equals(columnOrder, that.columnOrder);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(includeNewVariables, excludedColumns, includedColumns, columnOrder);
+  }
+
+  @Override
+  public String toString() {
+    return "TableColumnDto(includeNewVariables="
+        + isIncludeNewVariables()
+        + ", excludedColumns="
+        + getExcludedColumns()
+        + ", includedColumns="
+        + getIncludedColumns()
+        + ", columnOrder="
+        + getColumnOrder()
+        + ")";
+  }
+
+  private static boolean defaultIncludeNewVariables() {
+    return false;
+  }
+
+  private static List<String> defaultExcludedColumns() {
+    return new ArrayList<>();
+  }
+
+  private static List<String> defaultIncludedColumns() {
+    return new ArrayList<>();
+  }
+
+  private static List<String> defaultColumnOrder() {
+    return new ArrayList<>();
+  }
+
+  public static TableColumnDtoBuilder builder() {
+    return new TableColumnDtoBuilder();
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String includeNewVariables = "includeNewVariables";
     public static final String excludedColumns = "excludedColumns";
     public static final String includedColumns = "includedColumns";
     public static final String columnOrder = "columnOrder";
+  }
+
+  public static class TableColumnDtoBuilder {
+
+    private boolean includeNewVariablesValue;
+    private boolean includeNewVariablesSet;
+    private List<String> excludedColumnsValue;
+    private boolean excludedColumnsSet;
+    private List<String> includedColumnsValue;
+    private boolean includedColumnsSet;
+    private List<String> columnOrderValue;
+    private boolean columnOrderSet;
+
+    TableColumnDtoBuilder() {}
+
+    public TableColumnDtoBuilder includeNewVariables(final boolean includeNewVariables) {
+      includeNewVariablesValue = includeNewVariables;
+      includeNewVariablesSet = true;
+      return this;
+    }
+
+    public TableColumnDtoBuilder excludedColumns(final List<String> excludedColumns) {
+      excludedColumnsValue = excludedColumns;
+      excludedColumnsSet = true;
+      return this;
+    }
+
+    public TableColumnDtoBuilder includedColumns(final List<String> includedColumns) {
+      includedColumnsValue = includedColumns;
+      includedColumnsSet = true;
+      return this;
+    }
+
+    public TableColumnDtoBuilder columnOrder(final List<String> columnOrder) {
+      columnOrderValue = columnOrder;
+      columnOrderSet = true;
+      return this;
+    }
+
+    public TableColumnDto build() {
+      boolean includeNewVariablesValue = this.includeNewVariablesValue;
+      if (!includeNewVariablesSet) {
+        includeNewVariablesValue = TableColumnDto.defaultIncludeNewVariables();
+      }
+      List<String> excludedColumnsValue = this.excludedColumnsValue;
+      if (!excludedColumnsSet) {
+        excludedColumnsValue = TableColumnDto.defaultExcludedColumns();
+      }
+      List<String> includedColumnsValue = this.includedColumnsValue;
+      if (!includedColumnsSet) {
+        includedColumnsValue = TableColumnDto.defaultIncludedColumns();
+      }
+      List<String> columnOrderValue = this.columnOrderValue;
+      if (!columnOrderSet) {
+        columnOrderValue = TableColumnDto.defaultColumnOrder();
+      }
+      return new TableColumnDto(
+          includeNewVariablesValue, excludedColumnsValue, includedColumnsValue, columnOrderValue);
+    }
+
+    @Override
+    public String toString() {
+      return "TableColumnDto.TableColumnDtoBuilder(includeNewVariablesValue="
+          + includeNewVariablesValue
+          + ", excludedColumnsValue="
+          + excludedColumnsValue
+          + ", includedColumnsValue="
+          + includedColumnsValue
+          + ", columnOrderValue="
+          + columnOrderValue
+          + ")";
+    }
   }
 }

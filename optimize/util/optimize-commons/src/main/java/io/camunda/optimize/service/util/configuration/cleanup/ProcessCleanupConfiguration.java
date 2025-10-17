@@ -16,15 +16,13 @@ import io.camunda.optimize.util.SuppressionConstants;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class ProcessCleanupConfiguration {
+
   @JsonProperty("enabled")
   private boolean enabled;
 
@@ -47,6 +45,8 @@ public class ProcessCleanupConfiguration {
     this.cleanupMode = cleanupMode;
   }
 
+  public ProcessCleanupConfiguration() {}
+
   public void validate() {
     if (cleanupMode == null) {
       throw new OptimizeConfigurationException(
@@ -58,10 +58,81 @@ public class ProcessCleanupConfiguration {
     return new HashSet<>(processDefinitionSpecificConfiguration.keySet());
   }
 
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  @JsonProperty("enabled")
+  public void setEnabled(final boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  public CleanupMode getCleanupMode() {
+    return cleanupMode;
+  }
+
+  @JsonProperty("cleanupMode")
+  public void setCleanupMode(final CleanupMode cleanupMode) {
+    this.cleanupMode = cleanupMode;
+  }
+
+  public int getBatchSize() {
+    return batchSize;
+  }
+
+  @JsonProperty("batchSize")
+  public void setBatchSize(final int batchSize) {
+    this.batchSize = batchSize;
+  }
+
+  public Map<String, ProcessDefinitionCleanupConfiguration>
+      getProcessDefinitionSpecificConfiguration() {
+    return processDefinitionSpecificConfiguration;
+  }
+
   @SuppressWarnings(SuppressionConstants.UNUSED)
   public void setProcessDefinitionSpecificConfiguration(
-      Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
+      final Map<String, ProcessDefinitionCleanupConfiguration>
+          processDefinitionSpecificConfiguration) {
     this.processDefinitionSpecificConfiguration =
         Optional.ofNullable(processDefinitionSpecificConfiguration).orElse(new HashMap<>());
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessCleanupConfiguration;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(enabled, cleanupMode, batchSize, processDefinitionSpecificConfiguration);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessCleanupConfiguration that = (ProcessCleanupConfiguration) o;
+    return enabled == that.enabled
+        && Objects.equals(cleanupMode, that.cleanupMode)
+        && Objects.equals(batchSize, that.batchSize)
+        && Objects.equals(
+            processDefinitionSpecificConfiguration, that.processDefinitionSpecificConfiguration);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessCleanupConfiguration(enabled="
+        + isEnabled()
+        + ", cleanupMode="
+        + getCleanupMode()
+        + ", batchSize="
+        + getBatchSize()
+        + ", processDefinitionSpecificConfiguration="
+        + getProcessDefinitionSpecificConfiguration()
+        + ")";
   }
 }

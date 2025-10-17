@@ -15,9 +15,8 @@ import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class DecisionVariableValueRequestDto {
 
   private String decisionDefinitionKey;
@@ -29,12 +28,131 @@ public class DecisionVariableValueRequestDto {
   private Integer resultOffset = 0;
   private Integer numResults = MAX_RESPONSE_SIZE_LIMIT;
 
+  public DecisionVariableValueRequestDto() {}
+
   @JsonIgnore
-  public void setDecisionDefinitionVersion(String decisionDefinitionVersion) {
-    this.decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
+  public void setDecisionDefinitionVersion(final String decisionDefinitionVersion) {
+    decisionDefinitionVersions = Lists.newArrayList(decisionDefinitionVersion);
   }
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = tenantIds;
+  }
+
+  public String getDecisionDefinitionKey() {
+    return decisionDefinitionKey;
+  }
+
+  public void setDecisionDefinitionKey(final String decisionDefinitionKey) {
+    this.decisionDefinitionKey = decisionDefinitionKey;
+  }
+
+  public List<String> getDecisionDefinitionVersions() {
+    return decisionDefinitionVersions;
+  }
+
+  public void setDecisionDefinitionVersions(final List<String> decisionDefinitionVersions) {
+    this.decisionDefinitionVersions = decisionDefinitionVersions;
+  }
+
+  public String getVariableId() {
+    return variableId;
+  }
+
+  public void setVariableId(final String variableId) {
+    this.variableId = variableId;
+  }
+
+  public VariableType getVariableType() {
+    return variableType;
+  }
+
+  public void setVariableType(final VariableType variableType) {
+    this.variableType = variableType;
+  }
+
+  public String getValueFilter() {
+    return valueFilter;
+  }
+
+  public void setValueFilter(final String valueFilter) {
+    this.valueFilter = valueFilter;
+  }
+
+  public Integer getResultOffset() {
+    return resultOffset;
+  }
+
+  public void setResultOffset(final Integer resultOffset) {
+    this.resultOffset = resultOffset;
+  }
+
+  public Integer getNumResults() {
+    return numResults;
+  }
+
+  public void setNumResults(final Integer numResults) {
+    this.numResults = numResults;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DecisionVariableValueRequestDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        decisionDefinitionKey,
+        decisionDefinitionVersions,
+        tenantIds,
+        variableId,
+        variableType,
+        valueFilter,
+        resultOffset,
+        numResults);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DecisionVariableValueRequestDto that = (DecisionVariableValueRequestDto) o;
+    return Objects.equals(decisionDefinitionKey, that.decisionDefinitionKey)
+        && Objects.equals(decisionDefinitionVersions, that.decisionDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(variableId, that.variableId)
+        && Objects.equals(variableType, that.variableType)
+        && Objects.equals(valueFilter, that.valueFilter)
+        && Objects.equals(resultOffset, that.resultOffset)
+        && Objects.equals(numResults, that.numResults);
+  }
+
+  @Override
+  public String toString() {
+    return "DecisionVariableValueRequestDto(decisionDefinitionKey="
+        + getDecisionDefinitionKey()
+        + ", decisionDefinitionVersions="
+        + getDecisionDefinitionVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ", variableId="
+        + getVariableId()
+        + ", variableType="
+        + getVariableType()
+        + ", valueFilter="
+        + getValueFilter()
+        + ", resultOffset="
+        + getResultOffset()
+        + ", numResults="
+        + getNumResults()
+        + ")";
   }
 }

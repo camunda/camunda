@@ -10,19 +10,142 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.filter.data
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.FilterDataDto;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.date.DurationUnit;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.operator.ComparisonOperator;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
 public class DurationFilterDataDto implements FilterDataDto {
 
   protected Long value;
   protected DurationUnit unit;
   protected ComparisonOperator operator;
   protected boolean includeNull;
+
+  public DurationFilterDataDto(
+      final Long value,
+      final DurationUnit unit,
+      final ComparisonOperator operator,
+      final boolean includeNull) {
+    this.value = value;
+    this.unit = unit;
+    this.operator = operator;
+    this.includeNull = includeNull;
+  }
+
+  public DurationFilterDataDto() {}
+
+  public Long getValue() {
+    return value;
+  }
+
+  public void setValue(final Long value) {
+    this.value = value;
+  }
+
+  public DurationUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final DurationUnit unit) {
+    this.unit = unit;
+  }
+
+  public ComparisonOperator getOperator() {
+    return operator;
+  }
+
+  public void setOperator(final ComparisonOperator operator) {
+    this.operator = operator;
+  }
+
+  public boolean isIncludeNull() {
+    return includeNull;
+  }
+
+  public void setIncludeNull(final boolean includeNull) {
+    this.includeNull = includeNull;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DurationFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DurationFilterDataDto that = (DurationFilterDataDto) o;
+    return includeNull == that.includeNull
+        && Objects.equals(value, that.value)
+        && unit == that.unit
+        && operator == that.operator;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(value, unit, operator, includeNull);
+  }
+
+  @Override
+  public String toString() {
+    return "DurationFilterDataDto(value="
+        + getValue()
+        + ", unit="
+        + getUnit()
+        + ", operator="
+        + getOperator()
+        + ", includeNull="
+        + isIncludeNull()
+        + ")";
+  }
+
+  public static DurationFilterDataDtoBuilder builder() {
+    return new DurationFilterDataDtoBuilder();
+  }
+
+  public static class DurationFilterDataDtoBuilder {
+
+    private Long value;
+    private DurationUnit unit;
+    private ComparisonOperator operator;
+    private boolean includeNull;
+
+    DurationFilterDataDtoBuilder() {}
+
+    public DurationFilterDataDtoBuilder value(final Long value) {
+      this.value = value;
+      return this;
+    }
+
+    public DurationFilterDataDtoBuilder unit(final DurationUnit unit) {
+      this.unit = unit;
+      return this;
+    }
+
+    public DurationFilterDataDtoBuilder operator(final ComparisonOperator operator) {
+      this.operator = operator;
+      return this;
+    }
+
+    public DurationFilterDataDtoBuilder includeNull(final boolean includeNull) {
+      this.includeNull = includeNull;
+      return this;
+    }
+
+    public DurationFilterDataDto build() {
+      return new DurationFilterDataDto(value, unit, operator, includeNull);
+    }
+
+    @Override
+    public String toString() {
+      return "DurationFilterDataDto.DurationFilterDataDtoBuilder(value="
+          + value
+          + ", unit="
+          + unit
+          + ", operator="
+          + operator
+          + ", includeNull="
+          + includeNull
+          + ")";
+    }
+  }
 }

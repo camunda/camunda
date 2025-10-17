@@ -8,11 +8,47 @@
 package io.camunda.optimize.service.util.configuration.db;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
+import java.util.Objects;
 
-@Data
 public class DatabaseBackup {
 
   @JsonProperty("repositoryName")
   private String snapshotRepositoryName;
+
+  public DatabaseBackup() {}
+
+  public String getSnapshotRepositoryName() {
+    return snapshotRepositoryName;
+  }
+
+  @JsonProperty("repositoryName")
+  public void setSnapshotRepositoryName(final String snapshotRepositoryName) {
+    this.snapshotRepositoryName = snapshotRepositoryName;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof DatabaseBackup;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(snapshotRepositoryName);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final DatabaseBackup that = (DatabaseBackup) o;
+    return Objects.equals(snapshotRepositoryName, that.snapshotRepositoryName);
+  }
+
+  @Override
+  public String toString() {
+    return "DatabaseBackup(snapshotRepositoryName=" + getSnapshotRepositoryName() + ")";
+  }
 }

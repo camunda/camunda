@@ -14,10 +14,9 @@ import io.camunda.optimize.rest.queryparam.QueryParamUtil;
 import io.camunda.optimize.service.util.TenantListHandlingUtil;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
-import lombok.Data;
 
-@Data
 public class ProcessDefinitionParametersDto {
 
   protected String processDefinitionKey;
@@ -27,9 +26,7 @@ public class ProcessDefinitionParametersDto {
   protected Boolean disconsiderAutomatedTasks = false;
   protected List<ProcessFilterDto<?>> filters = new ArrayList<>();
 
-  public void setTenantIds(final List<String> tenantIds) {
-    this.tenantIds = normalizeTenants(tenantIds);
-  }
+  public ProcessDefinitionParametersDto() {}
 
   protected List<String> normalizeNullTenants(final List<String> tenantIds) {
     return tenantIds.stream()
@@ -44,5 +41,95 @@ public class ProcessDefinitionParametersDto {
 
   public List<String> getTenantIds() {
     return TenantListHandlingUtil.sortAndReturnTenantIdList(tenantIds);
+  }
+
+  public void setTenantIds(final List<String> tenantIds) {
+    this.tenantIds = normalizeTenants(tenantIds);
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
+  }
+
+  public List<String> getProcessDefinitionVersions() {
+    return processDefinitionVersions;
+  }
+
+  public void setProcessDefinitionVersions(final List<String> processDefinitionVersions) {
+    this.processDefinitionVersions = processDefinitionVersions;
+  }
+
+  public Long getMinimumDeviationFromAvg() {
+    return minimumDeviationFromAvg;
+  }
+
+  public void setMinimumDeviationFromAvg(final Long minimumDeviationFromAvg) {
+    this.minimumDeviationFromAvg = minimumDeviationFromAvg;
+  }
+
+  public Boolean getDisconsiderAutomatedTasks() {
+    return disconsiderAutomatedTasks;
+  }
+
+  public void setDisconsiderAutomatedTasks(final Boolean disconsiderAutomatedTasks) {
+    this.disconsiderAutomatedTasks = disconsiderAutomatedTasks;
+  }
+
+  public List<ProcessFilterDto<?>> getFilters() {
+    return filters;
+  }
+
+  public void setFilters(final List<ProcessFilterDto<?>> filters) {
+    this.filters = filters;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof ProcessDefinitionParametersDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final ProcessDefinitionParametersDto that = (ProcessDefinitionParametersDto) o;
+    return Objects.equals(processDefinitionKey, that.processDefinitionKey)
+        && Objects.equals(processDefinitionVersions, that.processDefinitionVersions)
+        && Objects.equals(tenantIds, that.tenantIds)
+        && Objects.equals(minimumDeviationFromAvg, that.minimumDeviationFromAvg)
+        && Objects.equals(disconsiderAutomatedTasks, that.disconsiderAutomatedTasks)
+        && Objects.equals(filters, that.filters);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionKey,
+        processDefinitionVersions,
+        tenantIds,
+        minimumDeviationFromAvg,
+        disconsiderAutomatedTasks,
+        filters);
+  }
+
+  @Override
+  public String toString() {
+    return "ProcessDefinitionParametersDto(processDefinitionKey="
+        + getProcessDefinitionKey()
+        + ", processDefinitionVersions="
+        + getProcessDefinitionVersions()
+        + ", tenantIds="
+        + getTenantIds()
+        + ", minimumDeviationFromAvg="
+        + getMinimumDeviationFromAvg()
+        + ", disconsiderAutomatedTasks="
+        + getDisconsiderAutomatedTasks()
+        + ", filters="
+        + getFilters()
+        + ")";
   }
 }

@@ -19,26 +19,22 @@ import jakarta.annotation.PostConstruct;
 import jakarta.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.scheduling.Trigger;
 import org.springframework.scheduling.support.PeriodicTrigger;
 import org.springframework.stereotype.Component;
 
-@EqualsAndHashCode(callSuper = true)
-@RequiredArgsConstructor
 @Component
-@Data
-@Slf4j
 public class OnboardingSchedulerService extends AbstractScheduledService
     implements ConfigurationReloadable {
 
+  private static final Logger LOG =
+      org.slf4j.LoggerFactory.getLogger(OnboardingSchedulerService.class);
   private final ProcessDefinitionReader processDefinitionReader;
   private final ProcessDefinitionWriter processDefinitionWriter;
   private final ProcessInstanceReader processInstanceReader;
@@ -48,9 +44,26 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   private final CustomerOnboardingDataImportService onboardingDataService;
   private CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService;
   @Autowired private ApplicationContext applicationContext;
-  private int intervalToCheckForOnboardingDataInSeconds;
+  private volatile int intervalToCheckForOnboardingDataInSeconds;
   private Consumer<String> emailNotificationHandler;
   private Consumer<String> panelNotificationHandler;
+
+  public OnboardingSchedulerService(
+      final ProcessDefinitionReader processDefinitionReader,
+      final ProcessDefinitionWriter processDefinitionWriter,
+      final ProcessInstanceReader processInstanceReader,
+      final ConfigurationService configurationService,
+      final OnboardingEmailNotificationService onboardingEmailNotificationService,
+      final ProcessOverviewService processOverviewService,
+      final CustomerOnboardingDataImportService onboardingDataService) {
+    this.processDefinitionReader = processDefinitionReader;
+    this.processDefinitionWriter = processDefinitionWriter;
+    this.processInstanceReader = processInstanceReader;
+    this.configurationService = configurationService;
+    this.onboardingEmailNotificationService = onboardingEmailNotificationService;
+    this.processOverviewService = processOverviewService;
+    this.onboardingDataService = onboardingDataService;
+  }
 
   @PostConstruct
   public void init() {
@@ -64,7 +77,7 @@ public class OnboardingSchedulerService extends AbstractScheduledService
 
   public void setUpScheduler() {
     if (configurationService.getOnboarding().isScheduleProcessOnboardingChecks()) {
-      log.info("Initializing OnboardingScheduler");
+      LOG.info("Initializing OnboardingScheduler");
       // Check no more often than every 60s, recommended 180 (3min)
       setIntervalToCheckForOnboardingDataInSeconds(
           Math.max(
@@ -76,17 +89,17 @@ public class OnboardingSchedulerService extends AbstractScheduledService
       setupOnboardingPanelNotifications();
       startOnboardingScheduling();
     } else {
-      log.info(
+      LOG.info(
           "Will not schedule checks for process onboarding state as this is disabled by configuration");
     }
   }
 
   public void setupOnboardingEmailNotifications() {
     if (configurationService.getOnboarding().isEnableOnboardingEmails()) {
-      this.setEmailNotificationHandler(
+      setEmailNotificationHandler(
           onboardingEmailNotificationService::sendOnboardingEmailWithErrorHandling);
     } else {
-      log.info("Onboarding emails deactivated by configuration");
+      LOG.info("Onboarding emails deactivated by configuration");
     }
   }
 
@@ -94,20 +107,20 @@ public class OnboardingSchedulerService extends AbstractScheduledService
     if (applicationContext.containsBeanDefinition(
         CCSaaSOnboardingPanelNotificationService.class.getSimpleName())) {
       if (configurationService.getPanelNotificationConfiguration().isEnabled()) {
-        this.setPanelNotificationHandler(
+        setPanelNotificationHandler(
             processDefKey ->
                 applicationContext
                     .getBean(CCSaaSOnboardingPanelNotificationService.class)
                     .sendOnboardingPanelNotification(processDefKey));
       } else {
-        log.info("Onboarding panel notifications deactivated by configuration");
+        LOG.info("Onboarding panel notifications deactivated by configuration");
       }
     }
   }
 
   public void onboardNewProcesses() {
-    Set<String> processesNewlyOnboarded = new HashSet<>();
-    for (String processToBeOnboarded :
+    final Set<String> processesNewlyOnboarded = new HashSet<>();
+    for (final String processToBeOnboarded :
         processDefinitionReader.getAllNonOnboardedProcessDefinitionKeys()) {
       resolveAnyPendingOwnerAuthorizations(processToBeOnboarded);
       if (processHasStartedInstance(processToBeOnboarded)) {
@@ -127,21 +140,21 @@ public class OnboardingSchedulerService extends AbstractScheduledService
   }
 
   public synchronized void startOnboardingScheduling() {
-    log.info("Starting onboarding scheduling");
+    LOG.info("Starting onboarding scheduling");
     startScheduling();
   }
 
   @PreDestroy
   public synchronized void stopOnboardingScheduling() {
-    log.info("Stopping onboarding scheduling");
+    LOG.info("Stopping onboarding scheduling");
     stopScheduling();
   }
 
   @Override
   protected void run() {
-    log.info("Checking whether new data would trigger onboarding");
+    LOG.info("Checking whether new data would trigger onboarding");
     onboardNewProcesses();
-    log.info("Onboarding check completed");
+    LOG.info("Onboarding check completed");
   }
 
   @Override
@@ -155,5 +168,147 @@ public class OnboardingSchedulerService extends AbstractScheduledService
 
   private void resolveAnyPendingOwnerAuthorizations(final String processToBeOnboarded) {
     processOverviewService.confirmOrDenyOwnershipData(processToBeOnboarded);
+  }
+
+  public ProcessDefinitionReader getProcessDefinitionReader() {
+    return processDefinitionReader;
+  }
+
+  public ProcessDefinitionWriter getProcessDefinitionWriter() {
+    return processDefinitionWriter;
+  }
+
+  public ProcessInstanceReader getProcessInstanceReader() {
+    return processInstanceReader;
+  }
+
+  public ConfigurationService getConfigurationService() {
+    return configurationService;
+  }
+
+  public OnboardingEmailNotificationService getOnboardingEmailNotificationService() {
+    return onboardingEmailNotificationService;
+  }
+
+  public ProcessOverviewService getProcessOverviewService() {
+    return processOverviewService;
+  }
+
+  public CustomerOnboardingDataImportService getOnboardingDataService() {
+    return onboardingDataService;
+  }
+
+  public CCSaaSOnboardingPanelNotificationService getSaaSPanelNotificationService() {
+    return saaSPanelNotificationService;
+  }
+
+  public void setSaaSPanelNotificationService(
+      final CCSaaSOnboardingPanelNotificationService saaSPanelNotificationService) {
+    this.saaSPanelNotificationService = saaSPanelNotificationService;
+  }
+
+  public ApplicationContext getApplicationContext() {
+    return applicationContext;
+  }
+
+  public void setApplicationContext(final ApplicationContext applicationContext) {
+    this.applicationContext = applicationContext;
+  }
+
+  public int getIntervalToCheckForOnboardingDataInSeconds() {
+    return intervalToCheckForOnboardingDataInSeconds;
+  }
+
+  public void setIntervalToCheckForOnboardingDataInSeconds(
+      final int intervalToCheckForOnboardingDataInSeconds) {
+    this.intervalToCheckForOnboardingDataInSeconds = intervalToCheckForOnboardingDataInSeconds;
+  }
+
+  public Consumer<String> getEmailNotificationHandler() {
+    return emailNotificationHandler;
+  }
+
+  public void setEmailNotificationHandler(final Consumer<String> emailNotificationHandler) {
+    this.emailNotificationHandler = emailNotificationHandler;
+  }
+
+  public Consumer<String> getPanelNotificationHandler() {
+    return panelNotificationHandler;
+  }
+
+  public void setPanelNotificationHandler(final Consumer<String> panelNotificationHandler) {
+    this.panelNotificationHandler = panelNotificationHandler;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof OnboardingSchedulerService;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OnboardingSchedulerService that = (OnboardingSchedulerService) o;
+    return intervalToCheckForOnboardingDataInSeconds
+            == that.intervalToCheckForOnboardingDataInSeconds
+        && Objects.equals(processDefinitionReader, that.processDefinitionReader)
+        && Objects.equals(processDefinitionWriter, that.processDefinitionWriter)
+        && Objects.equals(processInstanceReader, that.processInstanceReader)
+        && Objects.equals(configurationService, that.configurationService)
+        && Objects.equals(
+            onboardingEmailNotificationService, that.onboardingEmailNotificationService)
+        && Objects.equals(processOverviewService, that.processOverviewService)
+        && Objects.equals(onboardingDataService, that.onboardingDataService)
+        && Objects.equals(saaSPanelNotificationService, that.saaSPanelNotificationService)
+        && Objects.equals(applicationContext, that.applicationContext)
+        && Objects.equals(emailNotificationHandler, that.emailNotificationHandler)
+        && Objects.equals(panelNotificationHandler, that.panelNotificationHandler);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        processDefinitionReader,
+        processDefinitionWriter,
+        processInstanceReader,
+        configurationService,
+        onboardingEmailNotificationService,
+        processOverviewService,
+        onboardingDataService,
+        saaSPanelNotificationService,
+        applicationContext,
+        intervalToCheckForOnboardingDataInSeconds,
+        emailNotificationHandler,
+        panelNotificationHandler);
+  }
+
+  @Override
+  public String toString() {
+    return "OnboardingSchedulerService(processDefinitionReader="
+        + getProcessDefinitionReader()
+        + ", processDefinitionWriter="
+        + getProcessDefinitionWriter()
+        + ", processInstanceReader="
+        + getProcessInstanceReader()
+        + ", configurationService="
+        + getConfigurationService()
+        + ", onboardingEmailNotificationService="
+        + getOnboardingEmailNotificationService()
+        + ", processOverviewService="
+        + getProcessOverviewService()
+        + ", onboardingDataService="
+        + getOnboardingDataService()
+        + ", saaSPanelNotificationService="
+        + getSaaSPanelNotificationService()
+        + ", applicationContext="
+        + getApplicationContext()
+        + ", intervalToCheckForOnboardingDataInSeconds="
+        + getIntervalToCheckForOnboardingDataInSeconds()
+        + ", emailNotificationHandler="
+        + getEmailNotificationHandler()
+        + ", panelNotificationHandler="
+        + getPanelNotificationHandler()
+        + ")";
   }
 }

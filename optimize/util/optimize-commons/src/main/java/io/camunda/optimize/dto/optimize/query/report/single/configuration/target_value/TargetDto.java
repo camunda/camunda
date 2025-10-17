@@ -8,13 +8,7 @@
 package io.camunda.optimize.dto.optimize.query.report.single.configuration.target_value;
 
 import java.util.Objects;
-import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
 
-@Getter
-@Setter
-@ToString
 public class TargetDto {
 
   private TargetValueUnit unit = TargetValueUnit.HOURS;
@@ -22,23 +16,57 @@ public class TargetDto {
   private Boolean isBelow = false;
 
   @Override
-  public int hashCode() {
-    return Objects.hash(unit, value);
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final TargetDto targetDto = (TargetDto) o;
+    return unit == targetDto.unit
+        && Objects.equals(value, targetDto.value)
+        && Objects.equals(isBelow, targetDto.isBelow);
   }
 
   @Override
-  public boolean equals(final Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (!(o instanceof final TargetDto targetDto)) {
-      return false;
-    }
-    return unit == targetDto.unit
-        && Objects.equals(isBelow, targetDto.isBelow)
-        && Objects.equals(value, targetDto.value);
+  public int hashCode() {
+    return Objects.hash(unit, value, isBelow);
   }
 
+  @Override
+  public String toString() {
+    return "TargetDto(unit="
+        + getUnit()
+        + ", value="
+        + getValue()
+        + ", isBelow="
+        + getIsBelow()
+        + ")";
+  }
+
+  public TargetValueUnit getUnit() {
+    return unit;
+  }
+
+  public void setUnit(final TargetValueUnit unit) {
+    this.unit = unit;
+  }
+
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(final String value) {
+    this.value = value;
+  }
+
+  public Boolean getIsBelow() {
+    return isBelow;
+  }
+
+  public void setIsBelow(final Boolean isBelow) {
+    this.isBelow = isBelow;
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String unit = "unit";
