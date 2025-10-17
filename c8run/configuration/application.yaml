@@ -1,4 +1,14 @@
 camunda:
+  profilesOverride: "broker,identity,tasklist"
+  data:
+    secondary-storage:
+      type: rdbms
+      rdbms:
+        url: jdbc:h2:mem:camunda
+        username: sa
+        password:
+        flushInterval: PT0.5S
+        queueSize: 1000
   security:
     initialization:
       users:
