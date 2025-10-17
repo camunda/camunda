@@ -28,9 +28,9 @@ const compareByElementName = (
 };
 
 const compareByJobId = (incidentA: Incident, incidentB: Incident) => {
-  if (incidentA.jobKey === null) {
+  if (incidentA.jobKey === undefined) {
     return 1;
-  } else if (incidentB.jobKey === null) {
+  } else if (incidentB.jobKey === undefined) {
     return -1;
   }
   return incidentA.jobKey > incidentB.jobKey ? 1 : -1;

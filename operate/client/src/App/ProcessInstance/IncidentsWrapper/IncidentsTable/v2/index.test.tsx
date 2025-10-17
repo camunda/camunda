@@ -48,7 +48,7 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
 
     expect(withinRow.getByText(firstIncident.errorType)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobKey)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -68,7 +68,7 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     );
     expect(withinRow.getByText(secondIncident.errorType)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobKey)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
 
     expect(withinRow.getByText(firstIncident.errorType)).toBeInTheDocument();
     expect(withinRow.getByText(firstIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(firstIncident.jobKey)).toBeInTheDocument();
+    expect(withinRow.getByText(firstIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(firstIncident.creationTime) || '--'),
     ).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('IncidentsTable', {skip: !IS_INCIDENTS_PANEL_V2}, () => {
     );
     expect(withinRow.getByText(secondIncident.errorType)).toBeInTheDocument();
     expect(withinRow.getByText(secondIncident.elementName)).toBeInTheDocument();
-    expect(withinRow.getByText(secondIncident.jobKey)).toBeInTheDocument();
+    expect(withinRow.getByText(secondIncident.jobKey!)).toBeInTheDocument();
     expect(
       withinRow.getByText(formatDate(secondIncident.creationTime) || '--'),
     ).toBeInTheDocument();
