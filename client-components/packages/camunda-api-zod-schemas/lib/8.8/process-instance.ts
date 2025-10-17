@@ -28,6 +28,7 @@ import {
 	type StatisticName,
 } from './processes';
 import {batchOperationTypeSchema} from './batch-operation';
+import {queryIncidentsResponseBodySchema} from './incident';
 
 const processInstanceVariableFilterSchema = z.object({
 	name: z.string(),
@@ -151,6 +152,12 @@ const cancelProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
 };
+
+const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsResponseBodySchema;
+type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
+
+const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
+type QueryProcessInstanceIncidentsResponseBody = z.infer<typeof queryProcessInstanceIncidentsResponseBodySchema>;
 
 const queryProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'POST',
@@ -346,6 +353,8 @@ export {
 	queryProcessInstancesRequestBodySchema,
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
+	queryProcessInstanceIncidentsRequestBodySchema,
+	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
@@ -360,6 +369,8 @@ export type {
 	QueryProcessInstancesRequestBody,
 	QueryProcessInstancesResponseBody,
 	CancelProcessInstanceRequestBody,
+	QueryProcessInstanceIncidentsRequestBody,
+	QueryProcessInstanceIncidentsResponseBody,
 	CallHierarchy,
 	GetProcessInstanceCallHierarchyResponseBody,
 	SequenceFlow,
