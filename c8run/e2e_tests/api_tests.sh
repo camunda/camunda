@@ -41,7 +41,7 @@ if [[ "$returnCode" != 0 ]]; then
 fi
 printf "\nTest: test --config flag\n"
 
-PREFIX="$(curl localhost:9600/actuator/configprops | jq '.contexts.camunda.beans.["camunda.tasklist-io.camunda.configuration.beanoverrides.LegacyTasklistProperties"].properties.zeebeElasticsearch.prefix')"
+PREFIX="$(curl localhost:9600/actuator/configprops | jq '.contexts.camunda.beans.["camunda-io.camunda.configuration.Camunda"].properties.data.secondaryStorage.elasticsearch.indexPrefix')"
 echo $PREFIX
 if [[ "$PREFIX" != "\"extra-prefix-zeebe-record\"" ]]; then
         echo "test failed"
