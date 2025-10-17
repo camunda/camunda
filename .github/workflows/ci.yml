@@ -150,7 +150,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-      - run: ./mvnw spotless:check -P\!include-optimize
+      - run: ./mvnw spotless:check
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -177,7 +177,7 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # Not running Maven Spotless here since it is checked in a dedicated job
-      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild -P\!include-optimize verify
+      - run: ./mvnw -T1C -B -D skipTests -Dspotless.check.skip=true -P !autoFormat,checkFormat,spotbugs,skipFrontendBuild verify
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -289,7 +289,6 @@ jobs:
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ env.GENERAL_UT_MODULES }}
-          -P\!include-optimize
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -377,7 +376,6 @@ jobs:
           -D skipITs -D skipQaBuild=true -D skipChecks -D surefire.rerunFailingTestsCount=3
           -D junitThreadCount=16
           -P skip-random-tests,parallel-tests,extract-flaky-tests,skipFrontendBuild
-          -P\!include-optimize
           -pl ${{ matrix.maven-modules }}
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
@@ -479,7 +477,6 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -P\!include-optimize
           -D test.integration.camunda.database.type=es
           -pl ${{ matrix.module.maven_module }}
           verify
@@ -588,7 +585,6 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -P\!include-optimize
           -D test.integration.camunda.database.type=os
           -pl ${{ matrix.module.maven_module }}
           verify
@@ -639,7 +635,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run specific integration tests with H2 inmemory database
@@ -657,7 +653,6 @@ jobs:
           -D skipUTs -D skipChecks
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,multi-db-test
-          -P\!include-optimize
           -D test.integration.camunda.database.type=rdbms
           -pl 'qa/acceptance-tests'
           verify
@@ -704,7 +699,7 @@ jobs:
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - uses: ./.github/actions/build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       # Run integration tests with RDBMS database
@@ -718,7 +713,6 @@ jobs:
           -D failsafe.rerunFailingTestsCount=3 -D flaky.test.reportDir=failsafe-reports
           -P rdbms,extract-flaky-tests
           -pl qa/acceptance-tests
-          -P\!include-optimize
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -851,7 +845,7 @@ jobs:
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -T1C -PskipFrontendBuild -P\!include-optimize
+          maven-extra-args: -T1C -PskipFrontendBuild
       - uses: ./.github/actions/build-platform-docker
         if: ${{ matrix.docker-file != '' }}
         with:
@@ -891,7 +885,6 @@ jobs:
           -Dio.camunda.process.test.camundaVersion="${{ env.DOCKER_IMAGE_TAG }}"
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild
           -pl ${{ matrix.maven-modules }}
-          -P\!include-optimize
           verify
           | tee "${BUILD_OUTPUT_FILE_PATH}"
       - name: Analyze Test Runs
@@ -956,7 +949,6 @@ jobs:
           ./mvnw -B --no-snapshot-updates
           -D skipITs -D skipQaBuild=false -D skipChecks -Dsurefire.rerunFailingTestsCount=3
           -P skipFrontendBuild,extract-flaky-tests
-          -P\!include-optimize
           -pl :camunda-archunit-tests
           -am
           -Dtest='*ArchTest'
