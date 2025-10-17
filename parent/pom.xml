@@ -2330,6 +2330,7 @@
           <artifactId>maven-javadoc-plugin</artifactId>
           <version>${plugin.version.javadoc}</version>
           <configuration>
+            <charset>UTF-8</charset>
             <source>${version.java}</source>
             <quiet>true</quiet>
             <additionalOptions>-Xdoclint:none</additionalOptions>
