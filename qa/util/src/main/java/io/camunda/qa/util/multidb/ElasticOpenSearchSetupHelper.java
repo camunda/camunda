@@ -86,14 +86,20 @@ public class ElasticOpenSearchSetupHelper implements MultiDbSetupHelper {
     if (statusCode / 100 == 2) {
       LOGGER.info("Deletion on {} was successful", deleteEndpoint.toString());
       return true;
+    } else if (statusCode == 404) {
+      LOGGER.warn(
+          "Nothing to delete at {}. Response = [{}]. continue...",
+          deleteEndpoint.toString(),
+          response.body());
+      return true;
     } else {
       LOGGER.warn(
           "Failure on deletion at {}. Status code: {} [{}]",
           deleteEndpoint.toString(),
           statusCode,
           response.body());
+      return false;
     }
-    return false;
   }
 
   @Override
