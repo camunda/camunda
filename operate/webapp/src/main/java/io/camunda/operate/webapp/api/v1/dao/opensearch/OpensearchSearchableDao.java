@@ -14,7 +14,6 @@ import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
-import io.camunda.zeebe.util.VisibleForTesting;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -104,8 +103,7 @@ public abstract class OpensearchSearchableDao<T, R> {
    * Builds a tenant-aware filter query based on the query terms provided by {@link
    * #collectFilterQueryTerms(Object)} and {@link #collectRequiredFilterQueryTerms()}
    */
-  @VisibleForTesting
-  protected void buildFiltering(final Query<T> query, final SearchRequest.Builder request) {
+  void buildFiltering(final Query<T> query, final SearchRequest.Builder request) {
     final var queryTerms =
         Stream.concat(
                 collectRequiredFilterQueryTerms(),

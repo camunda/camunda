@@ -16,24 +16,29 @@ import static io.camunda.client.api.search.enums.PermissionType.READ_PROCESS_INS
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION;
+import static io.camunda.it.util.TestHelper.createTenant;
+import static io.camunda.it.util.TestHelper.deleteTenant;
+import static io.camunda.it.util.TestHelper.deployResourceForTenant;
+import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
+import static io.camunda.it.util.TestHelper.waitForProcessInstances;
+import static io.camunda.it.util.TestHelper.waitForTenantDeletion;
+import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
+import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.util.Either;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,126 +76,64 @@ public class OperateV1TenancyIT {
 
   @BeforeAll
   static void setUp(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    createTenant(adminClient, TENANT_A);
-    createTenant(adminClient, TENANT_TO_BE_DELETED);
-    assignUserToTenant(adminClient, ADMIN, TENANT_A);
-    assignUserToTenant(adminClient, ADMIN, TENANT_TO_BE_DELETED);
+    createTenant(adminClient, TENANT_A, TENANT_A, ADMIN);
+    createTenant(adminClient, TENANT_TO_BE_DELETED, TENANT_TO_BE_DELETED, ADMIN);
 
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
-    startProcessInstance(adminClient, PROCESS_ID, TENANT_A);
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
 
-    deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
-    startProcessInstance(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
-    waitForProcessBeingExported(adminClient);
+    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
+    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
+    waitForProcessInstances(adminClient, f -> f.processDefinitionId(PROCESS_ID), 2);
   }
 
   @Test
   public void shouldNotReturnProcessesFromDeletedTenants(
-      @Authenticated(ADMIN) final CamundaClient camundaClient) throws Exception {
+      @Authenticated(ADMIN) final CamundaClient camundaClient) {
 
     try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient(ADMIN, ADMIN)) {
       // given
-      verifySearch(
-          operateClient,
-          processInstanceResult -> {
-            assertThat(processInstanceResult.total).isEqualTo(2);
-            assertThat(processInstanceResult.tenantIds)
-                .containsExactlyInAnyOrder(TENANT_A, TENANT_TO_BE_DELETED);
-          });
+
+      Awaitility.await()
+          .atMost(TIMEOUT_DATA_AVAILABILITY)
+          .untilAsserted(
+              () -> {
+                final var result = searchProcessInstancesV1(operateClient);
+                assertSearchResultsTenants(result, TENANT_A, TENANT_TO_BE_DELETED);
+              });
 
       // when
       deleteTenant(camundaClient, TENANT_TO_BE_DELETED);
+      waitForTenantDeletion(camundaClient, TENANT_TO_BE_DELETED);
 
       // then
       Awaitility.await()
-          .atMost(Duration.ofSeconds(10))
+          .atMost(TIMEOUT_DATA_AVAILABILITY)
           .untilAsserted(
               () -> {
-                verifySearch(
-                    operateClient,
-                    processInstanceResult -> {
-                      assertThat(processInstanceResult.total).isEqualTo(1);
-                      assertThat(processInstanceResult.tenantIds).containsExactly(TENANT_A);
-                    });
+                final var afterDeletionResult = searchProcessInstancesV1(operateClient);
+                assertSearchResultsTenants(afterDeletionResult, TENANT_A);
               });
     }
   }
 
-  private void verifySearch(
-      final TestRestOperateClient client, final Consumer<ProcessInstanceResults> assertions)
-      throws Exception {
-    final HttpResponse<String> searchResponse =
-        client.sendV1SearchRequest("v1/process-instances", "{}");
-    final Either<Exception, Map> result = client.mapResult(searchResponse, Map.class);
+  private Either<Exception, ProcessInstanceResult> searchProcessInstancesV1(
+      final TestRestOperateClient operateClient) throws Exception {
+    final var response = operateClient.sendV1SearchRequest("v1/process-instances", "{}");
+    return operateClient.mapResult(response, ProcessInstanceResult.class);
+  }
+
+  private void assertSearchResultsTenants(
+      final Either<Exception, ProcessInstanceResult> result,
+      final String... expectedProcessInstanceTenants) {
 
     assertThat(result.isRight()).isTrue();
 
-    final Map<String, Object> responseBody = result.get();
-
-    final var processInstanceResults =
-        new ProcessInstanceResults(
-            (int) responseBody.get("total"),
-            ((List<Map<String, Object>>) responseBody.get("items"))
-                .stream().map(r -> r.get("tenantId").toString()).collect(Collectors.toSet()));
-
-    assertions.accept(processInstanceResults);
+    final var processInstanceResults = result.get();
+    final Set<String> tenants =
+        processInstanceResults.processInstances().stream()
+            .map(ProcessInstance::getTenantId)
+            .collect(Collectors.toSet());
+    assertThat(tenants).containsExactlyInAnyOrder(expectedProcessInstanceTenants);
   }
-
-  private static void createTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newCreateTenantCommand().tenantId(tenant).name(tenant).send().join();
-  }
-
-  private static void deleteTenant(final CamundaClient camundaClient, final String tenant) {
-    camundaClient.newDeleteTenantCommand(tenant).send().join();
-  }
-
-  private static void assignUserToTenant(
-      final CamundaClient camundaClient, final String username, final String tenant) {
-    camundaClient.newAssignUserToTenantCommand().username(username).tenantId(tenant).send().join();
-  }
-
-  private static void deployResource(
-      final CamundaClient camundaClient, final String resourceName, final String tenant) {
-    camundaClient
-        .newDeployResourceCommand()
-        .addResourceFromClasspath(resourceName)
-        .tenantId(tenant)
-        .send()
-        .join();
-  }
-
-  private static void startProcessInstance(
-      final CamundaClient camundaClient, final String processId, final String tenant) {
-    camundaClient
-        .newCreateInstanceCommand()
-        .bpmnProcessId(processId)
-        .latestVersion()
-        .tenantId(tenant)
-        .send()
-        .join();
-  }
-
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
-    waitForProcessBeingExported(camundaClient, 2);
-  }
-
-  private static void waitForProcessBeingExported(
-      final CamundaClient camundaClient, final int expectedDefinitions) {
-    Awaitility.await("should receive data from secondary storage")
-        .atMost(Duration.ofMinutes(1))
-        .ignoreExceptions() // Ignore exceptions and continue retrying
-        .untilAsserted(
-            () -> {
-              assertThat(
-                      camundaClient
-                          .newProcessInstanceSearchRequest()
-                          .filter(filter -> filter.processDefinitionId(fn -> fn.in(PROCESS_ID)))
-                          .send()
-                          .join()
-                          .items())
-                  .hasSize(expectedDefinitions);
-            });
-  }
-
-  private record ProcessInstanceResults(long total, Set<String> tenantIds) {}
 }
