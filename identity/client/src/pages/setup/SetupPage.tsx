@@ -25,7 +25,7 @@ import Divider from "src/components/form/Divider";
 import { useApiCall } from "src/utility/api";
 import { createAdminUser } from "src/utility/api/setup";
 import { ErrorResponse } from "src/utility/api/request";
-import { isValidEmail } from "src/utility/isValidEmail";
+import { isValidEmail } from "src/utility/validate";
 
 interface SetupFormProps {
   onSuccess: () => void;
