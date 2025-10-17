@@ -72,8 +72,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -106,8 +106,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -140,8 +140,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -174,8 +174,8 @@ jobs:
         working-directory: tasklist/client
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -212,8 +212,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
@@ -261,8 +261,8 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: Setup NodeJS
         uses: actions/setup-node@v4
         with:
@@ -313,8 +313,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: Create build output log file
         run: echo "BUILD_OUTPUT_FILE_PATH=$(mktemp)" >> "$GITHUB_ENV"
       - uses: ./.github/actions/setup-build
@@ -390,8 +390,8 @@ jobs:
           - 5000:5000
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           ignore: DL3018 # redundant when pinning the base image

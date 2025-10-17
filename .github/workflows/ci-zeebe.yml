@@ -56,8 +56,8 @@ jobs:
             arch: arm64
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly:  ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
@@ -128,8 +128,8 @@ jobs:
       TEST_TYPE: Unit
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -187,8 +187,8 @@ jobs:
       TEST_TYPE: Performance
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: ./.github/actions/setup-build
         with:
           vault-address: ${{ secrets.VAULT_ADDR }}
@@ -257,8 +257,8 @@ jobs:
       TEST_TYPE: Unit
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - name: Install and allow strace tests
         run: |
           sudo apt-get -qq update && sudo apt-get install -y strace
@@ -327,8 +327,8 @@ jobs:
       TEST_TYPE: Build
     steps:
       - uses: actions/checkout@v4
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ env.TEST_PRODUCT}} owned by ${{ env.TEST_OWNER}}"
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           config: ./.hadolint.yaml

@@ -1,0 +1,27 @@
+# This action expects the environment variables TEST_OWNER, TEST_PRODUCT and TEST_TYPE to be set
+# or their respective inputs to be populated.
+---
+name: Print Metadata
+
+# owner: @camunda/monorepo-devops-team
+
+description: Prints the job's metadata for easier owner attribution in build logs.
+
+inputs:
+  test_owner:
+    description: When specified, will take precedence over TEST_OWNER environment variable. Declares who owns the tests performed by this GHA job.
+    required: false
+  test_product:
+    description: When specified, will take precedence over TEST_PRODUCT environment variable. Declares what component is tested by this GHA job.
+    required: false
+  test_type:
+    description: When specified, will take precedence over TEST_TYPE environment variable. Declares what kind of test is performed by this GHA job.
+    required: false
+
+runs:
+  using: composite
+  steps:
+    - name: Log Test Details
+      shell: bash
+      run: |
+        echo "This is a ${{ inputs.test_type != '' && inputs.test_type || env.TEST_TYPE }} test for ${{ inputs.test_product != '' && inputs.test_product || env.TEST_PRODUCT }} owned by ${{ inputs.test_owner != '' && inputs.test_owner || env.TEST_OWNER }}"

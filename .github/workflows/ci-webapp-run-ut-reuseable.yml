@@ -41,9 +41,11 @@ jobs:
     timeout-minutes: 10
     permissions: { }
     steps:
-      - name: Log Test Details
-        run: echo "This is a ${{ env.TEST_TYPE}} test for ${{ inputs.componentName }} owned by ${{ env.TEST_OWNER}}"
       - uses: actions/checkout@v4
+      - name: Print metadata
+        uses: ./.github/actions/print-metadata
+        with:
+          test_product: "${{ inputs.componentName }}"
       - uses: ./.github/actions/setup-build
         with:
           maven-cache-key-modifier: ut-be-${{inputs.componentName}}
