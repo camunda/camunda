@@ -116,7 +116,7 @@ jobs:
         name: Build Zeebe
         id: build-zeebe
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: google-github-actions/auth@v2
         id: auth
         with:
