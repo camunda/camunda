@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryProcessInstanceIncidentsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useQuery} from '@tanstack/react-query';
 import {searchIncidentsByProcessInstance} from 'modules/api/v2/incidents/searchIncidentsByProcessInstance';
 import {queryKeys} from '../queryKeys';
@@ -14,10 +14,12 @@ import {queryKeys} from '../queryKeys';
 type QueryOptions<T> = {
   enabled?: boolean;
   enablePeriodicRefetch?: boolean;
-  select?: (result: QueryIncidentsResponseBody) => T;
+  select?: (result: QueryProcessInstanceIncidentsResponseBody) => T;
 };
 
-const useGetIncidentsByProcessInstance = <T = QueryIncidentsResponseBody>(
+const useGetIncidentsByProcessInstance = <
+  T = QueryProcessInstanceIncidentsResponseBody,
+>(
   processInstanceKey: string,
   options?: QueryOptions<T>,
 ) => {
