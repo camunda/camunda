@@ -306,6 +306,41 @@ public class IdentitySetupInitializeDefaultsTest {
   }
 
   @Test
+  public void shouldCreateAppsIntegrationRoleByDefault() {
+    // then
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == IdentitySetupIntent.INITIALIZED)
+                .authorizationRecords()
+                .withOwnerId(DefaultRole.APPS_INTEGRATION.getId()))
+        .extracting(Record::getValue)
+        .describedAs(
+            "Expect all apps_integration role authorizations to be owned by the apps_integration role")
+        .allSatisfy(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasOwnerId(DefaultRole.APPS_INTEGRATION.getId())
+                    .hasOwnerType(AuthorizationOwnerType.ROLE))
+        .describedAs(
+            "Expect the apps_integration role authorizations to have specific resource permissions")
+        .satisfiesExactlyInAnyOrder(
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+                    .hasOnlyPermissionTypes(
+                        PermissionType.READ_PROCESS_DEFINITION,
+                        PermissionType.CREATE_PROCESS_INSTANCE,
+                        PermissionType.READ_PROCESS_INSTANCE,
+                        PermissionType.UPDATE_PROCESS_INSTANCE,
+                        PermissionType.READ_USER_TASK,
+                        PermissionType.UPDATE_USER_TASK),
+            auth ->
+                Assertions.assertThat(auth)
+                    .hasResourceType(AuthorizationResourceType.DOCUMENT)
+                    .hasOnlyPermissionTypes(PermissionType.CREATE));
+  }
+
+  @Test
   public void shouldCreateRpaRoleByDefault() {
     // then
     assertThat(
