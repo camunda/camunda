@@ -14,6 +14,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 } from './common';
+import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
 const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
 type ElementInstanceState = z.infer<typeof elementInstanceStateSchema>;
@@ -136,6 +137,12 @@ const updateElementInstanceVariables: Endpoint<Pick<ElementInstance, 'elementIns
 	},
 };
 
+const queryElementInstanceIncidentsRequestBodySchema = queryIncidentsRequestBodySchema;
+type QueryElementInstanceIncidentsRequestBody = z.infer<typeof queryElementInstanceIncidentsRequestBodySchema>;
+
+const queryElementInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
+type QueryElementInstanceIncidentsResponseBody = z.infer<typeof queryElementInstanceIncidentsResponseBodySchema>;
+
 const queryElementInstanceIncidents: Endpoint<Pick<ElementInstance, 'elementInstanceKey'>> = {
 	method: 'POST',
 	getUrl: ({elementInstanceKey}) => `/${API_VERSION}/element-instances/${elementInstanceKey}/incidents/search`,
@@ -153,6 +160,8 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
+  queryElementInstanceIncidentsRequestBodySchema,
+  queryElementInstanceIncidentsResponseBodySchema,
 	queryElementInstanceIncidents,
 };
 export type {
@@ -163,4 +172,6 @@ export type {
 	QueryElementInstancesResponseBody,
 	GetElementInstanceResponseBody,
 	UpdateElementInstanceVariablesRequestBody,
+  QueryElementInstanceIncidentsRequestBody,
+  QueryElementInstanceIncidentsResponseBody,
 };
