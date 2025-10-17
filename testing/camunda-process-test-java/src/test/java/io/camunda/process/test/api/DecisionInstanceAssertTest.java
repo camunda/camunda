@@ -59,7 +59,7 @@ public class DecisionInstanceAssertTest {
   private static final String PROCESS_INSTANCE_KEY = "3";
   private static final String DECISION_DEFINITION_KEY = "4";
   private static final String ELEMENT_INSTANCE_KEY = "5";
-  private static final String ROOT_DECISION_DEFINITION_KEY = "5";
+  private static final String ROOT_DECISION_DEFINITION_KEY = "6";
   private static final int DECISION_DEFINITION_VERSION = 1;
 
   private static final String STRING_RESULT = "\"outputValue\"";
