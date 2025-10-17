@@ -1,10 +1,20 @@
 # Changelog
 
+## v0.0.8
+
+### 🚀 Enhancements
+
+- add query for element instance incident search ([#39686](https://github.com/camunda/camunda/pull/39686))
+
+### ❤️ Contributors
+
+- Christoph Fricke ([@christoph-fricke](https://github.com/christoph-fricke))
+
 ## v0.0.7
 
 ### 🩹 Fixes
 
-- remove impossible decision instance states ([91aedb2](https://github.com/camunda/camunda/commit/91aedb28dc1d2ebe9df0bef3be1bdc7a2765bc9a))
+- remove impossible decision instance states ([#39686](https://github.com/camunda/camunda/pull/39686))
 
 ### ❤️ Contributors
 
