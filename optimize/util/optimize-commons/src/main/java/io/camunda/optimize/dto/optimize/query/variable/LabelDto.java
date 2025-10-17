@@ -10,19 +10,84 @@ package io.camunda.optimize.dto.optimize.query.variable;
 import io.camunda.optimize.dto.optimize.OptimizeDto;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
 public class LabelDto implements OptimizeDto {
 
   private String variableLabel;
   @NotBlank private String variableName;
   @NotNull private VariableType variableType;
 
+  public LabelDto(
+      final String variableLabel,
+      @NotBlank final String variableName,
+      @NotNull final VariableType variableType) {
+    this.variableLabel = variableLabel;
+    this.variableName = variableName;
+    this.variableType = variableType;
+  }
+
+  public LabelDto() {}
+
+  public String getVariableLabel() {
+    return variableLabel;
+  }
+
+  public void setVariableLabel(final String variableLabel) {
+    this.variableLabel = variableLabel;
+  }
+
+  public @NotBlank String getVariableName() {
+    return variableName;
+  }
+
+  public void setVariableName(@NotBlank final String variableName) {
+    this.variableName = variableName;
+  }
+
+  public @NotNull VariableType getVariableType() {
+    return variableType;
+  }
+
+  public void setVariableType(@NotNull final VariableType variableType) {
+    this.variableType = variableType;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof LabelDto;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(variableLabel, variableName, variableType);
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final LabelDto that = (LabelDto) o;
+    return Objects.equals(variableLabel, that.variableLabel)
+        && Objects.equals(variableName, that.variableName)
+        && Objects.equals(variableType, that.variableType);
+  }
+
+  @Override
+  public String toString() {
+    return "LabelDto(variableLabel="
+        + getVariableLabel()
+        + ", variableName="
+        + getVariableName()
+        + ", variableType="
+        + getVariableType()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String variableLabel = "variableLabel";

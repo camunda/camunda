@@ -7,13 +7,72 @@
  */
 package io.camunda.optimize.dto.optimize.query.analysis;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@Data
-@EqualsAndHashCode(callSuper = true)
 public class FlowNodeOutlierParametersDto extends ProcessDefinitionParametersDto {
+
   protected String flowNodeId;
   protected Long lowerOutlierBound;
   protected Long higherOutlierBound;
+
+  public FlowNodeOutlierParametersDto() {}
+
+  public String getFlowNodeId() {
+    return flowNodeId;
+  }
+
+  public void setFlowNodeId(final String flowNodeId) {
+    this.flowNodeId = flowNodeId;
+  }
+
+  public Long getLowerOutlierBound() {
+    return lowerOutlierBound;
+  }
+
+  public void setLowerOutlierBound(final Long lowerOutlierBound) {
+    this.lowerOutlierBound = lowerOutlierBound;
+  }
+
+  public Long getHigherOutlierBound() {
+    return higherOutlierBound;
+  }
+
+  public void setHigherOutlierBound(final Long higherOutlierBound) {
+    this.higherOutlierBound = higherOutlierBound;
+  }
+
+  @Override
+  public String toString() {
+    return "FlowNodeOutlierParametersDto(flowNodeId="
+        + getFlowNodeId()
+        + ", lowerOutlierBound="
+        + getLowerOutlierBound()
+        + ", higherOutlierBound="
+        + getHigherOutlierBound()
+        + ")";
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final FlowNodeOutlierParametersDto that = (FlowNodeOutlierParametersDto) o;
+    return Objects.equals(flowNodeId, that.flowNodeId)
+        && Objects.equals(lowerOutlierBound, that.lowerOutlierBound)
+        && Objects.equals(higherOutlierBound, that.higherOutlierBound);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), flowNodeId, lowerOutlierBound, higherOutlierBound);
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof FlowNodeOutlierParametersDto;
+  }
 }

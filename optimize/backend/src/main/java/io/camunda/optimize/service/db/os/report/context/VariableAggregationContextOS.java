@@ -9,14 +9,108 @@ package io.camunda.optimize.service.db.os.report.context;
 
 import io.camunda.optimize.service.db.report.context.VariableAggregationContext;
 import java.util.Map;
-import lombok.Data;
-import lombok.experimental.SuperBuilder;
+import java.util.Objects;
 import org.opensearch.client.opensearch._types.aggregations.Aggregation;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 
-@SuperBuilder
-@Data
 public class VariableAggregationContextOS extends VariableAggregationContext {
+
   private final Query baseQueryForMinMaxStats;
   private final Map<String, Aggregation> subAggregations;
+
+  protected VariableAggregationContextOS(final VariableAggregationContextOSBuilder<?, ?> b) {
+    super(b);
+    this.baseQueryForMinMaxStats = b.baseQueryForMinMaxStats;
+    this.subAggregations = b.subAggregations;
+  }
+
+  public Query getBaseQueryForMinMaxStats() {
+    return this.baseQueryForMinMaxStats;
+  }
+
+  public Map<String, Aggregation> getSubAggregations() {
+    return this.subAggregations;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final VariableAggregationContextOS that = (VariableAggregationContextOS) o;
+    return Objects.equals(baseQueryForMinMaxStats, that.baseQueryForMinMaxStats)
+        && Objects.equals(subAggregations, that.subAggregations);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), baseQueryForMinMaxStats, subAggregations);
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof VariableAggregationContextOS;
+  }
+
+  public String toString() {
+    return "VariableAggregationContextOS(baseQueryForMinMaxStats="
+        + this.getBaseQueryForMinMaxStats()
+        + ", subAggregations="
+        + this.getSubAggregations()
+        + ")";
+  }
+
+  public static VariableAggregationContextOSBuilder<?, ?> builder() {
+    return new VariableAggregationContextOSBuilderImpl();
+  }
+
+  public abstract static class VariableAggregationContextOSBuilder<
+          C extends VariableAggregationContextOS,
+          B extends VariableAggregationContextOSBuilder<C, B>>
+      extends VariableAggregationContextBuilder<C, B> {
+
+    private Query baseQueryForMinMaxStats;
+    private Map<String, Aggregation> subAggregations;
+
+    public B baseQueryForMinMaxStats(final Query baseQueryForMinMaxStats) {
+      this.baseQueryForMinMaxStats = baseQueryForMinMaxStats;
+      return self();
+    }
+
+    public B subAggregations(final Map<String, Aggregation> subAggregations) {
+      this.subAggregations = subAggregations;
+      return self();
+    }
+
+    protected abstract B self();
+
+    public abstract C build();
+
+    public String toString() {
+      return "VariableAggregationContextOS.VariableAggregationContextOSBuilder(super="
+          + super.toString()
+          + ", baseQueryForMinMaxStats="
+          + this.baseQueryForMinMaxStats
+          + ", subAggregations="
+          + this.subAggregations
+          + ")";
+    }
+  }
+
+  private static final class VariableAggregationContextOSBuilderImpl
+      extends VariableAggregationContextOSBuilder<
+          VariableAggregationContextOS, VariableAggregationContextOSBuilderImpl> {
+
+    private VariableAggregationContextOSBuilderImpl() {}
+
+    protected VariableAggregationContextOSBuilderImpl self() {
+      return this;
+    }
+
+    public VariableAggregationContextOS build() {
+      return new VariableAggregationContextOS(this);
+    }
+  }
 }

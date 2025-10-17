@@ -15,20 +15,26 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
 public class CombinedReportDataDto implements ReportDataDto {
 
   protected CombinedReportConfigurationDto configuration = new CombinedReportConfigurationDto();
   protected ProcessVisualization visualization;
   protected List<CombinedReportItemDto> reports = new ArrayList<>();
+
+  public CombinedReportDataDto(
+      final CombinedReportConfigurationDto configuration,
+      final ProcessVisualization visualization,
+      final List<CombinedReportItemDto> reports) {
+    this.configuration = configuration;
+    this.visualization = visualization;
+    this.reports = reports;
+  }
+
+  public CombinedReportDataDto() {}
 
   @JsonIgnore
   public List<String> getReportIds() {
@@ -50,6 +56,62 @@ public class CombinedReportDataDto implements ReportDataDto {
     return Collections.singletonList(createCommandKey());
   }
 
+  public CombinedReportConfigurationDto getConfiguration() {
+    return configuration;
+  }
+
+  public void setConfiguration(final CombinedReportConfigurationDto configuration) {
+    this.configuration = configuration;
+  }
+
+  public ProcessVisualization getVisualization() {
+    return visualization;
+  }
+
+  public void setVisualization(final ProcessVisualization visualization) {
+    this.visualization = visualization;
+  }
+
+  public List<CombinedReportItemDto> getReports() {
+    return reports;
+  }
+
+  public void setReports(final List<CombinedReportItemDto> reports) {
+    this.reports = reports;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof CombinedReportDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final CombinedReportDataDto that = (CombinedReportDataDto) o;
+    return Objects.equals(configuration, that.configuration)
+        && visualization == that.visualization
+        && Objects.equals(reports, that.reports);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(configuration, visualization, reports);
+  }
+
+  @Override
+  public String toString() {
+    return "CombinedReportDataDto(configuration="
+        + getConfiguration()
+        + ", visualization="
+        + getVisualization()
+        + ", reports="
+        + getReports()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String configuration = "configuration";

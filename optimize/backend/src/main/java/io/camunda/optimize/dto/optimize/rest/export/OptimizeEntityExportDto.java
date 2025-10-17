@@ -19,13 +19,8 @@ import io.camunda.optimize.dto.optimize.rest.export.report.CombinedProcessReport
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleDecisionReportDefinitionExportDto;
 import io.camunda.optimize.dto.optimize.rest.export.report.SingleProcessReportDefinitionExportDto;
 import jakarta.validation.constraints.NotNull;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import java.util.Objects;
 
-@AllArgsConstructor
-@NoArgsConstructor
-@Data
 @JsonTypeInfo(
     use = JsonTypeInfo.Id.NAME,
     include = JsonTypeInfo.As.EXISTING_PROPERTY,
@@ -51,6 +46,99 @@ public abstract class OptimizeEntityExportDto {
   private String description;
   private int sourceIndexVersion;
 
+  public OptimizeEntityExportDto(
+      @NotNull final String id,
+      @NotNull final ExportEntityType exportEntityType,
+      @NotNull final String name,
+      final String description,
+      final int sourceIndexVersion) {
+    this.id = id;
+    this.exportEntityType = exportEntityType;
+    this.name = name;
+    this.description = description;
+    this.sourceIndexVersion = sourceIndexVersion;
+  }
+
+  public OptimizeEntityExportDto() {}
+
+  public @NotNull String getId() {
+    return id;
+  }
+
+  public void setId(@NotNull final String id) {
+    this.id = id;
+  }
+
+  public @NotNull ExportEntityType getExportEntityType() {
+    return exportEntityType;
+  }
+
+  public void setExportEntityType(@NotNull final ExportEntityType exportEntityType) {
+    this.exportEntityType = exportEntityType;
+  }
+
+  public @NotNull String getName() {
+    return name;
+  }
+
+  public void setName(@NotNull final String name) {
+    this.name = name;
+  }
+
+  public String getDescription() {
+    return description;
+  }
+
+  public void setDescription(final String description) {
+    this.description = description;
+  }
+
+  public int getSourceIndexVersion() {
+    return sourceIndexVersion;
+  }
+
+  public void setSourceIndexVersion(final int sourceIndexVersion) {
+    this.sourceIndexVersion = sourceIndexVersion;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof OptimizeEntityExportDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final OptimizeEntityExportDto that = (OptimizeEntityExportDto) o;
+    return sourceIndexVersion == that.sourceIndexVersion
+        && Objects.equals(id, that.id)
+        && exportEntityType == that.exportEntityType
+        && Objects.equals(name, that.name)
+        && Objects.equals(description, that.description);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, exportEntityType, name, description, sourceIndexVersion);
+  }
+
+  @Override
+  public String toString() {
+    return "OptimizeEntityExportDto(id="
+        + getId()
+        + ", exportEntityType="
+        + getExportEntityType()
+        + ", name="
+        + getName()
+        + ", description="
+        + getDescription()
+        + ", sourceIndexVersion="
+        + getSourceIndexVersion()
+        + ")";
+  }
+
+  @SuppressWarnings("checkstyle:ConstantName")
   public static final class Fields {
 
     public static final String id = "id";

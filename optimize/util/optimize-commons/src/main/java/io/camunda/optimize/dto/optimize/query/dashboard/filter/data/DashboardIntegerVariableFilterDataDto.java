@@ -10,12 +10,10 @@ package io.camunda.optimize.dto.optimize.query.dashboard.filter.data;
 import io.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.DashboardVariableFilterSubDataDto;
 import io.camunda.optimize.dto.optimize.query.variable.VariableType;
 import java.util.List;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import java.util.Objects;
 
-@EqualsAndHashCode(callSuper = true)
-@Data
 public class DashboardIntegerVariableFilterDataDto extends DashboardVariableFilterDataDto {
+
   protected List<String> defaultValues;
 
   protected DashboardIntegerVariableFilterDataDto() {
@@ -33,5 +31,43 @@ public class DashboardIntegerVariableFilterDataDto extends DashboardVariableFilt
       final List<String> defaultValues) {
     super(VariableType.INTEGER, name, data);
     this.defaultValues = defaultValues;
+  }
+
+  public List<String> getDefaultValues() {
+    return defaultValues;
+  }
+
+  public void setDefaultValues(final List<String> defaultValues) {
+    this.defaultValues = defaultValues;
+  }
+
+  @Override
+  protected boolean canEqual(final Object other) {
+    return other instanceof DashboardIntegerVariableFilterDataDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    if (!super.equals(o)) {
+      return false;
+    }
+    final DashboardIntegerVariableFilterDataDto that = (DashboardIntegerVariableFilterDataDto) o;
+    return Objects.equals(defaultValues, that.defaultValues);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(super.hashCode(), defaultValues);
+  }
+
+  @Override
+  public String toString() {
+    return "DashboardIntegerVariableFilterDataDto(defaultValues=" + getDefaultValues() + ")";
   }
 }

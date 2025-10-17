@@ -9,14 +9,14 @@ package io.camunda.optimize.dto.optimize.query.report.single.process.view;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import java.util.Objects;
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
-@Data
-@AllArgsConstructor
 public class StringViewPropertyDto implements TypedViewPropertyDto {
 
   private final String id;
+
+  public StringViewPropertyDto(final String id) {
+    this.id = id;
+  }
 
   @JsonValue
   public String getId() {
@@ -31,8 +31,26 @@ public class StringViewPropertyDto implements TypedViewPropertyDto {
     if (!(o instanceof StringViewPropertyDto)) {
       return false;
     }
-    StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
+    final StringViewPropertyDto stringViewPropertyDto = (StringViewPropertyDto) o;
     return Objects.equals(getId(), stringViewPropertyDto.getId());
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof StringViewPropertyDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final StringViewPropertyDto that = (StringViewPropertyDto) o;
+    return Objects.equals(id, that.id);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hashCode(id);
   }
 
   @Override

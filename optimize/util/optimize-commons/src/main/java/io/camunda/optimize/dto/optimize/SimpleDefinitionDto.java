@@ -9,32 +9,128 @@ package io.camunda.optimize.dto.optimize;
 
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
-import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
-import lombok.NonNull;
 
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
-@Data
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class SimpleDefinitionDto {
-  @EqualsAndHashCode.Include @NonNull private String key;
+
+  private String key;
   private String name;
-  @EqualsAndHashCode.Include @NonNull private DefinitionType type;
-  @NonNull private Set<String> engines = new HashSet<>();
+  private DefinitionType type;
+  private Set<String> engines = new HashSet<>();
 
   public SimpleDefinitionDto(
-      @NonNull final String key,
-      final String name,
-      @NonNull final DefinitionType type,
-      @NonNull final String engine) {
+      final String key, final String name, final DefinitionType type, final String engine) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+    if (type == null) {
+      throw new IllegalArgumentException("type cannot be null");
+    }
+    if (engine == null) {
+      throw new IllegalArgumentException("engine cannot be null");
+    }
+
     this.key = key;
     this.name = name;
     this.type = type;
     engines = Collections.singleton(engine);
+  }
+
+  public SimpleDefinitionDto(
+      final String key, final String name, final DefinitionType type, final Set<String> engines) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+    if (type == null) {
+      throw new IllegalArgumentException("type cannot be null");
+    }
+    if (engines == null) {
+      throw new IllegalArgumentException("engines cannot be null");
+    }
+
+    this.key = key;
+    this.name = name;
+    this.type = type;
+    this.engines = engines;
+  }
+
+  protected SimpleDefinitionDto() {}
+
+  public String getKey() {
+    return key;
+  }
+
+  public void setKey(final String key) {
+    if (key == null) {
+      throw new IllegalArgumentException("key cannot be null");
+    }
+
+    this.key = key;
+  }
+
+  public String getName() {
+    return name;
+  }
+
+  public void setName(final String name) {
+    this.name = name;
+  }
+
+  public DefinitionType getType() {
+    return type;
+  }
+
+  public void setType(final DefinitionType type) {
+    if (type == null) {
+      throw new IllegalArgumentException("type cannot be null");
+    }
+
+    this.type = type;
+  }
+
+  public Set<String> getEngines() {
+    return engines;
+  }
+
+  public void setEngines(final Set<String> engines) {
+    if (engines == null) {
+      throw new IllegalArgumentException("engines cannot be null");
+    }
+    this.engines = engines;
+  }
+
+  protected boolean canEqual(final Object other) {
+    return other instanceof SimpleDefinitionDto;
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final SimpleDefinitionDto that = (SimpleDefinitionDto) o;
+    return Objects.equals(key, that.key)
+        && Objects.equals(name, that.name)
+        && type == that.type
+        && Objects.equals(engines, that.engines);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(key, name, type, engines);
+  }
+
+  @Override
+  public String toString() {
+    return "SimpleDefinitionDto(key="
+        + getKey()
+        + ", name="
+        + getName()
+        + ", type="
+        + getType()
+        + ", engines="
+        + getEngines()
+        + ")";
   }
 }
