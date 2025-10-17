@@ -31,7 +31,7 @@ import {
 } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
-import { isValidId } from "src/utility/isValidId.ts";
+import { isValidId } from "src/utility/validate";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];

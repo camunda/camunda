@@ -21,7 +21,7 @@ import {
 } from "../components";
 import { spacing05 } from "@carbon/elements";
 import { Stack } from "@carbon/react";
-import { isValidId } from "src/utility/isValidId.ts";
+import { isValidId } from "src/utility/validate";
 
 type FormData = {
   mappingRuleId: string;

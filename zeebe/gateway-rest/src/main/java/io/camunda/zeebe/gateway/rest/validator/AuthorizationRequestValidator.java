@@ -11,6 +11,7 @@ import static io.camunda.zeebe.gateway.rest.validator.ErrorMessages.ERROR_MESSAG
 import static io.camunda.zeebe.gateway.rest.validator.RequestValidator.validate;
 
 import io.camunda.zeebe.gateway.protocol.rest.AuthorizationRequest;
+import io.camunda.zeebe.protocol.record.value.AuthorizationScope;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.springframework.http.ProblemDetail;
@@ -33,7 +34,7 @@ public final class AuthorizationRequestValidator {
               "resourceId",
               violations,
               idPattern,
-              (id) -> !"*".equals(id));
+              (id) -> !AuthorizationScope.WILDCARD_CHAR.equals(id));
           if (request.getResourceType() == null) {
             violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("resourceType"));
           }
