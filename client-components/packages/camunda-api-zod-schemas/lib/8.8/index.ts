@@ -34,7 +34,12 @@ import {
 import {queryDecisionInstances, getDecisionInstance} from './decision-instance';
 import {queryDecisionRequirements, getDecisionRequirements, getDecisionRequirementsXml} from './decision-requirements';
 import {createDocument, createDocuments, getDocument, deleteDocument, createDocumentLink} from './document';
-import {queryElementInstances, getElementInstance, updateElementInstanceVariables} from './element-instance';
+import {
+	queryElementInstances,
+	getElementInstance,
+	updateElementInstanceVariables,
+	queryElementInstanceIncidents,
+} from './element-instance';
 import {
 	createGroup,
 	getGroup,
@@ -177,6 +182,7 @@ const endpoints = {
 	deleteDocument,
 	createDocumentLink,
 	queryElementInstances,
+	queryElementInstanceIncidents,
 	getElementInstance,
 	updateElementInstanceVariables,
 	createGroup,
@@ -426,6 +432,8 @@ export {
 	elementInstanceTypeSchema,
 	elementInstanceSchema,
 	elementInstanceFilterSchema,
+  queryElementInstanceIncidentsRequestBodySchema,
+  queryElementInstanceIncidentsResponseBodySchema,
 	type ElementInstanceState,
 	type ElementInstanceType,
 	type ElementInstance,
@@ -433,6 +441,8 @@ export {
 	type QueryElementInstancesResponseBody,
 	type GetElementInstanceResponseBody,
 	type UpdateElementInstanceVariablesRequestBody,
+  type QueryElementInstanceIncidentsRequestBody,
+  type QueryElementInstanceIncidentsResponseBody,
 } from './element-instance';
 export {
 	createGroupRequestBodySchema,
@@ -568,6 +578,7 @@ export {
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
 	queryProcessInstanceIncidentsRequestBodySchema,
+	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
@@ -581,6 +592,7 @@ export {
 	type QueryProcessInstancesResponseBody,
 	type CancelProcessInstanceRequestBody,
 	type QueryProcessInstanceIncidentsRequestBody,
+	type QueryProcessInstanceIncidentsResponseBody,
 	type CallHierarchy,
 	type GetProcessInstanceCallHierarchyResponseBody,
 	type SequenceFlow,

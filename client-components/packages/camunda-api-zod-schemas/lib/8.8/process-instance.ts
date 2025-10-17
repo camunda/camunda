@@ -28,6 +28,7 @@ import {
 	type StatisticName,
 } from './processes';
 import {batchOperationTypeSchema} from './batch-operation';
+import {queryIncidentsResponseBodySchema} from './incident';
 
 const processInstanceVariableFilterSchema = z.object({
 	name: z.string(),
@@ -100,23 +101,6 @@ const cancelProcessInstanceRequestBodySchema = z
 	.optional();
 type CancelProcessInstanceRequestBody = z.infer<typeof cancelProcessInstanceRequestBodySchema>;
 
-const queryProcessInstanceIncidentsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: [
-		'incidentKey',
-		'errorType',
-		'errorMessage',
-		'state',
-		'creationTime',
-		'processInstanceKey',
-		'processDefinitionKey',
-		'elementInstanceKey',
-		'jobKey',
-		'tenantId',
-	] as const,
-	filter: z.never(),
-});
-type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
-
 const getProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'GET',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}`,
@@ -168,6 +152,12 @@ const cancelProcessInstance: Endpoint<Pick<ProcessInstance, 'processInstanceKey'
 	method: 'POST',
 	getUrl: ({processInstanceKey}) => `/${API_VERSION}/process-instances/${processInstanceKey}/cancellation`,
 };
+
+const queryProcessInstanceIncidentsRequestBodySchema = queryIncidentsResponseBodySchema;
+type QueryProcessInstanceIncidentsRequestBody = z.infer<typeof queryProcessInstanceIncidentsRequestBodySchema>;
+
+const queryProcessInstanceIncidentsResponseBodySchema = queryIncidentsResponseBodySchema;
+type QueryProcessInstanceIncidentsResponseBody = z.infer<typeof queryProcessInstanceIncidentsResponseBodySchema>;
 
 const queryProcessInstanceIncidents: Endpoint<Pick<ProcessInstance, 'processInstanceKey'>> = {
 	method: 'POST',
@@ -364,6 +354,7 @@ export {
 	queryProcessInstancesResponseBodySchema,
 	cancelProcessInstanceRequestBodySchema,
 	queryProcessInstanceIncidentsRequestBodySchema,
+	queryProcessInstanceIncidentsResponseBodySchema,
 	getProcessInstanceCallHierarchyResponseBodySchema,
 	getProcessInstanceStatisticsResponseBodySchema,
 	getProcessInstanceSequenceFlowsResponseBodySchema,
@@ -379,6 +370,7 @@ export type {
 	QueryProcessInstancesResponseBody,
 	CancelProcessInstanceRequestBody,
 	QueryProcessInstanceIncidentsRequestBody,
+	QueryProcessInstanceIncidentsResponseBody,
 	CallHierarchy,
 	GetProcessInstanceCallHierarchyResponseBody,
 	SequenceFlow,

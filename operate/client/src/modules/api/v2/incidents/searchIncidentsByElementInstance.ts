@@ -8,20 +8,20 @@
 
 import {
   endpoints,
-  type QueryProcessInstanceIncidentsRequestBody,
-  type QueryProcessInstanceIncidentsResponseBody,
+  type QueryElementInstanceIncidentsRequestBody,
+  type QueryElementInstanceIncidentsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {requestWithThrow} from 'modules/request';
 
-const searchIncidentsByProcessInstance = async (
-  processInstanceKey: string,
-  payload?: QueryProcessInstanceIncidentsRequestBody,
+const searchIncidentsByElementInstance = async (
+  elementInstanceKey: string,
+  payload?: QueryElementInstanceIncidentsRequestBody,
 ) => {
-  return requestWithThrow<QueryProcessInstanceIncidentsResponseBody>({
-    url: endpoints.queryProcessInstanceIncidents.getUrl({processInstanceKey}),
-    method: endpoints.queryProcessInstanceIncidents.method,
+  return requestWithThrow<QueryElementInstanceIncidentsResponseBody>({
+    url: endpoints.queryElementInstanceIncidents.getUrl({elementInstanceKey}),
+    method: endpoints.queryElementInstanceIncidents.method,
     body: payload,
   });
 };
 
-export {searchIncidentsByProcessInstance};
+export {searchIncidentsByElementInstance};
