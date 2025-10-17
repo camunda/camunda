@@ -168,6 +168,9 @@ public class DecisionInstanceFilterImpl
       case LITERAL_EXPRESSION:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
         break;
+      case UNKNOWN:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
+        break;
       default:
         throw new IllegalArgumentException(
             "Unexpected DecisionDefinitionType value: " + decisionDefinitionType);

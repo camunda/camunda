@@ -18,5 +18,6 @@ package io.camunda.client.api.search.response;
 public enum DecisionDefinitionType {
   DECISION_TABLE,
   LITERAL_EXPRESSION,
+  UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 }

@@ -205,7 +205,8 @@ public record DecisionInstanceEntity(
 
   public enum DecisionDefinitionType {
     DECISION_TABLE,
-    LITERAL_EXPRESSION;
+    LITERAL_EXPRESSION,
+    UNKNOWN;
 
     public static DecisionDefinitionType fromValue(final String value) {
       for (final DecisionDefinitionType b : DecisionDefinitionType.values()) {
