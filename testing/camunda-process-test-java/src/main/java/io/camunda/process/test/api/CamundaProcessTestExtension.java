@@ -15,6 +15,8 @@
  */
 package io.camunda.process.test.api;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
@@ -41,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.AfterAllCallback;
@@ -115,6 +116,7 @@ public class CamundaProcessTestExtension
   private CamundaProcessTestContext camundaProcessTestContext;
 
   private String initializingExtensionContextId;
+  private String runNamePrefix;
 
   CamundaProcessTestExtension(
       final CamundaProcessTestRuntimeBuilder containerRuntimeBuilder,
@@ -148,6 +150,8 @@ public class CamundaProcessTestExtension
   public void beforeAll(final ExtensionContext context) {
     if (runtime != null) {
       // already initialized in parent context
+      runNamePrefix =
+          ofNullable(runNamePrefix).map(s -> s + "#").orElse("") + context.getDisplayName();
       return;
     }
     initializingExtensionContextId = context.getUniqueId();
@@ -281,8 +285,8 @@ public class CamundaProcessTestExtension
     }
 
     try {
-      processCoverage.collectTestRunCoverage(
-          buildDisplayNamePrefix(context.getParent()) + context.getDisplayName());
+      final String prefix = ofNullable(runNamePrefix).map(s -> s + "#").orElse("");
+      processCoverage.collectTestRunCoverage(prefix + context.getDisplayName());
     } catch (final Throwable t) {
       LOG.warn("Failed to collect test process coverage, skipping.", t);
     }
@@ -297,19 +301,6 @@ public class CamundaProcessTestExtension
     // the other way around leads to race conditions and inconsistencies in the tests
     resetRuntimeClock();
     deleteRuntimeData();
-  }
-
-  private String buildDisplayNamePrefix(Optional<ExtensionContext> context) {
-    if (!context.isPresent()
-        || context.get().getUniqueId().equals(initializingExtensionContextId)) {
-      // if there is no context or it's the initializing context, then return an empty string
-      return "";
-    } else {
-      // if test is executed in a nested context, then build a prefix to be displayed
-      return buildDisplayNamePrefix(context.get().getParent())
-          + context.get().getDisplayName()
-          + "#";
-    }
   }
 
   private void printTestResults() {

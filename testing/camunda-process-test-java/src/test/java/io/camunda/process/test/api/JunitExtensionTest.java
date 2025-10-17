@@ -41,7 +41,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.UUID;
 import java.util.function.Consumer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,6 +58,8 @@ public class JunitExtensionTest {
 
   private static final URI GRPC_API_ADDRESS = URI.create("http://my-host:100");
   private static final URI REST_API_ADDRESS = URI.create("http://my-host:200");
+  private static final String CLASS_CONTEXT_ID = "class-context-id";
+  private static final String NESTED_CONTEXT_ID = "nested-context-id";
 
   private static final Consumer<String> NOOP = s -> {};
 
@@ -94,7 +95,7 @@ public class JunitExtensionTest {
                     .grpcAddress(GRPC_API_ADDRESS)
                     .restAddress(REST_API_ADDRESS));
 
-    when(extensionContext.getUniqueId()).thenReturn(UUID.randomUUID().toString());
+    when(extensionContext.getUniqueId()).thenReturn(CLASS_CONTEXT_ID);
     when(extensionContext.getRequiredTestInstances()).thenReturn(testInstances);
     when(testInstances.getAllInstances()).thenReturn(Collections.singletonList(this));
     when(extensionContext.getStore(any())).thenReturn(store);
@@ -249,7 +250,7 @@ public class JunitExtensionTest {
         new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
 
     final ExtensionContext nestedContext = mock(ExtensionContext.class);
-    when(nestedContext.getUniqueId()).thenReturn(UUID.randomUUID().toString());
+    when(nestedContext.getUniqueId()).thenReturn(NESTED_CONTEXT_ID);
 
     // when
     extension.beforeAll(extensionContext);
