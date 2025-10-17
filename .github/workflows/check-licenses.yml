@@ -20,7 +20,7 @@ jobs:
   analyze:
     name: "Analyze ${{ matrix.project.name }} dependencies"
     permissions: {}
-    runs-on: ubuntu-latest
+    runs-on: gcp-core-8-default
     timeout-minutes: 20
     strategy:
       # The matrix is necessary to run separate analyses
