@@ -88,6 +88,7 @@ import io.camunda.search.clients.transformers.filter.ProcessInstanceStatisticsFi
 import io.camunda.search.clients.transformers.filter.RoleFilterTransformer;
 import io.camunda.search.clients.transformers.filter.SequenceFlowFilterTransformer;
 import io.camunda.search.clients.transformers.filter.TenantFilterTransformer;
+import io.camunda.search.clients.transformers.filter.TenantMemberFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UsageMetricsTUFilterTransformer;
 import io.camunda.search.clients.transformers.filter.UserFilterTransformer;
@@ -118,6 +119,7 @@ import io.camunda.search.clients.transformers.sort.ProcessDefinitionFieldSorting
 import io.camunda.search.clients.transformers.sort.ProcessInstanceFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.RoleFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.TenantFieldSortingTransformer;
+import io.camunda.search.clients.transformers.sort.TenantMemberFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UsageMetricsFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserFieldSortingTransformer;
 import io.camunda.search.clients.transformers.sort.UserTaskFieldSortingTransformer;
@@ -146,6 +148,7 @@ import io.camunda.search.filter.ProcessInstanceStatisticsFilter;
 import io.camunda.search.filter.RoleFilter;
 import io.camunda.search.filter.SequenceFlowFilter;
 import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.TenantMemberFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.UsageMetricsTUFilter;
 import io.camunda.search.filter.UserFilter;
@@ -174,6 +177,7 @@ import io.camunda.search.query.ProcessInstanceFlowNodeStatisticsQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchQuery;
 import io.camunda.search.query.UsageMetricsQuery;
@@ -203,6 +207,7 @@ import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.TenantMemberSort;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UsageMetricsSort;
 import io.camunda.search.sort.UserSort;
@@ -347,6 +352,7 @@ public final class ServiceTransformers {
             RoleQuery.class,
             SequenceFlowQuery.class,
             TenantQuery.class,
+            TenantMemberQuery.class,
             UsageMetricsQuery.class,
             UsageMetricsTUQuery.class,
             UserTaskQuery.class,
@@ -405,6 +411,7 @@ public final class ServiceTransformers {
     mappers.put(ProcessInstanceSort.class, new ProcessInstanceFieldSortingTransformer());
     mappers.put(RoleSort.class, new RoleFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
+    mappers.put(TenantMemberSort.class, new TenantMemberFieldSortingTransformer());
     mappers.put(UserTaskSort.class, new UserTaskFieldSortingTransformer());
     mappers.put(VariableSort.class, new VariableFieldSortingTransformer());
     mappers.put(TenantSort.class, new TenantFieldSortingTransformer());
@@ -462,6 +469,9 @@ public final class ServiceTransformers {
     mappers.put(RoleFilter.class, new RoleFilterTransformer(indexDescriptors.get(RoleIndex.class)));
     mappers.put(
         TenantFilter.class, new TenantFilterTransformer(indexDescriptors.get(TenantIndex.class)));
+    mappers.put(
+        TenantMemberFilter.class,
+        new TenantMemberFilterTransformer(indexDescriptors.get(TenantIndex.class)));
     mappers.put(
         UsageMetricsFilter.class,
         new UsageMetricsFilterTransformer(indexDescriptors.get(UsageMetricTemplate.class)));

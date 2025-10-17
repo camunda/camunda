@@ -141,6 +141,7 @@ import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
@@ -278,6 +279,7 @@ import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentSearchRequestImpl;
+import io.camunda.client.impl.search.request.IncidentsByElementInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.IncidentsByProcessInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.JobSearchRequestImpl;
 import io.camunda.client.impl.search.request.MappingRulesByGroupSearchRequestImpl;
@@ -1359,6 +1361,13 @@ public final class CamundaClientImpl implements CamundaClient {
   public CorrelatedMessageSubscriptionSearchRequest
       newCorrelatedMessageSubscriptionSearchRequest() {
     return new CorrelatedMessageSubscriptionSearchRequestImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
+      final long elementInstanceKey) {
+    return new IncidentsByElementInstanceSearchRequestImpl(
+        httpClient, jsonMapper, elementInstanceKey);
   }
 
   private JobClient newJobClient() {

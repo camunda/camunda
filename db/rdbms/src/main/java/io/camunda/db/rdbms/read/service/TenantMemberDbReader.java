@@ -13,9 +13,8 @@ import io.camunda.db.rdbms.sql.columns.TenantMemberSearchColumn;
 import io.camunda.db.rdbms.write.domain.TenantMemberDbModel;
 import io.camunda.search.clients.reader.TenantMemberReader;
 import io.camunda.search.entities.TenantMemberEntity;
-import io.camunda.search.filter.TenantFilter;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.search.query.TenantQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.List;
@@ -35,9 +34,9 @@ public class TenantMemberDbReader extends AbstractEntityReader<TenantMemberEntit
 
   @Override
   public SearchQueryResult<TenantMemberEntity> search(
-      final TenantQuery query, final ResourceAccessChecks resourceAccessChecks) {
+      final TenantMemberQuery query, final ResourceAccessChecks resourceAccessChecks) {
 
-    if (shouldReturnEmptyResult(query.filter(), resourceAccessChecks)) {
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
       return new SearchQueryResult.Builder<TenantMemberEntity>().total(0).items(List.of()).build();
     }
 
@@ -65,12 +64,5 @@ public class TenantMemberDbReader extends AbstractEntityReader<TenantMemberEntit
     // todo use EntityType as enum
     return new TenantMemberEntity(
         model.tenantId(), model.entityId(), EntityType.valueOf(model.entityType()));
-  }
-
-  private boolean shouldReturnEmptyResult(
-      final TenantFilter filter, final ResourceAccessChecks resourceAccessChecks) {
-    return (filter.memberIds() != null && filter.memberIds().isEmpty())
-        || (resourceAccessChecks.authorizationCheck().enabled()
-            && resourceAccessChecks.getAuthorizedResourceIds().isEmpty());
   }
 }

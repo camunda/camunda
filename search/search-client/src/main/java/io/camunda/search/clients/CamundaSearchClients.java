@@ -72,6 +72,7 @@ import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.query.TypedSearchAggregationQuery;
 import io.camunda.search.query.TypedSearchQuery;
@@ -310,7 +311,7 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
-  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantQuery query) {
+  public SearchQueryResult<TenantMemberEntity> searchTenantMembers(final TenantMemberQuery query) {
     return doSearchWithReader(readers.tenantMemberReader(), query);
   }
 

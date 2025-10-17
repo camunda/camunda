@@ -22,6 +22,7 @@ import io.camunda.search.exception.CamundaSearchException;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.RoleQuery;
 import io.camunda.search.query.SearchQueryResult;
+import io.camunda.search.query.TenantMemberQuery;
 import io.camunda.search.query.TenantQuery;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -536,7 +537,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeClient() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
@@ -580,7 +581,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeUser() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)
@@ -624,7 +625,7 @@ public class TenantQueryControllerTest extends RestControllerTest {
   @Test
   void shouldListMembersOfTypeGroup() {
     // given
-    when(tenantServices.searchMembers(any(TenantQuery.class)))
+    when(tenantServices.searchMembers(any(TenantMemberQuery.class)))
         .thenReturn(
             new SearchQueryResult.Builder<TenantMemberEntity>()
                 .total(3)

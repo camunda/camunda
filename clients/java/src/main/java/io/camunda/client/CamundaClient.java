@@ -130,6 +130,7 @@ import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
 import io.camunda.client.api.search.request.IncidentSearchRequest;
+import io.camunda.client.api.search.request.IncidentsByElementInstanceSearchRequest;
 import io.camunda.client.api.search.request.IncidentsByProcessInstanceSearchRequest;
 import io.camunda.client.api.search.request.JobSearchRequest;
 import io.camunda.client.api.search.request.MappingRulesByGroupSearchRequest;
@@ -2757,4 +2758,21 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the correlated message subscription search request
    */
   CorrelatedMessageSubscriptionSearchRequest newCorrelatedMessageSubscriptionSearchRequest();
+
+  /**
+   * Executes a search request to query incidents by element instance key.
+   *
+   * <pre>
+   *   camundaClient
+   *    .newIncidentsByElementInstanceSearchRequest(elementInstanceKey)
+   *    .sort((s) -> s.incidentKey().desc())
+   *    .page((p) -> p.limit(100))
+   *    .send();
+   * </pre>
+   *
+   * @param elementInstanceKey the key of the element instance
+   * @return a builder for the incidents by element instance search request
+   */
+  IncidentsByElementInstanceSearchRequest newIncidentsByElementInstanceSearchRequest(
+      long elementInstanceKey);
 }

@@ -43,6 +43,7 @@ public class System {
 
   @NestedConfigurationProperty private Actor actor = new Actor();
   @NestedConfigurationProperty private Upgrade upgrade = new Upgrade();
+  @NestedConfigurationProperty private Restore restore = new Restore();
 
   public int getCpuThreadCount() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -97,5 +98,13 @@ public class System {
 
   public void setUpgrade(final Upgrade upgrade) {
     this.upgrade = upgrade;
+  }
+
+  public Restore getRestore() {
+    return restore;
+  }
+
+  public void setRestore(final Restore restore) {
+    this.restore = restore;
   }
 }

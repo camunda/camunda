@@ -205,6 +205,14 @@ public final class ElementInstanceServiceTest {
         // given
         final long elementInstanceKey = 123L;
         final IncidentQuery query = IncidentQuery.of(q -> q);
+        final FlowNodeInstanceEntity elementInstance =
+            Instancio.of(FlowNodeInstanceEntity.class)
+                .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), elementInstanceKey)
+                .create();
+
+        when(client.getFlowNodeInstance(any(Long.class))).thenReturn(elementInstance);
+        when(processCache.getCacheItem(elementInstance.processDefinitionKey()))
+            .thenReturn(new ProcessCacheItem("ProcessName", Map.of("unknown-id", "cached name")));
         final IncidentEntity incident =
             Instancio.of(IncidentEntity.class)
                 .set(field(IncidentEntity::flowNodeInstanceKey), elementInstanceKey)
@@ -224,6 +232,8 @@ public final class ElementInstanceServiceTest {
         final long elementInstanceKey = 456L;
         final IncidentQuery query = IncidentQuery.of(q -> q);
         final SearchQueryResult<IncidentEntity> result = SearchQueryResult.of();
+        final var entity = Instancio.create(FlowNodeInstanceEntity.class);
+        when(client.getFlowNodeInstance(any(Long.class))).thenReturn(entity);
         when(incidentServices.search(any(IncidentQuery.class))).thenReturn(result);
         // when
         final var searchResult = services.searchIncidents(elementInstanceKey, query);

@@ -21,7 +21,6 @@ import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 public class ClientsByTenantIntegrationTest {
@@ -37,7 +36,6 @@ public class ClientsByTenantIntegrationTest {
   }
 
   @Test
-  @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms")
   void shouldSearchAssignedClientsByTenantAndSort() {
     // given
     final var firstClientId = "aClientId";

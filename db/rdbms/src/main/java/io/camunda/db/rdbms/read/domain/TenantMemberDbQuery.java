@@ -9,7 +9,7 @@ package io.camunda.db.rdbms.read.domain;
 
 import io.camunda.search.entities.TenantMemberEntity;
 import io.camunda.search.filter.FilterBuilders;
-import io.camunda.search.filter.TenantFilter;
+import io.camunda.search.filter.TenantMemberFilter;
 import io.camunda.util.ObjectBuilder;
 import java.util.Collections;
 import java.util.List;
@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 public record TenantMemberDbQuery(
-    TenantFilter filter,
+    TenantMemberFilter filter,
     List<String> authorizedResourceIds,
     DbQuerySorting<TenantMemberEntity> sort,
     DbQueryPage page) {
@@ -29,14 +29,14 @@ public record TenantMemberDbQuery(
 
   public static final class Builder implements ObjectBuilder<TenantMemberDbQuery> {
 
-    private static final TenantFilter EMPTY_FILTER = FilterBuilders.tenant().build();
+    private static final TenantMemberFilter EMPTY_FILTER = FilterBuilders.tenantMember().build();
 
-    private TenantFilter filter;
+    private TenantMemberFilter filter;
     private DbQuerySorting<TenantMemberEntity> sort;
     private DbQueryPage page;
     private List<String> authorizedResourceIds = Collections.emptyList();
 
-    public Builder filter(final TenantFilter value) {
+    public Builder filter(final TenantMemberFilter value) {
       filter = value;
       return this;
     }
@@ -56,8 +56,9 @@ public record TenantMemberDbQuery(
       return this;
     }
 
-    public Builder filter(final Function<TenantFilter.Builder, ObjectBuilder<TenantFilter>> fn) {
-      return filter(FilterBuilders.tenant(fn));
+    public Builder filter(
+        final Function<TenantMemberFilter.Builder, ObjectBuilder<TenantMemberFilter>> fn) {
+      return filter(FilterBuilders.tenantMember(fn));
     }
 
     public Builder sort(

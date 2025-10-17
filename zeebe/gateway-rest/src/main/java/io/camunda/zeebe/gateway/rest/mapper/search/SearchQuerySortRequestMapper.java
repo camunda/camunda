@@ -28,6 +28,7 @@ import io.camunda.search.sort.ProcessDefinitionSort;
 import io.camunda.search.sort.ProcessInstanceSort;
 import io.camunda.search.sort.RoleSort;
 import io.camunda.search.sort.SortOption;
+import io.camunda.search.sort.TenantMemberSort;
 import io.camunda.search.sort.TenantSort;
 import io.camunda.search.sort.UserSort;
 import io.camunda.search.sort.UserTaskSort;
@@ -465,33 +466,36 @@ public class SearchQuerySortRequestMapper {
   }
 
   static List<String> applyTenantUserSortField(
-      final TenantUserSearchQuerySortRequest.FieldEnum field, final TenantSort.Builder builder) {
+      final TenantUserSearchQuerySortRequest.FieldEnum field,
+      final TenantMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case USERNAME -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
   }
 
   static List<String> applyTenantGroupSortField(
-      final TenantGroupSearchQuerySortRequest.FieldEnum field, final TenantSort.Builder builder) {
+      final TenantGroupSearchQuerySortRequest.FieldEnum field,
+      final TenantMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case GROUP_ID -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
   }
 
   static List<String> applyTenantClientSortField(
-      final TenantClientSearchQuerySortRequest.FieldEnum field, final TenantSort.Builder builder) {
+      final TenantClientSearchQuerySortRequest.FieldEnum field,
+      final TenantMemberSort.Builder builder) {
     return switch (field) {
       case null -> List.of(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
       case CLIENT_ID -> {
-        builder.memberId();
+        builder.id();
         yield List.of();
       }
     };
