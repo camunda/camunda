@@ -17,7 +17,6 @@ package io.camunda.client.impl.http;
 
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.ProblemException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -79,14 +78,12 @@ public class HttpCamundaFuture<RespT> extends CompletableFuture<RespT>
     }
   }
 
-  private ProblemException unwrapExecutionException(final ExecutionException e) {
+  private ClientException unwrapExecutionException(final ExecutionException e) {
     final Throwable cause = e.getCause();
-    if (cause instanceof ProblemException) {
-      throw (ProblemException) cause;
-    } else if (cause instanceof ClientException) {
-      throw (ClientException) cause;
+    if (cause instanceof ClientException) {
+      return (ClientException) cause;
     } else {
-      throw new ClientException(cause);
+      return new ClientException(cause);
     }
   }
 }

@@ -93,25 +93,10 @@ public interface TypedApiEntityConsumer<T> {
 
     @Override
     public ApiEntity<T> generateContent() throws IOException {
-      try {
-        if (isResponse) {
-          return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
-        }
-        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
-      } catch (final IOException ioe) {
-        LOGGER.warn("Could not read JSON content", ioe);
-        // write the original JSON response into an error response
-        final String jsonString = getJsonString();
-        return ApiEntity.of(
-            new ProblemDetail()
-                .title("Cannot parse the server JSON response")
-                .status(500)
-                .detail(
-                    "The client failed to parse the JSON response: "
-                        + ioe.getMessage()
-                        + ". The received JSON payload is: "
-                        + jsonString));
+      if (isResponse) {
+        return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), type));
       }
+      return ApiEntity.of(json.readValue(buffer.asParserOnFirstToken(), ProblemDetail.class));
     }
 
     @Override
