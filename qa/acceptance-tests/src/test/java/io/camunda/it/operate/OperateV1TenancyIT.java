@@ -19,21 +19,20 @@ import static io.camunda.client.api.search.enums.ResourceType.PROCESS_DEFINITION
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
 import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestOperateClient;
+import io.camunda.qa.util.cluster.TestRestOperateClient.ProcessInstanceResult;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.util.Either;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
@@ -81,7 +80,7 @@ public class OperateV1TenancyIT {
 
     deployResource(adminClient, "process/service_tasks_v1.bpmn", TENANT_TO_BE_DELETED);
     startProcessInstance(adminClient, PROCESS_ID, TENANT_TO_BE_DELETED);
-    waitForProcessBeingExported(adminClient);
+    waitForProcessBeingExported(adminClient, 2);
   }
 
   @Test
@@ -90,13 +89,8 @@ public class OperateV1TenancyIT {
 
     try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient(ADMIN, ADMIN)) {
       // given
-      verifySearch(
-          operateClient,
-          processInstanceResult -> {
-            assertThat(processInstanceResult.total).isEqualTo(2);
-            assertThat(processInstanceResult.tenantIds)
-                .containsExactlyInAnyOrder(TENANT_A, TENANT_TO_BE_DELETED);
-          });
+      final var result = searchProcessInstancesV1(operateClient);
+      assertSearchResults(result, 2, TENANT_A, TENANT_TO_BE_DELETED);
 
       // when
       deleteTenant(camundaClient, TENANT_TO_BE_DELETED);
@@ -106,34 +100,32 @@ public class OperateV1TenancyIT {
           .atMost(Duration.ofSeconds(10))
           .untilAsserted(
               () -> {
-                verifySearch(
-                    operateClient,
-                    processInstanceResult -> {
-                      assertThat(processInstanceResult.total).isEqualTo(1);
-                      assertThat(processInstanceResult.tenantIds).containsExactly(TENANT_A);
-                    });
+                final var afterDeletionResult = searchProcessInstancesV1(operateClient);
+                assertSearchResults(afterDeletionResult, 1, TENANT_A);
               });
     }
   }
 
-  private void verifySearch(
-      final TestRestOperateClient client, final Consumer<ProcessInstanceResults> assertions)
-      throws Exception {
-    final HttpResponse<String> searchResponse =
-        client.sendV1SearchRequest("v1/process-instances", "{}");
-    final Either<Exception, Map> result = client.mapResult(searchResponse, Map.class);
+  private Either<Exception, ProcessInstanceResult> searchProcessInstancesV1(
+      final TestRestOperateClient operateClient) throws Exception {
+    final var response = operateClient.sendV1SearchRequest("v1/process-instances", "{}");
+    return operateClient.mapResult(response, ProcessInstanceResult.class);
+  }
+
+  private void assertSearchResults(
+      final Either<Exception, ProcessInstanceResult> result,
+      final int expectedProcesses,
+      final String... expectedProcessInstanceTenants) {
 
     assertThat(result.isRight()).isTrue();
 
-    final Map<String, Object> responseBody = result.get();
-
-    final var processInstanceResults =
-        new ProcessInstanceResults(
-            (int) responseBody.get("total"),
-            ((List<Map<String, Object>>) responseBody.get("items"))
-                .stream().map(r -> r.get("tenantId").toString()).collect(Collectors.toSet()));
-
-    assertions.accept(processInstanceResults);
+    final var processInstanceResults = result.get();
+    assertThat(processInstanceResults.total()).isEqualTo(expectedProcesses);
+    final Set<String> tenants =
+        processInstanceResults.processInstances().stream()
+            .map(ProcessInstance::getTenantId)
+            .collect(Collectors.toSet());
+    assertThat(tenants).containsExactlyInAnyOrder(expectedProcessInstanceTenants);
   }
 
   private static void createTenant(final CamundaClient camundaClient, final String tenant) {
@@ -170,10 +162,6 @@ public class OperateV1TenancyIT {
         .join();
   }
 
-  private static void waitForProcessBeingExported(final CamundaClient camundaClient) {
-    waitForProcessBeingExported(camundaClient, 2);
-  }
-
   private static void waitForProcessBeingExported(
       final CamundaClient camundaClient, final int expectedDefinitions) {
     Awaitility.await("should receive data from secondary storage")
@@ -191,6 +179,4 @@ public class OperateV1TenancyIT {
                   .hasSize(expectedDefinitions);
             });
   }
-
-  private record ProcessInstanceResults(long total, Set<String> tenantIds) {}
 }
