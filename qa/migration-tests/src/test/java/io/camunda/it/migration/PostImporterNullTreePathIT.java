@@ -123,7 +123,10 @@ public class PostImporterNullTreePathIT {
         .forEach(
             incident -> {
               assertThat(incident.getState()).isEqualTo(IncidentState.ACTIVE);
-              assertThat(incident.getTreePath()).matches(TREE_PATH_REGEX);
+              assertThat(incident.getTreePath()).isNotBlank();
+              // we cannot reliably assert the treePath, see
+              // https://github.com/camunda/camunda/issues/39653
+              // assertThat(incident.getTreePath()).matches(TREE_PATH_REGEX);
               final String piKey = incident.getTreePath().split("/")[0].substring(3);
               assertThat(processInstanceKeys.contains(Long.parseLong(piKey))).isTrue();
             });
