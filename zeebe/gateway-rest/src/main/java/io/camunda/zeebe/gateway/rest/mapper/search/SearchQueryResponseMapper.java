@@ -1112,6 +1112,7 @@ public final class SearchQueryResponseMapper {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
 
