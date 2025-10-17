@@ -92,9 +92,9 @@ func PrintStatus(settings types.C8RunSettings) error {
 
 	// Overwrite ports if Docker is enabled
 	if settings.Docker {
-		operatePort = 8081
-		tasklistPort = 8082
-		identityPort = 8084
+		operatePort = 8088
+		tasklistPort = 8088
+		identityPort = 8088
 		camundaPort = 8088
 	}
 
