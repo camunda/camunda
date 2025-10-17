@@ -19,6 +19,7 @@ import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -70,6 +71,17 @@ public class TestRestTasklistClient implements CloseableSilently {
         Optional.ofNullable(processInstanceKey)
             .map(a -> mapToRequestBody("processInstanceKey", a))
             .orElse(null));
+  }
+
+  public HttpResponse<String> saveDraftVariables(final Long taskKey, String name, String value) {
+    final var path = String.format("%sv1/tasks/%d/variables", endpoint, taskKey);
+
+    final var requestDtoVariableValue = new HashMap<String, Object>();
+    requestDtoVariableValue.put("name", name);
+    requestDtoVariableValue.put("value", value);
+
+    return sendRequest(
+        "POST", path, mapToRequestBody("variables", Arrays.asList(requestDtoVariableValue)));
   }
 
   public HttpResponse<String> createProcessInstanceViaPublicForm(final String processDefinitionId) {
