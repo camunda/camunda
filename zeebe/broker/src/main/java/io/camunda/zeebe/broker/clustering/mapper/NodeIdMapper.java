@@ -47,6 +47,11 @@ public class NodeIdMapper implements Closeable {
   private final Runnable onRenewalFailure;
   private ScheduledFuture<?> renewealTimer;
   private boolean previousOwnerExpired;
+
+  private final int maxRenewRetries = 30;
+  private int renewalRetries = 0;
+  private final int faultyNodeId = 2;
+
   public NodeIdMapper(final LeaseClient lease) {
     this(lease, SHUTDOWN_VM);
   }
@@ -228,6 +233,12 @@ public class NodeIdMapper implements Closeable {
     renewealTimer =
         executor.scheduleAtFixedRate(
             () -> {
+              if (renewalRetries++ > maxRenewRetries
+                  && nodeInstance != null
+                  && nodeInstance.id() == faultyNodeId) {
+                renewealTimer.cancel(false);
+                return;
+              }
               if (lease.renewLease() == null) {
                 LOG.info("Renewal lease not acquired");
                 if (executor.isShutdown() || executor.isTerminated()) {
