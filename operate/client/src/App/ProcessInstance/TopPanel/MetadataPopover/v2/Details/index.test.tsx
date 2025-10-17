@@ -7,9 +7,8 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {type V2MetaDataDto} from '../types';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {baseMetaData, TestWrapper} from './mocks';
+import {mockInstanceMetadata, TestWrapper} from './mocks';
 import {Details} from './index';
 import {getExecutionDuration} from '../../Details/getExecutionDuration';
 
@@ -19,9 +18,16 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should render element instance details', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={mockInstanceMetadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Details')).toBeInTheDocument();
     expect(screen.getByText('Element Instance Key')).toBeInTheDocument();
@@ -29,33 +35,48 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job retries when available', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={mockInstanceMetadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Retries Left')).toBeInTheDocument();
     expect(screen.getByTestId('retries-left-count')).toHaveTextContent('3');
   });
 
   it('should hide job retries when null', () => {
-    const meta = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        jobRetries: null,
-      },
+    const metadata = {
+      ...mockInstanceMetadata,
+      jobRetries: null,
     };
 
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={metadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.queryByText('Retries Left')).not.toBeInTheDocument();
   });
 
   it('should show metadata dialog when "Show more metadata" is clicked', async () => {
     const {user} = render(
-      <Details metaData={baseMetaData} elementId="Task_1" />,
+      <Details
+        instanceMetadata={mockInstanceMetadata}
+        incident={null}
+        elementId="Task_1"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -66,19 +87,12 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should handle null instance metadata gracefully', () => {
-    const meta: V2MetaDataDto = {
-      flowNodeInstanceId: null,
-      flowNodeId: null,
-      flowNodeType: null,
-      instanceCount: null,
-      instanceMetadata: null,
-      incident: null,
-      incidentCount: 0,
-    };
-
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details instanceMetadata={null} incident={null} elementId="Task_1" />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(screen.getByText('Element Instance Key')).toBeInTheDocument();
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
@@ -95,17 +109,21 @@ describe('MetadataPopover <Details />', () => {
     const tasklistUrl = 'https://tasklist.example.com';
     vi.stubGlobal('clientConfig', {tasklistUrl});
 
-    const meta: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-      },
+    const metadata = {
+      ...mockInstanceMetadata,
+      type: 'USER_TASK' as const,
     };
 
-    render(<Details metaData={meta} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={metadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     const link = screen.getByRole('link', {name: 'Open Tasklist'});
     expect(link).toBeInTheDocument();
@@ -116,9 +134,16 @@ describe('MetadataPopover <Details />', () => {
     const tasklistUrl = 'https://tasklist.example.com';
     vi.stubGlobal('clientConfig', {tasklistUrl});
 
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={mockInstanceMetadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     expect(
       screen.queryByRole('link', {name: 'Open Tasklist'}),
@@ -126,13 +151,20 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display execution duration info', () => {
-    render(<Details metaData={baseMetaData} elementId="Task_1" />, {
-      wrapper: TestWrapper,
-    });
+    render(
+      <Details
+        instanceMetadata={mockInstanceMetadata}
+        incident={null}
+        elementId="Task_1"
+      />,
+      {
+        wrapper: TestWrapper,
+      },
+    );
 
     const calculatedExecutionDuration = getExecutionDuration(
-      baseMetaData!.instanceMetadata!.startDate,
-      baseMetaData!.instanceMetadata!.endDate,
+      mockInstanceMetadata.startDate,
+      mockInstanceMetadata.endDate,
     );
 
     expect(screen.getByText('Execution Duration')).toBeInTheDocument();
@@ -140,28 +172,29 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display user task metadata in modal when available', async () => {
-    const userTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-        assignee: 'john.doe',
-        dueDate: '2023-12-31T23:59:59.000Z',
-        followUpDate: '2023-12-30T12:00:00.000Z',
-        formKey: 'user-form-key',
-        userTaskKey: 'ut-123456',
-        candidateGroups: ['managers', 'admins'],
-        candidateUsers: ['user1', 'user2'],
-        externalFormReference: 'external-form-ref-123',
-        creationDate: '2023-12-01T09:00:00.000Z',
-        completionDate: '2023-12-31T18:00:00.000Z',
-        customHeaders: {custom1: 'value1', custom2: 2},
-        priority: 10,
-      },
+    const userTaskMetadata = {
+      ...mockInstanceMetadata,
+      type: 'USER_TASK' as const,
+      assignee: 'john.doe',
+      dueDate: '2023-12-31T23:59:59.000Z',
+      followUpDate: '2023-12-30T12:00:00.000Z',
+      formKey: 'user-form-key',
+      userTaskKey: 'ut-123456',
+      candidateGroups: ['managers', 'admins'],
+      candidateUsers: ['user1', 'user2'],
+      externalFormReference: 'external-form-ref-123',
+      creationDate: '2023-12-01T09:00:00.000Z',
+      completionDate: '2023-12-31T18:00:00.000Z',
+      customHeaders: {custom1: 'value1', custom2: 2},
+      priority: 10,
     };
 
     const {user} = render(
-      <Details metaData={userTaskMetaData} elementId="UserTask_1" />,
+      <Details
+        instanceMetadata={userTaskMetadata}
+        incident={null}
+        elementId="UserTask_1"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -218,24 +251,25 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display partial user task metadata when some fields are missing', async () => {
-    const partialUserTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'USER_TASK',
-        assignee: 'jane.smith',
-        formKey: 'simple-form',
-        userTaskKey: 'ut-789',
-        dueDate: undefined,
-        followUpDate: undefined,
-        candidateGroups: undefined,
-        candidateUsers: undefined,
-        externalFormReference: undefined,
-      },
+    const partialUserTaskMetadata = {
+      ...mockInstanceMetadata,
+      type: 'USER_TASK' as const,
+      assignee: 'jane.smith',
+      formKey: 'simple-form',
+      userTaskKey: 'ut-789',
+      dueDate: undefined,
+      followUpDate: undefined,
+      candidateGroups: undefined,
+      candidateUsers: undefined,
+      externalFormReference: undefined,
     };
 
     const {user} = render(
-      <Details metaData={partialUserTaskMetaData} elementId="UserTask_2" />,
+      <Details
+        instanceMetadata={partialUserTaskMetadata}
+        incident={null}
+        elementId="UserTask_2"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -247,16 +281,17 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display user task fields for non-user task types', async () => {
-    const serviceTaskMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        type: 'SERVICE_TASK',
-      },
+    const serviceTaskMetadata = {
+      ...mockInstanceMetadata,
+      type: 'SERVICE_TASK' as const,
     };
 
     const {user} = render(
-      <Details metaData={serviceTaskMetaData} elementId="ServiceTask_1" />,
+      <Details
+        instanceMetadata={serviceTaskMetadata}
+        incident={null}
+        elementId="ServiceTask_1"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -275,24 +310,26 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display incident fields for when incident is occured', async () => {
-    const incidentMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        incidentKey: '2251799813696584',
+    const incidentMetadata = {
+      ...mockInstanceMetadata,
+      incidentKey: '2251799813696584',
+    };
+
+    const incident = {
+      errorType: {
+        id: 'EXTRACT_VALUE_ERROR',
+        name: 'Extract value error',
       },
-      incident: {
-        errorType: {
-          id: 'EXTRACT_VALUE_ERROR',
-          name: 'Extract value error',
-        },
-        errorMessage:
-          "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'.",
-      },
+      errorMessage:
+        "Expected result of the expression 'approverGroups' to be 'ARRAY', but was 'NULL'.",
     };
 
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details
+        instanceMetadata={incidentMetadata}
+        incident={incident}
+        elementId="Activity_11ptrz9"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -312,17 +349,18 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display called process fields for called instances', async () => {
-    const incidentMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        calledProcessInstanceId: '229843728748927482',
-        calledProcessDefinitionName: 'Called Process',
-      },
+    const calledProcessMetadata = {
+      ...mockInstanceMetadata,
+      calledProcessInstanceId: '229843728748927482',
+      calledProcessDefinitionName: 'Called Process',
     };
 
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details
+        instanceMetadata={calledProcessMetadata}
+        incident={null}
+        elementId="Activity_11ptrz9"
+      />,
       {wrapper: TestWrapper},
     );
 
@@ -335,20 +373,21 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job data fields', async () => {
-    const incidentMetaData: V2MetaDataDto = {
-      ...baseMetaData,
-      instanceMetadata: {
-        ...baseMetaData.instanceMetadata!,
-        jobType: 'httpService',
-        jobWorker: 'worker-1',
-        jobDeadline: '2023-01-15T10:10:00.000Z',
-        jobCustomHeaders: {timeout: '30s'},
-        jobKey: '555666777',
-      },
+    const jobMetadata = {
+      ...mockInstanceMetadata,
+      jobType: 'httpService',
+      jobWorker: 'worker-1',
+      jobDeadline: '2023-01-15T10:10:00.000Z',
+      jobCustomHeaders: {timeout: '30s'},
+      jobKey: '555666777',
     };
 
     const {user} = render(
-      <Details metaData={incidentMetaData} elementId="Activity_11ptrz9" />,
+      <Details
+        instanceMetadata={jobMetadata}
+        incident={null}
+        elementId="Activity_11ptrz9"
+      />,
       {wrapper: TestWrapper},
     );
 
