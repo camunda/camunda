@@ -44,14 +44,6 @@ const backgroundColors = {
       color: staticColors.canceled,
       fadedColor: staticColors.canceled,
     },
-    UNSPECIFIED: {
-      color: 'var(--cds-layer-01)',
-      fadedColor: 'var(--cds-layer-01)',
-    },
-    UNKNOWN: {
-      color: 'var(--cds-layer-01)',
-      fadedColor: 'var(--cds-layer-01)',
-    },
   },
   dark: {
     active: {
@@ -82,14 +74,6 @@ const backgroundColors = {
       color: staticColors.canceled,
       fadedColor: staticColors.canceled,
     },
-    UNSPECIFIED: {
-      color: 'var(--cds-layer-01)',
-      fadedColor: 'var(--cds-layer-01)',
-    },
-    UNKNOWN: {
-      color: 'var(--cds-layer-01)',
-      fadedColor: 'var(--cds-layer-01)',
-    },
   },
 };
 
@@ -102,9 +86,7 @@ type ContainerProps = {
     | 'canceled'
     | 'completedEndEvents'
     | 'EVALUATED'
-    | 'FAILED'
-    | 'UNSPECIFIED'
-    | 'UNKNOWN';
+    | 'FAILED';
   $isFaded: boolean;
   $showStatistic?: boolean;
 };
@@ -127,12 +109,6 @@ const Container = styled(Stack)<ContainerProps>`
       css`
         padding-right: var(--cds-spacing-03);
         transform: translateX(-50%);
-      `}
-
-      ${($state === 'UNKNOWN' || $state === 'UNSPECIFIED') &&
-      css`
-        box-shadow: inset 0 0 0 1px var(--cds-border-inverse);
-        color: var(--cds-icon-primary);
       `}
 
       ${$state === 'completed' &&

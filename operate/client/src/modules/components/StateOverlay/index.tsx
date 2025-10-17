@@ -14,8 +14,6 @@ import {
   Error,
   RadioButtonChecked,
   WarningFilled,
-  HelpFilled,
-  CircleDash,
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
@@ -59,8 +57,6 @@ const StateOverlay: React.FC<Props> = observer(
           <CheckmarkOutline />
         )}
         {state === 'canceled' && <Error />}
-        {state === 'UNSPECIFIED' && <CircleDash />}
-        {state === 'UNKNOWN' && <HelpFilled />}
         {showStatistic && <span>{count}</span>}
       </Container>,
       container,

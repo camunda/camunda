@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.7
+
+### 🩹 Fixes
+
+- remove impossible decision instance states ([91aedb2](https://github.com/camunda/camunda/commit/91aedb28dc1d2ebe9df0bef3be1bdc7a2765bc9a))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.6
 
 ### 🚀 Enhancements

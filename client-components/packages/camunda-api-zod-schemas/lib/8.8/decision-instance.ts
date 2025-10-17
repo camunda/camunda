@@ -17,10 +17,10 @@ import {
 } from './common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
-const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION', 'UNSPECIFIED', 'UNKNOWN']);
+const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);
 type DecisionDefinitionType = z.infer<typeof decisionDefinitionTypeSchema>;
 
-const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED', 'UNSPECIFIED', 'UNKNOWN']);
+const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED']);
 type DecisionInstanceState = z.infer<typeof decisionInstanceStateSchema>;
 
 const decisionInstanceSchema = z.object({
