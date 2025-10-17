@@ -48,6 +48,7 @@ import type {
   ProcessInstance,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -158,6 +159,11 @@ describe('MetadataPopover', () => {
     });
 
     mockSearchIncidentsByProcessInstance('2251799813685294').withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchMessageSubscriptions().withSuccess({
       items: [],
       page: {totalItems: 0},
     });

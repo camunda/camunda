@@ -52,6 +52,7 @@ import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/inciden
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
+import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
 const mockIncidents = {
   count: 1,
@@ -239,6 +240,11 @@ describe('TopPanel', () => {
       page: {totalItems: 0},
     });
     mockSearchProcessInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
+
+    mockSearchMessageSubscriptions().withSuccess({
       items: [],
       page: {totalItems: 0},
     });
