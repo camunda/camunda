@@ -58,6 +58,28 @@ class CopyFromPreviousVersionStrategyTest {
   }
 
   @Test
+  void shouldCopyFromPreviousInitialized() throws IOException {
+    // given
+    final long previousVersion = 1L;
+    strategy.initializeDataDirectory(tempDir.toString(), 1, previousVersion);
+
+    // when
+
+    final long currentVersion = 2L;
+    final Path result = strategy.initializeDataDirectory(tempDir.toString(), 1, currentVersion);
+
+    // Verify initialization file was created
+    final Path initFile = result.resolve(DIRECTORY_INITIALIZED_FILE);
+    assertThat(Files.exists(initFile)).isTrue();
+
+    // Verify initialization file contents
+    final DirectoryInitializationInfo initInfo =
+        objectMapper.readValue(initFile.toFile(), DirectoryInitializationInfo.class);
+    assertThat(initInfo.initialized()).isNotNull();
+    assertThat(initInfo.initializedFrom()).isEqualTo(1);
+  }
+
+  @Test
   void shouldCopyFromLatestValidPreviousVersion() throws IOException {
     // given
     final Path dataDirectoryPrefix = tempDir.resolve("node-1");

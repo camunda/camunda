@@ -8,10 +8,11 @@
 package io.camunda.zeebe.broker.bootstrap;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,14 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
       final Path dataDirectoryPrefix, final long currentNodeVersion) {
     for (long version = currentNodeVersion - 1; version >= 0; version--) {
       final Path versionDirectory = dataDirectoryPrefix.resolve("v" + version);
-      if (Files.exists(versionDirectory) && isDirectoryInitialized(versionDirectory)) {
+      final boolean exists = Files.exists(versionDirectory);
+      final boolean directoryInitialized = isDirectoryInitialized(versionDirectory);
+      LOG.info(
+          "Checking for previous version directory at {}. File exists = {}, isDirectoryInitialized= {}",
+          versionDirectory,
+          exists,
+          directoryInitialized);
+      if (exists && directoryInitialized) {
         LOG.debug("Found valid previous version: {}", version);
         return version;
       }
@@ -106,7 +114,9 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
               if (Files.isDirectory(sourcePath)) {
                 Files.createDirectories(targetPath);
               } else {
-                Files.copy(sourcePath, targetPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(sourcePath, targetPath);
+                FileUtil.flushDirectory(targetPath.getParent()); // Verify if this is required.
+                LOG.info("Copying file {} to {}", sourcePath, targetPath);
               }
             } catch (final IOException e) {
               throw new RuntimeException("Failed to copy " + sourcePath + " to " + target, e);
@@ -123,7 +133,9 @@ public class CopyFromPreviousVersionStrategy implements DataDirectoryInitializat
             : DirectoryInitializationInfo.createdEmpty();
 
     final Path initFile = dataDirectory.resolve(DIRECTORY_INITIALIZED_FILE);
-    objectMapper.writeValue(initFile.toFile(), initInfo);
+    final var fileContent = objectMapper.writeValueAsBytes(initInfo);
+    Files.write(initFile, fileContent, StandardOpenOption.CREATE, StandardOpenOption.SYNC);
+    FileUtil.flushDirectory(dataDirectory);
     LOG.info("Written directory initialization file to {}", initFile);
   }
 }
