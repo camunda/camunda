@@ -117,6 +117,16 @@ deny[msg] {
         [concat(", ", sorted_needs), concat(", ", needs_list)])
 }
 
+warn[msg] {
+    # only enforced on workflows that opted-in
+    input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
+
+    count(get_jobs_without_printmetadata(input.jobs)) > 0
+
+    msg := sprintf("There are GitHub Actions jobs without print-metadata step! Affected job IDs: %s",
+        [concat(", ", get_jobs_without_printmetadata(input.jobs))])
+}
+
 ###########################   RULE HELPERS   ##################################
 
 get_jobs_without_timeoutminutes(jobInput) = jobs_without_timeoutminutes {
@@ -229,5 +239,31 @@ get_jobs_with_flaky_outputs(jobInput) = jobs_with_flaky_outputs {
 
         # check if job has flakyTests output
         job.outputs.flakyTests
+    }
+}
+
+get_jobs_without_printmetadata(jobInput) = jobs_without_printmetadata {
+    jobs_without_printmetadata := { job_id |
+        job := jobInput[job_id]
+
+        # not enforced on Unified CI jobs that are part of change detection control flow structure
+        job_id != "detect-changes"
+        job_id != "setup-unit-tests"
+        job_id != "check-results"
+
+        # not enforced on Unified CI jobs running after "check-results" job
+        not startswith(job_id, "deploy-")
+        not startswith(job_id, "utils-")
+
+        # not enforced on jobs that invoke other reusable workflows (instead enforced there)
+        not job.uses
+
+        # check that there is at least one step printing metadata
+        printmetadata_steps := { step |
+            step := job.steps[_]
+            step.name == "Print metadata"
+            step.uses == "./.github/actions/print-metadata"
+        }
+        count(printmetadata_steps) == 0
     }
 }
