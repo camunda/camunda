@@ -255,7 +255,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
     needs: [ detect-changes, setup-unit-tests ]
-    timeout-minutes: 25
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     steps:
