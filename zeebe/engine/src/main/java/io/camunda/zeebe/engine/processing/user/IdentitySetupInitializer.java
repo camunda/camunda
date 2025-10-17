@@ -83,6 +83,7 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
     setupAdminRole(setupRecord);
     setupRpaRole(setupRecord);
     setupConnectorsRole(setupRecord);
+    setupAppIntegrationsRole(setupRecord);
 
     initialization
         .getUsers()
@@ -228,6 +229,40 @@ public final class IdentitySetupInitializer implements StreamProcessorLifecycleA
             .setTenantId(DEFAULT_TENANT_ID)
             .setEntityType(EntityType.ROLE)
             .setEntityId(connectorsRoleId));
+  }
+
+  private static void setupAppIntegrationsRole(final IdentitySetupRecord setupRecord) {
+    final var appIntegrationsRoleId = DefaultRole.APPS_INTEGRATION.getId();
+    setupRecord.addRole(
+        new RoleRecord().setRoleId(appIntegrationsRoleId).setName("App Integrations"));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(appIntegrationsRoleId)
+            .setResourceType(AuthorizationResourceType.PROCESS_DEFINITION)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(
+                Set.of(
+                    PermissionType.READ_PROCESS_DEFINITION,
+                    PermissionType.CREATE_PROCESS_INSTANCE,
+                    PermissionType.READ_PROCESS_INSTANCE,
+                    PermissionType.UPDATE_PROCESS_INSTANCE,
+                    PermissionType.READ_USER_TASK,
+                    PermissionType.UPDATE_USER_TASK)));
+    setupRecord.addAuthorization(
+        new AuthorizationRecord()
+            .setOwnerType(AuthorizationOwnerType.ROLE)
+            .setOwnerId(appIntegrationsRoleId)
+            .setResourceType(AuthorizationResourceType.DOCUMENT)
+            .setResourceMatcher(WILDCARD.getMatcher())
+            .setResourceId(WILDCARD.getResourceId())
+            .setPermissionTypes(Set.of(PermissionType.CREATE)));
+    setupRecord.addTenantMember(
+        new TenantRecord()
+            .setTenantId(DEFAULT_TENANT_ID)
+            .setEntityType(EntityType.ROLE)
+            .setEntityId(appIntegrationsRoleId));
   }
 
   private static void setupRpaRole(final IdentitySetupRecord setupRecord) {
