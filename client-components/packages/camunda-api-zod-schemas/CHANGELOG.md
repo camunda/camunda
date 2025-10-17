@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.9
+
+### 🚀 Enhancements
+
+- use aliased incidents search request/response types ([de6fa21](https://github.com/camunda/camunda/commit/b6e683e959fdb7727cf53363e3eba95ec8a77646))
+
 ## v0.0.8
 
 ### 🚀 Enhancements
