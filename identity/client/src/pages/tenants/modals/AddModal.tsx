@@ -16,7 +16,7 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
-import { isValidTenantId } from "src/utility/isValidId.ts";
+import { isValidTenantId } from "src/utility/validate";
 
 type FormData = {
   name: string;

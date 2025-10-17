@@ -19,3 +19,9 @@ export const isValidId = (id: string): boolean =>
  */
 export const isValidTenantId = (id: string): boolean =>
   /^[\w\.-]{1,31}$/.test(id);
+
+export function isValidEmail(email: string): boolean {
+  return /^(([^<>()[\].,;:\s@"]+(\.[^<>()[\].,;:\s@"]+)*)|(".+"))@(([^<>()[\].,;:\s@"]+\.)+[^<>()[\].,;:\s@"]{2,})$/i.test(
+    email,
+  );
+}

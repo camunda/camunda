@@ -14,7 +14,7 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import { createRole } from "src/utility/api/roles";
 import { useNotifications } from "src/components/notifications";
-import { isValidId } from "src/utility/isValidId";
+import { isValidId } from "src/utility/validate";
 
 type FormData = {
   roleName: string;

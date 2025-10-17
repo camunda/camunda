@@ -13,8 +13,7 @@ import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createUser } from "src/utility/api/users";
-import { isValidEmail } from "src/utility/isValidEmail";
-import { isValidId } from "src/utility/isValidId.ts";
+import { isValidEmail, isValidId } from "src/utility/validate";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("users");
