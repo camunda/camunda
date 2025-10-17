@@ -49,10 +49,16 @@ global:
         enabled: true
       console:
         redirectUrl: https://{{ include "ingress.domain" . }}/console
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-console-client-token
       orchestration:
         redirectUrl: https://{{ include "ingress.domain" . }}/orchestration
       optimize:
         redirectUrl: https://{{ include "ingress.domain" . }}/optimize
+        secret:
+          existingSecret: camunda-credentials
+          existingSecretKey: identity-optimize-client-token
       webModeler:
         redirectUrl: https://{{ include "ingress.domain" . }}/modeler
     keycloak:
@@ -78,6 +84,10 @@ camunda-platform:
     security:
       authentication:
         method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-connectors-client-token
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
@@ -174,6 +184,10 @@ camunda-platform:
     security:
       authentication:
         method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-orchestration-client-token
     data:
       disk:
         ## Adjustement required due to PVC size
@@ -296,6 +310,10 @@ camunda-platform:
     security:
       authentication:
         method: oidc
+        oidc:
+          secret:
+            existingSecret: camunda-credentials
+            existingSecretKey: identity-optimize-client-token
     env:
     - name: JAVA_OPTS
       value: "-Xms512m -Xmx512m"
