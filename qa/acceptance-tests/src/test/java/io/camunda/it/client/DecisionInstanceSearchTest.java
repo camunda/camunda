@@ -219,7 +219,7 @@ class DecisionInstanceSearchTest {
   @Test
   public void shouldRetrieveDecisionInstanceByRootDecisionDefinitionKey(
       final CamundaClient camundaClient) {
-    // when
+    // given
     final long rootDecisionDefinitionKey =
         EVALUATED_DECISIONS
             .get(DECISION_DEFINITION_ID_1)
@@ -229,6 +229,7 @@ class DecisionInstanceSearchTest {
     final long decisionInstanceKey =
         EVALUATED_DECISIONS.get(DECISION_DEFINITION_ID_1).getDecisionEvaluationKey();
     final String decisionInstanceId = "%d-%d".formatted(decisionInstanceKey, 1);
+    // when
     final var result =
         camundaClient
             .newDecisionInstanceSearchRequest()
