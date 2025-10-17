@@ -82,7 +82,9 @@ const DecisionInstance: React.FC = () => {
           bottomPanel={
             <VariablesPanel
               decisionEvaluationInstanceKey={decisionInstanceId}
-              decisionDefinitionType={data?.decisionDefinitionType ?? 'UNKNOWN'}
+              decisionDefinitionType={
+                data?.decisionDefinitionType ?? 'DECISION_TABLE'
+              }
             />
           }
           type="decision"

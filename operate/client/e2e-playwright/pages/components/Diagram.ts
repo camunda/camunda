@@ -25,8 +25,8 @@ export class Diagram {
     });
     this.diagramSpinner = page.getByTestId('diagram-spinner');
     this.downloadXMLButton = page.getByRole('button', {
-        name: /Download XML/i,
-      });
+      name: /Download XML/i,
+    });
   }
 
   async moveCanvasHorizontally(dx: number) {

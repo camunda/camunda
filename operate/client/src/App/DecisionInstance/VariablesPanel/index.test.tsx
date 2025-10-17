@@ -33,7 +33,7 @@ describe('<VariablesPanel />', () => {
     render(
       <VariablesPanel
         decisionEvaluationInstanceKey="1"
-        decisionDefinitionType="UNKNOWN"
+        decisionDefinitionType="DECISION_TABLE"
       />,
       {wrapper: Wrapper},
     );

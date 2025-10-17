@@ -110,7 +110,8 @@ test.describe('decision instance page', () => {
       URL_API_PATTERN,
       mockResponses({
         decisionInstanceDetail: mockEvaluatedDecisionInstanceWithoutPanels,
-        decisionInstancesSearch: mockEvaluatedDecisionInstancesSearchWithoutPanels,
+        decisionInstancesSearch:
+          mockEvaluatedDecisionInstancesSearchWithoutPanels,
         xml: mockEvaluatedXmlWithoutPanels,
       }),
     );

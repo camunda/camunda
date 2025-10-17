@@ -12,8 +12,6 @@ import {
   WarningFilled as BaseWarningFilled,
   CheckmarkOutline as BaseCheckmarkOutline,
   RadioButtonChecked as BaseRadioButtonChecked,
-  HelpFilled as BaseHelpFilled,
-  CircleDash as BaseCircleDash,
 } from '@carbon/react/icons';
 
 const WarningFilled = styled(BaseWarningFilled)`
@@ -28,18 +26,4 @@ const RadioButtonChecked = styled(BaseRadioButtonChecked)`
   fill: var(--cds-support-success);
 `;
 
-const HelpFilled = styled(BaseHelpFilled)`
-  fill: var(--cds-icon-primary);
-`;
-
-const CircleDash = styled(BaseCircleDash)`
-  fill: var(--cds-icon-primary);
-`;
-
-export {
-  WarningFilled,
-  CheckmarkOutline,
-  RadioButtonChecked,
-  HelpFilled,
-  CircleDash,
-};
+export {WarningFilled, CheckmarkOutline, RadioButtonChecked};
