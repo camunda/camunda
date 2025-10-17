@@ -285,7 +285,8 @@ public class SwimMembershipProtocol
     // If the term has been increased, update the member and record a gossip event.
     else if (member.incarnationNumber() > swimMember.getIncarnationNumber()) {
       // If the member's version has changed, remove the old member and add the new member.
-      if (!Objects.equals(member.version(), swimMember.version())) {
+      if (!Objects.equals(member.version(), swimMember.version())
+          || (member.id().getIdVersion() > swimMember.id().getIdVersion())) {
         members.remove(member.id());
         randomMembers.remove(swimMember);
         post(new GroupMembershipEvent(GroupMembershipEvent.Type.MEMBER_REMOVED, swimMember.copy()));
