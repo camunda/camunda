@@ -15,9 +15,11 @@
  */
 package io.camunda.zeebe.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.client.api.command.ProblemException;
+import io.camunda.zeebe.client.api.response.ActivateJobsResponse;
 import io.camunda.zeebe.client.protocol.rest.ProblemDetail;
 import io.camunda.zeebe.client.util.ClientRestTest;
 import io.camunda.zeebe.client.util.RestGatewayPaths;
@@ -51,5 +53,21 @@ public final class ExceptionHandlingRestTest extends ClientRestTest {
             () -> client.newTopologyRequest().useRest().send().join(1L, TimeUnit.SECONDS))
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
+  }
+
+  // regression test for https://github.com/camunda/camunda/issues/39675
+  @Test
+  public void shouldIgnoreUnknownProperties() {
+    // given / a response with an unknown property "kind" in a job
+    gatewayService.onActivateJobsRequest(
+        "{\"jobs\": [{ \"type\": \"type\", \"kind\": \"BPMN_ELEMENT\"}]}");
+
+    // when / then
+    final ActivateJobsResponse activateJobsResponse =
+        client.newActivateJobsCommand().jobType("type").maxJobsToActivate(1).send().join();
+    assertThat(activateJobsResponse).isNotNull();
+    assertThat(activateJobsResponse.getJobs())
+        .hasSize(1)
+        .allSatisfy(job -> assertThat(job.getType()).isEqualTo("type"));
   }
 }
