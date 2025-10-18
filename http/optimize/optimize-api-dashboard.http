@@ -1,0 +1,233 @@
+
+
+
+############################--------GET DAHSBOARD IDS-------##################################
+
+### Get Dashboards by Collection ID 200
+# @name Get Dashboards by Collection ID
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/dashboard?collectionId=df2a36cf-9c18-4f72-8743-210ea0076214
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Dashboard IDs should be retrieved successfully", function () {
+    // Ensure status is 200
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+
+    // Parse the response body if necessary
+    let dashboards = response.body;
+    if (typeof dashboards === "string") {
+      dashboards = JSON.parse(dashboards);
+    }
+
+    // Check that response is an array
+    client.assert(Array.isArray(dashboards), "Response body is not an array");
+
+    // Store the first dashboard ID if it exists
+   if (dashboards.length >= 2) {
+    client.global.set("DASHBOARD_ID_1", dashboards[0].id);
+    client.global.set("DASHBOARD_ID_2", dashboards[1].id);
+} else if (dashboards.length === 1) {
+    client.global.set("DASHBOARD_ID_1", dashboards[0].id);
+}
+
+  });
+%}
+
+
+### Get Dashboards by Collection ID - Unauthorized 401
+# @name Get Dashboards by Collection ID - Unauthorized
+GET {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/dashboard?collectionId=df2a36cf-9c18-4f72-8743-210ea0076214
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalid_or_missing_token
+
+> {%
+  client.test("Unauthorized access should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+
+    let body = response.body;
+    if (typeof body === "string") {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        // not a JSON response, ignore
+      }
+    }
+
+    if (body && typeof body === "object" && body.message) {
+      console.log("Error message:", body.message);
+    }
+  });
+%}
+
+
+
+
+
+
+
+
+
+############################--------DELETE DAHSBOARD-------##################################
+
+### Delete Dashboard by ID 200
+# @name Delete Dashboard by ID Success
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/dashboard/27d8d7ad-f996-4b0f-b25f-528eff2587ed
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Dashboard should be deleted successfully", function () {
+    // Make sure the dashboard ID exists
+    client.assert(typeof client.global.get("DASHBOARD_ID") !== "undefined", "No dashboard ID available to delete");
+    // Accept 200 or 204 as success
+    client.assert(response.status === 204 || response.status === 200, "Expected status 204 or 200 but got " + response.status);
+  });
+%}
+
+
+### Delete Dashboard by ID - Unauthorized 401
+# @name Delete Dashboard - Unauthorized
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/dashboard/{{DASHBOARD_ID}}
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer INVALID_TOKEN
+
+> {%
+  client.test("Unauthorized deletion attempt should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+  });
+%}
+
+
+### Delete Dashboard by ID - Not Found 404
+# @name Delete Dashboard - Not Found
+DELETE {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/dashboard/00000000-0000-0000-0000-000000000000
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+> {%
+  client.test("Deleting non-existing dashboard should return 404", function () {
+    client.assert(response.status === 404, "Expected status 404 but got " + response.status);
+  });
+%}
+
+
+
+
+
+
+############################--------EXPORT DAHSBOARD DEFINITIONS-------##################################
+
+### Export Dashboard Definitions - Success 200
+# @name Export Dashboard Definitions - Success
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/dashboard/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+    "5fe0324a-a3e1-498c-8e32-91f5e3d10ba3"
+]
+
+> {%
+client.test("Dashboard definitions should be exported successfully", function () {
+    client.assert(response.status === 200, "Expected status 200 but got " + response.status);
+
+    let exported = response.body;
+    if (typeof exported === "string") {
+        exported = JSON.parse(exported);
+    }
+
+    client.assert(Array.isArray(exported), "Response body is not an array");
+    client.assert(exported.length > 0, "No dashboards were exported");
+});
+%}
+
+
+
+### Export Dashboard Definitions - Unauthorized 401
+# @name Export Dashboard Definitions - Unauthorized
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/dashboard/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer invalid_token_123
+
+[
+  "5fe0324a-a3e1-498c-8e32-91f5e3d10ba3"
+]
+
+> {%
+client.test("Unauthorized export should return 401", function () {
+    client.assert(response.status === 401, "Expected status 401 but got " + response.status);
+
+    // Optional: log error body if available
+    let body = response.body;
+    if (typeof body === "string") {
+        try {
+            body = JSON.parse(body);
+        } catch (e) {
+            // ignore non-JSON body
+        }
+    }
+    if (body && body.message) {
+        console.log("401 error message:", body.message);
+    }
+});
+%}
+
+
+
+### Export Dashboard Definitions - Not Found 404
+# @name Export Dashboard Definitions - Not Found
+POST {{OPTIMIZE_REST_ADDRESS_LOCAL}}/api/public/export/dashboard/definition/json
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{TOKEN}}
+
+[
+  "nonexistent-dashboard-id-123456"
+]
+
+> {%
+client.test("Non-existent dashboard export should return 404", function () {
+    client.assert(response.status === 404, "Expected status 404 but got " + response.status);
+
+    let body = response.body;
+    if (typeof body === "string") {
+        try {
+            body = JSON.parse(body);
+        } catch (e) {
+            // not JSON, ignore
+        }
+    }
+
+    if (body && body.message) {
+        console.log("404 error message:", body.message);
+    }
+});
+%}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
