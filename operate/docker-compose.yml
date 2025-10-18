@@ -1,4 +1,14 @@
 services:
+  postgres:
+    container_name: postgres
+    image: postgres:17.5-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: camunda
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: ""
+      POSTGRES_HOST_AUTH_METHOD: trust
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
     container_name: elasticsearch

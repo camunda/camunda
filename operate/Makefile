@@ -1,5 +1,45 @@
 ## Environment
 
+# Common security and initialization settings
+COMMON_SECURITY_ENV = \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME=demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD=demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME=Demo \
+	CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL=demo@example.com \
+	CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0=demo \
+	CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=true \
+	CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
+	CAMUNDA_BACKUP_WEBAPPS_ENABLED=false \
+	CAMUNDA_DATA_SECONDARYSTORAGE_TYPE=rdbms
+
+.PHONY: psg
+psg: rdbms-build psg-run
+
+.PHONY: psg-run
+psg-run:
+	docker compose -f docker-compose.yml up -d postgres \
+	&& $(COMMON_SECURITY_ENV) \
+	CAMUNDA_DATABASE_URL=jdbc:postgresql:camunda \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity,consolidated-auth,rdbmsPostgres
+
+.PHONY: h2
+h2: rdbms-build h2-run
+
+.PHONY: rdbms-build
+rdbms-build:
+	docker compose -f docker-compose.yml up -d elasticsearch \
+    && mvn install -DskipTests=true -Dskip.fe.build=false -DskipChecks -DskipQaBuild
+
+.PHONY: h2-run
+h2-run:
+	$(COMMON_SECURITY_ENV) \
+	CAMUNDA_DATABASE_URL=jdbc:h2:mem:camunda \
+	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
+	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity,consolidated-auth,rdbmsH2
+
 .PHONY: env-up
 env-up:
 	docker compose -f docker-compose.yml up -d elasticsearch \
