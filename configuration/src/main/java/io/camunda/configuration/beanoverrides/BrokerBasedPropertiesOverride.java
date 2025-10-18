@@ -581,6 +581,8 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "createSchema", database.isCreateSchema());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {

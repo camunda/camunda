@@ -33,6 +33,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  /** Whether to create the schema automatically */
+  private boolean createSchema = true;
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -71,6 +74,19 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public boolean isCreateSchema() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix() + ".create-schema",
+        createSchema,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        Set.of("zeebe.broker.exporters.camundaexporter.args.createSchema"));
+  }
+
+  public void setCreateSchema(final boolean createSchema) {
+    this.createSchema = createSchema;
   }
 
   public Security getSecurity() {
