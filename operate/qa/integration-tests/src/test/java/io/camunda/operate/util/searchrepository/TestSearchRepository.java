@@ -65,8 +65,6 @@ public interface TestSearchRepository {
 
   List<VariableEntity> getVariablesByProcessInstanceKey(String index, Long processInstanceKey);
 
-  boolean ilmPolicyExists(String policyName) throws IOException;
-
   List<BatchOperationEntity> getBatchOperationEntities(String indexName, List<String> ids)
       throws IOException;
 

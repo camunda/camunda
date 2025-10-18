@@ -8,7 +8,6 @@
 package io.camunda.tasklist.os;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
 import io.camunda.tasklist.exceptions.TasklistRuntimeException;
@@ -51,7 +50,6 @@ import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
 import org.apache.http.ssl.TrustStrategy;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -121,102 +119,6 @@ public class OpenSearchConnector {
           e);
     }
     return openSearchClient;
-  }
-
-  @Bean
-  public RestClient tasklistOsRestClient() {
-    osClientRepository.load(tasklistProperties.getOpenSearch().getInterceptorPlugins());
-    final var httpHost = getHttpHost(tasklistProperties.getOpenSearch());
-    return RestClient.builder(httpHost)
-        .setHttpClientConfigCallback(
-            b ->
-                configureApacheHttpClient(
-                    b,
-                    tasklistProperties.getOpenSearch(),
-                    osClientRepository.asRequestInterceptor()))
-        .build();
-  }
-
-  @Bean
-  public OpenSearchAsyncClient tasklistOsAsyncClient() {
-    osClientRepository.load(tasklistProperties.getOpenSearch().getInterceptorPlugins());
-    final OpenSearchAsyncClient openSearchClient =
-        createAsyncOsClient(tasklistProperties.getOpenSearch(), osClientRepository);
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error(
-                  "Error in getting health status from localhost:"
-                      + tasklistProperties.getOpenSearch().getPort(),
-                  e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new RuntimeException(e);
-    }
-    return openSearchClient;
-  }
-
-  private OpenSearchAsyncClient createAsyncOsClient(
-      final OpenSearchProperties osConfig, final PluginRepository pluginRepository) {
-    LOGGER.debug("Creating Async OpenSearch connection...");
-    LOGGER.debug("Creating OpenSearch connection...");
-    if (hasAwsCredentials()) {
-      return getAwsAsyncClient(osConfig);
-    }
-    final HttpHost host = getHttpHostForClient5(osConfig);
-    final ApacheHttpClient5TransportBuilder builder =
-        ApacheHttpClient5TransportBuilder.builder(host);
-
-    builder.setHttpClientConfigCallback(
-        httpClientBuilder -> {
-          configureApacheHttpClient5(
-              httpClientBuilder, osConfig, pluginRepository.asRequestInterceptor());
-          return httpClientBuilder;
-        });
-
-    builder.setRequestConfigCallback(
-        requestConfigBuilder -> {
-          setTimeouts(requestConfigBuilder, osConfig);
-          return requestConfigBuilder;
-        });
-
-    final JacksonJsonpMapper jsonpMapper = new JacksonJsonpMapper();
-    jsonpMapper.objectMapper().registerModule(new JavaTimeModule());
-    builder.setMapper(jsonpMapper);
-
-    final OpenSearchTransport transport = builder.build();
-    final OpenSearchAsyncClient openSearchAsyncClient = new OpenSearchAsyncClient(transport);
-
-    final CompletableFuture<HealthResponse> healthResponse;
-    try {
-      healthResponse = openSearchAsyncClient.cluster().health();
-      healthResponse.whenComplete(
-          (response, e) -> {
-            if (e != null) {
-              LOGGER.error(
-                  "Error in getting health status from localhost:"
-                      + tasklistProperties.getOpenSearch().getPort(),
-                  e);
-            } else {
-              LOGGER.info("OpenSearch cluster health: {}", response.status());
-            }
-          });
-    } catch (final IOException e) {
-      throw new TasklistRuntimeException(e);
-    }
-
-    if (!checkHealth(openSearchAsyncClient)) {
-      LOGGER.warn("OpenSearch cluster is not accessible");
-    } else {
-      LOGGER.debug("OpenSearch connection was successfully created.");
-    }
-    return openSearchAsyncClient;
   }
 
   protected OpenSearchClient createOsClient(

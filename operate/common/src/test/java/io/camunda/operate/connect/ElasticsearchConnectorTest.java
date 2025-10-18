@@ -16,8 +16,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -63,30 +61,6 @@ class ElasticsearchConnectorTest {
     connector.createEsClient(esProperties, mock());
 
     verify(connector, times(1)).checkHealth(any(RestHighLevelClient.class));
-  }
-
-  @Test
-  void shouldApplyRequestInterceptorsInOrderForNativeRestClient() {
-    final var context = new BasicHttpContext();
-    final var operateProperties = new OperateProperties();
-    final PluginRepository pluginRepository = new PluginRepository();
-    pluginRepository.load(
-        List.of(new PluginConfiguration("plg1", TestPlugin.class.getName(), null)));
-    final var connector = spy(new ElasticsearchConnector(operateProperties));
-    doReturn(true).when(connector).checkHealth(any(ElasticsearchClient.class));
-    connector.setEsClientRepository(pluginRepository);
-    final var client = connector.elasticsearchClient();
-
-    // when
-    ((RestClientTransport) client._transport())
-        .restClient()
-        .getHttpClient()
-        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
-
-    // then
-    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
-
-    assertThat(reqWrapper.getFirstHeader("foo").getValue()).isEqualTo("bar");
   }
 
   // TODO: this test will may be removed once RestHighLevelClient is gone
