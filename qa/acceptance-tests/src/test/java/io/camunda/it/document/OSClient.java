@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.it.backup;
+package io.camunda.it.document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -20,15 +20,18 @@ import org.apache.http.HttpHost;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.IndexRequest;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.transport.OpenSearchTransport;
 
-public class OSDBClientBackup implements BackupDBClient {
+public class OSClient implements DocumentClient {
   private final org.opensearch.client.RestClient osRestClient;
   private final OpenSearchClient opensearchClient;
   private final OpenSearchTransport transport;
 
-  public OSDBClientBackup(final String url) {
+  public OSClient(final String url) {
     osRestClient = org.opensearch.client.RestClient.builder(HttpHost.create(url)).build();
     transport =
         new org.opensearch.client.transport.rest_client.RestClientTransport(
@@ -88,6 +91,59 @@ public class OSDBClientBackup implements BackupDBClient {
   @Override
   public List<String> cat() throws IOException {
     return opensearchClient.cat().indices().valueBody().stream().map(IndicesRecord::index).toList();
+  }
+
+  @Override
+  public void index(String indexName, String documentId, Object document) throws IOException {
+    final var indexRequest =
+        IndexRequest.of(i -> i.index(indexName).id(documentId).document(document));
+
+    final var response = opensearchClient.index(indexRequest);
+
+    final String result = response.result().toString().toLowerCase();
+    if (!"created".equals(result) && !"updated".equals(result)) {
+      throw new IOException(
+          "Failed to index document with ID: " + documentId + ", result: " + response.result());
+    }
+  }
+
+  @Override
+  public void refresh(String indexName) throws IOException {
+    final var refreshRequest = RefreshRequest.of(r -> r.index(indexName));
+    final var response = opensearchClient.indices().refresh(refreshRequest);
+
+    // Check if refresh was successful
+    if (response.shards() != null && response.shards().failed().intValue() > 0) {
+      throw new IOException(
+          "Refresh failed for index: "
+              + indexName
+              + ", failed shards: "
+              + response.shards().failed());
+    }
+  }
+
+  @Override
+  public void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException {
+    if (documents.isEmpty()) {
+      return; // Nothing to index
+    }
+
+    final var bulkBuilder = new BulkRequest.Builder();
+
+    for (final var doc : documents) {
+      bulkBuilder.operations(
+          op -> op.index(idx -> idx.index(indexName).id(doc.id()).document(doc.document())));
+    }
+
+    final var bulkRequest = bulkBuilder.build();
+    final var response = opensearchClient.bulk(bulkRequest);
+
+    // Check for errors in bulk response
+    if (response.errors()) {
+      final var errorCount = response.items().size();
+      throw new IOException(
+          "Bulk indexing failed for " + errorCount + " documents in index: " + indexName);
+    }
   }
 
   @Override
