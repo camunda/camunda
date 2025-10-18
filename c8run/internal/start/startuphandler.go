@@ -18,7 +18,7 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-func printSystemInformation(javaVersion, javaHome, javaOpts string) {
+func printSystemInformation(javaVersion, javaHome, javaOpts string, usingElasticsearch bool) {
 	fmt.Println("")
 	fmt.Println("")
 	fmt.Println("System Version Information")
@@ -32,7 +32,9 @@ func printSystemInformation(javaVersion, javaHome, javaOpts string) {
 	fmt.Printf("  JAVA_OPTS: %s\n", javaOpts)
 	fmt.Println("--------------------------")
 	fmt.Println("Logging Details:")
-	fmt.Println("  Elasticsearch: ./log/elasticsearch.log")
+	if usingElasticsearch {
+		fmt.Println("  Elasticsearch: ./log/elasticsearch.log")
+	}
 	fmt.Println("  Connectors: ./log/connectors.log")
 	fmt.Println("  Camunda: ./log/camunda.log")
 	fmt.Println("--------------------------")
@@ -224,9 +226,24 @@ func (s *StartupHandler) StartCommand(wg *sync.WaitGroup, ctx context.Context, s
 	}
 	javaOpts = overrides.AdjustJavaOpts(javaOpts, settings)
 
-	printSystemInformation(javaVersion, javaHome, javaOpts)
-	elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
-	if !settings.DisableElasticsearch {
+	// Check if Elasticsearch should be started (only if secondary-storage.type is elasticsearch)
+	shouldStartElasticsearch := !settings.DisableElasticsearch
+	if shouldStartElasticsearch {
+		// Check if the config specifies RDBMS instead of Elasticsearch
+		configPath := filepath.Join(parentDir, "configuration", "application.yaml")
+		if configData, err := os.ReadFile(configPath); err == nil {
+			configStr := string(configData)
+			// Simple check: if config contains "type: rdbms" in secondary-storage section, don't start ES
+			if strings.Contains(configStr, "type: rdbms") {
+				shouldStartElasticsearch = false
+				log.Info().Msg("Detected RDBMS configuration, skipping Elasticsearch startup")
+			}
+		}
+	}
+
+	printSystemInformation(javaVersion, javaHome, javaOpts, shouldStartElasticsearch)
+	if shouldStartElasticsearch {
+		elasticHealthEndpoint := "http://localhost:9200/_cluster/health?wait_for_status=green&wait_for_active_shards=all&wait_for_no_initializing_shards=true&timeout=120s"
 		s.ProcessHandler.AttemptToStartProcess(processInfo.Elasticsearch.PidPath, "Elasticsearch", func() {
 			elasticsearchCmd := c8.ElasticsearchCmd(ctx, processInfo.Elasticsearch.Version, parentDir)
 			elasticsearchLogFilePath := filepath.Join(parentDir, "log", "elasticsearch.log")

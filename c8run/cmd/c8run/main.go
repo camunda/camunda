@@ -161,7 +161,7 @@ func createStartFlagSet(settings *types.C8RunSettings) *flag.FlagSet {
 	startFlagSet.StringVar(&settings.Keystore, "keystore", "", "Provide a JKS filepath to enable TLS")
 	startFlagSet.StringVar(&settings.KeystorePassword, "keystorePassword", "", "Provide a password to unlock your JKS keystore")
 	startFlagSet.StringVar(&settings.LogLevel, "log-level", "", "Adjust the log level of Camunda")
-	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", false, "Do not start or stop Elasticsearch (still requires Elasticsearch to be running outside of c8run)")
+	startFlagSet.BoolVar(&settings.DisableElasticsearch, "disable-elasticsearch", true, "Do not start or stop Elasticsearch (disabling will enable H2)")
 	startFlagSet.BoolVar(&settings.Docker, "docker", false, "Run Camunda from docker-compose.")
 	startFlagSet.StringVar(&settings.Username, "username", "demo", "Change the first users username (default: demo)")
 	startFlagSet.StringVar(&settings.Password, "password", "demo", "Change the first users password (default: demo)")
