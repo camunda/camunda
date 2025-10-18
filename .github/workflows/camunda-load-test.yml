@@ -156,7 +156,7 @@ jobs:
         name: Build Camunda Platform
         id: build-camunda
         with:
-          maven-extra-args: -PskipFrontendBuild -P\!include-optimize -Dmaven.test.skip=true
+          maven-extra-args: -PskipFrontendBuild -P\!include-optimize
       - uses: google-github-actions/auth@v2
         id: auth
         with:
