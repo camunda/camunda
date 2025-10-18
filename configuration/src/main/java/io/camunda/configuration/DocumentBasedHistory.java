@@ -14,6 +14,7 @@ import java.util.Set;
 public class DocumentBasedHistory {
 
   private static final boolean DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED = true;
+  private static final String DEFAULT_HISTORY_POLICY_NAME = "camunda-retention-policy";
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -23,6 +24,9 @@ public class DocumentBasedHistory {
   private final String prefix;
 
   private boolean processInstanceEnabled = DEFAULT_HISTORY_PROCESS_INSTANCE_ENABLED;
+
+  /** Defines the name of the created and applied ILM policy. */
+  private String policyName = DEFAULT_HISTORY_POLICY_NAME;
 
   public DocumentBasedHistory(final String databaseName) {
     prefix = "camunda.data.secondary-storage.%s.history".formatted(databaseName);
@@ -39,5 +43,24 @@ public class DocumentBasedHistory {
 
   public void setProcessInstanceEnabled(final boolean processInstanceEnabled) {
     this.processInstanceEnabled = processInstanceEnabled;
+  }
+
+  public String getPolicyName() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        prefix + ".policy-name",
+        policyName,
+        String.class,
+        BackwardsCompatibilityMode.SUPPORTED_ONLY_IF_VALUES_MATCH,
+        legacyPolicyNameProperties());
+  }
+
+  public void setPolicyName(final String policyName) {
+    this.policyName = policyName;
+  }
+
+  private Set<String> legacyPolicyNameProperties() {
+    return Set.of(
+        "camunda.database.retention.policyName",
+        "zeebe.broker.exporters.camundaexporter.args.history.retention.policyName");
   }
 }

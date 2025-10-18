@@ -581,6 +581,8 @@ public class BrokerBasedPropertiesOverride {
 
     setArg(
         args, "history.processInstanceEnabled", database.getHistory().isProcessInstanceEnabled());
+
+    setArg(args, "history.retention.policyName", database.getHistory().getPolicyName());
   }
 
   private void populateRdbmsExporter(final BrokerBasedProperties override) {
