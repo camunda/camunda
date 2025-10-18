@@ -10029,24 +10029,24 @@ components:
       type: object
       nullable: true
       properties:
-          denied:
-            type: boolean
-            description: >
-              Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
-                For example, a user task listener can deny the completion of a task by setting this flag to true.
-                In this example, the completion of a task is represented by a job that the worker can complete as denied.
-                As a result, the completion request is rejected and the task remains active.
-                Defaults to false.
-              nullable: true
-          deniedReason:
-              type: string
-              description: The reason provided by the user task listener for denying the work.
-              nullable: true
-          corrections:
-              $ref: "#/components/schemas/JobResultCorrections"
-          type:
-            type: string
-            example: userTask
+        denied:
+          type: boolean
+          description: >
+            Indicates whether the worker denies the work, i.e. explicitly doesn't approve it.
+            For example, a user task listener can deny the completion of a task by setting this flag to true.
+            In this example, the completion of a task is represented by a job that the worker can complete as denied.
+            As a result, the completion request is rejected and the task remains active.
+            Defaults to false.
+          nullable: true
+        deniedReason:
+          type: string
+          description: The reason provided by the user task listener for denying the work.
+          nullable: true
+        corrections:
+          $ref: "#/components/schemas/JobResultCorrections"
+        type:
+          type: string
+          example: userTask
     JobResultCorrections:
       type: object
       description: |
@@ -10105,24 +10105,24 @@ components:
       type: object
       nullable: true
       properties:
-            activateElements:
-              type: array
-              description: Indicates which elements need to be activated in the ad-hoc subprocess.
-              items:
-                $ref: "#/components/schemas/JobResultActivateElement"
-            isCompletionConditionFulfilled:
-              type: boolean
-              description: Indicates whether the completion condition of the ad-hoc subprocess is fulfilled.
-              default: false
-              nullable: false
-            isCancelRemainingInstances:
-              type: boolean
-              description: Indicates whether the remaining instances of the ad-hoc subprocess should be canceled.
-              default: false
-              nullable: false
-            type:
-              type: string
-              example: adHocSubProcess
+        activateElements:
+          type: array
+          description: Indicates which elements need to be activated in the ad-hoc subprocess.
+          items:
+            $ref: "#/components/schemas/JobResultActivateElement"
+        isCompletionConditionFulfilled:
+          type: boolean
+          description: Indicates whether the completion condition of the ad-hoc subprocess is fulfilled.
+          default: false
+          nullable: false
+        isCancelRemainingInstances:
+          type: boolean
+          description: Indicates whether the remaining instances of the ad-hoc subprocess should be canceled.
+          default: false
+          nullable: false
+        type:
+          type: string
+          example: adHocSubProcess
     JobResultActivateElement:
       description: >
         Instruction to activate a single BPMN element within an ad‑hoc sub‑process,
@@ -11717,37 +11717,29 @@ components:
           allOf:
             - $ref: "#/components/schemas/ElementId"
     ProcessInstanceCreationRuntimeInstruction:
-      type: object
-      description: Runtime instructions
-      required:
-        - type
-      properties:
-        type:
-          description: The type of the runtime instruction
-          type: string
-          enum:
-            - TERMINATE_PROCESS_INSTANCE
-          oneOf:
-            - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
       discriminator:
         propertyName: type
         mapping:
           TERMINATE_PROCESS_INSTANCE: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
+      oneOf:
+        - $ref: "#/components/schemas/ProcessInstanceCreationTerminateInstruction"
     ProcessInstanceCreationTerminateInstruction:
-      allOf:
-        - $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
-        - type: object
+      type: object
+      description: |
+        Terminates the process instance after a specific BPMN element is completed or terminated.
+      required:
+        - afterElementId
+      properties:
+        type:
+          description: The type of the runtime instruction
+          type: string
+          example: TERMINATE_PROCESS_INSTANCE
+        afterElementId:
           description: |
-            Terminates the process instance after a specific BPMN element is completed or terminated.
-          required:
-            - afterElementId
-          properties:
-            afterElementId:
-              description: |
-                The ID of the element that, once completed or terminated, will cause the process to be terminated.
-              example: Activity_106kosb
-              allOf:
-                - $ref: "#/components/schemas/ElementId"
+            The ID of the element that, once completed or terminated, will cause the process to be terminated.
+          example: Activity_106kosb
+          allOf:
+            - $ref: "#/components/schemas/ElementId"
     CreateProcessInstanceResult:
       x-semantic-provider:
         - processInstanceKey
