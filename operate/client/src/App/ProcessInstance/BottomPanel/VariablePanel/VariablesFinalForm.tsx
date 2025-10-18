@@ -43,7 +43,7 @@ const VariablesFinalForm: React.FC<Props> = ({scopeId}) => {
       render={(props) => <VariablesForm {...props} />}
       onSubmit={async (values, form) => {
         const {initialValues} = form.getState();
-        const isNewVariable = initialValues.name === '';
+        const isNewVariable = initialValues?.name === '';
         const {name, value} = values;
 
         try {

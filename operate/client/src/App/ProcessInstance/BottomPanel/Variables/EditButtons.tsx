@@ -21,7 +21,7 @@ const EditButtons: React.FC = () => {
   const nameError = useFieldError('name');
   const valueError = useFieldError('value');
   const errorMessage = getError(
-    initialValues.name === '' ? nameError : undefined,
+    initialValues?.name === '' ? nameError : undefined,
     valueError,
   );
 
@@ -51,7 +51,7 @@ const EditButtons: React.FC = () => {
           aria-label="Save variable"
           tooltipPosition="left"
           disabled={
-            initialValues.value === values.value ||
+            initialValues?.value === values?.value ||
             validating ||
             hasValidationErrors ||
             errorMessage !== undefined
