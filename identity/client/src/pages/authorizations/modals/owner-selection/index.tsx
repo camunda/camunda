@@ -23,6 +23,7 @@ type SelectionProps = {
   onChange: (newOwner: string) => void;
   onBlur: () => void;
   isEmpty?: boolean;
+  isInvalidId?: boolean;
 };
 
 const Selection: FC<SelectionProps> = ({
@@ -31,6 +32,7 @@ const Selection: FC<SelectionProps> = ({
   onChange,
   onBlur,
   isEmpty = false,
+  isInvalidId = false,
 }) => {
   const { t } = useTranslate("authorizations");
 
@@ -45,7 +47,13 @@ const Selection: FC<SelectionProps> = ({
             onBlur={onBlur}
             placeholder={t("enterUsername")}
             type="text"
-            errors={isEmpty ? t("usernameRequired") : ""}
+            errors={
+              isEmpty
+                ? t("usernameRequired")
+                : isInvalidId
+                  ? t("pleaseEnterValidUsername")
+                  : ""
+            }
           />
         );
       }
@@ -82,7 +90,13 @@ const Selection: FC<SelectionProps> = ({
           onBlur={onBlur}
           placeholder={t("enterGroupId")}
           type="text"
-          errors={isEmpty ? t("groupIdRequired") : ""}
+          errors={
+            isEmpty
+              ? t("groupIdRequired")
+              : isInvalidId
+                ? t("pleaseEnterValidGroupId")
+                : ""
+          }
         />
       );
     case OwnerType.MAPPING_RULE:
@@ -120,7 +134,13 @@ const Selection: FC<SelectionProps> = ({
           onBlur={onBlur}
           placeholder={t("enterId")}
           type="text"
-          errors={isEmpty ? t("ownerRequired") : ""}
+          errors={
+            isEmpty
+              ? t("ownerRequired")
+              : isInvalidId
+                ? t("pleaseEnterValidClientId")
+                : ""
+          }
         />
       );
     default:

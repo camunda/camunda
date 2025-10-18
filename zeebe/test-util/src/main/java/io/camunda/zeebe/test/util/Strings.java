@@ -25,4 +25,8 @@ public final class Strings {
   public static String newRandomValidIdentityId() {
     return UUID.randomUUID().toString().replace("-", "");
   }
+
+  public static String newRandomValidTenantId() {
+    return UUID.randomUUID().toString().replace("-", "").substring(0, 31);
+  }
 }

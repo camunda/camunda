@@ -7,14 +7,14 @@
  */
 
 import { FC } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import { createRole } from "src/utility/api/roles";
-import { isValidRoleId } from "src/pages/roles/modals/isValidRoleId";
 import { useNotifications } from "src/components/notifications";
+import { isValidId } from "src/utility/validate";
 
 type FormData = {
   roleName: string;
@@ -72,8 +72,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
         name="roleId"
         control={control}
         rules={{
-          validate: (value) =>
-            isValidRoleId(value) || t("pleaseEnterValidRoleId"),
+          validate: (value) => isValidId(value) || t("pleaseEnterValidRoleId"),
         }}
         render={({ field, fieldState }) => (
           <TextField

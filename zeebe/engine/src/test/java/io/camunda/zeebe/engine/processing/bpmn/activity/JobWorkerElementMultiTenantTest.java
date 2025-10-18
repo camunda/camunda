@@ -81,7 +81,7 @@ public class JobWorkerElementMultiTenantTest {
 
   @Before
   public void setUp() {
-    tenantId = Strings.newRandomValidIdentityId();
+    tenantId = Strings.newRandomValidTenantId();
     username = Strings.newRandomValidIdentityId();
     ENGINE.tenant().newTenant().withTenantId(tenantId).create();
     ENGINE.user().newUser(username).create();

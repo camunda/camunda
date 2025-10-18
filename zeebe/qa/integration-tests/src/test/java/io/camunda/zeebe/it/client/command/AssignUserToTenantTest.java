@@ -73,7 +73,7 @@ class AssignUserToTenantTest {
   @Test
   void shouldRejectAssignIfTenantDoesNotExist() {
     // Given
-    final var invalidTenantId = Strings.newRandomValidIdentityId();
+    final var invalidTenantId = Strings.newRandomValidTenantId();
 
     // When / Then
     assertThatThrownBy(

@@ -70,7 +70,7 @@
   "assignClientToTenant": "Assign client to tenant",
   "tenantClientRemoved": "Tenant client removed",
   "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
-  "pleaseEnterValidTenantId": "Please enter a valid Tenant ID. Allowed special characters: - _ . @",
+  "pleaseEnterValidTenantId": "Please enter a valid Tenant ID (only characters, numbers and . _ - and max 31 characters)",
   "tenantNameRequired": "Tenant name is required",
   "searchByTenantId": "Search by tenant ID"
 }

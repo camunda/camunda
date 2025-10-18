@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { useForm, Controller } from "react-hook-form";
+import { Controller, useForm } from "react-hook-form";
 import { Stack } from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
 import TextField from "src/components/form/TextField";
@@ -16,7 +16,7 @@ import useTranslate from "src/utility/localization";
 import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
 import { useNotifications } from "src/components/notifications";
-import { isValidTenantId } from "src/pages/tenants/modals/isValidTenantId";
+import { isValidTenantId } from "src/utility/validate";
 
 type FormData = {
   name: string;

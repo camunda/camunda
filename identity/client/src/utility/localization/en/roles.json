@@ -17,7 +17,7 @@
   "deleteRoleConfirmation": "Are you sure you want to delete <strong>{{roleId}}</strong>?",
   "roleIdPlaceholder": "Enter role ID",
   "roleNamePlaceholder": "Enter role name",
-  "pleaseEnterValidRoleId": "Please enter a valid role ID (only alphanumeric characters and max 256 characters)",
+  "pleaseEnterValidRoleId": "Please enter a valid role ID (only characters, numbers and _ ~ @ . + - and max 256 characters)",
   "roleIdHelperText": "The role ID must be unique and can not be modified",
   "roleDescriptionPlaceholder": "Enter a role description (Max 255 characters)",
   "assignUsersToRole": "Assign users to this Role",

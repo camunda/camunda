@@ -27,7 +27,7 @@ public class UsersByTenantSearchTest {
   private static final String USER_USERNAME_1 = "Alice" + Strings.newRandomValidUsername();
   private static final String USER_USERNAME_2 = "Bob" + Strings.newRandomValidUsername();
   private static final String USER_USERNAME_3 = Strings.newRandomValidUsername();
-  private static final String TENANT_ID = Strings.newRandomValidIdentityId();
+  private static final String TENANT_ID = Strings.newRandomValidTenantId();
 
   @BeforeAll
   static void setup() {
