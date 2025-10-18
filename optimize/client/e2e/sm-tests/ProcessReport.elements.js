@@ -120,7 +120,6 @@ export const renameVariablesBtn = Selector('button').withText('Rename variables'
 export const newNameInput = (name) =>
   Selector('.RenameVariablesModal tbody tr').withText(name).find('input');
 export const numberReportInfo = reportRenderer.find('.Number .label');
-export const variableSubmenuOption = (text) => Selector('.Submenu .DropdownOption').withText(text);
 export const collapsibleContainer = Selector('.CollapsibleContainer');
 export const collapsibleContainerTable = collapsibleContainer.find('.Table');
 export const collapsibleContainerExpandButton = collapsibleContainer.find('.expandButton');
