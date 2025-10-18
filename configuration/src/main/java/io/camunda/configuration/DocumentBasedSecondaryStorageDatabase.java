@@ -33,6 +33,9 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @NestedConfigurationProperty
   private DocumentBasedHistory history = new DocumentBasedHistory(databaseName());
 
+  @NestedConfigurationProperty
+  private BatchOperation batchOperations = new BatchOperation(databaseName());
+
   @Override
   public String getUrl() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -71,6 +74,14 @@ public abstract class DocumentBasedSecondaryStorageDatabase
   @Override
   public void setHistory(final DocumentBasedHistory history) {
     this.history = history;
+  }
+
+  public BatchOperation getBatchOperations() {
+    return batchOperations;
+  }
+
+  public void setBatchOperations(final BatchOperation batchOperations) {
+    this.batchOperations = batchOperations;
   }
 
   public Security getSecurity() {

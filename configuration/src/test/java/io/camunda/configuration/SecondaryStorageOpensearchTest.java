@@ -51,6 +51,8 @@ public class SecondaryStorageOpensearchTest {
 
   private static final boolean EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED = false;
 
+  private static final boolean EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION = false;
+
   @Nested
   @TestPropertySource(
       properties = {
@@ -63,6 +65,8 @@ public class SecondaryStorageOpensearchTest {
         "camunda.data.secondary-storage.opensearch.number-of-shards=" + EXPECTED_NUMBER_OF_SHARDS,
         "camunda.data.secondary-storage.opensearch.history.process-instance-enabled="
             + EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED,
+        "camunda.data.secondary-storage.opensearch.batch-operations.export-items-on-creation="
+            + EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION,
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -134,6 +138,8 @@ public class SecondaryStorageOpensearchTest {
           .isEqualTo(EXPECTED_NUMBER_OF_SHARDS);
       assertThat(exporterConfiguration.getHistory().isProcessInstanceEnabled())
           .isEqualTo(EXPECTED_HISTORY_PROCESS_INSTANCE_ENABLED);
+      assertThat(exporterConfiguration.getBatchOperation().isExportItemsOnCreation())
+          .isEqualTo(EXPECTED_BATCH_OPERATION_EXPORT_ITEMS_ON_CREATION);
     }
 
     @Test
