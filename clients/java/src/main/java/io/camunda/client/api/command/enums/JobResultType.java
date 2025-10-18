@@ -16,6 +16,16 @@
 package io.camunda.client.api.command.enums;
 
 public enum JobResultType {
-  USER_TASK,
-  AD_HOC_SUB_PROCESS
+  USER_TASK("userTask"),
+  AD_HOC_SUB_PROCESS("adHocSubProcess");
+
+  private final String protocolValue;
+
+  JobResultType(final String protocolValue) {
+    this.protocolValue = protocolValue;
+  }
+
+  public String getProtocolValue() {
+    return protocolValue;
+  }
 }

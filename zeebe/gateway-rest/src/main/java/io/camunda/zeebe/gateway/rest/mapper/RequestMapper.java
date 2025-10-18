@@ -31,6 +31,8 @@ import static io.camunda.zeebe.gateway.rest.validator.ResourceRequestValidator.v
 import static io.camunda.zeebe.gateway.rest.validator.SignalRequestValidator.validateSignalBroadcastRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateAssignmentRequest;
 import static io.camunda.zeebe.gateway.rest.validator.UserTaskRequestValidator.validateUpdateRequest;
+import static io.camunda.zeebe.protocol.record.value.JobResultType.AD_HOC_SUB_PROCESS;
+import static io.camunda.zeebe.protocol.record.value.JobResultType.USER_TASK;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.document.api.DocumentMetadataModel;
@@ -1115,17 +1117,19 @@ public class RequestMapper {
     if (request == null || request.getResult() == null) {
       return new JobResult();
     }
-    return switch (request.getResult().getType()) {
-      case USER_TASK -> getJobResult((JobResultUserTask) request.getResult());
-      case AD_HOC_SUB_PROCESS -> getJobResult((JobResultAdHocSubProcess) request.getResult());
-      default ->
-          throw new IllegalStateException("Unexpected value: " + request.getResult().getType());
-    };
+    final var type = request.getResult().getType();
+    if (USER_TASK.getType().equals(type)) {
+      return getJobResult((JobResultUserTask) request.getResult());
+    }
+    if (AD_HOC_SUB_PROCESS.getType().equals(type)) {
+      return getJobResult((JobResultAdHocSubProcess) request.getResult());
+    }
+    throw new IllegalStateException("Unexpected value: " + type);
   }
 
   private static JobResult getJobResult(final JobResultUserTask result) {
     final JobResult jobResult = new JobResult();
-    jobResult.setType(JobResultType.from(result.getType().getValue()));
+    jobResult.setType(JobResultType.from(result.getType()));
     jobResult.setDenied(result.getDenied() != null ? result.getDenied() : false);
     jobResult.setDenied(getBooleanOrDefault(result, JobResultUserTask::getDenied, false));
     jobResult.setDeniedReason(getStringOrEmpty(result, JobResultUserTask::getDeniedReason));
@@ -1171,7 +1175,7 @@ public class RequestMapper {
   private static JobResult getJobResult(final JobResultAdHocSubProcess result) {
     final JobResult jobResult = new JobResult();
     jobResult
-        .setType(JobResultType.from(result.getType().getValue()))
+        .setType(JobResultType.from(result.getType()))
         .setCompletionConditionFulfilled(result.getIsCompletionConditionFulfilled())
         .setCancelRemainingInstances(result.getIsCancelRemainingInstances());
     result.getActivateElements().stream()

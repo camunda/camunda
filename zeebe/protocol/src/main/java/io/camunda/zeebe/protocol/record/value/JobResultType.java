@@ -45,4 +45,8 @@ public enum JobResultType {
     }
     throw new IllegalArgumentException("Unknown job result type: " + resultType);
   }
+
+  public String getType() {
+    return type;
+  }
 }
