@@ -1,5 +1,8 @@
 camunda:
   profilesOverride: "broker,identity,tasklist"
+  backup:
+    webapps:
+      enabled: false
   data:
     secondary-storage:
       type: rdbms
