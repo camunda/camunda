@@ -7,7 +7,10 @@
  */
 package io.camunda.webapps.controllers;
 
-import io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.opensearch;
+
+import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.management.backups.Error;
 import io.camunda.management.backups.HistoryBackupDetail;
 import io.camunda.management.backups.HistoryBackupInfo;
@@ -21,7 +24,6 @@ import io.camunda.webapps.backup.GetBackupStateResponseDetailDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
-import io.camunda.webapps.profiles.ProfileWebApp;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.math.BigDecimal;
 import java.util.Arrays;
@@ -39,8 +41,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 @WebEndpoint(id = "backupHistory")
-@ConditionalOnBackupWebappsEnabled
-@ProfileWebApp
+@ConditionalOnSecondaryStorageType({elasticsearch, opensearch})
 public class BackupController {
   private static final Logger LOG = LoggerFactory.getLogger(BackupController.class);
 

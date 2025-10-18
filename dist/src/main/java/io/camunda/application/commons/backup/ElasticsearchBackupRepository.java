@@ -7,23 +7,21 @@
  */
 package io.camunda.application.commons.backup;
 
+import static io.camunda.configuration.SecondaryStorage.SecondaryStorageType.elasticsearch;
+
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.conditions.ConditionalOnSecondaryStorageType;
 import io.camunda.webapps.backup.BackupRepository;
 import io.camunda.webapps.backup.repository.BackupRepositoryProps;
 import io.camunda.webapps.backup.repository.WebappsSnapshotNameProvider;
-import io.camunda.webapps.profiles.ProfileWebApp;
 import java.util.concurrent.Executor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
-@ConditionalOnBackupWebappsEnabled
-@ConditionalOnSecondaryStorageType(SecondaryStorageType.elasticsearch)
+@ConditionalOnSecondaryStorageType(elasticsearch)
 @Configuration
-@ProfileWebApp
 public class ElasticsearchBackupRepository {
 
   private final ElasticsearchClient elasticsearchClient;

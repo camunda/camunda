@@ -7,8 +7,6 @@
  */
 package io.camunda.qa.util.cluster;
 
-import static io.camunda.application.commons.backup.ConditionalOnBackupWebappsEnabled.BACKUP_WEBAPPS_ENABLED;
-
 import io.atomix.cluster.MemberId;
 import io.camunda.application.StandaloneBackupManager;
 import io.camunda.application.StandaloneBackupManager.BackupManagerConfiguration;
@@ -37,7 +35,6 @@ public class TestStandaloneBackupManager
         // ---
         BackupManagerConfiguration.class,
         StandaloneBackupManager.class);
-    withProperty(BACKUP_WEBAPPS_ENABLED, true);
   }
 
   @Override
