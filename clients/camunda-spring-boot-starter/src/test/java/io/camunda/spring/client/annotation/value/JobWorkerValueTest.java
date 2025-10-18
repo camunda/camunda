@@ -13,18 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.camunda.client.jobhandling;
+package io.camunda.spring.client.annotation.value;
 
-import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
-
-public interface JobExceptionHandlingStrategy {
-  void handleException(Exception exception, ExceptionHandlingContext context) throws Exception;
-
-  record ExceptionHandlingContext(JobClient jobClient, ActivatedJob job, int maxRetries) {}
-
-  interface CommandWrapperCreator {
-    CommandWrapper create(FinalCommandStep<?> command);
-  }
-}
+public class JobWorkerValueTest {}
