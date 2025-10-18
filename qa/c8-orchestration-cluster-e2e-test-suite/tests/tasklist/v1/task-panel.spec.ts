@@ -46,103 +46,105 @@ test.describe('task panel page', () => {
     await captureFailureVideo(page, testInfo);
   });
 
-  test('filter selection', async ({taskPanelPage}) => {
+  test('filter selection', async ({taskPanelPageV1}) => {
     test.slow();
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
+      taskPanelPageV1.availableTasks.getByText('Some user activity'),
     ).toHaveCount(50);
 
-    await taskPanelPage.filterBy('Assigned to me');
-    await expect(taskPanelPage.availableTasks).toContainText('No tasks found');
+    await taskPanelPageV1.filterBy('Assigned to me');
+    await expect(taskPanelPageV1.availableTasks).toContainText(
+      'No tasks found',
+    );
 
-    await taskPanelPage.filterBy('All open tasks');
+    await taskPanelPageV1.filterBy('All open tasks');
     await expect(
-      taskPanelPage.availableTasks.getByText('Some user activity'),
+      taskPanelPageV1.availableTasks.getByText('Some user activity'),
     ).toHaveCount(50);
     await expect(
-      taskPanelPage.availableTasks.getByText('No tasks found'),
+      taskPanelPageV1.availableTasks.getByText('No tasks found'),
     ).toHaveCount(0);
   });
 
   test('update task list according to user actions', async ({
     page,
-    taskPanelPage,
-    taskDetailsPage,
+    taskPanelPageV1,
+    taskDetailsPageV1,
   }) => {
-    await taskPanelPage.filterBy('Unassigned');
+    await taskPanelPageV1.filterBy('Unassigned');
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText('usertask_to_be_assigned'),
+        taskPanelPageV1.availableTasks.getByText('usertask_to_be_assigned'),
       ).toBeVisible();
     }).toPass();
-    await taskPanelPage.openTask('usertask_to_be_assigned');
-    await expect(taskDetailsPage.emptyTaskMessage).toBeVisible();
-    await taskDetailsPage.clickAssignToMeButton();
-    await expect(taskDetailsPage.unassignButton).toBeVisible();
+    await taskPanelPageV1.openTask('usertask_to_be_assigned');
+    await expect(taskDetailsPageV1.emptyTaskMessage).toBeVisible();
+    await taskDetailsPageV1.clickAssignToMeButton();
+    await expect(taskDetailsPageV1.unassignButton).toBeVisible();
     await page.reload();
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText('usertask_to_be_assigned'),
+        taskPanelPageV1.availableTasks.getByText('usertask_to_be_assigned'),
       ).toHaveCount(0);
     }).toPass({timeout: 5000});
 
-    await taskPanelPage.filterBy('Assigned to me');
-    await taskPanelPage.openTask('usertask_to_be_assigned');
+    await taskPanelPageV1.filterBy('Assigned to me');
+    await taskPanelPageV1.openTask('usertask_to_be_assigned');
 
-    await expect(taskDetailsPage.completeTaskButton).toBeEnabled();
-    await taskDetailsPage.clickCompleteTaskButton();
-    await expect(taskDetailsPage.taskCompletedBanner).toBeVisible();
-
-    await expect(async () => {
-      await expect(taskPanelPage.availableTasks.getByText('user')).toHaveCount(
-        0,
-      );
-    }).toPass();
-
-    await taskPanelPage.filterBy('Completed');
+    await expect(taskDetailsPageV1.completeTaskButton).toBeEnabled();
+    await taskDetailsPageV1.clickCompleteTaskButton();
+    await expect(taskDetailsPageV1.taskCompletedBanner).toBeVisible();
 
     await expect(async () => {
       await expect(
-        taskPanelPage.availableTasks.getByText(/some text/),
+        taskPanelPageV1.availableTasks.getByText('user'),
+      ).toHaveCount(0);
+    }).toPass();
+
+    await taskPanelPageV1.filterBy('Completed');
+
+    await expect(async () => {
+      await expect(
+        taskPanelPageV1.availableTasks.getByText(/some text/),
       ).not.toHaveCount(50);
     }).toPass({timeout: 5000});
   });
 
-  // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
-  // V2 mode may have different scrolling/pagination behavior that affects task count expectations
-  test.skip('scrolling', async ({page, taskPanelPage}) => {
+  test('scrolling', async ({page, taskPanelPageV1}) => {
+    // TODO: This test fails in V2 mode - investigate if this is expected behavior or a bug
+    // V2 mode may have different scrolling/pagination behavior that affects task count expectations
     test.slow();
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(49);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
+    await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(99);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
+    await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(149);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
+    await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(0);
 
-    await taskPanelPage.scrollToLastTask('usertask_for_scrolling_2');
+    await taskPanelPageV1.scrollToLastTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(0);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
     await expect(page.getByText('usertask_for_scrolling_3')).toHaveCount(1);
 
-    await taskPanelPage.scrollToFirstTask('usertask_for_scrolling_2');
+    await taskPanelPageV1.scrollToFirstTask('usertask_for_scrolling_2');
 
     await expect(page.getByText('usertask_for_scrolling_1')).toHaveCount(1);
     await expect(page.getByText('usertask_for_scrolling_2')).toHaveCount(199);
